@@ -808,7 +808,556 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   // ! Part 4: User Groups
   // #region
-  // TODO: test the creation of a user group and that it is shown in the UI
+  it('Create a user group with regular members and admins', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.userGroup.name)
+    cy.get('[data-cy="cancel-create-user-group"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.userGroup.name)
+
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+
+    cy.get('[data-cy="add-member"]').click()
+    cy.get('[data-cy="member-shortname-email-1"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
+    cy.get('[data-cy="member-admin-1"]').realClick()
+
+    cy.get('[data-cy="add-member"]').click()
+    cy.get('[data-cy="member-shortname-email-2"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME')) // pro3 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+  })
+
+  it('Verify that the other group members and admins can see the group, its members and appropriate actions', function () {
+    // log in as the group owner and verify that all actions are available
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_EMAIL')
+    )
+
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(Cypress.env('LECTURER_IND_EMAIL'))
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(Cypress.env('LECTURER_INST_EMAIL'))
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    )
+      .should('exist')
+      .contains(Cypress.env('LECTURER_INST2_EMAIL'))
+
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="promote-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // log in as an admin user, verify that all functionalities except from ownership transfer are available
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.manage.userGroups.admin
+    )
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="leave-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_EMAIL')
+    )
+
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(Cypress.env('LECTURER_IND_EMAIL'))
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(Cypress.env('LECTURER_INST_EMAIL'))
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    )
+      .should('exist')
+      .contains(Cypress.env('LECTURER_INST2_EMAIL'))
+
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="promote-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // log in as a member user, verify that no modification actions are available and that the user emails are not shown
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.manage.userGroups.member
+    )
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="leave-group-${this.data.userGroup.name}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_EMAIL')
+    )
+
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .should('not.contain', Cypress.env('LECTURER_IND_EMAIL'))
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .should('not.contain', Cypress.env('LECTURER_INST_EMAIL'))
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    )
+      .should('exist')
+      .should('not.contain', Cypress.env('LECTURER_INST2_EMAIL'))
+
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    cy.get(
+      `[data-cy="promote-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.logoutLecturer()
+  })
+
+  it('Verify that creating another group with the same name fails', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.userGroup.name)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME')) // pro3 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get('[data-cy="user-group-creation-error-toast"]').should('exist') // error toast should be shown
+  })
+
+  it('Verify that a group can be left by admins and users', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="leave-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="cancel-leave-group"]').click()
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="leave-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="confirm-leave-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
+      'not.exist'
+    )
+
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="leave-group-${this.data.userGroup.name}"]`).click()
+    cy.get('[data-cy="confirm-leave-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it("Re-add the member and admin again using the add to group functionality and verify the action's success through the corresponding users", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    // re-add user pro1 as an admin and user pro3 as a member
+    cy.get('[data-cy="add-admin-group-input"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.get('[data-cy="add-admin-group-confirm"]').click()
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="add-admin-group-input"]').should('have.value', '') // form should be cleared on success
+
+    cy.get('[data-cy="add-member-group-input"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.get('[data-cy="add-member-group-confirm"]').click()
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="add-member-group-input"]').should('have.value', '') // form should be cleared on success
+  })
+
+  it('Promote and demote two different users and check the persistence of this change through the corresponding accounts', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+
+    // promote user pro3 to admin
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    )
+      .should('exist')
+      .contains(Cypress.env('LECTURER_INST2_EMAIL'))
+    cy.get(
+      `[data-cy="promote-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+
+    // demote user pro1 to member
+    cy.get(`[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(Cypress.env('LECTURER_IND_EMAIL'))
+    cy.get(
+      `[data-cy="demote-group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // verify that the changes went into effect for the corresponding users
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.manage.userGroups.member
+    )
+    cy.logoutLecturer()
+
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
+      messages.manage.userGroups.admin
+    )
+    cy.logoutLecturer()
+  })
+
+  it('Remove a member and an admin from the group and verify that the corresponding users lost access', function () {
+    // remove the promoted and demoted users from the group
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+
+    cy.get(
+      `[data-cy="remove-group-admin-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    cy.get(
+      `[data-cy="remove-group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.logoutLecturer()
+
+    // verify that the changes went into effect for the corresponding users
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+  })
+
+  it('Transfer the ownership to one of the group admins, verify the change and transfer the ownership back', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).click()
+
+    // verify that the ownership transfer was successful (and user themselves is added as an admin)
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_INST_SHORTNAME')
+    )
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // verify that the changes went into effect for the corresponding users and transfer the ownership back
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+    cy.get(
+      `[data-cy="transfer-group-ownership-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+
+    // verify that the ownership transfer was successful (and user themselves is added as an admin)
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get('[data-cy="group-owner-shortname-email"]').contains(
+      Cypress.env('LECTURER_EMAIL')
+    )
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.logoutLecturer()
+  })
+
+  it('Change the name of the user group and verify its persistence', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should('exist')
+    cy.get(`[data-cy="user-group-actions-${this.data.userGroup.name}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.userGroup.name}"]`).click()
+
+    cy.get('[data-cy="edit-group-name"]').click()
+    cy.get('[data-cy="edit-group-name-input"]')
+      .click()
+      .clear()
+      .type(this.data.userGroup.nameNew)
+    cy.get('[data-cy="save-new-group-name"]').click()
+    cy.get('[data-cy="edit-group-name-input"]').should('not.exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
+      'exist'
+    )
+  })
+
+  it('Delete the user group and verify that it is not shown anymore to any members', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="user-group-actions-${this.data.userGroup.nameNew}"]`
+    ).click()
+    cy.get(`[data-cy="delete-group-${this.data.userGroup.nameNew}"]`).click()
+    cy.get('[data-cy="cancel-delete-group"]').click()
+
+    cy.get(
+      `[data-cy="user-group-actions-${this.data.userGroup.nameNew}"]`
+    ).click()
+    cy.get(`[data-cy="delete-group-${this.data.userGroup.nameNew}"]`).click()
+
+    cy.get('[data-cy="confirm-delete-group"]').should('be.disabled')
+    cy.get('[data-cy="delete-group-resolve-group-confirm"]').click()
+    cy.get('[data-cy="confirm-delete-group"]').should('be.disabled')
+    cy.get('[data-cy="delete-group-revoke-permissions-confirm"]').click()
+    cy.get('[data-cy="confirm-delete-group"]').should('be.disabled')
+    cy.get('[data-cy="delete-group-irrevocable-action-confirm"]').click()
+    cy.get('[data-cy="confirm-delete-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+    cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+  })
   // #endregion
 
   // ! Cleanup

@@ -128,7 +128,7 @@ function UserGroupCreationForm({
                           name={`members.${index}.shortnameOrEmail`}
                           placeholder={t('manage.userGroups.emailOrShortname')}
                           label={`${t('manage.userGroups.member')} ${index + 1}`}
-                          data={{ cy: `member-${index}` }}
+                          data={{ cy: `member-shortname-email-${index}` }}
                         />
                       </div>
                       <div className="mb-1.5 flex items-end">

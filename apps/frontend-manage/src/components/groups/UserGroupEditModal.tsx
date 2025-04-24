@@ -63,6 +63,7 @@ function UserGroupEditModal({
                 value={titleState}
                 onChange={(newValue) => setTitleState(newValue)}
                 className={{ input: 'h-8 font-normal' }}
+                data={{ cy: 'edit-group-name-input' }}
               />
               <Button
                 basic
@@ -75,6 +76,7 @@ function UserGroupEditModal({
                     setTitleEditMode,
                   })
                 }}
+                data={{ cy: 'save-new-group-name' }}
               >
                 <Button.Icon withoutLabel icon={faSave} />
               </Button>
@@ -87,6 +89,7 @@ function UserGroupEditModal({
                   basic
                   onClick={() => setTitleEditMode(true)}
                   className={{ root: 'px-1.5 py-1.5' }}
+                  data={{ cy: 'edit-group-name' }}
                 >
                   <Button.Icon withoutLabel icon={faPencil} />
                 </Button>
@@ -100,11 +103,12 @@ function UserGroupEditModal({
             isGroupEditor && '!max-w-3xl'
           ),
         }}
+        dataCloseButton={{ cy: 'close-user-group-edit-modal' }}
       >
         <div className="mb-2.5 flex flex-row items-center gap-2">
           <FontAwesomeIcon icon={faUserTie} />
           <H4 className={{ root: 'my-0 py-0' }}>{t('shared.generic.owner')}</H4>
-          <div>{`${group.owner!.shortname} (${group.owner!.email})`}</div>
+          <div data-cy="group-owner-shortname-email">{`${group.owner!.shortname} (${group.owner!.email})`}</div>
         </div>
 
         <H4>{t('manage.userGroups.admins')}</H4>
@@ -153,6 +157,9 @@ function UserGroupEditModal({
                               newOwnerId: admin.id!,
                             })
                           }}
+                          data={{
+                            cy: `transfer-group-ownership-${admin.shortname}`,
+                          }}
                         >
                           <Button.Icon
                             withoutLabel
@@ -173,6 +180,7 @@ function UserGroupEditModal({
                             adminEmail: admin.email,
                           })
                         }}
+                        data={{ cy: `demote-group-admin-${admin.shortname}` }}
                       >
                         <Button.Icon withoutLabel icon={faUserMinus} />
                       </Button>
@@ -188,6 +196,7 @@ function UserGroupEditModal({
                             userId: admin.id!,
                           })
                         }}
+                        data={{ cy: `remove-group-admin-${admin.shortname}` }}
                       >
                         <Button.Icon withoutLabel icon={faUserXmark} />
                       </Button>
@@ -267,6 +276,9 @@ function UserGroupEditModal({
                             memberEmail: member.email,
                           })
                         }}
+                        data={{
+                          cy: `promote-group-member-${member.shortname}`,
+                        }}
                       >
                         <Button.Icon withoutLabel icon={faUserPlus} />
                       </Button>
@@ -282,6 +294,7 @@ function UserGroupEditModal({
                             userId: member.id!,
                           })
                         }}
+                        data={{ cy: `remove-group-member-${member.shortname}` }}
                       >
                         <Button.Icon withoutLabel icon={faUserXmark} />
                       </Button>

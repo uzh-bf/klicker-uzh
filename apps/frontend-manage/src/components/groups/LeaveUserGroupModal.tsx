@@ -40,7 +40,7 @@ function LeaveUserGroupModal({
         {t('manage.userGroups.confirmLeaveGroup', { groupName })}
       </div>
       <div className="flex flex-row justify-between">
-        <Button onClick={onClose}>
+        <Button onClick={onClose} data={{ cy: 'cancel-leave-group' }}>
           <Button.Icon icon={faBan} />
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
@@ -86,6 +86,7 @@ function LeaveUserGroupModal({
               setErrorToast(true)
             }
           }}
+          data={{ cy: 'confirm-leave-group' }}
         >
           <Button.Icon icon={faPersonWalkingArrowRight} />
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>

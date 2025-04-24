@@ -84,21 +84,21 @@ describe('Unit tests for user group management', () => {
       )
 
       // verify the result
-      expect(result).toBeDefined()
-      expect(result.name).toBe(groupName)
-      expect(result.members.length).toBe(2)
-      expect(result.admins.length).toBe(0)
-      expect(result.numOfMembers).toBe(3) // 2 members + owner
+      expect(result).toBeTruthy()
+      expect(result!.name).toBe(groupName)
+      expect(result!.members.length).toBe(2)
+      expect(result!.admins.length).toBe(0)
+      expect(result!.numOfMembers).toBe(3) // 2 members + owner
 
       // verify that members are correctly assigned
-      const memberIds = result.members.map((member) => member.id)
+      const memberIds = result!.members.map((member) => member.id)
       expect(memberIds).toContain(userTwo.id)
       expect(memberIds).toContain(userThree.id)
 
       // verify that a correct audit log entry has been created
       const auditLog = await prisma.auditLogEntry.findFirst({
         where: {
-          objectId: String(result.id),
+          objectId: String(result!.id),
           objectType: ObjectType.USER_GROUP,
           type: AuditLogType.USER_GROUP_CREATED,
         },
@@ -126,15 +126,15 @@ describe('Unit tests for user group management', () => {
       )
 
       // verify the result
-      expect(result).toBeDefined()
-      expect(result.name).toBe(groupName)
-      expect(result.members.length).toBe(1)
-      expect(result.admins.length).toBe(2)
-      expect(result.numOfMembers).toBe(4) // 1 member + 2 admins + owner
+      expect(result).toBeTruthy()
+      expect(result!.name).toBe(groupName)
+      expect(result!.members.length).toBe(1)
+      expect(result!.admins.length).toBe(2)
+      expect(result!.numOfMembers).toBe(4) // 1 member + 2 admins + owner
 
       // verify that members are correctly assigned to the right roles
-      const memberIds = result.members.map((member) => member.id)
-      const adminIds = result.admins.map((admin) => admin.id)
+      const memberIds = result!.members.map((member) => member.id)
+      const adminIds = result!.admins.map((admin) => admin.id)
       expect(memberIds).toContain(userTwo.id)
       expect(adminIds).toContain(userThree.id)
       expect(adminIds).toContain(userFour.id)
@@ -142,7 +142,7 @@ describe('Unit tests for user group management', () => {
       // verify that a correct audit log entry has been created
       const auditLog = await prisma.auditLogEntry.findFirst({
         where: {
-          objectId: String(result.id),
+          objectId: String(result!.id),
           type: AuditLogType.USER_GROUP_CREATED,
         },
       })
@@ -165,27 +165,25 @@ describe('Unit tests for user group management', () => {
       )
 
       // try to create another group with the same name
-      await expect(
-        createUserGroup(
-          {
-            name: groupName,
-            members: [{ shortnameOrEmail: userThree.email, isAdmin: false }],
-          },
-          userOneCtx
-        )
-      ).rejects.toThrow('User group with this name already exists')
+      const duplicateGroup = await createUserGroup(
+        {
+          name: groupName,
+          members: [{ shortnameOrEmail: userTwo.shortname, isAdmin: false }],
+        },
+        userOneCtx
+      )
+      expect(duplicateGroup).toBeNull()
     })
 
     it('User group creation should fail if no valid members were found', async () => {
-      await expect(
-        createUserGroup(
-          {
-            name: 'Empty Group',
-            members: [{ shortnameOrEmail: 'nonexistent', isAdmin: false }],
-          },
-          userOneCtx
-        )
-      ).rejects.toThrow('No members found')
+      const userGroup = await createUserGroup(
+        {
+          name: 'Empty Group',
+          members: [{ shortnameOrEmail: 'nonexistent', isAdmin: false }],
+        },
+        userOneCtx
+      )
+      expect(userGroup).toBeNull()
     })
 
     it('User group creation should success if at least one valid member was provided, other users should be ignored', async () => {
@@ -203,10 +201,10 @@ describe('Unit tests for user group management', () => {
       )
 
       // Verify only the valid member was added
-      expect(result).toBeDefined()
-      expect(result.name).toBe(groupName)
-      expect(result.members.length).toBe(1)
-      expect(result.members[0]!.id).toBe(userTwo.id)
+      expect(result).toBeTruthy()
+      expect(result!.name).toBe(groupName)
+      expect(result!.members.length).toBe(1)
+      expect(result!.members[0]!.id).toBe(userTwo.id)
     })
 
     it('Duplicate members and the owner should be filtered from the member / admin lists', async () => {
@@ -227,14 +225,14 @@ describe('Unit tests for user group management', () => {
       )
 
       // verify only non-owner members were added
-      expect(result).toBeDefined()
-      expect(result.members.length).toBe(1)
-      expect(result.members[0]!.id).toBe(userTwo.id)
-      expect(result.admins.length).toBe(1)
-      expect(result.admins[0]!.id).toBe(userThree.id)
+      expect(result).toBeTruthy()
+      expect(result!.members.length).toBe(1)
+      expect(result!.members[0]!.id).toBe(userTwo.id)
+      expect(result!.admins.length).toBe(1)
+      expect(result!.admins[0]!.id).toBe(userThree.id)
 
       // owner should not appear in members list
-      const memberIds = result.members.map((member) => member.id)
+      const memberIds = result!.members.map((member) => member.id)
       expect(memberIds).not.toContain(userOneCtx.user.sub)
     })
 
@@ -1530,6 +1528,84 @@ describe('Unit tests for user group management', () => {
       expect(auditLogEntry!.message).toBe(
         `User group ownership transferred to group admin.`
       )
+    })
+
+    it('Verify that uniqueness constraints on the user group name are resolved gracefully', async () => {
+      // create three user groups owned by users 1, 2, and 3 respectively
+      const groupName = 'Unique Group Name'
+      const group1 = await prisma.userGroup.create({
+        data: {
+          name: groupName,
+          ownerId: userOne.id,
+        },
+      })
+      const group2 = await prisma.userGroup.create({
+        data: {
+          name: groupName,
+          ownerId: userTwo.id,
+          admins: {
+            connect: [{ id: userOne.id }],
+          },
+        },
+      })
+      const group3 = await prisma.userGroup.create({
+        data: {
+          name: groupName,
+          ownerId: userThree.id,
+          admins: {
+            connect: [{ id: userOne.id }],
+          },
+        },
+      })
+
+      // transfer the ownership of the second group to user 1
+      const result = await transferGroupOwnership(
+        { id: group2.id, newOwnerId: userOne.id },
+        userTwoCtx
+      )
+      expect(result).toBe(true)
+
+      // verify that the ownership was updated and the name extended with a version number
+      const updatedGroup = await prisma.userGroup.findUnique({
+        where: { id: group2.id },
+      })
+      expect(updatedGroup?.ownerId).toBe(userOne.id)
+      expect(updatedGroup?.name).toBe(`${groupName} (1)`)
+
+      // verify that the first group name remains unchanged
+      const originalGroup = await prisma.userGroup.findUnique({
+        where: { id: group1.id },
+      })
+      expect(originalGroup?.name).toBe(groupName)
+      expect(originalGroup?.ownerId).toBe(userOne.id)
+
+      // transfer the ownership of the third group to user 1
+      const result2 = await transferGroupOwnership(
+        { id: group3.id, newOwnerId: userOne.id },
+        userThreeCtx
+      )
+      expect(result2).toBe(true)
+
+      // verify that the ownership was updated and the name extended with a version number
+      const updatedGroup2 = await prisma.userGroup.findUnique({
+        where: { id: group3.id },
+      })
+      expect(updatedGroup2?.ownerId).toBe(userOne.id)
+      expect(updatedGroup2?.name).toBe(`${groupName} (2)`)
+
+      // verify that the second group name remains unchanged
+      const originalGroup2 = await prisma.userGroup.findUnique({
+        where: { id: group2.id },
+      })
+      expect(originalGroup2?.name).toBe(`${groupName} (1)`)
+      expect(originalGroup2?.ownerId).toBe(userOne.id)
+
+      // verify that the first group name remains unchanged
+      const originalGroup3 = await prisma.userGroup.findUnique({
+        where: { id: group1.id },
+      })
+      expect(originalGroup3?.name).toBe(groupName)
+      expect(originalGroup3?.ownerId).toBe(userOne.id)
     })
 
     it('Admins and regular members should not be allowed to trigger ownership transfer', async () => {

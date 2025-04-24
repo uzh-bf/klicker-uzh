@@ -4347,7 +4347,10 @@ export async function createUserGroup(
   })
 
   if (userGroup) {
-    throw new Error('User group with this name already exists')
+    console.error(
+      `User group with name "${name}" already exists for user ${ctx.user.sub}.`
+    )
+    return null
   }
 
   // fetch all users that are to be added to the group
@@ -4363,7 +4366,10 @@ export async function createUserGroup(
 
   // if none of the specified members were found, throw an error
   if (users.length === 0) {
-    throw new Error('No members found')
+    console.error(
+      `No users found for the specified members: ${JSON.stringify(members)}`
+    )
+    return null
   }
 
   // create an object with all members / admins for the group with their ids as key and the isAdmin boolean as a value
@@ -4893,10 +4899,40 @@ export async function transferGroupOwnership(
   }
 
   await ctx.prisma.$transaction(async (prisma) => {
+    // check if the owner already has an user group with the same name -> potential issues with uniqueness
+    let groupName = userGroup.name
+    let counter = 0
+    let valid = false
+    do {
+      const existingGroup = await prisma.userGroup.findUnique({
+        where: {
+          ownerId_name: {
+            ownerId: newOwnerId,
+            name: groupName,
+          },
+        },
+      })
+
+      if (existingGroup) {
+        counter += 1
+        groupName = `${userGroup.name} (${counter})`
+      } else {
+        valid = true
+      }
+    } while (valid === false && counter < 100)
+
+    // if there was still no valid name found, return null (more than 100 copies of an answer collection with the same name are not realistic -> rate limit)
+    if (!valid) {
+      throw new Error(
+        `Could not find a valid name for the new answer collection.`
+      )
+    }
+
     // update the user group
     await prisma.userGroup.update({
       where: { id },
       data: {
+        name: groupName,
         owner: { connect: { id: newOwnerId } },
         admins: {
           connect: { id: ctx.user.sub },
