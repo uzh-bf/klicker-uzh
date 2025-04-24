@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KlickerUZH Evaluation</title>
+
+    <!-- Office JavaScript API -->
+    <script
+      type="text/javascript"
+      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
+    ></script>
+
+    <!-- Custom Styles for Reset and Full Height -->
+    <style>
+      html,
+      body {
+        height: 100vh; /* Use viewport height */
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Prevent body scrollbars when iframe is fullscreen */
+      }
+      #app-container {
+        height: 100vh; /* Use viewport height */
+        position: relative; /* Needed for absolute positioning of children */
+      }
+      /* Fullscreen Mode Styles */
+      .fullscreen-mode {
+        padding: 0 !important; /* Override initial padding */
+      }
+      .fullscreen-mode header,
+      .fullscreen-mode #main-content-area,
+      .fullscreen-mode #input-bar-area {
+        display: none !important;
+      }
+      .fullscreen-mode #iframe-container {
+        display: block !important; /* Override hidden */
+        position: absolute;
+        inset: 0;
+        padding: 0;
+        margin: 0;
+        /* Remove initial layout styles */
+        flex-grow: initial;
+        flex-direction: initial;
+        margin-top: 0;
+      }
+      .fullscreen-mode #iframe-wrapper {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        flex-grow: initial;
+      }
+      .fullscreen-mode #content-iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .fullscreen-mode #change-embedded-url-button {
+        display: block !important; /* Override hidden */
+        top: 0.5rem; /* Equivalent to top-2 */
+        right: 0.5rem; /* Equivalent to right-2 */
+        position: absolute;
+        z-index: 20;
+      }
+      /* Ensure containers take full height */
+      .h-full-flex {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      /* Make iframe take remaining space */
+      #iframe-container iframe {
+        flex-grow: 1;
+        border: none; /* Remove default iframe border */
+        width: 100%;
+        height: 100%;
+      }
+      #iframe-wrapper {
+        height: calc(100% - 4rem); /* Adjust height calculation based on header/button bar */
+      }
+      /* Style for the message box */
+      #message-box {
+        position: fixed;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        transition: opacity 0.5s ease-in-out;
+      }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- App specific JavaScript -->
+    <script type="text/javascript" src="content.js" defer></script>
+  </head>
+
+  <body class="bg-white">
+    <div id="app-container" class="h-full-flex flex flex-col p-6 relative">
+      <!-- Header -->
+      <header class="flex items-center mb-6 pb-4 border-b border-gray-200">
+        <!-- Replace with actual logo path -->
+        <img src="../../assets/logo-filled.png" alt="Klicker UZH Logo" class="h-10 mr-4" />
+        <h1 class="text-2xl font-semibold text-gray-800">KlickerUZH: Embed Evaluation</h1>
+      </header>
+
+      <!-- Main Content Area (Instructions + Image) - with background and padding -->
+      <div
+        id="main-content-area"
+        class="flex flex-grow space-x-8 mb-6 bg-gray-50 p-6 rounded-lg border border-gray-200"
+      >
+        <!-- Left Panel: Instructions (padding removed as parent now has padding) -->
+        <div class="w-1/2">
+          <h3 class="font-semibold text-gray-800 mb-4 text-sm">Instructions:</h3>
+          <ol class="list-decimal list-inside text-sm text-gray-600 space-y-3">
+            <li>
+              Go to
+              <a
+                href="https://manage.klicker.uzh.ch/quizzes"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 hover:underline"
+                >https://manage.klicker.uzh.ch/quizzes</a
+              >
+            </li>
+            <li>For the live quiz you want to embed, open the "Embed Evaluation" dialog</li>
+            <li>
+              Copy the link of the view to embed (the full evaluation, a specific question, or the
+              leaderboard)
+            </li>
+            <li>Paste the link into the field and click "Embed"</li>
+            <li>Resize the add-in to your preferred size (e.g., to cover the full slide)</li>
+          </ol>
+        </div>
+
+        <!-- Right Panel: Evaluation Links IMAGE -->
+        <div class="w-1/2 flex justify-center items-start">
+          <img
+            src="../../assets/embed-modal.png"
+            alt="Example Embed Evaluation Links Modal"
+            class="w-full h-auto max-w-md shadow-md rounded-lg border border-gray-200"
+          />
+        </div>
+      </div>
+
+      <!-- Bottom Input Area -->
+      <div
+        id="input-bar-area"
+        class="flex items-center space-x-3 pt-4 mt-6 border-t border-gray-200"
+      >
+        <label for="url-input" class="whitespace-nowrap text-sm font-medium text-gray-700"
+          >URL <span class="text-red-500">*</span></label
+        >
+        <input
+          type="url"
+          id="url-input"
+          placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
+          required
+          class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+        />
+        <button
+          type="button"
+          id="embed-button"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-md border border-gray-300 hover:border-gray-400 transition duration-150 ease-in-out text-sm"
+        >
+          Embed
+        </button>
+      </div>
+
+      <!-- Hidden iframe container (populated by JS after clicking Embed) -->
+      <div id="iframe-container" class="hidden flex-grow flex-col mt-4">
+        <div
+          id="iframe-wrapper"
+          class="flex-grow border border-gray-300 rounded-md overflow-hidden bg-white shadow-sm"
+        >
+          <iframe
+            id="content-iframe"
+            title="Embedded Content"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+            class="w-full h-full border-0"
+          ></iframe>
+        </div>
+      </div>
+
+      <!-- Message Box (keep for error/info messages) -->
+      <div
+        id="message-box"
+        class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 bg-red-500 text-white rounded-md shadow-md opacity-0 transition-opacity duration-500 ease-in-out"
+      >
+        <span id="message-text"></span>
+      </div>
+
+      <!-- Button to change URL when iframe is active -->
+      <button
+        id="change-embedded-url-button"
+        class="hidden absolute top-6 right-6 z-20 bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold py-1 px-3 rounded-md transition duration-150 ease-in-out"
+      >
+        Change URL
+      </button>
+    </div>
+  </body>
+</html>
