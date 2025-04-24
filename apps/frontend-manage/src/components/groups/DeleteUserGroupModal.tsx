@@ -99,7 +99,7 @@ function DeleteUserGroupModal({
       </div>
 
       <div className="flex flex-row justify-between">
-        <Button onClick={onClose}>
+        <Button onClick={onClose} data={{ cy: 'cancel-delete-group' }}>
           <Button.Icon icon={faBan} />
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
@@ -142,6 +142,7 @@ function DeleteUserGroupModal({
               setErrorToast(true)
             }
           }}
+          data={{ cy: 'confirm-delete-group' }}
         >
           <Button.Icon icon={faTrashCan} />
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>

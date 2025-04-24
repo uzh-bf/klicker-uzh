@@ -124,13 +124,15 @@ function AddUserGroupMember({
                   : t('manage.userGroups.addMemberPlaceholder')
               }
               className={{ input: 'h-7 text-sm' }}
+              data={{ cy: `add-${adminMode ? 'admin' : 'member'}-group-input` }}
             />
             <Button
               type="submit"
               loading={isSubmitting}
               disabled={loading}
-              className={{
-                root: 'h-7 whitespace-nowrap text-sm',
+              className={{ root: 'h-7 whitespace-nowrap text-sm' }}
+              data={{
+                cy: `add-${adminMode ? 'admin' : 'member'}-group-confirm`,
               }}
             >
               <Button.Icon icon={faPlus} loading={isSubmitting} />
