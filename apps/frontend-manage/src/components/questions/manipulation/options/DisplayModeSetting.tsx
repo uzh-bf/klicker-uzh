@@ -15,9 +15,9 @@ function DisplayModeSetting({ type }: DisplayModeSettingProps) {
       name="options.displayMode"
       items={Object.values(ElementDisplayMode).map((mode) => ({
         value: mode,
-        label: t(`manage.questionForms.${mode}Display`),
+        label: t(`manage.elementForms.${mode}Display`),
         data: {
-          cy: `select-display-mode-${t(`manage.questionForms.${mode}Display`)}`,
+          cy: `select-display-mode-${t(`manage.elementForms.${mode}Display`)}`,
         },
       }))}
       data={{ cy: 'select-display-mode' }}

@@ -6,9 +6,9 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React from 'react'
-import Question from './Question'
+import Question from './Element'
 
-interface QuestionListProps {
+interface ElementListProps {
   setSelectedQuestions: (id: number, data: Element) => void
   selectedQuestions: Record<number, Element>
   triggerSuccessToast: () => void
@@ -18,7 +18,7 @@ interface QuestionListProps {
   unsetDeletedQuestion: (questionId: number) => void
 }
 
-function QuestionList({
+function ElementList({
   setSelectedQuestions,
   selectedQuestions,
   triggerSuccessToast,
@@ -26,7 +26,7 @@ function QuestionList({
   tagfilter = [],
   handleTagClick,
   unsetDeletedQuestion,
-}: QuestionListProps): React.ReactElement {
+}: ElementListProps): React.ReactElement {
   const t = useTranslations()
   const { value: hideSurvey, setValue: setHideSurvey } = useStickyState(
     'hideLecturerSurvey',
@@ -111,4 +111,4 @@ function QuestionList({
   )
 }
 
-export default QuestionList
+export default ElementList

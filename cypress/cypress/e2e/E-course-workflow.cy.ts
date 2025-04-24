@@ -759,8 +759,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="delete-question-${this.data.deletion.qTitle}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.deleteElement({ elementName: this.data.deletion.qTitle })
     cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
       'not.exist'
     )

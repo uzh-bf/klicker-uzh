@@ -32,12 +32,12 @@ import ElementCreation, {
   WizardMode,
 } from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
+import ElementList from '../components/questions/ElementList'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
 import ElementSuccessToast from '../components/questions/manipulation/ElementSuccessToast'
 import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
-import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
@@ -409,7 +409,7 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                <QuestionList
+                <ElementList
                   questions={processedQuestions}
                   selectedQuestions={selectedElementContent}
                   triggerSuccessToast={() => setSuccessToast(true)}

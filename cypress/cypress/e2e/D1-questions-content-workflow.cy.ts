@@ -52,7 +52,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
   })
 
   it('Check that values of content element are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CT.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CT.title}"]`).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CONTENT.typeLabel)
@@ -70,7 +70,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
   })
 
   it('Edit a content element', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CT.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CT.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.CT.titleEdited)
@@ -97,7 +97,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
   })
 
   it('Check that edited content element is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CT.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CT.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CT.titleEdited

@@ -24,7 +24,7 @@ function ElementFormErrors({
       <div>{t('manage.formErrors.resolveErrors')}</div>
       <ul className="ml-4 list-disc">
         {errors.name && (
-          <li>{`${t('manage.questionForms.elementTitle')}: ${errors.name}`}</li>
+          <li>{`${t('manage.elementForms.elementTitle')}: ${errors.name}`}</li>
         )}
         {errors.tags && (
           <li>{`${t('manage.questionPool.tags')}: ${errors.tags}`}</li>
@@ -55,7 +55,7 @@ function ElementFormErrors({
             (choiceError, ix) =>
               choiceError && (
                 <li key={`choice-${ix}`}>{`${t(
-                  'manage.questionForms.answerOption'
+                  'manage.elementForms.answerOption'
                 )} ${ix + 1}: ${
                   choiceError.value && choiceError.feedback
                     ? `${choiceError.value} ${choiceError.feedback}`
@@ -68,7 +68,7 @@ function ElementFormErrors({
           'choices' in errors.options &&
           errors.options.choices &&
           typeof errors.options.choices === 'string' && (
-            <li>{`${t('manage.questionForms.answerOptions')}: ${
+            <li>{`${t('manage.elementForms.answerOptions')}: ${
               errors.options.choices
             }`}</li>
           )}
@@ -92,7 +92,7 @@ function ElementFormErrors({
           errors.options &&
           'solutionType' in errors.options &&
           errors.options.solutionType && (
-            <li>{`${t('manage.questionForms.solutionTypeNumerical')}: ${
+            <li>{`${t('manage.elementForms.solutionTypeNumerical')}: ${
               errors.options.solutionType
             }`}</li>
           )}
@@ -101,7 +101,7 @@ function ElementFormErrors({
           'solutionRanges' in errors.options &&
           errors.options.solutionRanges &&
           (typeof errors.options.solutionRanges === 'string' ? (
-            <li>{`${t('manage.questionForms.solutionRanges')}: ${
+            <li>{`${t('manage.elementForms.solutionRanges')}: ${
               errors.options.solutionRanges
             }`}</li>
           ) : (
@@ -109,7 +109,7 @@ function ElementFormErrors({
               (rangeError, ix) => (
                 <li
                   key={`solution-range-error-${ix}`}
-                >{`${t('manage.questionForms.solutionRanges')} ${ix + 1}: ${
+                >{`${t('manage.elementForms.solutionRanges')} ${ix + 1}: ${
                   rangeError
                 }`}</li>
               )
@@ -120,7 +120,7 @@ function ElementFormErrors({
           'exactSolutions' in errors.options &&
           errors.options.exactSolutions &&
           typeof errors.options.exactSolutions === 'string' && (
-            <li>{`${t('manage.questionForms.exactSolutions')}: ${
+            <li>{`${t('manage.elementForms.exactSolutions')}: ${
               errors.options.exactSolutions
             }`}</li>
           )}
@@ -131,7 +131,7 @@ function ElementFormErrors({
           'restrictions' in errors.options &&
           errors.options.restrictions &&
           (errors.options.restrictions as { maxLength?: string }).maxLength && (
-            <li>{`${t('manage.questionForms.answerLength')}: ${
+            <li>{`${t('manage.elementForms.answerLength')}: ${
               (
                 errors.options.restrictions as {
                   maxLength?: string
@@ -145,7 +145,7 @@ function ElementFormErrors({
           errors.options &&
           'restrictions' in errors.options &&
           (errors.options.restrictions as { min?: string }).min && (
-            <li>{`${t('manage.questionForms.restrictions')}: ${
+            <li>{`${t('manage.elementForms.restrictions')}: ${
               (errors.options.restrictions as { min?: string }).min
             }`}</li>
           )}
@@ -153,7 +153,7 @@ function ElementFormErrors({
           errors.options &&
           'restrictions' in errors.options &&
           (errors.options.restrictions as { max?: string }).max && (
-            <li>{`${t('manage.questionForms.restrictions')}: ${
+            <li>{`${t('manage.elementForms.restrictions')}: ${
               (errors.options.restrictions as { max?: string }).max
             }`}</li>
           )}
@@ -166,7 +166,7 @@ function ElementFormErrors({
             (solutionError: any, ix: number) =>
               solutionError && (
                 <li key={`solution-${ix}`}>{`${t(
-                  'manage.questionForms.possibleSolutionN',
+                  'manage.elementForms.possibleSolutionN',
                   { number: String(ix + 1) }
                 )}: ${solutionError}`}</li>
               )
@@ -177,7 +177,7 @@ function ElementFormErrors({
           errors.options.solutions &&
           typeof errors.options.solutions === 'string' && (
             <li>{`${t(
-              'manage.questionForms.possibleSolutions'
+              'manage.elementForms.possibleSolutions'
             )}: ${errors.options.solutions}`}</li>
           )}
 
@@ -186,7 +186,7 @@ function ElementFormErrors({
           errors.options &&
           'answerCollection' in errors.options &&
           errors.options.answerCollection && (
-            <li>{`${t('manage.questionForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
+            <li>{`${t('manage.elementForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
           )}
 
         {/* error messages specific to SE questions */}
@@ -194,14 +194,14 @@ function ElementFormErrors({
           errors.options &&
           'numberOfInputs' in errors.options &&
           errors.options.numberOfInputs && (
-            <li>{`${t('manage.questionForms.numberOfInputs')}: ${errors.options.numberOfInputs}`}</li>
+            <li>{`${t('manage.elementForms.numberOfInputs')}: ${errors.options.numberOfInputs}`}</li>
           )}
 
         {'options' in errors &&
           errors.options &&
           'correctAnswers' in errors.options &&
           errors.options.correctAnswers && (
-            <li>{`${t('manage.questionForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
+            <li>{`${t('manage.elementForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
           )}
 
         {/* error messages specific to CS questions */}
@@ -209,7 +209,7 @@ function ElementFormErrors({
           errors.options &&
           'selectedItems' in errors.options &&
           errors.options.selectedItems && (
-            <li>{`${t('manage.questionForms.selectedItems')}: ${errors.options.selectedItems}`}</li>
+            <li>{`${t('manage.elementForms.selectedItems')}: ${errors.options.selectedItems}`}</li>
           )}
 
         {'options' in errors &&

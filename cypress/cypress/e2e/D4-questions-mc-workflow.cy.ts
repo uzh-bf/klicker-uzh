@@ -123,13 +123,13 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
       messages.shared.READY.statusLabel
     )
-    cy.get(`[data-cy="edit-question-${this.data.MC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.MC.title}"]`).click()
     cy.get('[data-cy="mc-0-answer-option-0"]').should('exist')
     cy.get('[data-cy="mc-0-answer-option-1"]').should('exist')
   })
 
   it('Check that values of multiple choice question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.MC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.MC.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.MC.title
@@ -151,7 +151,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
 
   it('Edit a multiple choice question and add a sample solution', function () {
     // modify minimal content of MC question
-    cy.get(`[data-cy="edit-question-${this.data.MC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.MC.title}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -225,7 +225,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
   })
 
   it('Edit the multiple choice question again and add answer feedbacks', function () {
-    cy.get(`[data-cy="edit-question-${this.data.MC.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.MC.titleEdited}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // enable answer feedbacks and add valid ones for all options
@@ -289,7 +289,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
   })
 
   it('Check that edited multiple choice question is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.MC.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.MC.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.MC.titleEdited

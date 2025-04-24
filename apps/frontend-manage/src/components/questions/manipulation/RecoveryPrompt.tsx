@@ -21,15 +21,15 @@ function RecoveryPrompt({
       escapeDisabled
       open={open}
       onClose={() => null}
-      title={t('manage.questionForms.recoverData')}
+      title={t('manage.elementForms.recoverData')}
       className={{ content: 'gap-1' }}
     >
       <UserNotification
         type="warning"
         message={
           editMode
-            ? t('manage.questionForms.temporaryStorageEditing')
-            : t('manage.questionForms.temporaryStorageCreation')
+            ? t('manage.elementForms.temporaryStorageEditing')
+            : t('manage.elementForms.temporaryStorageCreation')
         }
         className={{ root: 'text-base' }}
       />
@@ -40,7 +40,7 @@ function RecoveryPrompt({
           data={{ cy: 'discard-recovered-element-data' }}
         >
           <Button.Icon icon={faBan} />
-          <Button.Label>{t('manage.questionForms.discard')}</Button.Label>
+          <Button.Label>{t('manage.elementForms.discard')}</Button.Label>
         </Button>
         <Button
           primary
@@ -48,7 +48,7 @@ function RecoveryPrompt({
           data={{ cy: 'load-recovered-element-data' }}
         >
           <Button.Icon icon={faArrowsRotate} />
-          <Button.Label>{t('manage.questionForms.loadData')}</Button.Label>
+          <Button.Label>{t('manage.elementForms.loadData')}</Button.Label>
         </Button>
       </div>
     </Modal>

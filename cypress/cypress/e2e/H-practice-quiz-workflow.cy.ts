@@ -1192,7 +1192,7 @@ describe('Different practice quiz workflows', function () {
     cy.loginLecturer()
 
     // modify numerical question
-    cy.get(`[data-cy="edit-question-${this.data.NRML2.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NRML2.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.manipulation.newNRTitle)

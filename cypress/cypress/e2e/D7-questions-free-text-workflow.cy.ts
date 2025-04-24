@@ -53,12 +53,12 @@ describe('Test creation and editing functionalities, validation, etc. for free t
       messages.shared.READY.statusLabel
     )
 
-    cy.get(`[data-cy="edit-question-${this.data.FT.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FT.title}"]`).click()
     cy.get('[data-cy="free-text-input-0"]').should('exist')
   })
 
   it('Check that values of Free Text question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FT.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FT.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.FT.title
@@ -77,7 +77,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
   })
 
   it('Edit a Free Text question', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FT.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FT.title}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -110,7 +110,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
   })
 
   it('Check that edited Free Text question is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FT.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FT.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.FT.titleEdited

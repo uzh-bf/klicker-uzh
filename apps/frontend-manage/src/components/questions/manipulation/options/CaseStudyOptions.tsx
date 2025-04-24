@@ -49,7 +49,7 @@ function CaseStudyOptions({
   if (collections.length === 0) {
     return (
       <UserNotification type="warning" className={{ root: 'text-base' }}>
-        {t.rich('manage.questionForms.CSAnswerCollectionRequired', {
+        {t.rich('manage.elementForms.CSAnswerCollectionRequired', {
           link: (text) => (
             <Link
               href="/resources"

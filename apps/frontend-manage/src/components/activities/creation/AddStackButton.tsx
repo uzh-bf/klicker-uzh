@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { QuestionDragDropTypes } from '../../questions/Question'
+import { ElementDragDropTypes } from '../../questions/Element'
 import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
 
 interface AddStackButtonProps {
@@ -37,7 +37,7 @@ function AddStackButton({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
-      drop: (item: QuestionDragDropTypes) => {
+      drop: (item: ElementDragDropTypes) => {
         const initialElements = [
           {
             id: item.id,

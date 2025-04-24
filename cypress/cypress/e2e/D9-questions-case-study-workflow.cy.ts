@@ -89,7 +89,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
     // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
+      messages.manage.elementForms.selectCollection
     )
     cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
@@ -258,7 +258,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that the correct content has been saved', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CS.title
@@ -345,7 +345,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that creation was successful', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CS.title
@@ -469,7 +469,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Add a sample solution to the case study question', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CS.title
@@ -507,7 +507,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that the sample solution has been stored correctly for the modified case study question', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CS.title
@@ -531,7 +531,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that the case study validation logic covers all required cases and block submission of invalid element edit modals', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
 
     // missing question title -> invalid
     cy.get('[data-cy="insert-question-title"]').click().clear()
@@ -843,7 +843,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Edit the case study question, change the answer collection (including new sample solutions), and remove one criterion', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .click()
       .clear()
@@ -1043,7 +1043,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that all changes to the case study question have been saved correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.CS.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.CS.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.CS.titleEdited

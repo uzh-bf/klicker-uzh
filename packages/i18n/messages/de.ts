@@ -1107,10 +1107,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
     },
-    questionForms: {
+    elementForms: {
       CREATETitle: 'Frage erstellen',
       EDITTitle: 'Frage bearbeiten',
       DUPLICATETitle: 'Frage duplizieren',
+      deleteElement: 'Element löschen',
       elementType: 'Elementtyp',
       selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',

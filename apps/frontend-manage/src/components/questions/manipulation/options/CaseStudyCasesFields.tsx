@@ -72,8 +72,8 @@ function CaseStudyCasesFields({
                 <FormikTextField
                   required
                   name={`options.cases.${ix}.title`}
-                  label={t('manage.questionForms.caseTitle')}
-                  tooltip={t('manage.questionForms.caseStudyCaseTitleTooltip')}
+                  label={t('manage.elementForms.caseTitle')}
+                  tooltip={t('manage.elementForms.caseStudyCaseTitleTooltip')}
                   className={{ root: 'mb-1' }}
                   data={{ cy: `case-title-${ix}` }}
                 />
@@ -88,10 +88,10 @@ function CaseStudyCasesFields({
                     <div className="w-full">
                       <FormLabel
                         required
-                        label={t('manage.questionForms.caseDescription')}
+                        label={t('manage.elementForms.caseDescription')}
                         labelType="small"
                         tooltip={t(
-                          'manage.questionForms.caseStudyCaseDescriptionTooltip'
+                          'manage.elementForms.caseStudyCaseDescriptionTooltip'
                         )}
                       />
                       <ContentInput
@@ -109,7 +109,7 @@ function CaseStudyCasesFields({
                           )
                         }}
                         placeholder={t(
-                          'manage.questionForms.caseDescriptionPlaceholder'
+                          'manage.elementForms.caseDescriptionPlaceholder'
                         )}
                         showToolbarOnFocus={false}
                         className={{ content: 'max-w-none' }}
@@ -124,12 +124,12 @@ function CaseStudyCasesFields({
                     <div className="flex flex-row gap-6">
                       <FormLabel
                         required
-                        label={t('manage.questionForms.caseStudySolutions', {
+                        label={t('manage.elementForms.caseStudySolutions', {
                           number: ix + 1,
                         })}
                         labelType="small"
                         tooltip={t(
-                          'manage.questionForms.caseStudySolutionsTooltip'
+                          'manage.elementForms.caseStudySolutionsTooltip'
                         )}
                       />
                     </div>
@@ -161,7 +161,7 @@ function CaseStudyCasesFields({
                                       <span className="text-sm text-gray-600">
                                         (
                                         {t(
-                                          'manage.questionForms.caseStudySolutionIntervalStep',
+                                          'manage.elementForms.caseStudySolutionIntervalStep',
                                           {
                                             lower: criterion.min,
                                             upper: criterion.max,
@@ -182,7 +182,7 @@ function CaseStudyCasesFields({
                                         label={
                                           criterionIx === 0
                                             ? t(
-                                                'manage.questionForms.lowerLimit'
+                                                'manage.elementForms.lowerLimit'
                                               )
                                             : undefined
                                         }
@@ -205,7 +205,7 @@ function CaseStudyCasesFields({
                                         label={
                                           criterionIx === 0
                                             ? t(
-                                                'manage.questionForms.upperLimit'
+                                                'manage.elementForms.upperLimit'
                                               )
                                             : undefined
                                         }
@@ -244,7 +244,7 @@ function CaseStudyCasesFields({
               data={{ cy: 'add-new-case' }}
             >
               <Button.Icon icon={faPlus} />
-              <Button.Label>{t('manage.questionForms.addCase')}</Button.Label>
+              <Button.Label>{t('manage.elementForms.addCase')}</Button.Label>
             </Button>
           </div>
         )}

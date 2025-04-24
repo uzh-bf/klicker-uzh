@@ -44,7 +44,7 @@ function ElementExplanationField({
               required={values.type === ElementType.Flashcard}
               label={t('shared.generic.explanation')}
               labelType="small"
-              tooltip={t('manage.questionForms.explanationTooltip')}
+              tooltip={t('manage.elementForms.explanationTooltip')}
             />
             <ContentInput
               error={meta.error}
@@ -53,7 +53,7 @@ function ElementExplanationField({
               onChange={(newValue: string) =>
                 setFieldValue('explanation', newValue)
               }
-              placeholder={t('manage.questionForms.explanationPlaceholder')}
+              placeholder={t('manage.elementForms.explanationPlaceholder')}
               key={`${values.type}-explanation`}
               data={{ cy: 'insert-question-explanation' }}
             />

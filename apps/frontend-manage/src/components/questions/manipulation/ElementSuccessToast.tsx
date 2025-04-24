@@ -18,7 +18,7 @@ function ElementSuccessToast({
       duration={4000}
       className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.questionForms.questionSavedSuccessfully')}
+      {t('manage.elementForms.questionSavedSuccessfully')}
     </Toast>
   )
 }

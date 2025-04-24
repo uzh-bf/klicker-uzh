@@ -41,10 +41,10 @@ describe('Create different types of elements (with and without sample solution) 
 
     // duplicate question and save
     cy.get(
-      `[data-cy="duplicate-question-${this.data.duplication.title}"]`
+      `[data-cy="duplicate-element-${this.data.duplication.title}"]`
     ).click()
     cy.wait(500)
-    cy.findByText(messages.manage.questionForms.DUPLICATETitle).should('exist')
+    cy.findByText(messages.manage.elementForms.DUPLICATETitle).should('exist')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -60,18 +60,14 @@ describe('Create different types of elements (with and without sample solution) 
     ).contains(messages.shared.DRAFT.statusLabel)
 
     // delete the created and duplicated question
+    cy.deleteElement({ elementName: `${this.data.duplication.title} (Copy)` })
     cy.get(
-      `[data-cy="delete-question-${this.data.duplication.title} (Copy)"]`
-    ).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
+      `[data-cy="element-item-${this.data.duplication.title} (Copy)"]`
+    ).should('not.exist')
     cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="element-item-${this.data.duplication.title + ' (Copy)'}"]`
-    ).should('not.exist')
-    cy.get(`[data-cy="delete-question-${this.data.duplication.title}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.deleteElement({ elementName: this.data.duplication.title })
     cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
       'not.exist'
     )
@@ -181,7 +177,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that opening the edit modal and closing without modifications does not trigger prompt', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.autoSave.title
@@ -190,7 +186,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
     cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="insert-question-title"]').should(
@@ -201,7 +197,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after editing a question and waiting for auto-save the corresponding content can be loaded', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -222,7 +218,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown & load data, verify updated content is visible
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
     cy.get('[data-cy="load-recovered-element-data"]').click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -235,7 +231,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after editing a question, auto-saving and discarding the saved content, the original content is loaded', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -256,7 +252,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown & discard data, verify original content is visible
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
     cy.get('[data-cy="discard-recovered-element-data"]').click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -269,14 +265,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // verify that when closing and opening now after discarding, no prompt is shown
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
     cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
   })
 
   it('Verify that after editing an element and saving it, no prompt is shown to the user', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -297,9 +293,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click()
 
     // recovery prompt should not be shown, verify edited content is visible
-    cy.get(
-      `[data-cy="edit-question-${this.data.autoSave.titleEdited}"]`
-    ).click()
+    cy.get(`[data-cy="edit-element-${this.data.autoSave.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.autoSave.titleEdited
@@ -312,7 +306,7 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that when duplicating a question, wating for auto-save and opening the creation form, the content cannot be loaded', function () {
     cy.loginLecturer()
     cy.get(
-      `[data-cy="duplicate-question-${this.data.autoSave.titleEdited}"]`
+      `[data-cy="duplicate-element-${this.data.autoSave.titleEdited}"]`
     ).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -332,7 +326,7 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that when duplicating a question, modifying it slightly,wating for auto-save and opening the creation form, the content can be loaded', function () {
     cy.loginLecturer()
     cy.get(
-      `[data-cy="duplicate-question-${this.data.autoSave.titleEdited}"]`
+      `[data-cy="duplicate-element-${this.data.autoSave.titleEdited}"]`
     ).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -547,7 +541,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Update the content of the single choice question (including answer feedbacks) and trigger instance updates', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.update.title1}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.update.title1}"]`).click()
 
     // update content of the question
     cy.get('[data-cy="insert-question-title"]')
@@ -622,7 +616,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Edit the question again and disable the sample solution, verify that no instances in practice quizzes / microlearnings are updated', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-question-${this.data.update.title2}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.update.title2}"]`).click()
 
     // update content of the question
     cy.get('[data-cy="insert-question-title"]')

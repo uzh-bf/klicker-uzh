@@ -67,10 +67,10 @@ function InstanceUpdateSwitch({
         />
         <div>
           <H4 className={{ root: 'm-0' }}>
-            {t('manage.questionForms.updateInstances')}
+            {t('manage.elementForms.updateInstances')}
           </H4>
           <Prose className={{ root: 'prose-xs max-w-none' }}>
-            {t('manage.questionForms.updateInstancesExplanation')}
+            {t('manage.elementForms.updateInstancesExplanation')}
           </Prose>
         </div>
       </div>
@@ -87,7 +87,7 @@ function InstanceUpdateSwitch({
           />
           <div>
             <H4 className={{ root: 'm-0' }}>
-              {t('manage.questionForms.includeTemplateInstanceUpdates')}
+              {t('manage.elementForms.includeTemplateInstanceUpdates')}
             </H4>
           </div>
         </div>

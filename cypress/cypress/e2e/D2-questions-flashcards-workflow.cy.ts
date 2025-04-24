@@ -55,7 +55,7 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
   })
 
   it('Check that values of flashcard element are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FC.title}"]`).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.FLASHCARD.typeLabel)
@@ -76,7 +76,7 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
   })
 
   it('Edit a flashcard element', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FC.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.FC.titleEdited)
@@ -107,7 +107,7 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
   })
 
   it('Check that edited flashcard element is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.FC.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.FC.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.FC.titleEdited

@@ -19,11 +19,11 @@ function FreeTextOptions({ values }: FreeTextOptionsProps) {
       <div className="mb-4 flex flex-row items-center">
         <FormikNumberField
           name="options.restrictions.maxLength"
-          label={t('manage.questionForms.maximumLength')}
+          label={t('manage.elementForms.maximumLength')}
           className={{
             field: 'w-44',
           }}
-          placeholder={t('manage.questionForms.answerLength')}
+          placeholder={t('manage.elementForms.answerLength')}
           precision={0}
           data={{ cy: 'set-free-text-length' }}
           hideError
@@ -42,7 +42,7 @@ function FreeTextOptions({ values }: FreeTextOptionsProps) {
                       <FormikTextField
                         required
                         name={`options.solutions.${index}`}
-                        label={t('manage.questionForms.possibleSolutionN', {
+                        label={t('manage.elementForms.possibleSolutionN', {
                           number: String(index + 1),
                         })}
                         type="text"
@@ -72,7 +72,7 @@ function FreeTextOptions({ values }: FreeTextOptionsProps) {
                 onClick={() => push('')}
                 data={{ cy: 'add-solution-value' }}
               >
-                {t('manage.questionForms.addSolution')}
+                {t('manage.elementForms.addSolution')}
               </Button>
             </div>
           )}

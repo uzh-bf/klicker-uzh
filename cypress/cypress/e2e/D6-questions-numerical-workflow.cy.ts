@@ -61,7 +61,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
       messages.shared.READY.statusLabel
     )
-    cy.get(`[data-cy="edit-question-${this.data.NR.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.title}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains(
       `Min: ${this.data.NR.min}`
     )
@@ -75,7 +75,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
   })
 
   it('Check that values of Numerical question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.NR.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.NR.title
@@ -106,7 +106,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
   })
 
   it('Edit a Numerical question and add a sample solution', function () {
-    cy.get(`[data-cy="edit-question-${this.data.NR.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.title}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -194,7 +194,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
   })
 
   it('Check that edited Numerical question is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.NR.titleEdited
@@ -240,7 +240,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
   })
 
   it('Edit the numerical question again and set an exact solution', function () {
-    cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.titleEdited}"]`).click()
     cy.get('[data-cy="set-solution-type-exact"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
 
@@ -274,7 +274,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
   })
 
   it('Verify that the exact solutions of the numerical question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.NR.titleEdited}"]`).click()
     cy.wrap(this.data.NR.exactSolutions).each((solution: number, ix) => {
       cy.get(`[data-cy="set-exact-solution-${ix}"]`).should(
         'have.value',

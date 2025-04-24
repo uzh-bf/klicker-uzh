@@ -23,7 +23,7 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
 
   return (
     <div className="w-4/5 flex-none border-r p-2">
-      <div className="font-bold">{t('manage.questionForms.mediaLibrary')}</div>
+      <div className="font-bold">{t('manage.elementForms.mediaLibrary')}</div>
       <div className="grid max-h-64 grid-cols-5 gap-2 overflow-y-auto">
         {data.userMediaFiles?.map((file) => (
           <Button
@@ -108,13 +108,13 @@ function MediaLibrary({ onImageClick }: Props) {
             {...getRootProps()}
           >
             <div className="font-bold">
-              {t('manage.questionForms.uploadImageHeader')}
+              {t('manage.elementForms.uploadImageHeader')}
             </div>
             <div className="mt-2">
               {isUploading ? (
                 <Loader />
               ) : (
-                <p>{t('manage.questionForms.uploadImageDescription')}</p>
+                <p>{t('manage.elementForms.uploadImageDescription')}</p>
               )}
             </div>
             <input type="file" {...getInputProps()} />

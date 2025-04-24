@@ -1107,10 +1107,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
     },
-    questionForms: {
+    elementForms: {
       CREATETitle: 'Create question',
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
+      deleteElement: 'Delete element',
       elementType: 'Element type',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
@@ -2349,7 +2350,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       requestedAccess: 'Requested Access',
-      deleteCollection: 'Delete collection',
+      deleteCollection: 'Delete Collection',
       deletionDisabledInUse:
         'This collection is used by at least one of your questions or templates. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
       removeCollection: 'Remove collection',
