@@ -89,7 +89,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
     // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.elementForms.selectCollection
+      messages.manage.elements.selectCollection
     )
     cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(

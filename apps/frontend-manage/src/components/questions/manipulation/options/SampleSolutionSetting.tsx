@@ -17,7 +17,7 @@ function SampleSolutionSetting({
       size="sm"
       disabled={disabled}
       name="options.hasSampleSolution"
-      label={t('manage.elementForms.enableSampleSolution')}
+      label={t('manage.elements.enableSampleSolution')}
       data={{ cy: 'configure-sample-solution' }}
       className={{ label: 'text-gray-600' }}
     />

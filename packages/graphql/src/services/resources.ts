@@ -254,6 +254,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
               _count: {
                 select: {
                   entries: true,
+                  directPermissions: true,
                   linkedElements: {
                     where: { permissions: { some: { userId: ctx.user.sub } } },
                   },
@@ -308,6 +309,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     return {
       ...collection,
       numOfEntries: collection._count.entries,
+      numSharedUsers: collection._count.directPermissions,
       permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
       isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,

@@ -72,8 +72,8 @@ function CaseStudyCasesFields({
                 <FormikTextField
                   required
                   name={`options.cases.${ix}.title`}
-                  label={t('manage.elementForms.caseTitle')}
-                  tooltip={t('manage.elementForms.caseStudyCaseTitleTooltip')}
+                  label={t('manage.elements.caseTitle')}
+                  tooltip={t('manage.elements.caseStudyCaseTitleTooltip')}
                   className={{ root: 'mb-1' }}
                   data={{ cy: `case-title-${ix}` }}
                 />
@@ -88,10 +88,10 @@ function CaseStudyCasesFields({
                     <div className="w-full">
                       <FormLabel
                         required
-                        label={t('manage.elementForms.caseDescription')}
+                        label={t('manage.elements.caseDescription')}
                         labelType="small"
                         tooltip={t(
-                          'manage.elementForms.caseStudyCaseDescriptionTooltip'
+                          'manage.elements.caseStudyCaseDescriptionTooltip'
                         )}
                       />
                       <ContentInput
@@ -109,7 +109,7 @@ function CaseStudyCasesFields({
                           )
                         }}
                         placeholder={t(
-                          'manage.elementForms.caseDescriptionPlaceholder'
+                          'manage.elements.caseDescriptionPlaceholder'
                         )}
                         showToolbarOnFocus={false}
                         className={{ content: 'max-w-none' }}
@@ -124,13 +124,11 @@ function CaseStudyCasesFields({
                     <div className="flex flex-row gap-6">
                       <FormLabel
                         required
-                        label={t('manage.elementForms.caseStudySolutions', {
+                        label={t('manage.elements.caseStudySolutions', {
                           number: ix + 1,
                         })}
                         labelType="small"
-                        tooltip={t(
-                          'manage.elementForms.caseStudySolutionsTooltip'
-                        )}
+                        tooltip={t('manage.elements.caseStudySolutionsTooltip')}
                       />
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -161,7 +159,7 @@ function CaseStudyCasesFields({
                                       <span className="text-sm text-gray-600">
                                         (
                                         {t(
-                                          'manage.elementForms.caseStudySolutionIntervalStep',
+                                          'manage.elements.caseStudySolutionIntervalStep',
                                           {
                                             lower: criterion.min,
                                             upper: criterion.max,
@@ -181,9 +179,7 @@ function CaseStudyCasesFields({
                                         }
                                         label={
                                           criterionIx === 0
-                                            ? t(
-                                                'manage.elementForms.lowerLimit'
-                                              )
+                                            ? t('manage.elements.lowerLimit')
                                             : undefined
                                         }
                                         name={`options.cases.${ix}.solutions.${itemIdString}.${criterion.id}.min`}
@@ -204,9 +200,7 @@ function CaseStudyCasesFields({
                                         }
                                         label={
                                           criterionIx === 0
-                                            ? t(
-                                                'manage.elementForms.upperLimit'
-                                              )
+                                            ? t('manage.elements.upperLimit')
                                             : undefined
                                         }
                                         name={`options.cases.${ix}.solutions.${itemIdString}.${criterion.id}.max`}
@@ -244,7 +238,7 @@ function CaseStudyCasesFields({
               data={{ cy: 'add-new-case' }}
             >
               <Button.Icon icon={faPlus} />
-              <Button.Label>{t('manage.elementForms.addCase')}</Button.Label>
+              <Button.Label>{t('manage.elements.addCase')}</Button.Label>
             </Button>
           </div>
         )}

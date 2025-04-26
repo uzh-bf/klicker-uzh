@@ -2700,6 +2700,66 @@ export async function getAnswerCollectionPermissions(
     })
 }
 
+export async function getElementPermissions(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  return element.directPermissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
+      permissionLevel: permission.permissionLevel,
+      isOwn: permission.user?.id === ctx.user.sub,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
+function mapDerivedPermissions({
+  permissions,
+  userId,
+}: {
+  permissions: (DB.DerivedPermission & {
+    user: Pick<DB.User, 'shortname' | 'email'>
+  })[]
+  userId: string
+}) {
+  return permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      permissionLevel: permission.permissionLevel,
+      userId: permission.userId,
+      username: permission.user.shortname,
+      userEmail: permission.user.email,
+      isOwn: permission.userId === userId,
+    }))
+    .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
+}
+
 export async function getDerivedAnswerCollectionPermissions(
   { id }: { id: number },
   ctx: ContextWithUser
@@ -2722,16 +2782,38 @@ export async function getDerivedAnswerCollectionPermissions(
   }
 
   // map the derived permissions to the expected format
-  return answerCollection.permissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      permissionLevel: permission.permissionLevel,
-      userId: permission.userId,
-      username: permission.user.shortname,
-      userEmail: permission.user.email,
-      isOwn: permission.userId === ctx.user.sub,
-    }))
-    .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
+  return mapDerivedPermissions({
+    permissions: answerCollection.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedElementPermissions(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the elements alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: element.permissions,
+    userId: ctx.user.sub,
+  })
 }
 
 export async function transferAnswerCollectionOwnership(
@@ -2866,6 +2948,122 @@ export async function transferAnswerCollectionOwnership(
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCollection.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferElementOwnership(
+  { id, shortnameOrEmail }: { id: number; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { answerCollectionId: id } } },
+  })
+
+  // find the element
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !element) {
+    return null
+  }
+
+  const updatedElement = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the element and grant admin permissions to the current user
+    const updated = await prisma.element.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              elementId_userId: {
+                elementId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the collection, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          elementId_userId: {
+            elementId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.ELEMENT,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.ELEMENT} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the answer collection for both users
+    await recomputeDerivedPermissions(
+      { elementId: id, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: id, userId: ctx.user.sub },
+      prisma
+    )
+
+    // create access request instances for the new owner
+    await createAccessRequestInstancesNewAdmin(
+      {
+        newAdminId: newOwner.id,
+        existingAdminOwnerId: ctx.user.sub,
+        elementId: id,
+      },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedElement.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,

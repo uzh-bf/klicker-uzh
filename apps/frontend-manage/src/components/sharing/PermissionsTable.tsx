@@ -8,6 +8,7 @@ import {
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import useObjectActionPermissions from './useObjectActionPermissions'
 
 function PermissionsTable({
@@ -48,9 +49,10 @@ function PermissionsTable({
           ].map((title, index) => (
             <th
               key={title}
-              className={`px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left ${
+              className={twMerge(
+                'px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left',
                 index === activeColumnIndex ? 'bg-blue-50' : ''
-              }`}
+              )}
             >
               {title}
             </th>
@@ -67,9 +69,10 @@ function PermissionsTable({
             {permissions.map((hasPermission, index) => (
               <td
                 key={index}
-                className={`px-4 py-3 text-center ${
-                  index + 1 === activeColumnIndex ? 'bg-blue-50' : ''
-                }`}
+                className={twMerge(
+                  'px-4 py-3 text-center',
+                  index === 0 ? 'text-left' : ''
+                )}
               >
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}

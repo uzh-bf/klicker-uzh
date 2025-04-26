@@ -315,6 +315,7 @@ export default {
       results: 'Results',
       never: 'Never',
       actions: 'Actions',
+      object: 'Object',
       read: 'Read',
       write: 'Write',
       admin: 'Admin',
@@ -336,6 +337,8 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
       CATALOG_COLLECTION: 'Catalog Collection',
+      ELEMENT: 'Element',
+      COURSE: 'Course',
       SC: 'Single Choice Question',
       MC: 'Multiple Choice Question',
       KPRIM: 'Kprim Question',
@@ -1079,7 +1082,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
-      createQuestion: 'Create Question',
+      createQuestion: 'Create Element',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
@@ -1107,11 +1110,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
     },
-    elementForms: {
-      CREATETitle: 'Create question',
-      EDITTitle: 'Edit question',
-      DUPLICATETitle: 'Duplicate question',
-      deleteElement: 'Delete element',
+    elements: {
+      CREATETitle: 'Create Element',
+      EDITTitle: 'Edit Element',
+      DUPLICATETitle: 'Duplicate Element',
+      deleteElement: 'Delete Element',
+      shareElement: 'Share Element',
+      viewElement: 'View Element',
+      modifyElement: 'Modify Element',
+      useElementInActivities: 'Use Element in Activities',
       elementType: 'Element type',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
@@ -2492,6 +2499,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeCATALOG_COLLECTIONtitle: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeANSWER_COLLECTIONtitle: 'Remove Answer Collection from Catalog',
+      removeELEMENT: 'Remove Element',
+      removeELEMENTtitle: 'Remove Element from Catalog',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeObjectTitle: 'Remove Object from Catalog Collection',
@@ -2539,6 +2548,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
+      requestSuccessInfoELEMENT:
+        'Once the owner accepts your request, you will be able to view the element and potentially re-use it in your own activities, depending on the granted permissions.',
       requestCatalogObjectSuccess:
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
@@ -2606,12 +2617,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
+      shareELEMENT: 'Share Element',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
       infoSharingLIVE_QUIZ_TEMPLATE:
         'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
+      infoSharingELEMENT:
+        'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
+      propagatedPermissions: 'Propagated Permissions',
+      propagatedPermissionsANSWER_COLLECTION: '',
+      propagatedPermissionsCATALOG_COLLECTION: '',
+      propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
+      propagatedPermissionsELEMENT:
+        'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',
@@ -2621,12 +2641,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeCATALOG_COLLECTION: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live Quiz Template',
+      removeELEMENT: 'Remove Element',
       confirmRemovalCATALOG_COLLECTION:
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
       confirmRemovalANSWER_COLLECTION:
         'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
       confirmRemovalLIVE_QUIZ_TEMPLATE:
         'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
+      confirmRemovalELEMENT:
+        'Are you sure you want to remove the element "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',
       removalSuccessful:
         'The object has been removed successfully from your account.',

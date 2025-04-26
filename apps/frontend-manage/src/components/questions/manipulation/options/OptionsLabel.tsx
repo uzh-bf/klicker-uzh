@@ -17,8 +17,8 @@ function OptionsLabel({ type }: OptionsLabelProps) {
           <FormLabel
             required
             labelType="small"
-            label={t('manage.elementForms.answerOptions')}
-            tooltip={t('manage.elementForms.answerOptionsTooltip')}
+            label={t('manage.elements.answerOptions')}
+            tooltip={t('manage.elements.answerOptionsTooltip')}
           />
         </div>
       )}
@@ -30,8 +30,8 @@ function OptionsLabel({ type }: OptionsLabelProps) {
             labelType="small"
             tooltip={
               type === ElementType.Numerical
-                ? t('manage.elementForms.NUMERICALOptionsTooltip')
-                : t('manage.elementForms.FTOptionsTooltip')
+                ? t('manage.elements.NUMERICALOptionsTooltip')
+                : t('manage.elements.FTOptionsTooltip')
             }
             className={{ label: 'mb-1 text-black' }}
           />

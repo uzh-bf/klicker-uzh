@@ -53,8 +53,8 @@ function WizardNavigation({
           <Button.Icon icon={faCancel} />
           <Button.Label>
             {editMode
-              ? t('manage.elementForms.cancelEditing')
-              : t('manage.elementForms.cancelCreation')}
+              ? t('manage.elements.cancelEditing')
+              : t('manage.elements.cancelCreation')}
           </Button.Label>
         </Button>
       </div>

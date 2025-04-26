@@ -3,9 +3,15 @@ import {
   faArchive,
   faEllipsis,
   faPencil,
+  faShare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementStatus, ElementType, Tag } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogObjectType,
+  ElementStatus,
+  ElementType,
+  Tag,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
@@ -14,6 +20,7 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import ObjectSharingModal from '../sharing/ObjectSharingModal'
 import ElementTags from './ElementTags'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
@@ -80,6 +87,7 @@ function Element({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
+  const [isSharingModalOpen, setIsSharingModalOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   const [collectedProps, drag] = useDrag({
@@ -99,11 +107,12 @@ function Element({
   })
 
   return (
-    <div
-      className="flex items-center gap-1.5"
-      data-cy={`element-item-${title}`}
-    >
-      <Checkbox checked={checked} onCheck={onCheck} />
+    <div className="flex items-center" data-cy={`element-item-${title}`}>
+      <Checkbox
+        checked={checked}
+        onCheck={onCheck}
+        className={{ root: 'mr-1.5' }}
+      />
       {drag(
         <div
           className={twMerge(
@@ -123,7 +132,6 @@ function Element({
                   onKeyDown={() => setIsModificationModalOpen(true)}
                   data-cy="question-title"
                 >
-                  {/* <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" /> */}
                   {title}
                 </a>
 
@@ -200,11 +208,24 @@ function Element({
                         icon={faTrashCan}
                         className="mr-2.5 h-4 w-4"
                       />
-                      {t('manage.elementForms.deleteElement')}
+                      {t('manage.elements.deleteElement')}
                     </div>
                   ),
                   onClick: () => setIsDeletionModalOpen(true),
                   data: { cy: `delete-element-${title}` },
+                },
+                {
+                  label: (
+                    <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+                      <FontAwesomeIcon
+                        icon={faShare}
+                        className="mr-2.5 h-4 w-4"
+                      />
+                      {t('manage.elements.shareElement')}
+                    </div>
+                  ),
+                  onClick: () => setIsSharingModalOpen(true),
+                  data: { cy: `share-element-${title}` },
                 },
               ]}
               trigger={
@@ -252,15 +273,29 @@ function Element({
           mode={ElementEditMode.DUPLICATE}
         />
       )}
-      <ElementDeletionModal
-        isModalOpen={isDeletionModalOpen}
-        setModalOpen={setIsDeletionModalOpen}
-        elementId={id}
-        type={type}
-        title={title}
-        content={content}
-        unsetDeletedQuestion={unsetDeletedQuestion}
-      />
+      {isDeletionModalOpen && (
+        <ElementDeletionModal
+          isModalOpen={isDeletionModalOpen}
+          setModalOpen={setIsDeletionModalOpen}
+          elementId={id}
+          type={type}
+          title={title}
+          content={content}
+          unsetDeletedQuestion={unsetDeletedQuestion}
+        />
+      )}
+      {isSharingModalOpen && (
+        <ObjectSharingModal // TODO: replace with wrapper and update function arguments
+          derivedPermissionsAvailable
+          open={isSharingModalOpen}
+          onClose={() => setIsSharingModalOpen(false)}
+          objectId={id}
+          objectType={CatalogObjectType.Element}
+          objectName={title}
+          onOwnershipTransfer={() => {}} // TODO: pass down function to transfer ownership -> afterwards check if function works as expected
+          isOwner={false} // TODO: get from fetched element data
+        />
+      )}
     </div>
   )
 }

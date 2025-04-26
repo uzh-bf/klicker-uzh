@@ -479,6 +479,7 @@ export type CatalogObject = {
 export enum CatalogObjectType {
   AnswerCollection = 'ANSWER_COLLECTION',
   CatalogCollection = 'CATALOG_COLLECTION',
+  Element = 'ELEMENT',
   LiveQuizTemplate = 'LIVE_QUIZ_TEMPLATE'
 }
 

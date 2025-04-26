@@ -44,7 +44,7 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="duplicate-element-${this.data.duplication.title}"]`
     ).click()
     cy.wait(500)
-    cy.findByText(messages.manage.elementForms.DUPLICATETitle).should('exist')
+    cy.findByText(messages.manage.elements.DUPLICATETitle).should('exist')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 

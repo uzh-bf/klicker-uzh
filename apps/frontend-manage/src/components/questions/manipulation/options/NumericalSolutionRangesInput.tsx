@@ -14,9 +14,9 @@ function NumericalSolutionRangesInput({
     <div className="mt-3">
       <FormLabel
         required
-        label={t('manage.elementForms.solutionRanges')}
+        label={t('manage.elements.solutionRanges')}
         labelType="small"
-        tooltip={t('manage.elementForms.solutionRangesTooltip')}
+        tooltip={t('manage.elements.solutionRangesTooltip')}
       />
       <FieldArray name="options.solutionRanges">
         {({ push, remove }: FieldArrayRenderProps) => (
@@ -71,7 +71,7 @@ function NumericalSolutionRangesInput({
               }
               data={{ cy: 'add-solution-range' }}
             >
-              {t('manage.elementForms.addSolutionRange')}
+              {t('manage.elements.addSolutionRange')}
             </Button>
           </div>
         )}

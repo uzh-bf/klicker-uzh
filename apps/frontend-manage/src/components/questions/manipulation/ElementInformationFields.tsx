@@ -37,8 +37,8 @@ function ElementInformationFields({
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
           disabled={mode === ElementEditMode.EDIT || isTemplate}
-          label={t('manage.elementForms.elementType')}
-          placeholder={t('manage.elementForms.selectQuestionType')}
+          label={t('manage.elements.elementType')}
+          placeholder={t('manage.elements.selectQuestionType')}
           items={questionTypeOptions}
           data={{ cy: 'select-question-type' }}
           className={{ select: { trigger: 'h-8 w-max' } }}
@@ -48,8 +48,8 @@ function ElementInformationFields({
           <FormikSelectField
             name="status"
             contentPosition="popper"
-            label={t('manage.elementForms.questionStatus')}
-            placeholder={t('manage.elementForms.selectQuestionStatus')}
+            label={t('manage.elements.questionStatus')}
+            placeholder={t('manage.elements.selectQuestionStatus')}
             items={statusOptions}
             data={{ cy: 'select-question-status' }}
             className={{ select: { trigger: 'h-8 w-32' } }}
@@ -61,8 +61,8 @@ function ElementInformationFields({
         <FormikTextField
           name="name"
           required
-          label={t('manage.elementForms.elementTitle')}
-          tooltip={t('manage.elementForms.titleTooltip')}
+          label={t('manage.elements.elementTitle')}
+          tooltip={t('manage.elements.titleTooltip')}
           className={{
             root: 'w-full',
           }}
@@ -77,7 +77,7 @@ function ElementInformationFields({
               required={false}
               label={t('manage.questionPool.tags')}
               labelType="small"
-              tooltip={t('manage.elementForms.tagsTooltip')}
+              tooltip={t('manage.elements.tagsTooltip')}
             />
             <Suspense fallback={<Loader />}>
               <SuspendedTagInput />

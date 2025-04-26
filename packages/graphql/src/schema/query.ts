@@ -1377,6 +1377,25 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
+          } else if (args.objectType === CatalogObjectTypeEnum.ELEMENT) {
+            // >= ADMIN permissions on element
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getElementPermissions(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
           }
 
           return null
@@ -1412,6 +1431,25 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getDerivedAnswerCollectionPermissions(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          } else if (args.objectType === CatalogObjectTypeEnum.ELEMENT) {
+            // >= ADMIN permissions on answer collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getDerivedElementPermissions(
               { id: parseInt(args.objectId) },
               ctx
             )

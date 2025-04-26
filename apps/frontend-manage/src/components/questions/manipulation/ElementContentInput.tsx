@@ -38,36 +38,36 @@ function ElementContentInput({
 
   const tooltipMap: Record<
     ElementType,
-    | 'manage.elementForms.questionTooltip'
-    | 'manage.elementForms.contentTooltip'
-    | 'manage.elementForms.instructionsTooltip'
+    | 'manage.elements.questionTooltip'
+    | 'manage.elements.contentTooltip'
+    | 'manage.elements.instructionsTooltip'
   > = {
-    [ElementType.Content]: 'manage.elementForms.contentTooltip',
-    [ElementType.Flashcard]: 'manage.elementForms.questionTooltip',
-    [ElementType.Sc]: 'manage.elementForms.questionTooltip',
-    [ElementType.Mc]: 'manage.elementForms.questionTooltip',
-    [ElementType.Kprim]: 'manage.elementForms.questionTooltip',
-    [ElementType.Numerical]: 'manage.elementForms.questionTooltip',
-    [ElementType.FreeText]: 'manage.elementForms.questionTooltip',
-    [ElementType.Selection]: 'manage.elementForms.questionTooltip',
-    [ElementType.CaseStudy]: 'manage.elementForms.instructionsTooltip',
+    [ElementType.Content]: 'manage.elements.contentTooltip',
+    [ElementType.Flashcard]: 'manage.elements.questionTooltip',
+    [ElementType.Sc]: 'manage.elements.questionTooltip',
+    [ElementType.Mc]: 'manage.elements.questionTooltip',
+    [ElementType.Kprim]: 'manage.elements.questionTooltip',
+    [ElementType.Numerical]: 'manage.elements.questionTooltip',
+    [ElementType.FreeText]: 'manage.elements.questionTooltip',
+    [ElementType.Selection]: 'manage.elements.questionTooltip',
+    [ElementType.CaseStudy]: 'manage.elements.instructionsTooltip',
   }
 
   const placeholderMap: Record<
     ElementType,
-    | 'manage.elementForms.questionPlaceholder'
-    | 'manage.elementForms.contentPlaceholder'
-    | 'manage.elementForms.instructionsPlaceholder'
+    | 'manage.elements.questionPlaceholder'
+    | 'manage.elements.contentPlaceholder'
+    | 'manage.elements.instructionsPlaceholder'
   > = {
-    [ElementType.Content]: 'manage.elementForms.contentPlaceholder',
-    [ElementType.Flashcard]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.Sc]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.Mc]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.Kprim]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.Numerical]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.FreeText]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.Selection]: 'manage.elementForms.questionPlaceholder',
-    [ElementType.CaseStudy]: 'manage.elementForms.instructionsPlaceholder',
+    [ElementType.Content]: 'manage.elements.contentPlaceholder',
+    [ElementType.Flashcard]: 'manage.elements.questionPlaceholder',
+    [ElementType.Sc]: 'manage.elements.questionPlaceholder',
+    [ElementType.Mc]: 'manage.elements.questionPlaceholder',
+    [ElementType.Kprim]: 'manage.elements.questionPlaceholder',
+    [ElementType.Numerical]: 'manage.elements.questionPlaceholder',
+    [ElementType.FreeText]: 'manage.elements.questionPlaceholder',
+    [ElementType.Selection]: 'manage.elements.questionPlaceholder',
+    [ElementType.CaseStudy]: 'manage.elements.instructionsPlaceholder',
   }
 
   return (

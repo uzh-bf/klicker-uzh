@@ -83,10 +83,10 @@ function CaseStudyCollectionSelection({
               itemsHelpers.setValue([])
             }
           }}
-          label={t('manage.elementForms.answerCollection')}
+          label={t('manage.elements.answerCollection')}
           labelType="small"
-          tooltip={t('manage.elementForms.caseStudyAnswerCollectionTooltip')}
-          placeholder={t('manage.elementForms.selectCollection')}
+          tooltip={t('manage.elements.caseStudyAnswerCollectionTooltip')}
+          placeholder={t('manage.elements.selectCollection')}
           items={collections.map((collection) => ({
             label: collection.name,
             value: String(collection.id),
@@ -116,7 +116,7 @@ function CaseStudyCollectionSelection({
         <FormLabel
           required
           label={t('shared.generic.caseStudyItems')}
-          tooltip={t('manage.elementForms.caseStudyItemsTooltip')}
+          tooltip={t('manage.elements.caseStudyItemsTooltip')}
           labelType="small"
         />
         <div data-cy="choose-case-study-items">
@@ -170,10 +170,8 @@ function CaseStudyCollectionSelection({
               // update the selected items
               itemsHelpers.setValue(newItemIds)
             }}
-            placeholder={t('manage.elementForms.selectCaseStudyItems')}
-            noOptionsMessage={() =>
-              t('manage.elementForms.noMatchingOptionFound')
-            }
+            placeholder={t('manage.elements.selectCaseStudyItems')}
+            noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
           />
         </div>
         <CaseStudyCollectionChangeModal

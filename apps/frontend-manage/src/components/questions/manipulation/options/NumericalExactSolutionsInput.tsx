@@ -16,9 +16,9 @@ function NumericalExactSolutionsInput({
     <div className="mt-3">
       <FormLabel
         required
-        label={t('manage.elementForms.exactSolutions')}
+        label={t('manage.elements.exactSolutions')}
         labelType="small"
-        tooltip={t('manage.elementForms.exactSolutionsTooltip')}
+        tooltip={t('manage.elements.exactSolutionsTooltip')}
       />
       <FieldArray name="options.exactSolutions">
         {({ push, remove }: FieldArrayRenderProps) => (
@@ -61,7 +61,7 @@ function NumericalExactSolutionsInput({
               onClick={() => push(undefined)}
               data={{ cy: 'add-exact-solution' }}
             >
-              {t('manage.elementForms.addExactSolution')}
+              {t('manage.elements.addExactSolution')}
             </Button>
           </div>
         )}

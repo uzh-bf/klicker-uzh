@@ -16,9 +16,9 @@ function NumericalSolutionTypeSwitch({
     <div className="mt-3">
       <FormLabel
         required
-        label={t('manage.elementForms.solutionTypeNumerical')}
+        label={t('manage.elements.solutionTypeNumerical')}
         labelType="small"
-        tooltip={t('manage.elementForms.solutionTypeNumericalTooltip')}
+        tooltip={t('manage.elements.solutionTypeNumericalTooltip')}
       />
       <div className="flex flex-row">
         <Button
@@ -33,7 +33,7 @@ function NumericalSolutionTypeSwitch({
           }}
           data={{ cy: 'set-solution-type-range' }}
         >
-          <Button.Label>{t('manage.elementForms.solutionRanges')}</Button.Label>
+          <Button.Label>{t('manage.elements.solutionRanges')}</Button.Label>
         </Button>
         <Button
           onClick={() => helpers.setValue('exact')}
@@ -47,7 +47,7 @@ function NumericalSolutionTypeSwitch({
           }}
           data={{ cy: 'set-solution-type-exact' }}
         >
-          <Button.Label>{t('manage.elementForms.exactSolutions')}</Button.Label>
+          <Button.Label>{t('manage.elements.exactSolutions')}</Button.Label>
         </Button>
       </div>
     </div>

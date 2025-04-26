@@ -422,6 +422,7 @@ type CatalogObject {
 enum CatalogObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  ELEMENT
   LIVE_QUIZ_TEMPLATE
 }
 

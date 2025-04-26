@@ -74,6 +74,49 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
+  } else if (objectType === CatalogObjectType.Element) {
+    return [
+      {
+        action: t('manage.elements.viewElement'),
+        permissions: [true, true, true, true],
+      },
+      {
+        action: t('manage.elements.DUPLICATETitle'),
+        permissions: [true, true, true, true],
+      },
+      {
+        action: t('manage.elements.modifyElement'),
+        permissions: [false, true, true, true],
+      },
+      {
+        action: t('manage.elements.useElementInActivities'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.elements.shareElement'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyCatalogAssignments'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.elements.deleteElement'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, true],
+      },
+    ]
   }
 
   return []

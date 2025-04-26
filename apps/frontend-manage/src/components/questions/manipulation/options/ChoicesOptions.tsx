@@ -94,7 +94,7 @@ function ChoicesOptions({
                         }}
                         showToolbarOnFocus={true}
                         placeholder={t(
-                          'manage.elementForms.answerOptionPlaceholder'
+                          'manage.elements.answerOptionPlaceholder'
                         )}
                         className={{
                           root: 'bg-white',
@@ -227,7 +227,7 @@ function ChoicesOptions({
                             }}
                             showToolbarOnFocus={true}
                             placeholder={t(
-                              'manage.elementForms.feedbackPlaceholder'
+                              'manage.elements.feedbackPlaceholder'
                             )}
                             className={{
                               root: 'bg-white',
@@ -270,7 +270,7 @@ function ChoicesOptions({
               }
               data={{ cy: 'add-new-answer' }}
             >
-              <Button.Label>{t('manage.elementForms.addAnswer')}</Button.Label>
+              <Button.Label>{t('manage.elements.addAnswer')}</Button.Label>
             </Button>
           </div>
         )

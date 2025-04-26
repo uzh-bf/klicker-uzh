@@ -31,7 +31,7 @@ function ElementformScoringSection({
         <div className="flex flex-row items-center gap-5">
           <FormLabel
             required={false}
-            label={t('manage.elementForms.sampleSolutionAndScoring')}
+            label={t('manage.elements.sampleSolutionAndScoring')}
             labelType="small"
             className={{ label: 'my-1 !text-lg' }}
           />
@@ -46,7 +46,7 @@ function ElementformScoringSection({
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faBookOpen} />
-              {t('manage.elementForms.scoringDocumentation')}
+              {t('manage.elements.scoringDocumentation')}
             </a>
           </Link>
         </div>
@@ -67,7 +67,7 @@ function ElementformScoringSection({
           />
           <div className="flex flex-row gap-2">
             <div className="text-sm">
-              {t('manage.elementForms.basePointInformation')}
+              {t('manage.elements.basePointInformation')}
             </div>
           </div>
           <Switch
@@ -100,7 +100,7 @@ function ElementformScoringSection({
           values.options.hasSampleSolution ? (
             <div className="flex flex-col items-center gap-1">
               <div className="text-sm">
-                {t('manage.elementForms.multiplierInformation')}
+                {t('manage.elements.multiplierInformation')}
               </div>
               <MultiplierSelector
                 withoutLabel
@@ -113,7 +113,7 @@ function ElementformScoringSection({
             </div>
           ) : (
             <div className="text-sm">
-              {t('manage.elementForms.multiplierNoEffect')}
+              {t('manage.elements.multiplierNoEffect')}
             </div>
           )}
         </div>
@@ -138,8 +138,8 @@ function ElementformScoringSection({
               </span>
               <span>
                 {values.basePoints
-                  ? t('manage.elementForms.liveQuizBasePoints')
-                  : t('manage.elementForms.zeroPoints')}
+                  ? t('manage.elements.liveQuizBasePoints')
+                  : t('manage.elements.zeroPoints')}
               </span>
             </div>
             <div className="text-sm">
@@ -151,7 +151,7 @@ function ElementformScoringSection({
                 'hasSampleSolution' in values.options &&
                 values.options.hasSampleSolution
                   ? `${values.pointsMultiplier} * (${t('shared.generic.correctnessPoints')} + ${t('shared.generic.bonusPoints')})`
-                  : t('manage.elementForms.zeroPoints')}
+                  : t('manage.elements.zeroPoints')}
               </span>
             </div>
           </div>

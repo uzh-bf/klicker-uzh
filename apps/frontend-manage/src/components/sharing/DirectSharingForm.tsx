@@ -128,7 +128,7 @@ function DirectSharingForm({
               data={{ cy: 'new-permission-user-group' }}
             />
           </td>
-          <td className="px-4 py-1.5 text-sm text-gray-900">
+          <td className="w-40 px-4 py-1.5 text-sm text-gray-900">
             <FormikSelectField
               name="permissionLevel"
               id="permissionLevel"
