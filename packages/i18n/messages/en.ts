@@ -2293,7 +2293,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newAnswerCollection: 'New Answer Collection',
       addSharedAnswerCollection: 'Add Shared Answer Collection',
       answerOptionUsed:
-        'Answer options marked with the warning symbol are already used as sample solutions or case study items in a question by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
+        'Answer options marked with the warning symbol are already used as sample solutions or case study items in a question or activity template by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
       name: 'Name',
       nameTooltip:
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',

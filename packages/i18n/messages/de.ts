@@ -2323,7 +2323,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsed:
-        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung or Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage oder einer Aktivitätsvorlage als korrekte Lösung oder Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
