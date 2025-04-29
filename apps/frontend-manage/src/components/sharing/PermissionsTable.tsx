@@ -4,8 +4,8 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogObjectType,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -15,7 +15,7 @@ function PermissionsTable({
   objectType,
   activePermissionLevel,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()

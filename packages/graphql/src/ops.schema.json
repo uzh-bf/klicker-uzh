@@ -4694,7 +4694,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "CatalogObjectType",
+                "name": "SharingObjectType",
                 "ofType": null
               }
             },
@@ -4741,42 +4741,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "CatalogObjectType",
-        "description": null,
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "ANSWER_COLLECTION",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "CATALOG_COLLECTION",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ELEMENT",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "LIVE_QUIZ_TEMPLATE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -15569,7 +15533,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -15850,7 +15814,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -16295,7 +16259,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -20101,7 +20065,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -22205,7 +22169,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -22489,7 +22453,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -22611,7 +22575,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -23023,7 +22987,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -25053,7 +25017,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "CatalogObjectType",
+                "name": "SharingObjectType",
                 "ofType": null
               }
             },
@@ -27980,7 +27944,32 @@
           {
             "name": "getActiveUserCourses",
             "description": null,
-            "args": [],
+            "args": [
+              {
+                "name": "activityId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "activityType",
+                "description": null,
+                "type": {
+                  "kind": "ENUM",
+                  "name": "ActivityType",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "LIST",
               "name": null,
@@ -28860,7 +28849,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -29225,7 +29214,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "CatalogObjectType",
+                    "name": "SharingObjectType",
                     "ofType": null
                   }
                 },
@@ -31820,6 +31809,42 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "SharingObjectType",
+        "description": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "ANSWER_COLLECTION",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "CATALOG_COLLECTION",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ELEMENT",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "LIVE_QUIZ_TEMPLATE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
         "possibleTypes": null
       },
       {

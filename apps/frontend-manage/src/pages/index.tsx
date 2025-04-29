@@ -9,6 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   Element,
   GetUserQuestionsDocument,
   ToggleIsArchivedDocument,
@@ -28,9 +29,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import ElementCreation, {
-  WizardMode,
-} from '../components/activities/ElementCreation'
+import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
 import ElementList from '../components/questions/ElementList'
 import ElementEditModal, {
@@ -56,7 +55,7 @@ function Index() {
   const [sortBy, setSortBy] = useState('')
   const [successToast, setSuccessToast] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
-  const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
+  const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
   )
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
@@ -99,11 +98,11 @@ function Index() {
     router.prefetch('/quizzes')
 
     if (router.query.elementId && router.query.editMode) {
-      setCreationMode(router.query.editMode as WizardMode)
+      setCreationMode(router.query.editMode as ActivityType)
     } else if (router.query.elementId && router.query.duplicationMode) {
-      setCreationMode(router.query.duplicationMode as WizardMode)
+      setCreationMode(router.query.duplicationMode as ActivityType)
     } else if (router.query.elementId && router.query.conversionMode) {
-      setCreationMode(router.query.conversionMode as WizardMode)
+      setCreationMode(router.query.conversionMode as ActivityType)
     }
   }, [router])
 
@@ -171,9 +170,9 @@ function Index() {
               setCreationMode(() => undefined)
             }}
             activityId={router.query.elementId as string}
-            editMode={router.query.editMode as string}
+            editMode={router.query.editMode as ActivityType}
             conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as WizardMode}
+            duplicationMode={router.query.duplicationMode as ActivityType}
             selection={selectedElementContent}
             resetSelection={() => setSelectedQuestions({})}
           />

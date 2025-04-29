@@ -1,5 +1,5 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -15,7 +15,7 @@ function ObjectRemovalModal({
   setRemovalFailure,
 }: {
   objectId: string | number
-  objectType: Omit<CatalogObjectType, CatalogObjectType.CatalogCollection>
+  objectType: Omit<SharingObjectType, SharingObjectType.CatalogCollection>
   objectName: string
   removalModal: boolean
   setRemovalModal: Dispatch<SetStateAction<boolean>>
@@ -24,20 +24,20 @@ function ObjectRemovalModal({
 }) {
   const t = useTranslations()
   const { onRemove, removing } = useObjectRemoval({
-    objectType: objectType as CatalogObjectType,
+    objectType: objectType as SharingObjectType,
     objectId,
     onError: () => setRemovalFailure(true),
   })
 
   return (
     <Modal
-      title={t(`manage.sharing.remove${objectType as CatalogObjectType}`)}
+      title={t(`manage.sharing.remove${objectType as SharingObjectType}`)}
       open={removalModal}
       onClose={() => setRemovalModal(false)}
       dataCloseButton={{ cy: 'close-remove-object' }}
     >
       <div>
-        {t(`manage.sharing.confirmRemoval${objectType as CatalogObjectType}`, {
+        {t(`manage.sharing.confirmRemoval${objectType as SharingObjectType}`, {
           objectName,
         })}
       </div>

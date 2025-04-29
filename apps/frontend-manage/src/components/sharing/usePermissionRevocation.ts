@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
@@ -8,6 +7,7 @@ import {
   GetDerivedObjectPermissionsDocument,
   GetObjectPermissionsDocument,
   RevokeObjectAccessDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -18,7 +18,7 @@ function usePermissionRevocation({
   onError,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   catalogCollectionId?: string
   onError: () => void
 }): {
@@ -79,7 +79,7 @@ function usePermissionRevocation({
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          ...(objectType === CatalogObjectType.CatalogCollection
+          ...(objectType === SharingObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -87,7 +87,7 @@ function usePermissionRevocation({
                 },
               ]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
+          ...(objectType === SharingObjectType.AnswerCollection
             ? [GetAnswerCollectionsInfoDocument]
             : []),
         ],

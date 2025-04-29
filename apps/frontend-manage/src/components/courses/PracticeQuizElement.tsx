@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   GetSingleCourseDocument,
   PracticeQuiz,
   PublicationStatus,
@@ -27,7 +28,6 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
 import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
@@ -271,7 +271,7 @@ function PracticeQuizElement({
                         pathname: '/',
                         query: {
                           elementId: practiceQuiz.id,
-                          editMode: WizardMode.PracticeQuiz,
+                          editMode: ActivityType.PracticeQuiz,
                         },
                       }),
                     data: { cy: `edit-practice-quiz-${practiceQuiz.name}` },
@@ -279,7 +279,7 @@ function PracticeQuizElement({
                   getActivityDuplicationAction({
                     id: practiceQuiz.id,
                     text: t('manage.course.duplicatePracticeQuiz'),
-                    wizardMode: WizardMode.PracticeQuiz,
+                    wizardMode: ActivityType.PracticeQuiz,
                     router: router,
                     data: {
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
@@ -323,7 +323,7 @@ function PracticeQuizElement({
                   getActivityDuplicationAction({
                     id: practiceQuiz.id,
                     text: t('manage.course.duplicatePracticeQuiz'),
-                    wizardMode: WizardMode.PracticeQuiz,
+                    wizardMode: ActivityType.PracticeQuiz,
                     router: router,
                     data: {
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
@@ -389,7 +389,7 @@ function PracticeQuizElement({
                   getActivityDuplicationAction({
                     id: practiceQuiz.id,
                     text: t('manage.course.duplicatePracticeQuiz'),
-                    wizardMode: WizardMode.PracticeQuiz,
+                    wizardMode: ActivityType.PracticeQuiz,
                     router: router,
                     data: {
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,

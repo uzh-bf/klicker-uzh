@@ -1,14 +1,14 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useObjectActionPermissions({
   objectType,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
 }): { action: string; permissions: boolean[] }[] {
   const t = useTranslations()
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
+  if (objectType === SharingObjectType.CatalogCollection) {
     return [
       {
         action: t('manage.catalog.browseCatalogCollection'),
@@ -19,7 +19,7 @@ function useObjectActionPermissions({
         permissions: [false, true, true, true],
       },
       {
-        action: t(`manage.sharing.share${CatalogObjectType.CatalogCollection}`),
+        action: t(`manage.sharing.share${SharingObjectType.CatalogCollection}`),
         permissions: [false, false, true, true],
       },
       {
@@ -39,7 +39,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
+  } else if (objectType === SharingObjectType.AnswerCollection) {
     return [
       {
         action: t('manage.resources.viewUseCollectionContent'),

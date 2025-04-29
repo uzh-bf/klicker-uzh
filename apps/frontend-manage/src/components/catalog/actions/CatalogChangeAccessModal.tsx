@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   ChangeCatalogCollectionObjectAccessDocument,
   ChangeCatalogObjectAccessDocument,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -22,7 +22,7 @@ function CatalogChangeAccessModal({
 }: {
   open: boolean
   onClose: () => void
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectName: string
   assignmentId?: number
   newAccess: ObjectAccess

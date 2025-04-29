@@ -1,6 +1,6 @@
 mutation ImportCatalogObject(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: SharingObjectType!
   $catalogCollectionId: String
 ) {
   importCatalogObject(

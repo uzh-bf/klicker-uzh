@@ -5,10 +5,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogObjectType,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
@@ -32,7 +32,7 @@ function ObjectImport({
   const t = useTranslations()
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<CatalogObjectType | ''>('')
+  const [typeFilter, setTypeFilter] = useState<SharingObjectType | ''>('')
   const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
     ''
   )
@@ -65,7 +65,7 @@ function ObjectImport({
   // set initial filter values based on query params
   useEffect(() => {
     if (router.query.filter) {
-      setTypeFilter(router.query.filter as CatalogObjectType)
+      setTypeFilter(router.query.filter as SharingObjectType)
     }
   }, [router.query])
 

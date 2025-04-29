@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetCatalogAnswerCollectionsDocument,
   GetCatalogLiveQuizTemplatesDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 import Select from 'react-select'
 
 interface SelectObjectForCatalogProps {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   setFieldValue: (field: string, value: any) => void
 }
 
@@ -27,13 +27,13 @@ function SelectObjectForCatalog({
   const { data: collectionsData, loading: collectionsLoading } = useQuery(
     GetCatalogAnswerCollectionsDocument,
     {
-      skip: objectType !== CatalogObjectType.AnswerCollection,
+      skip: objectType !== SharingObjectType.AnswerCollection,
       fetchPolicy: 'cache-and-network',
     }
   )
   const { data: liveQuizTemplateData, loading: liveQuizTemplateLoading } =
     useQuery(GetCatalogLiveQuizTemplatesDocument, {
-      skip: objectType !== CatalogObjectType.LiveQuizTemplate,
+      skip: objectType !== SharingObjectType.LiveQuizTemplate,
       fetchPolicy: 'cache-and-network',
     })
   // ... add loading queries for other object types
@@ -47,14 +47,14 @@ function SelectObjectForCatalog({
 
       try {
         // load objects available to the user for sharing (owner or admin access)
-        if (objectType === CatalogObjectType.AnswerCollection) {
+        if (objectType === SharingObjectType.AnswerCollection) {
           const collections =
             collectionsData?.getCatalogAnswerCollections?.map((c) => ({
               value: c.id,
               label: c.name,
             })) ?? []
           setOptions(collections)
-        } else if (objectType === CatalogObjectType.LiveQuizTemplate) {
+        } else if (objectType === SharingObjectType.LiveQuizTemplate) {
           const templates =
             liveQuizTemplateData?.getCatalogLiveQuizTemplates?.map((t) => ({
               value: t.id,

@@ -1,6 +1,6 @@
 query GetDerivedObjectPermissions(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: SharingObjectType!
 ) {
   getDerivedObjectPermissions(objectId: $objectId, objectType: $objectType) {
     permissionId

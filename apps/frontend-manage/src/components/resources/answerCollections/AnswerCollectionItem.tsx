@@ -7,7 +7,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
-  CatalogObjectType,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -152,7 +152,7 @@ function AnswerCollectionItem({
           <ObjectSharingModalWrapper
             objectId={collection.id}
             objectName={collection.name}
-            objectType={CatalogObjectType.AnswerCollection}
+            objectType={SharingObjectType.AnswerCollection}
             isOwner={collection.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
@@ -171,7 +171,7 @@ function AnswerCollectionItem({
       {!collection.isOwner && (
         <ObjectRemovalModal
           objectId={collection.id}
-          objectType={CatalogObjectType.AnswerCollection}
+          objectType={SharingObjectType.AnswerCollection}
           objectName={collection.name}
           removalModal={removalModal}
           setRemovalModal={setRemovalModal}

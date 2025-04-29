@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType as ActivityTypeEnum,
-  CatalogObjectType as CatalogObjectTypeEnum,
+  SharingObjectType as SharingObjectTypeEnum,
 } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
@@ -73,10 +73,10 @@ import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
-  CatalogObjectType,
   ObjectAccess,
   PermissionInfo,
   PermissionLevel,
+  SharingObjectType,
   UserGroup,
   UserGroupMembersInput,
 } from './sharing.js'
@@ -1651,7 +1651,7 @@ export const Mutation = builder.mutationType({
         type: CatalogObject,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
@@ -1679,7 +1679,7 @@ export const Mutation = builder.mutationType({
               access: args.access,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -1689,7 +1689,7 @@ export const Mutation = builder.mutationType({
               courseId: undefined,
               liveQuizId:
                 // TODO: add live quiz with or clause
-                args.objectType === CatalogObjectTypeEnum.LIVE_QUIZ_TEMPLATE
+                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ_TEMPLATE
                   ? args.objectId
                   : undefined,
               practiceQuizId: undefined,
@@ -1705,12 +1705,12 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           // access control implemented inside service functions (does not fit default schema)
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
             return await SharingService.importAnswerCollection(
               {
                 collectionId: parseInt(args.objectId),
@@ -1729,7 +1729,7 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
           requestedPermissionLevel: t.arg({
             type: PermissionLevel,
@@ -1743,7 +1743,7 @@ export const Mutation = builder.mutationType({
               requestedPermissionLevel: args.requestedPermissionLevel,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -1765,13 +1765,13 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.cancelObjectSharingRequest(
             {
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -2094,7 +2094,7 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
@@ -2103,7 +2103,7 @@ export const Mutation = builder.mutationType({
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2111,7 +2111,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2141,11 +2141,11 @@ export const Mutation = builder.mutationType({
               shortnameOrEmail: args.shortnameOrEmail,
               userGroupId: args.userGroupId,
               catalogCollectionId:
-                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -2168,12 +2168,12 @@ export const Mutation = builder.mutationType({
         args: {
           permissionId: t.arg.int({ required: true }),
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2181,7 +2181,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2209,11 +2209,11 @@ export const Mutation = builder.mutationType({
             {
               permissionId: args.permissionId,
               catalogCollectionId:
-                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -2237,13 +2237,13 @@ export const Mutation = builder.mutationType({
           permissionId: t.arg.int({ required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2251,7 +2251,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2280,11 +2280,11 @@ export const Mutation = builder.mutationType({
               permissionId: args.permissionId,
               permissionLevel: args.permissionLevel,
               catalogCollectionId:
-                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
@@ -2307,11 +2307,11 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
           shortnameOrEmail: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
             // == OWNER permissions on catalog collection required
             const validAccess = await checkAccess(
               [
@@ -2334,7 +2334,7 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
           ) {
             // == OWNER permissions on answer collection required
             const validAccess = await checkAccess(

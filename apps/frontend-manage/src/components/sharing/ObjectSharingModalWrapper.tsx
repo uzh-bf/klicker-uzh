@@ -1,4 +1,4 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useState } from 'react'
 import ObjectSharingModal from './ObjectSharingModal'
 import TransferOwnershipModal from './TransferOwnershipModal'
@@ -7,7 +7,7 @@ interface ObjectSharingModalBaseProps {
   objectId?: number
   objectUuid?: string
   objectName: string
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   catalogCollectionId?: string
   isOwner: boolean
   open: boolean
@@ -50,7 +50,7 @@ function ObjectSharingModalWrapper({
         isOwner={isOwner}
         onOwnershipTransfer={() => setTransferModalOpen(true)}
         derivedPermissionsAvailable={
-          objectType !== CatalogObjectType.CatalogCollection
+          objectType !== SharingObjectType.CatalogCollection
         }
       />
       <TransferOwnershipModal

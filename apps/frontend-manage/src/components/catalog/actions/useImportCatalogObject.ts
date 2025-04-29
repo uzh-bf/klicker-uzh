@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   ImportCatalogObjectDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object import, returns success boolean
@@ -11,7 +11,7 @@ function useImportCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -19,7 +19,7 @@ function useImportCatalogObject({
   const [importCatalogObject, { loading: importingCatalogObject }] =
     useMutation(ImportCatalogObjectDocument)
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
+  if (objectType === SharingObjectType.CatalogCollection) {
     return {
       onImport: async () => {
         console.error('Unsupported object type', objectType)

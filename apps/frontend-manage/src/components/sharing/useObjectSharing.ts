@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
@@ -8,6 +7,7 @@ import {
   GetObjectPermissionsDocument,
   PermissionLevel,
   ShareObjectDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -18,7 +18,7 @@ function useObjectSharing({
   onError,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   catalogCollectionId?: string
   onError: () => void
 }): {
@@ -88,7 +88,7 @@ function useObjectSharing({
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          ...(objectType === CatalogObjectType.CatalogCollection
+          ...(objectType === SharingObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -96,7 +96,7 @@ function useObjectSharing({
                 },
               ]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
+          ...(objectType === SharingObjectType.AnswerCollection
             ? [GetAnswerCollectionsInfoDocument]
             : []),
         ],

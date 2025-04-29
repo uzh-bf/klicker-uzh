@@ -2,8 +2,8 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType,
   CatalogObject,
-  CatalogObjectType,
   ObjectSharingRequest,
+  SharingObjectType,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -1145,7 +1145,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.catalogCollection.name,
-          objectType: CatalogObjectType.CATALOG_COLLECTION,
+          objectType: SharingObjectType.CATALOG_COLLECTION,
         })
       }
 
@@ -1157,7 +1157,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.answerCollection.name,
-          objectType: CatalogObjectType.ANSWER_COLLECTION,
+          objectType: SharingObjectType.ANSWER_COLLECTION,
         })
       }
 
@@ -3595,7 +3595,7 @@ export async function getCatalogObjects(
           id: answerCollection.id,
           name: answerCollection.name,
           assignmentId: assignment.id,
-          objectType: CatalogObjectType.ANSWER_COLLECTION,
+          objectType: SharingObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -3619,8 +3619,8 @@ export async function getCatalogObjects(
           objectType:
             // TODO: replace or type with normal live quiz catalog object type
             liveQuiz.status === DB.PublicationStatus.TEMPLATE
-              ? CatalogObjectType.LIVE_QUIZ_TEMPLATE
-              : CatalogObjectType.LIVE_QUIZ_TEMPLATE,
+              ? SharingObjectType.LIVE_QUIZ_TEMPLATE
+              : SharingObjectType.LIVE_QUIZ_TEMPLATE,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -3773,7 +3773,7 @@ export async function addObjectToCatalog(
   let objectInfo: {
     objectId?: number
     objectUuid?: string
-    objectType: CatalogObjectType
+    objectType: SharingObjectType
     objectName: string
     ownerShortname?: string
     ownerId?: string | null
@@ -3815,7 +3815,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: answerCollection.id,
       objectUuid: undefined,
-      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      objectType: SharingObjectType.ANSWER_COLLECTION,
       objectName: answerCollection.name,
       ownerShortname: answerCollection.owner?.shortname,
       ownerId: answerCollection.ownerId,
@@ -3857,8 +3857,8 @@ export async function addObjectToCatalog(
       objectUuid: liveQuiz.id,
       objectType:
         liveQuiz.status === DB.PublicationStatus.TEMPLATE
-          ? CatalogObjectType.LIVE_QUIZ_TEMPLATE
-          : CatalogObjectType.LIVE_QUIZ_TEMPLATE, // TODO: replace with LIVE_QUIZ
+          ? SharingObjectType.LIVE_QUIZ_TEMPLATE
+          : SharingObjectType.LIVE_QUIZ_TEMPLATE, // TODO: replace with LIVE_QUIZ
       objectName: liveQuiz.name,
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
@@ -4545,9 +4545,7 @@ export async function createUserGroup(
   })
 
   if (userGroup) {
-    console.error(
-      `User group with name "${name}" already exists for user ${ctx.user.sub}.`
-    )
+    // `User group with name "${name}" already exists for user ${ctx.user.sub}.`
     return null
   }
 
@@ -4564,9 +4562,7 @@ export async function createUserGroup(
 
   // if none of the specified members were found, throw an error
   if (users.length === 0) {
-    console.error(
-      `No users found for the specified members: ${JSON.stringify(members)}`
-    )
+    // `No users found for the specified members: ${JSON.stringify(members)}`
     return null
   }
 
