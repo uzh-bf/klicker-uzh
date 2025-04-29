@@ -1,5 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
+  GetAnswerCollectionsInfoDocument,
+  GetUserQuestionsDocument,
   ImportCatalogObjectDocument,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -37,6 +39,14 @@ function useImportCatalogObject({
           objectType,
           catalogCollectionId,
         },
+        refetchQueries: [
+          ...(objectType === SharingObjectType.AnswerCollection
+            ? [GetAnswerCollectionsInfoDocument]
+            : []),
+          ...(objectType === SharingObjectType.Element
+            ? [GetUserQuestionsDocument]
+            : []),
+        ],
       })
 
       if (res.data?.importCatalogObject) {

@@ -72,7 +72,7 @@ function CatalogObjectItem({
     setShowRequestCancellationSuccessToast,
   ] = useState(false)
 
-  // Use the new dropdown hook
+  // use the new dropdown hook
   const dropdownItems = useCatalogObjectActionsDropdown({
     object,
     actionsDisabled,

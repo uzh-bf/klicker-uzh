@@ -39,12 +39,14 @@ function useCatalogObjectActionsDropdown({
   return useMemo(() => {
     const items = []
 
-    // import functionality is only available for answer collections (for now) - not for catalog collections, elements, activities
+    // import functionality is only available for answer collections and elements (for now) - not for activities / courses
+    // when importing elements, the content of the element is imported, potentially linked answer collections are shared
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
       object.objectType !== SharingObjectType.CatalogCollection &&
-      object.objectType === SharingObjectType.AnswerCollection
+      (object.objectType === SharingObjectType.AnswerCollection ||
+        object.objectType === SharingObjectType.Element)
     ) {
       items.push({
         id: 'import',

@@ -1718,6 +1718,14 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+            return await SharingService.importElement(
+              {
+                elementId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
           }
 
           // elements and activities are not supported for the import feature (for now)

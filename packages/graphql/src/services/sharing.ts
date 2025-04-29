@@ -3538,6 +3538,128 @@ export async function importAnswerCollection(
 
   return true
 }
+
+export async function importElement(
+  {
+    elementId,
+    catalogCollectionId,
+  }: { elementId: number; catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  // verify that the user has access to the catalog collection the element is contained in
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable(
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return false
+  }
+
+  // get catalog assignment of this element, verify public access
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      elementId_catalogCollectionId: {
+        elementId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      element: {
+        include: {
+          answerCollectionItems: true,
+        },
+      },
+    },
+  })
+
+  // make sure that the element is assigned to the specified catalog collection and that it is public (import allowed)
+  if (!assignment || assignment.access !== DB.ObjectAccess.PUBLIC) {
+    return false
+  }
+
+  // make sure that the element exists and that the requesting user is not the owner
+  const element = assignment.element
+  if (!element || element.ownerId === ctx.user.sub) {
+    return false
+  }
+
+  // count number of times the element has been imported before
+  const importCount = await ctx.prisma.element.count({
+    where: {
+      originalId: String(element.id),
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    // create new element with the content of the original one
+    const newElement = await prisma.element.create({
+      data: {
+        originalId: String(element.id),
+        name:
+          importCount > 0 ? `${element.name} (${importCount})` : element.name,
+        content: element.content,
+        explanation: element.explanation,
+        basePoints: element.basePoints,
+        pointsMultiplier: element.pointsMultiplier,
+        type: element.type,
+        options: element.options,
+        answerCollection:
+          element.answerCollectionId !== null
+            ? {
+                connect: {
+                  id: element.answerCollectionId,
+                },
+              }
+            : undefined,
+        answerCollectionItems: {
+          connect: element.answerCollectionItems.map((item) => ({
+            id: item.id,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+    })
+
+    // trigger recomputation of derived permissions for the object
+    await recomputeDerivedPermissions(
+      { elementId: newElement.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    // if an answer collection is linked to the element, recompute the corresponding derived permissions
+    if (newElement.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newElement.answerCollectionId,
+          userId: ctx.user.sub,
+        },
+        prisma
+      )
+    }
+
+    return newElement
+  })
+
+  // invalidate cache for the existing element
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: element.id,
+  })
+
+  return true
+}
 // #endregion
 
 // ! Catalog Operations
