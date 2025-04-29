@@ -4347,9 +4347,7 @@ export async function createUserGroup(
   })
 
   if (userGroup) {
-    console.error(
-      `User group with name "${name}" already exists for user ${ctx.user.sub}.`
-    )
+    // `User group with name "${name}" already exists for user ${ctx.user.sub}.`
     return null
   }
 
@@ -4366,9 +4364,7 @@ export async function createUserGroup(
 
   // if none of the specified members were found, throw an error
   if (users.length === 0) {
-    console.error(
-      `No users found for the specified members: ${JSON.stringify(members)}`
-    )
+    // `No users found for the specified members: ${JSON.stringify(members)}`
     return null
   }
 

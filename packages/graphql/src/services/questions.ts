@@ -1094,48 +1094,66 @@ export async function updateElementInstances(
               element.type === DB.ElementType.CASE_STUDY) &&
             element.answerCollectionId !== null
           ) {
-            // get all answer collections connected to one of the impacted template activities
+            // get all answer collections and answer collection entries used in any instance in the affected template
             let instanceCollectionIds: number[] = []
+            let instanceCollectionEntryIds: number[] = []
+
             if (typeof liveQuizId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: liveQuizId,
-                    activityType: ActivityType.LIVE_QUIZ,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: liveQuizId,
+                  activityType: ActivityType.LIVE_QUIZ,
+                },
+                ctx
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof practiceQuizId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: practiceQuizId,
-                    activityType: ActivityType.PRACTICE_QUIZ,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: practiceQuizId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                },
+                ctx
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof microLearningId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: microLearningId,
-                    activityType: ActivityType.MICRO_LEARNING,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: microLearningId,
+                  activityType: ActivityType.MICRO_LEARNING,
+                },
+                ctx
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof groupActivityId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: groupActivityId,
-                    activityType: ActivityType.GROUP_ACTIVITY,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: groupActivityId,
+                  activityType: ActivityType.GROUP_ACTIVITY,
+                },
+                ctx
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             }
 
             // fetch the existing template and the contained answer collections
@@ -1145,6 +1163,7 @@ export async function updateElementInstances(
               },
               include: {
                 answerCollections: true,
+                answerCollectionItems: true,
               },
             })
 
@@ -1163,6 +1182,17 @@ export async function updateElementInstances(
               (id) => !templateCollectionIds.includes(id)
             )
 
+            const templateCollectionEntryIds =
+              template.answerCollectionItems.map((collection) => collection.id)
+            const collectionEntriesToDisconnect =
+              templateCollectionEntryIds.filter(
+                (id) => !instanceCollectionEntryIds.includes(id)
+              )
+            const collectionEntriesToConnect =
+              instanceCollectionEntryIds.filter(
+                (id) => !templateCollectionEntryIds.includes(id)
+              )
+
             // add all answer collections that were added or removed to the touched ones for a derived permissions update
             touchedAnswerCollectionIds = touchedAnswerCollectionIds.concat([
               ...collectionsToDisconnect,
@@ -1172,27 +1202,51 @@ export async function updateElementInstances(
             // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
             if (
               collectionsToConnect.length > 0 ||
-              collectionsToDisconnect.length > 0
+              collectionsToDisconnect.length > 0 ||
+              collectionEntriesToConnect.length > 0 ||
+              collectionEntriesToDisconnect.length > 0
             ) {
               await ctx.prisma.activityTemplate.update({
                 where: {
                   id: templateId,
                 },
                 data: {
-                  answerCollections: {
-                    connect:
-                      collectionsToConnect.length > 0
-                        ? collectionsToConnect.map((id) => ({
-                            id,
-                          }))
-                        : [],
-                    disconnect:
-                      collectionsToDisconnect.length > 0
-                        ? collectionsToDisconnect.map((id) => ({
-                            id,
-                          }))
-                        : [],
-                  },
+                  answerCollections:
+                    collectionsToConnect.length > 0 ||
+                    collectionsToDisconnect.length > 0
+                      ? {
+                          connect:
+                            collectionsToConnect.length > 0
+                              ? collectionsToConnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                          disconnect:
+                            collectionsToDisconnect.length > 0
+                              ? collectionsToDisconnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                        }
+                      : undefined,
+                  answerCollectionItems:
+                    collectionEntriesToConnect.length > 0 ||
+                    collectionEntriesToDisconnect.length > 0
+                      ? {
+                          connect:
+                            collectionEntriesToConnect.length > 0
+                              ? collectionEntriesToConnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                          disconnect:
+                            collectionEntriesToDisconnect.length > 0
+                              ? collectionEntriesToDisconnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                        }
+                      : undefined,
                 },
               })
             }
