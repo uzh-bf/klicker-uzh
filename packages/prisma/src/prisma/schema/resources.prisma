@@ -40,7 +40,8 @@ model AnswerCollectionEntry {
     collectionId Int
 
     // elements where this entry is used as a sample solution -> deletion not allowed
-    itemUsages Element[] @relation("ElementAnswerCollectionUsedItems")
+    itemUsages     Element[]          @relation("ElementAnswerCollectionUsedItems")
+    templateUsages ActivityTemplate[] @relation("TemplateAnswerCollectionUsedItems")
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
