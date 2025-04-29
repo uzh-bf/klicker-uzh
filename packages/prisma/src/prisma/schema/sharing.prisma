@@ -258,7 +258,9 @@ model ActivityTemplate {
     groupActivityId String?        @unique @db.Uuid
 
     // optional link to answer collections, if any question in the activity is based on these collections
-    answerCollections AnswerCollection[] @relation("TemplateAnswerCollectionUsages")
+    answerCollections     AnswerCollection[]      @relation("TemplateAnswerCollectionUsages")
+    // optional link to answer collection items, if any question in the activity is based on these items
+    answerCollectionItems AnswerCollectionEntry[] @relation("TemplateAnswerCollectionUsedItems")
 }
 
 // #endregion

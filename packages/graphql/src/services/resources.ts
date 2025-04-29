@@ -201,7 +201,9 @@ export async function getSingleAnswerCollection(
     where: { id },
     include: {
       entries: {
-        include: { _count: { select: { itemUsages: true } } },
+        include: {
+          _count: { select: { itemUsages: true, templateUsages: true } },
+        },
         orderBy: { value: 'asc' },
       },
       permissions: { where: { userId: ctx.user.sub } },
@@ -228,7 +230,7 @@ export async function getSingleAnswerCollection(
     ...collection,
     entries: collection.entries.map((entry) => ({
       ...entry,
-      numSolutionUsages: entry._count?.itemUsages,
+      numSolutionUsages: entry._count.itemUsages + entry._count.templateUsages,
     })),
     numSharedUsers: isManager
       ? collection._count?.directPermissions
@@ -624,10 +626,14 @@ export async function deleteAnswerCollectionEntry(
   // verify that the answer collection entry is not linked to any elements
   const entry = await ctx.prisma.answerCollectionEntry.findUnique({
     where: { id, collectionId },
-    include: { _count: { select: { itemUsages: true } } },
+    include: { _count: { select: { itemUsages: true, templateUsages: true } } },
   })
 
-  if (!entry || entry._count.itemUsages > 0) {
+  if (
+    !entry ||
+    entry._count.itemUsages > 0 ||
+    entry._count.templateUsages > 0
+  ) {
     return null
   }
 

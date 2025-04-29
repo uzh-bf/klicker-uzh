@@ -936,6 +936,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -955,6 +956,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds).toHaveLength(2)
     expect(answerCollectionIds).toEqual(
       expect.arrayContaining([AC1.id, AC2.id])
+    )
+    const answerCollectionItems = template?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems).toHaveLength(2)
+    expect(answerCollectionItems).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion.name
@@ -998,6 +1006,7 @@ describe('Unit tests for template service', () => {
       CSQuestion.name
     )
 
+    // trigger another element instance update, this time including the activity templates
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
       userOneCtx
@@ -1010,6 +1019,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1027,6 +1037,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds3).toHaveLength(2)
     expect(answerCollectionIds3).toEqual(
       expect.arrayContaining([AC1.id, AC2.id])
+    )
+    const answerCollectionItems3 = template3?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems3).toHaveLength(2)
+    expect(answerCollectionItems3).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template3?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion2.name
@@ -1057,6 +1074,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1074,6 +1092,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds4).toHaveLength(2)
     expect(answerCollectionIds4).toEqual(
       expect.arrayContaining([AC2.id, AC3.id])
+    )
+    const answerCollectionItems4 = template4?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems4).toHaveLength(2)
+    expect(answerCollectionItems4).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template4?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
@@ -1108,6 +1133,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1124,6 +1150,13 @@ describe('Unit tests for template service', () => {
     )
     expect(answerCollectionIds5).toHaveLength(1)
     expect(answerCollectionIds5).toEqual(expect.arrayContaining([AC3.id]))
+    const answerCollectionItems5 = template5?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems5).toHaveLength(2)
+    expect(answerCollectionItems5).toEqual(
+      expect.arrayContaining([AC3.entries[0]!.id, AC3.entries[1]!.id])
+    )
     expect(template5?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
     )
@@ -1157,6 +1190,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1175,11 +1209,68 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds6).toEqual(
       expect.arrayContaining([AC1.id, AC3.id])
     )
+    const answerCollectionItems6 = template6?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems6).toHaveLength(2)
+    expect(answerCollectionItems6).toEqual(
+      expect.arrayContaining([AC1.entries[0]!.id, AC1.entries[1]!.id])
+    )
     expect(template6?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
     )
     expect(template6?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
       CSQuestion3.name
+    )
+
+    // modify the answer collection entries used in the case study question (same answer collection, but options 2 & 3 instead of 1 & 2)
+    const CSQuestion4 = await prisma.element.update({
+      where: { id: CSQuestion.id },
+      data: {
+        name: 'Updated Case Study Question 4',
+        answerCollectionItems: {
+          disconnect: [{ id: AC1.entries[0]!.id }],
+          connect: [{ id: AC1.entries[2]!.id }],
+        },
+      },
+    })
+    await updateElementInstances(
+      { elementId: CSQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the update was successful and that the corresponding answer collection entries are now linked to the template
+    const template7 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        answerCollectionItems: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds7 = template7?.answerCollections.map(
+      (collection) => collection.id
+    )
+    const answerCollectionItems7 = template7?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionIds7).toHaveLength(2)
+    expect(answerCollectionIds7).toEqual(
+      expect.arrayContaining([AC1.id, AC3.id])
+    )
+    expect(answerCollectionItems7).toHaveLength(2)
+    expect(answerCollectionItems7).toEqual(
+      expect.arrayContaining([AC1.entries[1]!.id, AC1.entries[2]!.id])
     )
 
     // delete the live quiz / template, answer collections and questions

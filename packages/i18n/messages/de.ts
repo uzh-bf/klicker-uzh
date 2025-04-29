@@ -1605,7 +1605,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noInstances:
         'Die ausgewählte Aktivität enthält keine Elemente und kann daher nicht in ein Template umgewandelt werden.',
       resourcesRequiredMissing:
-        'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
+        'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht, verändert (benötigte Antwort-Optionen entfernt) oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
       noResourceAccessRequired:
         'Diese Aktivität enthält keine Elemente, die von Ressourcen abhängen.',
       confirmationsTitle: 'Erforderliche Bestätigungen',
@@ -2323,7 +2323,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsed:
-        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung or Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage oder einer Aktivitätsvorlage als korrekte Lösung oder Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
