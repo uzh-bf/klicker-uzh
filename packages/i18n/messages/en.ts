@@ -1589,7 +1589,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noInstances:
         'The selected activity does not contain any elements and cannot be converted into a template.',
       resourcesRequiredMissing:
-        'Some elements in this activity depend on resources (e.g., answer collections) that have been deleted or removed from the account (in case of shared access). Please replace these elements before converting the activity into a template.',
+        'Some elements in this activity depend on resources (e.g., answer collections) that have been deleted, modified (required answer options removed), or removed from the account (in case of shared access). Please replace these elements before converting the activity into a template.',
       noResourceAccessRequired:
         'This activity does not contain any elements that depend on resources (e.g., answer collections).',
       confirmationsTitle: 'Required Confirmations',

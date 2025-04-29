@@ -167,6 +167,7 @@ export async function getActivityAnswerCollectionIds(
     | null
   noInstances: boolean
   answerCollectionIds: number[]
+  answerCollectionEntryIds: number[]
 }> {
   // helper function that finds the ids of all answer collections linked to elements in an activity
   // fetch all element instances included in the activity that should be converted
@@ -192,6 +193,7 @@ export async function getActivityAnswerCollectionIds(
         activity: null,
         noInstances: false,
         answerCollectionIds: [],
+        answerCollectionEntryIds: [],
       }
     }
 
@@ -217,6 +219,7 @@ export async function getActivityAnswerCollectionIds(
         activity: null,
         noInstances: false,
         answerCollectionIds: [],
+        answerCollectionEntryIds: [],
       }
     }
 
@@ -242,6 +245,7 @@ export async function getActivityAnswerCollectionIds(
         activity: null,
         noInstances: false,
         answerCollectionIds: [],
+        answerCollectionEntryIds: [],
       }
     }
 
@@ -269,6 +273,7 @@ export async function getActivityAnswerCollectionIds(
         activity: null,
         noInstances: false,
         answerCollectionIds: [],
+        answerCollectionEntryIds: [],
       }
     }
 
@@ -280,6 +285,7 @@ export async function getActivityAnswerCollectionIds(
       activity: null,
       noInstances: false,
       answerCollectionIds: [],
+      answerCollectionEntryIds: [],
     }
   }
 
@@ -290,6 +296,7 @@ export async function getActivityAnswerCollectionIds(
       activity,
       noInstances: true,
       answerCollectionIds: [],
+      answerCollectionEntryIds: [],
     }
   }
 
@@ -312,7 +319,33 @@ export async function getActivityAnswerCollectionIds(
     )
   )
 
-  return { error: false, activity, noInstances: false, answerCollectionIds }
+  // extract all answer collection entry ids that are used as sample solutions in selection elements or as items in case study elements
+  const answerCollectionEntryIds = Array.from(
+    new Set(
+      instances
+        .filter(
+          (instance) =>
+            instance.elementType === DB.ElementType.SELECTION ||
+            instance.elementType === DB.ElementType.CASE_STUDY
+        )
+        .flatMap((instance) =>
+          instance.elementType === DB.ElementType.SELECTION
+            ? ((instance.elementData as SelectionElementData).options
+                .answerCollectionSolutionIds ?? [])
+            : ((
+                instance.elementData as CaseStudyElementData
+              ).options.items!.map((item) => item.id) ?? [])
+        )
+    )
+  )
+
+  return {
+    error: false,
+    activity,
+    noInstances: false,
+    answerCollectionIds,
+    answerCollectionEntryIds,
+  }
 }
 
 export async function checkTemplateInfoAvailable(
@@ -323,7 +356,7 @@ export async function checkTemplateInfoAvailable(
   ctx: ContextWithUser
 ) {
   // fetch all answer collections linked to elements in the activity
-  const { error, noInstances, answerCollectionIds } =
+  const { error, noInstances, answerCollectionIds, answerCollectionEntryIds } =
     (await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)) ??
     {}
 
@@ -357,8 +390,18 @@ export async function checkTemplateInfoAvailable(
     select: { id: true },
   })
 
-  // check if all required answer collections exist
-  if (answerCollections.length === answerCollectionIds.length) {
+  // check if all required answer collection entries are available to the user
+  const answerCollectionEntries =
+    await ctx.prisma.answerCollectionEntry.findMany({
+      where: { id: { in: answerCollectionEntryIds } },
+      select: { id: true },
+    })
+
+  // check if all required answer collections and answer collection entries exist
+  if (
+    answerCollections.length === answerCollectionIds.length &&
+    answerCollectionEntries.length === answerCollectionEntryIds.length
+  ) {
     return {
       noInstances: false,
       noResourcesRequired: false,
@@ -395,8 +438,13 @@ export async function createActivityTemplate(
   ctx: ContextWithUser
 ) {
   // fetch all answer collections linked to elements in the activity
-  const { error, activity, noInstances, answerCollectionIds } =
-    await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)
+  const {
+    error,
+    activity,
+    noInstances,
+    answerCollectionIds,
+    answerCollectionEntryIds,
+  } = await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)
 
   if (error || noInstances) {
     return false
@@ -466,6 +514,12 @@ export async function createActivityTemplate(
                   answerCollectionIds.length > 0
                     ? {
                         connect: answerCollectionIds.map((id) => ({ id })),
+                      }
+                    : undefined,
+                answerCollectionItems:
+                  answerCollectionEntryIds.length > 0
+                    ? {
+                        connect: answerCollectionEntryIds.map((id) => ({ id })),
                       }
                     : undefined,
               },
@@ -553,6 +607,14 @@ export async function createActivityTemplate(
                           connect: answerCollectionIds.map((id) => ({ id })),
                         }
                       : undefined,
+                  answerCollectionItems:
+                    answerCollectionEntryIds.length > 0
+                      ? {
+                          connect: answerCollectionEntryIds.map((id) => ({
+                            id,
+                          })),
+                        }
+                      : undefined,
                 },
               },
               // templates from asynchronous activities are linked to the same course
@@ -637,6 +699,14 @@ export async function createActivityTemplate(
                     answerCollectionIds.length > 0
                       ? {
                           connect: answerCollectionIds.map((id) => ({ id })),
+                        }
+                      : undefined,
+                  answerCollectionItems:
+                    answerCollectionEntryIds.length > 0
+                      ? {
+                          connect: answerCollectionEntryIds.map((id) => ({
+                            id,
+                          })),
                         }
                       : undefined,
                 },
@@ -734,6 +804,14 @@ export async function createActivityTemplate(
                           connect: answerCollectionIds.map((id) => ({ id })),
                         }
                       : undefined,
+                  answerCollectionItems:
+                    answerCollectionEntryIds.length > 0
+                      ? {
+                          connect: answerCollectionEntryIds.map((id) => ({
+                            id,
+                          })),
+                        }
+                      : undefined,
                 },
               },
               // templates from asynchronous activities are linked to the same course
@@ -790,6 +868,12 @@ export async function createActivityTemplate(
             answerCollectionIds.length > 0
               ? {
                   connect: answerCollectionIds.map((id) => ({ id })),
+                }
+              : undefined,
+          answerCollectionItems:
+            answerCollectionEntryIds.length > 0
+              ? {
+                  connect: answerCollectionEntryIds.map((id) => ({ id })),
                 }
               : undefined,
         },
