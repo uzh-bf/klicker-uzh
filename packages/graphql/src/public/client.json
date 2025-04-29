@@ -166,6 +166,7 @@
    "GetCatalogAnswerCollections": "ff946eec7421fc301c7585a6fc3ee47a24fc5c623fc44ba81cd8f76395a553ae",
    "GetCatalogCollectionInfo": "9ac26c6d23324f335c7c705276d8262ab691abdfffa3373389a70c0a10deb476",
    "GetCatalogCollectionsList": "76c80bd614dd262373f1bb75ce8c5620273843bf73708a018cc7bc969f40c146",
+   "GetCatalogElements": "4f7d3a298bd6d65c872c8e2377287fe9a0ef4d080ea4eb2d370108ca2fb7a31f",
    "GetCatalogLiveQuizTemplates": "2f7be6511b2db3700c8d714caf30ffab02d83b32576780add85e3ee6fcb0fe1f",
    "GetCatalogObjects": "fbc98ebeb86fff37cba49c00add1b1bd9fe593444cad7f121ce4ad1dce8143fb",
    "GetCatalogSharingRequests": "e59ead934b55cdd40cb94eec86cb94f1ae12490c053041704c6313555c091873",

@@ -1904,6 +1904,7 @@ type Query {
   getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
   getCatalogCollectionsList: [CatalogCollection!]
+  getCatalogElements: [CatalogSelectionObject!]
   getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]

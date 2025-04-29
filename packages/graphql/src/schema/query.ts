@@ -1525,6 +1525,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogElements: t.withAuth(asUser).field({
+        nullable: true,
+        type: [CatalogSelectionObject],
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getCatalogElements(ctx)
+        },
+      }),
+
       getAnswerCollectionCatalogInfo: t.withAuth(asUser).field({
         nullable: true,
         type: AnswerCollection,

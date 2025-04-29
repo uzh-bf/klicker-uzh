@@ -28722,6 +28722,26 @@
             "deprecationReason": null
           },
           {
+            "name": "getCatalogElements",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "CatalogSelectionObject",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "getCatalogLiveQuizTemplates",
             "description": null,
             "args": [],

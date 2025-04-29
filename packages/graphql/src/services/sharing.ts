@@ -3567,6 +3567,17 @@ export async function getCatalogObjects(
               accessRequests: { where: { userId: ctx.user.sub } },
             },
           },
+          element: {
+            where: { isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId: ctx.user.sub } },
+              accessRequests: { where: { userId: ctx.user.sub } },
+            },
+          },
           liveQuiz: {
             where: { isDeleted: false },
             select: {
@@ -3603,6 +3614,26 @@ export async function getCatalogObjects(
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: answerCollection.accessRequests.length > 0,
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
+        }
+      } else if (assignment.element) {
+        const element = assignment.element
+        const permission = element.permissions[0]
+
+        return {
+          id: element.id,
+          name: element.name,
+          assignmentId: assignment.id,
+          objectType: SharingObjectType.ELEMENT,
+          access: assignment.access,
+          ownerShortname: element.owner?.shortname,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isManager:
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isRequested: element.accessRequests.length > 0,
           isShared:
             typeof permission !== 'undefined' &&
             permission.permissionLevel !== DB.PermissionLevel.OWNER,
@@ -3743,6 +3774,29 @@ export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
   }))
 }
 
+export async function getCatalogElements(ctx: ContextWithUser) {
+  // fetch all elements, where the user is the owner or has been granted admin access
+  const elements = await ctx.prisma.element.findMany({
+    where: {
+      isDeleted: false, // soft deleted answer collections cannot be added to the catalog
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return elements.map((element) => ({
+    id: String(element.id),
+    name: element.name,
+  }))
+}
+
 export async function addObjectToCatalog(
   // one of the object ids should be defined for the object that is to be added to the catalog
   // otherwise, the function will return null
@@ -3863,6 +3917,45 @@ export async function addObjectToCatalog(
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
       templateId: liveQuiz.templateInfo?.id,
+      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
+    }
+  } else if (typeof elementId !== 'undefined') {
+    const element = await ctx.prisma.element.findUnique({
+      where: {
+        id: elementId,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId: ctx.user.sub } },
+      },
+    })
+
+    if (!element) {
+      return null
+    }
+
+    // get (unique) derived permission of this user on the element
+    const permission = element.permissions[0]
+    if (!permission) {
+      return null
+    }
+
+    // set object info
+    objectInfo = {
+      objectId: element.id,
+      objectUuid: undefined,
+      objectType: SharingObjectType.ELEMENT,
+      objectName: element.name,
+      ownerShortname: element.owner?.shortname,
+      ownerId: element.ownerId,
       isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
   }

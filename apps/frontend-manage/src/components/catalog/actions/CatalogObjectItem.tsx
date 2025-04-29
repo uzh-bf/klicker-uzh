@@ -7,6 +7,7 @@ import {
   faCheck,
   faEllipsisVertical,
   faList,
+  faQuestion,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -49,6 +50,7 @@ function CatalogObjectItem({
     [SharingObjectType.AnswerCollection]: faList,
     [SharingObjectType.CatalogCollection]: faFolder,
     [SharingObjectType.LiveQuizTemplate]: faFileLines,
+    [SharingObjectType.Element]: faQuestion,
   }
   const actionsDisabled = object.isOwner || object.isShared
 

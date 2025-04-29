@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetCatalogAnswerCollectionsDocument,
+  GetCatalogElementsDocument,
   GetCatalogLiveQuizTemplatesDocument,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -36,9 +37,14 @@ function SelectObjectForCatalog({
       skip: objectType !== SharingObjectType.LiveQuizTemplate,
       fetchPolicy: 'cache-and-network',
     })
-  // ... add loading queries for other object types
-
-  const anyLoading = collectionsLoading
+  const { data: elementsData, loading: elementsLoading } = useQuery(
+    GetCatalogElementsDocument,
+    {
+      skip: objectType !== SharingObjectType.Element,
+      fetchPolicy: 'cache-and-network',
+    }
+  )
+  // TODO: ... add loading queries for other object types
 
   useEffect(() => {
     // load available objects based on the selected type
@@ -61,7 +67,15 @@ function SelectObjectForCatalog({
               label: t.name,
             })) ?? []
           setOptions(templates)
-        } else {
+        } else if (objectType === SharingObjectType.Element) {
+          const elements =
+            elementsData?.getCatalogElements?.map((e) => ({
+              value: e.id,
+              label: e.name,
+            })) ?? []
+          setOptions(elements)
+        } // TODO: ... add other object types here
+        else {
           setOptions([])
         }
       } catch (error) {
@@ -72,7 +86,7 @@ function SelectObjectForCatalog({
     }
 
     loadObjects()
-  }, [collectionsData, liveQuizTemplateData, objectType])
+  }, [collectionsData, elementsData, liveQuizTemplateData, objectType])
 
   return (
     <div>
@@ -82,7 +96,7 @@ function SelectObjectForCatalog({
         })}
       </p>
 
-      {anyLoading ? (
+      {collectionsLoading || liveQuizTemplateLoading ? (
         <Loader />
       ) : options.length > 0 ? (
         <Select
