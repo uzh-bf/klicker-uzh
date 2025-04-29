@@ -1,7 +1,7 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
-  CatalogObjectType,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -20,7 +20,7 @@ function DirectSharingForm({
   onFailure,
   shareObjectCallback,
 }: {
-  type: CatalogObjectType
+  type: SharingObjectType
   onSuccess: () => void
   onFailure: () => void
   shareObjectCallback: ({

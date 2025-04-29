@@ -7,8 +7,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogCollection,
-  CatalogObjectType,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
@@ -165,7 +165,7 @@ function CatalogCollectionListItem({
             onClose={() => setSharingModal(false)}
             objectUuid={collection.id}
             objectName={collection.name}
-            objectType={CatalogObjectType.CatalogCollection}
+            objectType={SharingObjectType.CatalogCollection}
             isOwner={collection.isOwner ?? false}
           />
           <CatalogCollectionDeletionModal
@@ -182,7 +182,7 @@ function CatalogCollectionListItem({
           <CatalogChangeAccessModal
             open={changeAccessModal}
             onClose={() => setChangeAccessModal(false)}
-            objectType={CatalogObjectType.CatalogCollection}
+            objectType={SharingObjectType.CatalogCollection}
             objectName={collection.name}
             newAccess={newAccess}
             catalogCollectionId={collection.id}
@@ -208,7 +208,7 @@ function CatalogCollectionListItem({
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
-          objectType={CatalogObjectType.CatalogCollection}
+          objectType={SharingObjectType.CatalogCollection}
           objectId={collection.id}
           objectName={collection.name}
           objectOwner={collection.ownerShortname}

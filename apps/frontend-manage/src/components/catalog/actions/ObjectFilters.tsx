@@ -1,4 +1,4 @@
-import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -10,8 +10,8 @@ function ObjectFilters({
   accessTypeFilter,
   setAccessTypeFilter,
 }: {
-  typeFilter: CatalogObjectType | ''
-  setTypeFilter: Dispatch<SetStateAction<CatalogObjectType | ''>>
+  typeFilter: SharingObjectType | ''
+  setTypeFilter: Dispatch<SetStateAction<SharingObjectType | ''>>
   accessTypeFilter: ObjectAccess | ''
   setAccessTypeFilter: Dispatch<SetStateAction<ObjectAccess | ''>>
 }) {
@@ -27,7 +27,7 @@ function ObjectFilters({
             label: t('manage.catalog.all'),
             data: { cy: 'all-object-types' },
           },
-          ...Object.values(CatalogObjectType).map((type) => ({
+          ...Object.values(SharingObjectType).map((type) => ({
             label: t(`shared.types.${type}`),
             value: type,
             data: { cy: `catalog-object-type-${type}` },
@@ -35,7 +35,7 @@ function ObjectFilters({
         ]}
         value={typeFilter}
         onChange={(newValue) => {
-          setTypeFilter(newValue as CatalogObjectType)
+          setTypeFilter(newValue as SharingObjectType)
         }}
         className={{ select: { trigger: 'h-9 w-52' } }}
         data={{ cy: 'catalog-object-type-filter' }}

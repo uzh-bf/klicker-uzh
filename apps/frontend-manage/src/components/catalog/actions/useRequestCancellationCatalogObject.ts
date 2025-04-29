@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   CancelObjectSharingRequestDocument,
-  CatalogObjectType,
   GetCatalogObjectsDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object sharing request, returns success boolean
@@ -12,7 +12,7 @@ function useRequestCancellationCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void

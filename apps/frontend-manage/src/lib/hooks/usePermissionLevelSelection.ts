@@ -1,10 +1,10 @@
 import {
-  CatalogObjectType,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
-function usePermissionLevelSelection({ type }: { type: CatalogObjectType }) {
+function usePermissionLevelSelection({ type }: { type: SharingObjectType }) {
   const t = useTranslations()
 
   // TODO: once objects with execution rights are available, add the corresponding case here

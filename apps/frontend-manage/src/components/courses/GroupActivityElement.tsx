@@ -14,14 +14,17 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GroupActivity, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  GroupActivity,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../activities/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import GroupActivityExtensionButton from './groupActivity/GroupActivityExtensionButton'
@@ -216,7 +219,7 @@ function GroupActivityElement({
                         pathname: '/',
                         query: {
                           elementId: groupActivity.id,
-                          editMode: WizardMode.GroupActivity,
+                          editMode: ActivityType.GroupActivity,
                         },
                       }),
                     data: { cy: `edit-groupActivity-${groupActivity.name}` },

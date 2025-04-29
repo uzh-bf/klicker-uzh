@@ -1,8 +1,8 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  CatalogObjectType,
   PermissionInfo,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -17,7 +17,7 @@ function ExistingPermissionEntries({
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
-  type: CatalogObjectType
+  type: SharingObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
   onPermissionLevelChange: ({

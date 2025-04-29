@@ -1,6 +1,6 @@
 mutation ChangePermissionLevel(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: SharingObjectType!
   $permissionId: Int!
   $permissionLevel: PermissionLevel!
 ) {

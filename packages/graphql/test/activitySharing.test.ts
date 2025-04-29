@@ -5,7 +5,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { CatalogObjectType } from '@klicker-uzh/types'
+import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -250,7 +250,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res2).toBeTruthy()
     expect(res2!.uuid).toEqual(activityId1)
-    expect(res2!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res2!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res2!.templateId).toEqual(templateId1)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
@@ -297,7 +297,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res3).toBeTruthy()
     expect(res3!.uuid).toEqual(activityId2)
-    expect(res3!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res3!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res3!.templateId).toEqual(templateId2)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
@@ -345,7 +345,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res5).toBeTruthy()
     expect(res5!.uuid).toEqual(activityId2)
-    expect(res5!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res5!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res5!.templateId).toEqual(templateId2)
     expect(res5!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res5!.ownerShortname).toEqual(userOne.shortname)
@@ -625,20 +625,25 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
   // ! Sharing Operations for Live Quizzes (incl. Templates)
   // #region
   // TODO: add most important functions and functions specific to live quizzes / live quiz templates here
+  // TODO: make sure to cover the case where the live quiz is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Practice Quizzes (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to practice quizzes here
+  // TODO: make sure to cover the case where the practice quiz is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Microlearnings (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to microlearnings here
+  // TODO: make sure to cover the case where the microlearning is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Group Activities (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to group activities here
+  // TODO: make sure to cover the case where the group activity is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
+
   // #endregion
 })

@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client'
 import {
-  CatalogObjectType,
   DerivedPermissionInfo,
   GetDerivedObjectPermissionsDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useDerivedObjectPermissions({
@@ -11,7 +11,7 @@ function useDerivedObjectPermissions({
   skip,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   skip: boolean
 }): { derivedPermissions: DerivedPermissionInfo[]; loading: boolean } {
   const { data, loading } = useQuery(GetDerivedObjectPermissionsDocument, {

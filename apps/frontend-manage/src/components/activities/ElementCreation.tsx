@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
+  ActivityType,
   Course,
   Element,
   GetActiveUserCoursesDocument,
@@ -20,13 +21,6 @@ import LiveQuizWizard from './creation/liveQuiz/LiveQuizWizard'
 import MicroLearningWizard from './creation/microLearning/MicroLearningWizard'
 import PracticeQuizWizard from './creation/practiceQuiz/PracticeQuizWizard'
 
-export enum WizardMode {
-  LiveQuiz = 'liveQuiz',
-  Microlearning = 'microlearning',
-  PracticeQuiz = 'practiceQuiz',
-  GroupActivity = 'groupActivity',
-}
-
 export type ElementSelectCourse = {
   label: string
   value: string
@@ -39,11 +33,11 @@ export type ElementSelectCourse = {
 }
 
 interface ElementCreationProps {
-  creationMode: WizardMode
+  creationMode: ActivityType
   closeWizard: () => void
   activityId?: string
-  editMode?: string
-  duplicationMode?: WizardMode
+  editMode?: ActivityType
+  duplicationMode?: ActivityType
   conversionMode?: string
   selection: Record<number, Element>
   resetSelection: () => void
@@ -66,8 +60,8 @@ function ElementCreation({
       variables: { quizId: activityId || '' },
       skip:
         !activityId ||
-        (editMode !== WizardMode.LiveQuiz &&
-          duplicationMode !== WizardMode.LiveQuiz) ||
+        (editMode !== ActivityType.LiveQuiz &&
+          duplicationMode !== ActivityType.LiveQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
     }
   )
@@ -77,8 +71,8 @@ function ElementCreation({
       variables: { id: activityId || '' },
       skip:
         !activityId ||
-        (editMode !== WizardMode.Microlearning &&
-          duplicationMode !== WizardMode.Microlearning &&
+        (editMode !== ActivityType.MicroLearning &&
+          duplicationMode !== ActivityType.MicroLearning &&
           conversionMode !== 'microLearningToPracticeQuiz'),
     }
   )
@@ -88,8 +82,8 @@ function ElementCreation({
       variables: { id: activityId || '' },
       skip:
         !activityId ||
-        (editMode !== WizardMode.PracticeQuiz &&
-          duplicationMode !== WizardMode.PracticeQuiz) ||
+        (editMode !== ActivityType.PracticeQuiz &&
+          duplicationMode !== ActivityType.PracticeQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
     }
   )
@@ -99,16 +93,21 @@ function ElementCreation({
       variables: { id: activityId || '' },
       skip:
         !activityId ||
-        (editMode !== WizardMode.GroupActivity &&
-          duplicationMode !== WizardMode.GroupActivity),
+        (editMode !== ActivityType.GroupActivity &&
+          duplicationMode !== ActivityType.GroupActivity),
     }
   )
 
+  // fetch all courses available to the user and the one linked to this activity (if not included in the former)
   const {
     loading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
   } = useQuery(GetActiveUserCoursesDocument, {
+    variables: {
+      activityId: typeof editMode !== 'undefined' ? activityId : undefined,
+      activityType: editMode,
+    },
     fetchPolicy: 'cache-and-network',
   })
 
@@ -142,20 +141,20 @@ function ElementCreation({
   if (
     (!errorCourses && loadingCourses) ||
     (activityId &&
-      (editMode === WizardMode.LiveQuiz ||
-        duplicationMode === WizardMode.LiveQuiz) &&
+      (editMode === ActivityType.LiveQuiz ||
+        duplicationMode === ActivityType.LiveQuiz) &&
       liveLoading) ||
     (activityId &&
-      (editMode === WizardMode.Microlearning ||
-        duplicationMode === WizardMode.Microlearning) &&
+      (editMode === ActivityType.MicroLearning ||
+        duplicationMode === ActivityType.MicroLearning) &&
       microLoading) ||
     (activityId &&
-      (editMode === WizardMode.PracticeQuiz ||
-        duplicationMode === WizardMode.PracticeQuiz) &&
+      (editMode === ActivityType.PracticeQuiz ||
+        duplicationMode === ActivityType.PracticeQuiz) &&
       learningLoading) ||
     (activityId &&
-      (editMode === WizardMode.GroupActivity ||
-        duplicationMode === WizardMode.GroupActivity) &&
+      (editMode === ActivityType.GroupActivity ||
+        duplicationMode === ActivityType.GroupActivity) &&
       groupActivityLoading) ||
     (activityId &&
       conversionMode === 'microLearningToPracticeQuiz' &&
@@ -200,14 +199,14 @@ function ElementCreation({
   return (
     <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18.25rem] md:min-h-[18.25rem]">
       <div className="h-full w-full">
-        {creationMode === WizardMode.LiveQuiz && (
+        {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection ?? []}
             initialValues={
               dataLiveQuiz?.liveQuiz
-                ? duplicationMode === WizardMode.LiveQuiz
+                ? duplicationMode === ActivityType.LiveQuiz
                   ? {
                       ...dataLiveQuiz.liveQuiz,
                       name: `${dataLiveQuiz.liveQuiz.name} (Copy)`,
@@ -217,18 +216,18 @@ function ElementCreation({
             }
             selection={selection}
             resetSelection={resetSelection}
-            editMode={editMode === WizardMode.LiveQuiz}
-            duplicationMode={duplicationMode === WizardMode.LiveQuiz}
+            editMode={editMode === ActivityType.LiveQuiz}
+            duplicationMode={duplicationMode === ActivityType.LiveQuiz}
           />
         )}
-        {creationMode === WizardMode.Microlearning && (
+        {creationMode === ActivityType.MicroLearning && (
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
             courses={courseSelection ?? []}
             initialValues={
               dataMicroLearning?.getSingleMicroLearning
-                ? duplicationMode === WizardMode.Microlearning
+                ? duplicationMode === ActivityType.MicroLearning
                   ? ({
                       ...dataMicroLearning.getSingleMicroLearning,
                       name: `${dataMicroLearning.getSingleMicroLearning.name} (Copy)`,
@@ -238,11 +237,11 @@ function ElementCreation({
             }
             selection={selection}
             resetSelection={resetSelection}
-            editMode={editMode === WizardMode.Microlearning}
-            duplicationMode={duplicationMode === WizardMode.Microlearning}
+            editMode={editMode === ActivityType.MicroLearning}
+            duplicationMode={duplicationMode === ActivityType.MicroLearning}
           />
         )}
-        {(creationMode === WizardMode.PracticeQuiz ||
+        {(creationMode === ActivityType.PracticeQuiz ||
           conversionMode == 'microLearningToPracticeQuiz') && (
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
@@ -250,7 +249,7 @@ function ElementCreation({
             courses={courseSelection ?? []}
             initialValues={
               dataPracticeQuiz?.getSinglePracticeQuiz
-                ? duplicationMode === WizardMode.PracticeQuiz
+                ? duplicationMode === ActivityType.PracticeQuiz
                   ? ({
                       ...dataPracticeQuiz.getSinglePracticeQuiz,
                       name: `${dataPracticeQuiz.getSinglePracticeQuiz.name} (Copy)`,
@@ -261,11 +260,11 @@ function ElementCreation({
             selection={selection}
             resetSelection={resetSelection}
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
-            editMode={editMode === WizardMode.PracticeQuiz}
-            duplicationMode={duplicationMode === WizardMode.PracticeQuiz}
+            editMode={editMode === ActivityType.PracticeQuiz}
+            duplicationMode={duplicationMode === ActivityType.PracticeQuiz}
           />
         )}
-        {creationMode === WizardMode.GroupActivity && (
+        {creationMode === ActivityType.GroupActivity && (
           <GroupActivityWizard
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
@@ -275,8 +274,8 @@ function ElementCreation({
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }
-            editMode={editMode === WizardMode.GroupActivity}
-            duplicationMode={duplicationMode === WizardMode.GroupActivity}
+            editMode={editMode === ActivityType.GroupActivity}
+            duplicationMode={duplicationMode === ActivityType.GroupActivity}
           />
         )}
       </div>

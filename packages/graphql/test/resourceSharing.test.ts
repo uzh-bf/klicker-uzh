@@ -6,7 +6,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { CatalogObjectType } from '@klicker-uzh/types'
+import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -319,7 +319,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour).toBeDefined()
     expect(restrictedRequestUserThree).toBeDefined()
     expect(publicRequestUserThree?.objectType).toBe(
-      CatalogObjectType.ANSWER_COLLECTION
+      SharingObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
@@ -327,7 +327,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserThree?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour?.objectType).toBe(
-      CatalogObjectType.ANSWER_COLLECTION
+      SharingObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserFour?.requestId).toBe(request4.id)
     expect(publicRequestUserFour?.userId).toBe(userFour.id)
@@ -335,7 +335,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour?.userShortname).toBe(userFour.shortname)
 
     expect(restrictedRequestUserThree?.objectType).toBe(
-      CatalogObjectType.ANSWER_COLLECTION
+      SharingObjectType.ANSWER_COLLECTION
     )
     expect(restrictedRequestUserThree?.requestId).toBe(request3.id)
     expect(restrictedRequestUserThree?.userId).toBe(userThree.id)
@@ -356,7 +356,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour2).toBeDefined()
 
     expect(publicRequestUserThree2?.objectType).toBe(
-      CatalogObjectType.ANSWER_COLLECTION
+      SharingObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
     expect(publicRequestUserThree2?.userId).toBe(userThree.id)
@@ -364,7 +364,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserThree2?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour2?.objectType).toBe(
-      CatalogObjectType.ANSWER_COLLECTION
+      SharingObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserFour2?.requestId).toBe(request5.id)
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)
@@ -683,7 +683,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res2).toBeTruthy()
     expect(res2!.id).toEqual(AC1!.id)
-    expect(res2!.objectType).toEqual(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res2!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
     expect(res2!.isOwner).toBe(true)
@@ -729,7 +729,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res3).toBeTruthy()
     expect(res3!.id).toEqual(AC2!.id)
-    expect(res3!.objectType).toEqual(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res3!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
     expect(res3!.isOwner).toBe(false)
@@ -776,7 +776,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res4).toBeTruthy()
     expect(res4!.id).toEqual(AC2!.id)
-    expect(res4!.objectType).toEqual(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res4!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
     expect(res4!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res4!.ownerShortname).toEqual(userOne.shortname)
     expect(res4!.isOwner).toBe(false)

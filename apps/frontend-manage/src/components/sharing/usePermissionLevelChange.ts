@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   ChangePermissionLevelDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
@@ -8,6 +7,7 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to change the permission level for a certain object
@@ -17,7 +17,7 @@ function usePermissionLevelChange({
   catalogCollectionId,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   catalogCollectionId?: string
 }): {
   onPermissionLevelChange: ({
@@ -81,7 +81,7 @@ function usePermissionLevelChange({
             variables: { catalogCollectionId },
           },
           GetCatalogSharingRequestsDocument,
-          ...(objectType === CatalogObjectType.CatalogCollection
+          ...(objectType === SharingObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -89,7 +89,7 @@ function usePermissionLevelChange({
                 },
               ]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
+          ...(objectType === SharingObjectType.AnswerCollection
             ? [GetAnswerCollectionsInfoDocument]
             : []),
         ],

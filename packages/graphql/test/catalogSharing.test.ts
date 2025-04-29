@@ -5,7 +5,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { CatalogObjectType } from '@klicker-uzh/types'
+import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -1301,11 +1301,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalogObject1).toBeDefined()
     expect(catalogObject2).toBeDefined()
     expect(catalogObject1!.id).toBe(AC1!.id)
-    expect(catalogObject1!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
+    expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
     expect(catalogObject1!.assignmentId).toBe(assignment1.id)
     expect(catalogObject2!.uuid).toBe(activityId1)
     expect(catalogObject2!.objectType).toBe(
-      CatalogObjectType.LIVE_QUIZ_TEMPLATE
+      SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
     expect(catalogObject2!.assignmentId).toBe(assignment2.id)
 
@@ -1326,11 +1326,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalogObject3).toBeDefined()
     expect(catalogObject4).toBeDefined()
     expect(catalogObject3!.id).toBe(AC2!.id)
-    expect(catalogObject3!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
+    expect(catalogObject3!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
     expect(catalogObject3!.assignmentId).toBe(assignment3.id)
     expect(catalogObject4!.uuid).toBe(activityId2)
     expect(catalogObject4!.objectType).toBe(
-      CatalogObjectType.LIVE_QUIZ_TEMPLATE
+      SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
     expect(catalogObject4!.assignmentId).toBe(assignment4.id)
   })
@@ -1860,7 +1860,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour).toBeDefined()
     expect(restrictedRequestUserThree).toBeDefined()
     expect(publicRequestUserThree?.objectType).toBe(
-      CatalogObjectType.CATALOG_COLLECTION
+      SharingObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
@@ -1868,7 +1868,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserThree?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour?.objectType).toBe(
-      CatalogObjectType.CATALOG_COLLECTION
+      SharingObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserFour?.requestId).toBe(request4.id)
     expect(publicRequestUserFour?.userId).toBe(userFour.id)
@@ -1876,7 +1876,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour?.userShortname).toBe(userFour.shortname)
 
     expect(restrictedRequestUserThree?.objectType).toBe(
-      CatalogObjectType.CATALOG_COLLECTION
+      SharingObjectType.CATALOG_COLLECTION
     )
     expect(restrictedRequestUserThree?.requestId).toBe(request3.id)
     expect(restrictedRequestUserThree?.userId).toBe(userThree.id)
@@ -1897,7 +1897,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour2).toBeDefined()
 
     expect(publicRequestUserThree2?.objectType).toBe(
-      CatalogObjectType.CATALOG_COLLECTION
+      SharingObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
     expect(publicRequestUserThree2?.userId).toBe(userThree.id)
@@ -1905,7 +1905,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserThree2?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour2?.objectType).toBe(
-      CatalogObjectType.CATALOG_COLLECTION
+      SharingObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserFour2?.requestId).toBe(request5.id)
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)

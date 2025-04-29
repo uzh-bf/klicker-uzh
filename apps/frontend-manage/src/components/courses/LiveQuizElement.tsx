@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   DeleteLiveQuizDocument,
   GetSingleCourseDocument,
   LiveQuiz,
@@ -27,7 +28,6 @@ import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -199,7 +199,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                           pathname: '/',
                           query: {
                             elementId: quiz.id,
-                            editMode: WizardMode.LiveQuiz,
+                            editMode: ActivityType.LiveQuiz,
                           },
                         }),
                       data: { cy: `edit-live-quiz-${quiz.name}` },
@@ -207,7 +207,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                     getActivityDuplicationAction({
                       id: quiz.id,
                       text: t('manage.liveQuizzes.duplicateLiveQuiz'),
-                      wizardMode: WizardMode.LiveQuiz,
+                      wizardMode: ActivityType.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
@@ -254,7 +254,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                     getActivityDuplicationAction({
                       id: quiz.id,
                       text: t('manage.liveQuizzes.duplicateLiveQuiz'),
-                      wizardMode: WizardMode.LiveQuiz,
+                      wizardMode: ActivityType.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
@@ -287,7 +287,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                     getActivityDuplicationAction({
                       id: quiz.id,
                       text: t('manage.liveQuizzes.duplicateLiveQuiz'),
-                      wizardMode: WizardMode.LiveQuiz,
+                      wizardMode: ActivityType.LiveQuiz,
                       router: router,
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),

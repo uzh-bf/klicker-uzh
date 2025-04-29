@@ -37,7 +37,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
@@ -364,7 +363,7 @@ function LiveQuiz({
                       pathname: '/',
                       query: {
                         elementId: quiz.id,
-                        duplicationMode: WizardMode.LiveQuiz,
+                        duplicationMode: ActivityType.LiveQuiz,
                       },
                     })
                   }
@@ -385,7 +384,7 @@ function LiveQuiz({
                       pathname: '/',
                       query: {
                         elementId: quiz.id,
-                        editMode: WizardMode.LiveQuiz,
+                        editMode: ActivityType.LiveQuiz,
                       },
                     })
                   }

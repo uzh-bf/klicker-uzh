@@ -1,6 +1,6 @@
 mutation RequestCatalogObject(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: SharingObjectType!
   $catalogCollectionId: String
   $requestedPermissionLevel: PermissionLevel
 ) {
