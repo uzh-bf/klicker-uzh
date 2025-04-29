@@ -106,6 +106,20 @@ function Index() {
     }
   }, [router])
 
+  // once the activity wizard is opened, deselect all invalid questions
+  useEffect(() => {
+    setSelectedQuestions((selection) => {
+      if (!!creationMode) {
+        return Object.fromEntries(
+          Object.entries(selection).filter(
+            ([, question]) => question?.isManager ?? false
+          )
+        )
+      }
+      return selection
+    })
+  }, [creationMode])
+
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
       const dataQuestionsFlatTags = dataQuestions.userQuestions.map(
@@ -409,6 +423,7 @@ function Index() {
 
               <div className="h-full overflow-y-auto">
                 <ElementList
+                  activityWizardOpen={!!creationMode}
                   elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
                   triggerSuccessToast={() => setSuccessToast(true)}

@@ -9,6 +9,7 @@ import React from 'react'
 import Element from './Element'
 
 interface ElementListProps {
+  activityWizardOpen: boolean
   setSelectedQuestions: (id: number, data: ElementType) => void
   selectedQuestions: Record<number, ElementType>
   triggerSuccessToast: () => void
@@ -19,6 +20,7 @@ interface ElementListProps {
 }
 
 function ElementList({
+  activityWizardOpen,
   setSelectedQuestions,
   selectedQuestions,
   triggerSuccessToast,
@@ -53,6 +55,7 @@ function ElementList({
         <Element
           key={`question-list-element-${element.id}`}
           element={element}
+          disabled={!element.isManager && activityWizardOpen}
           checked={!!selectedQuestions[element.id]}
           tags={element.tags || []}
           handleTagClick={handleTagClick}

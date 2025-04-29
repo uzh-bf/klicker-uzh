@@ -49,6 +49,7 @@ export interface ElementDragDropTypes {
 interface ElementProps {
   checked: boolean
   element: ElementObject
+  disabled: boolean
   tags?: Tag[]
   handleTagClick: (tagName: string) => void
   onCheck: () => void
@@ -62,6 +63,7 @@ interface ElementProps {
 function Element({
   checked = false,
   element,
+  disabled,
   tags = [],
   handleTagClick,
   onCheck,
@@ -91,12 +93,14 @@ function Element({
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
+    canDrag: () => !disabled,
     type: element.type,
   })
 
   return (
     <div className="flex items-center" data-cy={`element-item-${element.name}`}>
       <Checkbox
+        disabled={disabled}
         checked={checked}
         onCheck={onCheck}
         className={{ root: 'mr-1.5' }}
@@ -105,19 +109,26 @@ function Element({
         <div
           className={twMerge(
             'flex w-full cursor-[grab] flex-col rounded-lg border border-solid px-3 py-2 hover:shadow-md md:flex-row',
-            collectedProps.isDragging && 'opacity-50'
+            collectedProps.isDragging && 'opacity-50',
+            disabled && 'cursor-not-allowed opacity-50 hover:shadow-none'
           )}
         >
           <div className="flex flex-1 flex-row">
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex flex-none flex-row items-center gap-2 text-lg">
                 <a
-                  className="hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold"
+                  className={twMerge(
+                    'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
+                    disabled && 'hover:cursor-not-allowed hover:text-black'
+                  )}
                   role="button"
                   tabIndex={0}
                   type="button"
-                  onClick={() => setIsModificationModalOpen(true)}
-                  onKeyDown={() => setIsModificationModalOpen(true)}
+                  onClick={() => {
+                    if (!disabled) {
+                      setIsModificationModalOpen(true)
+                    }
+                  }}
                   data-cy="question-title"
                 >
                   {element.name}
@@ -171,7 +182,7 @@ function Element({
           <div className="flex flex-row gap-1.5 md:flex-col">
             {element.isEditor ? (
               <Button
-                className={{ root: 'h-8 w-8 p-0' }}
+                disabled={disabled}
                 onClick={() => {
                   const value = localStorage.getItem(
                     `autosave-element-${element.id}`
@@ -183,6 +194,7 @@ function Element({
                     setIsModificationModalOpen(true)
                   }
                 }}
+                className={{ root: 'h-8 w-8 p-0' }}
                 data={{ cy: `edit-element-${element.name}` }}
               >
                 <Button.Icon withoutLabel icon={faPencil} />
@@ -190,8 +202,9 @@ function Element({
             ) : null}
 
             <Button
-              className={{ root: 'h-8 w-8 p-0' }}
+              disabled={disabled}
               onClick={() => setIsDuplicationModalOpen(true)}
+              className={{ root: 'h-8 w-8 p-0' }}
               data={{ cy: `duplicate-element-${element.name}` }}
             >
               <Button.Icon withoutLabel icon={faCopy} />
@@ -199,6 +212,7 @@ function Element({
 
             {element.isManager ? (
               <Dropdown
+                disabled={disabled}
                 items={[
                   {
                     label: (
