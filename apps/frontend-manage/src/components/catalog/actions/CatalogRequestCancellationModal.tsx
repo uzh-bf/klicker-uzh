@@ -1,5 +1,5 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -19,7 +19,7 @@ function CatalogRequestCancellationModal({
   open: boolean
   onSuccess: () => void
   onClose: () => void
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   objectName: string
   objectOwner?: string | null

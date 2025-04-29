@@ -1,6 +1,6 @@
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,7 +23,7 @@ function CatalogRequestModal({
   open: boolean
   onSuccess: () => void
   onClose: () => void
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   objectName: string
   objectOwner?: string | null

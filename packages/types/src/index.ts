@@ -15,7 +15,7 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum CatalogObjectType {
+export enum SharingObjectType {
   ANSWER_COLLECTION = 'ANSWER_COLLECTION',
   CATALOG_COLLECTION = 'CATALOG_COLLECTION',
   LIVE_QUIZ_TEMPLATE = 'LIVE_QUIZ_TEMPLATE',
@@ -341,7 +341,7 @@ export type AvatarSettings = {
 export type ObjectSharingRequest = {
   requestId: number
   objectName: string
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   userId: string
   userShortname: string
   userEmail: string
@@ -354,7 +354,7 @@ export type CatalogObject = {
   id?: number
   uuid?: string
   name: string
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   assignmentId: number
   templateId?: string
   access: ObjectAccess

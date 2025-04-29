@@ -1,4 +1,4 @@
-import { CatalogObjectType } from '@klicker-uzh/types'
+import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
@@ -719,7 +719,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
-      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
     ).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
@@ -766,7 +766,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
-      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
     ).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()

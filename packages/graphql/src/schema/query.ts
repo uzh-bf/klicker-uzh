@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType as ActivityTypeEnum,
-  CatalogObjectType as CatalogObjectTypeEnum,
+  SharingObjectType as SharingObjectTypeEnum,
 } from '@klicker-uzh/types'
 import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
@@ -74,11 +74,11 @@ import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
-  CatalogObjectType,
   CatalogSelectionObject,
   DerivedPermissionInfo,
   ObjectSharingRequest,
   PermissionInfo,
+  SharingObjectType,
   UserGroup,
 } from './sharing.js'
 import {
@@ -1338,10 +1338,10 @@ export const Query = builder.queryType({
         type: [PermissionInfo],
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
             // >= ADMIN permissions on catalog collection
             const validAccess = await checkAccess(
               [
@@ -1361,7 +1361,7 @@ export const Query = builder.queryType({
               ctx
             )
           } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
           ) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
@@ -1392,14 +1392,14 @@ export const Query = builder.queryType({
         type: [DerivedPermissionInfo],
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: CatalogObjectType, required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           // on certain top-level objects, no derived permissions can be created -> return an empty array
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
             return []
           } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
           ) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(

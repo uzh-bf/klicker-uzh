@@ -7,8 +7,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogObject,
-  CatalogObjectType,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -44,7 +44,7 @@ function useCatalogObjectActionsDropdown({
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
-      object.objectType !== CatalogObjectType.LiveQuizTemplate
+      object.objectType !== SharingObjectType.LiveQuizTemplate
     ) {
       items.push({
         id: 'import',
@@ -69,7 +69,7 @@ function useCatalogObjectActionsDropdown({
     if (
       !actionsDisabled &&
       !object.isRequested &&
-      object.objectType !== CatalogObjectType.LiveQuizTemplate
+      object.objectType !== SharingObjectType.LiveQuizTemplate
     ) {
       items.push({
         id: 'requestAccess',
@@ -88,7 +88,7 @@ function useCatalogObjectActionsDropdown({
     }
 
     // usage functionality for templates
-    if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+    if (object.objectType === SharingObjectType.LiveQuizTemplate) {
       items.push({
         id: 'useTemplate',
         label: (
@@ -127,7 +127,7 @@ function useCatalogObjectActionsDropdown({
     // TODO: remove the case for live quiz templates once the corresponding sharing functionality is available
     if (
       object.isManager &&
-      object.objectType !== CatalogObjectType.LiveQuizTemplate
+      object.objectType !== SharingObjectType.LiveQuizTemplate
     ) {
       items.push({
         id: 'share',

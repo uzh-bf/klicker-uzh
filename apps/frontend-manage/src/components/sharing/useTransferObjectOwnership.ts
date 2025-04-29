@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  SharingObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -15,7 +15,7 @@ function useTransferObjectOwnership({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -41,10 +41,10 @@ function useTransferObjectOwnership({
             query: GetObjectPermissionsDocument,
             variables: { objectId: String(objectId), objectType },
           },
-          ...(objectType === CatalogObjectType.CatalogCollection
+          ...(objectType === SharingObjectType.CatalogCollection
             ? [GetCatalogCollectionsListDocument]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
+          ...(objectType === SharingObjectType.AnswerCollection
             ? [
                 {
                   query: GetCatalogObjectsDocument,

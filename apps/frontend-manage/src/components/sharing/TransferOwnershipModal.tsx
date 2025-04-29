@@ -1,5 +1,5 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -20,7 +20,7 @@ function TransferOwnershipModal({
   open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectName: string
   catalogCollectionId?: string
 }) {

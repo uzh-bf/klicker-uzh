@@ -1,6 +1,6 @@
 query GetObjectPermissions(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: SharingObjectType!
 ) {
   getObjectPermissions(objectId: $objectId, objectType: $objectType) {
     ...PermissionInfoData

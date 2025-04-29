@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
   AddObjectToCatalogDocument,
-  CatalogObjectType,
   GetCatalogObjectsDocument,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -21,7 +21,7 @@ interface AddObjectToCatalogModalProps {
 }
 
 export interface CatalogObjectAdditionFormValues {
-  objectType?: CatalogObjectType
+  objectType?: SharingObjectType
   access: ObjectAccess
   objectId?: string
 }
@@ -163,7 +163,7 @@ function AddObjectToCatalogModal({
 
                 {values.objectType ? (
                   <SelectObjectForCatalog
-                    objectType={values.objectType as CatalogObjectType}
+                    objectType={values.objectType as SharingObjectType}
                     setFieldValue={setFieldValue}
                   />
                 ) : (

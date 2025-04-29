@@ -1,5 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -30,7 +30,7 @@ function ObjectSharingModal({
   open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectName: string
   onOwnershipTransfer: () => void
   catalogCollectionId?: string

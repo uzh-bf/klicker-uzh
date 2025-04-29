@@ -5,7 +5,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { CatalogObjectType } from '@klicker-uzh/types'
+import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -250,7 +250,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res2).toBeTruthy()
     expect(res2!.uuid).toEqual(activityId1)
-    expect(res2!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res2!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res2!.templateId).toEqual(templateId1)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
@@ -297,7 +297,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res3).toBeTruthy()
     expect(res3!.uuid).toEqual(activityId2)
-    expect(res3!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res3!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res3!.templateId).toEqual(templateId2)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
@@ -345,7 +345,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
     expect(res5).toBeTruthy()
     expect(res5!.uuid).toEqual(activityId2)
-    expect(res5!.objectType).toEqual(CatalogObjectType.LIVE_QUIZ_TEMPLATE)
+    expect(res5!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res5!.templateId).toEqual(templateId2)
     expect(res5!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res5!.ownerShortname).toEqual(userOne.shortname)

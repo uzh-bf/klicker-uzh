@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   RemoveAnswerCollectionDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useObjectRemoval({
@@ -10,7 +10,7 @@ function useObjectRemoval({
   objectId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   onError: () => void
 }): {
@@ -20,7 +20,7 @@ function useObjectRemoval({
   const [removeAnswerCollection, { loading: removingAnswerCollection }] =
     useMutation(RemoveAnswerCollectionDocument)
 
-  if (objectType === CatalogObjectType.AnswerCollection) {
+  if (objectType === SharingObjectType.AnswerCollection) {
     const onRemoveAnswerCollection = async () => {
       try {
         const res = await removeAnswerCollection({

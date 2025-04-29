@@ -12,8 +12,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogObject,
-  CatalogObjectType,
   ObjectAccess,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
@@ -45,10 +45,10 @@ function CatalogObjectItem({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
-    [CatalogObjectType.AnswerCollection]: faList,
-    [CatalogObjectType.CatalogCollection]: faFolder,
-    [CatalogObjectType.LiveQuizTemplate]: faFileLines,
+  const objectTypeIcons: Record<SharingObjectType, IconDefinition> = {
+    [SharingObjectType.AnswerCollection]: faList,
+    [SharingObjectType.CatalogCollection]: faFolder,
+    [SharingObjectType.LiveQuizTemplate]: faFileLines,
   }
   const actionsDisabled = object.isOwner || object.isShared
 
@@ -89,13 +89,13 @@ function CatalogObjectItem({
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object
-            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
               router.push({
                 pathname: '/quizzes',
                 query: { highlight: object.uuid },
               })
             } else if (
-              object.objectType === CatalogObjectType.AnswerCollection
+              object.objectType === SharingObjectType.AnswerCollection
             ) {
               router.push({
                 pathname: '/resources/answerCollections',
@@ -109,7 +109,7 @@ function CatalogObjectItem({
             // primary action for restricted objects with pending request: open request withdrawal modal
             setRequestCancellationModal(true)
           } else if (object.access === ObjectAccess.Public) {
-            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
             } else {
@@ -166,7 +166,7 @@ function CatalogObjectItem({
               <ObjectAccessSelection
                 compact
                 restrictedDisabled={
-                  object.objectType === CatalogObjectType.LiveQuizTemplate
+                  object.objectType === SharingObjectType.LiveQuizTemplate
                 }
                 value={object.access}
                 onChange={(access) => {
@@ -207,7 +207,7 @@ function CatalogObjectItem({
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
-          objectType={CatalogObjectType.AnswerCollection}
+          objectType={SharingObjectType.AnswerCollection}
           objectId={object.id ?? object.uuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}

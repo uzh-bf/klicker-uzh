@@ -1,6 +1,6 @@
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -22,7 +22,7 @@ function CatalogImportModal({
   open: boolean
   onSuccess: () => void
   onClose: () => void
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   objectId: string | number
   objectName: string
   objectOwner?: string | null

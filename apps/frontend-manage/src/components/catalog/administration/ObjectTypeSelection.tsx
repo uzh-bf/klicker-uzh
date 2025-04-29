@@ -1,4 +1,4 @@
-import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField, UserNotification } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -12,7 +12,7 @@ function ObjectTypeSelection({
   setFieldValue,
 }: {
   accessValue: ObjectAccess
-  objectTypeValue?: CatalogObjectType
+  objectTypeValue?: SharingObjectType
   setFieldValue: (
     field: string,
     value: any,
@@ -23,7 +23,7 @@ function ObjectTypeSelection({
 
   // for templates the default object access type is public
   useEffect(() => {
-    if (objectTypeValue === CatalogObjectType.LiveQuizTemplate) {
+    if (objectTypeValue === SharingObjectType.LiveQuizTemplate) {
       setFieldValue('access', ObjectAccess.Public)
     } else {
       setFieldValue('access', ObjectAccess.Restricted)
@@ -40,8 +40,8 @@ function ObjectTypeSelection({
             label={t('manage.catalog.objectType')}
             tooltip={t('manage.catalog.objectTypeTooltip')}
             placeholder={t('manage.catalog.selectObjectType')}
-            items={Object.values(CatalogObjectType)
-              .filter((type) => type !== CatalogObjectType.CatalogCollection)
+            items={Object.values(SharingObjectType)
+              .filter((type) => type !== SharingObjectType.CatalogCollection)
               .map((objectType) => ({
                 value: objectType,
                 label: t(`shared.types.${objectType}`),
@@ -55,7 +55,7 @@ function ObjectTypeSelection({
           <ObjectAccessSelection
             // TODO: remove this constraint, once templates also support sharing and restricted access
             restrictedDisabled={
-              objectTypeValue === CatalogObjectType.LiveQuizTemplate
+              objectTypeValue === SharingObjectType.LiveQuizTemplate
             }
             value={accessValue}
             onChange={(value) => setFieldValue('access', value)}
