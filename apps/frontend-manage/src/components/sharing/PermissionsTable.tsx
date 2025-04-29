@@ -67,13 +67,7 @@ function PermissionsTable({
           >
             <td className="px-4 py-3 text-sm text-gray-900">{action}</td>
             {permissions.map((hasPermission, index) => (
-              <td
-                key={index}
-                className={twMerge(
-                  'px-4 py-3 text-center',
-                  index === 0 ? 'text-left' : ''
-                )}
-              >
+              <td key={index} className="px-4 py-3 text-center">
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}
                   className={`text-lg ${

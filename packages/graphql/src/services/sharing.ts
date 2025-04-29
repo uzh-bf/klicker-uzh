@@ -1161,6 +1161,18 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         })
       }
 
+      // sharing request for element
+      else if (
+        typeof request.element !== 'undefined' &&
+        request.element !== null
+      ) {
+        acc.push({
+          ...sharedRequestAttributes,
+          objectName: request.element.name,
+          objectType: SharingObjectType.ELEMENT,
+        })
+      }
+
       // TODO: add more object types as soon as they can be requested / shared
 
       return acc
@@ -1262,6 +1274,55 @@ export async function requestCatalogObject(
     objectInfo = {
       existingPermission: collection.permissions.length > 0,
       existingRequest: collection.accessRequests.length > 0,
+    }
+  } else if (typeof elementId !== 'undefined') {
+    // fetch the element including potential pending permission requests
+    const element = await ctx.prisma.element.findUnique({
+      where: {
+        id: elementId,
+        // no permissions have been granted so far
+        permissions: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        // the user has not requested access already
+        accessRequests: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+      },
+      include: {
+        permissions: {
+          where: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        accessRequests: {
+          where: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+      },
+    })
+
+    if (!element) {
+      return false
+    }
+
+    // set the object information
+    objectInfo = {
+      existingPermission: element.permissions.length > 0,
+      existingRequest: element.accessRequests.length > 0,
     }
   }
   // TODO: ... add more object types once they are supported for sharing
