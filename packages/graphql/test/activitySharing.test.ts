@@ -625,20 +625,25 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
   // ! Sharing Operations for Live Quizzes (incl. Templates)
   // #region
   // TODO: add most important functions and functions specific to live quizzes / live quiz templates here
+  // TODO: make sure to cover the case where the live quiz is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Practice Quizzes (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to practice quizzes here
+  // TODO: make sure to cover the case where the practice quiz is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Microlearnings (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to microlearnings here
+  // TODO: make sure to cover the case where the microlearning is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
   // #endregion
 
   // ! Sharing Operations for Group Activities (reduced - due to shared logic with live quizzes)
   // #region
   // TODO: add most important functions and functions specific to group activities here
+  // TODO: make sure to cover the case where the group activity is assigned to a course and a user with permissions >= WRITE wants to access it, that the course is available (independent of actual access on course) (getActiveUserCourses)
+
   // #endregion
 })

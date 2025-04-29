@@ -1,12 +1,15 @@
 import {
+  Course,
   ElementOrderType,
   LeaderboardType,
+  PermissionLevel,
   PublicationStatus,
   TimelineEntryType,
   UserRole,
   type Participant,
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
+import { ActivityType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
@@ -17,6 +20,7 @@ import { type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
+import { checkAccess } from './sharing.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
@@ -840,7 +844,13 @@ export async function getUserCourses(ctx: ContextWithUser) {
   return filteredCourses
 }
 
-export async function getActiveUserCourses(ctx: ContextWithUser) {
+export async function getActiveUserCourses(
+  {
+    activityId,
+    activityType,
+  }: { activityId?: string | null; activityType?: ActivityType | null },
+  ctx: ContextWithUser
+) {
   const userCourses = await ctx.prisma.user.findUnique({
     where: {
       id: ctx.user.sub,
@@ -859,8 +869,102 @@ export async function getActiveUserCourses(ctx: ContextWithUser) {
       },
     },
   })
+  const courses = userCourses?.courses ?? []
 
-  return userCourses?.courses ?? []
+  if (
+    activityId &&
+    activityType !== null &&
+    typeof activityType !== 'undefined'
+  ) {
+    // verify that the user has sufficient access to the activity (at least WRITE permissions)
+    const validAccess = checkAccess(
+      [
+        ...(activityType === ActivityType.LIVE_QUIZ
+          ? [
+              {
+                liveQuizId: activityId,
+                minimumPermissionLevel: PermissionLevel.WRITE,
+              },
+            ]
+          : []),
+        ...(activityType === ActivityType.PRACTICE_QUIZ
+          ? [
+              {
+                practiceQuizId: activityId,
+                minimumPermissionLevel: PermissionLevel.WRITE,
+              },
+            ]
+          : []),
+        ...(activityType === ActivityType.MICRO_LEARNING
+          ? [
+              {
+                microLearningId: activityId,
+                minimumPermissionLevel: PermissionLevel.WRITE,
+              },
+            ]
+          : []),
+        ...(activityType === ActivityType.GROUP_ACTIVITY
+          ? [
+              {
+                groupActivityId: activityId,
+                minimumPermissionLevel: PermissionLevel.WRITE,
+              },
+            ]
+          : []),
+      ],
+      ctx
+    )
+
+    if (!validAccess) {
+      return courses
+    }
+
+    // fetch the course link to the corresponding acitivity
+    let activityCourse: Course | null = null
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+        where: { id: activityId },
+        include: { course: true },
+      })
+
+      activityCourse = liveQuiz!.course
+    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+      const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+        where: { id: activityId },
+        include: { course: true },
+      })
+
+      activityCourse = practiceQuiz!.course
+    } else if (activityType === ActivityType.MICRO_LEARNING) {
+      const microLearning = await ctx.prisma.microLearning.findUnique({
+        where: { id: activityId },
+        include: { course: true },
+      })
+
+      activityCourse = microLearning!.course
+    } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+      const groupActivity = await ctx.prisma.groupActivity.findUnique({
+        where: { id: activityId },
+        include: { course: true },
+      })
+
+      activityCourse = groupActivity!.course
+    }
+
+    // deduplicate the course linked to the activity with the other user courses and sort it accordingly
+    if (activityCourse) {
+      const sortedCourses = [
+        ...(activityCourse ? [activityCourse] : []),
+        ...courses.filter((course) => course.id !== activityCourse.id),
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+      return sortedCourses
+    } else {
+      return courses
+    }
+  }
+
+  return courses
 }
 
 export async function getCourseSummary(

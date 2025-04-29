@@ -1,12 +1,12 @@
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { NextRouter } from 'next/router'
-import { WizardMode } from '../../activities/ElementCreation'
 
 interface getActivityDuplicationActionProps {
   id: string
   text: string
-  wizardMode: WizardMode
+  wizardMode: ActivityType
   router: NextRouter
   data: { text?: string; cy?: string }
 }

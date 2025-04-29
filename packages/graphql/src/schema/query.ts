@@ -256,8 +256,12 @@ export const Query = builder.queryType({
       getActiveUserCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
-        resolve: async (_, __, ctx) => {
-          return await CourseService.getActiveUserCourses(ctx)
+        args: {
+          activityId: t.arg.string({ required: false }),
+          activityType: t.arg({ type: ActivityType, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getActiveUserCourses(args, ctx)
         },
       }),
 

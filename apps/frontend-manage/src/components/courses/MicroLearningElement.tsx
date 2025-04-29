@@ -18,6 +18,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   MicroLearning,
   PublicationStatus,
   UnpublishMicroLearningDocument,
@@ -29,7 +30,6 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -217,7 +217,7 @@ function MicroLearningElement({
                         pathname: '/',
                         query: {
                           elementId: microLearning.id,
-                          editMode: WizardMode.Microlearning,
+                          editMode: ActivityType.MicroLearning,
                         },
                       }),
                     data: { cy: `edit-microlearning-${microLearning.name}` },
@@ -225,7 +225,7 @@ function MicroLearningElement({
                   getActivityDuplicationAction({
                     id: microLearning.id,
                     text: t('manage.course.duplicateMicroLearning'),
-                    wizardMode: WizardMode.Microlearning,
+                    wizardMode: ActivityType.MicroLearning,
                     router: router,
                     data: {
                       cy: `duplicate-microlearning-${microLearning.name}`,
@@ -272,7 +272,7 @@ function MicroLearningElement({
                   getActivityDuplicationAction({
                     id: microLearning.id,
                     text: t('manage.course.duplicateMicroLearning'),
-                    wizardMode: WizardMode.Microlearning,
+                    wizardMode: ActivityType.MicroLearning,
                     router: router,
                     data: {
                       cy: `duplicate-microlearning-${microLearning.name}`,
@@ -340,7 +340,7 @@ function MicroLearningElement({
                   getActivityDuplicationAction({
                     id: microLearning.id,
                     text: t('manage.course.duplicateMicroLearning'),
-                    wizardMode: WizardMode.Microlearning,
+                    wizardMode: ActivityType.MicroLearning,
                     router: router,
                     data: {
                       cy: `duplicate-microlearning-${microLearning.name}`,
@@ -417,7 +417,7 @@ function MicroLearningElement({
                   getActivityDuplicationAction({
                     id: microLearning.id,
                     text: t('manage.course.duplicateMicroLearning'),
-                    wizardMode: WizardMode.Microlearning,
+                    wizardMode: ActivityType.MicroLearning,
                     router: router,
                     data: {
                       cy: `duplicate-microlearning-${microLearning.name}`,
