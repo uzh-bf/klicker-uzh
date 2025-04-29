@@ -1161,6 +1161,18 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         })
       }
 
+      // sharing request for element
+      else if (
+        typeof request.element !== 'undefined' &&
+        request.element !== null
+      ) {
+        acc.push({
+          ...sharedRequestAttributes,
+          objectName: request.element.name,
+          objectType: SharingObjectType.ELEMENT,
+        })
+      }
+
       // TODO: add more object types as soon as they can be requested / shared
 
       return acc
@@ -1262,6 +1274,55 @@ export async function requestCatalogObject(
     objectInfo = {
       existingPermission: collection.permissions.length > 0,
       existingRequest: collection.accessRequests.length > 0,
+    }
+  } else if (typeof elementId !== 'undefined') {
+    // fetch the element including potential pending permission requests
+    const element = await ctx.prisma.element.findUnique({
+      where: {
+        id: elementId,
+        // no permissions have been granted so far
+        permissions: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        // the user has not requested access already
+        accessRequests: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+      },
+      include: {
+        permissions: {
+          where: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        accessRequests: {
+          where: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+      },
+    })
+
+    if (!element) {
+      return false
+    }
+
+    // set the object information
+    objectInfo = {
+      existingPermission: element.permissions.length > 0,
+      existingRequest: element.accessRequests.length > 0,
     }
   }
   // TODO: ... add more object types once they are supported for sharing
@@ -2700,6 +2761,66 @@ export async function getAnswerCollectionPermissions(
     })
 }
 
+export async function getElementPermissions(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  return element.directPermissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
+      permissionLevel: permission.permissionLevel,
+      isOwn: permission.user?.id === ctx.user.sub,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
+function mapDerivedPermissions({
+  permissions,
+  userId,
+}: {
+  permissions: (DB.DerivedPermission & {
+    user: Pick<DB.User, 'shortname' | 'email'>
+  })[]
+  userId: string
+}) {
+  return permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      permissionLevel: permission.permissionLevel,
+      userId: permission.userId,
+      username: permission.user.shortname,
+      userEmail: permission.user.email,
+      isOwn: permission.userId === userId,
+    }))
+    .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
+}
+
 export async function getDerivedAnswerCollectionPermissions(
   { id }: { id: number },
   ctx: ContextWithUser
@@ -2722,16 +2843,38 @@ export async function getDerivedAnswerCollectionPermissions(
   }
 
   // map the derived permissions to the expected format
-  return answerCollection.permissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      permissionLevel: permission.permissionLevel,
-      userId: permission.userId,
-      username: permission.user.shortname,
-      userEmail: permission.user.email,
-      isOwn: permission.userId === ctx.user.sub,
-    }))
-    .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
+  return mapDerivedPermissions({
+    permissions: answerCollection.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedElementPermissions(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the elements alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: element.permissions,
+    userId: ctx.user.sub,
+  })
 }
 
 export async function transferAnswerCollectionOwnership(
@@ -2866,6 +3009,122 @@ export async function transferAnswerCollectionOwnership(
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCollection.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferElementOwnership(
+  { id, shortnameOrEmail }: { id: number; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { answerCollectionId: id } } },
+  })
+
+  // find the element
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !element) {
+    return null
+  }
+
+  const updatedElement = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the element and grant admin permissions to the current user
+    const updated = await prisma.element.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              elementId_userId: {
+                elementId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the collection, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          elementId_userId: {
+            elementId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.ELEMENT,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.ELEMENT} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the answer collection for both users
+    await recomputeDerivedPermissions(
+      { elementId: id, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: id, userId: ctx.user.sub },
+      prisma
+    )
+
+    // create access request instances for the new owner
+    await createAccessRequestInstancesNewAdmin(
+      {
+        newAdminId: newOwner.id,
+        existingAdminOwnerId: ctx.user.sub,
+        elementId: id,
+      },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedElement.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,
@@ -3279,6 +3538,128 @@ export async function importAnswerCollection(
 
   return true
 }
+
+export async function importElement(
+  {
+    elementId,
+    catalogCollectionId,
+  }: { elementId: number; catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  // verify that the user has access to the catalog collection the element is contained in
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable(
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return false
+  }
+
+  // get catalog assignment of this element, verify public access
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      elementId_catalogCollectionId: {
+        elementId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      element: {
+        include: {
+          answerCollectionItems: true,
+        },
+      },
+    },
+  })
+
+  // make sure that the element is assigned to the specified catalog collection and that it is public (import allowed)
+  if (!assignment || assignment.access !== DB.ObjectAccess.PUBLIC) {
+    return false
+  }
+
+  // make sure that the element exists and that the requesting user is not the owner
+  const element = assignment.element
+  if (!element || element.ownerId === ctx.user.sub) {
+    return false
+  }
+
+  // count number of times the element has been imported before
+  const importCount = await ctx.prisma.element.count({
+    where: {
+      originalId: String(element.id),
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    // create new element with the content of the original one
+    const newElement = await prisma.element.create({
+      data: {
+        originalId: String(element.id),
+        name:
+          importCount > 0 ? `${element.name} (${importCount})` : element.name,
+        content: element.content,
+        explanation: element.explanation,
+        basePoints: element.basePoints,
+        pointsMultiplier: element.pointsMultiplier,
+        type: element.type,
+        options: element.options,
+        answerCollection:
+          element.answerCollectionId !== null
+            ? {
+                connect: {
+                  id: element.answerCollectionId,
+                },
+              }
+            : undefined,
+        answerCollectionItems: {
+          connect: element.answerCollectionItems.map((item) => ({
+            id: item.id,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+    })
+
+    // trigger recomputation of derived permissions for the object
+    await recomputeDerivedPermissions(
+      { elementId: newElement.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    // if an answer collection is linked to the element, recompute the corresponding derived permissions
+    if (newElement.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newElement.answerCollectionId,
+          userId: ctx.user.sub,
+        },
+        prisma
+      )
+    }
+
+    return newElement
+  })
+
+  // invalidate cache for the existing element
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: element.id,
+  })
+
+  return true
+}
 // #endregion
 
 // ! Catalog Operations
@@ -3369,6 +3750,17 @@ export async function getCatalogObjects(
               accessRequests: { where: { userId: ctx.user.sub } },
             },
           },
+          element: {
+            where: { isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId: ctx.user.sub } },
+              accessRequests: { where: { userId: ctx.user.sub } },
+            },
+          },
           liveQuiz: {
             where: { isDeleted: false },
             select: {
@@ -3405,6 +3797,26 @@ export async function getCatalogObjects(
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: answerCollection.accessRequests.length > 0,
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
+        }
+      } else if (assignment.element) {
+        const element = assignment.element
+        const permission = element.permissions[0]
+
+        return {
+          id: element.id,
+          name: element.name,
+          assignmentId: assignment.id,
+          objectType: SharingObjectType.ELEMENT,
+          access: assignment.access,
+          ownerShortname: element.owner?.shortname,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isManager:
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isRequested: element.accessRequests.length > 0,
           isShared:
             typeof permission !== 'undefined' &&
             permission.permissionLevel !== DB.PermissionLevel.OWNER,
@@ -3545,6 +3957,29 @@ export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
   }))
 }
 
+export async function getCatalogElements(ctx: ContextWithUser) {
+  // fetch all elements, where the user is the owner or has been granted admin access
+  const elements = await ctx.prisma.element.findMany({
+    where: {
+      isDeleted: false, // soft deleted answer collections cannot be added to the catalog
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return elements.map((element) => ({
+    id: String(element.id),
+    name: element.name,
+  }))
+}
+
 export async function addObjectToCatalog(
   // one of the object ids should be defined for the object that is to be added to the catalog
   // otherwise, the function will return null
@@ -3665,6 +4100,45 @@ export async function addObjectToCatalog(
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
       templateId: liveQuiz.templateInfo?.id,
+      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
+    }
+  } else if (typeof elementId !== 'undefined') {
+    const element = await ctx.prisma.element.findUnique({
+      where: {
+        id: elementId,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId: ctx.user.sub } },
+      },
+    })
+
+    if (!element) {
+      return null
+    }
+
+    // get (unique) derived permission of this user on the element
+    const permission = element.permissions[0]
+    if (!permission) {
+      return null
+    }
+
+    // set object info
+    objectInfo = {
+      objectId: element.id,
+      objectUuid: undefined,
+      objectType: SharingObjectType.ELEMENT,
+      objectName: element.name,
+      ownerShortname: element.owner?.shortname,
+      ownerId: element.ownerId,
       isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
   }

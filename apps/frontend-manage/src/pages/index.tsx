@@ -31,12 +31,12 @@ import { buildIndex, processItems } from 'src/lib/utils/filters'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
+import ElementList from '../components/questions/ElementList'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
 import ElementSuccessToast from '../components/questions/manipulation/ElementSuccessToast'
 import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
-import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
@@ -105,6 +105,20 @@ function Index() {
       setCreationMode(router.query.conversionMode as ActivityType)
     }
   }, [router])
+
+  // once the activity wizard is opened, deselect all invalid questions
+  useEffect(() => {
+    setSelectedQuestions((selection) => {
+      if (!!creationMode) {
+        return Object.fromEntries(
+          Object.entries(selection).filter(
+            ([, question]) => question?.isManager ?? false
+          )
+        )
+      }
+      return selection
+    })
+  }, [creationMode])
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
@@ -408,8 +422,9 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                <QuestionList
-                  questions={processedQuestions}
+                <ElementList
+                  activityWizardOpen={!!creationMode}
+                  elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
                   triggerSuccessToast={() => setSuccessToast(true)}
                   setSelectedQuestions={(id: number, data: Element) => {

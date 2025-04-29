@@ -39,12 +39,14 @@ function useCatalogObjectActionsDropdown({
   return useMemo(() => {
     const items = []
 
-    // import functionality for public objects that aren't owned or shared
-    // TODO: enable importing live quiz templates once the corresponding functionality is available
+    // import functionality is only available for answer collections and elements (for now) - not for activities / courses
+    // when importing elements, the content of the element is imported, potentially linked answer collections are shared
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
-      object.objectType !== SharingObjectType.LiveQuizTemplate
+      object.objectType !== SharingObjectType.CatalogCollection &&
+      (object.objectType === SharingObjectType.AnswerCollection ||
+        object.objectType === SharingObjectType.Element)
     ) {
       items.push({
         id: 'import',

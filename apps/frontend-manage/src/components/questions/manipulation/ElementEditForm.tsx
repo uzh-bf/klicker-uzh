@@ -114,7 +114,7 @@ function ElementEditForm({
           <Modal
             asPortal
             fullScreen
-            title={t(`manage.questionForms.${mode}Title`)}
+            title={t(`manage.elements.${mode}Title`)}
             className={{
               content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
               title: 'text-xl',

@@ -91,7 +91,7 @@ function StudentElementPreview({
                     content={choice.feedback}
                   />
                 ) : (
-                  t('manage.questionForms.noFeedbackDefined')
+                  t('manage.elements.noFeedbackDefined')
                 )}
               </div>
             ))}

@@ -143,8 +143,7 @@ describe('Test functionalities of frontend-control application', function () {
     cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="delete-question-${this.data.questionTitle}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.deleteElement({ elementName: this.data.questionTitle })
     cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
       'not.exist'
     )

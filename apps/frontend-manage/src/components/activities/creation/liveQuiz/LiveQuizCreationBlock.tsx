@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
-import { QuestionDragDropTypes } from '../../../questions/Question'
+import { ElementDragDropTypes } from '../../../questions/Element'
 import DropElementsStack from '../DropElementsStack'
 import PasteSelectionButton from '../PasteSelectionButton'
 import WizardElementList from '../WizardElementList'
@@ -54,7 +54,7 @@ function LiveQuizCreationBlock({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
-      drop: (item: QuestionDragDropTypes) => {
+      drop: (item: ElementDragDropTypes) => {
         replace(blockIx, {
           ...block,
           elements: [

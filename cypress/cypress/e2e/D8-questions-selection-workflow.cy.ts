@@ -72,7 +72,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
     // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
+      messages.manage.elements.selectCollection
     )
     cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
@@ -132,7 +132,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Verify that the correct content has been saved', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SE.title
@@ -157,7 +157,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Verify that creation was successful and that preview is visible and correct', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
     cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
       this.data.SE.title
     )
@@ -205,7 +205,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Add a sample solution to the created selection question', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SE.title
@@ -228,7 +228,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Verify that the sample solution has been stored correctly for the modified selection question', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SE.title
@@ -276,7 +276,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .click()
       .clear()
@@ -311,7 +311,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Verify that the edited state of the selection question persists', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SE.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SE.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SE.titleEdited

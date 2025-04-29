@@ -78,7 +78,7 @@ function GrantedPermissionsTable({
             <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.userGroup')}
             </th>
-            <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
+            <th className="w-40 px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.permissionLevel')}
             </th>
             <th className="w-10" />

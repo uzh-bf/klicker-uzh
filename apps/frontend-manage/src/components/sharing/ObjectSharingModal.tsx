@@ -10,6 +10,7 @@ import ObjectAccessRemovalSuccessToast from './ObjectAccessRemovalSuccessToast'
 import ObjectSharingErrorToast from './ObjectSharingErrorToast'
 import ObjectSharingSuccessToast from './ObjectSharingSuccessToast'
 import PermissionsTable from './PermissionsTable'
+import PropagatedPermissionsTable from './PropagatedPermissionsTable'
 import useDerivedObjectPermissions from './useDerivedObjectPermissions'
 import useObjectPermissions from './useObjectPermissions'
 import useObjectSharing from './useObjectSharing'
@@ -106,6 +107,8 @@ function ObjectSharingModal({
           <PermissionsTable objectType={objectType} />
         </div>
 
+        <PropagatedPermissionsTable objectType={objectType} />
+
         <div className="mt-8">
           <GrantedPermissionsTable
             type={objectType}
@@ -117,7 +120,7 @@ function ObjectSharingModal({
               permissionId,
               newPermissionLevel,
             }) => {
-              const success = await onPermissionLevelChange({
+              await onPermissionLevelChange({
                 permissionId,
                 newPermissionLevel,
               })

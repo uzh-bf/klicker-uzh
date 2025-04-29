@@ -64,6 +64,7 @@ import {
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
+import { PermissionLevel } from './sharing.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -697,6 +698,16 @@ const sharedElementProps = (t: any) => ({
   createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
   updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
+  permissionLevel: t.expose('permissionLevel', {
+    type: PermissionLevel,
+    nullable: true,
+  }),
+  isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+  isManager: t.exposeBoolean('isManager', { nullable: true }),
+  isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+  isImported: t.exposeBoolean('isImported', { nullable: true }),
+  isShared: t.exposeBoolean('isShared', { nullable: true }),
+
   tags: t.expose('tags', {
     type: [TagRef],
     nullable: true,
@@ -705,6 +716,12 @@ const sharedElementProps = (t: any) => ({
 
 interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
+  permissionLevel?: DB.PermissionLevel
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
+  isImported?: boolean // imported flag for UI icon
+  isShared?: boolean // flag to signal whether the object is owned or shared
 }
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType

@@ -16,10 +16,10 @@ function CaseStudyCollectionChangeModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={t('manage.questionForms.changeOfAnswerCollection')}
+      title={t('manage.elements.changeOfAnswerCollection')}
     >
       <div className="flex flex-col gap-4">
-        <div>{t('manage.questionForms.confirmCollectionChange')}</div>
+        <div>{t('manage.elements.confirmCollectionChange')}</div>
         <div className="flex justify-between gap-2">
           <Button onClick={onClose} data={{ cy: 'cancel-change-collection' }}>
             <Button.Label>{t('shared.generic.cancel')}</Button.Label>

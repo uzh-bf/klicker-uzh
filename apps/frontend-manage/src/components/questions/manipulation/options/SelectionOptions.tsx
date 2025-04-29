@@ -73,7 +73,7 @@ function SelectionOptions({
   if (collections.length === 0) {
     return (
       <UserNotification type="warning" className={{ root: 'text-base' }}>
-        {t.rich('manage.questionForms.SEAnswerCollectionRequired', {
+        {t.rich('manage.elements.SEAnswerCollectionRequired', {
           link: (text) => (
             <Link
               href="/resources"
@@ -94,10 +94,10 @@ function SelectionOptions({
           <FormikSelectField
             required
             name="options.answerCollection"
-            label={t('manage.questionForms.answerCollection')}
+            label={t('manage.elements.answerCollection')}
             labelType="small"
-            tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
-            placeholder={t('manage.questionForms.selectCollection')}
+            tooltip={t('manage.elements.SELECTIONOptionsTooltip')}
+            placeholder={t('manage.elements.selectCollection')}
             items={collections.map((collection) => ({
               label: `${collection.name} (${collection.entries?.length ?? 0} ${t('shared.generic.entries')})`,
               value: String(collection.id),
@@ -128,7 +128,7 @@ function SelectionOptions({
           required
           min={1}
           name="options.numberOfInputs"
-          label={t('manage.questionForms.numberOfInputs')}
+          label={t('manage.elements.numberOfInputs')}
           labelType="small"
           data={{ cy: 'configure-number-of-inputs' }}
           className={{
@@ -140,8 +140,8 @@ function SelectionOptions({
         <div>
           <FormLabel
             required
-            label={t('manage.questionForms.correctAnswerOptions')}
-            tooltip={t('manage.questionForms.correctAnswerOptionsTooltip')}
+            label={t('manage.elements.correctAnswerOptions')}
+            tooltip={t('manage.elements.correctAnswerOptionsTooltip')}
             labelType="small"
           />
           <div data-cy="choose-correct-answer-options">
@@ -157,9 +157,9 @@ function SelectionOptions({
               onChange={(newValue) =>
                 helpers.setValue(newValue.map((tag) => tag.value))
               }
-              placeholder={t('manage.questionForms.selectAnswerOptions')}
+              placeholder={t('manage.elements.selectAnswerOptions')}
               noOptionsMessage={() =>
-                t('manage.questionForms.noMatchingOptionFound')
+                t('manage.elements.noMatchingOptionFound')
               }
             />
           </div>

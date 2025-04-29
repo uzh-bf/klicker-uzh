@@ -162,12 +162,12 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
       messages.shared.READY.statusLabel
     )
-    cy.get(`[data-cy="edit-question-${this.data.KP.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.KP.title}"]`).click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
 
   it('Check that values of KPRIM question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.KP.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.KP.title}"]`).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.KPRIM.typeLabel)
@@ -198,7 +198,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
 
   it('Edit a KPRIM question and add a sample solution', function () {
     // modify the question and test removing answer options and the corresponding validation
-    cy.get(`[data-cy="edit-question-${this.data.KP.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.KP.title}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -250,7 +250,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
   })
 
   it('Check that edited KPRIM question is stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.KP.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.KP.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.KP.titleEdited
@@ -268,7 +268,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
   })
 
   it('Edit the KPRIM question again and add answer feedbacks', function () {
-    cy.get(`[data-cy="edit-question-${this.data.KP.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.KP.titleEdited}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // enable answer feedbacks and add valid ones for all options

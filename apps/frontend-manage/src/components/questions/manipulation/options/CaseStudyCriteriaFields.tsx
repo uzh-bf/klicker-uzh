@@ -28,7 +28,7 @@ function CaseStudyCriteriaFields() {
     <div>
       <H3>{t('shared.generic.criteria')}</H3>
       <div className="mb-2">
-        {t('manage.questionForms.caseStudyCriteriaDescription')}
+        {t('manage.elements.caseStudyCriteriaDescription')}
       </div>
       <div className="flex flex-col gap-3">
         <FieldArray name="options.criteria">
@@ -53,8 +53,8 @@ function CaseStudyCriteriaFields() {
                       </span>
 
                       {criterion.mode === 'range'
-                        ? t('manage.questionForms.caseStudyRangeCriterion')
-                        : t('manage.questionForms.caseStudyStepCriterion')}
+                        ? t('manage.elements.caseStudyRangeCriterion')
+                        : t('manage.elements.caseStudyStepCriterion')}
                     </div>
                     <Button
                       destructive
@@ -108,9 +108,7 @@ function CaseStudyCriteriaFields() {
                     hideError
                     name={`options.criteria.${index}.name`}
                     label={t('shared.generic.name')}
-                    tooltip={t(
-                      'manage.questionForms.caseStudyCriteriaNameTooltip'
-                    )}
+                    tooltip={t('manage.elements.caseStudyCriteriaNameTooltip')}
                     className={{
                       root: 'mb-2 w-full',
                       tooltip: 'max-w-[30rem]',
@@ -128,7 +126,7 @@ function CaseStudyCriteriaFields() {
                         name={`options.criteria.${index}.min`}
                         label={t('shared.generic.minimumShort')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaMinTooltip'
+                          'manage.elements.caseStudyCriteriaMinTooltip'
                         )}
                         className={{
                           root: 'w-full',
@@ -142,7 +140,7 @@ function CaseStudyCriteriaFields() {
                         name={`options.criteria.${index}.max`}
                         label={t('shared.generic.maximumShort')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaMaxTooltip'
+                          'manage.elements.caseStudyCriteriaMaxTooltip'
                         )}
                         className={{
                           root: 'w-full',
@@ -156,7 +154,7 @@ function CaseStudyCriteriaFields() {
                         name={`options.criteria.${index}.step`}
                         label={t('shared.generic.step')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaStepTooltip'
+                          'manage.elements.caseStudyCriteriaStepTooltip'
                         )}
                         className={{
                           root: 'w-full',
@@ -169,7 +167,7 @@ function CaseStudyCriteriaFields() {
                         name={`options.criteria.${index}.unit`}
                         label={t('shared.generic.unit')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaUnitTooltip'
+                          'manage.elements.caseStudyCriteriaUnitTooltip'
                         )}
                         className={{
                           root: 'w-full',
@@ -190,7 +188,7 @@ function CaseStudyCriteriaFields() {
                         label={t('shared.generic.lowerEnd')}
                         placeholder={t('shared.generic.textInput')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaMinLabelTooltip'
+                          'manage.elements.caseStudyCriteriaMinLabelTooltip'
                         )}
                         maxLength={100}
                         className={{
@@ -205,7 +203,7 @@ function CaseStudyCriteriaFields() {
                         label={t('shared.generic.midValue')}
                         placeholder={t('shared.generic.textInput')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaMidLabelTooltip'
+                          'manage.elements.caseStudyCriteriaMidLabelTooltip'
                         )}
                         maxLength={100}
                         className={{
@@ -221,7 +219,7 @@ function CaseStudyCriteriaFields() {
                         label={t('shared.generic.upperEnd')}
                         placeholder={t('shared.generic.textInput')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaMaxLabelTooltip'
+                          'manage.elements.caseStudyCriteriaMaxLabelTooltip'
                         )}
                         maxLength={100}
                         className={{
@@ -243,7 +241,7 @@ function CaseStudyCriteriaFields() {
                         }
                         label={t('shared.generic.steps')}
                         tooltip={t(
-                          'manage.questionForms.caseStudyCriteriaStepsTooltip'
+                          'manage.elements.caseStudyCriteriaStepsTooltip'
                         )}
                         className={{
                           field: 'w-full',
@@ -291,7 +289,7 @@ function CaseStudyCriteriaFields() {
                 >
                   <Button.Icon icon={faPlus} />
                   <Button.Label>
-                    {t('manage.questionForms.addRangeCriterion')}
+                    {t('manage.elements.addRangeCriterion')}
                   </Button.Label>
                 </Button>
                 <Button
@@ -315,7 +313,7 @@ function CaseStudyCriteriaFields() {
                 >
                   <Button.Icon icon={faPlus} />
                   <Button.Label>
-                    {t('manage.questionForms.addStepsCriterion')}
+                    {t('manage.elements.addStepsCriterion')}
                   </Button.Label>
                 </Button>
               </div>

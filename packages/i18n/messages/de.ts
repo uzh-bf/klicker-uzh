@@ -316,6 +316,7 @@ export default {
       results: 'Resultate',
       never: 'Nie',
       actions: 'Aktionen',
+      object: 'Objekt',
       read: 'Lesen',
       write: 'Schreiben',
       admin: 'Admin',
@@ -337,6 +338,8 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
+      ELEMENT: 'Element',
+      COURSE: 'Kurs',
       SC: 'Single Choice Frage',
       MC: 'Multiple Choice Frage',
       KPRIM: 'Kprim Frage',
@@ -1079,7 +1082,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaktivität erstellen',
-      createQuestion: 'Frage Erstellen',
+      createQuestion: 'Element Erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
@@ -1107,10 +1110,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
     },
-    questionForms: {
-      CREATETitle: 'Frage erstellen',
-      EDITTitle: 'Frage bearbeiten',
-      DUPLICATETitle: 'Frage duplizieren',
+    elements: {
+      CREATETitle: 'Element erstellen',
+      EDITTitle: 'Element bearbeiten',
+      DUPLICATETitle: 'Element duplizieren',
+      deleteElement: 'Element löschen',
+      shareElement: 'Element teilen',
+      viewElement: 'Element anzeigen',
+      modifyElement: 'Element bearbeiten',
+      useElementInActivities: 'Element in Aktivitäten verwenden',
       elementType: 'Elementtyp',
       selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
@@ -2515,6 +2523,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTIONtitle: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeANSWER_COLLECTIONtitle: 'Antwort-Sammlung aus Katalog entfernen',
+      removeELEMENT: 'Element entfernen',
+      removeELEMENTtitle: 'Element aus Katalog entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeObjectDescription:
@@ -2561,6 +2571,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
+      requestSuccessInfoELEMENT:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
       requestCatalogObjectSuccess:
         'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
       requestCatalogObjectFailed:
@@ -2631,12 +2643,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
       shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
+      shareELEMENT: 'Element teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingLIVE_QUIZ_TEMPLATE:
         'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
+      infoSharingELEMENT:
+        'Diese Ansicht erlaubt es Ihnen, das Element "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Element bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      propagatedPermissions: 'Abgeleitete Berechtigungen',
+      propagatedPermissionsANSWER_COLLECTION: '',
+      propagatedPermissionsCATALOG_COLLECTION: '',
+      propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
+      propagatedPermissionsELEMENT:
+        'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2646,12 +2667,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
+      removeELEMENT: 'Element entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalANSWER_COLLECTION:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalLIVE_QUIZ_TEMPLATE:
         'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalELEMENT:
+        'Sind Sie sicher, dass Sie das Element "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',
       removalSuccessful:
         'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',

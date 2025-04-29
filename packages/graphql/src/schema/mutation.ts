@@ -1682,7 +1682,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId:
                 // TODO: add live quiz with or clause
@@ -1715,8 +1718,17 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+            return await SharingService.importElement(
+              {
+                elementId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
           }
 
+          // elements and activities are not supported for the import feature (for now)
           return false
         },
       }),
@@ -1742,7 +1754,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId: undefined,
               practiceQuizId: undefined,
@@ -1767,7 +1782,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId: undefined,
               practiceQuizId: undefined,
@@ -2109,6 +2127,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2130,7 +2156,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId: undefined,
               practiceQuizId: undefined,
@@ -2168,6 +2197,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2187,7 +2224,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId: undefined,
               practiceQuizId: undefined,
@@ -2227,6 +2267,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2247,7 +2295,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
-              elementId: undefined,
+              elementId:
+                args.objectType === SharingObjectTypeEnum.ELEMENT
+                  ? parseInt(args.objectId)
+                  : undefined,
               courseId: undefined,
               liveQuizId: undefined,
               practiceQuizId: undefined,
@@ -2293,7 +2344,6 @@ export const Mutation = builder.mutationType({
           } else if (
             args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
           ) {
-            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
             // == OWNER permissions on answer collection required
             const validAccess = await checkAccess(
               [
@@ -2309,6 +2359,28 @@ export const Mutation = builder.mutationType({
             }
 
             return await SharingService.transferAnswerCollectionOwnership(
+              {
+                id: parseInt(args.objectId),
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+            // == OWNER permissions on element required
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferElementOwnership(
               {
                 id: parseInt(args.objectId),
                 shortnameOrEmail: args.shortnameOrEmail,

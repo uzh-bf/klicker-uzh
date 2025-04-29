@@ -1,0 +1,6 @@
+query GetCatalogElements {
+  getCatalogElements {
+    id
+    name
+  }
+}

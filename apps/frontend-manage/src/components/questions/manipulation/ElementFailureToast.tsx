@@ -18,7 +18,7 @@ function ElementFailureToast({
       duration={6000}
       className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.questionForms.questionSavedFailed')}
+      {t('manage.elements.questionSavedFailed')}
     </Toast>
   )
 }

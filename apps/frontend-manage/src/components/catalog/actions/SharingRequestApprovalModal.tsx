@@ -10,6 +10,7 @@ import {
 import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import PropagatedPermissionsTable from '~/components/sharing/PropagatedPermissionsTable'
 import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
 import PermissionsTable from '../../sharing/PermissionsTable'
 
@@ -152,6 +153,11 @@ function SharingRequestApprovalModal({
           activePermissionLevel={permissionLevel}
         />
       </div>
+
+      <PropagatedPermissionsTable
+        objectType={request.objectType}
+        activePermissionLevel={permissionLevel}
+      />
 
       <Toast
         dismissible

@@ -98,7 +98,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
   })
 
   it('Check that values of single choice question are stored and loaded correctly', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="sc-0-answer-option-0"]').should('exist')
     cy.get('[data-cy="sc-0-answer-option-1"]').should('exist')
 
@@ -123,7 +123,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
 
   it('Edit a single choice question and add a sample solution', function () {
     // update contents of SC question
-    cy.get(`[data-cy="edit-question-${this.data.SC.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -178,7 +178,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
   })
 
   it('Edit the single choice question again and add answer feedbacks', function () {
-    cy.get(`[data-cy="edit-question-${this.data.SC.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SC.titleEdited}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // enable answer feedbacks and add valid ones for all options
@@ -270,7 +270,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
 
   it('Check that edited single choice question is stored and loaded correctly', function () {
     // check general question information
-    cy.get(`[data-cy="edit-question-${this.data.SC.titleEdited}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SC.titleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SC.titleEdited

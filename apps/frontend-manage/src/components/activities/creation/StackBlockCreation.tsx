@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { QuestionDragDropTypes } from '../../questions/Question'
+import { ElementDragDropTypes } from '../../questions/Element'
 import DropElementsStack from './DropElementsStack'
 import PasteSelectionButton from './PasteSelectionButton'
 import StackCreationErrors from './StackCreationErrors'
@@ -72,7 +72,7 @@ function StackBlockCreation({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
-      drop: (item: QuestionDragDropTypes) => {
+      drop: (item: ElementDragDropTypes) => {
         replace(stackIx, {
           ...stack,
           elements: [

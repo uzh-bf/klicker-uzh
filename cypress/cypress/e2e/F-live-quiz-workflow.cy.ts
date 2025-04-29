@@ -1417,7 +1417,7 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
 
     // modify single choice question
-    cy.get(`[data-cy="edit-question-${this.data.SC2.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SC2.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.liveQuiz.newSCTitle)

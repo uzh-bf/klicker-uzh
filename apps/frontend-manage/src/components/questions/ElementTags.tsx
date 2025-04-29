@@ -3,17 +3,15 @@ import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface QuestionTagsProps {
-  tags: Tag[]
-  tagfilter?: string[]
-  handleTagClick: (tagName: string) => void
-}
-
-function QuestionTags({
+function ElementTags({
   tags = [],
   tagfilter = [],
   handleTagClick,
-}: QuestionTagsProps): React.ReactElement {
+}: {
+  tags: Tag[]
+  tagfilter?: string[]
+  handleTagClick: (tagName: string) => void
+}): React.ReactElement {
   if (!tags || tags.length === 0) {
     return <></>
   }
@@ -43,4 +41,4 @@ function QuestionTags({
   )
 }
 
-export default QuestionTags
+export default ElementTags

@@ -1,43 +1,45 @@
 import { faBullhorn, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { Element } from '@klicker-uzh/graphql/dist/ops'
+import type { Element as ElementType } from '@klicker-uzh/graphql/dist/ops'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React from 'react'
-import Question from './Question'
+import Element from './Element'
 
-interface QuestionListProps {
-  setSelectedQuestions: (id: number, data: Element) => void
-  selectedQuestions: Record<number, Element>
+interface ElementListProps {
+  activityWizardOpen: boolean
+  setSelectedQuestions: (id: number, data: ElementType) => void
+  selectedQuestions: Record<number, ElementType>
   triggerSuccessToast: () => void
-  questions?: Element[]
+  elements?: ElementType[]
   tagfilter?: string[]
   handleTagClick: (tagName: string) => void
   unsetDeletedQuestion: (questionId: number) => void
 }
 
-function QuestionList({
+function ElementList({
+  activityWizardOpen,
   setSelectedQuestions,
   selectedQuestions,
   triggerSuccessToast,
-  questions = [],
+  elements = [],
   tagfilter = [],
   handleTagClick,
   unsetDeletedQuestion,
-}: QuestionListProps): React.ReactElement {
+}: ElementListProps): React.ReactElement {
   const t = useTranslations()
   const { value: hideSurvey, setValue: setHideSurvey } = useStickyState(
     'hideLecturerSurvey',
     'false'
   )
 
-  if (!questions) {
+  if (!elements) {
     return <></>
   }
 
-  if (questions.length === 0) {
+  if (elements.length === 0) {
     return (
       <UserNotification
         type="warning"
@@ -49,34 +51,28 @@ function QuestionList({
 
   return (
     <div className="bg-uzh-blue-400 space-y-1 md:space-y-2">
-      {questions.map((question) => (
-        <Question
-          key={`question-list-element-${question.id}`}
-          checked={!!selectedQuestions[question.id]}
-          id={question.id}
-          isArchived={question.isArchived ?? false}
-          tags={question.tags || []}
+      {elements.map((element) => (
+        <Element
+          key={`question-list-element-${element.id}`}
+          element={element}
+          disabled={!element.isManager && activityWizardOpen}
+          checked={!!selectedQuestions[element.id]}
+          tags={element.tags || []}
           handleTagClick={handleTagClick}
-          title={question.name}
-          status={question.status}
-          type={question.type}
-          content={question.content}
           hasAnswerFeedbacks={
-            'options' in question && 'hasAnswerFeedbacks' in question.options
-              ? (question.options.hasAnswerFeedbacks ?? false)
+            'options' in element && 'hasAnswerFeedbacks' in element.options
+              ? (element.options.hasAnswerFeedbacks ?? false)
               : true
           }
           hasSampleSolution={
-            'options' in question
-              ? (question.options.hasSampleSolution ?? false)
+            'options' in element
+              ? (element.options.hasSampleSolution ?? false)
               : true
           }
-          onCheck={() => setSelectedQuestions(question.id, question)}
+          onCheck={() => setSelectedQuestions(element.id, element)}
           triggerSuccessToast={triggerSuccessToast}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
-          createdAt={question.createdAt}
-          updatedAt={question.updatedAt}
         />
       ))}
       {hideSurvey === 'false' && (
@@ -111,4 +107,4 @@ function QuestionList({
   )
 }
 
-export default QuestionList
+export default ElementList

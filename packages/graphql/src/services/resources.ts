@@ -256,6 +256,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
               _count: {
                 select: {
                   entries: true,
+                  directPermissions: true,
                   linkedElements: {
                     where: { permissions: { some: { userId: ctx.user.sub } } },
                   },
@@ -310,6 +311,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     return {
       ...collection,
       numOfEntries: collection._count.entries,
+      numSharedUsers: collection._count.directPermissions,
       permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
       isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
@@ -320,7 +322,9 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel === DB.PermissionLevel.WRITE ||
         object.permissionLevel === DB.PermissionLevel.ADMIN ||
         object.permissionLevel === DB.PermissionLevel.OWNER,
-      isImported: false, // shared objects cannot be imported
+      isImported:
+        object.permissionLevel === DB.PermissionLevel.OWNER &&
+        object.answerCollection?.originalId !== null,
       isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
       isRemovable:
         collection._count.linkedElements === 0 &&

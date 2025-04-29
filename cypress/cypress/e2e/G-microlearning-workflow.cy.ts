@@ -1402,7 +1402,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
 
     // modify numerical question
-    cy.get(`[data-cy="edit-question-${this.data.SEML2.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.manipulation.newSETitle)
@@ -1797,8 +1797,7 @@ describe('Different microlearning workflows', function () {
     ]
 
     cy.wrap(questions).each((title: string) => {
-      cy.get(`[data-cy="delete-question-${title}"]`).click()
-      cy.get('[data-cy="confirm-question-deletion"]').click()
+      cy.deleteElement({ elementName: title })
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
     })
   })
