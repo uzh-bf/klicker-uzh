@@ -322,7 +322,9 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel === DB.PermissionLevel.WRITE ||
         object.permissionLevel === DB.PermissionLevel.ADMIN ||
         object.permissionLevel === DB.PermissionLevel.OWNER,
-      isImported: false, // shared objects cannot be imported
+      isImported:
+        object.permissionLevel === DB.PermissionLevel.OWNER &&
+        object.answerCollection?.originalId !== null,
       isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
       isRemovable:
         collection._count.linkedElements === 0 &&

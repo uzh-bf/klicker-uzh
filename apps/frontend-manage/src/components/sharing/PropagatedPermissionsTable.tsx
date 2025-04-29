@@ -1,6 +1,6 @@
 import {
-  CatalogObjectType,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -10,7 +10,7 @@ function PropagatedPermissionsTable({
   objectType,
   activePermissionLevel,
 }: {
-  objectType: CatalogObjectType
+  objectType: SharingObjectType
   activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()

@@ -2656,7 +2656,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
       propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
-      propagatedPermissionsELEMENT: 'TODO', // TODO
+      propagatedPermissionsELEMENT:
+        'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',

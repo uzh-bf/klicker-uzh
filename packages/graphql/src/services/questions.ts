@@ -25,18 +25,48 @@ import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
-  const userQuestions = await ctx.prisma.user.findUnique({
+  const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
-      questions: {
-        where: { isDeleted: false },
-        orderBy: [{ createdAt: 'desc' }],
-        include: { tags: { orderBy: { order: 'asc' } } },
+      objects: {
+        where: { elementId: { not: null } },
+        include: {
+          element: {
+            include: {
+              tags: {
+                where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+        },
+        orderBy: [{ element: { createdAt: 'desc' } }],
       },
     },
   })
 
-  return userQuestions?.questions
+  return (
+    user?.objects.flatMap((object) =>
+      object.element !== null
+        ? {
+            ...object.element,
+            permissionLevel: object.permissionLevel,
+            isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+            isManager:
+              object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN,
+            isEditor:
+              object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN ||
+              object.permissionLevel === DB.PermissionLevel.WRITE,
+            isImported:
+              object.permissionLevel === DB.PermissionLevel.OWNER &&
+              object.element.originalId !== null,
+            isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+          }
+        : []
+    ) ?? []
+  )
 }
 
 export async function getSingleQuestion(
@@ -44,8 +74,11 @@ export async function getSingleQuestion(
   ctx: ContextWithUser
 ) {
   const question = await ctx.prisma.element.findUnique({
-    where: { id, isDeleted: false },
+    where: { id },
     include: {
+      permissions: {
+        where: { userId: ctx.user.sub },
+      },
       tags: {
         where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
         orderBy: { order: 'asc' },
@@ -59,9 +92,19 @@ export async function getSingleQuestion(
   }
 
   const selectedItemIds = question.answerCollectionItems.map((item) => item.id)
+  const permission = question.permissions[0]
 
   return {
     ...question,
+    permissionLevel: permission?.permissionLevel,
+    isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission?.permissionLevel === DB.PermissionLevel.ADMIN,
+    isEditor:
+      permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission?.permissionLevel === DB.PermissionLevel.WRITE,
     options: {
       ...question.options,
       // SE elements

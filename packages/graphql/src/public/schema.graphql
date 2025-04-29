@@ -275,8 +275,14 @@ type CaseStudyElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
   options: CaseStudyElementOptions!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -471,8 +477,14 @@ type ChoicesElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
   options: ChoiceElementOptions!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -553,7 +565,13 @@ type ContentElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -884,7 +902,13 @@ type FlashcardElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -963,8 +987,14 @@ type FreeTextElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
   options: FreeTextElementOptions!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -1513,8 +1543,14 @@ type NumericalElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
   options: NumericalElementOptions!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -1988,8 +2024,14 @@ type SelectionElement {
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   name: String!
   options: SelectionElementOptions!
+  permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]

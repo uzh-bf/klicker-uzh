@@ -1381,7 +1381,7 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === CatalogObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
             // >= ADMIN permissions on element
             const validAccess = await checkAccess(
               [
@@ -1438,7 +1438,7 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === CatalogObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
               [

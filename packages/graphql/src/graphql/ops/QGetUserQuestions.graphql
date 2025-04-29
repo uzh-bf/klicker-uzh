@@ -18,6 +18,13 @@ query GetUserQuestions {
       createdAt
       updatedAt
 
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
+
       options {
         __typename
         hasSampleSolution
@@ -53,6 +60,13 @@ query GetUserQuestions {
       isDeleted
       createdAt
       updatedAt
+
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
 
       options {
         __typename
@@ -97,6 +111,13 @@ query GetUserQuestions {
       createdAt
       updatedAt
 
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
+
       options {
         __typename
         hasSampleSolution
@@ -131,6 +152,13 @@ query GetUserQuestions {
       createdAt
       updatedAt
 
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
+
       options {
         __typename
         hasSampleSolution
@@ -159,6 +187,13 @@ query GetUserQuestions {
       isDeleted
       createdAt
       updatedAt
+
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
 
       options {
         __typename
@@ -208,6 +243,13 @@ query GetUserQuestions {
       createdAt
       updatedAt
 
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
+
       tags {
         id
         name
@@ -230,6 +272,13 @@ query GetUserQuestions {
       isDeleted
       createdAt
       updatedAt
+
+      permissionLevel
+      isOwner
+      isManager
+      isEditor
+      isImported
+      isShared
 
       tags {
         id

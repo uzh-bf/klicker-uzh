@@ -74,7 +74,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
-  } else if (objectType === CatalogObjectType.Element) {
+  } else if (objectType === SharingObjectType.Element) {
     return [
       {
         action: t('manage.elements.viewElement'),

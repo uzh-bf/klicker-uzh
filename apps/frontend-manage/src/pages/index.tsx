@@ -409,7 +409,7 @@ function Index() {
 
               <div className="h-full overflow-y-auto">
                 <ElementList
-                  questions={processedQuestions}
+                  elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
                   triggerSuccessToast={() => setSuccessToast(true)}
                   setSelectedQuestions={(id: number, data: Element) => {

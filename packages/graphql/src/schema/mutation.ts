@@ -1683,7 +1683,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -1747,7 +1747,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -1775,7 +1775,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -2119,7 +2119,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ELEMENT
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2149,7 +2149,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -2189,7 +2189,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ELEMENT
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2217,7 +2217,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -2259,7 +2259,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === CatalogObjectTypeEnum.ELEMENT
+              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2288,7 +2288,7 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === CatalogObjectTypeEnum.ELEMENT
+                args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -2357,7 +2357,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === CatalogObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
             // == OWNER permissions on element required
             const validAccess = await checkAccess(
               [
