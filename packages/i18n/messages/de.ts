@@ -2640,6 +2640,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'Sie sind dabei, die Eigentumsrechte für die Live-Quiz Vorlage <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Vorlage, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipELEMENT:
+        'Sie sind dabei, die Eigentumsrechte für das Element <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Element, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
       shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',

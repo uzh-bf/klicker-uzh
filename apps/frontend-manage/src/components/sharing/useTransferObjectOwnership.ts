@@ -5,6 +5,7 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  GetUserQuestionsDocument,
   SharingObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -53,6 +54,9 @@ function useTransferObjectOwnership({
                 GetAnswerCollectionsInfoDocument,
                 GetCatalogSharingRequestsDocument,
               ]
+            : []),
+          ...(objectType === SharingObjectType.Element
+            ? [GetUserQuestionsDocument, GetCatalogSharingRequestsDocument]
             : []),
         ],
       })

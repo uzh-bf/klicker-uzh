@@ -2614,6 +2614,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipELEMENT:
+        'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',

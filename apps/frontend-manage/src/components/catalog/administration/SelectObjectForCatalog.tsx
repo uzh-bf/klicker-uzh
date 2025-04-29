@@ -96,7 +96,7 @@ function SelectObjectForCatalog({
         })}
       </p>
 
-      {collectionsLoading || liveQuizTemplateLoading ? (
+      {collectionsLoading || liveQuizTemplateLoading || elementsLoading ? (
         <Loader />
       ) : options.length > 0 ? (
         <Select

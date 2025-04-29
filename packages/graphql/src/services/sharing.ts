@@ -3032,7 +3032,7 @@ export async function transferElementOwnership(
     where: {
       OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
     },
-    include: { sharedObjects: { where: { answerCollectionId: id } } },
+    include: { sharedObjects: { where: { elementId: id } } },
   })
 
   // find the element
@@ -3100,7 +3100,7 @@ export async function transferElementOwnership(
       },
     })
 
-    // trigger recomputation of derived permissions for the answer collection for both users
+    // trigger recomputation of derived permissions for the element for both users
     await recomputeDerivedPermissions(
       { elementId: id, userId: newOwner.id },
       prisma
