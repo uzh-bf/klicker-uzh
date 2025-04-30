@@ -590,7 +590,7 @@ interface DeleteElementArgs {
 }
 
 Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
-  cy.get(`[data-cy="actions-element-${elementName}"]`).click()
+  cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
   cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
   cy.get('[data-cy="confirm-question-deletion"]').click()
 })
