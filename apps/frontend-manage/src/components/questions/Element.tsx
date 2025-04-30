@@ -83,8 +83,6 @@ function Element({
   const [isSharingModalOpen, setSharingModalOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
-  // TODO: check for derived access and if so, do not show deletion / removal options?!
-
   const [collectedProps, drag] = useDrag({
     item: {
       id: element.id,
