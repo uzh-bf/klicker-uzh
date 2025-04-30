@@ -345,19 +345,32 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       }
     }
 
-    const newElement = await prisma.element.upsert({
-      ...prepareQuestion({
-        ownerId: USER_ID_TEST,
-        ...data,
-        options: caseStudyCasesWithSolution
-          ? {
-              ...data.options,
-              cases: caseStudyCasesWithSolution,
-            }
-          : data.options,
-        collectionId,
-        usedCollectionEntries,
-      }),
+    // check if an element with the same original id already exists -> return early
+    const existingElement = await prisma.element.findFirst({
+      where: {
+        originalId: data.originalId,
+      },
+    })
+
+    if (existingElement) {
+      questionsTest.push(existingElement)
+      continue
+    }
+
+    const dataCreate = prepareQuestion({
+      ownerId: USER_ID_TEST,
+      ...data,
+      options: caseStudyCasesWithSolution
+        ? {
+            ...data.options,
+            cases: caseStudyCasesWithSolution,
+          }
+        : data.options,
+      collectionId,
+      usedCollectionEntries,
+    })
+    const newElement = await prisma.element.create({
+      data: dataCreate,
       include: {
         answerCollection: {
           include: {

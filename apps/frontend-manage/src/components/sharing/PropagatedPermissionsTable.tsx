@@ -21,8 +21,8 @@ function PropagatedPermissionsTable({
     [PermissionLevel.Read]: 1, // Read is the second column (index 1)
     [PermissionLevel.Write]: 2, // Write is the third column (index 2)
     [PermissionLevel.Admin]: 3, // Admin is the fourth column (index 3)
+    [PermissionLevel.Owner]: 4, // Owner is the fifth column (index 4)
     [PermissionLevel.Execute]: -1, // Execution rights are not present in this table
-    [PermissionLevel.Owner]: -1, // Owner rights are not present in this table
   }
 
   // get the active column index based on the corresponding access level
@@ -70,7 +70,9 @@ function PropagatedPermissionsTable({
               key={object}
               className="border-t border-gray-200 hover:bg-gray-50"
             >
-              <td className="px-4 py-3 text-sm text-gray-900">{object}</td>
+              <td className="px-4 py-3 text-sm font-bold text-gray-900">
+                {object}
+              </td>
               {permissions.map((permissionLevel, index) => (
                 <td
                   key={index}

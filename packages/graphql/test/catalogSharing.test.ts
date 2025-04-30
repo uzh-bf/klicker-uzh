@@ -38,6 +38,7 @@ import {
   initializePrisma,
   seedAnswerCollections,
   seedCatalogCollections,
+  seedElements,
   seedLiveQuizTemplates,
   testCleanup,
   testInitialization,
@@ -1253,10 +1254,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
   it('Make sure that objects in the catalog are queried correctly', async () => {
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
     const { activityId1, activityId2 } = await seedLiveQuizTemplates(prisma)
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
-    // assign answer collection 1 and catalog collection 1 to the top-level catalog collection
+    // assign objects to the top-level catalog collection
     const assignment1 = await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
@@ -1269,18 +1271,30 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         liveQuizId: activityId1,
       },
     })
-
-    // assign answer collection 2 and catalog collection 2 to the top-level catalog collection
     const assignment3 = await prisma.catalogCollectionAssignment.create({
+      data: {
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        elementId: SC.id,
+      },
+    })
+
+    // assign objects to the top-level catalog collection
+    const assignment4 = await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         answerCollectionId: AC2!.id,
       },
     })
-    const assignment4 = await prisma.catalogCollectionAssignment.create({
+    const assignment5 = await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         liveQuizId: activityId2,
+      },
+    })
+    const assignment6 = await prisma.catalogCollectionAssignment.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        elementId: MC.id,
       },
     })
 
@@ -1290,7 +1304,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userOneCtx
     )
     expect(catalogObjects).toBeDefined()
-    expect(catalogObjects.length).toBe(2)
+    expect(catalogObjects.length).toBe(3)
 
     const catalogObject1 = catalogObjects.find(
       (object) => object.id === AC1!.id
@@ -1298,8 +1312,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const catalogObject2 = catalogObjects.find(
       (object) => object.uuid === activityId1
     )
+    const catalogObject3 = catalogObjects.find((object) => object.id === SC.id)
     expect(catalogObject1).toBeDefined()
     expect(catalogObject2).toBeDefined()
+    expect(catalogObject3).toBeDefined()
+
     expect(catalogObject1!.id).toBe(AC1!.id)
     expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
     expect(catalogObject1!.assignmentId).toBe(assignment1.id)
@@ -1308,6 +1325,9 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
     expect(catalogObject2!.assignmentId).toBe(assignment2.id)
+    expect(catalogObject3!.id).toBe(SC.id)
+    expect(catalogObject3!.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(catalogObject3!.assignmentId).toBe(assignment3.id)
 
     // verify that the correct objects are returned for the public catalog collection
     const catalogObjects2 = await getCatalogObjects(
@@ -1315,24 +1335,30 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userOneCtx
     )
     expect(catalogObjects2).toBeDefined()
-    expect(catalogObjects2.length).toBe(2)
+    expect(catalogObjects2.length).toBe(3)
 
-    const catalogObject3 = catalogObjects2.find(
+    const catalogObject4 = catalogObjects2.find(
       (object) => object.id === AC2!.id
     )
-    const catalogObject4 = catalogObjects2.find(
+    const catalogObject5 = catalogObjects2.find(
       (object) => object.uuid === activityId2
     )
-    expect(catalogObject3).toBeDefined()
+    const catalogObject6 = catalogObjects2.find((object) => object.id === MC.id)
     expect(catalogObject4).toBeDefined()
-    expect(catalogObject3!.id).toBe(AC2!.id)
-    expect(catalogObject3!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
-    expect(catalogObject3!.assignmentId).toBe(assignment3.id)
-    expect(catalogObject4!.uuid).toBe(activityId2)
-    expect(catalogObject4!.objectType).toBe(
+    expect(catalogObject5).toBeDefined()
+    expect(catalogObject6).toBeDefined()
+
+    expect(catalogObject4!.id).toBe(AC2!.id)
+    expect(catalogObject4!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
+    expect(catalogObject4!.assignmentId).toBe(assignment4.id)
+    expect(catalogObject5!.uuid).toBe(activityId2)
+    expect(catalogObject5!.objectType).toBe(
       SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
-    expect(catalogObject4!.assignmentId).toBe(assignment4.id)
+    expect(catalogObject5!.assignmentId).toBe(assignment5.id)
+    expect(catalogObject6!.id).toBe(MC.id)
+    expect(catalogObject6!.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(catalogObject6!.assignmentId).toBe(assignment6.id)
   })
   // #endregion
 

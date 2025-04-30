@@ -74,7 +74,7 @@ export async function getSingleQuestion(
   ctx: ContextWithUser
 ) {
   const question = await ctx.prisma.element.findUnique({
-    where: { id },
+    where: { id, permissions: { some: { userId: ctx.user.sub } } },
     include: {
       permissions: {
         where: { userId: ctx.user.sub },
@@ -96,15 +96,15 @@ export async function getSingleQuestion(
 
   return {
     ...question,
-    permissionLevel: permission?.permissionLevel,
-    isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
+    permissionLevel: permission!.permissionLevel,
+    isOwner: permission!.permissionLevel === DB.PermissionLevel.OWNER,
     isManager:
-      permission?.permissionLevel === DB.PermissionLevel.OWNER ||
-      permission?.permissionLevel === DB.PermissionLevel.ADMIN,
+      permission!.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission!.permissionLevel === DB.PermissionLevel.ADMIN,
     isEditor:
-      permission?.permissionLevel === DB.PermissionLevel.OWNER ||
-      permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
-      permission?.permissionLevel === DB.PermissionLevel.WRITE,
+      permission!.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission!.permissionLevel === DB.PermissionLevel.WRITE,
     options: {
       ...question.options,
       // SE elements

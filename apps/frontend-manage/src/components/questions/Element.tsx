@@ -31,9 +31,9 @@ import ElementEditModal, {
 import RecoveryPrompt from './manipulation/RecoveryPrompt'
 
 const StatusColors: Record<ElementStatus, string> = {
-  [ElementStatus.Draft]: 'bg-slate-400',
-  [ElementStatus.Review]: 'bg-violet-400',
-  [ElementStatus.Ready]: 'bg-green-400',
+  [ElementStatus.Draft]: 'bg-slate-400 hover:bg-slate-500',
+  [ElementStatus.Review]: 'bg-violet-400 hover:bg-violet-500',
+  [ElementStatus.Ready]: 'bg-green-400 hover:bg-green-500',
 }
 
 export interface ElementDragDropTypes {

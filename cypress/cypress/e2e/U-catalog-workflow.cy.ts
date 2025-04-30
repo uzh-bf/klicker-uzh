@@ -392,7 +392,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
-    // Approve request for user pro1 (WRITE permissions)
+    // approve request for user pro1 (WRITE permissions)
     cy.get(
       `[data-cy="approve-sharing-request-${this.data.CCRestricted}-pro1"]`
     ).should('exist')
@@ -412,7 +412,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[data-cy="confirm-approval"]').click()
 
-    // Share directly with pro2 (ADMIN permissions)
+    // share directly with pro2 (ADMIN permissions)
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
     ).realClick()
@@ -430,7 +430,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
 
-    // Share directly with pro3 (READ permissions)
+    // share directly with pro3 (READ permissions)
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .clear()

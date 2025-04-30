@@ -1,6 +1,8 @@
 import {
   AnswerCollection,
   CatalogCollection,
+  Element,
+  ElementType,
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
@@ -224,6 +226,126 @@ export async function seedAnswerCollections(
   return collections as AnswerCollection[]
 }
 
+// TODO: docstring
+export async function seedElements(
+  userContext,
+  answerCollectionId: number
+): Promise<{
+  SC: Element
+  MC: Element
+  KP: Element
+  NR: Element
+  FT: Element
+  SE: Element
+  CS: Element
+  FC: Element
+  CT: Element
+}> {
+  const AC = await userContext.prisma.answerCollection.findUnique({
+    where: { id: answerCollectionId },
+    include: {
+      entries: true,
+    },
+  })
+
+  const SC = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.SC,
+      name: 'SC Element',
+      content: 'SC Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const MC = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.MC,
+      name: 'MC Element',
+      content: 'MC Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const KP = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.KPRIM,
+      name: 'KP Element',
+      content: 'KP Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const NR = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.NUMERICAL,
+      name: 'NR Element',
+      content: 'NR Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const FT = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.FREE_TEXT,
+      name: 'FT Element',
+      content: 'FT Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const SE = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.SELECTION,
+      name: 'SE Element',
+      content: 'SE Content',
+      options: {},
+      ownerId: userContext.user.id,
+      answerCollectionId: AC.id,
+    },
+  })
+
+  const CS = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.CASE_STUDY,
+      name: 'CS Element',
+      content: 'CS Content',
+      options: {},
+      ownerId: userContext.user.id,
+      answerCollectionId: AC.id,
+      answerCollectionItems: {
+        connect: [{ id: AC.entries[1]!.id }, { id: AC.entries[2]!.id }],
+      },
+    },
+  })
+
+  const FC = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.FLASHCARD,
+      name: 'FC Element',
+      content: 'FC Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  const CT = await userContext.prisma.element.create({
+    data: {
+      type: ElementType.CONTENT,
+      name: 'CT Element',
+      content: 'CT Content',
+      options: {},
+      ownerId: userContext.user.id,
+    },
+  })
+
+  return { SC, MC, KP, NR, FT, SE, CS, FC, CT }
+}
+
 /**
  * Seeds two catalog collections with different access levels (public and restricted).
  *
@@ -308,6 +430,56 @@ export async function seedAnswerCollectionPermissions(
   // recompute derived permissions that are checked in backend service functions
   await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
   await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
+}
+
+// TODO: docstring
+export async function seedCatalogCollectionPermissions(
+  prisma: PrismaClient,
+  publicId: string,
+  restrictedId: string
+) {
+  // create permissions for users 2, 3, and 4 (READ, WRITE, ADMIN in ascending order)
+  await prisma.permission.createMany({
+    data: [
+      {
+        permissionLevel: PermissionLevel.READ,
+        userId: userTwo.id,
+        catalogCollectionId: publicId,
+      },
+      {
+        permissionLevel: PermissionLevel.WRITE,
+        userId: userThree.id,
+        catalogCollectionId: publicId,
+      },
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        userId: userFour.id,
+        catalogCollectionId: publicId,
+      },
+      {
+        permissionLevel: PermissionLevel.READ,
+        userId: userTwo.id,
+        catalogCollectionId: restrictedId,
+      },
+      {
+        permissionLevel: PermissionLevel.WRITE,
+        userId: userThree.id,
+        catalogCollectionId: restrictedId,
+      },
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        userId: userFour.id,
+        catalogCollectionId: restrictedId,
+      },
+    ],
+  })
+
+  // recompute derived permissions that are checked in backend service functions
+  await recomputeDerivedPermissions({ catalogCollectionId: publicId }, prisma)
+  await recomputeDerivedPermissions(
+    { catalogCollectionId: restrictedId },
+    prisma
+  )
 }
 
 /**

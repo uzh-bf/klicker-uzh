@@ -1,3 +1,9 @@
+-- DropIndex
+DROP INDEX "Element_ownerId_originalId_key";
+
+-- DropIndex
+DROP INDEX "LiveSession_ownerId_originalId_key";
+
 -- CreateTable
 CREATE TABLE "_TemplateAnswerCollectionUsedItems" (
     "A" UUID NOT NULL,
