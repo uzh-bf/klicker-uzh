@@ -1,3 +1,4 @@
+import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 // global variable for ensured consistency with current dates
@@ -5,8 +6,11 @@ const currentYear = new Date().getFullYear()
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
   beforeEach('Load data fixture', function () {
-    cy.fixture('D-questions.json').then((data) => {
-      this.data = data
+    cy.fixture('questions.json').then((sharedData) => {
+      this.data = sharedData
+    })
+    cy.fixture('D-questions.json').then((questionsData) => {
+      this.data = { ...this.data, ...questionsData }
     })
   })
 
@@ -358,6 +362,7 @@ describe('Create different types of elements (with and without sample solution) 
   // #endregion
 
   // ! Part 3: Element instance updates
+  // #region
   // helper function to publish / start one instance of each activity type with the defined name
   function publishSetOfActivities({
     course,
@@ -909,6 +914,687 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="groupActivity-actions-${ga}"]`).should('not.exist')
     })
   })
+  // #endregion
+
+  // ! Part 4: Sharing functionalities for elements (restricted catalog collection)
+  // #region
+  it('Create a selection question', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      name: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+  })
+
+  it('Add the question as a restricted collection to the catalog', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // add question to catalog as restricted object
+    cy.addObjectToCatalog({
+      objectName: this.data.SEML.title,
+      objectType: SharingObjectType.ELEMENT,
+      permissionLevel: 'restricted',
+    })
+
+    // check that import and request functionalities are not available for owner (but deletion is)
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="remove-object-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it('Test filters and search on the catalog page', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // test search
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get('[data-cy="search-catalog-collection"]')
+      .click()
+      .type('SOME NON-EXISTING TITLE')
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="search-catalog-collection"]')
+      .clear()
+      .type(this.data.SEML.title)
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+
+    // test access type filters
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get('[data-cy="catalog-access-type-filter"]').contains(
+      messages.manage.catalog.all
+    )
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-public"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-restricted"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-all"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it('Request access to restricted question (for user pro1)', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="cancel-request-access"]').click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-request-access"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
+  it('Request access to restricted question (for user pro2)', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-request-access"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
+  it('Verify that access requests are correctly shown to collection owner', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro1"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro2"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+  })
+
+  it('Temporarily award ADMIN permissions to user pro3 and verify that the access requests are visible as well', function () {
+    // grant ADMIN permissions to user pro3 through direct sharing
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST2_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+    cy.logoutLecturer()
+
+    // verify that access requests are visible to user pro3
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro1"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro2"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // revoke direct ADMIN permissions again
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.logoutLecturer()
+
+    // verify that the access requests are not visible anymore to user pro3
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro1"]`).should(
+      'not.exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('not.exist')
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro2"]`).should(
+      'not.exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('not.exist')
+  })
+
+  it('Cancel the request through user pro1 and request the element again', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+
+    // cancel the request
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="cancel-request-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-request-cancellation"]').click()
+
+    // request the question again (should be possible)
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-request-access"]').click()
+
+    // check that access request is pending again
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
+  it('Grant access to restricted question (for user pro1)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).click()
+
+    // approval modal
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="confirm-approval"]').click()
+  })
+
+  it('Decline access request to restricted question (for user pro2)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).click()
+  })
+
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+  })
+
+  it('Verify that restricted question is visible for user pro1', function () {
+    cy.loginIndividualCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it('Verify that restricted question is not visible for user pro2', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Change the access level of the question in the catalog to public', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get(`[data-cy="${this.data.SEML.title}-object-access"]`).contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get(`[data-cy="${this.data.SEML.title}-object-access"]`).realClick()
+    cy.get('[data-cy="object-access-restricted"]').should('exist')
+    cy.get('[data-cy="object-access-public"]').realClick()
+    cy.get('[data-cy="confirm-access-change"]').click()
+    cy.get(`[data-cy="${this.data.SEML.title}-object-access"]`).contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+  })
+
+  it('Verify that question can now be imported or requested', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should('exist')
+
+    // no owner / admin actions are available
+    cy.get(`[data-cy="remove-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="${this.data.SEML.title}-object-access"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Remove the question from the catalog (by owner)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="remove-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-removal"]').click()
+  })
+
+  it('Verify that the question is no longer visible in the catalog', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Re-add the question with restricted access to the restricted catalog collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.addObjectToCatalog({
+      objectName: this.data.SEML.title,
+      objectType: SharingObjectType.ELEMENT,
+      permissionLevel: 'restricted',
+    })
+  })
+
+  it("Grant admin access to user 'pro2' for the restricted question", function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').clear()
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+  })
+
+  it('Verify that user pro2 should now be able to add this question to the catalog', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).should('exist')
+  })
+
+  it('Cleanup: Delete all created objects and validate deletion', function () {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: this.data.SEML.title })
+
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
+
+    // verify that all created data has been removed again
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+  // #endregion
+
+  // ! Part 5: Sharing functionalities for elements (public catalog collection)
+  // #region
+  it('Create a selection question', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      name: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+  })
+
+  it('Add the question with public access to the catalog and verify visibility', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.addObjectToCatalog({
+      objectName: this.data.SEML.title,
+      objectType: SharingObjectType.ELEMENT,
+      permissionLevel: 'public',
+    })
+
+    // question should be visible to owner, but cannot be requested / imported
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="remove-object-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it("Request access to the public question (for user 'pro1')", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.findByText(messages.manage.catalog.requestPublicResource)
+    cy.get('[data-cy="confirm-request-access"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
+  it("Request access to the public question (for user 'pro2')", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-request-access"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
+  it('Verify that access requests are correctly shown to question owner', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro1"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).should('exist')
+    cy.get(`[data-cy="sharing-request-${this.data.SEML.title}-pro2"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).should('exist')
+  })
+
+  it('Grant access to public question (for user pro1)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.SEML.title}-pro1"]`
+    ).click()
+
+    // approval modal
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="confirm-approval"]').click()
+  })
+
+  it('Decline access request to public question (for user pro2)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
+    ).click()
+  })
+
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+  })
+
+  it("Verify that the public question is visible for user 'pro1'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it("Verify that the public question is not visible for user 'pro2'", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Import (and copy) the public question (for user pro2)', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="close-object-import-modal"]').click()
+
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="cancel-object-import"]').click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-object-import"]').click()
+
+    // check that the collection is visible in resources
+    cy.get('[data-cy="library"]').click()
+    cy.reload() // make sure data is refetched (works without - this is to avoid race conditions in testing)
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it('Verify that imported question is visible to user pro2 (copied and with edit permissions)', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SEML.title}"]`).click()
+  })
+
+  // TODO: re-introduce this test, once the removal functionality for elements is available
+  // it('Remove the public question from user pro1', function () {
+  //   cy.loginIndividualCatalyst()
+  //   cy.get('[data-cy="analytics"]').should('exist')
+  //   cy.get('[data-cy="resources"]').click()
+  //   cy.get('[data-cy="answer-collections"]').click()
+  //   cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(
+  //     'exist'
+  //   )
+  //   removeAnswerCollection({ name: this.data.SEML.title })
+  //   cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(
+  //     'not.exist'
+  //   )
+  // })
+
+  it('Delete the original public question', function () {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: this.data.SEML.title })
+  })
+
+  it('Verify that imported question is still visible to user pro2 (due to derived permission)', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+  })
+
+  it('Remove the imported question from user pro2', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.deleteElement({ elementName: this.data.SEML.title })
+  })
+
+  it('Cleanup: Delete all created objects and validate deletion', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
+
+    // verify that all created data has been removed again
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+  // #endregion
 
   // ! Verification
   // #region
