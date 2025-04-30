@@ -1095,11 +1095,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:
         'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage.',
-      deleteQuestion: 'Frage löschen',
+      deleteElement: 'Element löschen',
       confirmDeletion:
-        'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
-      noQuestionRecovery:
-        'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Live Quizzes werden gelöschte Fragen nicht entfernt.',
+        'Bitte bestätigen Sie die folgenden Folgen der Löschung des Elementes <b>{name}</b>.',
+      elementDeletionFinal:
+        'Die Löschung eines Elements is unwiderruflich und gelöschte Elemente können nicht wiederhergestellt werden. Das Element wird durch die Löschung nicht aus bestehenden Aktivitäten entfernt.',
+      elementDeletionOtherUsers:
+        'Falls andere Nutzer mit geteiltem Zugriff auf das Element dieses in Aktivitäten einsetzen, bleibt der Zugriff für diese Nutzer bestehen.',
+      elementDeletionDerivedAccessHint:
+        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig gelöscht werden. In diesem Fall werden Sie nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
+      elementDeletionDependencyAccess:
+        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+      removeElement: 'Element entfernen',
+      confirmElementRemoval:
+        'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Elementes <b>{name}</b> aus Ihrem Nutzerkonto.',
+      elementRemovalFinal:
+        'Die Entfernung dieses Elements aus Ihrem Konto ist unwiderruflich und kann nicht rückgängig gemacht werden.',
+      elementRemovalDerivedAccessHint:
+        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall werden Sie nach der Entfernung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
+      elementRemovalDependencyAccess:
+        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',

@@ -271,6 +271,7 @@ type CaseStudyElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -473,6 +474,7 @@ type ChoicesElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -561,6 +563,7 @@ type ContentElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -898,6 +901,7 @@ type FlashcardElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -983,6 +987,7 @@ type FreeTextElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -1418,6 +1423,7 @@ type Mutation {
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
   deleteCourse(id: String!): Course
+  deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
@@ -1425,7 +1431,6 @@ type Mutation {
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
   deletePracticeQuiz(id: String!): PracticeQuiz
-  deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
@@ -1487,6 +1492,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
+  removeElement(id: Int!): Int
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
@@ -1539,6 +1545,7 @@ type NumericalElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -2021,6 +2028,7 @@ type SelectionElement {
   basePoints: Boolean!
   content: String!
   createdAt: Date
+  derivedAccess: Boolean
   explanation: String
   id: Int!
   isArchived: Boolean

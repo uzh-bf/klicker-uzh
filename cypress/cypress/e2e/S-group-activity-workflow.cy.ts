@@ -16,7 +16,7 @@ describe('Create and solve a group activity', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('J-group-activity.json').then((liveQuizData) => {
+    cy.fixture('S-group-activity.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
@@ -899,13 +899,13 @@ describe('Create and solve a group activity', function () {
     ).click()
     cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
-    cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
+    cy.get('[data-cy="confirmation-modal-cancel"]').click()
     cy.get(
       `[data-cy="groupActivity-actions-${this.data.running.name}"]`
     ).click()
     cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
-    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
     cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).findByText(
@@ -1206,7 +1206,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="delete-groupActivity-${this.data.running.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="groupActivity-actions-${this.data.running.name}"]`
     ).should('not.exist')
@@ -1286,7 +1286,7 @@ describe('Create and solve a group activity', function () {
     ).click()
     cy.get('[data-cy="confirm-groups-getting-access"]').click()
     cy.get('[data-cy="confirm-activity-available-until"]').click()
-    cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
+    cy.get('[data-cy="confirmation-modal-cancel"]').click()
     cy.get(
       `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).click()
@@ -1295,7 +1295,7 @@ describe('Create and solve a group activity', function () {
     ).click()
     cy.get('[data-cy="confirm-groups-getting-access"]').click()
     cy.get('[data-cy="confirm-activity-available-until"]').click()
-    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
   })
 
   it('Login as a student and solve the group activity', function () {
@@ -1349,7 +1349,7 @@ describe('Create and solve a group activity', function () {
       `[data-cy="end-group-activity-${this.data.synchronous.name}"]`
     ).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
-    cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
     cy.get(
@@ -1400,7 +1400,7 @@ describe('Create and solve a group activity', function () {
     ).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).should('not.exist')
@@ -1434,27 +1434,10 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Cleanup: Delete all created questions', function () {
+  it('Cleanup: Delete all created elements and the created answer collection', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-    const questions = [
-      this.data.SCML.title,
-      this.data.MCML.title,
-      this.data.KPML.title,
-      this.data.NRML.title,
-      this.data.FTML.title,
-      this.data.SEML.title,
-      this.data.CSML.title,
-      this.data.CT.title,
-    ]
 
-    cy.wrap(questions).each((title: string) => {
-      cy.deleteElement({ elementName: title })
-    })
-  })
-
-  it('Cleanup: Delete the created answer collection', function () {
-    cy.loginLecturer()
+    cy.deleteAllElements()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

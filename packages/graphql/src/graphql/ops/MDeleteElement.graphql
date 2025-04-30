@@ -1,5 +1,5 @@
-mutation DeleteQuestion($id: Int!) {
-  deleteQuestion(id: $id) {
+mutation DeleteElement($id: Int!) {
+  deleteElement(id: $id) {
     ... on ChoicesElement {
       id
     }

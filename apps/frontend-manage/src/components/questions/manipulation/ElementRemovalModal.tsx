@@ -1,14 +1,14 @@
 import { useMutation } from '@apollo/client'
 import {
-  DeleteElementDocument,
   GetUserQuestionsDocument,
+  RemoveElementDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'
 
-function ElementDeletionModal({
+function ElementRemovalModal({
   elementId,
   title,
   isModalOpen,
@@ -24,13 +24,13 @@ function ElementDeletionModal({
   const t = useTranslations()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, element will not be removed from any created activities
-    otherUsersAccess: false, // other users might not lose access to the element, if used
     derivedAccessHint: false, // derived access might be granted if element is still used
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  const [deleteElement, { loading: deleting }] = useMutation(
-    DeleteElementDocument
+  const [removeElement, { loading: removing }] = useMutation(
+    RemoveElementDocument,
+    { variables: { id: elementId } }
   )
 
   // on modal opening, reset the confirmation state
@@ -38,7 +38,6 @@ function ElementDeletionModal({
     if (isModalOpen) {
       setConfirmations({
         actionFinal: false,
-        otherUsersAccess: false,
         derivedAccessHint: false,
         dependencyAccess: false,
       })
@@ -49,13 +48,13 @@ function ElementDeletionModal({
     <ActivityConfirmationModal
       open={isModalOpen}
       setOpen={setModalOpen}
-      title={t('manage.questionPool.deleteElement')}
-      message={t.rich('manage.questionPool.confirmDeletion', {
+      title={t('manage.questionPool.removeElement')}
+      message={t.rich('manage.questionPool.confirmElementRemoval', {
         name: title,
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await deleteElement({
+        await removeElement({
           variables: {
             id: elementId,
           },
@@ -64,7 +63,7 @@ function ElementDeletionModal({
         unsetDeletedQuestion(elementId)
         setModalOpen(false)
       }}
-      submitting={deleting}
+      submitting={removing}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="delete"
@@ -72,7 +71,7 @@ function ElementDeletionModal({
       <div className="flex flex-col gap-2">
         <ConfirmationItem
           confirmationType="delete"
-          label={t('manage.questionPool.elementDeletionFinal')}
+          label={t('manage.questionPool.elementRemovalFinal')}
           onClick={() => {
             setConfirmations((prev) => ({
               ...prev,
@@ -85,20 +84,7 @@ function ElementDeletionModal({
         />
         <ConfirmationItem
           confirmationType="delete"
-          label={t('manage.questionPool.elementDeletionOtherUsers')}
-          onClick={() => {
-            setConfirmations((prev) => ({
-              ...prev,
-              otherUsersAccess: true,
-            }))
-          }}
-          confirmed={confirmations.otherUsersAccess}
-          notApplicable={false}
-          data={{ cy: 'confirm-other-users-access' }}
-        />
-        <ConfirmationItem
-          confirmationType="delete"
-          label={t('manage.questionPool.elementDeletionDerivedAccessHint')}
+          label={t('manage.questionPool.elementRemovalDerivedAccessHint')}
           onClick={() => {
             setConfirmations((prev) => ({
               ...prev,
@@ -111,7 +97,7 @@ function ElementDeletionModal({
         />
         <ConfirmationItem
           confirmationType="delete"
-          label={t('manage.questionPool.elementDeletionDependencyAccess')}
+          label={t('manage.questionPool.elementRemovalDependencyAccess')}
           onClick={() => {
             setConfirmations((prev) => ({
               ...prev,
@@ -127,4 +113,4 @@ function ElementDeletionModal({
   )
 }
 
-export default ElementDeletionModal
+export default ElementRemovalModal

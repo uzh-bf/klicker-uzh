@@ -1,0 +1,3 @@
+mutation RemoveElement($id: Int!) {
+  removeElement(id: $id)
+}

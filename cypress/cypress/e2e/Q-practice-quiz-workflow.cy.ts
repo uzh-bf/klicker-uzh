@@ -9,7 +9,7 @@ describe('Different practice quiz workflows', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('H-practice-quiz.json').then((liveQuizData) => {
+    cy.fixture('Q-practice-quiz.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
@@ -536,7 +536,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.running.nameDupl}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
     ).should('not.exist')
@@ -996,11 +996,9 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.running.nameNew}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
     ).should('not.exist')
@@ -1149,7 +1147,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
     ).should('not.exist')
@@ -1454,7 +1452,7 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.wait(500)
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
     ).should('not.exist')
@@ -1467,7 +1465,7 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.wait(500)
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
@@ -1477,28 +1475,13 @@ describe('Different practice quiz workflows', function () {
   // ! Cleanup
   // #region
   it('Cleanup: Delete all created questions', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-    const questions = [
-      this.data.SCML.title,
-      this.data.SC.title,
-      this.data.MCML.title,
-      this.data.KPML.title,
-      this.data.NRML.title,
-      this.data.FTML.title,
-      this.data.SEML.title,
-      this.data.CSML.title,
-      this.data.FC.title,
-      this.data.CT.title,
-    ]
-
-    cy.wrap(questions).each((title: string) => {
-      cy.deleteElement({ elementName: title })
-    })
+    cy.deleteAllElements()
   })
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+
+    cy.deleteAllElements()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

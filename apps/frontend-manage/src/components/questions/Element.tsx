@@ -4,6 +4,7 @@ import {
   faEllipsis,
   faPencil,
   faShare,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -28,6 +29,7 @@ import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
   ElementEditMode,
 } from './manipulation/ElementEditModal'
+import ElementRemovalModal from './manipulation/ElementRemovalModal'
 import RecoveryPrompt from './manipulation/RecoveryPrompt'
 
 const StatusColors: Record<ElementStatus, string> = {
@@ -74,10 +76,11 @@ function Element({
   tagfilter = [],
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
-  const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
-  const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
-  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
-  const [isSharingModalOpen, setIsSharingModalOpen] = useState(false)
+  const [isModificationModalOpen, setModificationModalOpen] = useState(false)
+  const [isDuplicationModalOpen, setDuplicationModalOpen] = useState(false)
+  const [isRemovalModalOpen, setRemovalModalOpen] = useState(false)
+  const [isDeletionModalOpen, setDeletionModalOpen] = useState(false)
+  const [isSharingModalOpen, setSharingModalOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   const [collectedProps, drag] = useDrag({
@@ -126,7 +129,7 @@ function Element({
                   type="button"
                   onClick={() => {
                     if (!disabled) {
-                      setIsModificationModalOpen(true)
+                      setModificationModalOpen(true)
                     }
                   }}
                   data-cy="question-title"
@@ -191,7 +194,7 @@ function Element({
                   if (value) {
                     setShowRecoveryPrompt(true)
                   } else {
-                    setIsModificationModalOpen(true)
+                    setModificationModalOpen(true)
                   }
                 }}
                 className={{ root: 'h-8 w-8 p-0' }}
@@ -203,30 +206,32 @@ function Element({
 
             <Button
               disabled={disabled}
-              onClick={() => setIsDuplicationModalOpen(true)}
+              onClick={() => setDuplicationModalOpen(true)}
               className={{ root: 'h-8 w-8 p-0' }}
               data={{ cy: `duplicate-element-${element.name}` }}
             >
               <Button.Icon withoutLabel icon={faCopy} />
             </Button>
 
+            {element.isShared &&
+            !element.isManager &&
+            !element.derivedAccess ? (
+              <Button
+                disabled={disabled}
+                onClick={() => setRemovalModalOpen(true)}
+                className={{
+                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
+                }}
+                data={{ cy: `remove-element-${element.name}` }}
+              >
+                <Button.Icon withoutLabel icon={faX} />
+              </Button>
+            ) : null}
+
             {element.isManager ? (
               <Dropdown
                 disabled={disabled}
                 items={[
-                  {
-                    label: (
-                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="mr-2.5 h-4 w-4"
-                        />
-                        {t('manage.elements.deleteElement')}
-                      </div>
-                    ),
-                    onClick: () => setIsDeletionModalOpen(true),
-                    data: { cy: `delete-element-${element.name}` },
-                  },
                   {
                     label: (
                       <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
@@ -237,8 +242,40 @@ function Element({
                         {t('manage.elements.shareElement')}
                       </div>
                     ),
-                    onClick: () => setIsSharingModalOpen(true),
+                    onClick: () => setSharingModalOpen(true),
                     data: { cy: `share-element-${element.name}` },
+                  },
+                  ...(element.isManager &&
+                  !element.isOwner &&
+                  !element.derivedAccess
+                    ? [
+                        {
+                          label: (
+                            <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                              <FontAwesomeIcon
+                                icon={faX}
+                                className="mr-2.5 h-4 w-4"
+                              />
+                              {t('manage.questionPool.removeElement')}
+                            </div>
+                          ),
+                          onClick: () => setRemovalModalOpen(true),
+                          data: { cy: `remove-element-${element.name}` },
+                        },
+                      ]
+                    : []),
+                  {
+                    label: (
+                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                        <FontAwesomeIcon
+                          icon={faTrashCan}
+                          className="mr-2.5 h-4 w-4"
+                        />
+                        {t('manage.elements.deleteElement')}
+                      </div>
+                    ),
+                    onClick: () => setDeletionModalOpen(true),
+                    data: { cy: `delete-element-${element.name}` },
                   },
                 ]}
                 trigger={
@@ -254,58 +291,66 @@ function Element({
           </div>
         </div>
       )}
+
       {showRecoveryPrompt && (
         <RecoveryPrompt
           editMode
           open={showRecoveryPrompt}
           onRecovery={() => {
             setShowRecoveryPrompt(false)
-            setIsModificationModalOpen(true)
+            setModificationModalOpen(true)
           }}
           onDiscard={() => {
             localStorage.removeItem(`autosave-element-${element.id}`)
             setShowRecoveryPrompt(false)
-            setIsModificationModalOpen(true)
+            setModificationModalOpen(true)
           }}
         />
       )}
       {isModificationModalOpen && (
         <ElementEditModal
-          handleSetIsOpen={setIsModificationModalOpen}
+          handleSetIsOpen={setModificationModalOpen}
           triggerSuccessToast={triggerSuccessToast}
           isOpen={isModificationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.EDIT}
         />
       )}
-      {isDuplicationModalOpen && (
+      {isDuplicationModalOpen && element.isEditor && (
         <ElementEditModal
-          handleSetIsOpen={setIsDuplicationModalOpen}
+          handleSetIsOpen={setDuplicationModalOpen}
           triggerSuccessToast={triggerSuccessToast}
           isOpen={isDuplicationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.DUPLICATE}
         />
       )}
-      {isDeletionModalOpen && (
+      {isDeletionModalOpen && element.isManager && (
         <ElementDeletionModal
           isModalOpen={isDeletionModalOpen}
-          setModalOpen={setIsDeletionModalOpen}
+          setModalOpen={setDeletionModalOpen}
           elementId={element.id}
-          type={element.type}
           title={element.name}
-          content={element.content}
           unsetDeletedQuestion={unsetDeletedQuestion}
         />
       )}
-      {isSharingModalOpen && (
+      {isRemovalModalOpen && !element.isOwner && (
+        <ElementRemovalModal
+          isModalOpen={isRemovalModalOpen}
+          setModalOpen={setRemovalModalOpen}
+          elementId={element.id}
+          title={element.name}
+          unsetDeletedQuestion={unsetDeletedQuestion}
+        />
+      )}
+      {isSharingModalOpen && element.isManager && (
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
           objectType={SharingObjectType.Element}
           isOwner={element.isOwner ?? false}
           open={isSharingModalOpen}
-          onClose={() => setIsSharingModalOpen(false)}
+          onClose={() => setSharingModalOpen(false)}
         />
       )}
     </div>

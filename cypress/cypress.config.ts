@@ -802,6 +802,16 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async deleteElements() {
+          const prisma = await connect()
+
+          try {
+            await prisma.element.deleteMany({})
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         // #endregion
 
         // ! Practice Quiz queries / mutations

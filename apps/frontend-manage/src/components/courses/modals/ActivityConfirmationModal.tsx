@@ -1,11 +1,12 @@
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 
 interface ActivityConfirmationModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   title: string
-  message: string
+  message: string | React.ReactNode
   onSubmit: () => Promise<any>
   submitting: boolean
   confirmations: Record<string, boolean>
@@ -49,7 +50,7 @@ function ActivityConfirmationModal({
             await onSubmit()
             setOpen(false)
           }}
-          data={{ cy: 'activity-confirmation-modal-confirm' }}
+          data={{ cy: 'confirmation-modal-confirm' }}
         >
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
@@ -59,17 +60,15 @@ function ActivityConfirmationModal({
           onClick={() => {
             setOpen(false)
           }}
-          data={{ cy: 'activity-confirmation-modal-cancel' }}
+          data={{ cy: 'confirmation-modal-cancel' }}
         >
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
     >
-      <UserNotification
-        type="warning"
-        message={message}
-        className={{ root: 'mb-3' }}
-      />
+      <UserNotification type="warning" className={{ root: 'mb-3 text-base' }}>
+        {message}
+      </UserNotification>
       {children}
     </Modal>
   )

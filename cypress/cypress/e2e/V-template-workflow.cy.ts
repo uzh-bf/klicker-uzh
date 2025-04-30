@@ -6,7 +6,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('M-template.json').then((liveQuizData) => {
+    cy.fixture('V-template.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
@@ -2447,7 +2447,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.activity1.name).should('not.exist')
 
     cy.loginIndividualCatalyst()
@@ -2460,99 +2460,12 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.activity2.name).should('not.exist')
   })
 
   it('Delete all created questions', function () {
-    cy.loginLecturer()
-    cy.wrap([
-      this.data.SC.title,
-      this.data.MC.title,
-      this.data.KP.title,
-      this.data.NR.title,
-      this.data.FT.title,
-      this.data.SE.title,
-      this.data.CS.title,
-      this.data.SC2.title,
-      this.data.MC2.title,
-      this.data.KP2.title,
-      this.data.NR2.title,
-      this.data.FT2.title,
-      this.data.SE2.title,
-      this.data.CS2.title,
-      this.data.SCML.title,
-      this.data.MCML.title,
-      this.data.KPML.title,
-      this.data.NRML.title,
-      this.data.FTML.title,
-      this.data.SEML.title,
-      this.data.CSML.title,
-      this.data.SCML2.title,
-      this.data.MCML2.title,
-      this.data.KPML2.title,
-      this.data.NRML2.title,
-      this.data.FTML2.title,
-      this.data.SEML2.title,
-      this.data.CSML2.title,
-      this.data.SCMLAF.title,
-      this.data.MCMLAF.title,
-      this.data.KPMLAF.title,
-      this.data.SCMLAF2.title,
-      this.data.MCMLAF2.title,
-      this.data.KPMLAF2.title,
-
-      this.data.SC.title,
-      this.data.MC.title,
-      this.data.KP.title,
-      this.data.NR.title,
-      this.data.FT.title,
-      this.data.SE.title,
-      this.data.CS.title,
-      this.data.activity1.newElements.SC.title,
-      this.data.activity1.newElements.MC.title,
-      this.data.activity1.newElements.KP.title,
-    ]).each((question: string) => {
-      cy.deleteElement({ elementName: question })
-    })
-
-    cy.loginIndividualCatalyst()
-    cy.wrap([
-      this.data.SC3.title,
-      this.data.MC3.title,
-      this.data.KP3.title,
-      this.data.NR3.title,
-      this.data.FT3.title,
-      this.data.SE3.title,
-      this.data.CS3.title,
-      this.data.SCML3.title,
-      this.data.MCML3.title,
-      this.data.KPML3.title,
-      this.data.NRML3.title,
-      this.data.FTML3.title,
-      this.data.SEML3.title,
-      this.data.CSML3.title,
-      this.data.SCMLAF3.title,
-      this.data.MCMLAF3.title,
-      this.data.KPMLAF3.title,
-
-      this.data.SC.title,
-      this.data.MC.title,
-      this.data.KP.title,
-      this.data.NR.title,
-      this.data.FT.title,
-      this.data.SE.title,
-      this.data.CS.title,
-      this.data.activity2.newElements.SC.title,
-      this.data.activity2.newElements.MC.title,
-      this.data.activity2.newElements.KP.title,
-      this.data.activity2.newElements.NR.title,
-      this.data.activity2.newElements.FT.title,
-      this.data.activity2.newElements.SE.title,
-      this.data.activity2.newElements.CS.title,
-    ]).each((question: string) => {
-      cy.deleteElement({ elementName: question })
-    })
+    cy.deleteAllElements()
   })
 
   it('Delete all created resources', function () {

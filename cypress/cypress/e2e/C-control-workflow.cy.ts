@@ -116,7 +116,7 @@ describe('Test functionalities of frontend-control application', function () {
 
     cy.findByText(this.data.quizName).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${this.data.quizName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.quizName).should('not.exist')
   })
 

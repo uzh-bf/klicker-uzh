@@ -5,7 +5,7 @@ const currentYear = new Date().getFullYear()
 
 describe('Test course creation and editing functionalities', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('E-course.json').then((data) => {
+    cy.fixture('N-course.json').then((data) => {
       this.data = data
     })
   })
@@ -730,7 +730,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="live-quizzes"]`).click()
     cy.findByText(this.data.deletion.lqName).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.deletion.lqName).should('not.exist')
   })
   // #endregion
