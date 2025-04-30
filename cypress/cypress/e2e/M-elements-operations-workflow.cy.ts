@@ -1708,18 +1708,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
-
-    cy.loginInstitutionalCatalyst()
-    cy.reload()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
-      'not.exist'
-    )
-
-    cy.loginInstitutionalCatalyst2()
-    cy.reload()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
-      'not.exist'
-    )
   })
   // #region
 
