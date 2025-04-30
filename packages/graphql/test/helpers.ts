@@ -254,7 +254,7 @@ export async function seedElements(
       name: 'SC Element',
       content: 'SC Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -264,7 +264,7 @@ export async function seedElements(
       name: 'MC Element',
       content: 'MC Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -274,7 +274,7 @@ export async function seedElements(
       name: 'KP Element',
       content: 'KP Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -284,7 +284,7 @@ export async function seedElements(
       name: 'NR Element',
       content: 'NR Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -294,7 +294,7 @@ export async function seedElements(
       name: 'FT Element',
       content: 'FT Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -304,7 +304,7 @@ export async function seedElements(
       name: 'SE Element',
       content: 'SE Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
       answerCollectionId: AC.id,
     },
   })
@@ -315,7 +315,7 @@ export async function seedElements(
       name: 'CS Element',
       content: 'CS Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
       answerCollectionId: AC.id,
       answerCollectionItems: {
         connect: [{ id: AC.entries[1]!.id }, { id: AC.entries[2]!.id }],
@@ -329,7 +329,7 @@ export async function seedElements(
       name: 'FC Element',
       content: 'FC Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
@@ -339,7 +339,7 @@ export async function seedElements(
       name: 'CT Element',
       content: 'CT Content',
       options: {},
-      ownerId: userOne.id,
+      ownerId: userContext.user.id,
     },
   })
 
