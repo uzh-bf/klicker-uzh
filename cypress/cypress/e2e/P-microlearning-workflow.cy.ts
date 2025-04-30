@@ -22,11 +22,11 @@ describe('Different microlearning workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 0: Preparation - Question Creation
   // #region
@@ -1522,7 +1522,9 @@ describe('Different microlearning workflows', function () {
 
     // delete elements
     cy.deleteElement({ elementName: this.data.manipulation.newSETitle })
+    cy.wait(500)
     cy.deleteElement({ elementName: this.data.CSML2.title })
+    cy.wait(500)
 
     // delete associated answer collection
     cy.get('[data-cy="resources"]').click()
