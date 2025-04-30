@@ -226,7 +226,13 @@ export async function seedAnswerCollections(
   return collections as AnswerCollection[]
 }
 
-// TODO: docstring
+/**
+ * Seeds the database with different types of elements for testing
+ *
+ * @param userContext - The user context containing the Prisma client and user information
+ * @param answerCollectionId - The ID of the answer collection to associate with certain elements
+ * @returns An object containing all created elements (SC, MC, KP, NR, FT, SE, CS, FC, CT)
+ */
 export async function seedElements(
   userContext,
   answerCollectionId: number
@@ -254,7 +260,7 @@ export async function seedElements(
       name: 'SC Element',
       content: 'SC Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -264,7 +270,7 @@ export async function seedElements(
       name: 'MC Element',
       content: 'MC Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -274,7 +280,7 @@ export async function seedElements(
       name: 'KP Element',
       content: 'KP Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -284,7 +290,7 @@ export async function seedElements(
       name: 'NR Element',
       content: 'NR Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -294,7 +300,7 @@ export async function seedElements(
       name: 'FT Element',
       content: 'FT Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -304,7 +310,7 @@ export async function seedElements(
       name: 'SE Element',
       content: 'SE Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
       answerCollectionId: AC.id,
     },
   })
@@ -315,7 +321,7 @@ export async function seedElements(
       name: 'CS Element',
       content: 'CS Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
       answerCollectionId: AC.id,
       answerCollectionItems: {
         connect: [{ id: AC.entries[1]!.id }, { id: AC.entries[2]!.id }],
@@ -329,7 +335,7 @@ export async function seedElements(
       name: 'FC Element',
       content: 'FC Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -339,7 +345,7 @@ export async function seedElements(
       name: 'CT Element',
       content: 'CT Content',
       options: {},
-      ownerId: userContext.user.id,
+      ownerId: userContext.user.sub,
     },
   })
 
@@ -432,7 +438,16 @@ export async function seedAnswerCollectionPermissions(
   await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
 }
 
-// TODO: docstring
+/**
+ * Seeds catalog collection permissions for testing
+ *
+ * Creates user permissions (READ, WRITE, ADMIN) for users 2, 3, and 4 on specified
+ * public and restricted catalog collections.
+ *
+ * @param prisma - Prisma client instance
+ * @param publicId - ID of the public catalog collection
+ * @param restrictedId - ID of the restricted catalog collection
+ */
 export async function seedCatalogCollectionPermissions(
   prisma: PrismaClient,
   publicId: string,

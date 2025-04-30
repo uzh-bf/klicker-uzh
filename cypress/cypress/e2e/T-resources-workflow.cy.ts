@@ -388,7 +388,6 @@ describe('Create, edit and share answer collections', function () {
   it('Cleanup: Verify that all answer collections have been deleted properly', function () {
     validateDatabaseContent()
   })
-
   // #endregion
 
   // ! 3. Sharing functionalities (restricted collection)

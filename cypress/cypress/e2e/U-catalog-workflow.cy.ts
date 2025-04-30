@@ -22,9 +22,11 @@ describe('Test all functionalities of catalog collections and objects contained 
   function verifyAdminOwnerPermissionsCCPublic({
     data,
     ownership,
+    elementOwnership,
   }: {
     data: any
     ownership: boolean
+    elementOwnership: boolean
   }) {
     cy.get(
       `[data-cy="catalog-collection-${data.CCPublic}-actions"]`
@@ -89,11 +91,102 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get(`[data-cy="remove-object-${data.liveQuiz.template.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
+    cy.get('[data-cy="leave-catalog-collection"]').click()
+
+    // verify that the selection questions can be imported or requested from the catalog collection
+    cy.get(`[data-cy="catalog-object-${data.SEML.title}"]`)
+      .should('exist')
+      .should(
+        elementOwnership ? 'contain' : 'not.contain',
+        messages.manage.catalog.accessRESTRICTED
+      ) // user not admin on object -> object permissions relevant in top-level catalog collection
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="request-access-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
+
+    cy.get(`[data-cy="catalog-object-${data.SEML2.title}"]`)
+      .should('exist')
+      .should(
+        elementOwnership ? 'contain' : 'not.contain',
+        messages.manage.catalog.accessPUBLIC
+      ) // user not admin on object -> object permissions relevant in top-level catalog collection
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
+
+    // move into catalog collection (public)
+    cy.get(`[data-cy="catalog-object-${data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(data.CCPublic)
+    cy.get(`[data-cy="catalog-object-${data.SEML.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+      cy.get(`[data-cy="request-access-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
+
+    cy.get(`[data-cy="catalog-object-${data.SEML2.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
+    cy.get('[data-cy="leave-catalog-collection"]').click()
+    cy.get(`[data-cy="catalog-object-${data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(data.CCRestricted)
+    cy.get(`[data-cy="catalog-object-${data.SEML.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+      cy.get(`[data-cy="request-access-${data.SEML.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
+
+    cy.get(`[data-cy="catalog-object-${data.SEML2.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
+    if (elementOwnership) {
+      cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="close-share-object"]').click()
+    } else {
+      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
+      cy.get('[data-cy="cancel-request-access"]').click()
+    }
   }
 
   // ! Part 1: Creation of Catalog Collections and Content
   // #region
-  it('Create a new answer collection AC1 in lecturer account', function () {
+  it('Create a new answer collection AC1 in the lecturer account', function () {
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
@@ -110,7 +203,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
   })
 
-  it('Create a new answer collection AC2 in pro1 account', function () {
+  it('Create a new answer collection AC2 in the pro1 account', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
@@ -125,6 +218,26 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="answer-collection-${this.data.AC2.name}"]`).should(
       'exist'
     )
+  })
+
+  it('Create two new selection questions in the pro1 account', function () {
+    cy.loginIndividualCatalyst()
+    cy.createQuestionSE({
+      name: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.AC2.name,
+      userId: Cypress.env('LECTURER_IND_ID'),
+    })
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.createQuestionSE({
+      name: this.data.SEML2.title,
+      content: this.data.SEML2.content,
+      numberOfInputs: this.data.SEML2.inputs,
+      collectionName: this.data.AC2.name,
+      userId: Cypress.env('LECTURER_IND_ID'),
+    })
+    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
   })
 
   it('Create the questions that will be required for this test workflow', function () {
@@ -469,7 +582,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.sharing.permissionsADMIN)
   })
 
-  it('Add AC2 to both catalog collections with restricted visibility using WRITE / ADMIN permissions respectively', function () {
+  it('Add the second answer collection to both catalog collections with restricted visibility using WRITE / ADMIN permissions respectively', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
@@ -586,13 +699,152 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).contains(messages.manage.catalog.accessPUBLIC)
   })
 
+  it('Add the selection questions to the catalog collections and the top-level catalg collection', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // add the two selection questions to the top level of the catalog collection
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-1"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML2.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML2.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+
+    // add the selection queestions as public and restricted objects to the public catalog collection
+    cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-1"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML2.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML2.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+
+    // add the selection questions as public and restricted objects to the restricted catalog collection
+    cy.get('[data-cy="leave-catalog-collection"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-1"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.SEML2.title
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.SEML2.title}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+  })
+
   it('Verify that the permissions on the catalog collections are correctly set for lecturer', function () {
     // test owner privileges on public catalog collection (share, transfer ownership, delete, edit)
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
-    verifyAdminOwnerPermissionsCCPublic({ data: this.data, ownership: true })
+    verifyAdminOwnerPermissionsCCPublic({
+      data: this.data,
+      ownership: true,
+      elementOwnership: false,
+    })
 
     // minimal testing of owner privileges on restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
@@ -618,7 +870,11 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog"]').click()
 
     // test availability of ADMIN permissions for user pro1 on public catalog collection
-    verifyAdminOwnerPermissionsCCPublic({ data: this.data, ownership: false })
+    verifyAdminOwnerPermissionsCCPublic({
+      data: this.data,
+      ownership: false,
+      elementOwnership: true,
+    })
 
     // test availability of WRITE permissions for user pro1 on restricted catalog collection (can modify object assignments)
     cy.get('[data-cy="leave-catalog-collection"]').click()
@@ -656,7 +912,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).click()
     cy.get('[data-cy="cancel-removal"]').click()
   })
+  // #endregion
 
+  // ! Part 3: Object Sharing
+  // #region
   it('Verify that user pro2 without permissions on the public catalog collection can see and request / import content', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
@@ -692,6 +951,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click() // navigate back to catalog collection
+    cy.logoutLecturer()
   })
 
   it('Verify that user pro3 can see and request access to objects in restricted answer collection with READ permissions', function () {
@@ -717,10 +977,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
   })
-  // #endregion
 
-  // ! Part 3: Object Sharing
-  // #region
   it('Verify that the permissions on the objects themselves (sharing, etc.) are determined by object access', function () {
     // main lecturer - OWNER of AC1 and no access to AC2 with corresponding sharing permissions
     cy.loginLecturer()
@@ -1362,6 +1619,17 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   // ! Cleanup
   // #region
+  it('Cleanup: Delete all questions that have been created', function () {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: this.data.SC.title })
+    cy.deleteElement({ elementName: this.data.SCML.title })
+    cy.logoutLecturer()
+
+    cy.loginIndividualCatalyst()
+    cy.deleteElement({ elementName: this.data.SEML.title })
+    cy.deleteElement({ elementName: this.data.SEML2.title })
+  })
+
   it('Cleanup: Remove the shared answer collection from all accounts and delete it', function () {
     // remove the shared answer collections from pro1
     cy.loginIndividualCatalyst()
@@ -1426,12 +1694,6 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.template.name}"]`).should(
       'not.exist'
     )
-  })
-
-  it('Cleanup: Delete all questions that have been created', function () {
-    cy.loginLecturer()
-    cy.deleteElement({ elementName: this.data.SC.title })
-    cy.deleteElement({ elementName: this.data.SCML.title })
   })
 
   it('Cleanup: Remove the two catalog collections through the lecturer account (owner)', function () {
