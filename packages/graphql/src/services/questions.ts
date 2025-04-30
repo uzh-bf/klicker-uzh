@@ -488,6 +488,7 @@ export async function deleteQuestion(
           isDeleted: true,
           answerCollection: { disconnect: true },
           answerCollectionItems: { set: [] },
+          directPermissions: { deleteMany: {} }, // delete all direct permissions on the element
         },
       })
 

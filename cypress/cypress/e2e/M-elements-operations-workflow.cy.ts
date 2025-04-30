@@ -1541,8 +1541,13 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that imported question is visible to user pro2 (copied and with edit permissions)', function () {
     cy.loginInstitutionalCatalyst()
     cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
-    cy.get(`[data-cy="edit-element-${this.data.SEML.title}"]`).click()
+    cy.get(`[data-cy="edit-element-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SEML.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).should(
+      'exist'
+    )
   })
 
   // TODO: re-introduce this test, once the removal functionality for elements is available
@@ -1595,6 +1600,128 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
   // #endregion
+
+  // ! Part 6: Direct sharing / enabled functionalities
+  // #region
+  it('Create a single choice question and share it with different permission levels', function () {
+    // create SC question
+    cy.loginLecturer()
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // share it directly with READ, WRITE and ADMIN permissions with the users pro1, pro2 and pro3, respectively
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).click()
+
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsWRITE
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsWRITE)
+
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST2_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+  })
+
+  it('Verify that the user with granted access are able to access the correct element manipulation functionalities', function () {
+    // READ permissions should enable a user to duplicate the element (no editing, no re-use, no deletion / sharing)
+    cy.loginIndividualCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+
+    // WRITE permissions should enable a user to duplicate or edit the element (no re-use, no deletion / sharing)
+    cy.loginInstitutionalCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+    cy.logoutLecturer()
+
+    // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
+    cy.loginInstitutionalCatalyst2()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).should('exist')
+    cy.get(`[data-cy="delete-element-${this.data.SCML.title}"]`).should('exist')
+  })
+
+  it('Cleanup: Delete the created question again and verify deletion', function () {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: this.data.SCML.title })
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+
+    cy.loginIndividualCatalyst()
+    cy.reload()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+
+    cy.loginInstitutionalCatalyst()
+    cy.reload()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+
+    cy.loginInstitutionalCatalyst2()
+    cy.reload()
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
+      'not.exist'
+    )
+  })
+  // #region
 
   // ! Verification
   // #region
