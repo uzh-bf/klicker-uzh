@@ -702,6 +702,7 @@ const sharedElementProps = (t: any) => ({
     type: PermissionLevel,
     nullable: true,
   }),
+  derivedAccess: t.exposeBoolean('derivedAccess', { nullable: true }),
   isOwner: t.exposeBoolean('isOwner', { nullable: true }),
   isManager: t.exposeBoolean('isManager', { nullable: true }),
   isEditor: t.exposeBoolean('isEditor', { nullable: true }),
@@ -717,6 +718,7 @@ const sharedElementProps = (t: any) => ({
 interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
   permissionLevel?: DB.PermissionLevel
+  derivedAccess?: boolean // = derived from other object => removal disabled
   isOwner?: boolean // = OWNER
   isManager?: boolean // = OWNER / ADMIN
   isEditor?: boolean // = OWNER / ADMIN / WRITE

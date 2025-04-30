@@ -697,7 +697,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteQuestion: t.withAuth(asUserFullAccess).field({
+      deleteElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -707,9 +707,19 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await QuestionService.deleteQuestion(args, ctx)
+            return await QuestionService.deleteElement(args, ctx)
           }
         ),
+      }),
+
+      removeElement: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.removeElement(args, ctx)
+        },
       }),
 
       editTag: t.withAuth(asUserFullAccess).field({

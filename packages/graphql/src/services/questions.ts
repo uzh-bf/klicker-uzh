@@ -51,6 +51,7 @@ export async function getUserQuestions(ctx: ContextWithUser) {
         ? {
             ...object.element,
             permissionLevel: object.permissionLevel,
+            derivedAccess: object.derived,
             isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
             isManager:
               object.permissionLevel === DB.PermissionLevel.OWNER ||
@@ -97,6 +98,7 @@ export async function getSingleQuestion(
   return {
     ...question,
     permissionLevel: permission!.permissionLevel,
+    derivedAccess: permission!.derived,
     isOwner: permission!.permissionLevel === DB.PermissionLevel.OWNER,
     isManager:
       permission!.permissionLevel === DB.PermissionLevel.OWNER ||
@@ -466,7 +468,7 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion(
+export async function deleteElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
@@ -521,6 +523,44 @@ export async function deleteQuestion(
   }
 
   return deletedElement
+}
+
+export async function removeElement(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified element
+  const element = await ctx.prisma.element.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this element and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.element.update({
+      where: { id },
+      data: {
+        directPermissions: {
+          deleteMany: { userId: ctx.user.sub },
+        },
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      { elementId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id,
+  })
+
+  return id
 }
 
 export async function editTag(

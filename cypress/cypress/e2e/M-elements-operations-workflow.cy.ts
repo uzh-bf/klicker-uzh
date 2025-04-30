@@ -867,7 +867,7 @@ describe('Create different types of elements (with and without sample solution) 
 
       // delete live quiz
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
-      cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     })
 
     // delete all practice quizzes
@@ -882,7 +882,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).click()
       cy.get(`[data-cy="delete-practice-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-      cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
       cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).should('not.exist')
     })
 
@@ -896,7 +896,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="microlearning-actions-${ml}"]`).click()
       cy.get(`[data-cy="delete-microlearning-${ml}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-      cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
       cy.get(`[data-cy="microlearning-actions-${ml}"]`).should('not.exist')
     })
 
@@ -910,7 +910,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="groupActivity-actions-${ga}"]`).click()
       cy.get(`[data-cy="delete-groupActivity-${ga}"]`).click()
       cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
-      cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
       cy.get(`[data-cy="groupActivity-actions-${ga}"]`).should('not.exist')
     })
   })
@@ -1550,20 +1550,19 @@ describe('Create different types of elements (with and without sample solution) 
     )
   })
 
-  // TODO: re-introduce this test, once the removal functionality for elements is available
-  // it('Remove the public question from user pro1', function () {
-  //   cy.loginIndividualCatalyst()
-  //   cy.get('[data-cy="analytics"]').should('exist')
-  //   cy.get('[data-cy="resources"]').click()
-  //   cy.get('[data-cy="answer-collections"]').click()
-  //   cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(
-  //     'exist'
-  //   )
-  //   removeAnswerCollection({ name: this.data.SEML.title })
-  //   cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(
-  //     'not.exist'
-  //   )
-  // })
+  it('Remove the public question from user pro1', function () {
+    cy.loginIndividualCatalyst()
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="remove-element-${this.data.SEML.title}"]`).click()
+
+    cy.get('[data-cy="confirm-deletion-final"]').click()
+    cy.get('[data-cy="confirm-derived-access"]').click()
+    cy.get('[data-cy="confirm-dependency-access"]').click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(
+      'not.exist'
+    )
+  })
 
   it('Delete the original public question', function () {
     cy.loginLecturer()

@@ -157,11 +157,9 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-actions-${this.data.PQ.name}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${this.data.PQ.name}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="practice-quiz-actions-${this.data.PQ.name}"]`).should(
       'not.exist'
     )
@@ -261,11 +259,9 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${this.data.ML.name}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${this.data.ML.name}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${this.data.ML.name}"]`).should(
       'not.exist'
     )
@@ -290,13 +286,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
   })
 
   it('Cleanup: Delete all created questions', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-    const questions = [this.data.question1.title, this.data.question2.title]
-
-    cy.wrap(questions).each((title: string) => {
-      cy.deleteElement({ elementName: title })
-    })
+    cy.deleteAllElements()
   })
 
   it("Verify that the microlearning is no longer visible on the student's view", function () {

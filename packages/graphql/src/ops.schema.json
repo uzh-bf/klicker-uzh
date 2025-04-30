@@ -3002,6 +3002,18 @@
             "deprecationReason": null
           },
           {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "explanation",
             "description": null,
             "args": [],
@@ -5326,6 +5338,18 @@
             "deprecationReason": null
           },
           {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "explanation",
             "description": null,
             "args": [],
@@ -6364,6 +6388,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,
@@ -10102,6 +10138,18 @@
             "deprecationReason": null
           },
           {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "explanation",
             "description": null,
             "args": [],
@@ -11135,6 +11183,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,
@@ -18569,6 +18629,35 @@
             "deprecationReason": null
           },
           {
+            "name": "deleteElement",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "UNION",
+              "name": "Element",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "deleteFeedback",
             "description": null,
             "args": [
@@ -18781,35 +18870,6 @@
             "type": {
               "kind": "OBJECT",
               "name": "PracticeQuiz",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deleteQuestion",
-            "description": null,
-            "args": [
-              {
-                "name": "id",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "UNION",
-              "name": "Element",
               "ofType": null
             },
             "isDeprecated": false,
@@ -22355,6 +22415,35 @@
             "deprecationReason": null
           },
           {
+            "name": "removeElement",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "removeUserFromGroup",
             "description": null,
             "args": [
@@ -24247,6 +24336,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,
@@ -31436,6 +31537,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedAccess",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,

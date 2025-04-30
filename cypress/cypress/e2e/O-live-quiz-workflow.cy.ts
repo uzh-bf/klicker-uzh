@@ -711,7 +711,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
@@ -720,7 +720,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameDupl).should('not.exist')
   })
   // #endregion
@@ -781,7 +781,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameNew).should('not.exist')
   })
 
@@ -1805,11 +1805,11 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
   })
   // #endregion
 
@@ -1823,26 +1823,20 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'not.be.disabled'
-    )
-    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
+    cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course2.quiz.name).should('not.exist')
   })
 
@@ -1865,29 +1859,7 @@ describe('Different live-quiz workflows', function () {
   })
 
   it('Cleanup: Delete the created questions from the question pool for repeated test execution', function () {
-    cy.loginLecturer()
-
-    const questions = [
-      this.data.SC.title,
-      this.data.MC.title,
-      this.data.KP.title,
-      this.data.NR.title,
-      this.data.FT.title,
-      this.data.SE.title,
-      this.data.CS.title,
-      this.data.SCML.title,
-      this.data.MCML.title,
-      this.data.KPML.title,
-      this.data.NRML.title,
-      this.data.FTML.title,
-      this.data.SEML.title,
-      this.data.CSML.title,
-      this.data.CT.title,
-      this.data.CT2.title,
-    ]
-    cy.wrap(questions).each((question: string) => {
-      cy.deleteElement({ elementName: question })
-    })
+    cy.deleteAllElements()
   })
 
   it('Cleanup: Delete the created answer collection', function () {

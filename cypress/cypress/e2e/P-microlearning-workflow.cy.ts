@@ -794,12 +794,12 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-anonymous-responses-microlearning"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
     ).click()
     cy.get(`[data-cy="end-microlearning-${this.data.running.nameNew}"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
   })
 
   it('Check that the microlearning is no longer visible to the student that submitted answers', function () {
@@ -829,25 +829,19 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="delete-microlearning-${this.data.running.nameNew}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'not.be.disabled'
-    )
-    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
+    cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.running.nameNew}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
     ).should('not.exist')
@@ -867,7 +861,7 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="delete-microlearning-${this.data.duplication.name}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.duplication.name}"]`
     ).should('not.exist')
@@ -967,7 +961,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
       'not.exist'
     )
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(`[data-cy="microlearning-actions-${this.data.future.name}"]`).should(
       'not.exist'
     )
@@ -1252,11 +1246,9 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="delete-microlearning-${this.data.completed.name}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
-      'be.disabled'
-    )
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.completed.name}"]`
     ).should('not.exist')
@@ -1758,7 +1750,7 @@ describe('Different microlearning workflows', function () {
       `[data-cy="delete-microlearning-${this.data.manipulation.name}"]`
     ).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
     ).should('not.exist')
@@ -1771,7 +1763,7 @@ describe('Different microlearning workflows', function () {
       `[data-cy="delete-microlearning-${this.data.manipulation.duplicateName}"]`
     ).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="microlearning-actions-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
@@ -1781,25 +1773,7 @@ describe('Different microlearning workflows', function () {
   // ! Cleanup
   // #region
   it('Cleanup: Delete all created questions', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-    const questions = [
-      this.data.SCML.title,
-      this.data.SC.title,
-      this.data.MCML.title,
-      this.data.KPML.title,
-      this.data.NRML.title,
-      this.data.FTML.title,
-      this.data.SEML.title,
-      this.data.CSML.title,
-      this.data.FC.title,
-      this.data.CT.title,
-    ]
-
-    cy.wrap(questions).each((title: string) => {
-      cy.deleteElement({ elementName: title })
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
-    })
+    cy.deleteAllElements()
   })
 
   it('Cleanup: Delete the converted practice quiz to avoid naming collisions', function () {
@@ -1815,7 +1789,7 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.conversion.pqName}"]`
     ).click()
-    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.conversion.pqName}"]`
     ).should('not.exist')

@@ -1095,11 +1095,26 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
         'We could not find any questions that meet the desired criteria. Please try other filters or create a new question.',
-      deleteQuestion: 'Delete question',
+      deleteElement: 'Delete element',
       confirmDeletion:
-        'Are you sure you want to delete the following question(s)?',
-      noQuestionRecovery:
-        'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing activities.',
+        'Please confirm the following consequences of deleting the element <b>{name}</b>.',
+      elementDeletionFinal:
+        'The deletion of an element is irreversible and deleted elements cannot be restored. The element will not be removed from existing activities.',
+      elementDeletionOtherUsers:
+        'If other users with shared access to the element use it in activities, access for these users will remain.',
+      elementDeletionDerivedAccessHint:
+        'If the element is used in an activity that you own or have admin access to, it cannot be completely deleted for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its deletion. Once the associated activity is deleted, the element will be automatically deleted as well.',
+      elementDeletionDependencyAccess:
+        'Derived access rights to included resources will be automatically revoked.',
+      removeElement: 'Remove Element',
+      confirmElementRemoval:
+        'Please confirm the following consequences of removing the element <b>{name}</b> from your user account.',
+      elementRemovalFinal:
+        'The removal of this element from your account is irreversible and cannot be undone.',
+      elementRemovalDerivedAccessHint:
+        'If the element is used in an activity that you own or have admin access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its removal. Once the associated activity is deleted, the element will be automatically removed as well.',
+      elementRemovalDependencyAccess:
+        'Derived access rights to included resources will be automatically revoked.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
