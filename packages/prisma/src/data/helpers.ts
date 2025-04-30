@@ -192,23 +192,12 @@ export function prepareQuestion({
       correct: choice.correct ?? false,
     }))
 
-    const data = {
+    return {
       ...args,
       options: {
         ...options,
         choices: preparedChoices,
       },
-    }
-
-    return {
-      where: {
-        ownerId_originalId: {
-          ownerId: ownerId,
-          originalId: originalId,
-        },
-      },
-      create: data,
-      update: data,
     }
   }
 
@@ -216,7 +205,7 @@ export function prepareQuestion({
     typeof collectionId !== 'undefined' &&
     typeof usedCollectionEntries !== 'undefined'
   ) {
-    const data = {
+    return {
       ...args,
       options,
       answerCollection: {
@@ -230,33 +219,11 @@ export function prepareQuestion({
         })),
       },
     }
-
-    return {
-      where: {
-        ownerId_originalId: {
-          ownerId: ownerId,
-          originalId: originalId,
-        },
-      },
-      create: data,
-      update: data,
-    }
-  }
-
-  const data = {
-    ...args,
-    options: options ?? {},
   }
 
   return {
-    where: {
-      ownerId_originalId: {
-        ownerId: ownerId,
-        originalId: originalId,
-      },
-    },
-    create: data,
-    update: data,
+    ...args,
+    options: options ?? {},
   }
 }
 
@@ -1043,22 +1010,20 @@ export async function prepareFlashcardsFromFile(
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data: any) => {
-      const flashcard = await prismaClient.element.upsert({
+      // check if an element with the same originalId already exists
+      const existingElement = await prismaClient.element.findFirst({
         where: {
-          ownerId_originalId: {
-            ownerId: userId,
-            originalId: data.originalId,
-          },
+          originalId: data.originalId,
+          ownerId: userId,
         },
-        create: {
-          ...data,
-          owner: {
-            connect: {
-              id: userId,
-            },
-          },
-        },
-        update: {
+      })
+
+      if (existingElement) {
+        return existingElement
+      }
+
+      const flashcard = await prismaClient.element.create({
+        data: {
           ...data,
           owner: {
             connect: {

@@ -21,6 +21,7 @@ import {
   getAnswerCollectionPermissions,
   getCatalogAnswerCollections,
   getCatalogSharingRequests,
+  getDerivedAnswerCollectionPermissions,
   importAnswerCollection,
   requestCatalogObject,
   revokeObjectAccess,
@@ -32,6 +33,7 @@ import {
   initializePrisma,
   seedAnswerCollectionPermissions,
   seedAnswerCollections,
+  seedCatalogCollectionPermissions,
   seedCatalogCollections,
   testCleanup,
   testInitialization,
@@ -89,55 +91,6 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
   // ! Catalog Operations with Answer Collections
   // #region
-  async function seedCatalogCollectionPermissions(
-    prisma,
-    publicId,
-    restrictedId
-  ) {
-    // create permissions for users 2, 3, and 4 (READ, WRITE, ADMIN in ascending order)
-    await prisma.permission.createMany({
-      data: [
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userTwo.id,
-          catalogCollectionId: publicId,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          catalogCollectionId: publicId,
-        },
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userFour.id,
-          catalogCollectionId: publicId,
-        },
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userTwo.id,
-          catalogCollectionId: restrictedId,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          catalogCollectionId: restrictedId,
-        },
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userFour.id,
-          catalogCollectionId: restrictedId,
-        },
-      ],
-    })
-
-    // recompute derived permissions that are checked in backend service functions
-    await recomputeDerivedPermissions({ catalogCollectionId: publicId }, prisma)
-    await recomputeDerivedPermissions(
-      { catalogCollectionId: restrictedId },
-      prisma
-    )
-  }
-
   async function seedAnswerCollectionCatalogAssignments(
     prisma,
     AC1Id,
@@ -372,7 +325,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour2?.userShortname).toBe(userFour.shortname)
   })
 
-  it('Verify that user 5 can request access and import public answer collections in public catalog (incl. clean up)', async () => {
+  it('Verify that user 5 can request access and import public answer collections in public catalog', async () => {
     // create answer collections and catalog collections for testing
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
@@ -1344,6 +1297,82 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(groupPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(groupPermission?.userGroupId).toBe(group.id)
     expect(groupPermission?.permissionId).toBe(dbGroupPermission.id)
+  })
+
+  it('Verify that derived permissions on the answer collection are loaded correctly', async () => {
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // seed derived READ, WRITE and ADMIN permissions for user 2, 3 and 4
+    const permission1 = await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: PermissionLevel.READ,
+        userId: userTwo.id,
+        answerCollectionId: AC1!.id,
+        derived: true,
+      },
+    })
+    const permission2 = await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: PermissionLevel.WRITE,
+        userId: userThree.id,
+        answerCollectionId: AC1!.id,
+        derived: true,
+      },
+    })
+    const permission3 = await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: PermissionLevel.ADMIN,
+        userId: userFour.id,
+        answerCollectionId: AC1!.id,
+        derived: true,
+      },
+    })
+
+    // derived permissions that are copies of direct permissions / resolved group permissions,
+    // should not show up in the derived permissions query
+    const permission4 = await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: PermissionLevel.READ,
+        userId: userFive.id,
+        answerCollectionId: AC1!.id,
+        derived: false,
+      },
+    })
+
+    // fetch the derived permissions and make sure that they are correct
+    const derivedPermissions = await getDerivedAnswerCollectionPermissions(
+      { id: AC1!.id },
+      userOneCtx
+    )
+    expect(derivedPermissions).toBeDefined()
+    expect(derivedPermissions.length).toBe(3)
+
+    const permissionIds = derivedPermissions.map((p) => p.permissionId)
+    expect(permissionIds).toEqual(
+      expect.arrayContaining([permission1.id, permission2.id, permission3.id])
+    )
+
+    const READPermission = derivedPermissions.find(
+      (permission) => permission.userId === userTwo.id
+    )
+    const WRITEPermission = derivedPermissions.find(
+      (permission) => permission.userId === userThree.id
+    )
+    const ADMINPermission = derivedPermissions.find(
+      (permission) => permission.userId === userFour.id
+    )
+    expect(READPermission).toBeDefined()
+    expect(WRITEPermission).toBeDefined()
+    expect(ADMINPermission).toBeDefined()
+    expect(READPermission!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(READPermission!.userId).toBe(userTwo.id)
+    expect(READPermission!.permissionId).toBe(permission1.id)
+    expect(WRITEPermission!.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(WRITEPermission!.userId).toBe(userThree.id)
+    expect(WRITEPermission!.permissionId).toBe(permission2.id)
+    expect(ADMINPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(ADMINPermission!.userId).toBe(userFour.id)
+    expect(ADMINPermission!.permissionId).toBe(permission3.id)
   })
 
   it('Verify that an answer collection OWNER can transfer the corresponding rights', async () => {
