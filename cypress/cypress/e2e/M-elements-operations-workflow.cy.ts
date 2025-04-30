@@ -9,7 +9,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
     })
-    cy.fixture('D-questions.json').then((questionsData) => {
+    cy.fixture('DM-questions.json').then((questionsData) => {
       this.data = { ...this.data, ...questionsData }
     })
   })
@@ -1337,8 +1337,8 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Cleanup: Delete all created objects and validate deletion', function () {
     cy.loginLecturer()
-    cy.deleteElement({ elementName: this.data.SEML.title })
 
+    cy.deleteAllElements()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
@@ -1582,6 +1582,7 @@ describe('Create different types of elements (with and without sample solution) 
   it('Cleanup: Delete all created objects and validate deletion', function () {
     cy.loginLecturer()
 
+    cy.deleteAllElements()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })

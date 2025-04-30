@@ -16,17 +16,17 @@ describe('Different microlearning workflows', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('G-microlearning.json').then((liveQuizData) => {
+    cy.fixture('P-microlearning.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Part 0: Preparation - Question Creation
   // #region
@@ -1282,30 +1282,110 @@ describe('Different microlearning workflows', function () {
 
   // ! Part 5: Practice Quiz Conversion
   // #region
-  it('Convert the seeded past microlearning into a practice quiz', function () {
+  it('Convert the a past microlearning into a practice quiz', function () {
+    const MLName = 'Microlearning for conversion'
+    const MLDisplayName = 'Microlearning for conversion (display name)'
+
+    // create questions and microlearning
     cy.loginLecturer()
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionMC({
+      name: this.data.MCML.title,
+      content: this.data.MCML.content,
+      choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionKPRIM({
+      name: this.data.KPML.title,
+      content: this.data.KPML.content,
+      choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionNR({
+      name: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FTML.title,
+      content: this.data.FTML.content,
+      ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createFlashcard({
+      name: this.data.FC.title,
+      content: this.data.FC.content,
+      explanation: this.data.FC.explanation,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createContent({
+      name: this.data.CT.title,
+      content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.createMicroLearning({
+      name: MLName,
+      displayName: MLDisplayName,
+      courseName: this.data.course,
+      startDate: `${currentYear - 1}-01-01T02:00`,
+      endDate: `${currentYear + 1}-12-31T18:00`,
+      stacks: [
+        {
+          elements: [this.data.SCML.title, this.data.MCML.title],
+        },
+        {
+          elements: [this.data.KPML.title, this.data.NRML.title],
+        },
+        {
+          elements: [this.data.FTML.title],
+        },
+        {
+          elements: [this.data.FC.title],
+        },
+        {
+          elements: [this.data.CT.title],
+        },
+      ],
+    })
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
 
-    // start conversion of a microlearning into a practice quiz
+    // publish and end microleraning
     cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="publish-microlearning-${MLName}"]`)
+      .contains(messages.manage.course.publishMicrolearning)
+      .click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
+    cy.get(`[data-cy="microlearning-${MLName}"]`).contains(
+      messages.shared.generic.published
+    )
+    cy.get(`[data-cy="microlearning-actions-${MLName}"]`).click()
+    cy.get(`[data-cy="end-microlearning-${MLName}"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+
+    // start conversion of a microlearning into a practice quiz
+    cy.get(`[data-cy="microlearning-actions-${MLName}"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.conversion.pastML}"]`
-    ).click()
-    cy.get(
-      `[data-cy="convert-microlearning-${this.data.conversion.pastML}-to-practice-quiz"]`
+      `[data-cy="convert-microlearning-${MLName}-to-practice-quiz"]`
     ).click()
 
     // check if the practice quiz editor is open
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
-      .should('have.value', `${this.data.conversion.pastML} (converted)`)
+      .should('have.value', `${MLName} (converted)`)
       .clear()
       .type(this.data.conversion.pqName)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
-      .should('have.value', this.data.conversion.pastML)
+      .should('have.value', MLDisplayName)
       .clear()
       .type(this.data.conversion.pqDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -1799,6 +1879,7 @@ describe('Different microlearning workflows', function () {
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+    cy.deleteAllElements()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

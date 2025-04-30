@@ -2,7 +2,7 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for selection elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
-    cy.fixture('D-questions.json').then((data) => {
+    cy.fixture('DM-questions.json').then((data) => {
       this.data = data
     })
 
@@ -448,6 +448,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Cleanup: Delete all created answer collections', function () {
+    cy.deleteAllElements()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.SE.collection })

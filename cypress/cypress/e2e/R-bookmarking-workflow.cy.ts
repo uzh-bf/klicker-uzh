@@ -7,7 +7,7 @@ const mlEndDate = `${currentYear}-12-31T18:00`
 
 describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('I-bookmarking.json').then((data) => {
+    cy.fixture('R-bookmarking.json').then((data) => {
       this.data = data
     })
   })

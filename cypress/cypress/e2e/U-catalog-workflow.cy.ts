@@ -3,7 +3,7 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('L-catalog.json').then((data) => {
+    cy.fixture('U-catalog.json').then((data) => {
       this.data = data
     })
     cy.fixture('questions.json').then((data) => {

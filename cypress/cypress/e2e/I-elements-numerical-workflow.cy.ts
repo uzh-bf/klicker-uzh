@@ -3,7 +3,7 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test creation and editing functionalities, validation, etc. for numerical elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
-    cy.fixture('D-questions.json').then((data) => {
+    cy.fixture('DM-questions.json').then((data) => {
       this.data = data
     })
   })

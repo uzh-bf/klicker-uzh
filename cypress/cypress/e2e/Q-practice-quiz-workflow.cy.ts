@@ -9,7 +9,7 @@ describe('Different practice quiz workflows', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('H-practice-quiz.json').then((liveQuizData) => {
+    cy.fixture('Q-practice-quiz.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
@@ -1480,6 +1480,8 @@ describe('Different practice quiz workflows', function () {
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+
+    cy.deleteAllElements()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

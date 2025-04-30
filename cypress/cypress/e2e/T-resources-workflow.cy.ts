@@ -3,7 +3,7 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('K-resources.json').then((data) => {
+    cy.fixture('T-resources.json').then((data) => {
       this.data = data
     })
   })

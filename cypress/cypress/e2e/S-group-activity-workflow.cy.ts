@@ -16,7 +16,7 @@ describe('Create and solve a group activity', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('J-group-activity.json').then((liveQuizData) => {
+    cy.fixture('S-group-activity.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
@@ -1434,12 +1434,10 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Cleanup: Delete all created questions', function () {
-    cy.deleteAllElements()
-  })
-
-  it('Cleanup: Delete the created answer collection', function () {
+  it('Cleanup: Delete all created elements and the created answer collection', function () {
     cy.loginLecturer()
+
+    cy.deleteAllElements()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

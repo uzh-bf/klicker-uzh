@@ -5,7 +5,7 @@ const currentYear = new Date().getFullYear()
 
 describe('Test course creation and editing functionalities', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('E-course.json').then((data) => {
+    cy.fixture('N-course.json').then((data) => {
       this.data = data
     })
   })

@@ -6,7 +6,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('M-template.json').then((liveQuizData) => {
+    cy.fixture('V-template.json').then((liveQuizData) => {
       this.data = { ...this.data, ...liveQuizData }
     })
   })
