@@ -1,8 +1,8 @@
 import { faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  faArrowUpFromBracket,
   faInfoCircle,
   faPencil,
+  faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -48,24 +48,6 @@ function useAnswerCollectionActionsDropdown({
       </Tooltip>
     )
 
-    // sharing functionalities
-    if (isManager) {
-      items.push({
-        id: 'share',
-        label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-            <FontAwesomeIcon
-              icon={faArrowUpFromBracket}
-              className="mr-2.5 h-4 w-4"
-            />
-            {t('manage.resources.shareCollection')}
-          </div>
-        ),
-        onClick: () => setSharingModal(true),
-        data: { cy: 'share-answer-collection' },
-      })
-    }
-
     if (isEditor) {
       // editing permissions on the answer collection
       items.push({
@@ -91,6 +73,21 @@ function useAnswerCollectionActionsDropdown({
         ),
         onClick: () => setViewingModal(true),
         data: { cy: 'view-answer-collection' },
+      })
+    }
+
+    // sharing functionalities
+    if (isManager) {
+      items.push({
+        id: 'share',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faShare} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.shareCollection')}
+          </div>
+        ),
+        onClick: () => setSharingModal(true),
+        data: { cy: 'share-answer-collection' },
       })
     }
 
