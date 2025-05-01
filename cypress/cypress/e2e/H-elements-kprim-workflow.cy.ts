@@ -1,6 +1,14 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for KPRIM elements', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -356,13 +364,6 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     // save modified question
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
-  })
-  // #endregion
-
-  // ! Cleanup
-  // #region
-  it('Cleanup: Delete the KPRIM question', function () {
-    cy.deleteElement({ elementName: this.data.KP.titleEdited })
   })
   // #endregion
 })

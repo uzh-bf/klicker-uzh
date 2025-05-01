@@ -18,6 +18,14 @@ type CriterionDataType = {
 }
 
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.fixture('DM-questions.json').then((data) => {
       this.data = data
@@ -1193,11 +1201,9 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   // ! Cleanup
   // #region
-  it('Cleanup: Delete case study question', function () {
-    cy.deleteElement({ elementName: this.data.CS.titleEdited })
-  })
-
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
+    cy.deleteElement({ elementName: this.data.CS.titleEdited })
+
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
 
@@ -1238,14 +1244,6 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
-  })
-
-  it('Cleanup: Delete all created answer collections', function () {
-    cy.deleteAllElements()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.CS.collection })
-    cy.deleteAnswerCollection({ collectionName: this.data.CS.collectionEdited })
   })
   // #endregion
 })

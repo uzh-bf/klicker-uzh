@@ -9,6 +9,7 @@
     "@testing-library/cypress": "~10.0.3",
     "@types/node": "^20.16.1",
     "@types/uuid": "^10.0.0",
+    "bcryptjs": "~2.4.3",
     "cypress": "~14.3.0",
     "cypress-real-events": "~1.14.0",
     "jose": "~5.9.4",

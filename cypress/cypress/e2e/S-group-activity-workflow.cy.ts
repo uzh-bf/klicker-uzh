@@ -12,6 +12,14 @@ const synchronousActivityStart = `${currentYear + 1}-01-01T02:00`
 const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
 
 describe('Create and solve a group activity', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -1443,20 +1451,6 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
       collectionName: this.data.collection.name,
-    })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
   // #endregion

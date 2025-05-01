@@ -1,6 +1,6 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import { MicroLearning } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import CatalystNotification from './CatalystNotification'
 import MicroLearningElement from './MicroLearningElement'
@@ -67,7 +67,12 @@ function MicroLearningList({
           ))}
         </div>
       ) : userCatalyst ? (
-        <div>{t('manage.course.noPracticeQuizzes')}</div>
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noMicrolearnings')}
+        </UserNotification>
       ) : (
         <CatalystNotification />
       )}

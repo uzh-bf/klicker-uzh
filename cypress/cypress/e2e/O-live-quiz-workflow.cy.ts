@@ -1,6 +1,14 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-quiz workflows', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -1850,30 +1858,6 @@ describe('Different live-quiz workflows', function () {
       if (result === false) {
         throw new Error(
           'No soft deleted live quiz with this name has been found'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-  })
-
-  it('Cleanup: Delete all created elements and the created answer collection', function () {
-    cy.loginLecturer()
-
-    cy.deleteAllElements()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
         )
       }
 

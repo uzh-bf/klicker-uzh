@@ -1,6 +1,6 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
 import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
@@ -67,7 +67,12 @@ function LiveQuizList({
           ))}
         </div>
       ) : (
-        <div>{t('manage.course.noLiveQuizzes')}</div>
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noLiveQuizzes')}
+        </UserNotification>
       )}
     </div>
   )

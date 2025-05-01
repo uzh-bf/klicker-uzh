@@ -6,6 +6,14 @@ const mlStartDate = `${currentYear}-01-01T02:00`
 const mlEndDate = `${currentYear}-12-31T18:00`
 
 describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('R-bookmarking.json').then((data) => {
       this.data = data
@@ -283,10 +291,6 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       // dummy action
       cy.visit(Cypress.env('URL_MANAGE'))
     })
-  })
-
-  it('Cleanup: Delete all created questions', function () {
-    cy.deleteAllElements()
   })
 
   it("Verify that the microlearning is no longer visible on the student's view", function () {

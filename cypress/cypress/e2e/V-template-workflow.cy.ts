@@ -2,6 +2,14 @@ import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -2493,34 +2501,6 @@ describe('Test all functionalities related to the creation, management, sharing 
     ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="confirm-delete-collection"]').click()
-  })
-
-  it('Cleanup: Verify that the answer collections and catalog collections have been deleted correctly', function () {
-    cy.loginLecturer()
-
-    // validate that no collections except from the seeded ones remain
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-
-    // validate that no catalog collections except from the seeded ones remain
-    cy.task('verifyDeletionCatalogCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains catalog collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
   })
   // #endregion
 })

@@ -5,6 +5,14 @@ import messages from '../../../packages/i18n/messages/en'
 const currentYear = new Date().getFullYear()
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -1335,25 +1343,9 @@ describe('Create different types of elements (with and without sample solution) 
     ).should('exist')
   })
 
-  it('Cleanup: Delete all created objects and validate deletion', function () {
-    cy.loginLecturer()
-
-    cy.deleteAllElements()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
-
-    // verify that all created data has been removed again
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
+  it('Cleanup: Reset the database', function () {
+    cy.cleanup()
+    cy.seed()
   })
   // #endregion
 
@@ -1579,25 +1571,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.deleteElement({ elementName: this.data.SEML.title })
   })
 
-  it('Cleanup: Delete all created objects and validate deletion', function () {
-    cy.loginLecturer()
-
-    cy.deleteAllElements()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
-
-    // verify that all created data has been removed again
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
+  it('Cleanup: Reset the database', function () {
+    cy.cleanup()
+    cy.seed()
   })
   // #endregion
 
@@ -1710,24 +1686,4 @@ describe('Create different types of elements (with and without sample solution) 
     )
   })
   // #region
-
-  // ! Verification
-  // #region
-  it('Verify that all answer collections have been deleted successfully', function () {
-    cy.loginLecturer()
-
-    // validate that no collections except from the seeded ones remain
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-  })
-  // #endregion
 })

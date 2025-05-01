@@ -5,6 +5,14 @@ const currentYear = new Date().getFullYear()
 
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -1469,39 +1477,6 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
-  })
-  // #endregion
-
-  // ! Cleanup
-  // #region
-  it('Cleanup: Delete all created questions', function () {
-    cy.deleteAllElements()
-  })
-
-  it('Cleanup: Delete the created answer collection', function () {
-    cy.loginLecturer()
-
-    cy.deleteAllElements()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({
-      collectionName: this.data.collection.name,
-    })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
   })
   // #endregion
 })
