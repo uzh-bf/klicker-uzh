@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
+import PermissionRevocationModal from './PermissionRevocationModal'
 
 function ExistingPermissionEntries({
   type,
@@ -43,6 +44,16 @@ function ExistingPermissionEntries({
     action: 'change',
   })
 
+  // state for managing the permission revocation modal
+  const [revocationModal, setRevocationModal] = useState<{
+    open: boolean
+    permissionId?: number
+    username?: string
+    userGroup?: string
+  }>({
+    open: false,
+  })
+
   // handle access level change with confirmation for own permissions
   const handlePermissionLevelChange = async (
     permissionId: number,
@@ -67,7 +78,9 @@ function ExistingPermissionEntries({
   // handle permission removal with confirmation for own permissions
   const handleRemovePermission = async (
     permissionId: number,
-    isOwn: boolean
+    isOwn: boolean,
+    username?: string,
+    userGroup?: string
   ) => {
     if (isOwn) {
       setModifyOwnPermissionsModal({
@@ -76,7 +89,12 @@ function ExistingPermissionEntries({
         action: 'remove',
       })
     } else {
-      await onPermissionRemoval(permissionId)
+      setRevocationModal({
+        open: true,
+        permissionId,
+        username,
+        userGroup,
+      })
     }
   }
 
@@ -91,6 +109,11 @@ function ExistingPermissionEntries({
       await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!)
     }
     setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
+  }
+
+  // confirm permission revocation
+  const confirmRevocation = async () => {
+    await onPermissionRemoval(revocationModal.permissionId!)
   }
 
   return (
@@ -152,7 +175,9 @@ function ExistingPermissionEntries({
                 onClick={async () => {
                   await handleRemovePermission(
                     permission.permissionId,
-                    permission.isOwn ?? false
+                    permission.isOwn ?? false,
+                    permission.username ?? undefined,
+                    permission.userGroupName ?? undefined
                   )
                 }}
                 data={{
@@ -178,6 +203,13 @@ function ExistingPermissionEntries({
         onConfirm={confirmModifyOwnPermissions}
         action={modifyOwnPermissionsModal.action}
         newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+      />
+      <PermissionRevocationModal
+        open={revocationModal.open}
+        onClose={() => setRevocationModal({ ...revocationModal, open: false })}
+        onRevocation={confirmRevocation}
+        username={revocationModal.username}
+        userGroup={revocationModal.userGroup}
       />
     </>
   )

@@ -208,7 +208,7 @@ export async function getSingleAnswerCollection(
       },
       permissions: { where: { userId: ctx.user.sub } },
       owner: { select: { shortname: true } },
-      _count: { select: { directPermissions: true } },
+      _count: { select: { permissions: true } },
     },
   })
 
@@ -232,9 +232,7 @@ export async function getSingleAnswerCollection(
       ...entry,
       numSolutionUsages: entry._count.itemUsages + entry._count.templateUsages,
     })),
-    numSharedUsers: isManager
-      ? collection._count?.directPermissions
-      : undefined,
+    numSharedUsers: isManager ? collection._count.permissions - 1 : undefined,
     permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
     ownerShortname: collection.owner?.shortname,
     isOwner,
@@ -311,7 +309,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     return {
       ...collection,
       numOfEntries: collection._count.entries,
-      numSharedUsers: collection._count.permissions,
+      numSharedUsers: collection._count.permissions - 1,
       permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
       isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
