@@ -1,4 +1,5 @@
 import { GroupActivity } from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import CatalystNotification from './CatalystNotification'
 import GroupActivityElement from './GroupActivityElement'
@@ -39,7 +40,12 @@ function GroupActivityList({
           ))}
         </div>
       ) : userCatalyst ? (
-        <div>{t('manage.course.noGroupActivities')}</div>
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noGroupActivities')}
+        </UserNotification>
       ) : (
         <CatalystNotification />
       )}

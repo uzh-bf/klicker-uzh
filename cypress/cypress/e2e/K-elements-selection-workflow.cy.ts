@@ -1,6 +1,14 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for selection elements', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.fixture('DM-questions.json').then((data) => {
       this.data = data
@@ -400,11 +408,9 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   // ! Cleanup
   // #region
-  it('Cleanup: Delete the selection question', function () {
-    cy.deleteElement({ elementName: this.data.SE.titleEdited })
-  })
-
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
+    cy.deleteElement({ elementName: this.data.SE.titleEdited })
+
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
 
@@ -447,12 +453,5 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
 
-  it('Cleanup: Delete all created answer collections', function () {
-    cy.deleteAllElements()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.SE.collection })
-    cy.deleteAnswerCollection({ collectionName: this.data.SE.collectionEdited })
-  })
   // #endregion
 })

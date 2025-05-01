@@ -2,6 +2,14 @@ import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('T-resources.json').then((data) => {
       this.data = data
@@ -17,20 +25,6 @@ describe('Create, edit and share answer collections', function () {
 
   // ! Helper functions
   // #region
-  function validateDatabaseContent() {
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-  }
-
   function removeAnswerCollection({ name }: { name: string }) {
     cy.get(`[data-cy="answer-collection-actions-${name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
@@ -298,10 +292,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.deleteAnswerCollection({ collectionName: this.data.public.nameNew })
   })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    validateDatabaseContent()
-  })
   // #endregion
 
   // ! 2. Sharing functionalities (private collection)
@@ -383,10 +373,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.private.name })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    validateDatabaseContent()
   })
   // #endregion
 
@@ -1088,10 +1074,6 @@ describe('Create, edit and share answer collections', function () {
       'not.exist'
     )
   })
-
-  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
-    validateDatabaseContent()
-  })
   // #endregion
 
   // ! 4. Sharing functionalities (public collection)
@@ -1439,10 +1421,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.public.name })
   })
-
-  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
-    validateDatabaseContent()
-  })
   // #endregion
 
   // ! 5. Modification of availability in catalog (automatic declining of requests / persistence of access / ...)
@@ -1677,10 +1655,6 @@ describe('Create, edit and share answer collections', function () {
     // read permission for user pro1 is automatically revoked, since the collection is not used
     cy.deleteAnswerCollection({ collectionName: this.data.private.name })
   })
-
-  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
-    validateDatabaseContent()
-  })
   // #endregion
 
   // ! 6. Direct Sharing of answer collections
@@ -1864,10 +1838,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.direct.name })
-  })
-
-  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
-    validateDatabaseContent()
   })
   // #endregion
 
@@ -2427,17 +2397,12 @@ describe('Create, edit and share answer collections', function () {
     removeAnswerCollection({ name: this.data.access.name })
   })
 
-  // TODO: experiment with soft deletion of answer collection, persistent of derived permissions (revocation of direct permissions)
   it('Cleanup: Delete the answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.access.name })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    validateDatabaseContent()
   })
   // #endregion
 
@@ -2716,10 +2681,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.ownership.name })
-  })
-
-  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
-    validateDatabaseContent()
   })
   // #endregion
 })

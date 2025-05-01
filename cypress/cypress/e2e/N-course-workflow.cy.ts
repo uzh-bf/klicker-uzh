@@ -4,6 +4,14 @@ import messages from '../../../packages/i18n/messages/en'
 const currentYear = new Date().getFullYear()
 
 describe('Test course creation and editing functionalities', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('N-course.json').then((data) => {
       this.data = data
@@ -544,6 +552,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
 
     // switch between entire course and biweekly leaderboard
+    cy.get('[data-cy="student-course-join-leaderboard"]').click()
     cy.get('[data-cy="select-course-leaderboard"]').click()
     cy.get('[data-cy="select-biweekly-leaderboard"]').click()
     cy.get('[data-cy="select-course-leaderboard"]').click()
@@ -733,11 +742,8 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.deletion.lqName).should('not.exist')
   })
-  // #endregion
 
-  // ! Cleanup
-  // #region
-  it('Cleanup: Delete all created courses', function () {
+  it('Cleanup: Delete all created courses and created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
 
@@ -752,10 +758,8 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-deletion-participant-group-confirm"]').click()
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
     cy.findByText(this.data.course2.name).should('not.exist')
-  })
 
-  it('Cleanup: Delete the created questions', function () {
-    cy.loginLecturer()
+    cy.get('[data-cy="library"]').click()
     cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
       'exist'
     )

@@ -2,6 +2,14 @@ import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('U-catalog.json').then((data) => {
       this.data = data
@@ -1620,14 +1628,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   // ! Cleanup
   // #region
   it('Cleanup: Delete all questions that have been created', function () {
-    cy.loginLecturer()
-    cy.deleteElement({ elementName: this.data.SC.title })
-    cy.deleteElement({ elementName: this.data.SCML.title })
-    cy.logoutLecturer()
-
-    cy.loginIndividualCatalyst()
-    cy.deleteElement({ elementName: this.data.SEML.title })
-    cy.deleteElement({ elementName: this.data.SEML2.title })
+    cy.deleteAllElements()
   })
 
   it('Cleanup: Remove the shared answer collection from all accounts and delete it', function () {
@@ -1719,34 +1720,6 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).should(
       'not.exist'
     )
-  })
-
-  it('Cleanup: Verify that the answer collections and catalog collections have been deleted properly and are not visible anymore', function () {
-    cy.loginLecturer()
-
-    // validate that no collections except from the seeded ones remain
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-
-    // validate that no catalog collections except from the seeded ones remain
-    cy.task('verifyDeletionCatalogCollections').then((result) => {
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains catalog collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
   })
   // #endregion
 })

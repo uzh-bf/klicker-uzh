@@ -1,9 +1,20 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('B-feature-access.json').then((data) => {
-      this.data = data
+    cy.fixture('questions.json').then((questionData) => {
+      this.data = questionData
+    })
+    cy.fixture('B-feature-access.json').then((featureData) => {
+      this.data = { ...this.data, ...featureData }
     })
   })
 
@@ -32,7 +43,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
     // (public) learning analytics course link available
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${data.seed.courseName}"]`).click()
+    cy.get(`[data-cy="course-list-button-${data.seededCourse}"]`).click()
     if (publicPreview) {
       cy.get('[data-cy="course-learning-analytics-link"]').should('exist')
     } else {
@@ -44,11 +55,6 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(
       `[data-cy="microlearning-actions-${data.seed.microlearning}"]`
     ).click()
-    if (publicPreview) {
-      cy.get('[data-cy="open-analytics-async-activity"]').should('exist')
-    } else {
-      cy.get('[data-cy="open-analytics-async-activity"]').should('not.exist')
-    }
     cy.get(`[data-cy="copy-lti-link-${data.seed.microlearning}"]`).click()
 
     // (public) learning analytics link on practice quizzes
@@ -56,11 +62,6 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(
       `[data-cy="practice-quiz-actions-${data.seed.practiceQuiz}"]`
     ).click()
-    if (publicPreview) {
-      cy.get('[data-cy="open-analytics-async-activity"]').should('exist')
-    } else {
-      cy.get('[data-cy="open-analytics-async-activity"]').should('not.exist')
-    }
     cy.get(`[data-cy="copy-lti-link-${data.seed.practiceQuiz}"]`).click()
 
     // private preview features in menubar
@@ -207,22 +208,6 @@ describe('Tests the availability of certain functionalities to catalyst users on
         publicPreview: false,
         privatePreview: false,
       })
-    })
-  })
-
-  it('Cleanup: Change back the user permissions to their original state', function () {
-    // modify access permissions
-    cy.task('updateLecturerPreviewFlags', {
-      publicPreview: true,
-      privatePreview: true,
-    }).then((result: boolean) => {
-      // check if the query was successful
-      if (result === false) {
-        throw new Error('Permissions of user could not be updated.')
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
 })

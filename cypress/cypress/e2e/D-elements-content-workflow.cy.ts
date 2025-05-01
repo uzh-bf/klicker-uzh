@@ -1,6 +1,14 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Content elements', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -109,13 +117,6 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
       .realClick()
       .contains(this.data.CT.contentEdited)
     cy.get('[data-cy="close-element-modal"]').click()
-  })
-  // #endregion
-
-  // ! Cleanup
-  // #region
-  it('Cleanup: Delete the content element', function () {
-    cy.deleteElement({ elementName: this.data.CT.titleEdited })
   })
   // #endregion
 })

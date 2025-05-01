@@ -7,6 +7,30 @@ import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
 
+Cypress.Commands.add('seed', () => {
+  // seed all required initial data directly into the database
+  cy.task('seedDatabase').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error(
+        'Seeding of required data into database was not successful!'
+      )
+    }
+  })
+  cy.reload()
+})
+
+Cypress.Commands.add('cleanup', () => {
+  // delete all objects and clear entire database
+  cy.task('cleanupDatabase').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error('An error occurred while resetting the database!')
+    }
+  })
+  cy.reload()
+})
+
 const loginFactory = (tokenData) => {
   return () => {
     cy.clearAllCookies()
@@ -1122,6 +1146,8 @@ Cypress.Commands.add(
 declare global {
   namespace Cypress {
     interface Chainable {
+      seed(): Chainable<void>
+      cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>

@@ -1,4 +1,12 @@
 describe('Test functionalities of frontend-control application', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('C-control.json').then((data) => {
       this.data = data
@@ -136,17 +144,6 @@ describe('Test functionalities of frontend-control application', function () {
       // dummy action
       cy.visit(Cypress.env('URL_MANAGE'))
     })
-  })
-
-  it('Cleanup: Delete the created questions', function () {
-    cy.loginLecturer()
-    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
-      'exist'
-    )
-    cy.deleteElement({ elementName: this.data.questionTitle })
-    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
-      'not.exist'
-    )
   })
 
   // TODO (later): check if quiz is running correctly / add student answer

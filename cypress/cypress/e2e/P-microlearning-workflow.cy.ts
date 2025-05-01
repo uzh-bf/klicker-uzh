@@ -12,6 +12,14 @@ const runningExtendedText = `End: 31.12.${currentYear + 5}, 18:00`
 // ? All microlearning creation steps are bundled in the beginning of the test, since reloading the page
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
 describe('Different microlearning workflows', function () {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -1849,57 +1857,6 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="microlearning-actions-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
-  })
-  // #endregion
-
-  // ! Cleanup
-  // #region
-  it('Cleanup: Delete all created questions', function () {
-    cy.deleteAllElements()
-  })
-
-  it('Cleanup: Delete the converted practice quiz to avoid naming collisions', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
-
-    // delete the converted practice quiz
-    cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.conversion.pqName}"]`
-    ).click()
-    cy.get(
-      `[data-cy="delete-practice-quiz-${this.data.conversion.pqName}"]`
-    ).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.conversion.pqName}"]`
-    ).should('not.exist')
-  })
-
-  it('Cleanup: Delete the created answer collection', function () {
-    cy.loginLecturer()
-    cy.deleteAllElements()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({
-      collectionName: this.data.collection.name,
-    })
-  })
-
-  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
-    cy.task('verifyDeletionAnswerCollections').then((result) => {
-      // check if the verification was successful
-      if (result === null || result === false) {
-        throw new Error(
-          'The database contains answer collections beyond the seeded ones.'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
   })
   // #endregion
 })
