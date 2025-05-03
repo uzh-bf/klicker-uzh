@@ -2137,12 +2137,13 @@ export async function changeObjectPermissionLevel(
   }
 
   // fetch the user group of the updated permission
-  const userGroup = previousPermission.userGroupId
-    ? await ctx.prisma.userGroup.findUnique({
-        where: { id: previousPermission.userGroupId },
-        include: { members: true, admins: true },
-      })
-    : null
+  const userGroup =
+    previousPermission.userGroupId !== null
+      ? await ctx.prisma.userGroup.findUnique({
+          where: { id: previousPermission.userGroupId },
+          include: { members: true, admins: true },
+        })
+      : null
 
   // execute the update and recomputation in a single transaction
   const permission = await ctx.prisma.$transaction(async (prisma) => {
@@ -2404,12 +2405,14 @@ export async function revokeObjectAccess(
     },
   })
 
-  const userGroup = permission?.userGroupId
-    ? await ctx.prisma.userGroup.findUnique({
-        where: { id: permission.userGroupId },
-        include: { members: true, admins: true },
-      })
-    : null
+  const userGroup =
+    typeof permission?.userGroupId !== 'undefined' &&
+    permission?.userGroupId !== null
+      ? await ctx.prisma.userGroup.findUnique({
+          where: { id: permission.userGroupId },
+          include: { members: true, admins: true },
+        })
+      : null
 
   if (!permission || permission.id !== permissionId) {
     return null
@@ -3435,9 +3438,16 @@ export async function shareObject(
       isOwn: false,
     }
   } else if (typeof userGroupId !== 'undefined' && userGroupId !== null) {
-    // check if the user group exists and if the triggering member is a member, admin or owner of it
+    // check if the user group exists and if the triggering user is a member, admin or owner of it
     const userGroup = await ctx.prisma.userGroup.findUnique({
-      where: { id: userGroupId },
+      where: {
+        id: userGroupId,
+        OR: [
+          { ownerId: ctx.user.sub },
+          { admins: { some: { id: ctx.user.sub } } },
+          { members: { some: { id: ctx.user.sub } } },
+        ],
+      },
       select: { id: true, name: true },
     })
 

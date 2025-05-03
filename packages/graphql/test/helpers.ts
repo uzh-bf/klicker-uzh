@@ -149,8 +149,11 @@ export async function testCleanup(prisma: PrismaClient) {
     )
   }
 
-  // delete all users that have been added for the test run
+  // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()
+  await prisma.participant.deleteMany()
+  await prisma.userGroup.deleteMany()
+  await prisma.participantGroup.deleteMany()
 }
 
 // setup test database configuration

@@ -176,13 +176,7 @@ export async function recomputeDerivedPermissions(
  * @returns Promise that resolves when the permission recomputation completes
  */
 async function recomputeCatalogCollectionPermissions(
-  {
-    id,
-    userId,
-  }: {
-    id: string
-    userId?: string
-  },
+  { id, userId }: { id: string; userId?: string },
   prisma: PrismaTransactionClient
 ) {
   // for the top-level default catalog collection, no permissions are awarded
@@ -255,6 +249,7 @@ async function recomputeCatalogCollectionPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -463,6 +458,7 @@ async function recomputeAnswerCollectionPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -868,6 +864,7 @@ async function recomputeElementPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -1401,6 +1398,7 @@ async function recomputeLiveQuizPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -1684,6 +1682,7 @@ async function recomputePracticeQuizPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -1969,6 +1968,7 @@ async function recomputeMicroLearningPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -2254,6 +2254,7 @@ async function recomputeGroupActivityPermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -2537,6 +2538,7 @@ async function recomputeCoursePermissionsUser(
             {
               userGroup: {
                 OR: [
+                  { ownerId: userId },
                   { members: { some: { id: userId } } },
                   { admins: { some: { id: userId } } },
                 ],
@@ -2813,12 +2815,13 @@ function getMaxAccessLevelCombined({
           }
         }
       } else if (directPermission.userGroup) {
-        // iterate over the members and admins and add / update the corresponding permissions for each user
+        // iterate over all users in the group and add / update the corresponding permissions for each user
         const groupMembers = [
           { id: directPermission.userGroup.ownerId },
           ...directPermission.userGroup.members,
           ...directPermission.userGroup.admins,
         ]
+
         groupMembers.forEach((user) => {
           if (
             typeof acc[user.id] !== 'undefined' &&
@@ -2838,9 +2841,7 @@ function getMaxAccessLevelCombined({
           }
         })
       } else {
-        throw new Error(
-          `Direct permission without user or user group found for catalog collection.`
-        )
+        throw new Error(`Direct permission without user or user group found.`)
       }
 
       return acc
