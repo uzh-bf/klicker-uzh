@@ -4,7 +4,6 @@ import {
   type PrismaTransactionClient,
 } from './types.js'
 
-// auxilary type definitions
 type UserAccessMap = {
   [userId: string]: {
     maxAccessLevel: DB.PermissionLevel
@@ -13,7 +12,7 @@ type UserAccessMap = {
   }
 }
 
-// map to directly compare permission levels
+// map to define order of permission levels
 const permissionLevelMap = {
   [DB.PermissionLevel.OWNER]: 5,
   [DB.PermissionLevel.ADMIN]: 4,
@@ -23,6 +22,7 @@ const permissionLevelMap = {
   ['NONE']: 0,
 }
 
+// inverse map to return permission levels for ordering key values
 const inversePermissionLevelMap: Record<
   number,
   DB.PermissionLevel | undefined
@@ -36,6 +36,33 @@ const inversePermissionLevelMap: Record<
 }
 
 // ! Generic entry point for derived permission recomputation
+/**
+ * This function serves as the main entry point for recomputing derived permissions
+ * for various entities within the system. It delegates to specific recomputation
+ * functions based on the entity type identified by the provided ID. Only exactly one
+ * object ID must be defined in the parameters.
+ *
+ * If in addition to the object ID a user ID is provided, only the derived permissions
+ * for this user will be recomputed.
+ *
+ * A recomputation of an object's derived permissions always automatically also includes
+ * the consideration of derived permissions granted due to a potential parent object
+ * (e.g. derived permissions on an answer collection that are granted through an element)
+ * and a propagation to dependent objects (given sufficient permissions).
+ *
+ * @param params - Object containing object IDs and optional user ID
+ * @param params.catalogCollectionId - ID of the catalog collection to recompute permissions for
+ * @param params.answerCollectionId - ID of the answer collection to recompute permissions for
+ * @param params.elementId - ID of the element to recompute permissions for
+ * @param params.courseId - ID of the course to recompute permissions for
+ * @param params.liveQuizId - ID of the live quiz to recompute permissions for
+ * @param params.practiceQuizId - ID of the practice quiz to recompute permissions for
+ * @param params.microLearningId - ID of the microlearning to recompute permissions for
+ * @param params.groupActivityId - ID of the group activity to recompute permissions for
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ * @returns Promise that resolves when the permission recomputation completes
+ */
 export async function recomputeDerivedPermissions(
   {
     // object ids - exactly one must be defined
@@ -136,6 +163,18 @@ export async function recomputeDerivedPermissions(
 
 // ! Derived permission recomputation for catalog collections
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for catalog collections
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for catalog collections.
+ *
+ * @param params - Object containing catalog collection ID and optional user ID
+ * @param params.id - ID of the catalog collection
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ * @returns Promise that resolves when the permission recomputation completes
+ */
 async function recomputeCatalogCollectionPermissions(
   {
     id,
@@ -162,6 +201,20 @@ async function recomputeCatalogCollectionPermissions(
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
   return await recomputeCatalogCollectionPermissionsObject({ id }, prisma)
 }
+
+/**
+ * Recomputes derived permissions for a specific user on a catalog collection.
+ *
+ * After removing any existing derived permission for the user, this function checks
+ * if the user has a direct permission on the catalog collection, is part of a group
+ * with a direct permission or is the owner of the object. The corresponding highest
+ * permission is then stored in the form of a derived permission (deduplicated).
+ *
+ * @param params - Object containing catalog collection ID and user ID
+ * @param params.id - ID of the catalog collection
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 
 async function recomputeCatalogCollectionPermissionsUser(
   { id, userId }: { id: string; userId: string },
@@ -256,6 +309,18 @@ async function recomputeCatalogCollectionPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a catalog collection.
+ *
+ * This function deletes all existing derived permissions for the catalog collection
+ * and then recomputes them based on all direct permissions that were granted to users
+ * or user groups. Permissions are directly deduplicated for the derived permissions
+ * table to only contain the highest permission level for each user.
+ *
+ * @param params - Object containing catalog collection ID
+ * @param params.id - ID of the catalog collection
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeCatalogCollectionPermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -310,10 +375,18 @@ async function recomputeCatalogCollectionPermissionsObject(
     ),
   })
 }
-// #endregion
 
-// ! Derived permission recomputation for answer collections
-// #region
+/**
+ * Dispatch function for the recomputation of derived permissions for answer collections.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for answer collections.
+ *
+ * @param params - Object containing answer collection ID and optional user ID
+ * @param params.id - ID of the answer collection
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeAnswerCollectionPermissions(
   { id, userId }: { id: number; userId?: string },
   prisma: PrismaTransactionClient
@@ -330,6 +403,27 @@ async function recomputeAnswerCollectionPermissions(
   return await recomputeAnswerCollectionPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on an answer collection.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the answer collection
+ * - any derived permission granted to the individual user on an element that is
+ *   linked to the answer collection (selection / case study question)
+ *   --> READ permissions on the answer collection
+ * - any derived permission granted to the individual user on an activity template
+ *   that is linked to the answer collection
+ *   --> READ permissions on the answer collection
+ *
+ * @param params - Object containing answer collection ID and user ID
+ * @param params.id - ID of the answer collection
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeAnswerCollectionPermissionsUser(
   { id, userId }: { id: number; userId: string },
   prisma: PrismaTransactionClient
@@ -522,6 +616,25 @@ async function recomputeAnswerCollectionPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on an answer collection.
+ *
+ * This function deletes all existing derived permissions for the answer collection
+ * and then recomputes them. Permissions are directly deduplicated for the derived
+ * permissions table to only contain the highest permission level for each user.
+ * The following sources for direct permissions on answer collections are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the answer collection
+ * - derived permissions granted to users on linked elements
+ *   (selection / case study element --> READ permissions)
+ * - derived permissions granted to users on linked activity templates
+ *   (--> READ permissions)
+ *
+ * @param params - Object containing answer collection ID
+ * @param params.id - ID of the answer collection
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeAnswerCollectionPermissionsObject(
   { id }: { id: number },
   prisma: PrismaTransactionClient
@@ -656,6 +769,17 @@ async function recomputeAnswerCollectionPermissionsObject(
 
 // ! Derived permission recomputation for elements
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for elements.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for elements.
+ *
+ * @param params - Object containing element ID and optional user ID
+ * @param params.id - ID of the element
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeElementPermissions(
   {
     id,
@@ -675,6 +799,36 @@ async function recomputeElementPermissions(
   return await recomputeElementPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on an element.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the element
+ * - any derived permission granted to the individual user on an activity where
+ *   an instance of the element is included, according to the following rules:
+ *   READ on activity --> no access to element
+ *   WRITE on activity --> no access to element
+ *   ADMIN on activity --> ADMIN on element
+ *   OWNER on activity --> ADMIN on element
+ *
+ * The reason behind the last rule is that the sharing of activities, which is
+ * allowed with >= ADMIN permissions, with a sufficiently high permission level
+ * implicitly also results in the sharing of the associated elements. To ensure
+ * consistency with the permission levels and sharing activities on elements, the
+ * users therefore need to be granted at least ADMIN permissions on the element.
+ *
+ * Additionally, if the element is linked to an answer collection, all derived
+ * permissions on the latter are recomputed for the user.
+ *
+ * @param params - Object containing element ID and user ID
+ * @param params.id - ID of the element
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeElementPermissionsUser(
   { id, userId }: { id: number; userId: string },
   prisma: PrismaTransactionClient
@@ -944,6 +1098,35 @@ async function recomputeElementPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on an element.
+ *
+ * This function deletes all existing derived permissions for the element
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on elements
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the element
+ * - derived permissions granted to users on activities where an instance of
+ *   the element is included, according to the same rules as for the user-specific
+ *   derived permissions recomputation for elements (see above).
+ *
+ *
+ * The reason behind the last rule is that the sharing of activities, which is
+ * allowed with >= ADMIN permissions, with a sufficiently high permission level
+ * implicitly also results in the sharing of the associated elements. To ensure
+ * consistency with the permission levels and sharing activities on elements, the
+ * users therefore need to be granted at least ADMIN permissions on the element.
+ *
+ * Additionally, if the element is linked to an answer collection, all derived
+ * permissions on the latter are recomputed.
+ *
+ * @param params - Object containing element ID
+ * @param params.id - ID of the element
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeElementPermissionsObject(
   { id }: { id: number },
   prisma: PrismaTransactionClient
@@ -1123,6 +1306,17 @@ async function recomputeElementPermissionsObject(
 
 // ! Derived permission recomputation for live quizzes
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for live quizzes.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for live quizzes.
+ *
+ * @param params - Object containing live quiz ID and optional user ID
+ * @param params.id - ID of the live quiz
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeLiveQuizPermissions(
   {
     id,
@@ -1142,6 +1336,32 @@ async function recomputeLiveQuizPermissions(
   return await recomputeLiveQuizPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on a live quiz.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the live quiz
+ * - any derived permission granted to the individual user on a course that
+ *   includes the considered live quiz, according to the following rules.
+ *   Additionally, the user can choose between awarding minimum required
+ *   permissions or the propagation of the permissions (higher rights).
+ *   READ on course --> READ on live quiz (min. required = propagated)
+ *   WRITE on course --> READ / WRITE on live quiz (min. required / propagated)
+ *   ADMIN on course --> ADMIN on live quiz (min. required = propagated)
+ *   OWNER on course --> ADMIN on live quiz (min. required = propagated)
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing live quiz ID and user ID
+ * @param params.id - ID of the live quiz
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeLiveQuizPermissionsUser(
   { id, userId }: { id: string; userId: string },
   prisma: PrismaTransactionClient
@@ -1271,6 +1491,28 @@ async function recomputeLiveQuizPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a live quiz.
+ *
+ * This function deletes all existing derived permissions for the live quiz
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on live quizzes
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the live quiz
+ * - derived permissions granted to users on a course that includes the considered
+ *   live quiz, according to the same rules as for the user-specific derived
+ *   permissions recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing live quiz ID
+ * @param params.id - ID of the live quiz
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeLiveQuizPermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -1352,6 +1594,17 @@ async function recomputeLiveQuizPermissionsObject(
 
 // ! Derived permission recomputation for practice quizzes
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for practice quizzes.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for practice quizzes.
+ *
+ * @param params - Object containing practice quiz ID and optional user ID
+ * @param params.id - ID of the practice quiz
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputePracticeQuizPermissions(
   {
     id,
@@ -1371,6 +1624,27 @@ async function recomputePracticeQuizPermissions(
   return await recomputePracticeQuizPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on a practice quiz.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the practice quiz
+ * - any derived permission granted to the individual user on a course that
+ *   includes the considered practice quiz, according to the rules defined
+ *   in the derived permission recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing practice quiz ID and user ID
+ * @param params.id - ID of the practice quiz
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputePracticeQuizPermissionsUser(
   { id, userId }: { id: string; userId: string },
   prisma: PrismaTransactionClient
@@ -1500,6 +1774,28 @@ async function recomputePracticeQuizPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a practice quiz.
+ *
+ * This function deletes all existing derived permissions for the practice quiz
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on practice quizzes
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the practice quiz
+ * - derived permissions granted to users on a course that includes the considered
+ *   practice quiz, according to the same rules as for the user-specific derived
+ *   permissions recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing practice quiz ID
+ * @param params.id - ID of the practice quiz
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputePracticeQuizPermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -1583,6 +1879,17 @@ async function recomputePracticeQuizPermissionsObject(
 
 // ! Derived permission recomputation for microlearnings
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for microlearnings.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for microlearnings.
+ *
+ * @param params - Object containing microlearning ID and optional user ID
+ * @param params.id - ID of the microlearning
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeMicroLearningPermissions(
   {
     id,
@@ -1602,6 +1909,27 @@ async function recomputeMicroLearningPermissions(
   return await recomputeMicroLearningPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on a microlearning.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the microlearning
+ * - any derived permission granted to the individual user on a course that
+ *   includes the considered microlearning, according to the rules defined
+ *   in the derived permission recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing microlearning ID and user ID
+ * @param params.id - ID of the microlearning
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeMicroLearningPermissionsUser(
   { id, userId }: { id: string; userId: string },
   prisma: PrismaTransactionClient
@@ -1731,6 +2059,28 @@ async function recomputeMicroLearningPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a microlearning.
+ *
+ * This function deletes all existing derived permissions for the microlearning
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on microlearnings
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the microlearning
+ * - derived permissions granted to users on a course that includes the considered
+ *   microlearning, according to the same rules as for the user-specific derived
+ *   permissions recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing microlearning ID
+ * @param params.id - ID of the microlearning
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeMicroLearningPermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -1814,6 +2164,17 @@ async function recomputeMicroLearningPermissionsObject(
 
 // ! Derived permission recomputation for group activities
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for group activities.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for group activities.
+ *
+ * @param params - Object containing group activity ID and optional user ID
+ * @param params.id - ID of the group activity
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeGroupActivityPermissions(
   {
     id,
@@ -1833,6 +2194,27 @@ async function recomputeGroupActivityPermissions(
   return await recomputeGroupActivityPermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on a group activity.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the group activity
+ * - any derived permission granted to the individual user on a course that
+ *   includes the considered group activity, according to the rules defined
+ *   in the derived permission recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing group activity ID and user ID
+ * @param params.id - ID of the group activity
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeGroupActivityPermissionsUser(
   { id, userId }: { id: string; userId: string },
   prisma: PrismaTransactionClient
@@ -1962,6 +2344,28 @@ async function recomputeGroupActivityPermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a group activity.
+ *
+ * This function deletes all existing derived permissions for the group activity
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on group activities
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the group activity
+ * - derived permissions granted to users on a course that includes the considered
+ *   group activity, according to the same rules as for the user-specific derived
+ *   permissions recomputation for live quizzes (see above).
+ *
+ * Additionally, a recomputation of the derived permissions on all elements
+ * used in the activity is triggered.
+ *
+ * @param params - Object containing group activity ID
+ * @param params.id - ID of the group activity
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeGroupActivityPermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -2045,6 +2449,17 @@ async function recomputeGroupActivityPermissionsObject(
 
 // ! Derived permission recomputation for courses
 // #region
+/**
+ * Dispatch function for the recomputation of derived permissions for courses.
+ *
+ * Based on the provided parameters, this function delegates to either user-specific
+ * or object-wide permission recomputation for courses.
+ *
+ * @param params - Object containing course ID and optional user ID
+ * @param params.id - ID of the course
+ * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeCoursePermissions(
   {
     id,
@@ -2064,6 +2479,25 @@ async function recomputeCoursePermissions(
   return await recomputeCoursePermissionsObject({ id }, prisma)
 }
 
+/**
+ * Recomputes derived permissions for a specific user on a course.
+ *
+ * This function removes any existing derived permission for the user and then
+ * computes the highest granted permission level for that same user from the
+ * following potential sources of access permissions:
+ * - direct permission granted to the individual user
+ * - direct permission granted to a user group the user is part of
+ * - ownership of the course
+ *
+ * Additionally, a recomputation of the derived permissions on all activities
+ * contained in the course is triggered (recursively also affecting contained
+ * elements and resources)
+ *
+ * @param params - Object containing course ID and user ID
+ * @param params.id - ID of the course
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeCoursePermissionsUser(
   { id, userId }: { id: string; userId: string },
   prisma: PrismaTransactionClient
@@ -2186,6 +2620,25 @@ async function recomputeCoursePermissionsUser(
   return
 }
 
+/**
+ * Recomputes derived permissions for all users on a course.
+ *
+ * This function deletes all existing derived permissions for the course
+ * and then recomputes them. Permissions are directly deduplicated for the
+ * derived permissions table to only contain the highest permission level
+ * for each user. The following sources for direct permissions on courses
+ * are considered:
+ * - direct permissions granted to users
+ * - direct permissions granted to user groups
+ * - ownership of the course
+ *
+ * Additionally, a recomputation of the derived permissions on all activities
+ * contained in the course is triggered.
+ *
+ * @param params - Object containing course ID
+ * @param params.id - ID of the course
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function recomputeCoursePermissionsObject(
   { id }: { id: string },
   prisma: PrismaTransactionClient
@@ -2273,7 +2726,15 @@ async function recomputeCoursePermissionsObject(
 
 // ! Generic helper functions for maximum access level determination (for objects WITHOUT derived access rights)
 // #region
-// maximum access level determination based on direct permissions (individual and group) for a single user
+/**
+ * This function consumes all the direct permissions on an object that were granted
+ * either to an individual user or to a user group the user is part of. It then
+ * deduplicates them and returns the highest available permission level, as well
+ * as the corresponding direct permission ID.
+ *
+ * @param directPermissions - Array of direct permissions on the object
+ * @returns - Object containing the maximum direct permission level and the corresponding direct permission ID
+ */
 function getMaxAccessLevelIndividual({
   directPermissions,
 }: {
@@ -2304,7 +2765,18 @@ function getMaxAccessLevelIndividual({
   )
 }
 
-// maximum access level determination based on direct permissions (individual and group) for all users with access to the object
+/**
+ * This function computes the maximum access level for all users with access to an object
+ * based on the direct permissions granted to and groups they are part of. It returns a map
+ * of user IDs to their maximum access level, the corresponding direct permission ID (deduplicated).
+ *
+ * @param directPermissions - Array of direct permissions on the object
+ * @param objectDeleted - Boolean indicating if the object was soft-deleted
+ *                        -> affects direct permission validity
+ * @param ownerId - Optional ID of the object owner
+ * @returns - Map containing the maximum access level and corresponding direct
+ *            permission ID for each user with access to the object
+ */
 function getMaxAccessLevelCombined({
   directPermissions,
   objectDeleted,
@@ -2386,7 +2858,21 @@ function getMaxAccessLevelCombined({
   return userAccess
 }
 
-// compute access level for activity based on course permissions and propagation parameters
+/**
+ * This function computes the maximum access level that should be granted to an individual
+ * user on all activities assigned to a course, based on the course permissions. It returns
+ * the maximum access level, the corresponding parent permission ID, and a boolean
+ * indicating if the access level was derived from the course permissions.
+ *
+ * The derived permission levels on activities contained in a course are computed according
+ * to the rules outlined in the corresponding derived permission computation on live quizzes
+ * above.
+ *
+ * @param coursePermissionLevel - The permission level of the course
+ * @param directCoursePermission - The direct permission granted to the user (individual or group)
+ *                                 on the course (optional)
+ * @returns - Object containing the maximum access level, parent permission ID, and derived status
+ */
 function getActivityAccessFromCourse({
   coursePermissionLevel,
   directCoursePermission,
@@ -2434,6 +2920,23 @@ function getActivityAccessFromCourse({
   return { maxAccessLevel, parentPermissionId, derived }
 }
 
+/**
+ * This function computes the maximum access level for a user on an activity based on
+ * the activity's owner ID, the activity's deletion status, direct permissions, and
+ * course permissions that might give rise to higher activity permissions.
+ * It returns an object containing the maximum access level, parent permission ID, and
+ * a boolean indicating if the access level was derived from course permissions.
+ *
+ * @param params - Object containing activity owner ID, deletion status, user ID,
+ *                 direct permissions on the activity, and course permissions
+ * @param params.activityOwnerId - ID of the activity owner
+ * @param params.activityDeleted - Boolean indicating if the activity is soft-deleted
+ * @param params.userId - ID of the user to check permissions for
+ * @param params.directPermissions - Array of direct permissions on the activity
+ * @param params.coursePermissions - Array of derived permissions on the course
+ * @returns - Object containing the maximum access level, parent permission ID,
+ *            and derived status or null if no valid derived permission was computed
+ */
 function getActivityPermissionsUser({
   activityOwnerId,
   activityDeleted,
@@ -2516,6 +3019,15 @@ function getActivityPermissionsUser({
   return { maxAccessLevel, parentPermissionId, derived }
 }
 
+/**
+ * This function triggers a recomputation of the derived permissions for all elements
+ * contained in the stacks / blocks of a given activity, limited to a specific user.
+ *
+ * @param params - Object containing stacks and user ID
+ * @param params.stacks - Array of element stacks or blocks with their instances
+ * @param params.userId - ID of the user to recompute permissions for
+ * @param prisma - Prisma transaction client for database operations
+ */
 async function propagateActivityToElementsUser(
   {
     stacks,
@@ -2542,6 +3054,15 @@ async function propagateActivityToElementsUser(
   }
 }
 
+/**
+ * This function combines the different sources for permissions on an activity
+ * (direct permissions on the activity and derived permissions on the course) to
+ * compute a map between the user ids and their maximum access levels.
+ *
+ * @param params - Object containing stacks
+ * @param params.stacks - Array of element stacks or blocks with their instances
+ * @param prisma - Prisma transaction client for database operations
+ */
 function getActivityPermissionsObject({
   activityOwnerId,
   activityDeleted,
@@ -2612,6 +3133,14 @@ function getActivityPermissionsObject({
   return userAccess
 }
 
+/**
+ * This function triggers a recomputation of the derived permissions for all elements
+ * contained in the stacks / blocks of a given activity.
+ *
+ * @param params - Object containing stacks
+ * @param params.stacks - Array of element stacks or blocks with their instances
+ * @param prisma - Prisma transaction client for database operations
+ */
 export async function propagateActivityToElements(
   {
     stacks,
