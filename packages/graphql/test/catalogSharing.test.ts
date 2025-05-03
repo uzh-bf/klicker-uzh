@@ -1376,7 +1376,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
   // ! Catalog Collection Sharing
   // #region
-  it('Change the permission level of direct permissions on a catalog collection', async () => {
+  it('Change the permission level of a direct individual permission on a catalog collection', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // grant READ permissions to user 2
@@ -1427,6 +1427,115 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(auditLogEntry).toBeTruthy()
     expect(auditLogEntry!.message).toBe(
       `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.WRITE} for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) through owner / admin ${userOne.id} for user ${userTwo.id}.`
+    )
+  })
+
+  it('Change the permission level of a direct user group permission on a catalog collection', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 1, 2, and 3 (ADMIN)
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userThree.id,
+        members: {
+          connect: [{ id: userOne.id }, { id: userTwo.id }],
+        },
+      },
+    })
+
+    // grant READ permissions to the user group
+    const readPermission = await prisma.permission.create({
+      data: {
+        permissionLevel: PermissionLevel.READ,
+        userGroupId: group.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // change the permission level to WRITE
+    const success = await changeObjectPermissionLevel(
+      {
+        catalogCollectionId: publicCatalog.id,
+        permissionId: readPermission.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+      userOneCtx
+    )
+    expect(success).toBe(true)
+
+    // verify that the permission level has been updated in the database
+    const updatedPermission = await prisma.permission.findUnique({
+      where: {
+        id: readPermission.id,
+      },
+    })
+    expect(updatedPermission).toBeDefined()
+    expect(updatedPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(updatedPermission?.catalogCollectionId).toBe(publicCatalog.id)
+    expect(updatedPermission?.userGroupId).toBe(group.id)
+
+    // verify that the individual permissions of the user group members have been updated
+    const ownerPerimission = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(ownerPerimission).toBeDefined()
+    expect(ownerPerimission?.permissionLevel).toBe(PermissionLevel.OWNER)
+
+    const userTwoPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(userTwoPermission).toBeDefined()
+    expect(userTwoPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const userThreePermission = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(userThreePermission).toBeDefined()
+    expect(userThreePermission?.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const userFourPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(userFourPermission).toBeNull()
+
+    // verify that the audit log entry has been created correctly
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_MODIFIED,
+        objectId: publicCatalog.id,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: group.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.WRITE} for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) through owner / admin ${userOne.id} for user group ${group.id}.`
     )
   })
 

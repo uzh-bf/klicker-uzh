@@ -86,7 +86,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   // ! Sharing functionalities for elements
   // #region
-  it('Verify that the level of granted direct permissions can be modified', async () => {
+  it('Verify that the level of granted direct individual permissions can be modified', async () => {
     const [AC1] = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1!.id)
 
@@ -170,6 +170,167 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(auditLogEntry).toBeTruthy()
     expect(auditLogEntry!.message).toBe(
       `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.WRITE} for ${ObjectType.ELEMENT} (ID ${SC!.id}) through owner / admin ${userOne.id} for user ${userTwo.id}.`
+    )
+  })
+
+  it('Verify that the level of granted direct group permissions can be modified', async () => {
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { SE } = await seedElements(userOneCtx, AC1!.id)
+
+    // create a user group with users 1, 2, and 3 (ADMIN)
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userThree.id,
+        members: {
+          connect: [{ id: userOne.id }, { id: userTwo.id }],
+        },
+      },
+    })
+
+    // grant individual WRITE permissions to user 2
+    const directPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        elementId: SE.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { elementId: SE.id, userId: userTwo.id },
+      prisma
+    )
+
+    // grant READ permissions to the group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        userGroupId: group.id,
+        elementId: SE.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions({ elementId: SE.id }, prisma)
+
+    // verify that the correct derived permissions have been created in the database
+    // OWNER for user 1, WRITE for user 2, READ for user 3
+    const derivedPermission1 = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: SE.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
+    expect(derivedPermission1?.directPermissionId).toBeNull()
+
+    const derivedPermission2 = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: SE.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(derivedPermission2?.directPermissionId).toBe(directPermission.id)
+
+    const derivedPermission3 = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: SE.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermission3?.directPermissionId).toBe(groupPermission.id)
+
+    // change the group permission level to change to ADMIN, overriding individual permissions
+    const success = await changeObjectPermissionLevel(
+      {
+        permissionId: groupPermission!.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        elementId: SE.id,
+      },
+      userOneCtx
+    )
+    expect(success).toBe(true)
+
+    // verify that the direct and derived permissions have been updated correctly
+    const updatedDirectPermission = await prisma.permission.findUnique({
+      where: {
+        elementId_userGroupId: {
+          elementId: SE.id,
+          userGroupId: group.id,
+        },
+      },
+    })
+    expect(updatedDirectPermission).toBeDefined()
+    expect(updatedDirectPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    // OWNER for user 1, ADMIN for user 2, ADMIN for user 3
+    const updatedDerivedPermission1 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          elementId_userId: {
+            elementId: SE.id,
+            userId: userOne.id,
+          },
+        },
+      }
+    )
+    expect(updatedDerivedPermission1).toBeDefined()
+    expect(updatedDerivedPermission1?.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+
+    const updatedDerivedPermission2 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          elementId_userId: {
+            elementId: SE.id,
+            userId: userTwo.id,
+          },
+        },
+      }
+    )
+    expect(updatedDerivedPermission2).toBeDefined()
+    expect(updatedDerivedPermission2?.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    const updatedDerivedPermission3 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          elementId_userId: {
+            elementId: SE.id,
+            userId: userThree.id,
+          },
+        },
+      }
+    )
+    expect(updatedDerivedPermission3).toBeDefined()
+    expect(updatedDerivedPermission3?.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    // verify that the audit log entry has been created correctly
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_MODIFIED,
+        objectType: ObjectType.ELEMENT,
+        objectId: String(SE!.id),
+        sourceUserId: userOne.id,
+        targetUserGroupId: group.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.ADMIN} for ${ObjectType.ELEMENT} (ID ${SE.id}) through owner / admin ${userOne.id} for user group ${group.id}.`
     )
   })
 
@@ -581,13 +742,13 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       where: {
         answerCollectionId_userId: {
           answerCollectionId: AC1!.id,
-          userId: userTwo.id,
+          userId: userOne.id,
         },
       },
     })
     expect(derivedPermission5).toBeTruthy()
-    expect(derivedPermission5!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(derivedPermission5!.directPermissionId).toBe(ACPermission1.id)
+    expect(derivedPermission5!.permissionLevel).toBe(PermissionLevel.OWNER)
+    expect(derivedPermission5!.directPermissionId).toBeNull()
     expect(derivedPermission5!.derived).toBe(false)
 
     const derivedPermission6 = await prisma.derivedPermission.findUnique({
