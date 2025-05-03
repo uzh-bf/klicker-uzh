@@ -2815,6 +2815,7 @@ function getMaxAccessLevelCombined({
       } else if (directPermission.userGroup) {
         // iterate over the members and admins and add / update the corresponding permissions for each user
         const groupMembers = [
+          { id: directPermission.userGroup.ownerId },
           ...directPermission.userGroup.members,
           ...directPermission.userGroup.admins,
         ]

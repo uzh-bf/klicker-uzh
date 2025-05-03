@@ -1191,6 +1191,15 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
 
+    // create a second answer collection
+    const answerCollection2 = await prisma.answerCollection.create({
+      data: {
+        name: 'Answer Collection 2',
+        description: 'Description 2',
+        ownerId: userTwo.id,
+      },
+    })
+
     // create two user groups
     const userGroup1 = await prisma.userGroup.create({
       data: {
@@ -1201,7 +1210,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       },
     })
-
     const userGroup2 = await prisma.userGroup.create({
       data: {
         name: 'User Group 2',
@@ -1212,16 +1220,15 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
 
-    // add WRITE and ADMIN permissions for the user groups, respectively
-    const group1Permission = await prisma.permission.create({
+    // grant WRITE and ADMIN permissions for the user groups, respectively (first answer collection)
+    const groupPermission1 = await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
         answerCollectionId: answerCollection.id,
         permissionLevel: PermissionLevel.WRITE,
       },
     })
-
-    const group2Permission = await prisma.permission.create({
+    const groupPermission2 = await prisma.permission.create({
       data: {
         userGroupId: userGroup2.id,
         answerCollectionId: answerCollection.id,
@@ -1229,9 +1236,29 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
 
+    // grante READ and WRITE permissions for the user groups, respectively (second answer collection)
+    const groupPermission3 = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup1.id,
+        answerCollectionId: answerCollection2.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const groupPermission4 = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup2.id,
+        answerCollectionId: answerCollection2.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
     // recompute derived permissions for the answer collection
     await recomputeDerivedPermissions(
       { answerCollectionId: answerCollection.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection2.id },
       prisma
     )
 
@@ -1264,7 +1291,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
       PermissionLevel.WRITE
     )
     expect(derivedPermissionUserTwo!.directPermissionId).toBe(
-      group1Permission.id
+      groupPermission1.id
     )
     expect(derivedPermissionUserTwo!.derived).toBeFalsy() // permission is not derived from another object permission
 
@@ -1282,7 +1309,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
       PermissionLevel.ADMIN
     )
     expect(derivedPermissionUserThree!.directPermissionId).toBe(
-      group2Permission.id
+      groupPermission2.id
     )
     expect(derivedPermissionUserThree!.derived).toBeFalsy() // permission is not derived from another object permission
 
@@ -1301,9 +1328,83 @@ describe('Unit tests covering the creation of derived permissions for resources 
       PermissionLevel.ADMIN
     )
     expect(derivedPermissionUserFour!.directPermissionId).toBe(
-      group2Permission.id
+      groupPermission2.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy() // permission is not derived from another object permission
+
+    // verify that the correct derived permission entries have been created for the respecitve users on the second catalog collection
+    // user 1 (WRITE - group 2), user 2 (OWNER), user 3 (WRITE - group 2 overrides), user 4 (WRITE - group 2)
+    const derivedPermissionUserOne2 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection2.id,
+            userId: userOne.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserOne2).toBeTruthy()
+    expect(derivedPermissionUserOne2!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionUserOne2!.directPermissionId).toBe(
+      groupPermission3.id
+    )
+    expect(derivedPermissionUserOne2!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo2 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection2.id,
+            userId: userTwo.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserTwo2).toBeTruthy()
+    expect(derivedPermissionUserTwo2!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserTwo2!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserTwo2!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree2 =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection2.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree2).toBeTruthy()
+    expect(derivedPermissionUserThree2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree2!.directPermissionId).toBe(
+      groupPermission4.id
+    )
+    expect(derivedPermissionUserThree2!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour2 =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection2.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserFour2).toBeTruthy()
+    expect(derivedPermissionUserFour2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserFour2!.directPermissionId).toBe(
+      groupPermission4.id
+    )
+    expect(derivedPermissionUserFour2!.derived).toBeFalsy()
   })
 
   it('Verify that direct permission for user group on element results in derived permissions for individual users', async () => {
