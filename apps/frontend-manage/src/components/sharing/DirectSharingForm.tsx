@@ -1,15 +1,19 @@
+import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
+  GetUserGroupsUserDocument,
   PermissionLevel,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
-  FormikTextField,
+  SelectField,
+  TextField,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
@@ -35,10 +39,11 @@ function DirectSharingForm({
 }) {
   const t = useTranslations()
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
+  const { data, loading } = useQuery(GetUserGroupsUserDocument)
 
   return (
     <Formik
-      validateOnChange
+      validateOnChange={false}
       isInitialValid={false}
       initialValues={{
         shortnameOrEmail: '',
@@ -54,8 +59,15 @@ function DirectSharingForm({
             values.shortnameOrEmail !== '')
         ) {
           const success = await shareObjectCallback({
-            shortnameOrEmail: values.shortnameOrEmail,
-            userGroupId: values.userGroupId,
+            shortnameOrEmail:
+              typeof values.shortnameOrEmail !== 'undefined' &&
+              values.shortnameOrEmail !== ''
+                ? values.shortnameOrEmail
+                : undefined,
+            userGroupId:
+              typeof values.userGroupId !== 'undefined'
+                ? parseInt(values.userGroupId)
+                : undefined,
             permissionLevel: values.permissionLevel,
           })
 
@@ -96,11 +108,27 @@ function DirectSharingForm({
         permissionLevel: Yup.string().required(),
       })}
     >
-      {({ isSubmitting, isValid, submitForm }) => (
+      {({
+        values,
+        isSubmitting,
+        isValid,
+        setFieldValue,
+        submitForm,
+        validateForm,
+      }) => (
         <tr className="border-t border-gray-200 hover:bg-gray-50">
           <td className="px-4 py-3 text-sm text-gray-900">
-            <FormikTextField
-              name="shortnameOrEmail"
+            <TextField
+              value={values.shortnameOrEmail || ''}
+              onChange={(newValue) => {
+                setFieldValue('shortnameOrEmail', newValue)
+                setFieldValue('userGroupId', undefined)
+
+                // manually trigger form re-validation (otherwise lacks one step behind)
+                setTimeout(() => {
+                  validateForm()
+                }, 0)
+              }}
               placeholder={
                 t('shared.generic.shortname') +
                 ' / ' +
@@ -114,11 +142,36 @@ function DirectSharingForm({
             />
           </td>
           <td className="px-4 py-3 text-sm text-gray-900">
-            <FormikSelectField
-              name="userGroupId"
-              id="userGroupId"
+            <SelectField
+              key={`userGroupId-${values.userGroupId}`}
               placeholder={t('manage.sharing.noUserGroupSelected')}
-              items={[]} // TODO: query and add available user groups
+              value={values.userGroupId}
+              onChange={(newValue) => {
+                setFieldValue('userGroupId', newValue)
+                setFieldValue('shortnameOrEmail', '')
+
+                // manually trigger form re-validation (otherwise lacks one step behind)
+                setTimeout(() => {
+                  validateForm()
+                }, 0)
+              }}
+              items={
+                loading || !data?.getUserGroupsUser
+                  ? []
+                  : sortBy(
+                      data.getUserGroupsUser.map((group) => ({
+                        value: String(group.id),
+                        labelString: group.name,
+                        label: (
+                          <div className="flex flex-row items-center gap-2 text-sm">
+                            <span>{group.name}</span>
+                            <span className="mr-5 text-gray-600">{`(${group.numOfMembers} ${t('manage.userGroups.members')})`}</span>
+                          </div>
+                        ),
+                      })),
+                      prop('labelString')
+                    )
+              }
               disabled={isSubmitting}
               className={{
                 select: {

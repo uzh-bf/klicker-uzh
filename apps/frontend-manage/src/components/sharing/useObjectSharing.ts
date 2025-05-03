@@ -50,7 +50,10 @@ function useObjectSharing({
         variables: {
           objectId: String(objectId),
           objectType,
-          shortnameOrEmail,
+          shortnameOrEmail:
+            typeof shortnameOrEmail !== 'undefined' && shortnameOrEmail !== ''
+              ? shortnameOrEmail
+              : undefined,
           userGroupId:
             typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
           permissionLevel: permissionLevel,
