@@ -2140,7 +2140,7 @@ export async function changeObjectPermissionLevel(
   const userGroup = previousPermission.userGroupId
     ? await ctx.prisma.userGroup.findUnique({
         where: { id: previousPermission.userGroupId },
-        include: { members: true },
+        include: { members: true, admins: true },
       })
     : null
 
@@ -2173,7 +2173,11 @@ export async function changeObjectPermissionLevel(
     const affectedUserIds = updatedPermission.userId
       ? [updatedPermission.userId]
       : userGroup
-        ? userGroup.members.flatMap((member) => (member.id ? [member.id] : []))
+        ? [
+            userGroup.ownerId,
+            ...userGroup.admins.map((admin) => admin.id),
+            ...userGroup.members.map((member) => member.id),
+          ]
         : []
 
     for (const affectedUserId of affectedUserIds) {
@@ -2403,7 +2407,7 @@ export async function revokeObjectAccess(
   const userGroup = permission?.userGroupId
     ? await ctx.prisma.userGroup.findUnique({
         where: { id: permission.userGroupId },
-        include: { members: true },
+        include: { members: true, admins: true },
       })
     : null
 
@@ -2461,7 +2465,11 @@ export async function revokeObjectAccess(
     const affectedUserIds = permission.userId
       ? [permission.userId]
       : userGroup
-        ? userGroup.members.flatMap((member) => (member.id ? [member.id] : []))
+        ? [
+            userGroup.ownerId,
+            ...userGroup.admins.map((admin) => admin.id),
+            ...userGroup.members.map((member) => member.id),
+          ]
         : []
 
     for (const affectedUserId of affectedUserIds) {
@@ -3426,8 +3434,232 @@ export async function shareObject(
       permissionLevel: permission.permissionLevel,
       isOwn: false,
     }
-  } else if (userGroupId) {
-    // TODO: implement sharing with user groups (including the creation of access request instances for all members in case of ADMIN permissions)
+  } else if (typeof userGroupId !== 'undefined' && userGroupId !== null) {
+    // check if the user group exists and if the triggering member is a member, admin or owner of it
+    const userGroup = await ctx.prisma.userGroup.findUnique({
+      where: { id: userGroupId },
+      select: { id: true, name: true },
+    })
+
+    if (!userGroup) {
+      return null
+    }
+
+    const permission = await ctx.prisma.$transaction(async (prisma) => {
+      // upsert new permission for the answer collection under consideration
+      const newPermission = await prisma.permission.upsert({
+        where: {
+          catalogCollectionId_userGroupId:
+            typeof catalogCollectionId !== 'undefined'
+              ? {
+                  catalogCollectionId,
+                  userGroupId,
+                }
+              : undefined,
+          answerCollectionId_userGroupId:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  answerCollectionId,
+                  userGroupId,
+                }
+              : undefined,
+          elementId_userGroupId:
+            typeof elementId !== 'undefined'
+              ? {
+                  elementId,
+                  userGroupId,
+                }
+              : undefined,
+          courseId_userGroupId:
+            typeof courseId !== 'undefined'
+              ? {
+                  courseId,
+                  userGroupId,
+                }
+              : undefined,
+          liveQuizId_userGroupId:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  liveQuizId,
+                  userGroupId,
+                }
+              : undefined,
+          practiceQuizId_userGroupId:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  practiceQuizId,
+                  userGroupId,
+                }
+              : undefined,
+          microLearningId_userGroupId:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  microLearningId,
+                  userGroupId,
+                }
+              : undefined,
+          groupActivityId_userGroupId:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  groupActivityId,
+                  userGroupId,
+                }
+              : undefined,
+        },
+        create: {
+          permissionLevel,
+          userGroup: {
+            connect: {
+              id: userGroupId,
+            },
+          },
+          catalogCollection:
+            typeof catalogCollectionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: catalogCollectionId,
+                  },
+                }
+              : undefined,
+          answerCollection:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: answerCollectionId,
+                  },
+                }
+              : undefined,
+          element:
+            typeof elementId !== 'undefined'
+              ? {
+                  connect: {
+                    id: elementId,
+                  },
+                }
+              : undefined,
+          course:
+            typeof courseId !== 'undefined'
+              ? {
+                  connect: {
+                    id: courseId,
+                  },
+                }
+              : undefined,
+          liveQuiz:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: liveQuizId,
+                  },
+                }
+              : undefined,
+          practiceQuiz:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: practiceQuizId,
+                  },
+                }
+              : undefined,
+          microLearning:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  connect: {
+                    id: microLearningId,
+                  },
+                }
+              : undefined,
+          groupActivity:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  connect: {
+                    id: groupActivityId,
+                  },
+                }
+              : undefined,
+        },
+        update: {
+          permissionLevel,
+        },
+      })
+
+      // trigger recomputation of derived permissions for the object
+      if (typeof catalogCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions({ catalogCollectionId }, prisma)
+      } else if (typeof answerCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions({ answerCollectionId }, prisma)
+      } else if (typeof elementId !== 'undefined') {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      } else if (typeof courseId !== 'undefined') {
+        await recomputeDerivedPermissions({ courseId }, prisma)
+      } else if (typeof liveQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ liveQuizId }, prisma)
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ practiceQuizId }, prisma)
+      } else if (typeof microLearningId !== 'undefined') {
+        await recomputeDerivedPermissions({ microLearningId }, prisma)
+      } else if (typeof groupActivityId !== 'undefined') {
+        await recomputeDerivedPermissions({ groupActivityId }, prisma)
+      }
+
+      // create an audit log entry for the newly created permission
+      const { objectType, objectId } = getAuditLogObjectType({
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      })
+      if (objectType && objectId) {
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_GRANTED,
+            objectType,
+            objectId,
+            sourceUserId: ctx.user.sub,
+            targetUserGroupId: userGroupId,
+            message: `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user group ${userGroupId}.`,
+          },
+        })
+      } else {
+        throw new Error(
+          `Could not determine object type or ID for audit log entry. Permission ID: ${newPermission.id}, Details: ${JSON.stringify(
+            {
+              catalogCollectionId,
+              answerCollectionId,
+              elementId,
+              courseId,
+              liveQuizId,
+              practiceQuizId,
+              microLearningId,
+              groupActivityId,
+            }
+          )}`
+        )
+      }
+
+      return newPermission
+    })
+
+    // invalidate permission
+    ctx.emitter.emit('invalidate', {
+      typename: 'Permission',
+      id: permission.id,
+    })
+
+    return {
+      permissionId: permission.id,
+      userId: undefined,
+      username: undefined,
+      userEmail: undefined,
+      userGroupId: userGroup.id,
+      userGroupName: userGroup.name,
+      permissionLevel: permission.permissionLevel,
+      isOwn: false,
+    }
   } else {
     return null
   }
@@ -4972,16 +5204,16 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
   }
 
   return [
-    ...user.userGroups.map((group) => ({
+    ...user.managedUserGroups.map((group) => ({
       ...group,
-      members: group.members.map((member) => ({
-        ...member,
-        isSelf: member.id === ctx.user.sub,
-      })),
+      owner: {
+        ...group.owner,
+        isSelf: group.owner.id === ctx.user.sub,
+      },
       numOfMembers: group.admins.length + group.members.length + 1,
-      isMember: true,
+      isMember: false,
       isAdmin: false,
-      isOwner: false,
+      isOwner: true,
     })),
     ...user.adminUserGroups.map((group) => ({
       ...group,
@@ -4994,16 +5226,16 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
       isAdmin: true,
       isOwner: false,
     })),
-    ...user.managedUserGroups.map((group) => ({
+    ...user.userGroups.map((group) => ({
       ...group,
-      owner: {
-        ...group.owner,
-        isSelf: group.owner.id === ctx.user.sub,
-      },
+      members: group.members.map((member) => ({
+        ...member,
+        isSelf: member.id === ctx.user.sub,
+      })),
       numOfMembers: group.admins.length + group.members.length + 1,
-      isMember: false,
+      isMember: true,
       isAdmin: false,
-      isOwner: true,
+      isOwner: false,
     })),
   ]
 }
