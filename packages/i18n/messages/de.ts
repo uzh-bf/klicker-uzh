@@ -2698,6 +2698,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',
       removalFailed:
         'Beim Entfernen des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      revokeDirectPermission: 'Direkten Zugriff entziehen',
+      revokeUserPermission:
+        'Bitte bestätigen Sie, dass Sie Nutzer <b>{username}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
+      revokeGroupPermission:
+        'Bitte bestätigen Sie, dass Sie der Nutzergruppe <b>{groupName}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
+      derivedPermissionWarning:
+        'Achtung: Das Entziehen der direkten Zugriffsrechte auf ein Objekt entfernt möglicherweise nicht den Zugriff des Nutzers darauf. Wenn ein Nutzer Zugriff auf andere Objekte hat, die von diesem Objekt abhängen, erhält er eine abgeleitete Berechtigung, die im unteren Bereich des Freigabedialogs eingesehen werden kann.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

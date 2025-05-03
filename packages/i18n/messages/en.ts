@@ -2672,6 +2672,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The object has been removed successfully from your account.',
       removalFailed:
         'An error occurred while removing the object. Please try again or contact the support.',
+      revokeDirectPermission: 'Revoke Direct Access',
+      revokeUserPermission:
+        'Please confirm that you want to remove the direct access to this resource for user <b>{username}</b>.',
+      revokeGroupPermission:
+        'Please confirm that you want to remove the direct access to this resource for the user group <b>{groupName}</b>.',
+      derivedPermissionWarning:
+        "Caution: Removing the direct access rights to an object might not completely remove a user's access to it. In case a user has access to other objects that depend on this one, they will be granted a derived permission, which can be inspected at the bottom of the sharing dialog.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

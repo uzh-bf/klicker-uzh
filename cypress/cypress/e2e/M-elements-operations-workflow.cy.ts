@@ -1126,6 +1126,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).click()
+    cy.get('[data-cy="confirm-revocation"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')

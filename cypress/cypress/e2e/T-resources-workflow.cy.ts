@@ -602,6 +602,11 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).click()
+    cy.get('[data-cy="cancel-revocation"]').click()
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="confirm-revocation"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
@@ -2335,6 +2340,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
+    cy.get('[data-cy="confirm-revocation"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
@@ -2352,6 +2358,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).click()
+    cy.get('[data-cy="confirm-revocation"]').click()
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.be.disabled')
