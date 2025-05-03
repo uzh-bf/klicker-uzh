@@ -1539,7 +1539,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
   })
 
-  it('Verify that direct permissions on the catalog collection can be revoked without conditions', async () => {
+  it('Verify that direct individual permissions on the catalog collection can be revoked without conditions', async () => {
     const { publicCatalog, restrictedCatalog } =
       await seedCatalogCollections(userOneCtx)
 
@@ -1605,6 +1605,167 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(audigLogEntry).toBeTruthy()
     expect(audigLogEntry!.message).toBe(
       `Permission revoked for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) by owner / admin ${userOne.id} for user ${userTwo.id}.`
+    )
+  })
+
+  it('Verify that direct group permissions on the catalog collection can be revoked without conditions', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 1, 2, 3, and 4 (OWNER)
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userFour.id,
+        members: {
+          connect: [
+            { id: userOne.id },
+            { id: userTwo.id },
+            { id: userThree.id },
+          ],
+        },
+      },
+    })
+
+    // grant WRITE permissions to the user group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        permissionLevel: PermissionLevel.WRITE,
+        userGroupId: group.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // verify that all users have derived permissions for the catalog collection
+    const permissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(permissionUserOne).toBeDefined()
+    expect(permissionUserOne?.permissionLevel).toBe(PermissionLevel.OWNER)
+    expect(permissionUserOne?.directPermissionId).toBeNull()
+
+    const permissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(permissionUserTwo).toBeDefined()
+    expect(permissionUserTwo?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserTwo?.directPermissionId).toBe(groupPermission.id)
+
+    const permissionUserThree = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(permissionUserThree).toBeDefined()
+    expect(permissionUserThree?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserThree?.directPermissionId).toBe(groupPermission.id)
+
+    const permissionUserFour = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(permissionUserFour).toBeDefined()
+    expect(permissionUserFour?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserFour?.directPermissionId).toBe(groupPermission.id)
+
+    // revoke the permission
+    const deletedPermissionId = await revokeObjectAccess(
+      {
+        catalogCollectionId: publicCatalog.id,
+        permissionId: groupPermission.id,
+      },
+      userOneCtx
+    )
+    expect(deletedPermissionId).toBe(groupPermission.id)
+
+    // verify that both the acutal permission and the derived ones have been deleted
+    const deletedPermission = await prisma.permission.findUnique({
+      where: {
+        id: groupPermission.id,
+      },
+    })
+    expect(deletedPermission).toBeNull()
+
+    const persistentPermissionUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: publicCatalog.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(persistentPermissionUserOne).toBeDefined()
+    expect(persistentPermissionUserOne?.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+
+    const deletedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(deletedPermissionUserTwo).toBeNull()
+
+    const deletedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: publicCatalog.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(deletedPermissionUserThree).toBeNull()
+
+    const deletedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: publicCatalog.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(deletedPermissionUserFour).toBeNull()
+
+    // verify that an audit log entry has been created for this permission revocation
+    const audigLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_REVOKED,
+        objectId: publicCatalog.id,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: group.id,
+      },
+    })
+    expect(audigLogEntry).toBeTruthy()
+    expect(audigLogEntry!.message).toBe(
+      `Permission revoked for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) by owner / admin ${userOne.id} for user group ${group.id}.`
     )
   })
 

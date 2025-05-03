@@ -1048,7 +1048,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
   })
 
-  it('Verify that direct permissions to an answer collection can be revoked, but might be replaced with derived permissions', async () => {
+  it('Verify that direct individual permissions to an answer collection can be revoked, but might be replaced with derived permissions', async () => {
     // create answer collections for testing
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
@@ -1348,6 +1348,164 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       },
     })
     expect(derivedPermission4).toBeNull()
+  })
+
+  it('Verify that direct group permissions on an answer collection can be revoked without conditions', async () => {
+    const [AC] = await seedAnswerCollections(userOneCtx)
+
+    // create a user group with users 1, 2, 3, and 4 (OWNER)
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userFour.id,
+        members: {
+          connect: [
+            { id: userOne.id },
+            { id: userTwo.id },
+            { id: userThree.id },
+          ],
+        },
+      },
+    })
+
+    // grant WRITE permissions to the user group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        permissionLevel: PermissionLevel.WRITE,
+        userGroupId: group.id,
+        answerCollectionId: AC!.id,
+      },
+    })
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+
+    // verify that all users have derived permissions for the answer collection
+    const permissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC!.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(permissionUserOne).toBeDefined()
+    expect(permissionUserOne?.permissionLevel).toBe(PermissionLevel.OWNER)
+    expect(permissionUserOne?.directPermissionId).toBeNull()
+
+    const permissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(permissionUserTwo).toBeDefined()
+    expect(permissionUserTwo?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserTwo?.directPermissionId).toBe(groupPermission.id)
+
+    const permissionUserThree = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC!.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(permissionUserThree).toBeDefined()
+    expect(permissionUserThree?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserThree?.directPermissionId).toBe(groupPermission.id)
+
+    const permissionUserFour = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC!.id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(permissionUserFour).toBeDefined()
+    expect(permissionUserFour?.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permissionUserFour?.directPermissionId).toBe(groupPermission.id)
+
+    // revoke the permission
+    const deletedPermissionId = await revokeObjectAccess(
+      {
+        answerCollectionId: AC!.id,
+        permissionId: groupPermission.id,
+      },
+      userOneCtx
+    )
+    expect(deletedPermissionId).toBe(groupPermission.id)
+
+    // verify that both the acutal permission and the derived ones have been deleted
+    const deletedPermission = await prisma.permission.findUnique({
+      where: {
+        id: groupPermission.id,
+      },
+    })
+    expect(deletedPermission).toBeNull()
+
+    const persistentPermissionUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: AC!.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(persistentPermissionUserOne).toBeDefined()
+    expect(persistentPermissionUserOne?.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+
+    const deletedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(deletedPermissionUserTwo).toBeNull()
+
+    const deletedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: AC!.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(deletedPermissionUserThree).toBeNull()
+
+    const deletedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: AC!.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(deletedPermissionUserFour).toBeNull()
+
+    // verify that an audit log entry has been created for this permission revocation
+    const audigLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_REVOKED,
+        objectId: String(AC!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: group.id,
+      },
+    })
+    expect(audigLogEntry).toBeTruthy()
+    expect(audigLogEntry!.message).toBe(
+      `Permission revoked for ${ObjectType.ANSWER_COLLECTION} (ID ${AC!.id}) by owner / admin ${userOne.id} for user group ${group.id}.`
+    )
   })
 
   it('Verify that direct permissions on the answer collection are loaded correctly', async () => {
