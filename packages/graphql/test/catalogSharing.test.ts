@@ -1307,12 +1307,17 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalogObjects.length).toBe(3)
 
     const catalogObject1 = catalogObjects.find(
-      (object) => object.id === AC1!.id
+      (object) =>
+        object.id === AC1!.id &&
+        object.objectType === SharingObjectType.ANSWER_COLLECTION
     )
     const catalogObject2 = catalogObjects.find(
       (object) => object.uuid === activityId1
     )
-    const catalogObject3 = catalogObjects.find((object) => object.id === SC.id)
+    const catalogObject3 = catalogObjects.find(
+      (object) =>
+        object.id === SC.id && object.objectType === SharingObjectType.ELEMENT
+    )
     expect(catalogObject1).toBeDefined()
     expect(catalogObject2).toBeDefined()
     expect(catalogObject3).toBeDefined()
@@ -1320,11 +1325,13 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalogObject1!.id).toBe(AC1!.id)
     expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
     expect(catalogObject1!.assignmentId).toBe(assignment1.id)
+
     expect(catalogObject2!.uuid).toBe(activityId1)
     expect(catalogObject2!.objectType).toBe(
       SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
     expect(catalogObject2!.assignmentId).toBe(assignment2.id)
+
     expect(catalogObject3!.id).toBe(SC.id)
     expect(catalogObject3!.objectType).toBe(SharingObjectType.ELEMENT)
     expect(catalogObject3!.assignmentId).toBe(assignment3.id)
@@ -1338,12 +1345,17 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalogObjects2.length).toBe(3)
 
     const catalogObject4 = catalogObjects2.find(
-      (object) => object.id === AC2!.id
+      (object) =>
+        object.id === AC2!.id &&
+        object.objectType === SharingObjectType.ANSWER_COLLECTION
     )
     const catalogObject5 = catalogObjects2.find(
       (object) => object.uuid === activityId2
     )
-    const catalogObject6 = catalogObjects2.find((object) => object.id === MC.id)
+    const catalogObject6 = catalogObjects2.find(
+      (object) =>
+        object.id === MC.id && object.objectType === SharingObjectType.ELEMENT
+    )
     expect(catalogObject4).toBeDefined()
     expect(catalogObject5).toBeDefined()
     expect(catalogObject6).toBeDefined()
@@ -1665,9 +1677,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
   })
 
-  it('Verify that catalog collections can be directly shared with other users and user groups', async () => {
-    const { publicCatalog, restrictedCatalog } =
-      await seedCatalogCollections(userOneCtx)
+  it('Verify that catalog collections can be directly shared with individual users', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // verify that the function fails, if the provided user does not exist
     const failure1 = await shareObject(
@@ -1814,8 +1825,152 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(auditLogEntry3!.message).toBe(
       `Direct permission with level ${PermissionLevel.ADMIN} granted for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) by owner / admin ${userOne.id} to user ${userFour.id}.`
     )
+  })
 
-    // TODO: as soon as user groups are available, extend the corresponding coverage of this unit test
+  it('Verify that catalog collections can be shared with user groups', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 1 (ADMIN), 2, and 3 and grant WRITE permissions to them
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+      },
+    })
+    const groupPermission = await shareObject(
+      {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+      userOneCtx
+    )
+    expect(groupPermission).toBeTruthy()
+    expect(groupPermission!.userGroupId).toBe(group.id)
+    expect(groupPermission!.userGroupName).toBe(group.name)
+
+    // create a user group with users 1, 3 (ADMIN), and 4 and grant ADMIN permissions to them
+    const group2 = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group 2',
+        ownerId: userThree.id,
+        members: {
+          connect: [{ id: userOne.id }, { id: userFour.id }],
+        },
+      },
+    })
+    const groupPermission2 = await shareObject(
+      {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: group2.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+      userOneCtx
+    )
+    expect(groupPermission2).toBeTruthy()
+    expect(groupPermission2!.userGroupId).toBe(group2.id)
+    expect(groupPermission2!.userGroupName).toBe(group2.name)
+
+    // verify that the correct direct permissions have been created in the database
+    const dbPermission1 = await prisma.permission.findUnique({
+      where: {
+        catalogCollectionId_userGroupId: {
+          catalogCollectionId: publicCatalog.id,
+          userGroupId: group.id,
+        },
+      },
+    })
+    expect(dbPermission1).toBeDefined()
+    expect(dbPermission1?.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const dbPermission2 = await prisma.permission.findUnique({
+      where: {
+        catalogCollectionId_userGroupId: {
+          catalogCollectionId: publicCatalog.id,
+          userGroupId: group2.id,
+        },
+      },
+    })
+    expect(dbPermission2).toBeDefined()
+    expect(dbPermission2?.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    // verify that the correct derived permissions have been created in the database
+    // OWNER for user 1, WRITE for user 2, ADMIN for users 3 and 4
+    const derivedPermission1 = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
+
+    const derivedPermission2 = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const derivedPermission3 = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    const derivedPermission4 = await prisma.derivedPermission.findUnique({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(derivedPermission4).toBeDefined()
+    expect(derivedPermission4?.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    // verify that the correct audit log entries have been created
+    const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectId: publicCatalog.id,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: group.id,
+      },
+    })
+    expect(auditLogEntry1).toBeTruthy()
+    expect(auditLogEntry1!.message).toBe(
+      `Direct permission with level ${PermissionLevel.WRITE} granted for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) by owner / admin ${userOne.id} to user group ${group.id}.`
+    )
+
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectId: publicCatalog.id,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: group2.id,
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `Direct permission with level ${PermissionLevel.ADMIN} granted for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) by owner / admin ${userOne.id} to user group ${group2.id}.`
+    )
   })
 
   it('Verify that access requests to catalog collections are shown correctly to owners and admins', async () => {

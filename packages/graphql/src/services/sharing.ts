@@ -3435,9 +3435,16 @@ export async function shareObject(
       isOwn: false,
     }
   } else if (typeof userGroupId !== 'undefined' && userGroupId !== null) {
-    // check if the user group exists and if the triggering member is a member, admin or owner of it
+    // check if the user group exists and if the triggering user is a member, admin or owner of it
     const userGroup = await ctx.prisma.userGroup.findUnique({
-      where: { id: userGroupId },
+      where: {
+        id: userGroupId,
+        OR: [
+          { ownerId: ctx.user.sub },
+          { admins: { some: { id: ctx.user.sub } } },
+          { members: { some: { id: ctx.user.sub } } },
+        ],
+      },
       select: { id: true, name: true },
     })
 
