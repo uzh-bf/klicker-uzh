@@ -1,4 +1,8 @@
-import { PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  ObjectAccess,
+  PermissionLevel,
+  PrismaClient,
+} from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -344,7 +348,18 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       data: {
         name: 'Catalog Collection',
         description: 'Description',
+        access: ObjectAccess.RESTRICTED,
         ownerId: userOne.id,
+      },
+    })
+
+    // create a second catalog collection owned by user 2
+    const catalogCollection2 = await prisma.catalogCollection.create({
+      data: {
+        name: 'Catalog Collection 2',
+        description: 'Description',
+        access: ObjectAccess.PUBLIC,
+        ownerId: userTwo.id,
       },
     })
 
@@ -373,7 +388,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       },
     })
 
-    // grant ADMIN permissions to the first group and WRITE permissions to the second group
+    // grant ADMIN permissions to the first group and WRITE permissions to the second group (first catalog collection)
     const groupPermission1 = await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
@@ -390,13 +405,33 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       },
     })
 
-    // trigger recomputation of derived permissions for the catalog collection
+    // grant READ permissions to the first group and WRITE for the second group (second catalog collection)
+    const groupPermission3 = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup1.id,
+        catalogCollectionId: catalogCollection2.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const groupPermission4 = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup2.id,
+        catalogCollectionId: catalogCollection2.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // trigger recomputation of derived permissions
     await recomputeDerivedPermissions(
       { catalogCollectionId: catalogCollection.id },
       prisma
     )
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: catalogCollection2.id },
+      prisma
+    )
 
-    // verify that the correct derived permission entries have been created for the respecitve users
+    // verify that the correct derived permission entries have been created for the respecitve users on the first catalog collection
     // user 1 (OWNER), user 2 (ADMIN), user 3 (ADMIN - group 1 overrides), user 4 (WRITE - group 2)
     const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
       where: {
@@ -466,6 +501,80 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       groupPermission2.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    // verify that the correct derived permission entries have been created for the respecitve users on the second catalog collection
+    // user 1 (WRITE - group 2), user 2 (OWNER), user 3 (WRITE - group 2 overrides), user 4 (WRITE - group 2)
+    const derivedPermissionUserOne2 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: catalogCollection2.id,
+            userId: userOne.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserOne2).toBeTruthy()
+    expect(derivedPermissionUserOne2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserOne2!.directPermissionId).toBe(
+      groupPermission4.id
+    )
+    expect(derivedPermissionUserOne2!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo2 = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: catalogCollection2.id,
+            userId: userTwo.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserTwo2).toBeTruthy()
+    expect(derivedPermissionUserTwo2!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserTwo2!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserTwo2!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree2 =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: catalogCollection2.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree2).toBeTruthy()
+    expect(derivedPermissionUserThree2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree2!.directPermissionId).toBe(
+      groupPermission4.id
+    )
+    expect(derivedPermissionUserThree2!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour2 =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: catalogCollection2.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserFour2).toBeTruthy()
+    expect(derivedPermissionUserFour2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserFour2!.directPermissionId).toBe(
+      groupPermission4.id
+    )
+    expect(derivedPermissionUserFour2!.derived).toBeFalsy()
   })
 
   async function permissionPrecendenceIndividualGroup(
