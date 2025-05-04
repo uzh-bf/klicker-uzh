@@ -511,8 +511,9 @@ export async function deleteMicroLearning(
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the microlearning is already hard deleted
+    // access requests need to be updated as well, since the derived permissions on elements might have changed
     await propagateActivityToElements(
-      { stacks: microLearning.stacks },
+      { stacks: microLearning.stacks, updateAccessRequests: true },
       ctx.prisma
     )
 

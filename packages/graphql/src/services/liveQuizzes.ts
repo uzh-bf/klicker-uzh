@@ -2039,7 +2039,11 @@ export async function deleteLiveQuiz(
 
       // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
       // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
-      await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
+      await propagateActivityToElements(
+        { stacks: liveQuiz.blocks, updateAccessRequests: true },
+        prisma
+      )
 
       return quiz
     })

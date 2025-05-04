@@ -2295,6 +2295,12 @@ describe('Unit tests for object access validation', () => {
         {
           catalogCollectionId: publicCatalog.id,
           userId: userSix.id,
+          objectAdminOrOwnerId: userOne.id, // object owner
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
           objectAdminOrOwnerId: userTwo.id,
           permissionLevel: PermissionLevel.WRITE,
         },
@@ -2319,7 +2325,7 @@ describe('Unit tests for object access validation', () => {
       ],
     })
     const accessRequestCount1 = await prisma.accessRequest.count()
-    expect(accessRequestCount1).toBe(4)
+    expect(accessRequestCount1).toBe(5)
 
     // lower the individual permission of user 2 -> access request for user 2 should be removed
     await changeObjectPermissionLevel(
@@ -2331,7 +2337,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount2 = await prisma.accessRequest.count()
-    expect(accessRequestCount2).toBe(3)
+    expect(accessRequestCount2).toBe(4)
 
     const removedAccessRequest2 = await prisma.accessRequest.findUnique({
       where: {
@@ -2355,7 +2361,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount3 = await prisma.accessRequest.count()
-    expect(accessRequestCount3).toBe(2)
+    expect(accessRequestCount3).toBe(3)
     const removedAccessRequest3 = await prisma.accessRequest.findUnique({
       where: {
         catalogCollectionId_userId_objectAdminOrOwnerId: {
@@ -2389,7 +2395,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount4 = await prisma.accessRequest.count()
-    expect(accessRequestCount4).toBe(2)
+    expect(accessRequestCount4).toBe(3)
 
     const retainedAccessRequest5 = await prisma.accessRequest.findUnique({
       where: {
@@ -2831,6 +2837,12 @@ describe('Unit tests for object access validation', () => {
         {
           catalogCollectionId: publicCatalog.id,
           userId: userSix.id,
+          objectAdminOrOwnerId: userOne.id, // object owner
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
           objectAdminOrOwnerId: userTwo.id,
           permissionLevel: PermissionLevel.WRITE,
         },
@@ -2855,7 +2867,7 @@ describe('Unit tests for object access validation', () => {
       ],
     })
     const accessRequestCount1 = await prisma.accessRequest.count()
-    expect(accessRequestCount1).toBe(4)
+    expect(accessRequestCount1).toBe(5)
 
     // revoke the individual permission of user 2 -> access request for user 2 should be removed
     await revokeObjectAccess(
@@ -2866,7 +2878,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount2 = await prisma.accessRequest.count()
-    expect(accessRequestCount2).toBe(3)
+    expect(accessRequestCount2).toBe(4)
 
     const removedAccessRequest2 = await prisma.accessRequest.findUnique({
       where: {
@@ -2889,7 +2901,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount3 = await prisma.accessRequest.count()
-    expect(accessRequestCount3).toBe(2)
+    expect(accessRequestCount3).toBe(3)
     const removedAccessRequest3 = await prisma.accessRequest.findUnique({
       where: {
         catalogCollectionId_userId_objectAdminOrOwnerId: {
@@ -2922,7 +2934,7 @@ describe('Unit tests for object access validation', () => {
       userOneCtx
     )
     const accessRequestCount4 = await prisma.accessRequest.count()
-    expect(accessRequestCount4).toBe(2)
+    expect(accessRequestCount4).toBe(3)
 
     const retainedAccessRequest5 = await prisma.accessRequest.findUnique({
       where: {

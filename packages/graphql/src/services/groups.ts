@@ -1693,8 +1693,9 @@ export async function deleteGroupActivity(
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the group activity is already hard deleted
+    // access requests need to be updated as well, since the derived permissions on elements might have changed
     await propagateActivityToElements(
-      { stacks: groupActivity.stacks },
+      { stacks: groupActivity.stacks, updateAccessRequests: true },
       ctx.prisma
     )
 

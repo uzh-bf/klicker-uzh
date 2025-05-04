@@ -9,6 +9,7 @@ import {
   MISSING_CATALOG_COLLECTION_ID,
   PrismaTransactionClient,
   recomputeDerivedPermissions,
+  updateAccessRequestInstances,
 } from '@klicker-uzh/util'
 import type {
   ContextWithUser,
@@ -2184,121 +2185,117 @@ export async function changeObjectPermissionLevel(
     for (const affectedUserId of affectedUserIds) {
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { catalogCollectionId, userId: affectedUserId },
+          {
+            catalogCollectionId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof answerCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { answerCollectionId, userId: affectedUserId },
+          {
+            answerCollectionId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof elementId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { elementId, userId: affectedUserId },
+          { elementId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof courseId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { courseId, userId: affectedUserId },
+          { courseId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof liveQuizId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { liveQuizId, userId: affectedUserId },
+          { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof practiceQuizId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { practiceQuizId, userId: affectedUserId },
+          {
+            practiceQuizId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof microLearningId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { microLearningId, userId: affectedUserId },
+          {
+            microLearningId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof groupActivityId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { groupActivityId, userId: affectedUserId },
+          {
+            groupActivityId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       }
+    }
 
-      // if ADMIN permissions were granted, make sure all group members also get access request instances assigned
-      if (
-        previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
-        permissionLevel === DB.PermissionLevel.ADMIN
-      ) {
-        // create access request instances for all members of the user group
-        await Promise.all(
-          affectedUserIds.map(async (userId) => {
-            await createAccessRequestInstancesNewAdmin(
-              {
-                newAdminId: userId,
-                existingAdminOwnerId: ctx.user.sub,
-                catalogCollectionId,
-                answerCollectionId,
-                elementId,
-                courseId,
-                liveQuizId,
-                practiceQuizId,
-                microLearningId,
-                groupActivityId,
-              },
-              prisma
-            )
-          })
-        )
-      }
-
-      // if ADMIN permissions were revoked, make sure that the user does not have any access request instances assigned anymore
-      else if (
-        previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permissionLevel !== DB.PermissionLevel.ADMIN
-      ) {
-        // fetch the user ids of all admin users of the object (after the permission level modification)
-        const adminOwnerPermissions = await prisma.derivedPermission.findMany({
-          where: {
-            permissionLevel: {
-              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-            },
+    // if an admin permission was granted or revoked, update the access request instances
+    if (
+      (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
+        permissionLevel === DB.PermissionLevel.ADMIN) ||
+      (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
+        permissionLevel !== DB.PermissionLevel.ADMIN)
+    ) {
+      if (typeof catalogCollectionId !== 'undefined') {
+        await updateAccessRequestInstances(
+          {
             catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
+            userId: updatedPermission.userId ?? undefined,
           },
-          select: { userId: true },
-        })
-        const adminOwnerIds = adminOwnerPermissions.map(
-          (permission) => permission.userId
+          prisma
         )
-
-        // identify users with revoked ADMIN permissions
-        const usersRevokedAdminPermissions = affectedUserIds.filter(
-          (userId) => !adminOwnerIds.includes(userId)
+      } else if (typeof answerCollectionId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { answerCollectionId, userId: updatedPermission.userId ?? undefined },
+          prisma
         )
-
-        if (usersRevokedAdminPermissions.length > 0) {
-          await prisma.accessRequest.deleteMany({
-            where: {
-              objectAdminOrOwnerId: {
-                in: usersRevokedAdminPermissions, // user might retain ADMIN / OWNER rights through different direct permission
-              },
-              catalogCollectionId,
-              answerCollectionId,
-              elementId,
-              courseId,
-              liveQuizId,
-              practiceQuizId,
-              microLearningId,
-              groupActivityId,
-            },
-          })
-        }
+      } else if (typeof elementId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { elementId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof courseId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { courseId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof liveQuizId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { liveQuizId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { practiceQuizId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof microLearningId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { microLearningId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof groupActivityId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { groupActivityId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
       }
     }
 
@@ -2479,92 +2476,109 @@ export async function revokeObjectAccess(
       // update the derived permissions of all affected users
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { catalogCollectionId, userId: affectedUserId },
+          {
+            catalogCollectionId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof answerCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { answerCollectionId, userId: affectedUserId },
+          {
+            answerCollectionId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof elementId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { elementId, userId: affectedUserId },
+          { elementId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof courseId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { courseId, userId: affectedUserId },
+          { courseId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof liveQuizId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { liveQuizId, userId: affectedUserId },
+          { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
           prisma
         )
       } else if (typeof practiceQuizId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { practiceQuizId, userId: affectedUserId },
+          {
+            practiceQuizId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof microLearningId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { microLearningId, userId: affectedUserId },
+          {
+            microLearningId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       } else if (typeof groupActivityId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { groupActivityId, userId: affectedUserId },
+          {
+            groupActivityId,
+            userId: affectedUserId,
+            updateAccessRequests: false,
+          },
           prisma
         )
       }
     }
 
-    // if the revoked permission was at ADMIN level, remove any access requests linked to ADMINS using this permission
+    // if an admin permission was revoked, update the access request instances
     if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
-      // fetch the user ids of all admin users of the object (after the permission level modification)
-      const adminOwnerPermissions = await prisma.derivedPermission.findMany({
-        where: {
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-          catalogCollectionId,
-          answerCollectionId,
-          elementId,
-          courseId,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-        },
-        select: { userId: true },
-      })
-      const adminOwnerIds = adminOwnerPermissions.map(
-        (permission) => permission.userId
-      )
-
-      // identify users with revoked ADMIN permissions
-      const usersRevokedAdminPermissions = affectedUserIds.filter(
-        (userId) => !adminOwnerIds.includes(userId)
-      )
-
-      // remove any access requests linked to users that lost their ADMIN access to the object
-      if (usersRevokedAdminPermissions.length > 0) {
-        await prisma.accessRequest.deleteMany({
-          where: {
-            objectAdminOrOwnerId: {
-              in: usersRevokedAdminPermissions,
-            },
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          },
-        })
+      if (typeof catalogCollectionId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { catalogCollectionId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof answerCollectionId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { answerCollectionId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof elementId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { elementId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof courseId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { courseId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof liveQuizId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { liveQuizId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { practiceQuizId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof microLearningId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { microLearningId, userId: permission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof groupActivityId !== 'undefined') {
+        await updateAccessRequestInstances(
+          { groupActivityId, userId: permission.userId ?? undefined },
+          prisma
+        )
       }
     }
 
@@ -3593,23 +3607,50 @@ export async function shareObject(
         },
       })
 
+      // check if admin permissions were granted and the corresponding access requests need to be updated
+      const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
+
       // trigger recomputation of derived permissions for the object
       if (typeof catalogCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions({ catalogCollectionId }, prisma)
+        await recomputeDerivedPermissions(
+          { catalogCollectionId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof answerCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions({ answerCollectionId }, prisma)
+        await recomputeDerivedPermissions(
+          { answerCollectionId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+        await recomputeDerivedPermissions(
+          { elementId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions({ courseId }, prisma)
+        await recomputeDerivedPermissions(
+          { courseId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions({ liveQuizId }, prisma)
+        await recomputeDerivedPermissions(
+          { liveQuizId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions({ practiceQuizId }, prisma)
+        await recomputeDerivedPermissions(
+          { practiceQuizId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions({ microLearningId }, prisma)
+        await recomputeDerivedPermissions(
+          { microLearningId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions({ groupActivityId }, prisma)
+        await recomputeDerivedPermissions(
+          { groupActivityId, updateAccessRequests },
+          prisma
+        )
       }
 
       // create an audit log entry for the newly created permission
