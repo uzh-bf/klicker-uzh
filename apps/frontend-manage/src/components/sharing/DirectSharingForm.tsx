@@ -168,6 +168,7 @@ function DirectSharingForm({
                             <span className="mr-5 text-gray-600">{`(${group.numOfMembers} ${t('manage.userGroups.members')})`}</span>
                           </div>
                         ),
+                        data: { cy: `user-group-${group.name}` },
                       })),
                       prop('labelString')
                     )

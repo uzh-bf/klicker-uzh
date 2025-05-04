@@ -43,8 +43,12 @@
   },
   "CCPublic": "Public Catalog Collection",
   "CCRestricted": "Restricted Catalog Collection",
+  "CCRestricted2": "Second Catalog Collection",
   "userGroup": {
     "name": "User Group TEST",
     "nameNew": "User Group NEW"
-  }
+  },
+  "group1": "Group 1",
+  "group2": "Group 2",
+  "group3": "Group 3"
 }
