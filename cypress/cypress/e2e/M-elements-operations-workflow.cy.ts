@@ -1089,7 +1089,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that access requests are visible to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -1114,7 +1114,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // revoke direct ADMIN permissions again
     cy.loginLecturer()
@@ -1130,7 +1130,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the access requests are not visible anymore to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -1647,7 +1647,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // WRITE permissions should enable a user to duplicate or edit the element (no re-use, no deletion / sharing)
     cy.loginInstitutionalCatalyst()
@@ -1659,7 +1659,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
     cy.loginInstitutionalCatalyst2()
@@ -1686,5 +1686,269 @@ describe('Create different types of elements (with and without sample solution) 
       'not.exist'
     )
   })
-  // #region
+
+  it('Create user groups with all users and prepare a new selection question (incl. answer collection) for user group sharing', function () {
+    // create catalog collection with restricted access
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      name: this.data.SEML2.title,
+      content: this.data.SEML2.content,
+      numberOfInputs: this.data.SEML2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML2.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create user group with users 1 (OWNER) and pro1 (MEMBER)
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group1)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group1}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="view-edit-group-${this.data.group1}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+
+    // create user group with users 1 (OWNER) and pro2 (ADMIN)
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group2)
+    cy.get('[data-cy="cancel-create-user-group"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group2)
+
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group2}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="view-edit-group-${this.data.group2}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+    cy.logoutUser()
+
+    // create user group with users 1 (MEMBER) and pro3 (OWNER)
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group3)
+    cy.get('[data-cy="cancel-create-user-group"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group3)
+
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_SHORTNAME')) // lecturer is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group3}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group3}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group3}"]`).should('exist')
+
+    cy.get(`[data-cy="view-edit-group-${this.data.group3}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+    cy.logoutUser()
+  })
+
+  it('Grant direct READ, WRITE and ADMIN permissions to the element for the user groups', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).click()
+    cy.get(`[data-cy="share-element-${this.data.SEML2.title}"]`).click()
+
+    // grant direct READ permissions to group 1
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group1}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+
+    // grant direct WRITE permissions to group 2
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsWRITE
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group2}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsWRITE)
+
+    // grant direct ADMIN permissions to group 3
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group3}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+  })
+
+  it('Verify that the users in group 1 have been granted READ permissions on the element and contained answer collection', function () {
+    cy.loginIndividualCatalyst()
+
+    // check that the shared element is available with the correct permissions
+    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
+      'exist'
+    )
+
+    // check that the contained answer collection is available with READ permissions
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.collection.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
+    cy.wrap(this.data.collection.options).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it('Verify that the users in group 2 have been granted WRITE permissions on the element and contained answer collection', function () {
+    cy.loginInstitutionalCatalyst()
+
+    // check that the shared element is available with the correct permissions
+    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).should('exist')
+
+    // check that the contained answer collection is available with READ permissions
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.collection.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
+    cy.wrap(this.data.collection.options).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it('Verify that the users in group 3 have been granted ADMIN permissions on the element and contained answer collection', function () {
+    cy.loginInstitutionalCatalyst2()
+
+    // check that the shared element is available with the correct permissions
+    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).should('exist')
+    cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).should(
+      'exist'
+    )
+
+    // check that the contained answer collection is available with READ permissions
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.collection.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
+    cy.wrap(this.data.collection.options).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+  // #endregion
 })

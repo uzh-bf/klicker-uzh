@@ -385,7 +385,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).should(
       'exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // other users should not see empty public collection (restricted for access requests)
     cy.loginIndividualCatalyst()
@@ -470,7 +470,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).should(
       'exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // other users should also see both catalog collections and content of public one
     cy.loginIndividualCatalyst()
@@ -920,6 +920,258 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).click()
     cy.get('[data-cy="cancel-removal"]').click()
   })
+
+  it('Create user groups with all users and prepare a new catalog collection for user group sharing', function () {
+    // create catalog collection with restricted access
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get('[data-cy="create-catalog-collection-button"]').click()
+    cy.get('[data-cy="catalog-collection-name-input"]')
+      .click()
+      .type(this.data.CCRestricted2)
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get('[data-cy="create-catalog-collection-submit"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted2}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessRESTRICTED)
+
+    // create user group with users 1 (OWNER) and pro1 (MEMBER)
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group1)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group1}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group1}"]`).should('exist')
+    cy.get(`[data-cy="view-edit-group-${this.data.group1}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+
+    // create user group with users 1 (OWNER) and pro2 (ADMIN)
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group2)
+    cy.get('[data-cy="cancel-create-user-group"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group2)
+
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group2}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group2}"]`).should('exist')
+    cy.get(`[data-cy="view-edit-group-${this.data.group2}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+    cy.logoutUser()
+
+    // create user group with users 1 (MEMBER) and pro3 (OWNER)
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group3)
+    cy.get('[data-cy="cancel-create-user-group"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.group3)
+
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_SHORTNAME')) // lecturer is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+
+    // check that the user group has been created correctly
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).should('exist')
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).contains(
+      messages.shared.generic.owner
+    )
+    cy.get(`[data-cy="user-group-actions-${this.data.group3}"]`).click()
+    cy.get(`[data-cy="view-edit-group-${this.data.group3}"]`).should('exist')
+    cy.get(`[data-cy="delete-group-${this.data.group3}"]`).should('exist')
+
+    cy.get(`[data-cy="view-edit-group-${this.data.group3}"]`).click()
+    cy.get(`[data-cy="edit-group-name"]`).should('exist')
+    cy.get(
+      `[data-cy="group-member-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get('[data-cy="close-user-group-edit-modal"]').click()
+    cy.logoutUser()
+  })
+
+  it('Grant direct READ, WRITE and ADMIN permissions to the catalog collection for the user groups', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="catalog-collection-${this.data.CCRestricted2}-actions"]`
+    ).realClick()
+    cy.get('[data-cy="share-catalog-collection"]').click()
+
+    // grant direct READ permissions to group 1
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
+    cy.get('[data-cy="new-permission-username-or-email"]').should(
+      'have.value',
+      ''
+    ) // username field should have been cleared automatically
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+
+    // entering a username again, should reset the user group field
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_INST2_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+
+    // select the user group again
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
+
+    // choose permission level for group 1 and grant direct group permission
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group1}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+
+    // grant direct WRITE permissions to group 2
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsWRITE
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group2}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsWRITE)
+
+    // grant direct ADMIN permissions to group 3
+    cy.get('[data-cy="new-permission-user-group"]').contains(
+      messages.manage.sharing.noUserGroupSelected
+    )
+    cy.get('[data-cy="new-permission-user-group"]').realClick()
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).click()
+    cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group3}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+  })
+
+  it('Verify that the users in group 1 have been granted READ permissions on the catalog collection', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted2}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(
+      this.data.CCRestricted2
+    )
+    cy.get('[data-cy="add-object-to-catalog-button"]').should('not.exist')
+  })
+
+  it('Verify that the users in group 2 have been granted WRITE permissions on the catalog collection', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted2}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(
+      this.data.CCRestricted2
+    )
+    cy.get('[data-cy="add-object-to-catalog-button"]').should('exist')
+  })
+
+  it('Verify that the users in group 3 have been granted ADMIN permissions on the catalog collection', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted2}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(
+      this.data.CCRestricted2
+    )
+    cy.get('[data-cy="add-object-to-catalog-button"]').should('exist')
+  })
   // #endregion
 
   // ! Part 3: Object Sharing
@@ -959,7 +1211,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click() // navigate back to catalog collection
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Verify that user pro3 can see and request access to objects in restricted answer collection with READ permissions', function () {
@@ -1012,7 +1264,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // pro1 - ADMIN of AC1 and OWNER of AC2 with corresponding sharing permissions
     cy.loginIndividualCatalyst()
@@ -1039,7 +1291,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="close-share-object"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // pro2 - ADMIN of catalog collection CC2 but without permissions on answer collections should not be able to access sharing dialogs
     cy.loginInstitutionalCatalyst()
@@ -1191,7 +1443,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // log in as an admin user, verify that all functionalities except from ownership transfer are available
     cy.loginIndividualCatalyst()
@@ -1254,7 +1506,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // log in as a member user, verify that no modification actions are available and that the user emails are not shown
     cy.loginInstitutionalCatalyst2()
@@ -1318,7 +1570,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="remove-group-member-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Verify that creating another group with the same name fails', function () {
@@ -1437,7 +1689,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the changes went into effect for the corresponding users
     cy.loginIndividualCatalyst()
@@ -1448,7 +1700,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
       messages.manage.userGroups.member
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     cy.loginInstitutionalCatalyst2()
     cy.get('[data-cy="analytics"]').should('exist')
@@ -1458,7 +1710,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).contains(
       messages.manage.userGroups.admin
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Remove a member and an admin from the group and verify that the corresponding users lost access', function () {
@@ -1484,7 +1736,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="group-member-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the changes went into effect for the corresponding users
     cy.loginIndividualCatalyst()
@@ -1494,7 +1746,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     cy.loginInstitutionalCatalyst2()
     cy.get('[data-cy="analytics"]').should('exist')
@@ -1503,7 +1755,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Transfer the ownership to one of the group admins, verify the change and transfer the ownership back', function () {
@@ -1531,7 +1783,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="group-admin-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the changes went into effect for the corresponding users and transfer the ownership back
     cy.loginInstitutionalCatalyst()
@@ -1558,7 +1810,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Change the name of the user group and verify its persistence', function () {
@@ -1612,7 +1864,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
@@ -1621,7 +1873,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="user-group-${this.data.userGroup.nameNew}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
   // #endregion
 
@@ -1642,7 +1894,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-object"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // remove the shared answer collections from pro2
     cy.loginInstitutionalCatalyst()
@@ -1654,7 +1906,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-object"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // remove the shared answer collections from pro3
     cy.loginInstitutionalCatalyst2()
@@ -1666,7 +1918,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-object"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // delete answer collection AC1
     cy.loginLecturer()
@@ -1674,7 +1926,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.AC1.name })
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // delete answer collection AC2
     cy.loginIndividualCatalyst()

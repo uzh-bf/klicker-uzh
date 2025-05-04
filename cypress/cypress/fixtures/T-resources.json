@@ -106,5 +106,24 @@
       "Nine",
       "Ten"
     ]
-  }
+  },
+  "shared": {
+    "name": "Shared Answer Collection",
+    "description": "This is a shared answer collection",
+    "items": [
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+      "Twenty"
+    ]
+  },
+  "group1": "Group 1",
+  "group2": "Group 2",
+  "group3": "Group 3"
 }
