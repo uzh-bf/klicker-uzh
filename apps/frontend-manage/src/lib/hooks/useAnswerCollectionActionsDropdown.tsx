@@ -16,6 +16,7 @@ function useAnswerCollectionActionsDropdown({
   isManager,
   isEditor,
   isRemovable,
+  isDeletable,
   setSharingModal,
   setEditModal,
   setViewingModal,
@@ -26,6 +27,7 @@ function useAnswerCollectionActionsDropdown({
   isManager: boolean
   isEditor: boolean
   isRemovable: boolean
+  isDeletable: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setEditModal: Dispatch<SetStateAction<boolean>>
   setViewingModal: Dispatch<SetStateAction<boolean>>
@@ -36,17 +38,6 @@ function useAnswerCollectionActionsDropdown({
 
   return useMemo(() => {
     const items = []
-    const DeletionTooltip = () => (
-      <Tooltip
-        tooltip={t('manage.resources.deletionDisabledInUse')}
-        className={{
-          tooltip: 'max-w-[30rem] text-sm',
-          trigger: 'ml-2',
-        }}
-      >
-        <FontAwesomeIcon icon={faInfoCircle} className="text-primary-100" />
-      </Tooltip>
-    )
 
     if (isEditor) {
       // editing permissions on the answer collection
@@ -104,7 +95,20 @@ function useAnswerCollectionActionsDropdown({
           >
             <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.removeCollection')}
-            {!isRemovable && <DeletionTooltip />}
+            {!isRemovable && (
+              <Tooltip
+                tooltip={t('manage.resources.removalDisabledInUse')}
+                className={{
+                  tooltip: 'max-w-[30rem] text-sm',
+                  trigger: 'ml-2',
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={faInfoCircle}
+                  className="text-primary-100"
+                />
+              </Tooltip>
+            )}
           </div>
         ),
         onClick: () => setRemovalModal(true),
@@ -121,16 +125,29 @@ function useAnswerCollectionActionsDropdown({
           <div
             className={twMerge(
               'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
-              !isRemovable && 'text-opactiy-50 hover:cursor-not-allowed'
+              !isDeletable && 'text-opactiy-50 hover:cursor-not-allowed'
             )}
           >
             <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.deleteCollection')}
-            {!isRemovable && <DeletionTooltip />}
+            {!isDeletable && (
+              <Tooltip
+                tooltip={t('manage.resources.deletionDisabledInUse')}
+                className={{
+                  tooltip: 'max-w-[30rem] text-sm',
+                  trigger: 'ml-2',
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={faInfoCircle}
+                  className="text-primary-100"
+                />
+              </Tooltip>
+            )}
           </div>
         ),
         onClick: () => setDeletionModal(true),
-        disabled: !isRemovable,
+        disabled: !isDeletable,
         data: { cy: 'delete-answer-collection' },
       })
     }
@@ -142,6 +159,7 @@ function useAnswerCollectionActionsDropdown({
     isManager,
     isEditor,
     isRemovable,
+    isDeletable,
     setSharingModal,
     setEditModal,
     setViewingModal,

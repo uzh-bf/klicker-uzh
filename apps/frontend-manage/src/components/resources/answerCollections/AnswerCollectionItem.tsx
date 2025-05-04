@@ -50,6 +50,7 @@ function AnswerCollectionItem({
     isManager: collection.isManager ?? false,
     isEditor: collection.isEditor ?? false,
     isRemovable: collection.isRemovable ?? false,
+    isDeletable: collection.isDeletable ?? false,
     setSharingModal,
     setEditModal,
     setViewingModal,

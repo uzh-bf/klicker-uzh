@@ -112,6 +112,7 @@ type AnswerCollection {
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
+  isDeletable: Boolean
   isEditor: Boolean
   isImported: Boolean
   isManager: Boolean
@@ -280,6 +281,7 @@ type CaseStudyElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   options: CaseStudyElementOptions!
@@ -483,6 +485,7 @@ type ChoicesElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   options: ChoiceElementOptions!
@@ -572,6 +575,7 @@ type ContentElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   permissionLevel: PermissionLevel
@@ -910,6 +914,7 @@ type FlashcardElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   permissionLevel: PermissionLevel
@@ -996,6 +1001,7 @@ type FreeTextElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   options: FreeTextElementOptions!
@@ -1554,6 +1560,7 @@ type NumericalElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   options: NumericalElementOptions!
@@ -2037,6 +2044,7 @@ type SelectionElement {
   isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
+  isRemovable: Boolean
   isShared: Boolean
   name: String!
   options: SelectionElementOptions!

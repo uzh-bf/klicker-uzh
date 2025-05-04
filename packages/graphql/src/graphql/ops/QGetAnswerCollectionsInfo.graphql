@@ -13,6 +13,7 @@ query GetAnswerCollectionsInfo {
     isEditor
     isImported
     isShared
+    isDeletable
     isRemovable
   }
 }

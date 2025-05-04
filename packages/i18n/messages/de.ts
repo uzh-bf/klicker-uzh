@@ -2408,7 +2408,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
       removeCollection: 'Sammlung entfernen',
       removalDisabledInUse:
-        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht entfernen.',
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt oder wurde mit Ihnen über eine Nutzergruppe geteilt. Sie können die Sammlung daher nicht entfernen.',
       deleteAnswerCollection: 'Antwort-Sammlung löschen',
       confirmCollectionDeletion:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden. Nutzer welche die Antwort-Sammlung nicht nutzen, verlieren den Zugriff.',

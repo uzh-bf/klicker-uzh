@@ -25,6 +25,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       options {
         __typename
@@ -69,6 +70,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       options {
         __typename
@@ -120,6 +122,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       options {
         __typename
@@ -162,6 +165,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       options {
         __typename
@@ -199,6 +203,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       options {
         __typename
@@ -255,6 +260,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       tags {
         id
@@ -286,6 +292,7 @@ query GetUserQuestions {
       isEditor
       isImported
       isShared
+      isRemovable
 
       tags {
         id

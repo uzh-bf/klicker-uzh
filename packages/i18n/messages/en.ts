@@ -2377,7 +2377,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This collection is used by at least one of your questions or templates. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
       removeCollection: 'Remove collection',
       removalDisabledInUse:
-        'This collection is used by at least one of your questions or templates. Therefore, you cannot remove the collection.',
+        'This collection is used by at least one of your questions or templates or shared with you through a user group. Therefore, you cannot remove the collection.',
       deleteAnswerCollection: 'Delete Answer Collection',
       confirmCollectionDeletion:
         'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection. All users who are not using the collection will lose access to it.',

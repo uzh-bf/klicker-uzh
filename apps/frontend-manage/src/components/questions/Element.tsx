@@ -215,7 +215,8 @@ function Element({
 
             {element.isShared &&
             !element.isManager &&
-            !element.derivedAccess ? (
+            !element.derivedAccess &&
+            element.isRemovable ? (
               <Button
                 disabled={disabled}
                 onClick={() => setRemovalModalOpen(true)}
@@ -247,7 +248,8 @@ function Element({
                   },
                   ...(element.isManager &&
                   !element.isOwner &&
-                  !element.derivedAccess
+                  !element.derivedAccess &&
+                  element.isRemovable
                     ? [
                         {
                           label: (
@@ -334,7 +336,7 @@ function Element({
           unsetDeletedQuestion={unsetDeletedQuestion}
         />
       )}
-      {isRemovalModalOpen && !element.isOwner && (
+      {isRemovalModalOpen && !element.isOwner && element.isRemovable && (
         <ElementRemovalModal
           isModalOpen={isRemovalModalOpen}
           setModalOpen={setRemovalModalOpen}

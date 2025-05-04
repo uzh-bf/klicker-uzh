@@ -39,7 +39,9 @@ function DirectSharingForm({
 }) {
   const t = useTranslations()
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
-  const { data, loading } = useQuery(GetUserGroupsUserDocument)
+  const { data, loading } = useQuery(GetUserGroupsUserDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
 
   return (
     <Formik
