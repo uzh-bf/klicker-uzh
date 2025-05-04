@@ -147,8 +147,31 @@ export async function recomputeDerivedPermissions(
   }
 }
 
-// TODO: DOCSTRING
 // ! Access request update function taking into account all admins and the owner
+/**
+ * This function updates access requests for a specific object type, potentially limited
+ * to object requests assigned to a specific admin or owner user. Before upserting new
+ * access requests for all pending user requests, it first deleted all invalid access
+ * requests for users that have lost their admin or owner permissions.
+ *
+ * Thereby, triggering this function with a userId, it can be assumed that all access
+ * requests assigned to this user as an admin or owner are valid and should be kept.
+ * If no userId is provided, all access requests that are not assigned to any object
+ * owner or admin are validated and potentially updated / removed.
+ *
+ * @param params - Object containing object IDs and optional user ID
+ * @param params.catalogCollectionId - ID of the catalog collection to update access requests for
+ * @param params.answerCollectionId - ID of the answer collection to update access requests for
+ * @param params.elementId - ID of the element to update access requests for
+ * @param params.courseId - ID of the course to update access requests for
+ * @param params.liveQuizId - ID of the live quiz to update access requests for
+ * @param params.practiceQuizId - ID of the practice quiz to update access requests for
+ * @param params.microLearningId - ID of the microlearning to update access requests for
+ * @param params.groupActivityId - ID of the group activity to update access requests for
+ * @param params.userId - Optional user ID to limit the update to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ * @returns Promise that resolves when the access request update completes
+ */
 export async function updateAccessRequestInstances(
   {
     // object ids - exactly one must be defined
