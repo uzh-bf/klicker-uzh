@@ -1687,7 +1687,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
   })
 
-  it.only('Create user groups with all users and prepare a new selection question (incl. answer collection) for user group sharing', function () {
+  it('Create user groups with all users and prepare a new selection question (incl. answer collection) for user group sharing', function () {
     // create catalog collection with restricted access
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')
@@ -1810,7 +1810,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.logoutLecturer()
   })
 
-  it.only('Grant direct READ, WRITE and ADMIN permissions to the element for the user groups', function () {
+  it('Grant direct READ, WRITE and ADMIN permissions to the element for the user groups', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML2.title}"]`).click()
@@ -1857,7 +1857,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-submit"]').click()
   })
 
-  it.only('Verify that the users in group 1 have been granted READ permissions on the element and contained answer collection', function () {
+  it('Verify that the users in group 1 have been granted READ permissions on the element and contained answer collection', function () {
     cy.loginIndividualCatalyst()
 
     // check that the shared element is available with the correct permissions
@@ -1883,7 +1883,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it.only('Verify that the users in group 2 have been granted WRITE permissions on the element and contained answer collection', function () {
+  it('Verify that the users in group 2 have been granted WRITE permissions on the element and contained answer collection', function () {
     cy.loginInstitutionalCatalyst()
 
     // check that the shared element is available with the correct permissions
@@ -1910,7 +1910,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it.only('Verify that the users in group 3 have been granted ADMIN permissions on the element and contained answer collection', function () {
+  it('Verify that the users in group 3 have been granted ADMIN permissions on the element and contained answer collection', function () {
     cy.loginInstitutionalCatalyst2()
 
     // check that the shared element is available with the correct permissions
