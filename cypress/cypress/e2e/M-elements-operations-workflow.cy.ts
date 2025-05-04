@@ -1089,7 +1089,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that access requests are visible to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -1114,7 +1114,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="deny-sharing-request-${this.data.SEML.title}-pro2"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // revoke direct ADMIN permissions again
     cy.loginLecturer()
@@ -1130,7 +1130,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the access requests are not visible anymore to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -1647,7 +1647,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // WRITE permissions should enable a user to duplicate or edit the element (no re-use, no deletion / sharing)
     cy.loginInstitutionalCatalyst()
@@ -1659,7 +1659,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
     cy.loginInstitutionalCatalyst2()
@@ -1772,7 +1772,7 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('exist')
     cy.get('[data-cy="close-user-group-edit-modal"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // create user group with users 1 (MEMBER) and pro3 (OWNER)
     cy.loginInstitutionalCatalyst2()
@@ -1807,13 +1807,15 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="group-member-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).should('exist')
     cy.get('[data-cy="close-user-group-edit-modal"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Grant direct READ, WRITE and ADMIN permissions to the element for the user groups', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML2.title}"]`).click()
+
+    // grant direct READ permissions to group 1
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
     cy.get('[data-cy="new-permission-user-group"]').realClick()
     cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
@@ -1825,6 +1827,9 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group1}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
 
     // grant direct WRITE permissions to group 2
     cy.get('[data-cy="new-permission-user-group"]').contains(
@@ -1840,6 +1845,9 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group2}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsWRITE)
 
     // grant direct ADMIN permissions to group 3
     cy.get('[data-cy="new-permission-user-group"]').contains(
@@ -1855,6 +1863,9 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group3}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Verify that the users in group 1 have been granted READ permissions on the element and contained answer collection', function () {

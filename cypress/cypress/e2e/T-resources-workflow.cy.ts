@@ -560,7 +560,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that access requests are visible to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -585,7 +585,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="deny-sharing-request-${this.data.restricted.name}-pro2"]`
     ).should('exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // revoke direct ADMIN permissions again
     cy.loginLecturer()
@@ -610,7 +610,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // verify that the access requests are not visible anymore to user pro3
     cy.loginInstitutionalCatalyst2()
@@ -1503,7 +1503,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="group-admin-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('exist')
     cy.get('[data-cy="close-user-group-edit-modal"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
 
     // create user group with users 1 (MEMBER) and pro3 (OWNER)
     cy.loginInstitutionalCatalyst2()
@@ -1538,7 +1538,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="group-member-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).should('exist')
     cy.get('[data-cy="close-user-group-edit-modal"]').click()
-    cy.logoutLecturer()
+    cy.logoutUser()
   })
 
   it('Grant direct READ, WRITE and ADMIN permissions to the answer collection for the user groups', function () {
@@ -1564,6 +1564,9 @@ describe('Create, edit and share answer collections', function () {
       messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group1}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
 
     // grant direct WRITE permissions to group 2
     cy.get('[data-cy="new-permission-user-group"]').contains(
@@ -1579,6 +1582,9 @@ describe('Create, edit and share answer collections', function () {
       messages.manage.sharing.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group2}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsWRITE)
 
     // grant direct ADMIN permissions to group 3
     cy.get('[data-cy="new-permission-user-group"]').contains(
@@ -1594,6 +1600,9 @@ describe('Create, edit and share answer collections', function () {
       messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${this.data.group3}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Verify that the users in group 1 have been granted READ permissions on the answer collection', function () {

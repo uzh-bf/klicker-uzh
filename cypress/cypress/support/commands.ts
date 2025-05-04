@@ -123,7 +123,7 @@ Cypress.Commands.add(
   })
 )
 
-Cypress.Commands.add('logoutLecturer', () => {
+Cypress.Commands.add('logoutUser', () => {
   cy.clearCookie('next-auth.session-token')
 })
 
@@ -1153,7 +1153,7 @@ declare global {
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
       loginInstitutionalCatalyst2(): Chainable<void>
-      logoutLecturer(): Chainable<void>
+      logoutUser(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
