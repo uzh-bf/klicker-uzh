@@ -21,6 +21,7 @@ mutation CreateAnswerCollection(
     isEditor
     isImported
     isShared
+    isDeletable
     isRemovable
   }
 }

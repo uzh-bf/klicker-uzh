@@ -101,7 +101,8 @@ export async function createAnswerCollection(
     isEditor: true,
     isImported: false,
     isShared: false,
-    isRemovable: true,
+    isDeletable: true,
+    isRemovable: false,
   }
 }
 
@@ -249,6 +250,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       objects: {
         where: { answerCollectionId: { not: null } },
         include: {
+          directPermission: true,
           answerCollection: {
             include: {
               _count: {
@@ -324,9 +326,15 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel === DB.PermissionLevel.OWNER &&
         object.answerCollection?.originalId !== null,
       isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
-      isRemovable:
+      isDeletable:
         collection._count.linkedElements === 0 &&
         collection._count.linkedTemplates === 0,
+      isRemovable:
+        collection._count.linkedElements === 0 &&
+        collection._count.linkedTemplates === 0 &&
+        object.permissionLevel !== DB.PermissionLevel.OWNER &&
+        !object.derived &&
+        object.directPermission?.userGroupId === null,
     }
   })
 

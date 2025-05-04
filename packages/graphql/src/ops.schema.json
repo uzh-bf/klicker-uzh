@@ -1175,6 +1175,18 @@
             "deprecationReason": null
           },
           {
+            "name": "isDeletable",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "isEditor",
             "description": null,
             "args": [],
@@ -3103,6 +3115,18 @@
           },
           {
             "name": "isOwner",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isRemovable",
             "description": null,
             "args": [],
             "type": {
@@ -5450,6 +5474,18 @@
             "deprecationReason": null
           },
           {
+            "name": "isRemovable",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "isShared",
             "description": null,
             "args": [],
@@ -6495,6 +6531,18 @@
           },
           {
             "name": "isOwner",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isRemovable",
             "description": null,
             "args": [],
             "type": {
@@ -10250,6 +10298,18 @@
             "deprecationReason": null
           },
           {
+            "name": "isRemovable",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "isShared",
             "description": null,
             "args": [],
@@ -11290,6 +11350,18 @@
           },
           {
             "name": "isOwner",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isRemovable",
             "description": null,
             "args": [],
             "type": {
@@ -24454,6 +24526,18 @@
             "deprecationReason": null
           },
           {
+            "name": "isRemovable",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "isShared",
             "description": null,
             "args": [],
@@ -31644,6 +31728,18 @@
           },
           {
             "name": "isOwner",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isRemovable",
             "description": null,
             "args": [],
             "type": {

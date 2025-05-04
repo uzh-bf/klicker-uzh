@@ -708,6 +708,7 @@ const sharedElementProps = (t: any) => ({
   isEditor: t.exposeBoolean('isEditor', { nullable: true }),
   isImported: t.exposeBoolean('isImported', { nullable: true }),
   isShared: t.exposeBoolean('isShared', { nullable: true }),
+  isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
 
   tags: t.expose('tags', {
     type: [TagRef],
@@ -724,6 +725,7 @@ interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   isEditor?: boolean // = OWNER / ADMIN / WRITE
   isImported?: boolean // imported flag for UI icon
   isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
 }
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType

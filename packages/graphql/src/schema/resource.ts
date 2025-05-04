@@ -46,7 +46,8 @@ interface IAnswerCollection extends DB.AnswerCollection {
   isEditor?: boolean // = OWNER / ADMIN / WRITE
   isImported?: boolean // imported flag for UI icon
   isShared?: boolean // flag to signal whether the object is owned or shared
-  isRemovable?: boolean // flag to signal the existence of dependent objects
+  isRemovable?: boolean // flag to signal the option to remove the direct individual permission & the existence of dependent objects
+  isDeletable?: boolean // flag to signal whether the object can be deleted / the existence of dependent objects
 }
 
 export const AnswerCollectionRef =
@@ -74,6 +75,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isImported: t.exposeBoolean('isImported', { nullable: true }),
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+    isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
   }),
 })
 

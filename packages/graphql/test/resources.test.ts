@@ -96,7 +96,8 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(AC!.isEditor).toBeTruthy()
     expect(AC!.isImported).toBeFalsy()
     expect(AC!.isShared).toBeFalsy()
-    expect(AC!.isRemovable).toBeTruthy()
+    expect(AC!.isDeletable).toBeTruthy()
+    expect(AC!.isRemovable).toBeFalsy()
 
     // test that the answer collection has been correctly created in the database
     const dbAC = await prisma.answerCollection.findUnique({

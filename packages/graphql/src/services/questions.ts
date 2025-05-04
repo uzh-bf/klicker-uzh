@@ -31,6 +31,7 @@ export async function getUserQuestions(ctx: ContextWithUser) {
       objects: {
         where: { elementId: { not: null } },
         include: {
+          directPermission: true,
           element: {
             include: {
               tags: {
@@ -64,6 +65,11 @@ export async function getUserQuestions(ctx: ContextWithUser) {
               object.permissionLevel === DB.PermissionLevel.OWNER &&
               object.element.originalId !== null,
             isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+            // object can be removed, if the object is shared and the permission is not derived / granted through a user group
+            isRemovable:
+              object.permissionLevel !== DB.PermissionLevel.OWNER &&
+              !object.derived &&
+              object.directPermission?.userGroupId === null,
           }
         : []
     ) ?? []
