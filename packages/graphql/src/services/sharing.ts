@@ -297,235 +297,6 @@ export async function verifyCatalogObjectEditPermissions(
 }
 
 /**
- * Creates access request instances for a new admin/owner based on existing requests.
- *
- * This function duplicates all pending access requests from an existing admin/owner to a new admin/owner
- * for various object types (collections, elements, courses, quizzes, etc).
- *
- * @param  params - The parameters object.
- * @param  params.newAdminId - The ID of the new admin/owner.
- * @param  params.existingAdminOwnerId - The ID of the existing admin/owner.
- * @param  params.catalogCollectionId - Optional ID of a catalog collection.
- * @param  params.answerCollectionId - Optional ID of an answer collection.
- * @param  params.elementId - Optional ID of an element.
- * @param  params.courseId - Optional ID of a course.
- * @param  params.liveQuizId - Optional ID of a live quiz.
- * @param  params.practiceQuizId - Optional ID of a practice quiz.
- * @param  params.microLearningId - Optional ID of a micro learning.
- * @param  params.groupActivityId - Optional ID of a group activity.
- * @param  ctx - The Prisma transaction context with user information.
- * @returns Returns nothing if successful.
- */
-export async function createAccessRequestInstancesNewAdmin(
-  {
-    newAdminId,
-    existingAdminOwnerId,
-    catalogCollectionId,
-    answerCollectionId,
-    elementId,
-    courseId,
-    liveQuizId,
-    practiceQuizId,
-    microLearningId,
-    groupActivityId,
-  }: {
-    newAdminId: string
-    existingAdminOwnerId: string
-    catalogCollectionId?: string
-    answerCollectionId?: number
-    elementId?: number
-    courseId?: string
-    liveQuizId?: string
-    practiceQuizId?: string
-    microLearningId?: string
-    groupActivityId?: string
-  },
-  prisma: PrismaTransactionClient
-) {
-  // if none of the object ids are defined, return early
-  if (
-    !catalogCollectionId &&
-    typeof answerCollectionId === 'undefined' &&
-    typeof elementId === 'undefined' &&
-    !courseId &&
-    !liveQuizId &&
-    !practiceQuizId &&
-    !microLearningId &&
-    !groupActivityId
-  ) {
-    return
-  }
-
-  // fetch all access requests for any existing admin / user on the object
-  const pendingRequests = await prisma.accessRequest.findMany({
-    where: {
-      // only filter for one of the existing owners / admins to make sure to get all requests
-      objectAdminOrOwnerId: existingAdminOwnerId,
-      // filter by the object ids - undefined = filter is not applied
-      catalogCollectionId,
-      answerCollectionId,
-      elementId,
-      courseId,
-      liveQuizId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-    },
-  })
-
-  // upsert new access requests for the new admin / owner
-  // (no Promise.all to avoid parallelization inside transaction -> could result in issue due to closure of transaction connection)
-  for (const request of pendingRequests) {
-    await prisma.accessRequest.upsert({
-      where: {
-        catalogCollectionId_userId_objectAdminOrOwnerId:
-          request.catalogCollectionId !== null
-            ? {
-                catalogCollectionId: request.catalogCollectionId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        answerCollectionId_userId_objectAdminOrOwnerId:
-          request.answerCollectionId !== null
-            ? {
-                answerCollectionId: request.answerCollectionId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        elementId_userId_objectAdminOrOwnerId:
-          request.elementId !== null
-            ? {
-                elementId: request.elementId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        courseId_userId_objectAdminOrOwnerId:
-          request.courseId !== null
-            ? {
-                courseId: request.courseId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        liveQuizId_userId_objectAdminOrOwnerId:
-          request.liveQuizId !== null
-            ? {
-                liveQuizId: request.liveQuizId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        practiceQuizId_userId_objectAdminOrOwnerId:
-          request.practiceQuizId !== null
-            ? {
-                practiceQuizId: request.practiceQuizId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        microLearningId_userId_objectAdminOrOwnerId:
-          request.microLearningId !== null
-            ? {
-                microLearningId: request.microLearningId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-        groupActivityId_userId_objectAdminOrOwnerId:
-          request.groupActivityId !== null
-            ? {
-                groupActivityId: request.groupActivityId,
-                userId: request.userId,
-                objectAdminOrOwnerId: newAdminId,
-              }
-            : undefined,
-      },
-      create: {
-        permissionLevel: request.permissionLevel,
-        user: {
-          connect: {
-            id: request.userId,
-          },
-        },
-        objectAdminOrOwner: {
-          connect: {
-            id: newAdminId,
-          },
-        },
-        catalogCollection:
-          request.catalogCollectionId !== null
-            ? {
-                connect: {
-                  id: request.catalogCollectionId,
-                },
-              }
-            : undefined,
-        answerCollection:
-          request.answerCollectionId !== null
-            ? {
-                connect: {
-                  id: request.answerCollectionId,
-                },
-              }
-            : undefined,
-        element:
-          request.elementId !== null
-            ? {
-                connect: {
-                  id: request.elementId,
-                },
-              }
-            : undefined,
-        course:
-          request.courseId !== null
-            ? {
-                connect: {
-                  id: request.courseId,
-                },
-              }
-            : undefined,
-        liveQuiz:
-          request.liveQuizId !== null
-            ? {
-                connect: {
-                  id: request.liveQuizId,
-                },
-              }
-            : undefined,
-        practiceQuiz:
-          request.practiceQuizId !== null
-            ? {
-                connect: {
-                  id: request.practiceQuizId,
-                },
-              }
-            : undefined,
-        microLearning:
-          request.microLearningId !== null
-            ? {
-                connect: {
-                  id: request.microLearningId,
-                },
-              }
-            : undefined,
-        groupActivity:
-          request.groupActivityId !== null
-            ? {
-                connect: {
-                  id: request.groupActivityId,
-                },
-              }
-            : undefined,
-      },
-      update: {},
-    })
-  }
-}
-
-/**
  * Determines the object type and returns the ID based on the provided ID parameters.
  * Returns the appropriate DB.ObjectType and a stringified version of the ID,
  * or null if no valid ID is provided.
@@ -1914,25 +1685,6 @@ export async function resolveObjectSharingRequest(
       },
     })
 
-    // if ADMIN permissions were granted, make sure the user also gets access request instances assigned
-    if (permissionLevel === DB.PermissionLevel.ADMIN) {
-      await createAccessRequestInstancesNewAdmin(
-        {
-          newAdminId: userId,
-          existingAdminOwnerId: ctx.user.sub,
-          catalogCollectionId: pendingRequest.catalogCollectionId ?? undefined,
-          answerCollectionId: pendingRequest.answerCollectionId ?? undefined,
-          elementId: pendingRequest.elementId ?? undefined,
-          courseId: pendingRequest.courseId ?? undefined,
-          liveQuizId: pendingRequest.liveQuizId ?? undefined,
-          practiceQuizId: pendingRequest.practiceQuizId ?? undefined,
-          microLearningId: pendingRequest.microLearningId ?? undefined,
-          groupActivityId: pendingRequest.groupActivityId ?? undefined,
-        },
-        prisma
-      )
-    }
-
     // create an audit log entry for the resolved access request
     const { objectType, objectId } = getAuditLogObjectType({
       catalogCollectionId: pendingRequest.catalogCollectionId,
@@ -1977,10 +1729,12 @@ export async function resolveObjectSharingRequest(
     }
 
     // trigger recomputation of derived permissions within the same transaction
+    const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
     if (pendingRequest.catalogCollectionId !== null) {
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           catalogCollectionId: pendingRequest.catalogCollectionId,
         },
         prisma
@@ -1989,6 +1743,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           answerCollectionId: pendingRequest.answerCollectionId,
         },
         prisma
@@ -1997,6 +1752,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           elementId: pendingRequest.elementId,
         },
         prisma
@@ -2005,6 +1761,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           courseId: pendingRequest.courseId,
         },
         prisma
@@ -2013,6 +1770,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           liveQuizId: pendingRequest.liveQuizId,
         },
         prisma
@@ -2021,6 +1779,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           practiceQuizId: pendingRequest.practiceQuizId,
         },
         prisma
@@ -2029,6 +1788,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           microLearningId: pendingRequest.microLearningId,
         },
         prisma
@@ -2037,6 +1797,7 @@ export async function resolveObjectSharingRequest(
       await recomputeDerivedPermissions(
         {
           userId,
+          updateAccessRequests,
           groupActivityId: pendingRequest.groupActivityId,
         },
         prisma
@@ -2710,20 +2471,18 @@ export async function transferCatalogCollectionOwnership(
 
     // trigger recomputation of derived permissions for the catalog collection for both users
     await recomputeDerivedPermissions(
-      { catalogCollectionId: id, userId: newOwner.id },
+      {
+        catalogCollectionId: id,
+        userId: newOwner.id,
+        updateAccessRequests: true,
+      },
       prisma
     )
     await recomputeDerivedPermissions(
-      { catalogCollectionId: id, userId: ctx.user.sub },
-      prisma
-    )
-
-    // create access request instances for the new owner
-    await createAccessRequestInstancesNewAdmin(
       {
-        newAdminId: newOwner.id,
-        existingAdminOwnerId: ctx.user.sub,
         catalogCollectionId: id,
+        userId: ctx.user.sub,
+        updateAccessRequests: false,
       },
       prisma
     )
@@ -3011,20 +2770,18 @@ export async function transferAnswerCollectionOwnership(
 
     // trigger recomputation of derived permissions for the answer collection for both users
     await recomputeDerivedPermissions(
-      { answerCollectionId: id, userId: newOwner.id },
+      {
+        answerCollectionId: id,
+        userId: newOwner.id,
+        updateAccessRequests: true,
+      },
       prisma
     )
     await recomputeDerivedPermissions(
-      { answerCollectionId: id, userId: ctx.user.sub },
-      prisma
-    )
-
-    // create access request instances for the new owner
-    await createAccessRequestInstancesNewAdmin(
       {
-        newAdminId: newOwner.id,
-        existingAdminOwnerId: ctx.user.sub,
         answerCollectionId: id,
+        userId: ctx.user.sub,
+        updateAccessRequests: false,
       },
       prisma
     )
@@ -3127,21 +2884,11 @@ export async function transferElementOwnership(
 
     // trigger recomputation of derived permissions for the element for both users
     await recomputeDerivedPermissions(
-      { elementId: id, userId: newOwner.id },
+      { elementId: id, userId: newOwner.id, updateAccessRequests: true },
       prisma
     )
     await recomputeDerivedPermissions(
-      { elementId: id, userId: ctx.user.sub },
-      prisma
-    )
-
-    // create access request instances for the new owner
-    await createAccessRequestInstancesNewAdmin(
-      {
-        newAdminId: newOwner.id,
-        existingAdminOwnerId: ctx.user.sub,
-        elementId: id,
-      },
+      { elementId: id, userId: ctx.user.sub, updateAccessRequests: false },
       prisma
     )
 
@@ -3350,45 +3097,45 @@ export async function shareObject(
       })
 
       // trigger recomputation of derived permissions for the object
+      const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { catalogCollectionId, userId },
+          { catalogCollectionId, userId, updateAccessRequests },
           prisma
         )
       } else if (typeof answerCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { answerCollectionId, userId },
+          { answerCollectionId, userId, updateAccessRequests },
           prisma
         )
       } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions({ elementId, userId }, prisma)
+        await recomputeDerivedPermissions(
+          { elementId, userId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions({ courseId, userId }, prisma)
+        await recomputeDerivedPermissions(
+          { courseId, userId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions({ liveQuizId, userId }, prisma)
+        await recomputeDerivedPermissions(
+          { liveQuizId, userId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions({ practiceQuizId, userId }, prisma)
+        await recomputeDerivedPermissions(
+          { practiceQuizId, userId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions({ microLearningId, userId }, prisma)
+        await recomputeDerivedPermissions(
+          { microLearningId, userId, updateAccessRequests },
+          prisma
+        )
       } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions({ groupActivityId, userId }, prisma)
-      }
-
-      // if ADMIN permissions were granted, make sure that new access request instances are created for the user
-      if (permissionLevel === DB.PermissionLevel.ADMIN) {
-        await createAccessRequestInstancesNewAdmin(
-          {
-            newAdminId: userId,
-            existingAdminOwnerId: ctx.user.sub,
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          },
+        await recomputeDerivedPermissions(
+          { groupActivityId, userId, updateAccessRequests },
           prisma
         )
       }
