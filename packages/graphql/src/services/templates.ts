@@ -968,7 +968,11 @@ export async function deleteActivityTemplate(
       })
 
       // update derived permissions on all linked elements
-      await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
+      await propagateActivityToElements(
+        { stacks: liveQuiz.blocks, updateAccessRequests: true },
+        prisma
+      )
 
       return deletedLiveQuiz.id
     })
@@ -1002,7 +1006,11 @@ export async function deleteActivityTemplate(
       })
 
       // update derived permissions on all linked elements
-      await propagateActivityToElements({ stacks: practiceQuiz.stacks }, prisma)
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
+      await propagateActivityToElements(
+        { stacks: practiceQuiz.stacks, updateAccessRequests: true },
+        prisma
+      )
 
       return deletedPracticeQuiz.id
     })
@@ -1036,8 +1044,9 @@ export async function deleteActivityTemplate(
       })
 
       // update derived permissions on all linked elements
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
       await propagateActivityToElements(
-        { stacks: microLearning.stacks },
+        { stacks: microLearning.stacks, updateAccessRequests: true },
         prisma
       )
 
@@ -1073,8 +1082,9 @@ export async function deleteActivityTemplate(
       })
 
       // update derived permissions on all linked elements
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
       await propagateActivityToElements(
-        { stacks: groupActivity.stacks },
+        { stacks: groupActivity.stacks, updateAccessRequests: true },
         prisma
       )
 

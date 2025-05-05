@@ -60,10 +60,119 @@ const inversePermissionLevelMap: Record<
  * @param params.microLearningId - ID of the microlearning to recompute permissions for
  * @param params.groupActivityId - ID of the group activity to recompute permissions for
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  * @returns Promise that resolves when the permission recomputation completes
  */
 export async function recomputeDerivedPermissions(
+  {
+    // object ids - exactly one must be defined
+    catalogCollectionId,
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    // optional user to limit the required recomputation
+    userId,
+    // optional flag to update the access requests for the object under consideration
+    updateAccessRequests = false,
+  }: {
+    catalogCollectionId?: string
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
+    userId?: string
+    updateAccessRequests?: boolean
+  } & (
+    | { catalogCollectionId: string }
+    | { answerCollectionId: number }
+    | { elementId: number }
+    | { courseId: string }
+    | { liveQuizId: string }
+    | { practiceQuizId: string }
+    | { microLearningId: string }
+    | { groupActivityId: string }
+  ),
+  prisma: PrismaTransactionClient
+) {
+  if (typeof catalogCollectionId !== 'undefined') {
+    await recomputeCatalogCollectionPermissions(
+      { id: catalogCollectionId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof answerCollectionId !== 'undefined') {
+    await recomputeAnswerCollectionPermissions(
+      { id: answerCollectionId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof elementId !== 'undefined') {
+    await recomputeElementPermissions(
+      { id: elementId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof liveQuizId !== 'undefined') {
+    await recomputeLiveQuizPermissions(
+      { id: liveQuizId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof practiceQuizId !== 'undefined') {
+    await recomputePracticeQuizPermissions(
+      { id: practiceQuizId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof microLearningId !== 'undefined') {
+    await recomputeMicroLearningPermissions(
+      { id: microLearningId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof groupActivityId !== 'undefined') {
+    await recomputeGroupActivityPermissions(
+      { id: groupActivityId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof courseId !== 'undefined') {
+    await recomputeCoursePermissions(
+      { id: courseId, userId, updateAccessRequests },
+      prisma
+    )
+  } else {
+    throw new Error('No object id defined')
+  }
+}
+
+// ! Access request update function taking into account all admins and the owner
+/**
+ * This function updates access requests for a specific object type, potentially limited
+ * to object requests assigned to a specific admin or owner user. Before upserting new
+ * access requests for all pending user requests, it first deleted all invalid access
+ * requests for users that have lost their admin or owner permissions.
+ *
+ * Thereby, triggering this function with a userId, it can be assumed that all access
+ * requests assigned to this user as an admin or owner are valid and should be kept.
+ * If no userId is provided, all access requests that are not assigned to any object
+ * owner or admin are validated and potentially updated / removed.
+ *
+ * @param params - Object containing object IDs and optional user ID
+ * @param params.catalogCollectionId - ID of the catalog collection to update access requests for
+ * @param params.answerCollectionId - ID of the answer collection to update access requests for
+ * @param params.elementId - ID of the element to update access requests for
+ * @param params.courseId - ID of the course to update access requests for
+ * @param params.liveQuizId - ID of the live quiz to update access requests for
+ * @param params.practiceQuizId - ID of the practice quiz to update access requests for
+ * @param params.microLearningId - ID of the microlearning to update access requests for
+ * @param params.groupActivityId - ID of the group activity to update access requests for
+ * @param params.userId - Optional user ID to limit the update to a specific user
+ * @param prisma - Prisma transaction client for database operations
+ * @returns Promise that resolves when the access request update completes
+ */
+export async function updateAccessRequestInstances(
   {
     // object ids - exactly one must be defined
     catalogCollectionId,
@@ -98,66 +207,413 @@ export async function recomputeDerivedPermissions(
   ),
   prisma: PrismaTransactionClient
 ) {
-  if (typeof catalogCollectionId !== 'undefined') {
-    await recomputeCatalogCollectionPermissions(
-      { id: catalogCollectionId, userId },
-      prisma
-    )
-  } else if (typeof answerCollectionId !== 'undefined') {
-    await recomputeAnswerCollectionPermissions(
-      { id: answerCollectionId, userId },
-      prisma
-    )
-  } else if (typeof elementId !== 'undefined') {
-    await recomputeElementPermissions(
-      {
-        id: elementId,
-        userId,
+  // if no object id is defined, throw an error
+  if (
+    typeof catalogCollectionId === 'undefined' &&
+    typeof answerCollectionId === 'undefined' &&
+    typeof elementId === 'undefined' &&
+    typeof courseId === 'undefined' &&
+    typeof liveQuizId === 'undefined' &&
+    typeof practiceQuizId === 'undefined' &&
+    typeof microLearningId === 'undefined' &&
+    typeof groupActivityId === 'undefined'
+  ) {
+    throw new Error('No object id defined for the update of access requests')
+  }
+
+  if (typeof userId !== 'undefined') {
+    // check if the considered user has admin permissions or is the owner
+    const adminPermissions = await prisma.derivedPermission.findUnique({
+      where: {
+        permissionLevel: {
+          in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+        },
+        catalogCollectionId_userId:
+          typeof catalogCollectionId !== 'undefined'
+            ? {
+                catalogCollectionId,
+                userId,
+              }
+            : undefined,
+        answerCollectionId_userId:
+          typeof answerCollectionId !== 'undefined'
+            ? {
+                answerCollectionId,
+                userId,
+              }
+            : undefined,
+        elementId_userId:
+          typeof elementId !== 'undefined'
+            ? {
+                elementId,
+                userId,
+              }
+            : undefined,
+        courseId_userId:
+          typeof courseId !== 'undefined'
+            ? {
+                courseId,
+                userId,
+              }
+            : undefined,
+        liveQuizId_userId:
+          typeof liveQuizId !== 'undefined'
+            ? {
+                liveQuizId,
+                userId,
+              }
+            : undefined,
+        practiceQuizId_userId:
+          typeof practiceQuizId !== 'undefined'
+            ? {
+                practiceQuizId,
+                userId,
+              }
+            : undefined,
+        microLearningId_userId:
+          typeof microLearningId !== 'undefined'
+            ? {
+                microLearningId,
+                userId,
+              }
+            : undefined,
+        groupActivityId_userId:
+          typeof groupActivityId !== 'undefined'
+            ? {
+                groupActivityId,
+                userId,
+              }
+            : undefined,
       },
-      prisma
-    )
-  } else if (typeof liveQuizId !== 'undefined') {
-    await recomputeLiveQuizPermissions(
-      {
-        id: liveQuizId,
-        userId,
+    })
+
+    // if the user is not an admin or owner, remove all access requests and return
+    if (!adminPermissions) {
+      await prisma.accessRequest.deleteMany({
+        where: {
+          objectAdminOrOwnerId: userId,
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+      })
+
+      return
+    }
+
+    // fetch all remaining access requests and deduplicate them to get the unique userIds of the requesters
+    const accessRequests = await prisma.accessRequest.findMany({
+      where: {
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
       },
-      prisma
-    )
-  } else if (typeof practiceQuizId !== 'undefined') {
-    await recomputePracticeQuizPermissions(
-      {
-        id: practiceQuizId,
-        userId,
-      },
-      prisma
-    )
-  } else if (typeof microLearningId !== 'undefined') {
-    await recomputeMicroLearningPermissions(
-      {
-        id: microLearningId,
-        userId,
-      },
-      prisma
-    )
-  } else if (typeof groupActivityId !== 'undefined') {
-    await recomputeGroupActivityPermissions(
-      {
-        id: groupActivityId,
-        userId,
-      },
-      prisma
-    )
-  } else if (typeof courseId !== 'undefined') {
-    await recomputeCoursePermissions(
-      {
-        id: courseId,
-        userId,
-      },
-      prisma
+      distinct: ['userId'],
+    })
+
+    // upsert access requests for all requesting users for the user (admin / owner) under consideration
+    await Promise.all(
+      accessRequests.map(
+        async ({ userId: requestingUserId, permissionLevel }) =>
+          await prisma.accessRequest.upsert({
+            where: {
+              catalogCollectionId_userId_objectAdminOrOwnerId:
+                typeof catalogCollectionId !== 'undefined'
+                  ? {
+                      catalogCollectionId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              answerCollectionId_userId_objectAdminOrOwnerId:
+                typeof answerCollectionId !== 'undefined'
+                  ? {
+                      answerCollectionId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              elementId_userId_objectAdminOrOwnerId:
+                typeof elementId !== 'undefined'
+                  ? {
+                      elementId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              courseId_userId_objectAdminOrOwnerId:
+                typeof courseId !== 'undefined'
+                  ? {
+                      courseId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              liveQuizId_userId_objectAdminOrOwnerId:
+                typeof liveQuizId !== 'undefined'
+                  ? {
+                      liveQuizId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              practiceQuizId_userId_objectAdminOrOwnerId:
+                typeof practiceQuizId !== 'undefined'
+                  ? {
+                      practiceQuizId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              microLearningId_userId_objectAdminOrOwnerId:
+                typeof microLearningId !== 'undefined'
+                  ? {
+                      microLearningId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+              groupActivityId_userId_objectAdminOrOwnerId:
+                typeof groupActivityId !== 'undefined'
+                  ? {
+                      groupActivityId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
+            },
+            create: {
+              permissionLevel,
+              user: { connect: { id: requestingUserId } },
+              objectAdminOrOwner: { connect: { id: userId } },
+              catalogCollection:
+                typeof catalogCollectionId !== 'undefined'
+                  ? { connect: { id: catalogCollectionId } }
+                  : undefined,
+              answerCollection:
+                typeof answerCollectionId !== 'undefined'
+                  ? { connect: { id: answerCollectionId } }
+                  : undefined,
+              element:
+                typeof elementId !== 'undefined'
+                  ? { connect: { id: elementId } }
+                  : undefined,
+              course:
+                typeof courseId !== 'undefined'
+                  ? { connect: { id: courseId } }
+                  : undefined,
+              liveQuiz:
+                typeof liveQuizId !== 'undefined'
+                  ? { connect: { id: liveQuizId } }
+                  : undefined,
+              practiceQuiz:
+                typeof practiceQuizId !== 'undefined'
+                  ? { connect: { id: practiceQuizId } }
+                  : undefined,
+              microLearning:
+                typeof microLearningId !== 'undefined'
+                  ? { connect: { id: microLearningId } }
+                  : undefined,
+              groupActivity:
+                typeof groupActivityId !== 'undefined'
+                  ? { connect: { id: groupActivityId } }
+                  : undefined,
+            },
+            update: {
+              permissionLevel,
+            },
+          })
+      )
     )
   } else {
-    throw new Error('No object id defined')
+    // find all users with admin or owner permissions on the object under consideration
+    const adminUsers = await prisma.derivedPermission.findMany({
+      where: {
+        permissionLevel: {
+          in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+        },
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+      select: {
+        userId: true,
+      },
+    })
+    const adminUserIds = adminUsers.map((user) => user.userId)
+
+    // delete all access requests that are not assigned to one of the identified admins or the owner
+    await prisma.accessRequest.deleteMany({
+      where: {
+        objectAdminOrOwnerId: {
+          notIn: adminUserIds,
+        },
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+    })
+
+    // fetch all remaining access requests and deduplicate them to get the unique userIds of the requesters
+    const accessRequests = await prisma.accessRequest.findMany({
+      where: {
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+      distinct: ['userId'],
+    })
+
+    // upsert access requests for all requesting users for all admins and the owner
+    const combinations = adminUserIds.flatMap((adminUserId) =>
+      accessRequests.map((accessRequest) => ({
+        requestingUserId: accessRequest.userId,
+        requestedPermissionLevel: accessRequest.permissionLevel,
+        adminOrOwnerUserId: adminUserId,
+      }))
+    )
+    await Promise.all(
+      combinations.map(
+        async ({
+          requestingUserId,
+          requestedPermissionLevel,
+          adminOrOwnerUserId,
+        }) =>
+          await prisma.accessRequest.upsert({
+            where: {
+              catalogCollectionId_userId_objectAdminOrOwnerId:
+                typeof catalogCollectionId !== 'undefined'
+                  ? {
+                      catalogCollectionId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              answerCollectionId_userId_objectAdminOrOwnerId:
+                typeof answerCollectionId !== 'undefined'
+                  ? {
+                      answerCollectionId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              elementId_userId_objectAdminOrOwnerId:
+                typeof elementId !== 'undefined'
+                  ? {
+                      elementId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              courseId_userId_objectAdminOrOwnerId:
+                typeof courseId !== 'undefined'
+                  ? {
+                      courseId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              liveQuizId_userId_objectAdminOrOwnerId:
+                typeof liveQuizId !== 'undefined'
+                  ? {
+                      liveQuizId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              practiceQuizId_userId_objectAdminOrOwnerId:
+                typeof practiceQuizId !== 'undefined'
+                  ? {
+                      practiceQuizId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              microLearningId_userId_objectAdminOrOwnerId:
+                typeof microLearningId !== 'undefined'
+                  ? {
+                      microLearningId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+              groupActivityId_userId_objectAdminOrOwnerId:
+                typeof groupActivityId !== 'undefined'
+                  ? {
+                      groupActivityId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
+            },
+            create: {
+              permissionLevel: requestedPermissionLevel,
+              user: { connect: { id: requestingUserId } },
+              objectAdminOrOwner: { connect: { id: adminOrOwnerUserId } },
+              catalogCollection:
+                typeof catalogCollectionId !== 'undefined'
+                  ? { connect: { id: catalogCollectionId } }
+                  : undefined,
+              answerCollection:
+                typeof answerCollectionId !== 'undefined'
+                  ? { connect: { id: answerCollectionId } }
+                  : undefined,
+              element:
+                typeof elementId !== 'undefined'
+                  ? { connect: { id: elementId } }
+                  : undefined,
+              course:
+                typeof courseId !== 'undefined'
+                  ? { connect: { id: courseId } }
+                  : undefined,
+              liveQuiz:
+                typeof liveQuizId !== 'undefined'
+                  ? { connect: { id: liveQuizId } }
+                  : undefined,
+              practiceQuiz:
+                typeof practiceQuizId !== 'undefined'
+                  ? { connect: { id: practiceQuizId } }
+                  : undefined,
+              microLearning:
+                typeof microLearningId !== 'undefined'
+                  ? { connect: { id: microLearningId } }
+                  : undefined,
+              groupActivity:
+                typeof groupActivityId !== 'undefined'
+                  ? { connect: { id: groupActivityId } }
+                  : undefined,
+            },
+            update: {
+              permissionLevel: requestedPermissionLevel,
+            },
+          })
+      )
+    )
   }
 }
 
@@ -172,11 +628,16 @@ export async function recomputeDerivedPermissions(
  * @param params - Object containing catalog collection ID and optional user ID
  * @param params.id - ID of the catalog collection
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  * @returns Promise that resolves when the permission recomputation completes
  */
 async function recomputeCatalogCollectionPermissions(
-  { id, userId }: { id: string; userId?: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId?: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // for the top-level default catalog collection, no permissions are awarded
@@ -187,13 +648,16 @@ async function recomputeCatalogCollectionPermissions(
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
     return await recomputeCatalogCollectionPermissionsUser(
-      { id, userId },
+      { id, userId, updateAccessRequests },
       prisma
     )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeCatalogCollectionPermissionsObject({ id }, prisma)
+  return await recomputeCatalogCollectionPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -207,11 +671,16 @@ async function recomputeCatalogCollectionPermissions(
  * @param params - Object containing catalog collection ID and user ID
  * @param params.id - ID of the catalog collection
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 
 async function recomputeCatalogCollectionPermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -301,6 +770,14 @@ async function recomputeCatalogCollectionPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances(
+      { catalogCollectionId: id, userId },
+      prisma
+    )
+  }
+
   return
 }
 
@@ -314,10 +791,11 @@ async function recomputeCatalogCollectionPermissionsUser(
  *
  * @param params - Object containing catalog collection ID
  * @param params.id - ID of the catalog collection
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeCatalogCollectionPermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this catalog collection
@@ -369,6 +847,11 @@ async function recomputeCatalogCollectionPermissionsObject(
       })
     ),
   })
+
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ catalogCollectionId: id }, prisma)
+  }
 }
 
 /**
@@ -380,22 +863,30 @@ async function recomputeCatalogCollectionPermissionsObject(
  * @param params - Object containing answer collection ID and optional user ID
  * @param params.id - ID of the answer collection
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeAnswerCollectionPermissions(
-  { id, userId }: { id: number; userId?: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: number; userId?: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
     return await recomputeAnswerCollectionPermissionsUser(
-      { id, userId },
+      { id, userId, updateAccessRequests },
       prisma
     )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeAnswerCollectionPermissionsObject({ id }, prisma)
+  return await recomputeAnswerCollectionPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -417,10 +908,15 @@ async function recomputeAnswerCollectionPermissions(
  * @param params - Object containing answer collection ID and user ID
  * @param params.id - ID of the answer collection
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeAnswerCollectionPermissionsUser(
-  { id, userId }: { id: number; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: number; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -609,6 +1105,14 @@ async function recomputeAnswerCollectionPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances(
+      { answerCollectionId: id, userId },
+      prisma
+    )
+  }
+
   return
 }
 
@@ -629,10 +1133,11 @@ async function recomputeAnswerCollectionPermissionsUser(
  *
  * @param params - Object containing answer collection ID
  * @param params.id - ID of the answer collection
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeAnswerCollectionPermissionsObject(
-  { id }: { id: number },
+  { id, updateAccessRequests }: { id: number; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this catalog collection
@@ -760,6 +1265,11 @@ async function recomputeAnswerCollectionPermissionsObject(
       })
     ),
   })
+
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ answerCollectionId: id }, prisma)
+  }
 }
 // #endregion
 
@@ -774,25 +1284,34 @@ async function recomputeAnswerCollectionPermissionsObject(
  * @param params - Object containing element ID and optional user ID
  * @param params.id - ID of the element
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeElementPermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: number
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputeElementPermissionsUser({ id, userId }, prisma)
+    return await recomputeElementPermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeElementPermissionsObject({ id }, prisma)
+  return await recomputeElementPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -823,10 +1342,15 @@ async function recomputeElementPermissions(
  * @param params - Object containing element ID and user ID
  * @param params.id - ID of the element
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeElementPermissionsUser(
-  { id, userId }: { id: number; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: number; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -1084,10 +1608,15 @@ async function recomputeElementPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ elementId: id, userId }, prisma)
+  }
+
   // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
   if (element.answerCollectionId !== null) {
     await recomputeAnswerCollectionPermissionsUser(
-      { id: element.answerCollectionId, userId },
+      { id: element.answerCollectionId, userId, updateAccessRequests },
       prisma
     )
   }
@@ -1122,10 +1651,11 @@ async function recomputeElementPermissionsUser(
  *
  * @param params - Object containing element ID
  * @param params.id - ID of the element
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeElementPermissionsObject(
-  { id }: { id: number },
+  { id, updateAccessRequests }: { id: number; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this element
@@ -1291,10 +1821,15 @@ async function recomputeElementPermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ elementId: id }, prisma)
+  }
+
   // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
   if (element.answerCollectionId !== null) {
     await recomputeAnswerCollectionPermissionsObject(
-      { id: element.answerCollectionId },
+      { id: element.answerCollectionId, updateAccessRequests },
       prisma
     )
   }
@@ -1312,25 +1847,34 @@ async function recomputeElementPermissionsObject(
  * @param params - Object containing live quiz ID and optional user ID
  * @param params.id - ID of the live quiz
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeLiveQuizPermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: string
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputeLiveQuizPermissionsUser({ id, userId }, prisma)
+    return await recomputeLiveQuizPermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeLiveQuizPermissionsObject({ id }, prisma)
+  return await recomputeLiveQuizPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -1357,10 +1901,15 @@ async function recomputeLiveQuizPermissions(
  * @param params - Object containing live quiz ID and user ID
  * @param params.id - ID of the live quiz
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeLiveQuizPermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -1477,12 +2026,17 @@ async function recomputeLiveQuizPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ liveQuizId: id, userId }, prisma)
+  }
+
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
   // the derived element permissions need to be recomputed (-> complete recompute required)
   // users with lower permissions on the activity will never obtained derived permissions through it
   // --> however, since the computation is based on derived activity permissions, we need to compute these before
   await propagateActivityToElementsUser(
-    { stacks: liveQuiz.blocks, userId },
+    { stacks: liveQuiz.blocks, userId, updateAccessRequests },
     prisma
   )
 
@@ -1509,10 +2063,11 @@ async function recomputeLiveQuizPermissionsUser(
  *
  * @param params - Object containing live quiz ID
  * @param params.id - ID of the live quiz
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeLiveQuizPermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this element
@@ -1585,8 +2140,16 @@ async function recomputeLiveQuizPermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ liveQuizId: id }, prisma)
+  }
+
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
+  await propagateActivityToElements(
+    { stacks: liveQuiz.blocks, updateAccessRequests },
+    prisma
+  )
 }
 // #endregion
 
@@ -1601,25 +2164,34 @@ async function recomputeLiveQuizPermissionsObject(
  * @param params - Object containing practice quiz ID and optional user ID
  * @param params.id - ID of the practice quiz
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputePracticeQuizPermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: string
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputePracticeQuizPermissionsUser({ id, userId }, prisma)
+    return await recomputePracticeQuizPermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputePracticeQuizPermissionsObject({ id }, prisma)
+  return await recomputePracticeQuizPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -1641,10 +2213,15 @@ async function recomputePracticeQuizPermissions(
  * @param params - Object containing practice quiz ID and user ID
  * @param params.id - ID of the practice quiz
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputePracticeQuizPermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -1761,12 +2338,17 @@ async function recomputePracticeQuizPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ practiceQuizId: id, userId }, prisma)
+  }
+
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
   // the derived element permissions need to be recomputed (-> complete recompute required)
   // users with lower permissions on the activity will never obtained derived permissions through it
   // --> however, since the computation is based on derived activity permissions, we need to compute these before
   await propagateActivityToElementsUser(
-    { stacks: practiceQuiz.stacks, userId },
+    { stacks: practiceQuiz.stacks, userId, updateAccessRequests },
     prisma
   )
 
@@ -1793,10 +2375,11 @@ async function recomputePracticeQuizPermissionsUser(
  *
  * @param params - Object containing practice quiz ID
  * @param params.id - ID of the practice quiz
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputePracticeQuizPermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this element
@@ -1871,8 +2454,16 @@ async function recomputePracticeQuizPermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ practiceQuizId: id }, prisma)
+  }
+
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements({ stacks: practiceQuiz.stacks }, prisma)
+  await propagateActivityToElements(
+    { stacks: practiceQuiz.stacks, updateAccessRequests },
+    prisma
+  )
 }
 // #endregion
 
@@ -1887,25 +2478,34 @@ async function recomputePracticeQuizPermissionsObject(
  * @param params - Object containing microlearning ID and optional user ID
  * @param params.id - ID of the microlearning
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeMicroLearningPermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: string
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputeMicroLearningPermissionsUser({ id, userId }, prisma)
+    return await recomputeMicroLearningPermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeMicroLearningPermissionsObject({ id }, prisma)
+  return await recomputeMicroLearningPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -1927,10 +2527,15 @@ async function recomputeMicroLearningPermissions(
  * @param params - Object containing microlearning ID and user ID
  * @param params.id - ID of the microlearning
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeMicroLearningPermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -2047,12 +2652,17 @@ async function recomputeMicroLearningPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ microLearningId: id, userId }, prisma)
+  }
+
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
   // the derived element permissions need to be recomputed (-> complete recompute required)
   // users with lower permissions on the activity will never obtained derived permissions through it
   // --> however, since the computation is based on derived activity permissions, we need to compute these before
   await propagateActivityToElementsUser(
-    { stacks: microLearning.stacks, userId },
+    { stacks: microLearning.stacks, userId, updateAccessRequests },
     prisma
   )
 
@@ -2079,10 +2689,11 @@ async function recomputeMicroLearningPermissionsUser(
  *
  * @param params - Object containing microlearning ID
  * @param params.id - ID of the microlearning
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeMicroLearningPermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this element
@@ -2157,8 +2768,16 @@ async function recomputeMicroLearningPermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ microLearningId: id }, prisma)
+  }
+
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements({ stacks: microLearning.stacks }, prisma)
+  await propagateActivityToElements(
+    { stacks: microLearning.stacks, updateAccessRequests },
+    prisma
+  )
 }
 // #endregion
 
@@ -2173,25 +2792,34 @@ async function recomputeMicroLearningPermissionsObject(
  * @param params - Object containing group activity ID and optional user ID
  * @param params.id - ID of the group activity
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeGroupActivityPermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: string
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputeGroupActivityPermissionsUser({ id, userId }, prisma)
+    return await recomputeGroupActivityPermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeGroupActivityPermissionsObject({ id }, prisma)
+  return await recomputeGroupActivityPermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -2213,10 +2841,15 @@ async function recomputeGroupActivityPermissions(
  * @param params - Object containing group activity ID and user ID
  * @param params.id - ID of the group activity
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeGroupActivityPermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -2333,12 +2966,17 @@ async function recomputeGroupActivityPermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ groupActivityId: id, userId }, prisma)
+  }
+
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
   // the derived element permissions need to be recomputed (-> complete recompute required)
   // users with lower permissions on the activity will never obtained derived permissions through it
   // --> however, since the computation is based on derived activity permissions, we need to compute these before
   await propagateActivityToElementsUser(
-    { stacks: groupActivity.stacks, userId },
+    { stacks: groupActivity.stacks, userId, updateAccessRequests },
     prisma
   )
 
@@ -2365,10 +3003,11 @@ async function recomputeGroupActivityPermissionsUser(
  *
  * @param params - Object containing group activity ID
  * @param params.id - ID of the group activity
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeGroupActivityPermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this element
@@ -2443,8 +3082,16 @@ async function recomputeGroupActivityPermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ groupActivityId: id }, prisma)
+  }
+
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements({ stacks: groupActivity.stacks }, prisma)
+  await propagateActivityToElements(
+    { stacks: groupActivity.stacks, updateAccessRequests },
+    prisma
+  )
 }
 // #endregion
 
@@ -2459,25 +3106,34 @@ async function recomputeGroupActivityPermissionsObject(
  * @param params - Object containing course ID and optional user ID
  * @param params.id - ID of the course
  * @param params.userId - Optional user ID to limit recomputation to a specific user
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeCoursePermissions(
   {
     id,
     userId,
+    updateAccessRequests,
   }: {
     id: string
     userId?: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
   if (userId) {
-    return await recomputeCoursePermissionsUser({ id, userId }, prisma)
+    return await recomputeCoursePermissionsUser(
+      { id, userId, updateAccessRequests },
+      prisma
+    )
   }
 
   // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
-  return await recomputeCoursePermissionsObject({ id }, prisma)
+  return await recomputeCoursePermissionsObject(
+    { id, updateAccessRequests },
+    prisma
+  )
 }
 
 /**
@@ -2497,10 +3153,15 @@ async function recomputeCoursePermissions(
  * @param params - Object containing course ID and user ID
  * @param params.id - ID of the course
  * @param params.userId - ID of the user to recompute permissions for
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeCoursePermissionsUser(
-  { id, userId }: { id: string; userId: string },
+  {
+    id,
+    userId,
+    updateAccessRequests,
+  }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // check if a permission for this user exists
@@ -2596,25 +3257,33 @@ async function recomputeCoursePermissionsUser(
     })
   }
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ courseId: id, userId }, prisma)
+  }
+
   // recompute the derived permissions on all activities contained in this course (sequentially)
   for (const liveQuiz of course.liveQuizzes) {
-    await recomputeLiveQuizPermissionsUser({ id: liveQuiz.id, userId }, prisma)
+    await recomputeLiveQuizPermissionsUser(
+      { id: liveQuiz.id, userId, updateAccessRequests },
+      prisma
+    )
   }
   for (const practiceQuiz of course.practiceQuizzes) {
     await recomputePracticeQuizPermissionsUser(
-      { id: practiceQuiz.id, userId },
+      { id: practiceQuiz.id, userId, updateAccessRequests },
       prisma
     )
   }
   for (const microLearning of course.microLearnings) {
     await recomputeMicroLearningPermissionsUser(
-      { id: microLearning.id, userId },
+      { id: microLearning.id, userId, updateAccessRequests },
       prisma
     )
   }
   for (const groupActivity of course.groupActivities) {
     await recomputeGroupActivityPermissionsUser(
-      { id: groupActivity.id, userId },
+      { id: groupActivity.id, userId, updateAccessRequests },
       prisma
     )
   }
@@ -2639,10 +3308,11 @@ async function recomputeCoursePermissionsUser(
  *
  * @param params - Object containing course ID
  * @param params.id - ID of the course
+ * @param params.updateAccessRequests - Flag to update access requests for the object
  * @param prisma - Prisma transaction client for database operations
  */
 async function recomputeCoursePermissionsObject(
-  { id }: { id: string },
+  { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
   // delete all derived permissions for this course
@@ -2701,25 +3371,33 @@ async function recomputeCoursePermissionsObject(
     ),
   })
 
+  // if the corresponding flag is set, update the access requests for the object
+  if (updateAccessRequests) {
+    await updateAccessRequestInstances({ courseId: id }, prisma)
+  }
+
   // recompute the derived permissions on all activities contained in this course (sequentially)
   for (const liveQuiz of course.liveQuizzes) {
-    await recomputeLiveQuizPermissionsObject({ id: liveQuiz.id }, prisma)
+    await recomputeLiveQuizPermissionsObject(
+      { id: liveQuiz.id, updateAccessRequests },
+      prisma
+    )
   }
   for (const practiceQuiz of course.practiceQuizzes) {
     await recomputePracticeQuizPermissionsObject(
-      { id: practiceQuiz.id },
+      { id: practiceQuiz.id, updateAccessRequests },
       prisma
     )
   }
   for (const microLearning of course.microLearnings) {
     await recomputeMicroLearningPermissionsObject(
-      { id: microLearning.id },
+      { id: microLearning.id, updateAccessRequests },
       prisma
     )
   }
   for (const groupActivity of course.groupActivities) {
     await recomputeGroupActivityPermissionsObject(
-      { id: groupActivity.id },
+      { id: groupActivity.id, updateAccessRequests },
       prisma
     )
   }
@@ -3034,11 +3712,13 @@ async function propagateActivityToElementsUser(
   {
     stacks,
     userId,
+    updateAccessRequests,
   }: {
     stacks:
       | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
       | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
     userId: string
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
@@ -3052,7 +3732,10 @@ async function propagateActivityToElementsUser(
 
   // sequentially update all elements
   for (const elementId of elementIds) {
-    await recomputeElementPermissionsUser({ id: elementId, userId }, prisma)
+    await recomputeElementPermissionsUser(
+      { id: elementId, userId, updateAccessRequests },
+      prisma
+    )
   }
 }
 
@@ -3146,10 +3829,12 @@ function getActivityPermissionsObject({
 export async function propagateActivityToElements(
   {
     stacks,
+    updateAccessRequests,
   }: {
     stacks:
       | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
       | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
+    updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
 ) {
@@ -3163,7 +3848,10 @@ export async function propagateActivityToElements(
 
   // sequentially update all elements
   for (const elementId of elementIds) {
-    await recomputeElementPermissionsObject({ id: elementId }, prisma)
+    await recomputeElementPermissionsObject(
+      { id: elementId, updateAccessRequests },
+      prisma
+    )
   }
 }
 // #endregion
