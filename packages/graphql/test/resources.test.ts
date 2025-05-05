@@ -132,8 +132,8 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Test that the creation of an answer collection fails gracefully if the name uniqueness constraint is violated', async () => {
-    const [dbAC] = await seedAnswerCollections(userOneCtx)
-    expect(dbAC).toBeTruthy()
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
+    expect(AC).toBeTruthy()
 
     const res = await createAnswerCollection(
       {
@@ -148,7 +148,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
 
   it('Verify that all users with access to the answer collection can use the query to include it in elements', async () => {
     // create answer collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // check availability of answer collection during element creation
@@ -166,7 +166,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
 
   it('Verify that all users with access to the answer collection can query its content', async () => {
     // create answer collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // check availability of answer collection during element creation
@@ -245,7 +245,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
 
   it('Verify that answer collection info is correctly loaded (including potential links to elements and templates impacting removability)', async () => {
     // create answer collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // seed an element, owned by user 1 and shared with user 3
@@ -409,7 +409,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
 
   it('Verify that answer collection metadata updates are executed and stored correctly', async () => {
     // create answer collections for testing
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     const updatedName = 'Updated Name'
     const updatedDescription = 'Updated Description'
@@ -435,7 +435,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Verify that answer collections can be deleted when unused (hard deletion case)', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // connect the first answer collection to an element
     const element = await prisma.element.create({
@@ -510,7 +510,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Verify that answer collections can be deleted when unused (soft deletion case)', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
 
     // connect the first answer collection to an element of user 2
     const element = await prisma.element.create({
@@ -610,12 +610,12 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Verify that on deletion, all access requests, direct permissions and catalog collection assignments are removed', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // add an element for user 4 linked to the answer collection
     const element = await prisma.element.create({
       data: {
-        type: ElementType.SC,
+        type: ElementType.SELECTION,
         name: 'Test Element',
         content: 'Test Element Content',
         options: {},
@@ -659,7 +659,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     })
     expect(derivedPermission4).toBeTruthy()
     expect(derivedPermission4!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(derivedPermission4!.directPermissionId).toBeDefined()
+    expect(derivedPermission4!.directPermissionId).toBeNull() // element owner - no direct permission id
     expect(derivedPermission4!.derived).toBeTruthy()
 
     // create an access request to the answer collection for user 3
@@ -734,7 +734,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(remainingDerivedPermission4!.permissionLevel).toBe(
       PermissionLevel.READ
     )
-    expect(remainingDerivedPermission4!.directPermissionId).toBeDefined()
+    expect(remainingDerivedPermission4!.directPermissionId).toBeNull() // element owner - no direct permission id
     expect(remainingDerivedPermission4!.derived).toBeTruthy()
 
     // verify that the access request has been removed
@@ -752,7 +752,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Verify that own permission can only be removed if the answer collection is unused', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // add an explicite permission for user 2 on the answer collection
     await prisma.permission.create({
@@ -790,7 +790,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(derivedPermissionElement!.permissionLevel).toBe(
       PermissionLevel.WRITE
     )
-    expect(derivedPermissionElement!.directPermissionId).toBeDefined()
+    expect(derivedPermissionElement!.directPermissionId).not.toBeNull()
     expect(derivedPermissionElement!.derived).toBeFalsy()
 
     // verify that the answer collection cannot be removed from the account of user 2 (used in element)
@@ -893,7 +893,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Test the modification of answer collection entries', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     const dbAC1 = await prisma.answerCollection.findUnique({
       where: {
@@ -927,7 +927,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Test that the deletion of answer collection entries is possible if they are not used in an element', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     const dbAC1 = await prisma.answerCollection.findUnique({
       where: {
@@ -1024,7 +1024,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   })
 
   it('Test the creation of a new answer collection entry for an existing answer collection', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     const newEntry = 'New Entry'
     const createdEntry = await addAnswerCollectionOption(

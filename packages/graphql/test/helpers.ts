@@ -204,7 +204,7 @@ export async function initializePrisma() {
  */
 export async function seedAnswerCollections(
   userContext
-): Promise<AnswerCollection[]> {
+): Promise<{ AC1: AnswerCollection; AC2: AnswerCollection }> {
   const collections = await Promise.all(
     [answerCollection1, answerCollection2].map((collection) =>
       createAnswerCollection(
@@ -221,12 +221,14 @@ export async function seedAnswerCollections(
   if (
     !collections ||
     collections.some((collection) => !collection) ||
-    collections.length !== 2
+    collections.length !== 2 ||
+    !collections[0] ||
+    !collections[1]
   ) {
     throw new Error('Failed to create answer collections')
   }
 
-  return collections as AnswerCollection[]
+  return { AC1: collections[0], AC2: collections[1] }
 }
 
 /**

@@ -168,6 +168,7 @@ export async function recomputeDerivedPermissions(
  * @param params.practiceQuizId - ID of the practice quiz to update access requests for
  * @param params.microLearningId - ID of the microlearning to update access requests for
  * @param params.groupActivityId - ID of the group activity to update access requests for
+ * @param params.objectSoftDeleted - Optional flag to signal the soft deletion of the object
  * @param params.userId - Optional user ID to limit the update to a specific user
  * @param prisma - Prisma transaction client for database operations
  * @returns Promise that resolves when the access request update completes
@@ -183,7 +184,7 @@ export async function updateAccessRequestInstances(
     practiceQuizId,
     microLearningId,
     groupActivityId,
-    // optional user to limit the required recomputation
+    objectSoftDeleted,
     userId,
   }: {
     catalogCollectionId?: string
@@ -194,6 +195,7 @@ export async function updateAccessRequestInstances(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    objectSoftDeleted?: boolean
     userId?: string
   } & (
     | { catalogCollectionId: string }
@@ -219,6 +221,24 @@ export async function updateAccessRequestInstances(
     typeof groupActivityId === 'undefined'
   ) {
     throw new Error('No object id defined for the update of access requests')
+  }
+
+  // if the object is soft-deleted, remove all access requests
+  if (objectSoftDeleted) {
+    await prisma.accessRequest.deleteMany({
+      where: {
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+    })
+
+    return
   }
 
   if (typeof userId !== 'undefined') {
@@ -751,6 +771,16 @@ async function recomputeCatalogCollectionPermissionsUser(
     maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
     parentPermissionId = directPermissionId
   } else {
+    if (updateAccessRequests) {
+      // remove any access requests that might have been created
+      await prisma.accessRequest.deleteMany({
+        where: {
+          catalogCollectionId: id,
+          objectAdminOrOwnerId: userId,
+        },
+      })
+    }
+
     // no permission found that would justify access
     return
   }
@@ -1072,9 +1102,6 @@ async function recomputeAnswerCollectionPermissionsUser(
         permissionLinkedTemplate?.directPermissionId ?? undefined
       derived = true // permission was derived from another element
     }
-  } else {
-    // no direct permission or derived access found that would justify access
-    return
   }
 
   // if the user still has access, add a corresponding derived permission
@@ -1108,7 +1135,11 @@ async function recomputeAnswerCollectionPermissionsUser(
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
     await updateAccessRequestInstances(
-      { answerCollectionId: id, userId },
+      {
+        answerCollectionId: id,
+        userId,
+        objectSoftDeleted: answerCollection.isDeleted,
+      },
       prisma
     )
   }
@@ -1268,7 +1299,10 @@ async function recomputeAnswerCollectionPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ answerCollectionId: id }, prisma)
+    await updateAccessRequestInstances(
+      { answerCollectionId: id, objectSoftDeleted: answerCollection.isDeleted },
+      prisma
+    )
   }
 }
 // #endregion
@@ -1610,7 +1644,10 @@ async function recomputeElementPermissionsUser(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ elementId: id, userId }, prisma)
+    await updateAccessRequestInstances(
+      { elementId: id, userId, objectSoftDeleted: element.isDeleted },
+      prisma
+    )
   }
 
   // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
@@ -1823,7 +1860,10 @@ async function recomputeElementPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ elementId: id }, prisma)
+    await updateAccessRequestInstances(
+      { elementId: id, objectSoftDeleted: element.isDeleted },
+      prisma
+    )
   }
 
   // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
@@ -1992,43 +2032,43 @@ async function recomputeLiveQuizPermissionsUser(
     coursePermissions: liveQuiz.course?.permissions ?? [],
   })
 
-  // if no valid derived permission was computed, return early
-  if (res === null) {
-    return
-  }
-
   // if the user still has access, add a corresponding derived permission
-  const { maxAccessLevel, parentPermissionId, derived } = res
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        liveQuiz: {
-          connect: {
-            id,
+  if (res !== null) {
+    const { maxAccessLevel, parentPermissionId, derived } = res
+    if (typeof maxAccessLevel !== 'undefined') {
+      await prisma.derivedPermission.create({
+        data: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          liveQuiz: {
+            connect: {
+              id,
+            },
+          },
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: parentPermissionId,
+                  },
+                }
+              : undefined,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? {
-                connect: {
-                  id: parentPermissionId,
-                },
-              }
-            : undefined,
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-    })
+      })
+    }
   }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ liveQuizId: id, userId }, prisma)
+    await updateAccessRequestInstances(
+      { liveQuizId: id, userId, objectSoftDeleted: liveQuiz.isDeleted },
+      prisma
+    )
   }
 
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
@@ -2142,7 +2182,10 @@ async function recomputeLiveQuizPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ liveQuizId: id }, prisma)
+    await updateAccessRequestInstances(
+      { liveQuizId: id, objectSoftDeleted: liveQuiz.isDeleted },
+      prisma
+    )
   }
 
   // recompute the derived permissions on all elements contained in this activity
@@ -2304,43 +2347,43 @@ async function recomputePracticeQuizPermissionsUser(
     coursePermissions: practiceQuiz.course?.permissions ?? [],
   })
 
-  // if no valid derived permission was computed, return early
-  if (res === null) {
-    return
-  }
-
   // if the user still has access, add a corresponding derived permission
-  const { maxAccessLevel, parentPermissionId, derived } = res
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        practiceQuiz: {
-          connect: {
-            id,
+  if (res !== null) {
+    const { maxAccessLevel, parentPermissionId, derived } = res
+    if (typeof maxAccessLevel !== 'undefined') {
+      await prisma.derivedPermission.create({
+        data: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          practiceQuiz: {
+            connect: {
+              id,
+            },
+          },
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: parentPermissionId,
+                  },
+                }
+              : undefined,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? {
-                connect: {
-                  id: parentPermissionId,
-                },
-              }
-            : undefined,
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-    })
+      })
+    }
   }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ practiceQuizId: id, userId }, prisma)
+    await updateAccessRequestInstances(
+      { practiceQuizId: id, userId, objectSoftDeleted: practiceQuiz.isDeleted },
+      prisma
+    )
   }
 
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
@@ -2456,7 +2499,10 @@ async function recomputePracticeQuizPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ practiceQuizId: id }, prisma)
+    await updateAccessRequestInstances(
+      { practiceQuizId: id, objectSoftDeleted: practiceQuiz.isDeleted },
+      prisma
+    )
   }
 
   // recompute the derived permissions on all elements contained in this activity
@@ -2618,43 +2664,47 @@ async function recomputeMicroLearningPermissionsUser(
     coursePermissions: microLearning.course?.permissions ?? [],
   })
 
-  // if no valid derived permission was computed, return early
-  if (res === null) {
-    return
-  }
-
   // if the user still has access, add a corresponding derived permission
-  const { maxAccessLevel, parentPermissionId, derived } = res
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        microLearning: {
-          connect: {
-            id,
+  if (res !== null) {
+    const { maxAccessLevel, parentPermissionId, derived } = res
+    if (typeof maxAccessLevel !== 'undefined') {
+      await prisma.derivedPermission.create({
+        data: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          microLearning: {
+            connect: {
+              id,
+            },
+          },
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: parentPermissionId,
+                  },
+                }
+              : undefined,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? {
-                connect: {
-                  id: parentPermissionId,
-                },
-              }
-            : undefined,
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-    })
+      })
+    }
   }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ microLearningId: id, userId }, prisma)
+    await updateAccessRequestInstances(
+      {
+        microLearningId: id,
+        userId,
+        objectSoftDeleted: microLearning.isDeleted,
+      },
+      prisma
+    )
   }
 
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
@@ -2770,7 +2820,10 @@ async function recomputeMicroLearningPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ microLearningId: id }, prisma)
+    await updateAccessRequestInstances(
+      { microLearningId: id, objectSoftDeleted: microLearning.isDeleted },
+      prisma
+    )
   }
 
   // recompute the derived permissions on all elements contained in this activity
@@ -2932,43 +2985,47 @@ async function recomputeGroupActivityPermissionsUser(
     coursePermissions: groupActivity.course?.permissions ?? [],
   })
 
-  // if no valid derived permission was computed, return early
-  if (res === null) {
-    return
-  }
-
   // if the user still has access, add a corresponding derived permission
-  const { maxAccessLevel, parentPermissionId, derived } = res
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        groupActivity: {
-          connect: {
-            id,
+  if (res !== null) {
+    const { maxAccessLevel, parentPermissionId, derived } = res
+    if (typeof maxAccessLevel !== 'undefined') {
+      await prisma.derivedPermission.create({
+        data: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          groupActivity: {
+            connect: {
+              id,
+            },
+          },
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: parentPermissionId,
+                  },
+                }
+              : undefined,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? {
-                connect: {
-                  id: parentPermissionId,
-                },
-              }
-            : undefined,
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-    })
+      })
+    }
   }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ groupActivityId: id, userId }, prisma)
+    await updateAccessRequestInstances(
+      {
+        groupActivityId: id,
+        userId,
+        objectSoftDeleted: groupActivity.isDeleted,
+      },
+      prisma
+    )
   }
 
   // if the activity still exists and the user had ADMIN / OWNER permissions on it,
@@ -3084,7 +3141,10 @@ async function recomputeGroupActivityPermissionsObject(
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
-    await updateAccessRequestInstances({ groupActivityId: id }, prisma)
+    await updateAccessRequestInstances(
+      { groupActivityId: id, objectSoftDeleted: groupActivity.isDeleted },
+      prisma
+    )
   }
 
   // recompute the derived permissions on all elements contained in this activity
@@ -3237,8 +3297,6 @@ async function recomputeCoursePermissionsUser(
 
     maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
     parentPermissionId = directPermissionId
-  } else {
-    return
   }
 
   // if the user has access, add a corresponding derived permission

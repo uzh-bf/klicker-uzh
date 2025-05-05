@@ -345,7 +345,7 @@ describe('Unit tests for user group management', () => {
       const updatedGroup = await prisma.userGroup.findUnique({
         where: { id: group.id },
       })
-      expect(updatedGroup).toBeDefined()
+      expect(updatedGroup).not.toBeNull()
       expect(updatedGroup?.ownerId).toBe(userOne.id)
     })
 
@@ -364,7 +364,7 @@ describe('Unit tests for user group management', () => {
       })
 
       // create an answer collection and grant permissions to the group
-      const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+      const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
       await prisma.permission.create({
         data: {
           permissionLevel: PermissionLevel.WRITE,
@@ -596,7 +596,7 @@ describe('Unit tests for user group management', () => {
       })
 
       // create an answer collection and grant permissions to the group
-      const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+      const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
       await prisma.permission.create({
         data: {
           permissionLevel: PermissionLevel.WRITE,
@@ -1233,7 +1233,7 @@ describe('Unit tests for user group management', () => {
       })
 
       // create an answer collection and grant permissions to the group
-      const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+      const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
       await prisma.permission.create({
         data: {
           permissionLevel: PermissionLevel.WRITE,
@@ -2006,7 +2006,7 @@ describe('Unit tests for user group management', () => {
       })
 
       // create an answer collection and grant permissions to the group
-      const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+      const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
       await prisma.permission.create({
         data: {
           permissionLevel: PermissionLevel.WRITE,

@@ -87,7 +87,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   // ! Sharing functionalities for elements
   // #region
   it('Verify that the level of granted direct individual permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant READ permissions to user 2
@@ -109,7 +109,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permission1).toBeDefined()
+    expect(permission1).not.toBeNull()
     expect(permission1!.permissionLevel).toBe(PermissionLevel.READ)
 
     const derivedPermission1 = await prisma.derivedPermission.findUnique({
@@ -120,7 +120,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1!.permissionLevel).toBe(PermissionLevel.READ)
 
     // verify that if all information is consistent, the permission level is changed and correctly propagated
@@ -143,7 +143,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permission2).toBeDefined()
+    expect(permission2).not.toBeNull()
     expect(permission2!.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
@@ -154,7 +154,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2!.permissionLevel).toBe(PermissionLevel.WRITE)
 
     // verify that the audit log entry has been created correctly
@@ -174,7 +174,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that the level of granted direct group permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // create a user group with users 1, 2, and 3 (ADMIN)
@@ -221,7 +221,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(derivedPermission1?.directPermissionId).toBeNull()
 
@@ -233,7 +233,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(derivedPermission2?.directPermissionId).toBe(directPermission.id)
 
@@ -245,7 +245,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3).not.toBeNull()
     expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.READ)
     expect(derivedPermission3?.directPermissionId).toBe(groupPermission.id)
 
@@ -269,7 +269,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(updatedDirectPermission).toBeDefined()
+    expect(updatedDirectPermission).not.toBeNull()
     expect(updatedDirectPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // OWNER for user 1, ADMIN for user 2, ADMIN for user 3
@@ -283,7 +283,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       }
     )
-    expect(updatedDerivedPermission1).toBeDefined()
+    expect(updatedDerivedPermission1).not.toBeNull()
     expect(updatedDerivedPermission1?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -298,7 +298,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       }
     )
-    expect(updatedDerivedPermission2).toBeDefined()
+    expect(updatedDerivedPermission2).not.toBeNull()
     expect(updatedDerivedPermission2?.permissionLevel).toBe(
       PermissionLevel.ADMIN
     )
@@ -313,7 +313,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       }
     )
-    expect(updatedDerivedPermission3).toBeDefined()
+    expect(updatedDerivedPermission3).not.toBeNull()
     expect(updatedDerivedPermission3?.permissionLevel).toBe(
       PermissionLevel.ADMIN
     )
@@ -335,7 +335,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Test the direct sharing functionality for elements with different permission levels for individual users', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // seed ADMIN and READ permissions on the answer collection for users 2 and 3
@@ -564,7 +564,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that direct group permissions on the element can be revoked without conditions and derived permissions are revoked as well', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC!.id)
 
     // create a user group with users 1, 2, 3, 4, and 5 (OWNER)
@@ -626,7 +626,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permissionUserOne).toBeDefined()
+    expect(permissionUserOne).not.toBeNull()
     expect(permissionUserOne?.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(permissionUserOne?.directPermissionId).toBeNull()
 
@@ -638,7 +638,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permissionUserTwo).toBeDefined()
+    expect(permissionUserTwo).not.toBeNull()
     expect(permissionUserTwo?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserTwo?.directPermissionId).toBe(groupPermission.id)
 
@@ -650,7 +650,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permissionUserThree).toBeDefined()
+    expect(permissionUserThree).not.toBeNull()
     expect(permissionUserThree?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserThree?.directPermissionId).toBe(groupPermission.id)
 
@@ -662,7 +662,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permissionUserFour).toBeDefined()
+    expect(permissionUserFour).not.toBeNull()
     expect(permissionUserFour?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserFour?.directPermissionId).toBe(groupPermission.id)
 
@@ -674,7 +674,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(permissionUserFive).toBeDefined()
+    expect(permissionUserFive).not.toBeNull()
     expect(permissionUserFive?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserFive?.directPermissionId).toBe(groupPermission.id)
 
@@ -688,7 +688,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(ACDerivedPermissionUserOne).toBeDefined()
+    expect(ACDerivedPermissionUserOne).not.toBeNull()
     expect(ACDerivedPermissionUserOne?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -704,7 +704,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(ACDerivedPermissionUserTwo).toBeDefined()
+    expect(ACDerivedPermissionUserTwo).not.toBeNull()
     expect(ACDerivedPermissionUserTwo?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -722,7 +722,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(ACDerivedPermissionUserThree).toBeDefined()
+    expect(ACDerivedPermissionUserThree).not.toBeNull()
     expect(ACDerivedPermissionUserThree?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -740,7 +740,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(ACDerivedPermissionUserFour).toBeDefined()
+    expect(ACDerivedPermissionUserFour).not.toBeNull()
     expect(ACDerivedPermissionUserFour?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -758,7 +758,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(ACDerivedPermissionUserFive).toBeDefined()
+    expect(ACDerivedPermissionUserFive).not.toBeNull()
     expect(ACDerivedPermissionUserFive?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -794,7 +794,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(persistentPermissionUserOne).toBeDefined()
+    expect(persistentPermissionUserOne).not.toBeNull()
     expect(persistentPermissionUserOne?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -809,7 +809,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(deletedPermissionUserTwo).toBeDefined()
+    expect(deletedPermissionUserTwo).not.toBeNull()
     expect(deletedPermissionUserTwo?.permissionLevel).toBe(PermissionLevel.READ)
     expect(deletedPermissionUserTwo?.directPermissionId).toBe(
       elementReadPermission.id
@@ -861,7 +861,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(persistentACPermissionUserOne).toBeDefined()
+    expect(persistentACPermissionUserOne).not.toBeNull()
     expect(persistentACPermissionUserOne?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -877,7 +877,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(persistentACPermissionUserTwo).toBeDefined()
+    expect(persistentACPermissionUserTwo).not.toBeNull()
     expect(persistentACPermissionUserTwo?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -895,7 +895,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
           },
         },
       })
-    expect(persistentACPermissionUserThree).toBeDefined()
+    expect(persistentACPermissionUserThree).not.toBeNull()
     expect(persistentACPermissionUserThree?.permissionLevel).toBe(
       PermissionLevel.READ
     )
@@ -943,7 +943,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Test the direct sharing functionality for elements with different permission levels for user groups', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // create a user group with users 1 (ADMIN), 2, and 3 and grant WRITE permissions on the element to them
@@ -1027,7 +1027,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(dbPermission1).toBeDefined()
+    expect(dbPermission1).not.toBeNull()
     expect(dbPermission1?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const dbPermission2 = await prisma.permission.findUnique({
@@ -1038,7 +1038,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(dbPermission2).toBeDefined()
+    expect(dbPermission2).not.toBeNull()
     expect(dbPermission2?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct derived permissions have been created in the database
@@ -1051,7 +1051,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
 
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
@@ -1062,7 +1062,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const derivedPermission3 = await prisma.derivedPermission.findUnique({
@@ -1073,7 +1073,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3).not.toBeNull()
     expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     const derivedPermission4 = await prisma.derivedPermission.findUnique({
@@ -1084,7 +1084,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         },
       },
     })
-    expect(derivedPermission4).toBeDefined()
+    expect(derivedPermission4).not.toBeNull()
     expect(derivedPermission4?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct audit log entries have been created
@@ -1171,7 +1171,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that direct permissions on the elements are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // grant READ permissions to user 2
@@ -1207,7 +1207,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       { id: SE.id },
       userOneCtx
     )
-    expect(directPermissions).toBeDefined()
+    expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 
     const userPermission = directPermissions.find(
@@ -1216,8 +1216,8 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const groupPermission = directPermissions.find(
       (permission) => permission.userGroupId === group.id
     )
-    expect(userPermission).toBeDefined()
-    expect(groupPermission).toBeDefined()
+    expect(userPermission).not.toBeNull()
+    expect(groupPermission).not.toBeNull()
     expect(userPermission?.permissionLevel).toBe(PermissionLevel.READ)
     expect(userPermission?.userId).toBe(userTwo.id)
     expect(userPermission?.permissionId).toBe(dbUserPermission.id)
@@ -1227,7 +1227,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that derived permissions on the element are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // seed derived READ, WRITE and ADMIN permissions for user 2, 3 and 4
@@ -1272,7 +1272,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       { id: SE.id },
       userOneCtx
     )
-    expect(derivedPermissions).toBeDefined()
+    expect(derivedPermissions).not.toBeNull()
     expect(derivedPermissions.length).toBe(3)
 
     const permissionIds = derivedPermissions.map((p) => p.permissionId)
@@ -1289,9 +1289,9 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const ADMINPermission = derivedPermissions.find(
       (permission) => permission.userId === userFour.id
     )
-    expect(READPermission).toBeDefined()
-    expect(WRITEPermission).toBeDefined()
-    expect(ADMINPermission).toBeDefined()
+    expect(READPermission).not.toBeNull()
+    expect(WRITEPermission).not.toBeNull()
+    expect(ADMINPermission).not.toBeNull()
     expect(READPermission!.permissionLevel).toBe(PermissionLevel.READ)
     expect(READPermission!.userId).toBe(userTwo.id)
     expect(READPermission!.permissionId).toBe(permission1.id)
@@ -1305,7 +1305,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Verify that direct permissions to an element can be revoked, but might be replaced with derived permissions', async () => {
     // create answer collections for testing
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1!.id)
 
     const permission1 = await prisma.permission.upsert({
@@ -1619,7 +1619,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that an element OWNER can transfer the corresponding rights and that derived permissions are created correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // add direct admin permissions to user 4
@@ -1745,7 +1745,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   // ! Catalog functionalities for elements
   // #region
   it('Verify that only elements where a user has admin permissions are returned for the addition to the catalog', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant admin permissions to users 2 and 3, and write permissions to user 4 on the single choice question
@@ -1798,7 +1798,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
     // verify that the correct elements are returned when querying them for the addition to the catalog
     const elementsUserOne = await getCatalogElements(userOneCtx)
-    expect(elementsUserOne).toBeDefined()
+    expect(elementsUserOne).not.toBeNull()
     expect(elementsUserOne.length).toBe(2)
     const elementIds1 = elementsUserOne.map((element) => element.id)
     expect(elementIds1).toEqual(
@@ -1806,7 +1806,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
 
     const elementsUserTwo = await getCatalogElements(userTwoCtx)
-    expect(elementsUserTwo).toBeDefined()
+    expect(elementsUserTwo).not.toBeNull()
     expect(elementsUserTwo.length).toBe(2)
     const elementIds2 = elementsUserTwo.map((element) => element.id)
     expect(elementIds2).toEqual(
@@ -1814,13 +1814,13 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
 
     const elementsUserThree = await getCatalogElements(userThreeCtx)
-    expect(elementsUserThree).toBeDefined()
+    expect(elementsUserThree).not.toBeNull()
     expect(elementsUserThree.length).toBe(1)
     const elementIds3 = elementsUserThree.map((element) => element.id)
     expect(elementIds3).toEqual(expect.arrayContaining([String(SC.id)]))
 
     const elementsUserFour = await getCatalogElements(userFourCtx)
-    expect(elementsUserFour).toBeDefined()
+    expect(elementsUserFour).not.toBeNull()
     expect(elementsUserFour.length).toBe(0)
     const elementIds4 = elementsUserFour.map((element) => element.id)
     expect(elementIds4).toEqual(expect.arrayContaining([]))
@@ -1828,7 +1828,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Test that elements can be added to a catalog collection by users with sufficient permissions', async () => {
     const { restrictedCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grand READ permissions on the selection question to user 2
@@ -2024,7 +2024,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Verify that user 5 can request access and import public elements in public catalog (incl. derived permissions on answer collections)', async () => {
     // create elements and catalog collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE, CS } = await seedElements(userOneCtx, AC1!.id)
     const { publicCatalog, restrictedCatalog } =
       await seedCatalogCollections(userOneCtx)
@@ -2302,7 +2302,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that element sharing requests can be cancelled by the initiator', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
     const request = await prisma.accessRequest.create({
       data: {
@@ -2317,7 +2317,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const pendingRequest = await prisma.accessRequest.findUnique({
       where: { id: request.id },
     })
-    expect(pendingRequest).toBeDefined()
+    expect(pendingRequest).not.toBeNull()
 
     // verify that such a request fails for users that have not requested access
     const failure = await cancelObjectSharingRequest(
@@ -2355,7 +2355,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that access requests to answer collections are shown correctly to owners and admins', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE, CS } = await seedElements(userOneCtx, AC1!.id)
 
     // create access requests for user 3 (on both questions) and user 4 (on the case study question)
@@ -2407,7 +2407,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
     // get the pending sharing requests for user 1 and check their content
     const requests = await getCatalogSharingRequests(userOneCtx)
-    expect(requests).toBeDefined()
+    expect(requests).not.toBeNull()
     expect(requests!.length).toBe(3)
     const publicRequestUserThree = requests!.find(
       (request) => request.requestId === request1.id
@@ -2418,9 +2418,9 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const restrictedRequestUserThree = requests!.find(
       (request) => request.requestId === request3.id
     )
-    expect(publicRequestUserThree).toBeDefined()
-    expect(publicRequestUserFour).toBeDefined()
-    expect(restrictedRequestUserThree).toBeDefined()
+    expect(publicRequestUserThree).not.toBeNull()
+    expect(publicRequestUserFour).not.toBeNull()
+    expect(restrictedRequestUserThree).not.toBeNull()
     expect(publicRequestUserThree?.objectType).toBe(SharingObjectType.ELEMENT)
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
@@ -2443,7 +2443,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
     // get the pending sharing requests for user 2 and check their content
     const requests2 = await getCatalogSharingRequests(userTwoCtx)
-    expect(requests2).toBeDefined()
+    expect(requests2).not.toBeNull()
     expect(requests2!.length).toBe(2)
     const publicRequestUserThree2 = requests2!.find(
       (request) => request.requestId === request2.id
@@ -2451,8 +2451,8 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const publicRequestUserFour2 = requests2!.find(
       (request) => request.requestId === request5.id
     )
-    expect(publicRequestUserThree2).toBeDefined()
-    expect(publicRequestUserFour2).toBeDefined()
+    expect(publicRequestUserThree2).not.toBeNull()
+    expect(publicRequestUserFour2).not.toBeNull()
 
     expect(publicRequestUserThree2?.objectType).toBe(SharingObjectType.ELEMENT)
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
