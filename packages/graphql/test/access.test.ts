@@ -1,5 +1,6 @@
 import {
   AuditLogType,
+  ElementInstanceType,
   ElementType,
   ObjectAccess,
   ObjectType,
@@ -8,8 +9,13 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import {
+  ElementInstanceResults,
+  SelectionElementData,
+} from '@klicker-uzh/types'
+import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
+  updateAccessRequestInstances,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -27,6 +33,7 @@ import {
   initializePrisma,
   seedAnswerCollections,
   seedCatalogCollections,
+  seedElements,
   testCleanup,
   testInitialization,
 } from './helpers.js'
@@ -1469,6 +1476,1389 @@ describe('Unit tests for object access validation', () => {
 
   // ! Duplication of Pending Access Requests
   // #region
+  it('Verify that new access request instances are created for new object admins (with userId argument)', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC!.id)
+
+    // create an access request for user 2 on all objects
+    const catalogRequest = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const answerCollectionRequest = await prisma.accessRequest.create({
+      data: {
+        answerCollectionId: AC!.id,
+        userId: userTwo.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const elementRequest = await prisma.accessRequest.create({
+      data: {
+        elementId: SC.id,
+        userId: userTwo.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // add ADMIN permissions for user 3 on all objects
+    await prisma.permission.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          elementId: SC.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+
+    // create a user group with users 4 and 5 and grant ADMIN permissions to the group on all objects
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userOne.id,
+        admins: { connect: { id: userFive.id } },
+        members: { connect: { id: userFour.id } },
+      },
+    })
+    await prisma.permission.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          elementId: SC.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+
+    // recompute the derived permissions on all objects without updating the access requests
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await recomputeDerivedPermissions({ elementId: SC.id }, prisma)
+
+    // verify that still only three access requests are pending
+    const pendingRequestsCount = await prisma.accessRequest.count()
+    expect(pendingRequestsCount).toBe(3)
+
+    // update the access request instances for user 3 on one object after the other and verify the results
+    await updateAccessRequestInstances(
+      { catalogCollectionId: publicCatalog.id, userId: userThree.id },
+      prisma
+    )
+    const pendingRequestsCount2 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount2).toBe(4)
+    const newRequest1 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newRequest1).toBeTruthy()
+    expect(newRequest1!.permissionLevel).toBe(catalogRequest.permissionLevel)
+
+    await updateAccessRequestInstances(
+      { answerCollectionId: AC!.id, userId: userThree.id },
+      prisma
+    )
+    const pendingRequestsCount3 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount3).toBe(5)
+    const newRequest2 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newRequest2).toBeTruthy()
+    expect(newRequest2!.permissionLevel).toBe(
+      answerCollectionRequest.permissionLevel
+    )
+
+    await updateAccessRequestInstances(
+      { elementId: SC.id, userId: userThree.id },
+      prisma
+    )
+    const pendingRequestsCount4 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount4).toBe(6)
+    const newRequest3 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newRequest3).toBeTruthy()
+    expect(newRequest3!.permissionLevel).toBe(elementRequest.permissionLevel)
+
+    // update the access request instances for user 4 on all objects in the same way
+    await updateAccessRequestInstances(
+      { catalogCollectionId: publicCatalog.id, userId: userFour.id },
+      prisma
+    )
+    const pendingRequestsCount5 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount5).toBe(7)
+    const newRequest4 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(newRequest4).toBeTruthy()
+    expect(newRequest4!.permissionLevel).toBe(catalogRequest.permissionLevel)
+
+    await updateAccessRequestInstances(
+      { answerCollectionId: AC!.id, userId: userFour.id },
+      prisma
+    )
+    const pendingRequestsCount6 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount6).toBe(8)
+    const newRequest5 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(newRequest5).toBeTruthy()
+    expect(newRequest5!.permissionLevel).toBe(
+      answerCollectionRequest.permissionLevel
+    )
+
+    await updateAccessRequestInstances(
+      { elementId: SC.id, userId: userFour.id },
+      prisma
+    )
+    const pendingRequestsCount7 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount7).toBe(9)
+    const newRequest6 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(newRequest6).toBeTruthy()
+    expect(newRequest6!.permissionLevel).toBe(elementRequest.permissionLevel)
+
+    // trigger access request recomputation through derived permissions update for user 5 on all objects
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFive.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC!.id,
+        userId: userFive.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: SC.id, userId: userFive.id, updateAccessRequests: true },
+      prisma
+    )
+
+    // verify that the access requests for user 5 have been created
+    const pendingRequestsCount8 = await prisma.accessRequest.count()
+    expect(pendingRequestsCount8).toBe(12)
+
+    const newRequest7 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(newRequest7).toBeTruthy()
+    expect(newRequest7!.permissionLevel).toBe(catalogRequest.permissionLevel)
+
+    const newRequest8 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(newRequest8).toBeTruthy()
+    expect(newRequest8!.permissionLevel).toBe(
+      answerCollectionRequest.permissionLevel
+    )
+
+    const newRequest9 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(newRequest9).toBeTruthy()
+    expect(newRequest9!.permissionLevel).toBe(elementRequest.permissionLevel)
+  })
+
+  it('Verify that access request instances are removed alongisde derived permissions when user looses admin or owner access', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC!.id)
+
+    // add ADMIN permissions for user 3 on all objects
+    await prisma.permission.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          elementId: SC.id,
+          userId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+
+    // create a user group with users 4 and 5 and grant ADMIN permissions to the group on all objects
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userOne.id,
+        admins: { connect: { id: userFive.id } },
+        members: { connect: { id: userFour.id } },
+      },
+    })
+    await prisma.permission.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          elementId: SC.id,
+          userGroupId: group.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+
+    // recompute the derived permissions on all objects without updating the access requests
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await recomputeDerivedPermissions({ elementId: SC.id }, prisma)
+
+    // create access requests for user 2 on all objects and linked to all admins
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+    const accessRequestsCount = await prisma.accessRequest.count()
+    expect(accessRequestsCount).toBe(12)
+
+    // remove the admin permissions for user 3 and the group
+    await prisma.permission.deleteMany({
+      where: {
+        OR: [
+          {
+            catalogCollectionId: publicCatalog.id,
+            userId: userThree.id,
+          },
+          {
+            answerCollectionId: AC!.id,
+            userId: userThree.id,
+          },
+          {
+            elementId: SC.id,
+            userId: userThree.id,
+          },
+          {
+            catalogCollectionId: publicCatalog.id,
+            userGroupId: group.id,
+          },
+          {
+            answerCollectionId: AC!.id,
+            userGroupId: group.id,
+          },
+          {
+            elementId: SC.id,
+            userGroupId: group.id,
+          },
+        ],
+      },
+    })
+
+    // recompute derived permissions without triggering an access request update
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await recomputeDerivedPermissions({ elementId: SC.id }, prisma)
+    const accessRequestsCount2 = await prisma.accessRequest.count()
+    expect(accessRequestsCount2).toBe(12)
+
+    // update the access request instances for user 3 and verify that they are removed correctly
+    await updateAccessRequestInstances(
+      { catalogCollectionId: publicCatalog.id, userId: userThree.id },
+      prisma
+    )
+    await updateAccessRequestInstances(
+      { answerCollectionId: AC!.id, userId: userThree.id },
+      prisma
+    )
+    await updateAccessRequestInstances(
+      { elementId: SC.id, userId: userThree.id },
+      prisma
+    )
+    const accessRequestsCount3 = await prisma.accessRequest.count()
+    expect(accessRequestsCount3).toBe(9)
+
+    const accessRequest1 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(accessRequest1).toBeNull()
+    const accessRequest2 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(accessRequest2).toBeNull()
+    const accessRequest3 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(accessRequest3).toBeNull()
+
+    // update the access request instances for user 4 and verify that they are removed correctly
+    await updateAccessRequestInstances(
+      { catalogCollectionId: publicCatalog.id, userId: userFour.id },
+      prisma
+    )
+    await updateAccessRequestInstances(
+      { answerCollectionId: AC!.id, userId: userFour.id },
+      prisma
+    )
+    await updateAccessRequestInstances(
+      { elementId: SC.id, userId: userFour.id },
+      prisma
+    )
+    const accessRequestsCount4 = await prisma.accessRequest.count()
+    expect(accessRequestsCount4).toBe(6)
+
+    const accessRequest4 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(accessRequest4).toBeNull()
+    const accessRequest5 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(accessRequest5).toBeNull()
+    const accessRequest6 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(accessRequest6).toBeNull()
+
+    // update the access request instances for user 5 through the derived permissions recomputation function and verify that they are removed correctly
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFive.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC!.id,
+        userId: userFive.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: SC.id, userId: userFive.id, updateAccessRequests: true },
+      prisma
+    )
+    const accessRequestsCount5 = await prisma.accessRequest.count()
+    expect(accessRequestsCount5).toBe(3)
+
+    const accessRequest7 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(accessRequest7).toBeNull()
+    const accessRequest8 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(accessRequest8).toBeNull()
+    const accessRequest9 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(accessRequest9).toBeNull()
+
+    // verify that on object deletion, the access requests are removed through cascading delete
+    await prisma.catalogCollection.delete({
+      where: { id: publicCatalog.id },
+    })
+    await prisma.answerCollection.delete({
+      where: { id: AC!.id },
+    })
+    await prisma.element.delete({
+      where: { id: SC.id },
+    })
+    const accessRequestsCount6 = await prisma.accessRequest.count()
+    expect(accessRequestsCount6).toBe(0)
+  })
+
+  it('Verify that access requests for soft-deleted objects are automatically removed for all users', async () => {
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC!.id)
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Live Quiz Test',
+        displayName: 'Live Quiz Test',
+        description: 'Test Description',
+        ownerId: userOne.id,
+      },
+    })
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course Test',
+        displayName: 'Course Test',
+        description: 'Test Description',
+        pinCode: 8888,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+    const practiceQuiz = await prisma.practiceQuiz.create({
+      data: {
+        name: 'Practice Quiz Test',
+        displayName: 'Practice Quiz Test',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        courseId: course.id,
+      },
+    })
+    const microlearning = await prisma.microLearning.create({
+      data: {
+        name: 'Microlearning Test',
+        displayName: 'Microlearning Test',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+      },
+    })
+    const groupActivity = await prisma.groupActivity.create({
+      data: {
+        name: 'Group Activity Test',
+        displayName: 'Group Activity Test',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+      },
+    })
+
+    // create access requests for user 2 on all objects
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          liveQuizId: liveQuiz.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          courseId: course.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          practiceQuizId: practiceQuiz.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          microLearningId: microlearning.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          groupActivityId: groupActivity.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+      ],
+    })
+    const accessRequestsCount = await prisma.accessRequest.count()
+    expect(accessRequestsCount).toBe(7)
+
+    // soft delete the objects one after the other and verify that the corresponding access requests are removed
+    // to update access requests use a combination of the update access requests functions (with and without userId) and the derived permission recomputation
+    await prisma.answerCollection.update({
+      where: { id: AC!.id },
+      data: { isDeleted: true },
+    })
+    await updateAccessRequestInstances(
+      {
+        answerCollectionId: AC!.id,
+        userId: userOne.id,
+        objectSoftDeleted: true,
+      },
+      prisma
+    )
+    const accessRequestsCount2 = await prisma.accessRequest.count()
+    expect(accessRequestsCount2).toBe(6)
+
+    await prisma.element.update({
+      where: { id: SC.id },
+      data: { isDeleted: true },
+    })
+    await updateAccessRequestInstances(
+      { elementId: SC.id, userId: userOne.id, objectSoftDeleted: true },
+      prisma
+    )
+    const accessRequestsCount3 = await prisma.accessRequest.count()
+    expect(accessRequestsCount3).toBe(5)
+
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { isDeleted: true },
+    })
+    await updateAccessRequestInstances(
+      { liveQuizId: liveQuiz.id, objectSoftDeleted: true },
+      prisma
+    )
+    const accessRequestsCount4 = await prisma.accessRequest.count()
+    expect(accessRequestsCount4).toBe(4)
+
+    await prisma.practiceQuiz.update({
+      where: { id: practiceQuiz.id },
+      data: { isDeleted: true },
+    })
+    await updateAccessRequestInstances(
+      { practiceQuizId: practiceQuiz.id, objectSoftDeleted: true },
+      prisma
+    )
+    const accessRequestsCount5 = await prisma.accessRequest.count()
+    expect(accessRequestsCount5).toBe(3)
+
+    await prisma.microLearning.update({
+      where: { id: microlearning.id },
+      data: { isDeleted: true },
+    })
+    await recomputeDerivedPermissions(
+      {
+        microLearningId: microlearning.id,
+        userId: userOne.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    const accessRequestsCount6 = await prisma.accessRequest.count()
+    expect(accessRequestsCount6).toBe(2)
+
+    await prisma.groupActivity.update({
+      where: { id: groupActivity.id },
+      data: { isDeleted: true },
+    })
+    await recomputeDerivedPermissions(
+      { groupActivityId: groupActivity.id, updateAccessRequests: true },
+      prisma
+    )
+    const accessRequestsCount7 = await prisma.accessRequest.count()
+    expect(accessRequestsCount7).toBe(1)
+  })
+
+  it('Test the combination of permission propagation and access request instance updates', async () => {
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SE } = await seedElements(userOneCtx, AC!.id)
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Live Quiz Test',
+        displayName: 'Live Quiz Test',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        blocks: {
+          create: [
+            {
+              order: 0,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    elementId: SE.id,
+                    migrationId: '',
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementType: ElementType.SC,
+                    options: {},
+                    elementData: {} as SelectionElementData,
+                    results: {} as ElementInstanceResults,
+                    anonymousResults: {} as ElementInstanceResults,
+                    ownerId: userOne.id,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    // create access requests for user 2 on all objects
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SE.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          liveQuizId: liveQuiz.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+    const accessRequestsCount = await prisma.accessRequest.count()
+    expect(accessRequestsCount).toBe(3)
+
+    // add ADMIN permissions for user 3 on the live quiz
+    await prisma.permission.create({
+      data: {
+        liveQuizId: liveQuiz.id,
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // trigger a recomputation of the derived permissions and verify that derived
+    // permissions on all three objects were created with the correct permission levels
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: liveQuiz.id,
+        userId: userThree.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+
+    const derivedPermissionLiveQuiz = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: liveQuiz.id,
+            userId: userThree.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionLiveQuiz).toBeTruthy()
+    expect(derivedPermissionLiveQuiz!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    const derivedPermissionElement = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: SE.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(derivedPermissionElement).toBeTruthy()
+    expect(derivedPermissionElement!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    const derivedPermissionAnswerCollection =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: AC!.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollection).toBeTruthy()
+    expect(derivedPermissionAnswerCollection!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    // verify that new access request instances have been created for user 3 on the objects where they are admin
+    const accessRequestsCount2 = await prisma.accessRequest.count()
+    expect(accessRequestsCount2).toBe(5)
+
+    const newAccessRequestLiveQuiz = await prisma.accessRequest.findUnique({
+      where: {
+        liveQuizId_userId_objectAdminOrOwnerId: {
+          liveQuizId: liveQuiz.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newAccessRequestLiveQuiz).toBeTruthy()
+    expect(newAccessRequestLiveQuiz!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    const newAccessRequestElement = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SE.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newAccessRequestElement).toBeTruthy()
+    expect(newAccessRequestElement!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const newAccessRequestAnswerCollection =
+      await prisma.accessRequest.findUnique({
+        where: {
+          answerCollectionId_userId_objectAdminOrOwnerId: {
+            answerCollectionId: AC!.id,
+            userId: userTwo.id,
+            objectAdminOrOwnerId: userThree.id,
+          },
+        },
+      })
+    expect(newAccessRequestAnswerCollection).toBeNull()
+
+    // remove the direct ADMIN permission on the live quiz again
+    await prisma.permission.delete({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: liveQuiz.id,
+          userId: userThree.id,
+        },
+      },
+    })
+
+    // trigger a recomputation of the derived permissions and verify that the access request instances are removed
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: liveQuiz.id,
+        userId: userThree.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    const accessRequestsCount3 = await prisma.accessRequest.count()
+    expect(accessRequestsCount3).toBe(3)
+
+    const removedAccessRequestLiveQuiz = await prisma.accessRequest.findUnique({
+      where: {
+        liveQuizId_userId_objectAdminOrOwnerId: {
+          liveQuizId: liveQuiz.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(removedAccessRequestLiveQuiz).toBeNull()
+
+    const removedAccessRequestElement = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SE.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(removedAccessRequestElement).toBeNull()
+  })
+
+  it('Verify that triggering an access request instances update without userId does update the instances for all users', async () => {
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC!.id)
+
+    // create access requests for user 2 on all objects
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestsCount = await prisma.accessRequest.count()
+    expect(accessRequestsCount).toBe(2)
+
+    // grant ADMIN permissions to user 3 on both objects
+    await prisma.permission.create({
+      data: {
+        answerCollectionId: AC!.id,
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        elementId: SC.id,
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // create a user gorup with users 4, 5, and 6 and grant ADMIN permissions to the group on both objects
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userSix.id,
+        admins: { connect: [{ id: userFive.id }, { id: userOne.id }] },
+        members: { connect: { id: userFour.id } },
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        answerCollectionId: AC!.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        elementId: SC.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // trigger a recomputation of the derived permissions without updating the access requests
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await updateAccessRequestInstances({ answerCollectionId: AC!.id }, prisma)
+    const accessRequestsCount2 = await prisma.accessRequest.count()
+    expect(accessRequestsCount2).toBe(6)
+
+    const newAccessRequest1 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newAccessRequest1).toBeTruthy()
+    expect(newAccessRequest1!.permissionLevel).toBe(PermissionLevel.READ)
+
+    const newAccessRequest2 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(newAccessRequest2).toBeTruthy()
+    expect(newAccessRequest2!.permissionLevel).toBe(PermissionLevel.READ)
+
+    const newAccessRequest3 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(newAccessRequest3).toBeTruthy()
+    expect(newAccessRequest3!.permissionLevel).toBe(PermissionLevel.READ)
+
+    const newAccessRequest4 = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userSix.id,
+        },
+      },
+    })
+    expect(newAccessRequest4).toBeTruthy()
+    expect(newAccessRequest4!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // trigger a recomputation of the dervied permissions, including an update of the corresponding access request instances
+    await recomputeDerivedPermissions(
+      {
+        elementId: SC.id,
+        updateAccessRequests: true,
+      },
+      prisma
+    )
+    const accessRequestsCount3 = await prisma.accessRequest.count()
+    expect(accessRequestsCount3).toBe(10)
+
+    const newAccessRequest5 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(newAccessRequest5).toBeTruthy()
+    expect(newAccessRequest5!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const newAccessRequest6 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(newAccessRequest6).toBeTruthy()
+    expect(newAccessRequest6!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const newAccessRequest7 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(newAccessRequest7).toBeTruthy()
+    expect(newAccessRequest7!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    const newAccessRequest8 = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userSix.id,
+        },
+      },
+    })
+    expect(newAccessRequest8).toBeTruthy()
+    expect(newAccessRequest8!.permissionLevel).toBe(PermissionLevel.WRITE)
+  })
+
+  it('Verify that triggering an access request instances update without userId after permission revocation does update the instances for all users', async () => {
+    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC!.id)
+
+    // grant ADMIN permissions to user 3 on both objects
+    await prisma.permission.create({
+      data: {
+        answerCollectionId: AC!.id,
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        elementId: SC.id,
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // create a user gorup with users 4, 5, and 6 and grant ADMIN permissions to the group on both objects
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Test Group',
+        ownerId: userSix.id,
+        admins: { connect: [{ id: userFive.id }, { id: userOne.id }] },
+        members: { connect: { id: userFour.id } },
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        answerCollectionId: AC!.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        elementId: SC.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // trigger a recomputation of the derived permissions for both objects
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await recomputeDerivedPermissions({ elementId: SC.id }, prisma)
+
+    // create access requests for user 2 on all objects for all admin users (1, 3, 4, 5, and 6)
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC!.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userSix.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userSix.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestsCount = await prisma.accessRequest.count()
+    expect(accessRequestsCount).toBe(10)
+
+    // revoke the admin permissions on the answer collection and recompute the access requests using the dedicated function
+    await prisma.permission.deleteMany({
+      where: {
+        OR: [
+          {
+            answerCollectionId: AC!.id,
+            userId: userThree.id,
+          },
+          {
+            answerCollectionId: AC!.id,
+            userGroupId: group.id,
+          },
+        ],
+      },
+    })
+    await recomputeDerivedPermissions({ answerCollectionId: AC!.id }, prisma)
+    await updateAccessRequestInstances({ answerCollectionId: AC!.id }, prisma)
+
+    // verify that the admin access request instances for the answer collection were removed
+    const accessRequestsCount2 = await prisma.accessRequest.count()
+    expect(accessRequestsCount2).toBe(6)
+
+    // revoke the admin permissions on the element and recompute the access requests inside the derived permissions function
+    await prisma.permission.deleteMany({
+      where: {
+        OR: [
+          {
+            elementId: SC.id,
+            userId: userThree.id,
+          },
+          {
+            elementId: SC.id,
+            userGroupId: group.id,
+          },
+        ],
+      },
+    })
+    await recomputeDerivedPermissions(
+      { elementId: SC.id, updateAccessRequests: true },
+      prisma
+    )
+
+    // verify that the admin access request instances for the element were removed
+    const accessRequestsCount3 = await prisma.accessRequest.count()
+    expect(accessRequestsCount3).toBe(2)
+
+    // verify that only the access request instances for the owner persist
+    const ownerAnswerCollectionAccessRequest =
+      await prisma.accessRequest.findUnique({
+        where: {
+          answerCollectionId_userId_objectAdminOrOwnerId: {
+            answerCollectionId: AC!.id,
+            userId: userTwo.id,
+            objectAdminOrOwnerId: userOne.id,
+          },
+        },
+      })
+    expect(ownerAnswerCollectionAccessRequest).toBeTruthy()
+    expect(ownerAnswerCollectionAccessRequest!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const ownerElementAccessRequest = await prisma.accessRequest.findUnique({
+      where: {
+        elementId_userId_objectAdminOrOwnerId: {
+          elementId: SC.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(ownerElementAccessRequest).toBeTruthy()
+    expect(ownerElementAccessRequest!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
   it('Test that resolving an access request with ADMIN permissions triggers a duplication of pending access requests', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
     const [AC1] = await seedAnswerCollections(userOneCtx)
