@@ -50,7 +50,7 @@ function ElementList({
   }
 
   return (
-    <div className="bg-uzh-blue-400 space-y-1 md:space-y-2">
+    <div className="space-y-1 md:space-y-2">
       {elements.map((element) => (
         <Element
           key={`question-list-element-${element.id}`}

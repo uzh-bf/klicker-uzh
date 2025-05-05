@@ -1,9 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import {
-  ElementInstance,
-  GetLiveQuizHmacDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -55,7 +52,7 @@ interface EmbeddingModalProps {
   open: boolean
   onClose: () => void
   quizId: string
-  elements?: (Pick<ElementInstance, 'id'> & { elementData: { name: string } })[]
+  elements?: { id: number; name: string }[]
 }
 
 function EmbeddingModal({
@@ -123,7 +120,7 @@ function EmbeddingModal({
             return (
               <div key={element.id}>
                 <div className="line-clamp-1 font-bold">
-                  {ix + 1} {element.elementData.name}
+                  {ix + 1} {element.name}
                 </div>
                 <LazyHMACLink
                   quizId={quizId}

@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import {
   faClock,
   faFileLines,
@@ -15,6 +16,7 @@ import {
   CatalogObject,
   ObjectAccess,
   SharingObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
@@ -54,6 +56,11 @@ function CatalogObjectItem({
   }
   const actionsDisabled = object.isOwner || object.isShared
 
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+
   // modal states
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
@@ -92,7 +99,9 @@ function CatalogObjectItem({
             // primary action for users with access: go to corresponding list view and highlight object
             if (object.objectType === SharingObjectType.LiveQuizTemplate) {
               router.push({
-                pathname: '/quizzes',
+                pathname: dataUser?.userProfile?.privatePreview
+                  ? '/activities'
+                  : '/quizzes',
                 query: { highlight: object.uuid },
               })
             } else if (

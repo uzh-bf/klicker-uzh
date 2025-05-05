@@ -1,5 +1,8 @@
 import { useMutation } from '@apollo/client'
-import { ChangeLiveQuizNameDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChangeLiveQuizNameDocument,
+  GetUserActivitiesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -67,6 +70,7 @@ function LiveQuizNameChangeModal({
                   displayName: values.displayName,
                 },
               },
+              refetchQueries: [GetUserActivitiesDocument],
             })
 
             if (result.data?.changeLiveQuizName?.id) {

@@ -1,0 +1,33 @@
+query GetUserActivities {
+  userActivities {
+    id
+    templateId
+    type
+    status
+    course
+    numOfStacks
+    numOfElements
+
+    stacks {
+      id
+      numOfParticipants
+      elements {
+        id
+        name
+        type
+      }
+    }
+
+    name
+    displayName
+
+    permissionLevel
+    derivedAccess
+    isOwner
+    isManager
+    isEditor
+    isShared
+    isRemovable
+    updatedAt
+  }
+}

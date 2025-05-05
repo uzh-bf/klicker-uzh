@@ -2,8 +2,10 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CancelLiveQuizDocument,
   GetLiveQuizSummaryDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -31,6 +33,11 @@ function CancelLiveQuizModal({
 }) {
   const router = useRouter()
   const t = useTranslations()
+
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
@@ -68,7 +75,7 @@ function CancelLiveQuizModal({
           },
         })
       },
-      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
+      refetchQueries: [GetUserLiveQuizzesDocument, GetUserActivitiesDocument],
     }
   )
 
@@ -112,7 +119,9 @@ function CancelLiveQuizModal({
           }
           onClick={async () => {
             await cancelLiveQuiz()
-            router.push('/quizzes')
+            router.push(
+              dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
+            )
             setOpen(false)
             setConfirmations({ ...initialConfirmations })
           }}

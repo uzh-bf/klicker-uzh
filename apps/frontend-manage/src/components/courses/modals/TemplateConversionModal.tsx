@@ -10,6 +10,7 @@ import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
   CreateActivityTemplateDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -136,7 +137,10 @@ function TemplateConversionModal({
                 templateInstructions: values.instructions,
                 copyBeforeConversion: values.conversionType === 'copy',
               },
-              refetchQueries: [GetUserLiveQuizzesDocument],
+              refetchQueries: [
+                GetUserLiveQuizzesDocument,
+                GetUserActivitiesDocument,
+              ],
             })
 
             if (result.data?.createActivityTemplate) {
