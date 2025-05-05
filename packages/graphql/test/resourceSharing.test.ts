@@ -136,7 +136,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   }
 
   it('Verify that permissions on answer collection determine allowed actions when included in top-level catalog collection', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant READ, WRITE and ADMIN permissions on the answer collection to users 2, 3, and 4
     await prisma.permission.createMany({
@@ -206,7 +206,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that access requests to answer collections are shown correctly to owners and admins', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
 
     // create access requests for user 3 (on both) and user 4 (on the public catalog)
     // access requests for the publbic catalog should be linked to both user 1 (owner) and user 2 (admin)
@@ -327,7 +327,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
   it('Verify that user 5 can request access and import public answer collections in public catalog', async () => {
     // create answer collections and catalog collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
     const { publicCatalog, restrictedCatalog } =
       await seedCatalogCollections(userOneCtx)
@@ -519,7 +519,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that answer collection sharing requests can be cancelled by the initiator', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const request = await prisma.accessRequest.create({
       data: {
         permissionLevel: PermissionLevel.WRITE,
@@ -572,7 +572,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
   it('Test that answer collections can be added to a catalog collection by users with sufficient permissions', async () => {
     const { restrictedCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
 
     // grand READ permissions on the first answer collection to user 2
     await prisma.permission.create({
@@ -766,7 +766,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that the correct information is extracted for public / restricted answer collections in the catalog', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // add the answer collection to the top-level catalog collection
@@ -817,7 +817,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that the correct answer collections are fetched to be included in the catalog', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
 
     // grant ADMIN permissions to user 2 on the first collection only
     await prisma.permission.create({
@@ -857,7 +857,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   // ! Sharing Operations for Answer Collections
   // #region
   it('Verify that the level of granted direct individual permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant READ permissions to user 2
     await prisma.permission.create({
@@ -943,7 +943,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that the level of granted direct group permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // create a user group with users 1, 2, and 3 (ADMIN)
     const group = await prisma.userGroup.create({
@@ -1050,7 +1050,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
   it('Verify that direct individual permissions to an answer collection can be revoked, but might be replaced with derived permissions', async () => {
     // create answer collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     const permission1 = await prisma.permission.upsert({
@@ -1351,7 +1351,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that direct group permissions on an answer collection can be revoked without conditions', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
 
     // create a user group with users 1, 2, 3, and 4 (OWNER)
     const group = await prisma.userGroup.create({
@@ -1509,7 +1509,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that direct permissions on the answer collection are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant READ permissions to user 2
     const dbUserPermission = await prisma.permission.create({
@@ -1564,7 +1564,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that derived permissions on the answer collection are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // seed derived READ, WRITE and ADMIN permissions for user 2, 3 and 4
     const permission1 = await prisma.derivedPermission.create({
@@ -1640,7 +1640,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Verify that an answer collection OWNER can transfer the corresponding rights', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // add direct admin permissions to user 4
     await prisma.permission.create({
@@ -1752,7 +1752,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Test the direct sharing functionality for answer collections with different permission levels and individual users', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // try sharing the object with a user that does not exist
     const res1 = await shareObject(
@@ -1923,7 +1923,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   })
 
   it('Test the direct sharing functionality for answer collections with different permission levels and user groups', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // create a user group with users 1 (ADMIN), 2, and 3 and grant WRITE permissions to them
     const group = await prisma.userGroup.create({

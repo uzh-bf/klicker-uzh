@@ -768,7 +768,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(restrictedCatalog3?.isShared).toBe(false)
 
     // add an object to the public catalog collection and verify that it is now shown to user 3
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: publicCatalog.id,
@@ -1018,7 +1018,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       await seedCatalogCollections(userOneCtx)
 
     // create an answer collection and assign it to the restricted catalog collection
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: restrictedCatalog.id,
@@ -1064,7 +1064,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
   // ! Catalog Object Sharing (general functions without explicit object dependence)
   // #region
   it('Verify that the correct number of access requests is shown to all users', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
 
     // add three two access requests for user 1 and one for user 2
     await prisma.accessRequest.createMany({
@@ -1098,7 +1098,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
   })
 
   it('Verify that access requests are correctly removed and new permissions created when being resolved', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // add two access requests for users 2 and 3 on the answer collection
     const request1 = await prisma.accessRequest.create({
@@ -1253,7 +1253,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
   })
 
   it('Make sure that objects in the catalog are queried correctly', async () => {
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
     const { activityId1, activityId2 } = await seedLiveQuizTemplates(prisma)
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
@@ -2366,7 +2366,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
   it('Verify that the object access of an object included in the catalog can be modified (assuming sufficient permissions)', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // assign the answer collection to the top-level and public catalog collections
     const assignment1 = await prisma.catalogCollectionAssignment.create({

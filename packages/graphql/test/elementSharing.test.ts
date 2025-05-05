@@ -87,7 +87,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   // ! Sharing functionalities for elements
   // #region
   it('Verify that the level of granted direct individual permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant READ permissions to user 2
@@ -174,7 +174,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that the level of granted direct group permissions can be modified', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // create a user group with users 1, 2, and 3 (ADMIN)
@@ -335,7 +335,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Test the direct sharing functionality for elements with different permission levels for individual users', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // seed ADMIN and READ permissions on the answer collection for users 2 and 3
@@ -564,7 +564,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that direct group permissions on the element can be revoked without conditions and derived permissions are revoked as well', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC!.id)
 
     // create a user group with users 1, 2, 3, 4, and 5 (OWNER)
@@ -943,7 +943,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Test the direct sharing functionality for elements with different permission levels for user groups', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // create a user group with users 1 (ADMIN), 2, and 3 and grant WRITE permissions on the element to them
@@ -1171,7 +1171,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that direct permissions on the elements are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // grant READ permissions to user 2
@@ -1227,7 +1227,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that derived permissions on the element are loaded correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // seed derived READ, WRITE and ADMIN permissions for user 2, 3 and 4
@@ -1305,7 +1305,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Verify that direct permissions to an element can be revoked, but might be replaced with derived permissions', async () => {
     // create answer collections for testing
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1!.id)
 
     const permission1 = await prisma.permission.upsert({
@@ -1619,7 +1619,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that an element OWNER can transfer the corresponding rights and that derived permissions are created correctly', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
 
     // add direct admin permissions to user 4
@@ -1745,7 +1745,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   // ! Catalog functionalities for elements
   // #region
   it('Verify that only elements where a user has admin permissions are returned for the addition to the catalog', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant admin permissions to users 2 and 3, and write permissions to user 4 on the single choice question
@@ -1828,7 +1828,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Test that elements can be added to a catalog collection by users with sufficient permissions', async () => {
     const { restrictedCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grand READ permissions on the selection question to user 2
@@ -2024,7 +2024,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
   it('Verify that user 5 can request access and import public elements in public catalog (incl. derived permissions on answer collections)', async () => {
     // create elements and catalog collections for testing
-    const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE, CS } = await seedElements(userOneCtx, AC1!.id)
     const { publicCatalog, restrictedCatalog } =
       await seedCatalogCollections(userOneCtx)
@@ -2302,7 +2302,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that element sharing requests can be cancelled by the initiator', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC1!.id)
     const request = await prisma.accessRequest.create({
       data: {
@@ -2355,7 +2355,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   })
 
   it('Verify that access requests to answer collections are shown correctly to owners and admins', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SE, CS } = await seedElements(userOneCtx, AC1!.id)
 
     // create access requests for user 3 (on both questions) and user 4 (on the case study question)

@@ -1478,7 +1478,7 @@ describe('Unit tests for object access validation', () => {
   // #region
   it('Verify that new access request instances are created for new object admins (with userId argument)', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC!.id)
 
     // create an access request for user 2 on all objects
@@ -1750,7 +1750,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Verify that access request instances are removed alongisde derived permissions when user looses admin or owner access', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC!.id)
 
     // add ADMIN permissions for user 3 on all objects
@@ -2097,7 +2097,7 @@ describe('Unit tests for object access validation', () => {
   })
 
   it('Verify that access requests for soft-deleted objects are automatically removed for all users', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC!.id)
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
@@ -2279,7 +2279,7 @@ describe('Unit tests for object access validation', () => {
   })
 
   it('Test the combination of permission propagation and access request instance updates', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC!.id)
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
@@ -2489,7 +2489,7 @@ describe('Unit tests for object access validation', () => {
   })
 
   it('Verify that triggering an access request instances update without userId does update the instances for all users', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC!.id)
 
     // create access requests for user 2 on all objects
@@ -2667,7 +2667,7 @@ describe('Unit tests for object access validation', () => {
   })
 
   it('Verify that triggering an access request instances update without userId after permission revocation does update the instances for all users', async () => {
-    const [AC] = await seedAnswerCollections(userOneCtx)
+    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC!.id)
 
     // grant ADMIN permissions to user 3 on both objects
@@ -2861,7 +2861,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Test that resolving an access request with ADMIN permissions triggers a duplication of pending access requests', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // create two access requests for the public catalog collection (user 2 and 3)
     const catalogRequest2 = await prisma.accessRequest.create({
@@ -2983,7 +2983,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Test that increasing the level of an existing individual permission to ADMIN level results in a duplication of all pending access requests', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant READ permissions to user 2 on the public catalog collection and the answer collection
     const catalogPermission = await prisma.permission.create({
@@ -3270,7 +3270,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Test that reduction the level of an existing individual permission from ADMIN level results in a duplication of all pending access requests', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant ADMIN permissions to user 2 on the public catalog collection and the answer collection
     const catalogPermission = await prisma.permission.create({
@@ -3741,7 +3741,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Verify that on revocation of individual ADMIN object permissions, access request instances are removed for the previous ADMIN', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // grant ADMIN permissions to user 2 on the public catalog collection and the answer collection
     const catalogPermission = await prisma.permission.create({
@@ -4372,7 +4372,7 @@ describe('Unit tests for object access validation', () => {
   })
 
   it('Verify that any pending access requests are also assigned to new owner on answer collection ownership transfer', async () => {
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // create access requests for users 3 and 4
     await prisma.accessRequest.createMany({
@@ -4466,7 +4466,7 @@ describe('Unit tests for object access validation', () => {
 
   it('Verify that any pending access requests to an object are duplicated when granting ADMIN permissions to a new user', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
-    const [AC1] = await seedAnswerCollections(userOneCtx)
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
 
     // create access requests for users 3 and 4
     await prisma.accessRequest.createMany({
