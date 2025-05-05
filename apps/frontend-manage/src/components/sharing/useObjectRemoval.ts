@@ -28,7 +28,7 @@ function useObjectRemoval({
           optimisticResponse: {
             removeAnswerCollection: objectId as number,
           },
-          refetchQueries: [GetAnswerCollectionsInfoDocument],
+          refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
         })
 
         if (

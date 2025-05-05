@@ -138,8 +138,8 @@ function TemplateConversionModal({
                 copyBeforeConversion: values.conversionType === 'copy',
               },
               refetchQueries: [
-                GetUserLiveQuizzesDocument,
-                GetUserActivitiesDocument,
+                { query: GetUserLiveQuizzesDocument },
+                { query: GetUserActivitiesDocument },
               ],
             })
 

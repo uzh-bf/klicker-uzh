@@ -100,13 +100,13 @@ function AddObjectToCatalogModal({
                 }
 
                 const newObject = data.addObjectToCatalog
-                const modifiedObjectId = newObject.id
-                const modifiedObjectUuid = newObject.uuid
+                const modifiedObjectId = newObject.objectId
+                const modifiedObjectUuid = newObject.objectUuid
                 const newObjects = prevObjects.getCatalogObjects
                   .filter((obj) =>
-                    typeof obj.id !== 'undefined' && obj.id !== null
-                      ? obj.id !== modifiedObjectId
-                      : obj.uuid !== modifiedObjectUuid
+                    typeof obj.objectId !== 'undefined' && obj.objectId !== null
+                      ? obj.objectId !== modifiedObjectId
+                      : obj.objectUuid !== modifiedObjectUuid
                   )
                   .concat(newObject)
 

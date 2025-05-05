@@ -70,7 +70,7 @@ function LiveQuizNameChangeModal({
                   displayName: values.displayName,
                 },
               },
-              refetchQueries: [GetUserActivitiesDocument],
+              refetchQueries: [{ query: GetUserActivitiesDocument }],
             })
 
             if (result.data?.changeLiveQuizName?.id) {

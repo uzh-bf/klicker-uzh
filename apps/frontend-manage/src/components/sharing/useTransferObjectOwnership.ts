@@ -43,7 +43,7 @@ function useTransferObjectOwnership({
             variables: { objectId: String(objectId), objectType },
           },
           ...(objectType === SharingObjectType.CatalogCollection
-            ? [GetCatalogCollectionsListDocument]
+            ? [{ query: GetCatalogCollectionsListDocument }]
             : []),
           ...(objectType === SharingObjectType.AnswerCollection
             ? [
@@ -51,12 +51,15 @@ function useTransferObjectOwnership({
                   query: GetCatalogObjectsDocument,
                   variables: { catalogCollectionId },
                 },
-                GetAnswerCollectionsInfoDocument,
-                GetCatalogSharingRequestsDocument,
+                { query: GetAnswerCollectionsInfoDocument },
+                { query: GetCatalogSharingRequestsDocument },
               ]
             : []),
           ...(objectType === SharingObjectType.Element
-            ? [GetUserQuestionsDocument, GetCatalogSharingRequestsDocument]
+            ? [
+                { query: GetUserQuestionsDocument },
+                { query: GetCatalogSharingRequestsDocument },
+              ]
             : []),
         ],
       })

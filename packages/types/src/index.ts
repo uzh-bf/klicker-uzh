@@ -351,11 +351,11 @@ export type ObjectSharingRequest = {
 // ----- CATALOG -----
 // #region
 export type CatalogObject = {
-  id?: number
-  uuid?: string
+  id: number // assignment id
+  objectId?: number // object id
+  objectUuid?: string // object uuid
   name: string
   objectType: SharingObjectType
-  assignmentId: number
   templateId?: string
   access: ObjectAccess
   ownerShortname?: string

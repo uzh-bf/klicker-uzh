@@ -249,7 +249,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       userOneCtx
     )
     expect(res2).toBeTruthy()
-    expect(res2!.uuid).toEqual(activityId1)
+    expect(res2!.objectUuid).toEqual(activityId1)
     expect(res2!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res2!.templateId).toEqual(templateId1)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
@@ -296,7 +296,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       userThreeCtx
     )
     expect(res3).toBeTruthy()
-    expect(res3!.uuid).toEqual(activityId2)
+    expect(res3!.objectUuid).toEqual(activityId2)
     expect(res3!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res3!.templateId).toEqual(templateId2)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
@@ -344,7 +344,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       userFourCtx
     )
     expect(res5).toBeTruthy()
-    expect(res5!.uuid).toEqual(activityId2)
+    expect(res5!.objectUuid).toEqual(activityId2)
     expect(res5!.objectType).toEqual(SharingObjectType.LIVE_QUIZ_TEMPLATE)
     expect(res5!.templateId).toEqual(templateId2)
     expect(res5!.access).toEqual(ObjectAccess.RESTRICTED)

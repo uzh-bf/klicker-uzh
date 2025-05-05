@@ -448,17 +448,17 @@ type CatalogCollection {
 
 type CatalogObject {
   access: ObjectAccess!
-  assignmentId: Int!
-  id: Int
+  id: Int!
   isManager: Boolean!
   isOwner: Boolean!
   isRequested: Boolean!
   isShared: Boolean!
   name: String!
+  objectId: Int
   objectType: SharingObjectType!
+  objectUuid: String
   ownerShortname: String
   templateId: String
-  uuid: String
 }
 
 type CatalogSelectionObject {

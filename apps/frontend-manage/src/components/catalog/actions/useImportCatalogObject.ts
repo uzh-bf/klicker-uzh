@@ -41,10 +41,10 @@ function useImportCatalogObject({
         },
         refetchQueries: [
           ...(objectType === SharingObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
           ...(objectType === SharingObjectType.Element
-            ? [GetUserQuestionsDocument]
+            ? [{ query: GetUserQuestionsDocument }]
             : []),
         ],
       })

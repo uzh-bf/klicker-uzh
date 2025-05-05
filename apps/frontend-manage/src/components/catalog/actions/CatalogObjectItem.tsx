@@ -102,14 +102,14 @@ function CatalogObjectItem({
                 pathname: dataUser?.userProfile?.privatePreview
                   ? '/activities'
                   : '/quizzes',
-                query: { highlight: object.uuid },
+                query: { highlight: object.objectUuid },
               })
             } else if (
               object.objectType === SharingObjectType.AnswerCollection
             ) {
               router.push({
                 pathname: '/resources/answerCollections',
-                query: { highlight: object.id },
+                query: { highlight: object.objectId },
               })
             }
           } else if (
@@ -218,7 +218,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setRequestModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           objectAccess={object.access}
@@ -240,7 +240,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setImportModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           catalogCollectionId={catalogCollectionId}
@@ -261,7 +261,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setRequestCancellationModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           catalogCollectionId={catalogCollectionId}
@@ -279,7 +279,7 @@ function CatalogObjectItem({
             onClose={() => setChangeAccessModal(false)}
             objectType={object.objectType}
             objectName={object.name}
-            assignmentId={object.assignmentId}
+            assignmentId={object.id}
             newAccess={newAccess}
             catalogCollectionId={catalogCollectionId}
           />
@@ -292,9 +292,9 @@ function CatalogObjectItem({
         </>
       ) : null}
       {object.isManager ? (
-        object.uuid ? (
+        object.objectUuid ? (
           <ObjectSharingModalWrapper
-            objectUuid={object.uuid}
+            objectUuid={object.objectUuid}
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
@@ -304,7 +304,7 @@ function CatalogObjectItem({
           />
         ) : (
           <ObjectSharingModalWrapper
-            objectId={object.id!}
+            objectId={object.objectId!}
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}

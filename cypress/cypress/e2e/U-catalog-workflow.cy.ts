@@ -1939,7 +1939,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Cleanup: Delete the live quiz template', function () {
     cy.loginLecturer()
 
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template.name}"]`
     ).click()

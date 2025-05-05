@@ -962,7 +962,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Currently, no activities are available. You can easily create new activities by combining questions in the <link>library</link>.',
       noActivitiesForFilters:
         'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
-      course: 'course',
       liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',

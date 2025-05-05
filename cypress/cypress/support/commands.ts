@@ -694,6 +694,7 @@ Cypress.Commands.add(
     resourceAccessRequired,
   }: ConvertLiveQuizToTemplateArgs) => {
     // depending on the setting, choose between conversion and copy & conversion of activity
+    cy.get(`[data-cy="actions-live-quiz-${liveQuiz}"]`).realClick()
     cy.get(`[data-cy="template-from-live-quiz-${liveQuiz}"]`).click()
 
     if (copyBeforeConversion) {

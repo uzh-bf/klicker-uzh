@@ -86,7 +86,7 @@ function useObjectSharing({
           })
         },
         refetchQueries: [
-          GetCatalogSharingRequestsDocument,
+          { query: GetCatalogSharingRequestsDocument },
           {
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
@@ -100,7 +100,7 @@ function useObjectSharing({
               ]
             : []),
           ...(objectType === SharingObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],
       })

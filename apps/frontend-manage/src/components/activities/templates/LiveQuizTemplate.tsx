@@ -512,8 +512,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       blocks: processedBlocks,
                     },
                     refetchQueries: [
-                      GetUserLiveQuizzesDocument,
-                      GetUserActivitiesDocument,
+                      { query: GetUserLiveQuizzesDocument },
+                      { query: GetUserActivitiesDocument },
                     ],
                   })
 

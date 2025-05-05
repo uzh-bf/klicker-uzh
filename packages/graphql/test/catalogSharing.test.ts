@@ -1308,33 +1308,34 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     const catalogObject1 = catalogObjects.find(
       (object) =>
-        object.id === AC1!.id &&
+        object.objectId === AC1!.id &&
         object.objectType === SharingObjectType.ANSWER_COLLECTION
     )
     const catalogObject2 = catalogObjects.find(
-      (object) => object.uuid === activityId1
+      (object) => object.objectUuid === activityId1
     )
     const catalogObject3 = catalogObjects.find(
       (object) =>
-        object.id === SC.id && object.objectType === SharingObjectType.ELEMENT
+        object.objectId === SC.id &&
+        object.objectType === SharingObjectType.ELEMENT
     )
-    expect(catalogObject1).not.toBeNull()
-    expect(catalogObject2).not.toBeNull()
-    expect(catalogObject3).not.toBeNull()
+    expect(catalogObject1).toBeDefined()
+    expect(catalogObject2).toBeDefined()
+    expect(catalogObject3).toBeDefined()
 
-    expect(catalogObject1!.id).toBe(AC1!.id)
+    expect(catalogObject1!.objectId).toBe(AC1!.id)
     expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
-    expect(catalogObject1!.assignmentId).toBe(assignment1.id)
+    expect(catalogObject1!.id).toBe(assignment1.id)
 
-    expect(catalogObject2!.uuid).toBe(activityId1)
+    expect(catalogObject2!.objectUuid).toBe(activityId1)
     expect(catalogObject2!.objectType).toBe(
       SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
-    expect(catalogObject2!.assignmentId).toBe(assignment2.id)
+    expect(catalogObject2!.id).toBe(assignment2.id)
 
-    expect(catalogObject3!.id).toBe(SC.id)
+    expect(catalogObject3!.objectId).toBe(SC.id)
     expect(catalogObject3!.objectType).toBe(SharingObjectType.ELEMENT)
-    expect(catalogObject3!.assignmentId).toBe(assignment3.id)
+    expect(catalogObject3!.id).toBe(assignment3.id)
 
     // verify that the correct objects are returned for the public catalog collection
     const catalogObjects2 = await getCatalogObjects(
@@ -1346,31 +1347,32 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     const catalogObject4 = catalogObjects2.find(
       (object) =>
-        object.id === AC2!.id &&
+        object.objectId === AC2!.id &&
         object.objectType === SharingObjectType.ANSWER_COLLECTION
     )
     const catalogObject5 = catalogObjects2.find(
-      (object) => object.uuid === activityId2
+      (object) => object.objectUuid === activityId2
     )
     const catalogObject6 = catalogObjects2.find(
       (object) =>
-        object.id === MC.id && object.objectType === SharingObjectType.ELEMENT
+        object.objectId === MC.id &&
+        object.objectType === SharingObjectType.ELEMENT
     )
-    expect(catalogObject4).not.toBeNull()
-    expect(catalogObject5).not.toBeNull()
-    expect(catalogObject6).not.toBeNull()
+    expect(catalogObject4).toBeDefined()
+    expect(catalogObject5).toBeDefined()
+    expect(catalogObject6).toBeDefined()
 
-    expect(catalogObject4!.id).toBe(AC2!.id)
+    expect(catalogObject4!.objectId).toBe(AC2!.id)
     expect(catalogObject4!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
-    expect(catalogObject4!.assignmentId).toBe(assignment4.id)
-    expect(catalogObject5!.uuid).toBe(activityId2)
+    expect(catalogObject4!.id).toBe(assignment4.id)
+    expect(catalogObject5!.objectUuid).toBe(activityId2)
     expect(catalogObject5!.objectType).toBe(
       SharingObjectType.LIVE_QUIZ_TEMPLATE
     )
-    expect(catalogObject5!.assignmentId).toBe(assignment5.id)
-    expect(catalogObject6!.id).toBe(MC.id)
+    expect(catalogObject5!.id).toBe(assignment5.id)
+    expect(catalogObject6!.objectId).toBe(MC.id)
     expect(catalogObject6!.objectType).toBe(SharingObjectType.ELEMENT)
-    expect(catalogObject6!.assignmentId).toBe(assignment6.id)
+    expect(catalogObject6!.id).toBe(assignment6.id)
   })
   // #endregion
 

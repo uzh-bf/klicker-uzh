@@ -1892,7 +1892,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       userOneCtx
     )
     expect(res2).toBeTruthy()
-    expect(res2!.id).toEqual(SC.id)
+    expect(res2!.objectId).toEqual(SC.id)
     expect(res2!.objectType).toEqual(SharingObjectType.ELEMENT)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
@@ -1938,7 +1938,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       userThreeCtx
     )
     expect(res3).toBeTruthy()
-    expect(res3!.id).toEqual(MC.id)
+    expect(res3!.objectId).toEqual(MC.id)
     expect(res3!.objectType).toEqual(SharingObjectType.ELEMENT)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
@@ -1985,7 +1985,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       userFourCtx
     )
     expect(res4).toBeTruthy()
-    expect(res4!.id).toEqual(MC.id)
+    expect(res4!.objectId).toEqual(MC.id)
     expect(res4!.objectType).toEqual(SharingObjectType.ELEMENT)
     expect(res4!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res4!.ownerShortname).toEqual(userOne.shortname)

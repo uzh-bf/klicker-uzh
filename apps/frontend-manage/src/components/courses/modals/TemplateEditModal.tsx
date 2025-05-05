@@ -93,8 +93,8 @@ function TemplateEditModal({
                 },
                 // TODO: update cache instead of triggering refetch query once combined activity overview is available
                 refetchQueries: [
-                  GetUserLiveQuizzesDocument,
-                  GetUserActivitiesDocument,
+                  { query: GetUserLiveQuizzesDocument },
+                  { query: GetUserActivitiesDocument },
                 ],
               })
 

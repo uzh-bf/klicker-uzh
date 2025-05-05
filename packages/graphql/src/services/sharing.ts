@@ -3816,9 +3816,9 @@ export async function getCatalogObjects(
         const permission = answerCollection.permissions[0]
 
         return {
-          id: answerCollection.id,
+          id: assignment.id,
+          objectId: answerCollection.id,
           name: answerCollection.name,
-          assignmentId: assignment.id,
           objectType: SharingObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
@@ -3836,9 +3836,9 @@ export async function getCatalogObjects(
         const permission = element.permissions[0]
 
         return {
-          id: element.id,
+          id: assignment.id,
+          objectId: element.id,
           name: element.name,
-          assignmentId: assignment.id,
           objectType: SharingObjectType.ELEMENT,
           access: assignment.access,
           ownerShortname: element.owner?.shortname,
@@ -3856,9 +3856,9 @@ export async function getCatalogObjects(
         const permission = liveQuiz.permissions[0]
 
         return {
-          uuid: liveQuiz.id,
+          id: assignment.id,
+          objectUuid: liveQuiz.id,
           name: liveQuiz.name,
-          assignmentId: assignment.id,
           templateId: liveQuiz.templateInfo?.id,
           objectType:
             // TODO: replace or type with normal live quiz catalog object type
@@ -4353,11 +4353,11 @@ export async function addObjectToCatalog(
 
   // return the updated catalog object
   return {
-    id: objectInfo.objectId,
-    uuid: objectInfo.objectUuid,
+    id: assignment.id,
+    objectId: objectInfo.objectId,
+    objectUuid: objectInfo.objectUuid,
     name: objectInfo.objectName,
     objectType: objectInfo.objectType,
-    assignmentId: assignment.id,
     templateId: objectInfo.templateId,
     access: assignment.access,
     ownerShortname: objectInfo.ownerShortname,

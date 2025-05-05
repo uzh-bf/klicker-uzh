@@ -230,11 +230,7 @@ function CourseSelectionPage() {
                       String(values.preferredGroupSize)
                     ),
                   },
-                  refetchQueries: [
-                    {
-                      query: GetUserCoursesDocument,
-                    },
-                  ],
+                  refetchQueries: [{ query: GetUserCoursesDocument }],
                 })
 
                 if (result.data?.createCourse) {

@@ -1,8 +1,25 @@
 import messages from '../../../packages/i18n/messages/en'
 
+// ! LECACY TEST WORKFLOW FOR LIVE QUIZ WITHOUT SELECTION / CASE STUDY ELEMENTS AND OLD LIVE QUIZ LIST
+// ! -> TO BE REMOVED ONCE UNIFIED ACTIVITY OVERVIEW IS AVAILABLE
 describe('Different live-quiz workflows', function () {
   before(() => {
     cy.seed()
+
+    // remove private preview flag from lecturer user
+    cy.task('updateLecturerPreviewFlags', {
+      publicPreview: true,
+      privatePreview: false,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error('Permissions of user could not be updated.')
+      }
+
+      // login as lecturer
+      cy.loginLecturer()
+      cy.reload()
+    })
   })
 
   after(() => {
@@ -100,65 +117,6 @@ describe('Different live-quiz workflows', function () {
       userId: Cypress.env('LECTURER_ID'),
     })
 
-    // create answer collections that are required for selection and case study questions
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get('[data-cy="answer-collection-list"]').should('exist')
-    cy.createAnswerCollection({
-      name: this.data.collection.name,
-      description: this.data.collection.description,
-      entries: this.data.collection.options,
-      userId: Cypress.env('LECTURER_ID'),
-    })
-
-    // create selection and case study questions (with and without sample solution)
-    cy.get('[data-cy="library"]').click()
-    cy.createQuestionSE({
-      name: this.data.SE.title,
-      content: this.data.SE.content,
-      numberOfInputs: this.data.SE.inputs,
-      collectionName: this.data.collection.name,
-      userId: Cypress.env('LECTURER_ID'),
-    })
-    cy.createQuestionSE({
-      name: this.data.SEML.title,
-      content: this.data.SEML.content,
-      numberOfInputs: this.data.SEML.inputs,
-      collectionName: this.data.collection.name,
-      correctAnswers: this.data.collection.options.filter((_, i) =>
-        this.data.SEML.solutions.includes(i)
-      ),
-      userId: Cypress.env('LECTURER_ID'),
-    })
-
-    // create case study questions (with and without sample solution)
-    cy.createQuestionCS({
-      name: this.data.CS.title,
-      content: this.data.CS.content,
-      explanation: this.data.CS.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
-        this.data.CS.selectedItems.includes(i)
-      ),
-      criteria: this.data.CS.criteria,
-      cases: this.data.CS.cases,
-      solutions: this.data.CS.solutions,
-      userId: Cypress.env('LECTURER_ID'),
-    })
-    cy.createQuestionCS({
-      name: this.data.CSML.title,
-      content: this.data.CSML.content,
-      explanation: this.data.CSML.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
-        this.data.CSML.selectedItems.includes(i)
-      ),
-      criteria: this.data.CSML.criteria,
-      cases: this.data.CSML.cases,
-      solutions: this.data.CSML.solutions,
-      userId: Cypress.env('LECTURER_ID'),
-    })
-
     // create content elements for both blocks
     cy.createContent({
       name: this.data.CT.title,
@@ -225,15 +183,15 @@ describe('Different live-quiz workflows', function () {
       .contains(messages.manage.activityWizard.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
     cy.get('[data-cy="live-quiz-advanced-settings"]').should('not.exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
     cy.get('[data-cy="select-multiplier"]').should('exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course2.name)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
 
@@ -439,7 +397,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Edit the created live quiz and check if all settings persist', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
 
     cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.name}"]`).should(
       'exist'
@@ -674,7 +632,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Duplicate the live quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
       'exist'
     )
@@ -714,7 +672,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Cleanup: Delete the duplicated live quiz', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
     cy.findByText(this.data.course1.quiz.nameDupl).should('exist')
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
@@ -737,7 +695,7 @@ describe('Different live-quiz workflows', function () {
   // #region
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
       'exist'
     )
@@ -778,7 +736,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Cleanup: Delete the created and completed live quiz', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
 
     cy.findByText(this.data.course1.quiz.nameNew).should('exist')
     cy.get(
@@ -841,15 +799,15 @@ describe('Different live-quiz workflows', function () {
       .should('exist')
       .contains(messages.manage.activityWizard.liveQuizNoCourse)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
     cy.get('[data-cy="select-multiplier"]').should('exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course2.name)
     cy.get('[data-cy="select-multiplier"]').should('not.exist')
-    cy.get('[data-cy="select-course"]').click()
+    cy.get('[data-cy="select-course"]').realClick()
     cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
     cy.get('[data-cy="select-multiplier"]').should('exist')
@@ -876,8 +834,6 @@ describe('Different live-quiz workflows', function () {
             this.data.KP.title,
             this.data.NR.title,
             this.data.FT.title,
-            this.data.SE.title,
-            this.data.CS.title,
             this.data.CT.title,
           ],
         },
@@ -888,8 +844,6 @@ describe('Different live-quiz workflows', function () {
             this.data.KPML.title,
             this.data.NRML.title,
             this.data.FTML.title,
-            this.data.SEML.title,
-            this.data.CSML.title,
             this.data.CT2.title,
           ],
         },
@@ -924,7 +878,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Start the first block of the live quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -982,26 +936,6 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="free-text-input-4"]').type(this.data.FT.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-5-field-0"]').click()
-    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
-    cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled') // partial responses allowed
-    cy.get('[id="selection-5-field-1"]').click()
-    cy.get('[id="react-select-selection-5-field-1-option-2"]').click()
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-    cy.answerCaseStudy({
-      elementIx: 6,
-      answers: this.data.CS.answers,
-      cases: this.data.CS.cases,
-      criteria: this.data.CS.criteria,
-      initialValidation: cy
-        .get('[data-cy="student-submit-answer"]')
-        .should('be.disabled'),
-      sequentialUI: true,
-    })
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
     cy.get('[data-cy="student-submit-answer"]').click() // no answer required for content element
     cy.wait(500)
 
@@ -1021,7 +955,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Start the second block of the live quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1035,7 +969,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Make feedbacks visible, respond to one and disable moderation', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1113,27 +1047,6 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
-    // SE question - submit partial answer (only submit selection for one of two inputs)
-    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-5-field-0"]').click()
-    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-
-    // CS question - skipping not permitted, partial answers not possible
-    cy.answerCaseStudy({
-      elementIx: 6,
-      answers: this.data.CSML.answers,
-      cases: this.data.CSML.cases,
-      criteria: this.data.CSML.criteria,
-      initialValidation: cy
-        .get('[data-cy="student-submit-answer"]')
-        .should('be.disabled'),
-      sequentialUI: true,
-    })
-    cy.get('[data-cy="student-submit-answer"]').click()
-    cy.wait(500)
-
     // CT element - no answer required
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
@@ -1170,7 +1083,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Check out the public evaluation links accessible through the embedding modal', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1192,11 +1105,6 @@ describe('Different live-quiz workflows', function () {
       .invoke('text')
       .then((text) => {
         cy.wrap(text).as('publicLinkQuestion6')
-      })
-    cy.get('[data-cy="open-embedding-link-question-7"]')
-      .invoke('text')
-      .then((text) => {
-        cy.wrap(text).as('publicLinkQuestion7')
       })
     cy.get('[data-cy="open-embedding-link-question-9"]')
       .invoke('text')
@@ -1236,10 +1144,6 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkQuestion6').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.CS.content).should('exist')
-    cy.get('@publicLinkQuestion7').then((link) => {
-      cy.visit(String(link))
-    })
     cy.findByText(this.data.CT.content).should('exist')
     cy.get('@publicLinkQuestion9').then((link) => {
       cy.visit(String(link))
@@ -1252,103 +1156,10 @@ describe('Different live-quiz workflows', function () {
     })
   })
 
-  it('Check out evaluation view of live quiz and its content', function () {
-    cy.loginLecturer()
-
-    cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
-    ).click()
-    cy.wait(1000)
-
-    // extract the quiz id from the URL and visit the evaluation view
-    cy.location('href').then((href) => {
-      const quizId = href.split('/')[4]
-      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
-    })
-
-    // check content of evaluation view
-    cy.findByText(this.data.SC.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MC.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SC.content).should('exist')
-
-    // test instance navigation
-    cy.get('[data-cy="evaluate-question-select"]')
-      .should('exist')
-      .contains(this.data.SC.title)
-    cy.get('[data-cy="evaluate-question-select"]').click()
-    cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.KP.title}"]`
-    ).click()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.KP.title)
-    cy.get('[data-cy="evaluate-question-select"]').click()
-    cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.SC.title}"]`
-    ).click()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.SC.title)
-
-    // navigate forwards and backwards through all questions
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KP.title).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.NR.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.FT.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SE.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CS.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CT.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MCML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KPML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.NRML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.FTML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SEML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
-    cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CT2.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.NRML.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.SCML.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.CT.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.CS.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SE.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.FT.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.MC.title).should('exist')
-
-    // test navigation through blocks
-    cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
-    cy.get('[data-cy="evaluate-stack-0"]').click()
-    cy.findByText(this.data.SC.title).should('exist')
-    cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
-  })
-
   it('Close block and delete feedback / feedback response', function () {
     cy.loginLecturer()
 
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1379,7 +1190,7 @@ describe('Different live-quiz workflows', function () {
   it('End live quiz on lecturer cockpit', function () {
     cy.loginLecturer()
 
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1436,7 +1247,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="save-new-question"]').click()
 
     // edit and save the live quiz without changing the question content
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1468,7 +1279,7 @@ describe('Different live-quiz workflows', function () {
     })
 
     // edit the live quiz and add the modified SC and the new MC question
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1529,7 +1340,7 @@ describe('Different live-quiz workflows', function () {
     cy.deleteElement({ elementName: this.data.MC2.title })
 
     // edit and save the live quiz without changing the question content
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1558,7 +1369,7 @@ describe('Different live-quiz workflows', function () {
   it('Execute the live quiz, answer the questions and verify the question contents', function () {
     // start the live quiz and open the first block
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="start-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -1599,7 +1410,7 @@ describe('Different live-quiz workflows', function () {
   it('Open the next block and answer the multiple choice question in the second block', function () {
     // open the next block
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.liveQuiz.name}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -1647,7 +1458,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Close the second block of the live quiz and end it', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.liveQuiz.name}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -1658,7 +1469,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Duplicate the live quiz and check that the same questions are contained therein', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should('exist')
 
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).click()
@@ -1701,7 +1512,7 @@ describe('Different live-quiz workflows', function () {
   it('Execute the duplicated live quiz, answer the questions and verify the question contents', function () {
     // start the live quiz and open the first block
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="start-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
@@ -1746,7 +1557,7 @@ describe('Different live-quiz workflows', function () {
   it('Open the next block and answer the multiple choice question in the second block', function () {
     // open the next block
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.liveQuiz.duplicateName}"]`
     ).click()
@@ -1798,7 +1609,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Close the second block of the live quiz and end it', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="live-quiz-cockpit-${this.data.liveQuiz.duplicateName}"]`
     ).click()
@@ -1811,7 +1622,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Delete the created live quizzes', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
     cy.get(
@@ -1825,7 +1636,7 @@ describe('Different live-quiz workflows', function () {
   // #region
   it('Cleanup: Delete the live quiz used for the full cycle test', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
+    cy.get(`[data-cy="live-quizzes"]`).click()
 
     cy.findByText(this.data.course2.quiz.name).should('exist')
     cy.get(

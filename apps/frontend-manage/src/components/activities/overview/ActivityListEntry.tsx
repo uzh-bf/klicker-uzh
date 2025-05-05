@@ -59,6 +59,7 @@ function ActivityListEntry({
           'border-uzh-grey-60 flex flex-row items-center justify-between border-b-2 border-solid px-2 py-2',
           highlighted && 'border-primary-100 border-2 bg-orange-50'
         )}
+        data-cy={`activity-${activity.type}-${activity.name}`}
       >
         <div>
           <div className="flex flex-row items-center gap-2.5">
@@ -67,15 +68,16 @@ function ActivityListEntry({
               {`${t(`shared.types.${activity.type}`)}: ${activity.name}`}
             </div>
 
-            {!activity.templateId && (
-              <FontAwesomeIcon
-                icon={faPencil}
-                size="sm"
-                onClick={() => setChangeName(true)}
-                className="hover:cursor-pointer"
-                data-cy={`change-activity-name-${activity.name}`}
-              />
-            )}
+            {activity.status !== PublicationStatus.Template &&
+              activity.status !== PublicationStatus.Ended && (
+                <FontAwesomeIcon
+                  icon={faPencil}
+                  size="sm"
+                  onClick={() => setChangeName(true)}
+                  className="hover:cursor-pointer"
+                  data-cy={`change-activity-name-${activity.name}`}
+                />
+              )}
             <FontAwesomeIcon
               icon={faInfoCircle}
               onClick={() => setShowDetails(true)}

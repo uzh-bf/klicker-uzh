@@ -1,9 +1,9 @@
 fragment CatalogObjectData on CatalogObject {
   id
-  uuid
+  objectId
+  objectUuid
   name
   objectType
-  assignmentId
   templateId
   access
   ownerShortname

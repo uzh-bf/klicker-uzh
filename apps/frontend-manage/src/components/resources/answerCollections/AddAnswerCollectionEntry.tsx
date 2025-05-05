@@ -104,7 +104,7 @@ function AddAnswerCollectionEntry({
               },
             })
           },
-          refetchQueries: [GetAnswerCollectionsInfoDocument],
+          refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
         })
         setFieldOpen(false)
         setOptionsEditingDisabled(false)

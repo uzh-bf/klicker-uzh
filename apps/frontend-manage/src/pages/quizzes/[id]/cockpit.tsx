@@ -49,7 +49,10 @@ function Cockpit() {
           },
         })
       },
-      refetchQueries: [GetUserLiveQuizzesDocument, GetUserActivitiesDocument],
+      refetchQueries: [
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
+      ],
     }
   )
 

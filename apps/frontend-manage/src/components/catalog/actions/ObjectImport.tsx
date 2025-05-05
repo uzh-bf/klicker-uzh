@@ -47,9 +47,8 @@ function ObjectImport({
   const { data: objectsData, loading: objectsLoading } = useQuery(
     GetCatalogObjectsDocument,
     {
-      variables: {
-        catalogCollectionId,
-      },
+      variables: { catalogCollectionId },
+      fetchPolicy: 'cache-and-network',
     }
   )
   const objects = objectsData?.getCatalogObjects ?? []
@@ -128,24 +127,20 @@ function ObjectImport({
         )}
         {filteredObjects.length > 0 ? (
           <div>
-            {filteredObjects.length > 0 && (
-              <div>
-                {filteredObjects.map((object) => (
-                  <CatalogObjectItem
-                    key={`catalog-object-${object.id}-${object.name}`}
-                    object={object}
-                    catalogCollectionId={catalogCollectionId}
-                    // if element is in catalog collection -> collection permissions apply regarding object management in catalog collection
-                    // if element is shown on top level of catalog -> permissions on the object itself apply
-                    managedAccess={
-                      typeof catalogCollectionId !== 'undefined'
-                        ? collectionEditor
-                        : object.isManager
-                    }
-                  />
-                ))}
-              </div>
-            )}
+            {filteredObjects.map((object) => (
+              <CatalogObjectItem
+                key={`catalog-object-${object.id}-${object.objectType}-${object.name}`}
+                object={object}
+                catalogCollectionId={catalogCollectionId}
+                // if element is in catalog collection -> collection permissions apply regarding object management in catalog collection
+                // if element is shown on top level of catalog -> permissions on the object itself apply
+                managedAccess={
+                  typeof catalogCollectionId !== 'undefined'
+                    ? collectionEditor
+                    : object.isManager
+                }
+              />
+            ))}
           </div>
         ) : null}
         {filteredObjects.length === 0 &&

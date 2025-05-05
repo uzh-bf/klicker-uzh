@@ -75,7 +75,10 @@ function CancelLiveQuizModal({
           },
         })
       },
-      refetchQueries: [GetUserLiveQuizzesDocument, GetUserActivitiesDocument],
+      refetchQueries: [
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
+      ],
     }
   )
 

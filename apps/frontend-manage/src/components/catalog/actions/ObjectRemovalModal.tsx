@@ -52,7 +52,7 @@ function ObjectRemovalModal({
             onClick={async () => {
               const res = await removeCatalogObjectAssignment({
                 variables: {
-                  assignmentId: object.assignmentId,
+                  assignmentId: object.id,
                 },
                 update: (cache, { data }) => {
                   // check if request was successful
@@ -76,7 +76,7 @@ function ObjectRemovalModal({
                       data: {
                         getCatalogObjects:
                           catalogObjects?.getCatalogObjects.filter(
-                            (obj) => obj.assignmentId !== object.assignmentId
+                            (obj) => obj.id !== object.id
                           ),
                       },
                     })

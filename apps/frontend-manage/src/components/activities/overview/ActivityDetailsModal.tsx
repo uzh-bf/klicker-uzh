@@ -59,7 +59,7 @@ function ActivityDetailsModal({
                   passHref
                 >
                   <a
-                    data-cy={`open-question-live-quiz-${instance.id}`}
+                    data-cy={`open-instance-${instance.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

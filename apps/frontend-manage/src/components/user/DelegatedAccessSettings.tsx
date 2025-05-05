@@ -45,10 +45,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   // const { data: scope } = useSuspenseQuery(GetUserScopeDocument)
 
   const [createUserLogin] = useMutation(CreateUserLoginDocument, {
-    refetchQueries: [GetUserLoginsDocument],
+    refetchQueries: [{ query: GetUserLoginsDocument }],
   })
   const [deleteUserLogin] = useMutation(DeleteUserLoginDocument, {
-    refetchQueries: [GetUserLoginsDocument],
+    refetchQueries: [{ query: GetUserLoginsDocument }],
   })
 
   const [copiedPassword, setCopiedPassword] = useState(false)
