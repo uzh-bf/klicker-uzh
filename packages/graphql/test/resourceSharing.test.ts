@@ -257,7 +257,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // get the pending sharing requests for user 1 and check their content
     const requests = await getCatalogSharingRequests(userOneCtx)
-    expect(requests).toBeDefined()
+    expect(requests).not.toBeNull()
     expect(requests!.length).toBe(3)
     const publicRequestUserThree = requests!.find(
       (request) => request.requestId === request1.id
@@ -268,9 +268,9 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const restrictedRequestUserThree = requests!.find(
       (request) => request.requestId === request3.id
     )
-    expect(publicRequestUserThree).toBeDefined()
-    expect(publicRequestUserFour).toBeDefined()
-    expect(restrictedRequestUserThree).toBeDefined()
+    expect(publicRequestUserThree).not.toBeNull()
+    expect(publicRequestUserFour).not.toBeNull()
+    expect(restrictedRequestUserThree).not.toBeNull()
     expect(publicRequestUserThree?.objectType).toBe(
       SharingObjectType.ANSWER_COLLECTION
     )
@@ -297,7 +297,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // get the pending sharing requests for user 2 and check their content
     const requests2 = await getCatalogSharingRequests(userTwoCtx)
-    expect(requests2).toBeDefined()
+    expect(requests2).not.toBeNull()
     expect(requests2!.length).toBe(2)
     const publicRequestUserThree2 = requests2!.find(
       (request) => request.requestId === request2.id
@@ -305,8 +305,8 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const publicRequestUserFour2 = requests2!.find(
       (request) => request.requestId === request5.id
     )
-    expect(publicRequestUserThree2).toBeDefined()
-    expect(publicRequestUserFour2).toBeDefined()
+    expect(publicRequestUserThree2).not.toBeNull()
+    expect(publicRequestUserFour2).not.toBeNull()
 
     expect(publicRequestUserThree2?.objectType).toBe(
       SharingObjectType.ANSWER_COLLECTION
@@ -533,7 +533,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const pendingRequest = await prisma.accessRequest.findUnique({
       where: { id: request.id },
     })
-    expect(pendingRequest).toBeDefined()
+    expect(pendingRequest).not.toBeNull()
 
     // verify that such a request fails for users that have not requested access
     const failure = await cancelObjectSharingRequest(
@@ -798,7 +798,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       { collectionId: AC1!.id },
       userOneCtx
     )
-    expect(res1).toBeDefined()
+    expect(res1).not.toBeNull()
     expect(res1!.id).toEqual(AC1!.id)
     expect(res1!.name).toEqual(answerCollection1.name)
     expect(res1!.description).toEqual(answerCollection1.description)
@@ -809,7 +809,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       { collectionId: AC2!.id },
       userOneCtx
     )
-    expect(res2).toBeDefined()
+    expect(res2).not.toBeNull()
     expect(res2!.id).toEqual(AC2!.id)
     expect(res2!.name).toEqual(answerCollection2.name)
     expect(res2!.description).toEqual(answerCollection2.description)
@@ -831,7 +831,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // query the available answer collections for user 1
     const collections1 = await getCatalogAnswerCollections(userOneCtx)
-    expect(collections1).toBeDefined()
+    expect(collections1).not.toBeNull()
     expect(collections1!.length).toBe(2)
     expect(collections1!.map((c) => parseInt(c.id))).toEqual(
       expect.arrayContaining([AC1!.id, AC2!.id])
@@ -842,14 +842,14 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // query the available answer collections for user 2
     const collections2 = await getCatalogAnswerCollections(userTwoCtx)
-    expect(collections2).toBeDefined()
+    expect(collections2).not.toBeNull()
     expect(collections2!.length).toBe(1)
     expect(parseInt(collections2![0]!.id)).toBe(AC1!.id)
     expect(collections2![0]!.name).toBe(answerCollection1.name)
 
     // query that for any other user (e.g. user 3) no answer collections are returned
     const collections3 = await getCatalogAnswerCollections(userThreeCtx)
-    expect(collections3).toBeDefined()
+    expect(collections3).not.toBeNull()
     expect(collections3!.length).toBe(0)
   })
   // #endregion
@@ -878,7 +878,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permission1).toBeDefined()
+    expect(permission1).not.toBeNull()
     expect(permission1!.permissionLevel).toBe(PermissionLevel.READ)
 
     const derivedPermission1 = await prisma.derivedPermission.findUnique({
@@ -889,7 +889,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1!.permissionLevel).toBe(PermissionLevel.READ)
 
     // verify that if all information is consistent, the permission level is changed and correctly propagated
@@ -912,7 +912,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permission2).toBeDefined()
+    expect(permission2).not.toBeNull()
     expect(permission2!.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
@@ -923,7 +923,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2!.permissionLevel).toBe(PermissionLevel.WRITE)
 
     // verify that the audit log entry has been created correctly
@@ -983,7 +983,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         id: readPermission.id,
       },
     })
-    expect(updatedPermission).toBeDefined()
+    expect(updatedPermission).not.toBeNull()
     expect(updatedPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(updatedPermission?.answerCollectionId).toBe(AC1!.id)
     expect(updatedPermission?.userGroupId).toBe(group.id)
@@ -997,7 +997,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(ownerPerimission).toBeDefined()
+    expect(ownerPerimission).not.toBeNull()
     expect(ownerPerimission?.permissionLevel).toBe(PermissionLevel.OWNER)
 
     const userTwoPermission = await prisma.derivedPermission.findUnique({
@@ -1008,7 +1008,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(userTwoPermission).toBeDefined()
+    expect(userTwoPermission).not.toBeNull()
     expect(userTwoPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const userThreePermission = await prisma.derivedPermission.findUnique({
@@ -1019,7 +1019,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(userThreePermission).toBeDefined()
+    expect(userThreePermission).not.toBeNull()
     expect(userThreePermission?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const userFourPermission = await prisma.derivedPermission.findUnique({
@@ -1387,7 +1387,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permissionUserOne).toBeDefined()
+    expect(permissionUserOne).not.toBeNull()
     expect(permissionUserOne?.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(permissionUserOne?.directPermissionId).toBeNull()
 
@@ -1399,7 +1399,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permissionUserTwo).toBeDefined()
+    expect(permissionUserTwo).not.toBeNull()
     expect(permissionUserTwo?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserTwo?.directPermissionId).toBe(groupPermission.id)
 
@@ -1411,7 +1411,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permissionUserThree).toBeDefined()
+    expect(permissionUserThree).not.toBeNull()
     expect(permissionUserThree?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserThree?.directPermissionId).toBe(groupPermission.id)
 
@@ -1423,7 +1423,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(permissionUserFour).toBeDefined()
+    expect(permissionUserFour).not.toBeNull()
     expect(permissionUserFour?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserFour?.directPermissionId).toBe(groupPermission.id)
 
@@ -1454,7 +1454,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
           },
         },
       })
-    expect(persistentPermissionUserOne).toBeDefined()
+    expect(persistentPermissionUserOne).not.toBeNull()
     expect(persistentPermissionUserOne?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -1544,7 +1544,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       { id: AC1!.id },
       userOneCtx
     )
-    expect(directPermissions).toBeDefined()
+    expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 
     const userPermission = directPermissions.find(
@@ -1553,8 +1553,8 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const groupPermission = directPermissions.find(
       (permission) => permission.userGroupId === group.id
     )
-    expect(userPermission).toBeDefined()
-    expect(groupPermission).toBeDefined()
+    expect(userPermission).not.toBeNull()
+    expect(groupPermission).not.toBeNull()
     expect(userPermission?.permissionLevel).toBe(PermissionLevel.READ)
     expect(userPermission?.userId).toBe(userTwo.id)
     expect(userPermission?.permissionId).toBe(dbUserPermission.id)
@@ -1608,7 +1608,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       { id: AC1!.id },
       userOneCtx
     )
-    expect(derivedPermissions).toBeDefined()
+    expect(derivedPermissions).not.toBeNull()
     expect(derivedPermissions.length).toBe(3)
 
     const permissionIds = derivedPermissions.map((p) => p.permissionId)
@@ -1625,9 +1625,9 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const ADMINPermission = derivedPermissions.find(
       (permission) => permission.userId === userFour.id
     )
-    expect(READPermission).toBeDefined()
-    expect(WRITEPermission).toBeDefined()
-    expect(ADMINPermission).toBeDefined()
+    expect(READPermission).not.toBeNull()
+    expect(WRITEPermission).not.toBeNull()
+    expect(ADMINPermission).not.toBeNull()
     expect(READPermission!.permissionLevel).toBe(PermissionLevel.READ)
     expect(READPermission!.userId).toBe(userTwo.id)
     expect(READPermission!.permissionId).toBe(permission1.id)
@@ -1978,7 +1978,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(dbPermission1).toBeDefined()
+    expect(dbPermission1).not.toBeNull()
     expect(dbPermission1?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const dbPermission2 = await prisma.permission.findUnique({
@@ -1989,7 +1989,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(dbPermission2).toBeDefined()
+    expect(dbPermission2).not.toBeNull()
     expect(dbPermission2?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct derived permissions have been created in the database
@@ -2002,7 +2002,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
 
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
@@ -2013,7 +2013,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const derivedPermission3 = await prisma.derivedPermission.findUnique({
@@ -2024,7 +2024,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3).not.toBeNull()
     expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     const derivedPermission4 = await prisma.derivedPermission.findUnique({
@@ -2035,7 +2035,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         },
       },
     })
-    expect(derivedPermission4).toBeDefined()
+    expect(derivedPermission4).not.toBeNull()
     expect(derivedPermission4?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct audit log entries have been created

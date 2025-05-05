@@ -1474,7 +1474,7 @@ describe('Unit tests for object access validation', () => {
   })
   // #endregion
 
-  // ! Duplication of Pending Access Requests
+  // ! Updates of Pending Access Requests
   // #region
   it('Verify that new access request instances are created for new object admins (with userId argument)', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)

@@ -345,7 +345,7 @@ describe('Unit tests for user group management', () => {
       const updatedGroup = await prisma.userGroup.findUnique({
         where: { id: group.id },
       })
-      expect(updatedGroup).toBeDefined()
+      expect(updatedGroup).not.toBeNull()
       expect(updatedGroup?.ownerId).toBe(userOne.id)
     })
 

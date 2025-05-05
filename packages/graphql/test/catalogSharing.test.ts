@@ -99,7 +99,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userTwoCtx
       )
     expect(valid1).toBe(true)
-    expect(catalog1).toBeDefined()
+    expect(catalog1).not.toBeNull()
     expect(catalog1?.id).toBe(MISSING_CATALOG_COLLECTION_ID)
 
     // seed public and restricted catalog collections with user 1 as the owner
@@ -116,7 +116,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userOneCtx
       )
     expect(valid2).toBe(true)
-    expect(catalog2).toBeDefined()
+    expect(catalog2).not.toBeNull()
     expect(catalog2?.id).toBe(publicCatalog.id)
 
     const { valid: valid3, catalogCollection: catalog3 } =
@@ -128,7 +128,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userOneCtx
       )
     expect(valid3).toBe(true)
-    expect(catalog3).toBeDefined()
+    expect(catalog3).not.toBeNull()
     expect(catalog3?.id).toBe(restrictedCatalog.id)
 
     // verify that the validation fails for user 2 without access to neither catalog collection
@@ -186,7 +186,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userThreeCtx
       )
     expect(valid6).toBe(true)
-    expect(catalog6).toBeDefined()
+    expect(catalog6).not.toBeNull()
     expect(catalog6?.id).toBe(publicCatalog.id)
 
     const { valid: valid7, catalogCollection: catalog7 } =
@@ -198,7 +198,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userThreeCtx
       )
     expect(valid7).toBe(true)
-    expect(catalog7).toBeDefined()
+    expect(catalog7).not.toBeNull()
     expect(catalog7?.id).toBe(publicCatalog.id)
 
     const { valid: valid8, catalogCollection: catalog8 } =
@@ -210,7 +210,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         userFourCtx
       )
     expect(valid8).toBe(true)
-    expect(catalog8).toBeDefined()
+    expect(catalog8).not.toBeNull()
     expect(catalog8?.id).toBe(restrictedCatalog.id)
 
     const { valid: failed1, catalogCollection: failedCatalog1 } =
@@ -410,7 +410,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       },
       userOneCtx
     )
-    expect(publicCatalog).toBeDefined()
+    expect(publicCatalog).not.toBeNull()
     expect(publicCatalog.name).toBe(publicName)
     expect(publicCatalog.access).toBe(ObjectAccess.PUBLIC)
 
@@ -421,7 +421,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       },
       userOneCtx
     )
-    expect(restrictedCatalog).toBeDefined()
+    expect(restrictedCatalog).not.toBeNull()
     expect(restrictedCatalog.name).toBe(restrictedName)
     expect(restrictedCatalog.access).toBe(ObjectAccess.RESTRICTED)
 
@@ -429,14 +429,14 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const dbCatalog = await prisma.catalogCollection.findUnique({
       where: { id: publicCatalog.id },
     })
-    expect(dbCatalog).toBeDefined()
+    expect(dbCatalog).not.toBeNull()
     expect(dbCatalog?.name).toBe(publicName)
     expect(dbCatalog?.access).toBe(ObjectAccess.PUBLIC)
     expect(dbCatalog?.ownerId).toBe(userOne.id)
     const dbCatalog2 = await prisma.catalogCollection.findUnique({
       where: { id: restrictedCatalog.id },
     })
-    expect(dbCatalog2).toBeDefined()
+    expect(dbCatalog2).not.toBeNull()
     expect(dbCatalog2?.name).toBe(restrictedName)
     expect(dbCatalog2?.access).toBe(ObjectAccess.RESTRICTED)
     expect(dbCatalog2?.ownerId).toBe(userOne.id)
@@ -499,7 +499,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: publicCatalog.id },
       userOneCtx
     )
-    expect(info3).toBeDefined()
+    expect(info3).not.toBeNull()
     expect(info3!.id).toBe(publicCatalog.id)
     expect(info3!.name).toBe(publicCatalog.name)
     expect(info3!.access).toBe(ObjectAccess.PUBLIC)
@@ -515,7 +515,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: publicCatalog.id },
       userTwoCtx
     )
-    expect(info4).toBeDefined()
+    expect(info4).not.toBeNull()
     expect(info4!.id).toBe(publicCatalog.id)
     expect(info4!.name).toBe(publicCatalog.name)
     expect(info4!.access).toBe(ObjectAccess.PUBLIC)
@@ -532,7 +532,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: publicCatalog.id },
       userFiveCtx
     )
-    expect(info5).toBeDefined()
+    expect(info5).not.toBeNull()
     expect(info5!.id).toBe(publicCatalog.id)
     expect(info5!.name).toBe(publicCatalog.name)
     expect(info5!.access).toBe(ObjectAccess.PUBLIC)
@@ -549,7 +549,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: restrictedCatalog.id },
       userOneCtx
     )
-    expect(info6).toBeDefined()
+    expect(info6).not.toBeNull()
     expect(info6!.id).toBe(restrictedCatalog.id)
     expect(info6!.name).toBe(restrictedCatalog.name)
     expect(info6!.access).toBe(ObjectAccess.RESTRICTED)
@@ -565,7 +565,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: restrictedCatalog.id },
       userTwoCtx
     )
-    expect(info7).toBeDefined()
+    expect(info7).not.toBeNull()
     expect(info7!.id).toBe(restrictedCatalog.id)
     expect(info7!.name).toBe(restrictedCatalog.name)
     expect(info7!.access).toBe(ObjectAccess.RESTRICTED)
@@ -581,7 +581,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: restrictedCatalog.id },
       userThreeCtx
     )
-    expect(info8).toBeDefined()
+    expect(info8).not.toBeNull()
     expect(info8!.id).toBe(restrictedCatalog.id)
     expect(info8!.name).toBe(restrictedCatalog.name)
     expect(info8!.access).toBe(ObjectAccess.RESTRICTED)
@@ -597,7 +597,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: restrictedCatalog.id },
       userFourCtx
     )
-    expect(info9).toBeDefined()
+    expect(info9).not.toBeNull()
     expect(info9!.id).toBe(restrictedCatalog.id)
     expect(info9!.name).toBe(restrictedCatalog.name)
     expect(info9!.access).toBe(ObjectAccess.RESTRICTED)
@@ -627,7 +627,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const updatedCatalog = await prisma.catalogCollection.findUnique({
       where: { id: publicCatalog.id },
     })
-    expect(updatedCatalog).toBeDefined()
+    expect(updatedCatalog).not.toBeNull()
     expect(updatedCatalog?.access).toBe(ObjectAccess.RESTRICTED)
 
     // verify that an audit log entry has been created successfully
@@ -662,7 +662,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const updatedCatalog = await prisma.catalogCollection.findUnique({
       where: { id: publicCatalog.id },
     })
-    expect(updatedCatalog).toBeDefined()
+    expect(updatedCatalog).not.toBeNull()
     expect(updatedCatalog?.name).toBe(newName)
   })
 
@@ -685,7 +685,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     // check that the created catalog collections are loaded correctly
     const catalogs1 = await getCatalogCollectionsList(userOneCtx)
-    expect(catalogs1).toBeDefined()
+    expect(catalogs1).not.toBeNull()
     expect(catalogs1.length).toBe(2)
 
     const publicCatalog1 = catalogs1.find(
@@ -694,8 +694,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const restrictedCatalog1 = catalogs1.find(
       (catalog) => catalog.id === restrictedCatalog.id
     )
-    expect(publicCatalog1).toBeDefined()
-    expect(restrictedCatalog1).toBeDefined()
+    expect(publicCatalog1).not.toBeNull()
+    expect(restrictedCatalog1).not.toBeNull()
     expect(publicCatalog1?.name).toBe(publicCatalog.name)
     expect(publicCatalog1?.access).toBe(ObjectAccess.PUBLIC)
     expect(publicCatalog1?.ownerId).toBe(userOne.id)
@@ -716,7 +716,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(restrictedCatalog1?.isShared).toBe(false)
 
     const catalogs2 = await getCatalogCollectionsList(userTwoCtx)
-    expect(catalogs2).toBeDefined()
+    expect(catalogs2).not.toBeNull()
     expect(catalogs2.length).toBe(2)
 
     const publicCatalog2 = catalogs2.find(
@@ -725,8 +725,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const restrictedCatalog2 = catalogs2.find(
       (catalog) => catalog.id === restrictedCatalog.id
     )
-    expect(publicCatalog2).toBeDefined()
-    expect(restrictedCatalog2).toBeDefined()
+    expect(publicCatalog2).not.toBeNull()
+    expect(restrictedCatalog2).not.toBeNull()
     expect(publicCatalog2?.name).toBe(publicCatalog.name)
     expect(publicCatalog2?.access).toBe(ObjectAccess.PUBLIC)
     expect(publicCatalog2?.ownerId).toBe(userOne.id)
@@ -747,7 +747,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(restrictedCatalog2?.isShared).toBe(false)
 
     const catalogs3 = await getCatalogCollectionsList(userThreeCtx)
-    expect(catalogs3).toBeDefined()
+    expect(catalogs3).not.toBeNull()
     expect(catalogs3.length).toBe(1)
     const publicCatalog3 = catalogs3.find(
       (catalog) => catalog.id === publicCatalog.id
@@ -756,7 +756,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       (catalog) => catalog.id === restrictedCatalog.id
     )
     expect(publicCatalog3).toBeUndefined()
-    expect(restrictedCatalog3).toBeDefined()
+    expect(restrictedCatalog3).not.toBeNull()
     expect(restrictedCatalog3?.name).toBe(restrictedCatalog.name)
     expect(restrictedCatalog3?.access).toBe(ObjectAccess.RESTRICTED)
     expect(restrictedCatalog3?.ownerId).toBe(userOne.id)
@@ -777,7 +777,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     })
 
     const catalogs4 = await getCatalogCollectionsList(userThreeCtx)
-    expect(catalogs4).toBeDefined()
+    expect(catalogs4).not.toBeNull()
     expect(catalogs4.length).toBe(2)
     const publicCatalog4 = catalogs4.find(
       (catalog) => catalog.id === publicCatalog.id
@@ -785,8 +785,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const restrictedCatalog4 = catalogs4.find(
       (catalog) => catalog.id === restrictedCatalog.id
     )
-    expect(publicCatalog4).toBeDefined()
-    expect(restrictedCatalog4).toBeDefined()
+    expect(publicCatalog4).not.toBeNull()
+    expect(restrictedCatalog4).not.toBeNull()
     expect(publicCatalog4?.name).toBe(publicCatalog.name)
     expect(publicCatalog4?.access).toBe(ObjectAccess.PUBLIC)
     expect(publicCatalog4?.ownerId).toBe(userOne.id)
@@ -834,7 +834,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(ownerAccessRequest).toBeDefined()
+    expect(ownerAccessRequest).not.toBeNull()
     expect(ownerAccessRequest?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const adminAccessRequest = await prisma.accessRequest.findUnique({
@@ -846,7 +846,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(adminAccessRequest).toBeDefined()
+    expect(adminAccessRequest).not.toBeNull()
     expect(adminAccessRequest?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     // verify that the corresponding audit log entries have been created successfully
@@ -963,7 +963,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(ownerAccessRequest2).toBeDefined()
+    expect(ownerAccessRequest2).not.toBeNull()
     expect(ownerAccessRequest2?.permissionLevel).toBe(PermissionLevel.READ)
 
     const adminAccessRequest2 = await prisma.accessRequest.findUnique({
@@ -975,7 +975,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(adminAccessRequest2).toBeDefined()
+    expect(adminAccessRequest2).not.toBeNull()
     expect(adminAccessRequest2?.permissionLevel).toBe(PermissionLevel.READ)
 
     // request access again with WRITE permissions and verify that the permission level is updated accordingly
@@ -997,7 +997,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(ownerAccessRequest3).toBeDefined()
+    expect(ownerAccessRequest3).not.toBeNull()
     expect(ownerAccessRequest3?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const adminAccessRequest3 = await prisma.accessRequest.findUnique({
@@ -1009,7 +1009,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(adminAccessRequest3).toBeDefined()
+    expect(adminAccessRequest3).not.toBeNull()
     expect(adminAccessRequest3?.permissionLevel).toBe(PermissionLevel.WRITE)
   })
 
@@ -1144,7 +1144,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         id: request1.id,
       },
     })
-    expect(dbRequest1).toBeDefined()
+    expect(dbRequest1).not.toBeNull()
 
     // deny the access request and verify that it is removed from the database
     const success1 = await resolveObjectSharingRequest(
@@ -1218,7 +1218,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(directPermission).toBeDefined()
+    expect(directPermission).not.toBeNull()
     expect(directPermission?.permissionLevel).toBe(PermissionLevel.READ)
     expect(directPermission?.answerCollectionId).toBe(AC1!.id)
     expect(directPermission?.userId).toBe(userFour.id)
@@ -1231,7 +1231,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission).toBeDefined()
+    expect(derivedPermission).not.toBeNull()
     expect(derivedPermission?.permissionLevel).toBe(PermissionLevel.READ)
     expect(derivedPermission?.answerCollectionId).toBe(AC1!.id)
     expect(derivedPermission?.userId).toBe(userFour.id)
@@ -1303,7 +1303,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: MISSING_CATALOG_COLLECTION_ID },
       userOneCtx
     )
-    expect(catalogObjects).toBeDefined()
+    expect(catalogObjects).not.toBeNull()
     expect(catalogObjects.length).toBe(3)
 
     const catalogObject1 = catalogObjects.find(
@@ -1318,9 +1318,9 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       (object) =>
         object.id === SC.id && object.objectType === SharingObjectType.ELEMENT
     )
-    expect(catalogObject1).toBeDefined()
-    expect(catalogObject2).toBeDefined()
-    expect(catalogObject3).toBeDefined()
+    expect(catalogObject1).not.toBeNull()
+    expect(catalogObject2).not.toBeNull()
+    expect(catalogObject3).not.toBeNull()
 
     expect(catalogObject1!.id).toBe(AC1!.id)
     expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
@@ -1341,7 +1341,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { catalogCollectionId: publicCatalog.id },
       userOneCtx
     )
-    expect(catalogObjects2).toBeDefined()
+    expect(catalogObjects2).not.toBeNull()
     expect(catalogObjects2.length).toBe(3)
 
     const catalogObject4 = catalogObjects2.find(
@@ -1356,9 +1356,9 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       (object) =>
         object.id === MC.id && object.objectType === SharingObjectType.ELEMENT
     )
-    expect(catalogObject4).toBeDefined()
-    expect(catalogObject5).toBeDefined()
-    expect(catalogObject6).toBeDefined()
+    expect(catalogObject4).not.toBeNull()
+    expect(catalogObject5).not.toBeNull()
+    expect(catalogObject6).not.toBeNull()
 
     expect(catalogObject4!.id).toBe(AC2!.id)
     expect(catalogObject4!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
@@ -1409,7 +1409,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         id: readPermission.id,
       },
     })
-    expect(updatedPermission).toBeDefined()
+    expect(updatedPermission).not.toBeNull()
     expect(updatedPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(updatedPermission?.catalogCollectionId).toBe(publicCatalog.id)
     expect(updatedPermission?.userId).toBe(userTwo.id)
@@ -1474,7 +1474,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         id: readPermission.id,
       },
     })
-    expect(updatedPermission).toBeDefined()
+    expect(updatedPermission).not.toBeNull()
     expect(updatedPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(updatedPermission?.catalogCollectionId).toBe(publicCatalog.id)
     expect(updatedPermission?.userGroupId).toBe(group.id)
@@ -1488,7 +1488,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(ownerPerimission).toBeDefined()
+    expect(ownerPerimission).not.toBeNull()
     expect(ownerPerimission?.permissionLevel).toBe(PermissionLevel.OWNER)
 
     const userTwoPermission = await prisma.derivedPermission.findUnique({
@@ -1499,7 +1499,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(userTwoPermission).toBeDefined()
+    expect(userTwoPermission).not.toBeNull()
     expect(userTwoPermission?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const userThreePermission = await prisma.derivedPermission.findUnique({
@@ -1510,7 +1510,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(userThreePermission).toBeDefined()
+    expect(userThreePermission).not.toBeNull()
     expect(userThreePermission?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const userFourPermission = await prisma.derivedPermission.findUnique({
@@ -1648,7 +1648,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(permissionUserOne).toBeDefined()
+    expect(permissionUserOne).not.toBeNull()
     expect(permissionUserOne?.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(permissionUserOne?.directPermissionId).toBeNull()
 
@@ -1660,7 +1660,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(permissionUserTwo).toBeDefined()
+    expect(permissionUserTwo).not.toBeNull()
     expect(permissionUserTwo?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserTwo?.directPermissionId).toBe(groupPermission.id)
 
@@ -1672,7 +1672,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(permissionUserThree).toBeDefined()
+    expect(permissionUserThree).not.toBeNull()
     expect(permissionUserThree?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserThree?.directPermissionId).toBe(groupPermission.id)
 
@@ -1684,7 +1684,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(permissionUserFour).toBeDefined()
+    expect(permissionUserFour).not.toBeNull()
     expect(permissionUserFour?.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(permissionUserFour?.directPermissionId).toBe(groupPermission.id)
 
@@ -1715,7 +1715,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
           },
         },
       })
-    expect(persistentPermissionUserOne).toBeDefined()
+    expect(persistentPermissionUserOne).not.toBeNull()
     expect(persistentPermissionUserOne?.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
@@ -1808,7 +1808,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       { id: publicCatalog.id },
       userOneCtx
     )
-    expect(directPermissions).toBeDefined()
+    expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 
     const userPermission = directPermissions.find(
@@ -1817,8 +1817,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const groupPermission = directPermissions.find(
       (permission) => permission.userGroupId === group.id
     )
-    expect(userPermission).toBeDefined()
-    expect(groupPermission).toBeDefined()
+    expect(userPermission).not.toBeNull()
+    expect(groupPermission).not.toBeNull()
     expect(userPermission?.permissionLevel).toBe(PermissionLevel.READ)
     expect(userPermission?.userId).toBe(userTwo.id)
     expect(userPermission?.permissionId).toBe(dbUserPermission.id)
@@ -2016,7 +2016,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(dbPermission1).toBeDefined()
+    expect(dbPermission1).not.toBeNull()
     expect(dbPermission1?.permissionLevel).toBe(PermissionLevel.READ)
 
     const dbPermission2 = await prisma.permission.findUnique({
@@ -2027,7 +2027,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(dbPermission2).toBeDefined()
+    expect(dbPermission2).not.toBeNull()
     expect(dbPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const dbPermission3 = await prisma.permission.findUnique({
@@ -2038,7 +2038,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(dbPermission3).toBeDefined()
+    expect(dbPermission3).not.toBeNull()
     expect(dbPermission3?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the recomputation of derived permissions was triggered correctly
@@ -2050,7 +2050,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.READ)
 
     // verify that the correct audit log entries have been created
@@ -2153,7 +2153,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(dbPermission1).toBeDefined()
+    expect(dbPermission1).not.toBeNull()
     expect(dbPermission1?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const dbPermission2 = await prisma.permission.findUnique({
@@ -2164,7 +2164,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(dbPermission2).toBeDefined()
+    expect(dbPermission2).not.toBeNull()
     expect(dbPermission2?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct derived permissions have been created in the database
@@ -2177,7 +2177,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission1).toBeDefined()
+    expect(derivedPermission1).not.toBeNull()
     expect(derivedPermission1?.permissionLevel).toBe(PermissionLevel.OWNER)
 
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
@@ -2188,7 +2188,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission2).toBeDefined()
+    expect(derivedPermission2).not.toBeNull()
     expect(derivedPermission2?.permissionLevel).toBe(PermissionLevel.WRITE)
 
     const derivedPermission3 = await prisma.derivedPermission.findUnique({
@@ -2199,7 +2199,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission3).toBeDefined()
+    expect(derivedPermission3).not.toBeNull()
     expect(derivedPermission3?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     const derivedPermission4 = await prisma.derivedPermission.findUnique({
@@ -2210,7 +2210,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         },
       },
     })
-    expect(derivedPermission4).toBeDefined()
+    expect(derivedPermission4).not.toBeNull()
     expect(derivedPermission4?.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // verify that the correct audit log entries have been created
@@ -2296,7 +2296,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     // get the pending sharing requests for user 1 and check their content
     const requests = await getCatalogSharingRequests(userOneCtx)
-    expect(requests).toBeDefined()
+    expect(requests).not.toBeNull()
     expect(requests!.length).toBe(3)
     const publicRequestUserThree = requests!.find(
       (request) => request.requestId === request1.id
@@ -2307,9 +2307,9 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const restrictedRequestUserThree = requests!.find(
       (request) => request.requestId === request3.id
     )
-    expect(publicRequestUserThree).toBeDefined()
-    expect(publicRequestUserFour).toBeDefined()
-    expect(restrictedRequestUserThree).toBeDefined()
+    expect(publicRequestUserThree).not.toBeNull()
+    expect(publicRequestUserFour).not.toBeNull()
+    expect(restrictedRequestUserThree).not.toBeNull()
     expect(publicRequestUserThree?.objectType).toBe(
       SharingObjectType.CATALOG_COLLECTION
     )
@@ -2336,7 +2336,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     // get the pending sharing requests for user 2 and check their content
     const requests2 = await getCatalogSharingRequests(userTwoCtx)
-    expect(requests2).toBeDefined()
+    expect(requests2).not.toBeNull()
     expect(requests2!.length).toBe(2)
     const publicRequestUserThree2 = requests2!.find(
       (request) => request.requestId === request2.id
@@ -2344,8 +2344,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const publicRequestUserFour2 = requests2!.find(
       (request) => request.requestId === request5.id
     )
-    expect(publicRequestUserThree2).toBeDefined()
-    expect(publicRequestUserFour2).toBeDefined()
+    expect(publicRequestUserThree2).not.toBeNull()
+    expect(publicRequestUserFour2).not.toBeNull()
 
     expect(publicRequestUserThree2?.objectType).toBe(
       SharingObjectType.CATALOG_COLLECTION
@@ -2403,7 +2403,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
           id: assignment1.id,
         },
       })
-    expect(updatedAssignment1).toBeDefined()
+    expect(updatedAssignment1).not.toBeNull()
     expect(updatedAssignment1?.access).toBe(ObjectAccess.RESTRICTED)
     expect(updatedAssignment1?.answerCollectionId).toBe(AC1!.id)
     expect(updatedAssignment1?.catalogCollectionId).toBe(
@@ -2416,7 +2416,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
           id: assignment2.id,
         },
       })
-    expect(updatedAssignment2).toBeDefined()
+    expect(updatedAssignment2).not.toBeNull()
     expect(updatedAssignment2?.access).toBe(ObjectAccess.PUBLIC)
     expect(updatedAssignment2?.answerCollectionId).toBe(AC1!.id)
     expect(updatedAssignment2?.catalogCollectionId).toBe(publicCatalog.id)

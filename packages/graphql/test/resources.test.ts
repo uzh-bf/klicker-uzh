@@ -615,7 +615,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     // add an element for user 4 linked to the answer collection
     const element = await prisma.element.create({
       data: {
-        type: ElementType.SC,
+        type: ElementType.SELECTION,
         name: 'Test Element',
         content: 'Test Element Content',
         options: {},
@@ -659,7 +659,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     })
     expect(derivedPermission4).toBeTruthy()
     expect(derivedPermission4!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(derivedPermission4!.directPermissionId).toBeDefined()
+    expect(derivedPermission4!.directPermissionId).toBeNull() // element owner - no direct permission id
     expect(derivedPermission4!.derived).toBeTruthy()
 
     // create an access request to the answer collection for user 3
@@ -734,7 +734,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(remainingDerivedPermission4!.permissionLevel).toBe(
       PermissionLevel.READ
     )
-    expect(remainingDerivedPermission4!.directPermissionId).toBeDefined()
+    expect(remainingDerivedPermission4!.directPermissionId).toBeNull() // element owner - no direct permission id
     expect(remainingDerivedPermission4!.derived).toBeTruthy()
 
     // verify that the access request has been removed
@@ -790,7 +790,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(derivedPermissionElement!.permissionLevel).toBe(
       PermissionLevel.WRITE
     )
-    expect(derivedPermissionElement!.directPermissionId).toBeDefined()
+    expect(derivedPermissionElement!.directPermissionId).not.toBeNull()
     expect(derivedPermissionElement!.derived).toBeFalsy()
 
     // verify that the answer collection cannot be removed from the account of user 2 (used in element)
