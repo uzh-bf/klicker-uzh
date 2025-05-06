@@ -87,7 +87,7 @@ const statusActionMap = {
   [PublicationStatus.Graded]: [],
 }
 
-// limit the available actions based on the permission level
+// limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
 const permissionActionMap = {
   isManager: [
     'duplicateLiveQuiz',
@@ -97,8 +97,13 @@ const permissionActionMap = {
     'deleteTemplate',
   ],
   isEditor: ['editLiveQuiz', 'editTemplate'],
-  isExecutor: ['startLiveQuiz', 'lecturerCockpit', 'liveQuizEvaluation'],
-  isShared: ['qrCode', 'embeddingEvaluation', 'useTemplate'],
+  isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+  isShared: [
+    'qrCode',
+    'embeddingEvaluation',
+    'liveQuizEvaluation',
+    'useTemplate',
+  ],
 }
 
 function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
@@ -234,7 +239,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
         label: t('manage.liveQuizzes.liveQuizEvaluation'),
         icon: faChartSimple,
         onClick: () => {
-          router.push(`/quizzes/${quiz.id}/cockpit`)
+          window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
         },
         data: { cy: `live-quiz-evaluation-${quiz.name}` },
       },

@@ -2538,6 +2538,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeELEMENTtitle: 'Remove Element from Catalog',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
+      removeLIVE_QUIZ: 'Remove Live-Quiz',
+      removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
       removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
@@ -2583,6 +2585,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
+      requestSuccessInfoLIVE_QUIZ: '',
       requestSuccessInfoELEMENT:
         'Once the owner accepts your request, you will be able to view the element and potentially re-use it in your own activities, depending on the granted permissions.',
       requestCatalogObjectSuccess:
@@ -2687,6 +2690,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeCATALOG_COLLECTION: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live Quiz Template',
+      removeLIVE_QUIZ: 'Remove Live Quiz',
+      removeLIVE_QUIZtitle: 'Remove Live Quiz from Catalog',
       removeELEMENT: 'Remove Element',
       confirmRemovalCATALOG_COLLECTION:
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
@@ -2694,6 +2699,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
       confirmRemovalLIVE_QUIZ_TEMPLATE:
         'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
+      confirmRemovalLIVE_QUIZ:
+        'Are you sure you want to remove the live quiz "{objectName}" from your profile?',
       confirmRemovalELEMENT:
         'Are you sure you want to remove the element "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',

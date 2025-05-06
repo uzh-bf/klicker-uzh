@@ -2562,6 +2562,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeELEMENTtitle: 'Element aus Katalog entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
+      removeLIVE_QUIZ: 'Live-Quiz entfernen',
+      removeLIVE_QUIZtitle: 'Live-Quiz aus Katalog entfernen',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -2606,6 +2608,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
+      requestSuccessInfoLIVE_QUIZ: '',
       requestSuccessInfoELEMENT:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
       requestCatalogObjectSuccess:
@@ -2713,6 +2716,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
+      removeLIVE_QUIZ: 'Live-Quiz entfernen',
       removeELEMENT: 'Element entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
@@ -2720,6 +2724,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalLIVE_QUIZ_TEMPLATE:
         'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalLIVE_QUIZ:
+        'Sind Sie sicher, dass Sie das Live-Quiz "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalELEMENT:
         'Sind Sie sicher, dass Sie das Element "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',
