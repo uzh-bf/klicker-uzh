@@ -10,6 +10,7 @@ import {
   faPencil,
   faPlay,
   faQrcode,
+  faShare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -20,13 +21,15 @@ import {
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
   PublicationStatus,
+  SharingObjectType,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import EmbeddingModal from '~/components/liveQuiz/EmbeddingModal'
+import ObjectSharingModalWrapper from '~/components/sharing/ObjectSharingModalWrapper'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../../courses/modals/TemplateCreationErrorToast'
@@ -45,13 +48,15 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
-  const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
+  const [embeddingModal, setEmbeddingModal] = useState<boolean>(false)
+  const [qrModal, setQRModal] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
-  const [editTemplateModal, setEditTemplateModal] = useState<boolean>(false)
-  const [deletionTemplateModal, setDeletionTemplateModal] =
+  const [templateEditingModal, setTemplateEditingModal] =
     useState<boolean>(false)
-  const [changeName, setChangeName] = useState<boolean>(false)
+  const [templateDeletionModal, setTemplateDeletionModal] =
+    useState<boolean>(false)
+  const [sharingModal, setSharingModal] = useState<boolean>(false)
+  const [nameChangeModal, setNameChangeModal] = useState<boolean>(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
   const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
@@ -130,227 +135,252 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
     }
   )
 
+  const ACTIONS = useMemo(
+    () => [
+      {
+        id: 'startLiveQuiz',
+        label: t('manage.liveQuizzes.startLiveQuiz'),
+        icon: faPlay,
+        onClick: async () => {
+          await startLiveQuiz()
+          router.push(`quizzes/${quiz.id}/cockpit`)
+        },
+        disabled: startingQuiz,
+        data: { cy: `start-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'editLiveQuiz',
+        label: t('manage.liveQuizzes.editLiveQuiz'),
+        icon: faPencil,
+        onClick: () => {
+          router.push({
+            pathname: '/',
+            query: {
+              elementId: quiz.id,
+              editMode: ActivityType.LiveQuiz,
+            },
+          })
+        },
+        data: { cy: `edit-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'lecturerCockpit',
+        label: t('manage.liveQuizzes.lecturerCockpit'),
+        icon: faChalkboardUser,
+        onClick: () => {
+          router.push(`/quizzes/${quiz.id}/cockpit`)
+        },
+        data: { cy: `live-quiz-cockpit-${quiz.name}` },
+      },
+      {
+        id: 'liveQuizEvaluation',
+        label: t('manage.liveQuizzes.liveQuizEvaluation'),
+        icon: faChartSimple,
+        onClick: () => {
+          router.push(`/quizzes/${quiz.id}/cockpit`)
+        },
+        data: { cy: `live-quiz-evaluation-${quiz.name}` },
+      },
+      {
+        id: 'duplicateLiveQuiz',
+        label: t('manage.liveQuizzes.duplicateLiveQuiz'),
+        icon: faCopy,
+        onClick: () => {
+          router.push({
+            pathname: '/',
+            query: {
+              elementId: quiz.id,
+              duplicationMode: ActivityType.LiveQuiz,
+            },
+          })
+        },
+        data: { cy: `duplicate-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'embeddingEvaluation',
+        label: t('manage.liveQuizzes.embeddingEvaluation'),
+        icon: faCode,
+        onClick: () => {
+          setEmbeddingModal(true)
+        },
+        data: { cy: `show-embedding-modal-${quiz.name}` },
+      },
+      {
+        id: 'qrCode',
+        label: t('manage.general.qrCode'),
+        icon: faQrcode,
+        onClick: () => {
+          setQRModal(true)
+        },
+        data: { cy: `show-qr-modal-${quiz.name}` },
+      },
+      {
+        id: 'editTemplate',
+        label: t('manage.template.editTemplate'),
+        icon: faPencil,
+        onClick: () => {
+          setTemplateEditingModal(true)
+        },
+        data: { cy: `edit-template-${quiz.name}` },
+      },
+      {
+        id: 'useTemplate',
+        label: t('manage.catalog.useTemplate'),
+        icon: faWpforms,
+        onClick: () => {
+          router.push(`/templates/${quiz.templateId}`)
+        },
+        data: { cy: `use-template-${quiz.name}` },
+      },
+      {
+        id: 'deleteTemplate',
+        label: t('manage.template.deleteTemplate'),
+        icon: faTrashCan,
+        onClick: () => {
+          setTemplateDeletionModal(true)
+        },
+        data: { cy: `delete-template-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'templateFromLiveQuiz',
+        label: t('manage.template.convertOption'),
+        icon: faFilePen,
+        onClick: () => {
+          setConversionModal({
+            open: true,
+            activityId: quiz.id,
+            activityType: ActivityType.LiveQuiz,
+          })
+        },
+        data: { cy: `template-from-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'shareLiveQuiz',
+        label: t('manage.liveQuizzes.shareLiveQuiz'),
+        icon: faShare,
+        onClick: () => {
+          setSharingModal(true)
+        },
+        data: { cy: `share-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'deleteLiveQuiz',
+        label: t('manage.liveQuizzes.deleteLiveQuiz'),
+        icon: faTrashCan,
+        onClick: () => {
+          setDeletionModal(true)
+        },
+        data: { cy: `delete-live-quiz-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+    ],
+    [
+      t,
+      startLiveQuiz,
+      router,
+      quiz,
+      startingQuiz,
+      setEmbeddingModal,
+      setQRModal,
+      setTemplateEditingModal,
+      setTemplateDeletionModal,
+      setConversionModal,
+      setSharingModal,
+      setDeletionModal,
+    ]
+  )
+
+  // create a map between the activity status and the available actions (in order)
+  const permissionActionsMap = useMemo(
+    () => ({
+      [PublicationStatus.Draft]: [
+        'startLiveQuiz',
+        'editLiveQuiz',
+        'qrCode',
+        'embeddingEvaluation',
+        'duplicateLiveQuiz',
+        'templateFromLiveQuiz',
+        'shareLiveQuiz',
+        'deleteLiveQuiz',
+      ],
+      [PublicationStatus.Scheduled]: [
+        'startLiveQuiz',
+        'duplicateLiveQuiz',
+        'qrCode',
+        'embeddingEvaluation',
+        'shareLiveQuiz',
+        'deleteLiveQuiz',
+      ],
+      [PublicationStatus.Published]: [
+        'lecturerCockpit',
+        'liveQuizEvaluation',
+        'qrCode',
+        'embeddingEvaluation',
+        'duplicateLiveQuiz',
+        'shareLiveQuiz',
+      ],
+      [PublicationStatus.Ended]: [
+        'liveQuizEvaluation',
+        'duplicateLiveQuiz',
+        'embeddingEvaluation',
+        'shareLiveQuiz',
+        'deleteLiveQuiz',
+      ],
+      [PublicationStatus.Template]: [
+        'editTemplate',
+        'useTemplate',
+        'deleteTemplate',
+      ],
+      [PublicationStatus.Graded]: [],
+    }),
+    []
+  )
+
+  const availableActions = useMemo(
+    () =>
+      permissionActionsMap[quiz.status].flatMap(
+        (actionId) => ACTIONS.find((action) => action.id === actionId) ?? []
+      ),
+    [ACTIONS, permissionActionsMap, quiz.status]
+  )
+
   return (
     <div>
       <div className="flex flex-row items-center gap-2">
-        {quiz.status === PublicationStatus.Draft ||
-        quiz.status === PublicationStatus.Scheduled ? (
-          <ActivityActionButton
-            disabled={startingQuiz}
-            icon={faPlay}
-            tooltip={t('manage.liveQuizzes.startLiveQuiz')}
-            onClick={async () => {
-              await startLiveQuiz()
-              router.push(`quizzes/${quiz.id}/cockpit`)
-            }}
-            data={{ cy: `start-live-quiz-${quiz.name}` }}
-          />
-        ) : null}
-        {quiz.status === PublicationStatus.Draft ? (
-          <ActivityActionButton
-            icon={faPencil}
-            tooltip={t('manage.liveQuizzes.editLiveQuiz')}
-            onClick={async () => {
-              router.push({
-                pathname: '/',
-                query: {
-                  elementId: quiz.id,
-                  editMode: ActivityType.LiveQuiz,
-                },
-              })
-            }}
-            data={{ cy: `edit-live-quiz-${quiz.name}` }}
-          />
-        ) : null}
+        {availableActions.slice(0, 3).map((action) => {
+          return (
+            <ActivityActionButton
+              key={`live-quiz-${quiz.id}-${action.id}`}
+              icon={action.icon}
+              tooltip={action.label}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              data={action.data}
+              className={action.className}
+            />
+          )
+        })}
 
-        {quiz.status === PublicationStatus.Published ? (
-          <ActivityActionButton
-            icon={faChalkboardUser}
-            tooltip={t('manage.liveQuizzes.lecturerCockpit')}
-            onClick={() => {
-              router.push(`/quizzes/${quiz.id}/cockpit`)
-            }}
-            data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
-          />
-        ) : null}
-
-        {quiz.status === PublicationStatus.Published ||
-        quiz.status === PublicationStatus.Ended ? (
-          <ActivityActionButton
-            icon={faChartSimple}
-            tooltip={t('manage.liveQuizzes.liveQuizEvaluation')}
-            onClick={() => {
-              router.push(`/quizzes/${quiz.id}/cockpit`)
-            }}
-            data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
-          />
-        ) : null}
-        {quiz.status === PublicationStatus.Ended ||
-        quiz.status === PublicationStatus.Scheduled ? (
-          <ActivityActionButton
-            icon={faCopy}
-            tooltip={t('manage.liveQuizzes.duplicateLiveQuiz')}
-            onClick={() => {
-              router.push({
-                pathname: '/',
-                query: {
-                  elementId: quiz.id,
-                  duplicationMode: ActivityType.LiveQuiz,
-                },
-              })
-            }}
-            data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
-          />
-        ) : null}
-
-        {quiz.status === PublicationStatus.Ended ? (
-          <ActivityActionButton
-            icon={faCode}
-            tooltip={t('manage.liveQuizzes.embeddingEvaluation')}
-            onClick={() => {
-              setEmbedModalOpen(true)
-            }}
-            data={{ cy: `show-embedding-modal-${quiz.name}` }}
-          />
-        ) : null}
-
-        {quiz.status === PublicationStatus.Draft ||
-        quiz.status === PublicationStatus.Scheduled ||
-        quiz.status === PublicationStatus.Published ? (
-          <ActivityActionButton
-            icon={faQrcode}
-            tooltip={t('manage.general.qrCode')}
-            onClick={() => {
-              setQrModalOpen(true)
-            }}
-            data={{ cy: `show-qr-modal-${quiz.name}` }}
-          />
-        ) : null}
-
-        {quiz.status === PublicationStatus.Template ? (
-          <ActivityActionButton
-            icon={faPencil}
-            tooltip={t('manage.template.editTemplate')}
-            onClick={() => setEditTemplateModal(true)}
-            data={{ cy: `edit-template-${quiz.name}` }}
-          />
-        ) : null}
-        {quiz.status === PublicationStatus.Template ? (
-          <ActivityActionButton
-            icon={faWpforms}
-            tooltip={t('manage.catalog.useTemplate')}
-            onClick={() => router.push(`/templates/${quiz.templateId}`)}
-            data={{ cy: `use-template-${quiz.name}` }}
-          />
-        ) : null}
-        {quiz.status === PublicationStatus.Template ? (
-          <ActivityActionButton
-            icon={faTrashCan}
-            tooltip={t('manage.template.deleteTemplate')}
-            onClick={() => {
-              setDeletionTemplateModal(true)
-            }}
-            className="border-red-600 text-red-600 hover:text-red-600"
-            data={{ cy: `delete-template-${quiz.name}` }}
-          />
-        ) : null}
-
-        {quiz.status !== PublicationStatus.Template ? (
+        {availableActions.length > 3 && (
           <Dropdown
-            items={[
-              // embed evaluation - for DRAFT, SCHEDULED, PUBLISHED, ENDED
-              ...(quiz.status === PublicationStatus.Draft ||
-              quiz.status === PublicationStatus.Scheduled ||
-              quiz.status === PublicationStatus.Published
-                ? [
-                    {
-                      label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                          <FontAwesomeIcon
-                            icon={faCode}
-                            className="mr-2.5 h-4 w-4"
-                          />
-                          {t('manage.liveQuizzes.embeddingEvaluation')}
-                        </div>
-                      ),
-                      onClick: () => setEmbedModalOpen(true),
-                      data: { cy: `show-embedding-modal-${quiz.name}` },
-                    },
-                  ]
-                : []),
-
-              // duplicate - for DRAFT, SCHEDULED, PUBLISHED
-              ...(quiz.status === PublicationStatus.Draft ||
-              quiz.status === PublicationStatus.Published
-                ? [
-                    {
-                      label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                          <FontAwesomeIcon
-                            icon={faCopy}
-                            className="mr-2.5 h-4 w-4"
-                          />
-                          {t('manage.liveQuizzes.duplicateLiveQuiz')}
-                        </div>
-                      ),
-                      onClick: () =>
-                        router.push({
-                          pathname: '/',
-                          query: {
-                            elementId: quiz.id,
-                            duplicationMode: ActivityType.LiveQuiz,
-                          },
-                        }),
-                      data: { cy: `duplicate-live-quiz-${quiz.name}` },
-                    },
-                  ]
-                : []),
-
-              // convert to template - for DRAFT
-              ...(quiz.status === PublicationStatus.Draft
-                ? [
-                    {
-                      label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                          <FontAwesomeIcon
-                            icon={faFilePen}
-                            className="mr-2.5 h-4 w-4"
-                          />
-                          {t('manage.template.convertOption')}
-                        </div>
-                      ),
-                      onClick: () =>
-                        setConversionModal({
-                          open: true,
-                          activityId: quiz.id,
-                          activityType: ActivityType.LiveQuiz,
-                        }),
-                      data: { cy: `template-from-live-quiz-${quiz.name}` },
-                    },
-                  ]
-                : []),
-
-              // delete - for DRAFT, SCHEDULED, ENDED
-              ...(quiz.status === PublicationStatus.Draft ||
-              quiz.status === PublicationStatus.Scheduled ||
-              quiz.status === PublicationStatus.Ended
-                ? [
-                    {
-                      label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                          <FontAwesomeIcon
-                            icon={faTrashCan}
-                            className="mr-2.5 h-4 w-4"
-                          />
-                          {t('manage.liveQuizzes.deleteLiveQuiz')}
-                        </div>
-                      ),
-                      onClick: () => setDeletionModal(true),
-                      data: { cy: `delete-live-quiz-${quiz.name}` },
-                    },
-                  ]
-                : []),
-            ]}
+            items={availableActions.slice(3).map((action) => ({
+              label: (
+                <div
+                  className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100 ${
+                    action.className ?? ''
+                  }`}
+                >
+                  <FontAwesomeIcon
+                    icon={action.icon}
+                    className="mr-2.5 h-4 w-4"
+                  />
+                  {action.label}
+                </div>
+              ),
+              onClick: action.onClick,
+              data: action.data,
+            }))}
             trigger={
               <ActivityActionButton
                 icon={faEllipsis}
@@ -359,57 +389,83 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
               />
             }
           />
-        ) : null}
+        )}
       </div>
       <div>
-        <LiveQuizDeletionModal
-          quizId={quiz.id}
-          open={deletionModal}
-          setOpen={setDeletionModal}
-          onDelete={deleteLiveQuiz}
-          deleting={deletingLiveQuiz}
-        />
-        <LiveQuizNameChangeModal
-          quizId={quiz.id}
-          name={quiz.name}
-          displayName={quiz.displayName}
-          open={changeName}
-          setOpen={setChangeName}
-        />
-        <TemplateDeletionModal
-          activityId={quiz.id}
-          activityType={ActivityType.LiveQuiz}
-          open={deletionTemplateModal}
-          setOpen={setDeletionTemplateModal}
-          onSuccess={() => setTemplateDeletionSuccess(true)}
-          onError={() => setTemplateDeletionError(true)}
-        />
-        <TemplateEditModal
-          activityId={quiz.id}
-          activityType={ActivityType.LiveQuiz}
-          open={editTemplateModal}
-          setOpen={setEditTemplateModal}
-          onSuccess={() => setTemplateEditSuccess(true)}
-          onError={() => setTemplateEditError(true)}
-        />
+        {deletionModal && (
+          <LiveQuizDeletionModal
+            quizId={quiz.id}
+            open={deletionModal}
+            setOpen={setDeletionModal}
+            onDelete={deleteLiveQuiz}
+            deleting={deletingLiveQuiz}
+          />
+        )}
 
-        <LiveQuizQRModal
-          quizId={quiz.id}
-          open={qrModalOpen}
-          setOpen={setQrModalOpen}
-        />
-        <EmbeddingModal
-          key={quiz.id}
-          open={embedModalOpen}
-          onClose={() => setEmbedModalOpen(false)}
-          quizId={quiz.id}
-          elements={quiz.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => ({
-              id: instance.id,
-              name: instance.name,
-            }))
-          )}
-        />
+        {nameChangeModal && (
+          <LiveQuizNameChangeModal
+            quizId={quiz.id}
+            name={quiz.name}
+            displayName={quiz.displayName}
+            open={nameChangeModal}
+            setOpen={setNameChangeModal}
+          />
+        )}
+
+        {templateDeletionModal && (
+          <TemplateDeletionModal
+            activityId={quiz.id}
+            activityType={ActivityType.LiveQuiz}
+            open={templateDeletionModal}
+            setOpen={setTemplateDeletionModal}
+            onSuccess={() => setTemplateDeletionSuccess(true)}
+            onError={() => setTemplateDeletionError(true)}
+          />
+        )}
+        {templateEditingModal && (
+          <TemplateEditModal
+            activityId={quiz.id}
+            activityType={ActivityType.LiveQuiz}
+            open={templateEditingModal}
+            setOpen={setTemplateEditingModal}
+            onSuccess={() => setTemplateEditSuccess(true)}
+            onError={() => setTemplateEditError(true)}
+          />
+        )}
+
+        {qrModal && (
+          <LiveQuizQRModal
+            quizId={quiz.id}
+            open={qrModal}
+            setOpen={setQRModal}
+          />
+        )}
+
+        {embeddingModal && (
+          <EmbeddingModal
+            key={quiz.id}
+            open={embeddingModal}
+            onClose={() => setEmbeddingModal(false)}
+            quizId={quiz.id}
+            elements={quiz.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => ({
+                id: instance.id,
+                name: instance.name,
+              }))
+            )}
+          />
+        )}
+
+        {sharingModal && quiz.isManager && (
+          <ObjectSharingModalWrapper
+            objectUuid={quiz.id}
+            objectName={quiz.name}
+            objectType={SharingObjectType.LiveQuiz}
+            isOwner={quiz.isOwner ?? false}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+          />
+        )}
 
         <TemplateConversionModal
           open={conversionModal.open}

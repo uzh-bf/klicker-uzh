@@ -319,6 +319,7 @@ export default {
       actions: 'Actions',
       object: 'Object',
       read: 'Read',
+      execute: 'Execute',
       write: 'Write',
       admin: 'Admin',
       owner: 'Owner',
@@ -1834,10 +1835,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Edit Quiz',
-      duplicateLiveQuiz: 'Duplicate Quiz',
+      duplicateLiveQuiz: 'Duplicate Live Quiz',
+      viewLiveQuiz: 'View Live Quiz',
+      executeLiveQuiz: 'Execute Live Quiz',
+      manageFeedbacksExecution: 'Manage Feedbacks, ... during Execution',
+      modifyActivitySettings: 'Modify Activity Settings',
+      modifyContainedElements: 'Manage Elements in Live Quiz',
+      modifyCourseAssignment: 'Modify Course Assignment',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveQuiz: 'Delete live quiz',
+      shareLiveQuiz: 'Share Live Quiz',
+      deleteLiveQuiz: 'Delete Live Quiz',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:
@@ -2604,6 +2612,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while changing the object visibility. Please try again.',
     },
     sharing: {
+      noAccess: 'No access',
       permissionsREAD: 'Read permissions',
       permissionsWRITE: 'Write permissions',
       permissionsADMIN: 'Admin permissions',
@@ -2633,6 +2642,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       revokeAccessDisabledTooltip:
         'The access to the answer collection cannot be revoked because this user is actively using the collection.',
       noUserGroupSelected: 'No user group selected',
+      noUserGroupsAvailable: 'No user groups available',
       shortnameEmailOrGroupRequired:
         'Please enter a shortname / email address or select a user group.',
       infoTransferOwnershipCATALOG_COLLECTION:
@@ -2643,9 +2653,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipELEMENT:
         'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipLIVE_QUIZ:
+        'You are about to transfer all ownership rights of the live quiz <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this quiz and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the live quiz. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
+      shareLIVE_QUIZ: 'Share Live Quiz',
       shareELEMENT: 'Share Element',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
@@ -2653,6 +2666,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
       infoSharingLIVE_QUIZ_TEMPLATE:
         'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
+      infoSharingLIVE_QUIZ:
+        'This view allows you to share the live quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
       infoSharingELEMENT:
         'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
       propagatedPermissions: 'Propagated Permissions',
@@ -2661,6 +2676,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
       propagatedPermissionsELEMENT:
         'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
+      propagatedPermissionsLIVE_QUIZ:
+        'Depending on the granted permission level, permissions will propagate to the elements in this live quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside the live quiz. For more details regarding the allowed actions, please check out the permission tables for the corresponding elements or refer to the official documentation.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',

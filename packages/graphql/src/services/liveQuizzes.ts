@@ -772,14 +772,25 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
-      liveQuizzes: {
-        where: { status: PublicationStatus.PUBLISHED },
-        include: { course: true },
+      objects: {
+        where: {
+          liveQuizId: { not: null },
+          permissionLevel: {
+            in: [
+              PermissionLevel.EXECUTE,
+              PermissionLevel.WRITE,
+              PermissionLevel.ADMIN,
+              PermissionLevel.OWNER,
+            ],
+          },
+          liveQuiz: { status: PublicationStatus.PUBLISHED },
+        },
+        include: { liveQuiz: { include: { course: true } } },
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return user?.objects.map((object) => object.liveQuiz!) ?? []
 }
 
 export async function getLecturerViewLiveQuiz(

@@ -8,7 +8,7 @@ function useObjectPropagatedPermissions({
   objectType,
 }: {
   objectType: SharingObjectType
-}): { object: string; permissions: PermissionLevel[] }[] | null {
+}): { object: string; permissions: (PermissionLevel | undefined)[] }[] | null {
   const t = useTranslations()
 
   if (objectType === SharingObjectType.CatalogCollection) {
@@ -22,6 +22,29 @@ function useObjectPropagatedPermissions({
         permissions: [
           PermissionLevel.Read,
           PermissionLevel.Read,
+          PermissionLevel.Read,
+          PermissionLevel.Read,
+        ],
+      },
+    ]
+  } else if (objectType === SharingObjectType.LiveQuiz) {
+    return [
+      {
+        object: t('shared.types.ELEMENT'),
+        permissions: [
+          undefined,
+          undefined,
+          undefined,
+          PermissionLevel.Admin,
+          PermissionLevel.Admin,
+        ],
+      },
+      {
+        object: t('shared.types.ANSWER_COLLECTION'),
+        permissions: [
+          undefined,
+          undefined,
+          undefined,
           PermissionLevel.Read,
           PermissionLevel.Read,
         ],

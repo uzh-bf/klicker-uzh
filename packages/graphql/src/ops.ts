@@ -3658,6 +3658,7 @@ export enum SharingObjectType {
   AnswerCollection = 'ANSWER_COLLECTION',
   CatalogCollection = 'CATALOG_COLLECTION',
   Element = 'ELEMENT',
+  LiveQuiz = 'LIVE_QUIZ',
   LiveQuizTemplate = 'LIVE_QUIZ_TEMPLATE'
 }
 

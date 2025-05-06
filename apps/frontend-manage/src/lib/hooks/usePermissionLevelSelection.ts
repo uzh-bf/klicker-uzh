@@ -7,11 +7,13 @@ import { useTranslations } from 'next-intl'
 function usePermissionLevelSelection({ type }: { type: SharingObjectType }) {
   const t = useTranslations()
 
-  // TODO: once objects with execution rights are available, add the corresponding case here
+  // execution rights are only available for activities and courses
+  const showExecution = type === SharingObjectType.LiveQuiz
 
   // default case: no execution permissions, all other access levels
   return [
     PermissionLevel.Read,
+    ...(showExecution ? [PermissionLevel.Execute] : []),
     PermissionLevel.Write,
     PermissionLevel.Admin,
   ].map((level) => ({
