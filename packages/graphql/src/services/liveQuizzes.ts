@@ -676,6 +676,40 @@ export async function manipulateLiveQuiz(
 
   return activity
 }
+
+export async function removeLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified live quiz
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this live quiz and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.liveQuiz.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { liveQuizId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id,
+  })
+
+  return id
+}
 // #endregion
 
 // ------ LIVE QUIZ GETTER FUNCTIONS (LECTURER) ------

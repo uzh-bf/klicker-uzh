@@ -11,6 +11,7 @@ import {
   faPlay,
   faQrcode,
   faShare,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -43,6 +44,7 @@ import TemplateEditSuccessToast from '../../courses/modals/TemplateEditSuccessTo
 import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import LiveQuizNameChangeModal from '../../liveQuiz/LiveQuizNameChangeModal'
 import ActivityActionButton from './ActivityActionButton'
+import ActivityRemovalModal from './ActivityRemovalModal'
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -54,6 +56,7 @@ const statusActionMap = {
     'duplicateLiveQuiz',
     'templateFromLiveQuiz',
     'shareLiveQuiz',
+    'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Scheduled]: [
@@ -62,6 +65,7 @@ const statusActionMap = {
     'qrCode',
     'embeddingEvaluation',
     'shareLiveQuiz',
+    'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Published]: [
@@ -71,12 +75,14 @@ const statusActionMap = {
     'embeddingEvaluation',
     'duplicateLiveQuiz',
     'shareLiveQuiz',
+    'removeLiveQuiz',
   ],
   [PublicationStatus.Ended]: [
     'liveQuizEvaluation',
     'duplicateLiveQuiz',
     'embeddingEvaluation',
     'shareLiveQuiz',
+    'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Template]: [
@@ -104,6 +110,7 @@ const permissionActionMap = {
     'liveQuizEvaluation',
     'useTemplate',
   ],
+  isRemovable: ['removeLiveQuiz'],
 }
 
 function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
@@ -113,6 +120,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   const [embeddingModal, setEmbeddingModal] = useState<boolean>(false)
   const [qrModal, setQRModal] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
+  const [removalModal, setRemovalModal] = useState<boolean>(false)
   const [templateEditingModal, setTemplateEditingModal] =
     useState<boolean>(false)
   const [templateDeletionModal, setTemplateDeletionModal] =
@@ -327,6 +335,16 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
         data: { cy: `share-live-quiz-${quiz.name}` },
       },
       {
+        id: 'removeLiveQuiz',
+        label: t('manage.liveQuizzes.removeLiveQuiz'),
+        icon: faX,
+        onClick: () => {
+          setRemovalModal(true)
+        },
+        data: { cy: `remove-live-quiz-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
         id: 'deleteLiveQuiz',
         label: t('manage.liveQuizzes.deleteLiveQuiz'),
         icon: faTrashCan,
@@ -360,7 +378,13 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
           (actionId) => ACTIONS.find((action) => action.id === actionId) ?? []
         )
         .filter((action) => {
-          if (quiz.isManager || quiz.isOwner) {
+          if (
+            (quiz.isManager || quiz.isOwner) &&
+            (permissionActionMap.isManager.includes(action.id) ||
+              permissionActionMap.isEditor.includes(action.id) ||
+              permissionActionMap.isExecutor.includes(action.id) ||
+              permissionActionMap.isShared.includes(action.id))
+          ) {
             return true
           } else if (
             quiz.isEditor &&
@@ -380,7 +404,13 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
             permissionActionMap.isShared.includes(action.id)
           ) {
             return true
+          } else if (
+            quiz.isRemovable &&
+            permissionActionMap.isRemovable.includes(action.id)
+          ) {
+            return true
           }
+          return false
         }),
     [
       ACTIONS,
@@ -388,6 +418,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
       quiz.isExecutor,
       quiz.isManager,
       quiz.isOwner,
+      quiz.isRemovable,
       quiz.isShared,
       quiz.status,
     ]
@@ -512,6 +543,16 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
             isOwner={quiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
+          />
+        )}
+
+        {removalModal && quiz.isRemovable && (
+          <ActivityRemovalModal
+            activityId={quiz.id}
+            activityType={ActivityType.LiveQuiz}
+            title={quiz.name}
+            isModalOpen={removalModal}
+            setModalOpen={setRemovalModal}
           />
         )}
 

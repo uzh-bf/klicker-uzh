@@ -1,0 +1,3 @@
+mutation RemoveLiveQuiz($id: String!) {
+  removeLiveQuiz(id: $id)
+}

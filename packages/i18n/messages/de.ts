@@ -967,6 +967,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
       lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      removeActivity: 'Aktivität entfernen',
+      confirmActivityRemoval:
+        'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
+      activityRemovalFinal:
+        'Die Entfernung der Aktivität wird sie aus Ihrem Benutzerkonto entfernen, aber nicht deren Inhalt löschen. Zudem bleiben veröffentlichte Aktivitäten für alle Studierenden weiterhin verfügbar. Die Aktion kann nicht rückgängig gemacht werden.',
+      activityRemovalDerivedAccessHint:
+        'Wenn diese Aktivität einem Kurs zugewiesen ist, auf den Sie Zugriff haben, kann sie aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall erhalten Sie automatisch eine abgeleitete Berechtigung für die Aktivität, nachdem Sie deren Entfernung ausgelöst haben. Sobald der zugehörige Kurs gelöscht oder entfernt wird, wird das Element ebenfalls automatisch entfernt.',
+      activityRemovalDependencyAccess:
+        'Abgeleitete Zugriffsrechte auf enthaltene Elemente und Ressourcen werden automatisch widerrufen (es sei denn, diese sind technisch erforderlich).',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1875,6 +1884,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       shareLiveQuiz: 'Live Quiz teilen',
+      removeLiveQuiz: 'Live Quiz entfernen',
       deleteLiveQuiz: 'Live Quiz löschen',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',

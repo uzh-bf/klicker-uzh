@@ -2,7 +2,6 @@ import { faClock, faSquareCheck } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faFilePen,
-  faInfoCircle,
   faPencil,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
@@ -65,7 +64,11 @@ function ActivityListEntry({
         <div>
           <div className="flex flex-row items-center gap-2.5">
             {publicationStatusMap[activity.status]}
-            <div className="font-bold">
+            <div
+              className="hover:text-uzh-blue-100 font-bold hover:cursor-pointer"
+              onClick={() => setShowDetails(true)}
+              data-cy={`activity-name-${activity.name}`}
+            >
               {`${t(`shared.types.${activity.type}`)}: ${activity.name}`}
             </div>
 
@@ -80,12 +83,7 @@ function ActivityListEntry({
                   data-cy={`change-activity-name-${activity.name}`}
                 />
               )}
-            <FontAwesomeIcon
-              icon={faInfoCircle}
-              onClick={() => setShowDetails(true)}
-              className="text-uzh-blue-60 hover:text-uzh-blue-80 h-4 w-4 hover:cursor-pointer"
-              data-cy={`open-activity-details-${activity.name}`}
-            />
+
             <ObjectPermissionLevel
               permissionLevel={activity.permissionLevel}
               className="px-0.5"

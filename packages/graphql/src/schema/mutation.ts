@@ -1410,6 +1410,16 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      removeLiveQuiz: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.removeLiveQuiz(args, ctx)
+        },
+      }),
+
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
