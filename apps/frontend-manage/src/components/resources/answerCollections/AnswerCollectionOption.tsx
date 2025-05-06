@@ -89,7 +89,7 @@ function AnswerCollectionOption({
                 },
               })
             },
-            refetchQueries: [GetAnswerCollectionsInfoDocument],
+            refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
           })
 
           onSuccess()

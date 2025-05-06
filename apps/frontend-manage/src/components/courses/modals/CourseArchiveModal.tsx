@@ -24,7 +24,7 @@ function CourseArchiveModal({
   const t = useTranslations()
   const [toggleArchiveCourse, { loading }] = useMutation(
     ToggleArchiveCourseDocument,
-    { refetchQueries: [GetUserCoursesDocument] }
+    { refetchQueries: [{ query: GetUserCoursesDocument }] }
   )
 
   if (!courseId) {

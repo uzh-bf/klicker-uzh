@@ -386,7 +386,7 @@ describe('Create different types of elements (with and without sample solution) 
     groupActivity: string
   }) {
     // start the first live quiz and open the first block
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="start-live-quiz-${liveQuiz}"]`).click()
     cy.wait(500)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -857,7 +857,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.deleteElement({ elementName: this.data.update.title3 })
 
     // end all created and running live quizzes and delete them
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.wrap([
       this.data.update.liveQuiz1,
       this.data.update.liveQuiz2,
@@ -874,6 +874,8 @@ describe('Create different types of elements (with and without sample solution) 
       cy.wait(500)
 
       // delete live quiz
+      cy.reload() // TODO: resolve issue that causes this to be required -> cache update works correctly locally
+      cy.get(`[data-cy="actions-live-quiz-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     })

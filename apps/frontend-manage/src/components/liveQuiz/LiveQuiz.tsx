@@ -24,6 +24,7 @@ import {
   ActivityType,
   CheckPrivatePreviewAvailableDocument,
   DeleteLiveQuizDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz as LiveQuizType,
@@ -126,6 +127,17 @@ function LiveQuiz({
           data: {
             userLiveQuizzes:
               data?.userLiveQuizzes?.filter((q) => q.id !== quiz.id) ?? [],
+          },
+        })
+
+        const data2 = cache.readQuery({
+          query: GetUserActivitiesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserActivitiesDocument,
+          data: {
+            userActivities:
+              data2?.userActivities?.filter((q) => q.id !== quiz.id) ?? [],
           },
         })
       },
@@ -256,7 +268,11 @@ function LiveQuiz({
                             (instance) =>
                               typeof instance !== 'undefined' &&
                               instance !== null
-                          )}
+                          )
+                          .map((instance) => ({
+                            id: instance.id,
+                            name: instance.elementData.name,
+                          }))}
                       />
                     </>
                   )}

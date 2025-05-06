@@ -6,6 +6,7 @@ import {
 import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
+import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -19,6 +20,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import { ActivityInfo } from './activities.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -242,6 +244,14 @@ export const Query = builder.queryType({
         type: [Element],
         resolve: async (_, __, ctx) => {
           return await QuestionService.getUserQuestions(ctx)
+        },
+      }),
+
+      userActivities: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityInfo],
+        resolve: async (_, __, ctx) => {
+          return await ActivityService.getUserActivities(ctx)
         },
       }),
 

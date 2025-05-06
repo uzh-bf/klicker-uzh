@@ -90,7 +90,7 @@ function SuspendedFirstLoginModal() {
                 locale: values.locale,
                 sendUpdates: values.sendProjectUpdates,
               },
-              refetchQueries: [GetUserQuestionsDocument],
+              refetchQueries: [{ query: GetUserQuestionsDocument }],
             })
 
             if (!result) {

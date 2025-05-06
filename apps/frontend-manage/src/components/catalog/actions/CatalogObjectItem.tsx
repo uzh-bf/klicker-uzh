@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import {
   faClock,
   faFileLines,
@@ -15,6 +16,7 @@ import {
   CatalogObject,
   ObjectAccess,
   SharingObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
@@ -54,6 +56,11 @@ function CatalogObjectItem({
   }
   const actionsDisabled = object.isOwner || object.isShared
 
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+
   // modal states
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
@@ -92,15 +99,17 @@ function CatalogObjectItem({
             // primary action for users with access: go to corresponding list view and highlight object
             if (object.objectType === SharingObjectType.LiveQuizTemplate) {
               router.push({
-                pathname: '/quizzes',
-                query: { highlight: object.uuid },
+                pathname: dataUser?.userProfile?.privatePreview
+                  ? '/activities'
+                  : '/quizzes',
+                query: { highlight: object.objectUuid },
               })
             } else if (
               object.objectType === SharingObjectType.AnswerCollection
             ) {
               router.push({
                 pathname: '/resources/answerCollections',
-                query: { highlight: object.id },
+                query: { highlight: object.objectId },
               })
             }
           } else if (
@@ -209,7 +218,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setRequestModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           objectAccess={object.access}
@@ -231,7 +240,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setImportModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           catalogCollectionId={catalogCollectionId}
@@ -252,7 +261,7 @@ function CatalogObjectItem({
           }}
           onClose={() => setRequestCancellationModal(false)}
           objectType={object.objectType}
-          objectId={object.id ?? object.uuid!}
+          objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
           objectOwner={object.ownerShortname}
           catalogCollectionId={catalogCollectionId}
@@ -270,7 +279,7 @@ function CatalogObjectItem({
             onClose={() => setChangeAccessModal(false)}
             objectType={object.objectType}
             objectName={object.name}
-            assignmentId={object.assignmentId}
+            assignmentId={object.id}
             newAccess={newAccess}
             catalogCollectionId={catalogCollectionId}
           />
@@ -283,9 +292,9 @@ function CatalogObjectItem({
         </>
       ) : null}
       {object.isManager ? (
-        object.uuid ? (
+        object.objectUuid ? (
           <ObjectSharingModalWrapper
-            objectUuid={object.uuid}
+            objectUuid={object.objectUuid}
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
@@ -295,7 +304,7 @@ function CatalogObjectItem({
           />
         ) : (
           <ObjectSharingModalWrapper
-            objectId={object.id!}
+            objectId={object.objectId!}
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}

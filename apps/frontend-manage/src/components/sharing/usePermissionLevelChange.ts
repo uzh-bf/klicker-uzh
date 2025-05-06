@@ -80,7 +80,7 @@ function usePermissionLevelChange({
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          GetCatalogSharingRequestsDocument,
+          { query: GetCatalogSharingRequestsDocument },
           ...(objectType === SharingObjectType.CatalogCollection
             ? [
                 {
@@ -90,7 +90,7 @@ function usePermissionLevelChange({
               ]
             : []),
           ...(objectType === SharingObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],
       })

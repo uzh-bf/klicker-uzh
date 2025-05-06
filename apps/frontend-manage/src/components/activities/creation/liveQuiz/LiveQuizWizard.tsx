@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateLiveQuizDocument,
@@ -8,6 +8,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
   StartLiveQuizDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -101,6 +102,11 @@ function LiveQuizWizard({
 }: LiveQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
+
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
@@ -333,7 +339,9 @@ function LiveQuizWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            viewElementHref="/quizzes"
+            viewElementHref={
+              dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
+            }
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()

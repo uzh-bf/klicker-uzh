@@ -99,7 +99,10 @@ function useRequestCatalogObject({
           if (catalogObjects?.getCatalogObjects) {
             const updatedObjects = catalogObjects?.getCatalogObjects.map(
               (obj) => {
-                if (obj.id === objectId) {
+                if (
+                  (typeof objectId === 'number' && obj.objectId === objectId) ||
+                  (typeof objectId === 'string' && obj.objectUuid === objectId)
+                ) {
                   return { ...obj, isRequested: true }
                 }
 

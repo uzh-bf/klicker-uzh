@@ -724,8 +724,10 @@ describe('Test course creation and editing functionalities', function () {
     ).should('not.exist')
 
     // check that the live quiz has been removed from the course
-    cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.deletion.lqName}"]`).should('exist')
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
+    ).should('exist')
     cy.get(`[data-cy="edit-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -736,8 +738,13 @@ describe('Test course creation and editing functionalities', function () {
 
   it('Cleanup: Delete the live quiz that is not assigned to the course anymore', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="live-quizzes"]`).click()
-    cy.findByText(this.data.deletion.lqName).should('exist')
+    cy.get(`[data-cy="activities"]`).click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.deletion.lqName}"]`
+    ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.deletion.lqName).should('not.exist')

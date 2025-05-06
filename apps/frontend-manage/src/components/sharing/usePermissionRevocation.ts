@@ -70,7 +70,7 @@ function usePermissionRevocation({
           })
         },
         refetchQueries: [
-          GetCatalogSharingRequestsDocument,
+          { query: GetCatalogSharingRequestsDocument },
           {
             query: GetDerivedObjectPermissionsDocument,
             variables: { objectId: String(objectId), objectType },
@@ -88,7 +88,7 @@ function usePermissionRevocation({
               ]
             : []),
           ...(objectType === SharingObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],
       })

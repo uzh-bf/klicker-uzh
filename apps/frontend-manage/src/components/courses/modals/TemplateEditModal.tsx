@@ -4,6 +4,7 @@ import {
   ActivityType,
   EditActivityTemplateDocument,
   GetTemplateInformationDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -91,7 +92,10 @@ function TemplateEditModal({
                   instructions: values.instructions,
                 },
                 // TODO: update cache instead of triggering refetch query once combined activity overview is available
-                refetchQueries: [GetUserLiveQuizzesDocument],
+                refetchQueries: [
+                  { query: GetUserLiveQuizzesDocument },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
 
               if (result.data?.editActivityTemplate) {

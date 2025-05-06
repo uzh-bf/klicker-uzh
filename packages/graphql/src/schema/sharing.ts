@@ -49,11 +49,11 @@ export const CatalogObjectRef =
   builder.objectRef<CatalogObjectInterface>('CatalogObject')
 export const CatalogObject = CatalogObjectRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id', { nullable: true }),
-    uuid: t.exposeString('uuid', { nullable: true }),
+    id: t.exposeInt('id'), // assignment id
+    objectId: t.exposeInt('objectId', { nullable: true }), // object id
+    objectUuid: t.exposeString('objectUuid', { nullable: true }), // object uuid
     name: t.exposeString('name'),
     objectType: t.expose('objectType', { type: SharingObjectType }),
-    assignmentId: t.exposeInt('assignmentId'),
     templateId: t.exposeString('templateId', { nullable: true }),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),

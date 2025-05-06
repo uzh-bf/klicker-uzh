@@ -48,7 +48,9 @@ describe('Test functionalities of frontend-control application', function () {
 
     // check if the creation was successful
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.quizName}"]`).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.quizName}"]`).should(
+      'exist'
+    )
   })
 
   it('Generate a token to log into the control-frontend application, execute quiz', function () {
@@ -120,9 +122,12 @@ describe('Test functionalities of frontend-control application', function () {
   // ! Cleanup
   it('Cleanup: Delete the created and completed live quiz', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="live-quizzes"]`).click()
+    cy.get(`[data-cy="activities"]`).click()
 
-    cy.findByText(this.data.quizName).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.quizName}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="actions-live-quiz-${this.data.quizName}"]`).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.quizName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.quizName).should('not.exist')

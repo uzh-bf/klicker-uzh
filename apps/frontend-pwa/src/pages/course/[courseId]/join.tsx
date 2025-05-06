@@ -66,7 +66,7 @@ function JoinCourse({
 
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument,
-    { refetchQueries: [SelfDocument] }
+    { refetchQueries: [{ query: SelfDocument }] }
   )
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 

@@ -46,14 +46,28 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       active: router.pathname == '/',
       data: { cy: 'library' },
     },
-    {
-      type: 'button',
-      key: 'live-quizzes-menubar-item',
-      label: t('manage.general.liveQuizzes'),
-      onClick: () => router.push('/quizzes'),
-      active: router.pathname == '/quizzes',
-      data: { cy: 'live-quizzes' },
-    },
+    ...(user?.privatePreview
+      ? ([
+          {
+            type: 'button',
+            key: 'activities-menubar-item',
+            // label: t('shared.generic.activities'),
+            label: t('manage.general.liveQuizzes'), // TODO: once activity overview supports all activity types, change this back to activities label
+            onClick: () => router.push('/activities'),
+            active: router.pathname == '/activities',
+            data: { cy: 'activities' },
+          },
+        ] as NavigationItemProps[])
+      : ([
+          {
+            type: 'button',
+            key: 'live-quizzes-menubar-item',
+            label: t('manage.general.liveQuizzes'),
+            onClick: () => router.push('/quizzes'),
+            active: router.pathname == '/quizzes',
+            data: { cy: 'live-quizzes' },
+          },
+        ] as NavigationItemProps[])),
     {
       type: 'button',
       key: 'courses-menubar-item',

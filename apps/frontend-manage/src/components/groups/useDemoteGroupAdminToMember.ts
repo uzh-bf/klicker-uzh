@@ -70,7 +70,7 @@ function useDemoteGroupAdminToMember() {
         //     })
         //   }
         // },
-        refetchQueries: [GetUserGroupsUserDocument],
+        refetchQueries: [{ query: GetUserGroupsUserDocument }],
       })
     } catch (e) {
       console.error(e)

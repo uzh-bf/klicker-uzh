@@ -24,22 +24,22 @@ export default {
       statusLabel: 'Geplant',
     },
     PUBLISHED: {
-      statusLabel: 'Öffentlich',
+      statusLabel: 'Öffentlich / Laufend',
     },
     ENDED: {
-      statusLabel: 'Abgeschlossen',
+      statusLabel: 'Abgeschlossen / Bereit zur Bewertung',
     },
     GRADED: {
       statusLabel: 'Bewertet',
+    },
+    TEMPLATE: {
+      statusLabel: 'Vorlage',
     },
     REVIEW: {
       statusLabel: 'Review',
     },
     READY: {
       statusLabel: 'Bereit',
-    },
-    TEMPLATE: {
-      statusLabel: 'Vorlage',
     },
     SC: {
       short: 'SC',
@@ -99,6 +99,7 @@ export default {
     generic: {
       date: 'Datum',
       percentage: 'Prozent',
+      status: 'Status',
       groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
@@ -152,6 +153,7 @@ export default {
       home: 'Home',
       questions: 'Fragen',
       question: 'Frage',
+      activities: 'Aktivitäten',
       element: 'Element',
       block: 'Block',
       stack: 'Stack',
@@ -954,6 +956,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der angegebene Benutzer existiert nicht. Bitte überprüfen Sie die E-Mail-Adresse und stellen Sie sicher, dass sich der Benutzer mindestens einmal bei KlickerUZH angemeldet hat.',
       grantAccessError:
         'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
+    },
+    activities: {
+      noActivitiesAvailable:
+        'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Fragen in der <link>Bibliothek</link> erstellen.',
+      noActivitiesForFilters:
+        'Für die aktuell ausgewählten Filter bzw. den eingegebenen Suchbegriff konnten keine Aktivitäten gefunden werden. Bitte versuchen Sie es mit anderen Filtern oder einem anderen Suchbegriff.',
+      liveQuizInfo: '{numOfBlocks} Blöcke, {numOfElements} Element(e)',
+      activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
+      activityDetails: 'Aktivitätsdetails',
+      lastModifiedAt: 'Zuletzt bearbeitet am {date}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

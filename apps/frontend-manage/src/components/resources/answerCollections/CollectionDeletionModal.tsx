@@ -28,7 +28,7 @@ function CollectionDeletionModal({
     optimisticResponse: {
       deleteAnswerCollection: collection.id,
     },
-    refetchQueries: [GetAnswerCollectionsInfoDocument],
+    refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
   })
 
   return (

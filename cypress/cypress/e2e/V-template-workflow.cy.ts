@@ -19,6 +19,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
+  // TODO: comment this functionality again
   // ! DEV: if a test case fails, stop the test run
   // afterEach(function () {
   //   if (this.currentTest.state === 'failed') {
@@ -498,10 +499,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="open-activity-overview"]').click()
 
     // verify the existense of the created live quiz including all actions
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -516,7 +523,10 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Create a template from a copy of the live quiz', function () {
     // convert a copy of the created live quiz into a template
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -539,6 +549,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-next-step"]').should('not.be.disabled')
     cy.get('[data-cy="close-template-conversion-modal"]').click()
 
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -564,7 +577,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz still exists with all functionalities
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.template1Orig.name}"]`)
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
+    )
       .should('exist')
       .contains(messages.shared.generic.template)
     cy.get(
@@ -574,10 +589,16 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
     ).should('exist')
 
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -592,7 +613,10 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Convert the live quiz into a second template', function () {
     // convert the live quiz into a template
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -625,7 +649,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz does not exist anymore
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.template2.name}"]`)
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.template2.name}"]`
+    )
       .should('exist')
       .contains(messages.shared.generic.template)
     cy.get(
@@ -634,14 +660,14 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should(
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
     )
   })
 
   it('Test the editing functionality for live quiz templates', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="edit-template-${this.data.liveQuiz.template1Orig.name}"]`
     ).click()
@@ -678,14 +704,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-edit"]').click()
 
     // verify that the template is shown in an updated version
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.template1.name}"]`)
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    )
       .should('exist')
       .contains(messages.shared.generic.template)
   })
 
   it('Verify that the content of both live quiz templates has been stored correctly', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
 
     cy.get(
       `[data-cy="edit-template-${this.data.liveQuiz.template1.name}"]`
@@ -821,7 +849,7 @@ describe('Test all functionalities related to the creation, management, sharing 
   // #region
   it('Open the template in the lecturer account and test all element content actions / verify default content', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
@@ -1097,7 +1125,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Use the template in the lecturer account to create an activity with partially new content', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
@@ -1343,7 +1371,9 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // submit the creation of an activity from the template and verify that the live quiz overview is correctly opened
     cy.get(`[data-cy="live-quiz-template-submit"]`).click()
-    cy.get(`[data-cy="live-quiz-${this.data.activity1.name}"]`).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity1.name}"]`).should(
+      'exist'
+    )
   })
 
   it('Verify that the new elements from the third block have been added to the library', function () {
@@ -1359,8 +1389,10 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Execute the live quiz and open the first block', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.activity1.name}"]`).should('exist')
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity1.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="start-live-quiz-${this.data.activity1.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
   })
@@ -1427,7 +1459,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Close the first block and open the second block of the live quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -1496,7 +1528,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Close the second block and open the third block of the live quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -1532,7 +1564,7 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Verify the content of the evaluation and close the live quiz', function () {
     cy.loginLecturer()
 
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
     cy.wait(1000)
 
@@ -1579,7 +1611,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // end the live quiz
     cy.visit(`${Cypress.env('URL_MANAGE')}`)
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -2023,7 +2055,9 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // submit the creation of an activity from the template and verify that the live quiz overview is correctly opened
     cy.get(`[data-cy="live-quiz-template-submit"]`).click()
-    cy.get(`[data-cy="live-quiz-${this.data.activity2.name}"]`).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity2.name}"]`).should(
+      'exist'
+    )
   })
 
   it('Verify that correct permissions and elements have been created on the answer collections contained in the template', function () {
@@ -2068,15 +2102,17 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Execute the live quiz and open the first block', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.activity2.name}"]`).should('exist')
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity2.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="start-live-quiz-${this.data.activity2.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click()
   })
 
   it('Verify the content of the elements through the student view and answer the questions', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
@@ -2176,7 +2212,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Close the first block and open the second block of the live quiz', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -2185,7 +2221,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Verify the content of the elements through the student view and answer the questions', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
@@ -2289,7 +2325,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Close the second block and open the third block of the live quiz', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -2298,7 +2334,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Verify the content of the elements through the student view and answer the questions', function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
@@ -2368,7 +2404,7 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Verify the content of the evaluation and close the live quiz', function () {
     cy.loginIndividualCatalyst()
 
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.wait(1000)
 
@@ -2415,7 +2451,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // end the live quiz
     cy.visit(`${Cypress.env('URL_MANAGE')}`)
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
     cy.get('[data-cy="next-block-timeline"]').click() // close block
     cy.wait(500)
@@ -2428,7 +2464,7 @@ describe('Test all functionalities related to the creation, management, sharing 
   // #region
   it('Delete all created templates', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
@@ -2437,7 +2473,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
-    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
@@ -2446,9 +2482,14 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created activities', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="live-quizzes"]`).click()
+    cy.get(`[data-cy="activities"]`).click()
 
-    cy.findByText(this.data.activity1.name).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity1.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.activity1.name}"]`
+    ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.activity1.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
@@ -2459,9 +2500,13 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.findByText(this.data.activity1.name).should('not.exist')
 
     cy.loginIndividualCatalyst()
-    cy.get(`[data-cy="live-quizzes"]`).click()
-
-    cy.findByText(this.data.activity2.name).should('exist')
+    cy.get(`[data-cy="activities"]`).click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity2.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.activity2.name}"]`
+    ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.activity2.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
@@ -2472,35 +2517,5 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.findByText(this.data.activity2.name).should('not.exist')
   })
 
-  it('Delete all created questions', function () {
-    cy.deleteAllElements()
-  })
-
-  it('Delete all created resources', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
-    cy.deleteAnswerCollection({ collectionName: this.data.collection2.name })
-
-    cy.loginIndividualCatalyst()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.deleteAnswerCollection({ collectionName: this.data.collection3.name })
-  })
-
-  it('Delete all created catalog collections', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="analytics"]').should('exist')
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="catalog"]').click()
-    cy.get(
-      `[data-cy="catalog-collection-${this.data.catalog.name}-actions"]`
-    ).realClick()
-    cy.get('[data-cy="delete-catalog-collection"]').click()
-    cy.get('[data-cy="confirm-delete-collection"]').click()
-  })
   // #endregion
 })

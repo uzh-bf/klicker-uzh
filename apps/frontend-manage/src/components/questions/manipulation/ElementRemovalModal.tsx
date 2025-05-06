@@ -58,7 +58,7 @@ function ElementRemovalModal({
           variables: {
             id: elementId,
           },
-          refetchQueries: [GetUserQuestionsDocument],
+          refetchQueries: [{ query: GetUserQuestionsDocument }],
         })
         unsetDeletedQuestion(elementId)
         setModalOpen(false)

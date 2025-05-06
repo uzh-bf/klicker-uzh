@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import {
   GetUserLiveQuizzesDocument,
   PublicationStatus,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -10,13 +11,18 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuiz from '../../components/liveQuiz/LiveQuiz'
 
 function LiveQuizList() {
   const t = useTranslations()
   const router = useRouter()
+
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const { loading, data } = useQuery(GetUserLiveQuizzesDocument)
 
@@ -49,6 +55,17 @@ function LiveQuizList() {
       ?.filter((quiz) => quiz?.status === PublicationStatus.Template)
       .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
   }, [data])
+
+  // TODO: remove this once the migration to the new activity overview is complete
+  // if the user has the private preview flag set, redirect to new activity overview
+  useEffect(() => {
+    if (
+      dataUser?.userProfile?.privatePreview &&
+      router.pathname !== '/activities'
+    ) {
+      router.push('/activities')
+    }
+  }, [dataUser?.userProfile?.privatePreview, router])
 
   if (loading) {
     return (

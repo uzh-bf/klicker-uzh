@@ -130,7 +130,7 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
           id: quiz.id,
         },
       },
-      refetchQueries: [GetSingleCourseDocument],
+      refetchQueries: [{ query: GetSingleCourseDocument }],
     }
   )
 

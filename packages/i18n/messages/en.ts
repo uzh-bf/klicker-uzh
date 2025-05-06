@@ -24,22 +24,22 @@ export default {
       statusLabel: 'Scheduled',
     },
     PUBLISHED: {
-      statusLabel: 'Published',
+      statusLabel: 'Published / Running',
     },
     ENDED: {
-      statusLabel: 'Ended',
+      statusLabel: 'Ended / Ready for Grading',
     },
     GRADED: {
       statusLabel: 'Graded',
+    },
+    TEMPLATE: {
+      statusLabel: 'Template',
     },
     REVIEW: {
       statusLabel: 'Review',
     },
     READY: {
       statusLabel: 'Ready',
-    },
-    TEMPLATE: {
-      statusLabel: 'Template',
     },
     SC: {
       short: 'SC',
@@ -98,6 +98,7 @@ export default {
     generic: {
       date: 'Date',
       percentage: 'Percentage',
+      status: 'Status',
       groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
@@ -151,6 +152,7 @@ export default {
       home: 'Home',
       questions: 'Questions',
       question: 'Question',
+      activities: 'Activities',
       element: 'Element',
       block: 'Block',
       stack: 'Stack',
@@ -954,6 +956,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The specified user does not exist. Please check the email address and ensure that the user has logged in to KlickerUZH at least once.',
       grantAccessError:
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
+    },
+    activities: {
+      noActivitiesAvailable:
+        'Currently, no activities are available. You can easily create new activities by combining questions in the <link>library</link>.',
+      noActivitiesForFilters:
+        'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
+      liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
+      activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
+      activityDetails: 'Activity Details',
+      lastModifiedAt: 'Last modified at {date}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

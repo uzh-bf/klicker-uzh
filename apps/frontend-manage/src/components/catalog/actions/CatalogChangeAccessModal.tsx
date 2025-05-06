@@ -100,7 +100,7 @@ function CatalogChangeAccessModal({
                             data: {
                               getCatalogObjects:
                                 catalogObjects?.getCatalogObjects.map((obj) =>
-                                  obj.assignmentId === assignmentId
+                                  obj.id === assignmentId
                                     ? { ...obj, access: newAccess }
                                     : obj
                                 ),

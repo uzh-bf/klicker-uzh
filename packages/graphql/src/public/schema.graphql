@@ -34,6 +34,39 @@ type ActivityFeedback {
   upvoteRate: Float!
 }
 
+type ActivityInfo {
+  course: String
+  derivedAccess: Boolean!
+  displayName: String!
+  id: String!
+  isEditor: Boolean!
+  isManager: Boolean!
+  isOwner: Boolean!
+  isRemovable: Boolean!
+  isShared: Boolean!
+  name: String!
+  numOfElements: Int!
+  numOfStacks: Int!
+  permissionLevel: PermissionLevel!
+  stacks: [ActivityInfoStack!]!
+  status: PublicationStatus!
+  templateId: String
+  type: ActivityType!
+  updatedAt: Date!
+}
+
+type ActivityInfoElement {
+  id: Int!
+  name: String!
+  type: ElementType!
+}
+
+type ActivityInfoStack {
+  elements: [ActivityInfoElement!]!
+  id: Int!
+  numOfParticipants: Int
+}
+
 enum ActivityLevel {
   HIGH
   LOW
@@ -415,17 +448,17 @@ type CatalogCollection {
 
 type CatalogObject {
   access: ObjectAccess!
-  assignmentId: Int!
-  id: Int
+  id: Int!
   isManager: Boolean!
   isOwner: Boolean!
   isRequested: Boolean!
   isShared: Boolean!
   name: String!
+  objectId: Int
   objectType: SharingObjectType!
+  objectUuid: String
   ownerShortname: String
   templateId: String
-  uuid: String
 }
 
 type CatalogSelectionObject {
@@ -1981,6 +2014,7 @@ type Query {
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
+  userActivities: [ActivityInfo!]
   userCourses: [Course!]
   userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]

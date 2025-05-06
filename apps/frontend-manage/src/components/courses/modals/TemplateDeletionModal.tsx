@@ -3,6 +3,7 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   DeleteActivityTemplateDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -34,7 +35,10 @@ function TemplateDeletionModal({
         activityType: activityType,
       },
       // TODO: update cache instead of triggering refetch query once combined activity overview is available
-      refetchQueries: [GetUserLiveQuizzesDocument],
+      refetchQueries: [
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
+      ],
     }
   )
 

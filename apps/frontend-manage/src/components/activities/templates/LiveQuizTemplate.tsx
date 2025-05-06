@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faDeleteLeft,
@@ -8,7 +8,9 @@ import {
 import {
   ActivityTemplate,
   CreateLiveQuizFromTemplateDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
@@ -37,6 +39,11 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
   const router = useRouter()
   const liveQuiz = template.liveQuiz
+
+  // TODO: remove, once migration to single activity overwiew has been completed
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   // mutation for submission
   const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
@@ -504,7 +511,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       isGamificationEnabled: quizData.isGamificationEnabled,
                       blocks: processedBlocks,
                     },
-                    refetchQueries: [GetUserLiveQuizzesDocument],
+                    refetchQueries: [
+                      { query: GetUserLiveQuizzesDocument },
+                      { query: GetUserActivitiesDocument },
+                    ],
                   })
 
                   const quizId = res?.createLiveQuizFromTemplate
@@ -516,7 +526,9 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
                     // redirect to live quiz overview and highlight newly created element
                     router.push({
-                      pathname: '/quizzes',
+                      pathname: dataUser?.userProfile?.privatePreview
+                        ? '/activities'
+                        : '/quizzes',
                       query: { highlight: quizId },
                     })
                   } else {
