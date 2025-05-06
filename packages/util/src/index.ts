@@ -6,3 +6,6 @@ export * from './permissions.js'
 
 // export everything from the types module
 export * from './types.js'
+
+// export everything from the levels module
+export * from './levels.js'

@@ -10,8 +10,7 @@ import {
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
 import { ActivityType } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
+import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
@@ -852,9 +851,7 @@ export async function getActiveUserCourses(
   ctx: ContextWithUser
 ) {
   const userCourses = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       courses: {
         where: {
@@ -877,7 +874,7 @@ export async function getActiveUserCourses(
     typeof activityType !== 'undefined'
   ) {
     // verify that the user has sufficient access to the activity (at least WRITE permissions)
-    const validAccess = checkAccess(
+    const validAccess = await checkAccess(
       [
         ...(activityType === ActivityType.LIVE_QUIZ
           ? [

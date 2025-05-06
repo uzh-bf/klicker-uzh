@@ -29,10 +29,10 @@ import type {
 import {
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
+  levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { min } from 'mathjs'
@@ -1803,6 +1803,7 @@ export async function getLiveQuizSummary(
 
     if (cachedResults) {
       const { instanceResults } = cachedResults
+
       const cachedResponses = liveQuiz.activeBlock.elements.reduce(
         (acc, instance) => {
           acc += instanceResults[instance.id]?.anonymousResults.total ?? 0

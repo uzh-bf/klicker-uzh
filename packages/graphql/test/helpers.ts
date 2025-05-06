@@ -2,6 +2,7 @@ import {
   AnswerCollection,
   CatalogCollection,
   Element,
+  ElementInstanceType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
@@ -10,6 +11,7 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -566,5 +568,42 @@ export async function seedLiveQuizTemplates(prisma: PrismaClient) {
     templateId2,
     templateId3,
   }
+}
+
+export async function seedLiveQuiz(
+  elements: { id: number; type: ElementType }[],
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.create({
+    data: {
+      name: 'Live Quiz Test',
+      displayName: 'Live Quiz Test',
+      description: 'Test Description',
+      ownerId: userOne.id,
+      blocks: {
+        create: elements.map((element, index) => ({
+          order: index,
+          elements: {
+            create: [
+              {
+                order: 0,
+                elementId: element.id,
+                migrationId: `migrationId-${element.id}`,
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementType: element.type,
+                options: {},
+                elementData: {} as ElementData,
+                results: {} as ElementInstanceResults,
+                anonymousResults: {} as ElementInstanceResults,
+                ownerId: userOne.id,
+              },
+            ],
+          },
+        })),
+      },
+    },
+  })
+
+  return liveQuiz
 }
 // #endregion

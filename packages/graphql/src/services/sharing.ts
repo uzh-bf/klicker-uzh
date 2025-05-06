@@ -1943,13 +1943,20 @@ export async function changeObjectPermissionLevel(
           ]
         : []
 
+    // if an admin permission was granted or revoked, update the access request instances
+    const updateAccessRequests =
+      (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
+        permissionLevel === DB.PermissionLevel.ADMIN) ||
+      (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
+        permissionLevel !== DB.PermissionLevel.ADMIN)
+
     for (const affectedUserId of affectedUserIds) {
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
           {
             catalogCollectionId,
             userId: affectedUserId,
-            updateAccessRequests: false,
+            updateAccessRequests,
           },
           prisma
         )
@@ -1958,23 +1965,23 @@ export async function changeObjectPermissionLevel(
           {
             answerCollectionId,
             userId: affectedUserId,
-            updateAccessRequests: false,
+            updateAccessRequests,
           },
           prisma
         )
       } else if (typeof elementId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { elementId, userId: affectedUserId, updateAccessRequests: false },
+          { elementId, userId: affectedUserId, updateAccessRequests },
           prisma
         )
       } else if (typeof courseId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { courseId, userId: affectedUserId, updateAccessRequests: false },
+          { courseId, userId: affectedUserId, updateAccessRequests },
           prisma
         )
       } else if (typeof liveQuizId !== 'undefined') {
         await recomputeDerivedPermissions(
-          { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
+          { liveQuizId, userId: affectedUserId, updateAccessRequests },
           prisma
         )
       } else if (typeof practiceQuizId !== 'undefined') {
@@ -1982,7 +1989,7 @@ export async function changeObjectPermissionLevel(
           {
             practiceQuizId,
             userId: affectedUserId,
-            updateAccessRequests: false,
+            updateAccessRequests,
           },
           prisma
         )
@@ -1991,7 +1998,7 @@ export async function changeObjectPermissionLevel(
           {
             microLearningId,
             userId: affectedUserId,
-            updateAccessRequests: false,
+            updateAccessRequests,
           },
           prisma
         )
@@ -2000,61 +2007,8 @@ export async function changeObjectPermissionLevel(
           {
             groupActivityId,
             userId: affectedUserId,
-            updateAccessRequests: false,
+            updateAccessRequests,
           },
-          prisma
-        )
-      }
-    }
-
-    // if an admin permission was granted or revoked, update the access request instances
-    if (
-      (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
-        permissionLevel === DB.PermissionLevel.ADMIN) ||
-      (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permissionLevel !== DB.PermissionLevel.ADMIN)
-    ) {
-      if (typeof catalogCollectionId !== 'undefined') {
-        await updateAccessRequestInstances(
-          {
-            catalogCollectionId,
-            userId: updatedPermission.userId ?? undefined,
-          },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { answerCollectionId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { elementId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { courseId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { liveQuizId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { practiceQuizId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { microLearningId, userId: updatedPermission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { groupActivityId, userId: updatedPermission.userId ?? undefined },
           prisma
         )
       }

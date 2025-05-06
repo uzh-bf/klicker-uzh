@@ -1,6 +1,5 @@
 import {
   AuditLogType,
-  ElementInstanceType,
   ElementType,
   ObjectAccess,
   ObjectType,
@@ -8,10 +7,6 @@ import {
   PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import {
-  ElementInstanceResults,
-  SelectionElementData,
-} from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -34,6 +29,7 @@ import {
   seedAnswerCollections,
   seedCatalogCollections,
   seedElements,
+  seedLiveQuiz,
   testCleanup,
   testInitialization,
 } from './helpers.js'
@@ -2281,37 +2277,10 @@ describe('Unit tests for object access validation', () => {
   it('Test the combination of permission propagation and access request instance updates', async () => {
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC!.id)
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Live Quiz Test',
-        displayName: 'Live Quiz Test',
-        description: 'Test Description',
-        ownerId: userOne.id,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              elements: {
-                create: [
-                  {
-                    order: 0,
-                    elementId: SE.id,
-                    migrationId: '',
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementType: ElementType.SC,
-                    options: {},
-                    elementData: {} as SelectionElementData,
-                    results: {} as ElementInstanceResults,
-                    anonymousResults: {} as ElementInstanceResults,
-                    ownerId: userOne.id,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    })
+    const liveQuiz = await seedLiveQuiz(
+      [{ id: SE.id, type: ElementType.SELECTION }],
+      userOneCtx
+    )
 
     // create access requests for user 2 on all objects
     await prisma.accessRequest.createMany({
