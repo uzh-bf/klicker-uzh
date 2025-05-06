@@ -48,12 +48,14 @@ function CatalogObjectItem({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const objectTypeIcons: Record<SharingObjectType, IconDefinition> = {
-    [SharingObjectType.AnswerCollection]: faList,
-    [SharingObjectType.CatalogCollection]: faFolder,
-    [SharingObjectType.LiveQuizTemplate]: faFileLines,
-    [SharingObjectType.Element]: faQuestion,
-  }
+  const objectTypeIcons: Record<SharingObjectType, IconDefinition | undefined> =
+    {
+      [SharingObjectType.AnswerCollection]: faList,
+      [SharingObjectType.CatalogCollection]: faFolder,
+      [SharingObjectType.LiveQuizTemplate]: faFileLines,
+      [SharingObjectType.LiveQuiz]: undefined,
+      [SharingObjectType.Element]: faQuestion,
+    }
   const actionsDisabled = object.isOwner || object.isShared
 
   // TODO: remove, once migration to single activity overwiew has been completed
@@ -139,10 +141,12 @@ function CatalogObjectItem({
             accessType={object.access}
             className="mr-2 w-3 text-sm"
           />
-          <FontAwesomeIcon
-            icon={objectTypeIcons[object.objectType]}
-            className="h-4 w-4"
-          />
+          {typeof objectTypeIcons[object.objectType] !== 'undefined' && (
+            <FontAwesomeIcon
+              icon={objectTypeIcons[object.objectType]!}
+              className="h-4 w-4"
+            />
+          )}
           <div>{object.name}</div>
           {object.ownerShortname ? (
             <div className="text-xs text-slate-500">

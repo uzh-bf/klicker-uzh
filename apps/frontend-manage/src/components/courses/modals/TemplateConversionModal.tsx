@@ -61,6 +61,7 @@ function TemplateConversionModal({
       activityType,
     },
     skip: !open,
+    fetchPolicy: 'cache-and-network',
   })
   const templateInfo = data?.checkTemplateInfoAvailable
 

@@ -117,6 +117,57 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
+  } else if (objectType === SharingObjectType.LiveQuiz) {
+    return [
+      {
+        action: t('manage.liveQuizzes.viewLiveQuiz'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.executeLiveQuiz'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.manageFeedbacksExecution'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.modifyActivitySettings'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.modifyContainedElements'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.modifyCourseAssignment'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.duplicateLiveQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.shareLiveQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.liveQuizzes.deleteLiveQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, false, true],
+      },
+    ]
   }
 
   return []

@@ -68,6 +68,11 @@ export async function getUserActivities(ctx: ContextWithUser) {
       object.permissionLevel === DB.PermissionLevel.OWNER ||
       object.permissionLevel === DB.PermissionLevel.ADMIN ||
       object.permissionLevel === DB.PermissionLevel.WRITE
+    const isExecutor =
+      object.permissionLevel === DB.PermissionLevel.EXECUTE ||
+      object.permissionLevel === DB.PermissionLevel.WRITE ||
+      object.permissionLevel === DB.PermissionLevel.ADMIN ||
+      object.permissionLevel === DB.PermissionLevel.OWNER
     const isShared = object.permissionLevel !== DB.PermissionLevel.OWNER
     const isRemovable =
       object.permissionLevel !== DB.PermissionLevel.OWNER &&
@@ -107,6 +112,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isOwner,
         isManager,
         isEditor,
+        isExecutor,
         isShared,
         isRemovable,
         updatedAt: object.liveQuiz.updatedAt,

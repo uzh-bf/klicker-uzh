@@ -2584,6 +2584,45 @@ export async function getElementPermissions(
     })
 }
 
+export async function getLiveQuizPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  return element.directPermissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
+      permissionLevel: permission.permissionLevel,
+      isOwn: permission.user?.id === ctx.user.sub,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
 function mapDerivedPermissions({
   permissions,
   userId,
@@ -2858,7 +2897,7 @@ export async function transferElementOwnership(
       },
     })
 
-    // if the new owner previously had a permission on the collection, delete it
+    // if the new owner previously had a permission on the element, delete it
     if (newOwner.sharedObjects.length > 0) {
       await prisma.permission.delete({
         where: {
@@ -2889,6 +2928,112 @@ export async function transferElementOwnership(
     )
     await recomputeDerivedPermissions(
       { elementId: id, userId: ctx.user.sub, updateAccessRequests: false },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedElement.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferLiveQuizOwnership(
+  { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { liveQuizId: id } } },
+  })
+
+  // find the live quiz
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !liveQuiz) {
+    return null
+  }
+
+  const updatedElement = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the live quiz and grant admin permissions to the current user
+    const updated = await prisma.liveQuiz.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              liveQuizId_userId: {
+                liveQuizId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the live quiz, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.LIVE_QUIZ,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.LIVE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the live quiz for both users
+    await recomputeDerivedPermissions(
+      { liveQuizId: id, userId: newOwner.id, updateAccessRequests: true },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
       prisma
     )
 

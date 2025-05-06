@@ -19,7 +19,6 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
-  // TODO: comment this functionality again
   // ! DEV: if a test case fails, stop the test run
   // afterEach(function () {
   //   if (this.currentTest.state === 'failed') {

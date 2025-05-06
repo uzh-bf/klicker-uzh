@@ -5,6 +5,7 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  GetUserLiveQuizzesDocument,
   GetUserQuestionsDocument,
   SharingObjectType,
   TransferObjectOwnershipDocument,
@@ -42,6 +43,7 @@ function useTransferObjectOwnership({
             query: GetObjectPermissionsDocument,
             variables: { objectId: String(objectId), objectType },
           },
+          { query: GetCatalogSharingRequestsDocument },
           ...(objectType === SharingObjectType.CatalogCollection
             ? [{ query: GetCatalogCollectionsListDocument }]
             : []),
@@ -52,14 +54,13 @@ function useTransferObjectOwnership({
                   variables: { catalogCollectionId },
                 },
                 { query: GetAnswerCollectionsInfoDocument },
-                { query: GetCatalogSharingRequestsDocument },
               ]
             : []),
           ...(objectType === SharingObjectType.Element
-            ? [
-                { query: GetUserQuestionsDocument },
-                { query: GetCatalogSharingRequestsDocument },
-              ]
+            ? [{ query: GetUserQuestionsDocument }]
+            : []),
+          ...(objectType === SharingObjectType.LiveQuiz
+            ? [{ query: GetUserLiveQuizzesDocument }]
             : []),
         ],
       })

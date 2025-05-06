@@ -40,6 +40,7 @@ type ActivityInfo {
   displayName: String!
   id: String!
   isEditor: Boolean!
+  isExecutor: Boolean!
   isManager: Boolean!
   isOwner: Boolean!
   isRemovable: Boolean!
@@ -2148,6 +2149,7 @@ enum SharingObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
   ELEMENT
+  LIVE_QUIZ
   LIVE_QUIZ_TEMPLATE
 }
 

@@ -61,6 +61,7 @@ interface IActivityInfo {
   isManager: boolean
   isEditor: boolean
   isShared: boolean
+  isExecutor: boolean
   isRemovable: boolean
   updatedAt: Date
 }
@@ -87,6 +88,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     isOwner: t.exposeBoolean('isOwner'),
     isManager: t.exposeBoolean('isManager'),
     isEditor: t.exposeBoolean('isEditor'),
+    isExecutor: t.exposeBoolean('isExecutor'),
     isShared: t.exposeBoolean('isShared'),
     isRemovable: t.exposeBoolean('isRemovable'),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

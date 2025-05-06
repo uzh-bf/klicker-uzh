@@ -146,7 +146,12 @@ function DirectSharingForm({
           <td className="px-4 py-3 text-sm text-gray-900">
             <SelectField
               key={`userGroupId-${values.userGroupId}`}
-              placeholder={t('manage.sharing.noUserGroupSelected')}
+              disabled={isSubmitting || data?.getUserGroupsUser?.length === 0}
+              placeholder={
+                data?.getUserGroupsUser?.length === 0
+                  ? t('manage.sharing.noUserGroupsAvailable')
+                  : t('manage.sharing.noUserGroupSelected')
+              }
               value={values.userGroupId}
               onChange={(newValue) => {
                 setFieldValue('userGroupId', newValue)
@@ -175,7 +180,6 @@ function DirectSharingForm({
                       prop('labelString')
                     )
               }
-              disabled={isSubmitting}
               className={{
                 select: {
                   trigger: 'h-7 text-sm text-gray-900',

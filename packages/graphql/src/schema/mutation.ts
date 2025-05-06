@@ -2145,6 +2145,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2171,7 +2179,10 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
-              liveQuizId: undefined,
+              liveQuizId:
+                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                  ? args.objectId
+                  : undefined,
               practiceQuizId: undefined,
               microLearningId: undefined,
               groupActivityId: undefined,
@@ -2215,6 +2226,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2239,7 +2258,10 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
-              liveQuizId: undefined,
+              liveQuizId:
+                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                  ? args.objectId
+                  : undefined,
               practiceQuizId: undefined,
               microLearningId: undefined,
               groupActivityId: undefined,
@@ -2285,6 +2307,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               // TODO: add further object types, once they are supported by the sharing function
             ],
             ctx
@@ -2310,7 +2340,10 @@ export const Mutation = builder.mutationType({
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
-              liveQuizId: undefined,
+              liveQuizId:
+                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                  ? args.objectId
+                  : undefined,
               practiceQuizId: undefined,
               microLearningId: undefined,
               groupActivityId: undefined,
@@ -2393,6 +2426,28 @@ export const Mutation = builder.mutationType({
             return await SharingService.transferElementOwnership(
               {
                 id: parseInt(args.objectId),
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+            // == OWNER permissions on live quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  liveQuizId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferLiveQuizOwnership(
+              {
+                id: args.objectId,
                 shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx

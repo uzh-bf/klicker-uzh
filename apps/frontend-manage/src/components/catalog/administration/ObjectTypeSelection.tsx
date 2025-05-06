@@ -41,7 +41,12 @@ function ObjectTypeSelection({
             tooltip={t('manage.catalog.objectTypeTooltip')}
             placeholder={t('manage.catalog.selectObjectType')}
             items={Object.values(SharingObjectType)
-              .filter((type) => type !== SharingObjectType.CatalogCollection)
+              .filter(
+                (type) =>
+                  type === SharingObjectType.AnswerCollection ||
+                  type === SharingObjectType.Element ||
+                  type === SharingObjectType.LiveQuizTemplate
+              )
               .map((objectType) => ({
                 value: objectType,
                 label: t(`shared.types.${objectType}`),

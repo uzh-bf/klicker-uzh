@@ -19,15 +19,17 @@ function PermissionsTable({
   activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()
-
   const actionPermissions = useObjectActionPermissions({ objectType })
+
+  // execution rights are only available for activities and courses
+  const showExecution = objectType === SharingObjectType.LiveQuiz
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {
-    [PermissionLevel.Read]: 1, // Read is the second column (index 1)
-    [PermissionLevel.Write]: 2, // Write is the third column (index 2)
-    [PermissionLevel.Admin]: 3, // Admin is the fourth column (index 3)
-    [PermissionLevel.Execute]: -1, // Execution rights are not present in this table
+    [PermissionLevel.Read]: 1, // Read is the first column (index 1)
+    [PermissionLevel.Execute]: showExecution ? 2 : -1, // if shown, Execution is the second column (index 2)
+    [PermissionLevel.Write]: showExecution ? 3 : 2, // Write is the third column (index 3)
+    [PermissionLevel.Admin]: showExecution ? 4 : 3, // Admin is the fourth column (index 4)
     [PermissionLevel.Owner]: -1, // Owner rights are not present in this table
   }
 
@@ -43,6 +45,7 @@ function PermissionsTable({
           {[
             t('shared.generic.actions'),
             t('shared.generic.read'),
+            ...(showExecution ? [t('shared.generic.execute')] : []),
             t('shared.generic.write'),
             t('shared.generic.admin'),
             t('shared.generic.owner'),

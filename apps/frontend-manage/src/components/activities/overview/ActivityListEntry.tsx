@@ -16,7 +16,8 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LiveQuizNameChangeModal from '~/components/liveQuiz/LiveQuizNameChangeModal'
+import LiveQuizNameChangeModal from '../../liveQuiz/LiveQuizNameChangeModal'
+import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
@@ -69,7 +70,8 @@ function ActivityListEntry({
             </div>
 
             {activity.status !== PublicationStatus.Template &&
-              activity.status !== PublicationStatus.Ended && (
+              activity.status !== PublicationStatus.Ended &&
+              activity.isEditor && (
                 <FontAwesomeIcon
                   icon={faPencil}
                   size="sm"
@@ -81,8 +83,12 @@ function ActivityListEntry({
             <FontAwesomeIcon
               icon={faInfoCircle}
               onClick={() => setShowDetails(true)}
-              className="text-uzh-blue-60 h-4 w-4"
+              className="text-uzh-blue-60 hover:text-uzh-blue-80 h-4 w-4 hover:cursor-pointer"
               data-cy={`open-activity-details-${activity.name}`}
+            />
+            <ObjectPermissionLevel
+              permissionLevel={activity.permissionLevel}
+              className="px-0.5"
             />
           </div>
           <div className="ml-[1.65rem] text-sm text-gray-500">
@@ -102,6 +108,7 @@ function ActivityListEntry({
             })}
           </div>
         </div>
+
         {activity.type === ActivityType.LiveQuiz ? (
           <LiveQuizActions quiz={activity} />
         ) : null}

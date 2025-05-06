@@ -26,6 +26,7 @@ query GetUserActivities {
     isOwner
     isManager
     isEditor
+    isExecutor
     isShared
     isRemovable
     updatedAt
