@@ -25,8 +25,12 @@ function ActivityDetailsModal({
       open={open}
       onClose={onClose}
       className={{ content: 'w-96 min-w-96 max-w-96' }}
+      dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
-      <div className="flex flex-col items-center gap-4 overflow-x-auto overflow-y-hidden">
+      <div
+        className="flex flex-col items-center gap-4 overflow-x-auto overflow-y-hidden"
+        data-cy="activity-details-modal"
+      >
         {activity.stacks.map((stack, index) => (
           <div
             key={stack.id}

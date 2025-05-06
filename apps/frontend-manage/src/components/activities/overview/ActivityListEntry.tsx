@@ -82,6 +82,7 @@ function ActivityListEntry({
               icon={faInfoCircle}
               onClick={() => setShowDetails(true)}
               className="text-uzh-blue-60 h-4 w-4"
+              data-cy={`open-activity-details-${activity.name}`}
             />
           </div>
           <div className="ml-[1.65rem] text-sm text-gray-500">

@@ -15,10 +15,6 @@ describe('Different live-quiz workflows', function () {
       if (result === false) {
         throw new Error('Permissions of user could not be updated.')
       }
-
-      // login as lecturer
-      cy.loginLecturer()
-      cy.reload()
     })
   })
 
@@ -1101,15 +1097,15 @@ describe('Different live-quiz workflows', function () {
       .then((text) => {
         cy.wrap(text).as('publicLinkQuestion0')
       })
-    cy.get('[data-cy="open-embedding-link-question-6"]')
+    cy.get('[data-cy="open-embedding-link-question-5"]')
       .invoke('text')
       .then((text) => {
-        cy.wrap(text).as('publicLinkQuestion6')
+        cy.wrap(text).as('publicLinkQuestion5')
       })
-    cy.get('[data-cy="open-embedding-link-question-9"]')
+    cy.get('[data-cy="open-embedding-link-question-7"]')
       .invoke('text')
       .then((text) => {
-        cy.wrap(text).as('publicLinkQuestion9')
+        cy.wrap(text).as('publicLinkQuestion7')
       })
     cy.get('[data-cy="open-embedding-link-leaderboard"]')
       .invoke('text')
@@ -1141,11 +1137,11 @@ describe('Different live-quiz workflows', function () {
       cy.visit(String(link))
     })
     cy.findByText(this.data.SC.content).should('exist')
-    cy.get('@publicLinkQuestion6').then((link) => {
+    cy.get('@publicLinkQuestion5').then((link) => {
       cy.visit(String(link))
     })
     cy.findByText(this.data.CT.content).should('exist')
-    cy.get('@publicLinkQuestion9').then((link) => {
+    cy.get('@publicLinkQuestion7').then((link) => {
       cy.visit(String(link))
     })
     cy.findByText(this.data.MCML.content).should('exist')

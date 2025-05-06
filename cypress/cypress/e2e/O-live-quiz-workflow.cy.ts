@@ -441,9 +441,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
 
-    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.name}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
+    ).should('exist')
     cy.get(`[data-cy="edit-live-quiz-${this.data.course1.quiz.name}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
@@ -601,9 +601,9 @@ describe('Different live-quiz workflows', function () {
 
     //  start editing again and check if correct values were saved
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="edit-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -675,11 +675,14 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
+    ).should('exist')
 
     // duplicate the live quiz and verify that the content is the same as for the original live quiz
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course1.quiz.nameNew}"]`
+    ).realClick()
     cy.get(
       `[data-cy="duplicate-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -707,19 +710,27 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.SC.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameDupl}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
+    ).should('exist')
   })
 
   it('Cleanup: Delete the duplicated live quiz', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
-    cy.findByText(this.data.course1.quiz.nameDupl).should('exist')
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course1.quiz.nameDupl}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course1.quiz.nameDupl}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
@@ -738,9 +749,9 @@ describe('Different live-quiz workflows', function () {
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
+    ).should('exist')
 
     // start live quiz and then abort it
     cy.get(
@@ -780,7 +791,12 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
-    cy.findByText(this.data.course1.quiz.nameNew).should('exist')
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course1.quiz.nameNew}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -898,9 +914,9 @@ describe('Different live-quiz workflows', function () {
     })
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.course2.quiz.name}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
+    ).should('exist')
 
     // start live quiz and first block
     cy.get(`[data-cy="start-live-quiz-${this.data.course2.quiz.name}"]`).click()
@@ -1413,12 +1429,14 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(
-      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
-    ).click()
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.SC2.title
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
     )
+    cy.get(
+      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
   it('Edit the single choice question, edit and save the unmodified live quiz -> verify that nothing changed', function () {
@@ -1448,12 +1466,14 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(
-      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
-    ).click()
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.SC2.title
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
     )
+    cy.get(
+      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
   it('Add the modified single choice question and a multiple choice question to the live quiz', function () {
@@ -1507,18 +1527,18 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(
-      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
-    ).click()
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.SC2.title
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+    cy.get(
+      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
+    cy.get('[data-cy="activity-details-modal"]').contains(
       this.data.liveQuiz.newSCTitle
     )
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.MC2.title
-    )
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.MC2.title)
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
   it('Delete the two created elements and verify that the live quiz content is not modified on edit', function () {
@@ -1541,18 +1561,18 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(
-      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
-    ).click()
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.SC2.title
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+    cy.get(
+      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
+    cy.get('[data-cy="activity-details-modal"]').contains(
       this.data.liveQuiz.newSCTitle
     )
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
-      this.data.MC2.title
-    )
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.MC2.title)
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
   it('Execute the live quiz, answer the questions and verify the question contents', function () {
@@ -1659,8 +1679,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz and check that the same questions are contained therein', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should('exist')
-
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
     cy.get('[data-cy="insert-live-quiz-name"]')
@@ -1685,17 +1706,17 @@ describe('Different live-quiz workflows', function () {
 
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
-      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.duplicateName}"]`
+      `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="open-activity-details-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get(
-      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
-    ).contains(this.data.SC2.title)
-    cy.get(
-      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
-    ).contains(this.data.liveQuiz.newSCTitle)
-    cy.get(
-      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
-    ).contains(this.data.MC2.title)
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      this.data.liveQuiz.newSCTitle
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(this.data.MC2.title)
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
   it('Execute the duplicated live quiz, answer the questions and verify the question contents', function () {
@@ -1812,8 +1833,15 @@ describe('Different live-quiz workflows', function () {
   it('Delete the created live quizzes', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+    ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
@@ -1827,7 +1855,12 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
-    cy.findByText(this.data.course2.quiz.name).should('exist')
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course2.quiz.name}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1839,6 +1872,9 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
+    cy.get(
+      `[data-cy="actions-live-quiz-${this.data.course2.quiz.name}"]`
+    ).realClick()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
