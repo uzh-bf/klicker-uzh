@@ -44,6 +44,63 @@ import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import LiveQuizNameChangeModal from '../../liveQuiz/LiveQuizNameChangeModal'
 import ActivityActionButton from './ActivityActionButton'
 
+// create a map between the activity status and the available actions (in order)
+const statusActionMap = {
+  [PublicationStatus.Draft]: [
+    'startLiveQuiz',
+    'editLiveQuiz',
+    'qrCode',
+    'embeddingEvaluation',
+    'duplicateLiveQuiz',
+    'templateFromLiveQuiz',
+    'shareLiveQuiz',
+    'deleteLiveQuiz',
+  ],
+  [PublicationStatus.Scheduled]: [
+    'startLiveQuiz',
+    'duplicateLiveQuiz',
+    'qrCode',
+    'embeddingEvaluation',
+    'shareLiveQuiz',
+    'deleteLiveQuiz',
+  ],
+  [PublicationStatus.Published]: [
+    'lecturerCockpit',
+    'liveQuizEvaluation',
+    'qrCode',
+    'embeddingEvaluation',
+    'duplicateLiveQuiz',
+    'shareLiveQuiz',
+  ],
+  [PublicationStatus.Ended]: [
+    'liveQuizEvaluation',
+    'duplicateLiveQuiz',
+    'embeddingEvaluation',
+    'shareLiveQuiz',
+    'deleteLiveQuiz',
+  ],
+  [PublicationStatus.Template]: [
+    'editTemplate',
+    'useTemplate',
+    'deleteTemplate',
+  ],
+  [PublicationStatus.Graded]: [],
+}
+
+// limit the available actions based on the permission level
+const permissionActionMap = {
+  isManager: [
+    'duplicateLiveQuiz',
+    'templateFromLiveQuiz',
+    'shareLiveQuiz',
+    'deleteLiveQuiz',
+    'deleteTemplate',
+  ],
+  isEditor: ['editLiveQuiz', 'editTemplate'],
+  isExecutor: ['startLiveQuiz', 'lecturerCockpit', 'liveQuizEvaluation'],
+  isShared: ['qrCode', 'embeddingEvaluation', 'useTemplate'],
+}
+
 function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   const t = useTranslations()
   const router = useRouter()
@@ -291,58 +348,44 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
     ]
   )
 
-  // create a map between the activity status and the available actions (in order)
-  const permissionActionsMap = useMemo(
-    () => ({
-      [PublicationStatus.Draft]: [
-        'startLiveQuiz',
-        'editLiveQuiz',
-        'qrCode',
-        'embeddingEvaluation',
-        'duplicateLiveQuiz',
-        'templateFromLiveQuiz',
-        'shareLiveQuiz',
-        'deleteLiveQuiz',
-      ],
-      [PublicationStatus.Scheduled]: [
-        'startLiveQuiz',
-        'duplicateLiveQuiz',
-        'qrCode',
-        'embeddingEvaluation',
-        'shareLiveQuiz',
-        'deleteLiveQuiz',
-      ],
-      [PublicationStatus.Published]: [
-        'lecturerCockpit',
-        'liveQuizEvaluation',
-        'qrCode',
-        'embeddingEvaluation',
-        'duplicateLiveQuiz',
-        'shareLiveQuiz',
-      ],
-      [PublicationStatus.Ended]: [
-        'liveQuizEvaluation',
-        'duplicateLiveQuiz',
-        'embeddingEvaluation',
-        'shareLiveQuiz',
-        'deleteLiveQuiz',
-      ],
-      [PublicationStatus.Template]: [
-        'editTemplate',
-        'useTemplate',
-        'deleteTemplate',
-      ],
-      [PublicationStatus.Graded]: [],
-    }),
-    []
-  )
-
   const availableActions = useMemo(
     () =>
-      permissionActionsMap[quiz.status].flatMap(
-        (actionId) => ACTIONS.find((action) => action.id === actionId) ?? []
-      ),
-    [ACTIONS, permissionActionsMap, quiz.status]
+      statusActionMap[quiz.status]
+        .flatMap(
+          (actionId) => ACTIONS.find((action) => action.id === actionId) ?? []
+        )
+        .filter((action) => {
+          if (quiz.isManager || quiz.isOwner) {
+            return true
+          } else if (
+            quiz.isEditor &&
+            (permissionActionMap.isEditor.includes(action.id) ||
+              permissionActionMap.isExecutor.includes(action.id) ||
+              permissionActionMap.isShared.includes(action.id))
+          ) {
+            return true
+          } else if (
+            quiz.isExecutor &&
+            (permissionActionMap.isExecutor.includes(action.id) ||
+              permissionActionMap.isShared.includes(action.id))
+          ) {
+            return true
+          } else if (
+            quiz.isShared &&
+            permissionActionMap.isShared.includes(action.id)
+          ) {
+            return true
+          }
+        }),
+    [
+      ACTIONS,
+      quiz.isEditor,
+      quiz.isExecutor,
+      quiz.isManager,
+      quiz.isOwner,
+      quiz.isShared,
+      quiz.status,
+    ]
   )
 
   return (

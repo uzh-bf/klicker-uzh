@@ -70,7 +70,8 @@ function ActivityListEntry({
             </div>
 
             {activity.status !== PublicationStatus.Template &&
-              activity.status !== PublicationStatus.Ended && (
+              activity.status !== PublicationStatus.Ended &&
+              activity.isEditor && (
                 <FontAwesomeIcon
                   icon={faPencil}
                   size="sm"
