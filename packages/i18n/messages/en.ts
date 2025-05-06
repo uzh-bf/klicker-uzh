@@ -967,6 +967,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      removeActivity: 'Remove Activity',
+      confirmActivityRemoval:
+        'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
+      activityRemovalFinal:
+        'Removing the activity will remove it from your account, but not delete any of its content. Additionally, published activities will remain available to all students. The removal cannot be undone.',
+      activityRemovalDerivedAccessHint:
+        'If this activity is assigned to a course that you have access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the activity after triggering its removal. Once the associated course is deleted or removed, the element will be automatically removed as well.',
+      activityRemovalDependencyAccess:
+        'Derived access rights to included elements and resources will be automatically revoked (unless technically required).',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1845,6 +1854,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
       shareLiveQuiz: 'Share Live Quiz',
+      removeLiveQuiz: 'Remove Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',

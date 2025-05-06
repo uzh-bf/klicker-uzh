@@ -160,7 +160,6 @@ function AddObjectToCatalogModal({
                 className={`rounded-md border p-4 ${values.objectType ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-gray-100'}`}
               >
                 <H4>2. {t('manage.catalog.selectSpecificObject')}</H4>
-
                 {values.objectType ? (
                   <SelectObjectForCatalog
                     objectType={values.objectType as SharingObjectType}

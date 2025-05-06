@@ -1432,9 +1432,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
-    ).click()
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1469,9 +1467,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
-    ).click()
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1530,9 +1526,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
-    ).click()
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
     cy.get('[data-cy="activity-details-modal"]').contains(
       this.data.liveQuiz.newSCTitle
@@ -1564,9 +1558,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="open-activity-details-${this.data.liveQuiz.name}"]`
-    ).click()
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
     cy.get('[data-cy="activity-details-modal"]').contains(
       this.data.liveQuiz.newSCTitle
@@ -1709,7 +1701,7 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
     ).should('exist')
     cy.get(
-      `[data-cy="open-activity-details-${this.data.liveQuiz.duplicateName}"]`
+      `[data-cy="activity-name-${this.data.liveQuiz.duplicateName}"]`
     ).click()
     cy.get('[data-cy="activity-details-modal"]').contains(this.data.SC2.title)
     cy.get('[data-cy="activity-details-modal"]').contains(
