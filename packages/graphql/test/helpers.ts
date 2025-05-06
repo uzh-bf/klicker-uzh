@@ -579,7 +579,7 @@ export async function seedLiveQuiz(
       name: 'Live Quiz Test',
       displayName: 'Live Quiz Test',
       description: 'Test Description',
-      ownerId: userOne.id,
+      ownerId: ctx.user.sub,
       blocks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -595,7 +595,7 @@ export async function seedLiveQuiz(
                 elementData: {} as ElementData,
                 results: {} as ElementInstanceResults,
                 anonymousResults: {} as ElementInstanceResults,
-                ownerId: userOne.id,
+                ownerId: ctx.user.sub,
               },
             ],
           },
