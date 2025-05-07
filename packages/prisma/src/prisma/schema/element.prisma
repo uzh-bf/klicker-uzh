@@ -21,8 +21,7 @@ enum ElementType {
 model Element {
   id Int @id @default(autoincrement())
 
-  version Int @default(1) // used to track question versions, incremented on each update
-
+  version    Int     @default(1) // used to track question versions, incremented on each update
   originalId String?
 
   isArchived Boolean @default(false)

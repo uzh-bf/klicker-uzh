@@ -1,7 +1,9 @@
 import {
   Course,
+  DerivedPermission,
   ElementOrderType,
   LeaderboardType,
+  Permission,
   PermissionLevel,
   PublicationStatus,
   TimelineEntryType,
@@ -826,19 +828,58 @@ export async function getUserCourses(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      courses: {
-        orderBy: {
-          endDate: 'desc',
+      objects: {
+        where: { courseId: { not: null } },
+        include: {
+          directPermission: true,
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: true,
+                },
+              },
+            },
+          },
         },
+        orderBy: [{ course: { endDate: 'desc' } }],
       },
     },
   })
 
   // sort courses by archived or not
   const filteredCourses =
-    userCourses?.courses.sort((a, b) => {
-      return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
-    }) ?? []
+    userCourses?.objects
+      .flatMap((object) =>
+        object.course !== null
+          ? {
+              ...object.course,
+              permissionLevel: object.permissionLevel,
+              derivedAccess: object.derived,
+              numSharedUsers: object.course._count.permissions - 1,
+              isOwner: object.permissionLevel === PermissionLevel.OWNER,
+              isManager:
+                object.permissionLevel === PermissionLevel.OWNER ||
+                object.permissionLevel === PermissionLevel.ADMIN,
+              isEditor:
+                object.permissionLevel === PermissionLevel.OWNER ||
+                object.permissionLevel === PermissionLevel.ADMIN ||
+                object.permissionLevel === PermissionLevel.WRITE,
+              isImported:
+                object.permissionLevel === PermissionLevel.OWNER &&
+                object.course.originalId !== null,
+              isShared: object.permissionLevel !== PermissionLevel.OWNER,
+              // object can be removed, if the object is shared and the permission is not derived / granted through a user group
+              isRemovable:
+                object.permissionLevel !== PermissionLevel.OWNER &&
+                !object.derived &&
+                object.directPermission?.userGroupId === null,
+            }
+          : []
+      )
+      .sort((a, b) => {
+        return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
+      }) ?? []
 
   return filteredCourses
 }
@@ -1089,6 +1130,33 @@ export async function getControlCourses(ctx: ContextWithUser) {
   return user?.courses ?? []
 }
 
+function getPermissionBooleans({
+  permission,
+}: {
+  permission: DerivedPermission & { directPermission: Permission | null }
+}) {
+  return {
+    isOwner: permission.permissionLevel === PermissionLevel.OWNER,
+    isManager:
+      permission.permissionLevel === PermissionLevel.OWNER ||
+      permission.permissionLevel === PermissionLevel.ADMIN,
+    isEditor:
+      permission.permissionLevel === PermissionLevel.OWNER ||
+      permission.permissionLevel === PermissionLevel.ADMIN ||
+      permission.permissionLevel === PermissionLevel.WRITE,
+    isExecutor:
+      permission.permissionLevel === PermissionLevel.EXECUTE ||
+      permission.permissionLevel === PermissionLevel.WRITE ||
+      permission.permissionLevel === PermissionLevel.ADMIN ||
+      permission.permissionLevel === PermissionLevel.OWNER,
+    isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+    isRemovable:
+      permission.permissionLevel !== PermissionLevel.OWNER &&
+      !permission.derived &&
+      permission.directPermission?.userGroupId === null,
+  }
+}
+
 export async function getCourseData(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1100,23 +1168,53 @@ export async function getCourseData(
       liveQuizzes: {
         where: { isDeleted: false },
         include: {
-          blocks: { include: { _count: { select: { elements: true } } } },
+          blocks: { include: { elements: true } },
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+          },
+          templateInfo: true,
+          _count: { select: { permissions: true } },
         },
         orderBy: { updatedAt: 'desc' },
       },
       practiceQuizzes: {
         where: { isDeleted: false },
-        include: { _count: { select: { stacks: true } } },
+        include: {
+          stacks: { include: { elements: true } },
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+          },
+          templateInfo: true,
+          _count: { select: { permissions: true } },
+        },
         orderBy: { updatedAt: 'desc' },
       },
       groupActivities: {
         where: { isDeleted: false },
-        include: { stacks: { include: { elements: true } } },
+        include: {
+          stacks: { include: { elements: true } },
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+          },
+          templateInfo: true,
+          _count: { select: { permissions: true } },
+        },
         orderBy: { updatedAt: 'desc' },
       },
       microLearnings: {
         where: { isDeleted: false },
-        include: { _count: { select: { stacks: true } } },
+        include: {
+          stacks: { include: { elements: true } },
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+          },
+          templateInfo: true,
+          _count: { select: { permissions: true } },
+        },
         orderBy: { scheduledStartAt: 'desc' },
       },
       leaderboard: {
@@ -1128,41 +1226,115 @@ export async function getCourseData(
     },
   })
 
+  // fetch the requesting user to check for private / public preview flags
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
   if (!course) return null
 
-  const reducedLiveQuizzes = course?.liveQuizzes.map((session) => {
-    return {
-      ...session,
-      numOfBlocks: session.blocks.length,
-      numOfInstances: session.blocks.reduce(
-        (acc, block) => acc + block._count.elements,
-        0
-      ),
-    }
-  })
+  const reducedLiveQuizzes = !user?.privatePreview
+    ? course.liveQuizzes.map((session) => {
+        return {
+          ...session,
+          numOfBlocks: session.blocks.length,
+          numOfInstances: session.blocks.reduce(
+            (acc, block) => acc + block.elements.length,
+            0
+          ),
+        }
+      })
+    : []
 
-  const reducedPracticeQuizzes = course?.practiceQuizzes.map((quiz) => {
+  const liveQuizActivities = user?.privatePreview
+    ? course.liveQuizzes.flatMap((liveQuiz) => {
+        const permission = liveQuiz.permissions[0]
+
+        if (!permission) {
+          return []
+        }
+
+        const {
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+        } = getPermissionBooleans({
+          permission,
+        })
+
+        const stacks = liveQuiz.blocks.map((block) => ({
+          id: block.id,
+          numOfParticipants: block.elements[0]
+            ? block.elements[0].results.total +
+              block.elements[0].anonymousResults.total
+            : 0,
+          elements: block.elements.map((instance) => ({
+            id: instance.id,
+            name: instance.elementData.name,
+            type: instance.elementType,
+          })),
+        }))
+
+        return {
+          id: liveQuiz.id,
+          templateId: liveQuiz.templateInfo?.id ?? null,
+          name: liveQuiz.name,
+          displayName: liveQuiz.displayName,
+          type: ActivityType.LIVE_QUIZ,
+          status: liveQuiz.status,
+          course: course.name,
+          numOfStacks: liveQuiz.blocks.length,
+          numOfElements: liveQuiz.blocks.reduce(
+            (acc, block) => acc + block.elements.length,
+            0
+          ),
+          stacks,
+          permissionLevel: permission.permissionLevel,
+          derivedAccess: permission.derived,
+          numSharedUsers: liveQuiz._count.permissions - 1,
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+          updatedAt: liveQuiz.updatedAt,
+        }
+      })
+    : []
+
+  const reducedPracticeQuizzes = course.practiceQuizzes.map((quiz) => {
     return {
       ...quiz,
-      numOfStacks: quiz._count.stacks,
+      numOfStacks: quiz.stacks.length,
     }
   })
 
-  const reducedMicroLearnings = course?.microLearnings.map((microLearning) => {
+  // TODO: return practice quizzes in the activity format for the new frontend visualizations
+  const practiceQuizActivities = user?.privatePreview ? [] : []
+
+  const reducedMicroLearnings = course.microLearnings.map((microLearning) => {
     return {
       ...microLearning,
-      numOfStacks: microLearning._count.stacks,
+      numOfStacks: microLearning.stacks.length,
     }
   })
 
-  const reducedGroupActivities = course?.groupActivities.map(
-    (groupActivity) => {
-      return {
-        ...groupActivity,
-        numOfQuestions: groupActivity.stacks[0]!.elements.length,
-      }
+  // TODO: return microlearnings in the activity format for the new frontend visualizations
+  const microLearningActivities = user?.privatePreview ? [] : []
+
+  const reducedGroupActivities = course.groupActivities.map((groupActivity) => {
+    return {
+      ...groupActivity,
+      numOfQuestions: groupActivity.stacks[0]!.elements.length,
     }
-  )
+  })
+
+  // TODO: return group activities in the activity format for the new frontend visualizations
+  const groupActivityActivities = user?.privatePreview ? [] : []
 
   return {
     ...course,
@@ -1170,7 +1342,11 @@ export async function getCourseData(
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: reducedGroupActivities,
     microLearnings: reducedMicroLearnings,
-    numOfParticipants: course?.participations.length,
+    liveQuizActivities,
+    practiceQuizActivities,
+    microLearningActivities,
+    groupActivityActivities,
+    numOfParticipants: course.participations.length,
     numOfParticipantGroups: course._count.participantGroups,
   }
 }

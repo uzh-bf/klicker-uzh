@@ -13,5 +13,15 @@ query GetUserCourses {
     endDate
     createdAt
     updatedAt
+
+    derivedAccess
+    numSharedUsers
+    permissionLevel
+    isOwner
+    isManager
+    isEditor
+    isImported
+    isShared
+    isRemovable
   }
 }

@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
+import { ActivityInfoRef, IActivityInfo } from './activities.js'
 import { type IGroupActivity, GroupActivityRef } from './groupActivity.js'
 import { type ILiveQuiz, LiveQuizRef } from './liveQuiz.js'
 import { type IMicroLearning, MicroLearningRef } from './microLearning.js'
@@ -15,6 +16,7 @@ import {
   ParticipationRef,
 } from './participant.js'
 import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
+import { PermissionLevel } from './sharing.js'
 import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
@@ -23,13 +25,27 @@ export interface ICourse extends DB.Course {
   averageScore?: number
   isGroupDeadlinePassed?: boolean
   liveQuizzes?: ILiveQuiz[]
+  liveQuizActivities?: IActivityInfo[]
   practiceQuizzes?: IPracticeQuiz[]
+  practiceQuizActivities?: IActivityInfo[]
   microLearnings?: IMicroLearning[]
+  microLearningActivities?: IActivityInfo[]
   participantGroups?: IParticipantGroup[]
   groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
   groupActivities?: IGroupActivity[]
+  groupActivityActivities?: IActivityInfo[]
   awards?: IAwardEntry[]
   owner?: IUser
+
+  permissionLevel?: DB.PermissionLevel
+  derivedAccess?: boolean // = derived from other object => removal disabled
+  numSharedUsers?: number
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
+  isImported?: boolean // imported flag for UI icon
+  isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
@@ -83,16 +99,41 @@ export const Course = builder.objectType(CourseRef, {
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
+    permissionLevel: t.expose('permissionLevel', {
+      type: PermissionLevel,
+      nullable: true,
+    }),
+    derivedAccess: t.exposeBoolean('derivedAccess', { nullable: true }),
+    numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isManager: t.exposeBoolean('isManager', { nullable: true }),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+    isImported: t.exposeBoolean('isImported', { nullable: true }),
+    isShared: t.exposeBoolean('isShared', { nullable: true }),
+    isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+
     liveQuizzes: t.expose('liveQuizzes', {
       type: [LiveQuizRef],
+      nullable: true,
+    }),
+    liveQuizActivities: t.expose('liveQuizActivities', {
+      type: [ActivityInfoRef],
       nullable: true,
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
       type: [PracticeQuizRef],
       nullable: true,
     }),
+    practiceQuizActivities: t.expose('practiceQuizActivities', {
+      type: [ActivityInfoRef],
+      nullable: true,
+    }),
     microLearnings: t.expose('microLearnings', {
       type: [MicroLearningRef],
+      nullable: true,
+    }),
+    microLearningActivities: t.expose('microLearningActivities', {
+      type: [ActivityInfoRef],
       nullable: true,
     }),
     participantGroups: t.expose('participantGroups', {
@@ -105,6 +146,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     groupActivities: t.expose('groupActivities', {
       type: [GroupActivityRef],
+      nullable: true,
+    }),
+    groupActivityActivities: t.expose('groupActivityActivities', {
+      type: [ActivityInfoRef],
       nullable: true,
     }),
     awards: t.expose('awards', {

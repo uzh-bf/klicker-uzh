@@ -12,6 +12,7 @@ interface GroupActivityListProps {
   courseId: string
   courseStartDate: string
   userCatalyst?: boolean
+  privatePreview: boolean
 }
 
 function GroupActivityList({
@@ -21,6 +22,7 @@ function GroupActivityList({
   courseId,
   courseStartDate,
   userCatalyst,
+  privatePreview,
 }: GroupActivityListProps) {
   const t = useTranslations()
 

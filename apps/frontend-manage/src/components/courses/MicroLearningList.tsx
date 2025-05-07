@@ -18,12 +18,14 @@ interface MicroLearningListProps {
   >[]
   courseId: string
   userCatalyst?: boolean
+  privatePreview: boolean
 }
 
 function MicroLearningList({
   microLearnings,
   courseId,
   userCatalyst,
+  privatePreview,
 }: MicroLearningListProps) {
   const t = useTranslations()
 

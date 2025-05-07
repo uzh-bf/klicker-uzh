@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
@@ -14,6 +15,7 @@ import {
   type ElementType,
   SharingObjectType,
   type Tag,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
@@ -83,6 +85,11 @@ function Element({
   const [isDeletionModalOpen, setDeletionModalOpen] = useState(false)
   const [isSharingModalOpen, setSharingModalOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
+
+  // TODO: once the sharing feature is available for all users, remove this feature flag check
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const [collectedProps, drag] = useDrag({
     item: {
@@ -220,6 +227,19 @@ function Element({
               <Button.Icon withoutLabel icon={faCopy} />
             </Button>
 
+            {element.isManager && !dataUser?.userProfile?.privatePreview ? (
+              <Button
+                disabled={disabled}
+                onClick={() => setDeletionModalOpen(true)}
+                className={{
+                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
+                }}
+                data={{ cy: `delete-element-${element.name}` }}
+              >
+                <Button.Icon withoutLabel icon={faTrashCan} />
+              </Button>
+            ) : null}
+
             {element.isShared &&
             !element.isManager &&
             !element.derivedAccess &&
@@ -236,7 +256,7 @@ function Element({
               </Button>
             ) : null}
 
-            {element.isManager ? (
+            {element.isManager && dataUser?.userProfile?.privatePreview ? (
               <Dropdown
                 disabled={disabled}
                 items={[

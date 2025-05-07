@@ -41,7 +41,7 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
   }),
 })
 
-interface IActivityInfo {
+export interface IActivityInfo {
   id: string
   templateId: string | null
 

@@ -467,6 +467,9 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
                 data={{ cy: `actions-live-quiz-${quiz.name}` }}
               />
             }
+            className={{
+              viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
+            }}
           />
         )}
       </div>

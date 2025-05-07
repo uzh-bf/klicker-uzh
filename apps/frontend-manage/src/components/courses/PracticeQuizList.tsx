@@ -14,6 +14,7 @@ interface PracticeQuizTileProps {
   courseId: string
   courseStartDate: string
   userCatalyst?: boolean
+  privatePreview: boolean
 }
 
 function PracticeQuizList({
@@ -21,6 +22,7 @@ function PracticeQuizList({
   courseId,
   courseStartDate,
   userCatalyst,
+  privatePreview,
 }: PracticeQuizTileProps) {
   const t = useTranslations()
 
