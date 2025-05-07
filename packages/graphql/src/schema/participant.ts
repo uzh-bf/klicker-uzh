@@ -5,7 +5,7 @@ import {
   type SubscriptionKeysInput as SubscriptionKeysInputType,
   type SubscriptionObjectInput as SubscriptionObjectInputType,
 } from '@klicker-uzh/types'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
+import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import {
   type IAchievement,
