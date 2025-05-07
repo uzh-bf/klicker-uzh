@@ -6,6 +6,7 @@ import ContentInput from '../../common/ContentInput'
 import { ElementFormTypes } from './types'
 
 interface ElementExplanationFieldProps {
+  disabled?: boolean
   values: ElementFormTypes
   setFieldValue: (
     field: string,
@@ -15,6 +16,7 @@ interface ElementExplanationFieldProps {
 }
 
 function ElementExplanationField({
+  disabled,
   values,
   setFieldValue,
 }: ElementExplanationFieldProps) {
@@ -47,6 +49,8 @@ function ElementExplanationField({
               tooltip={t('manage.elements.explanationTooltip')}
             />
             <ContentInput
+              key={`${values.type}-explanation`}
+              disabled={disabled}
               error={meta.error}
               touched={meta.touched}
               content={field.value || '<br>'}
@@ -54,7 +58,7 @@ function ElementExplanationField({
                 setFieldValue('explanation', newValue)
               }
               placeholder={t('manage.elements.explanationPlaceholder')}
-              key={`${values.type}-explanation`}
+              showToolbarOnFocus={disabled} // show toolbar only when not disabled
               data={{ cy: 'insert-question-explanation' }}
             />
           </>

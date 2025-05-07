@@ -14,6 +14,7 @@ import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
   loading,
+  disabled,
   isTemplate,
   collections,
   setSelectedItems,
@@ -22,6 +23,7 @@ function CaseStudyCollectionSelection({
   refetchAnswerCollections,
 }: {
   loading: boolean
+  disabled: boolean
   isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
@@ -70,6 +72,7 @@ function CaseStudyCollectionSelection({
       <div className="flex flex-row items-end gap-2">
         <SelectField
           required
+          disabled={disabled || loading}
           value={collectionField.value}
           onChange={(value) => {
             if (hasSampleSolution && selectedAnswers.length > 0) {
@@ -100,7 +103,7 @@ function CaseStudyCollectionSelection({
           }}
         />
         <Button
-          disabled={loading}
+          disabled={disabled || loading}
           onClick={async () => await refetchAnswerCollections()}
           className={{ root: 'h-9 w-9' }}
           data={{ cy: 'refresh-answer-collections' }}
@@ -123,6 +126,7 @@ function CaseStudyCollectionSelection({
           <Select
             isClearable
             isMulti
+            isDisabled={disabled || loading}
             value={selectedAnswers}
             options={collectionAnswers}
             menuPlacement="auto"

@@ -311,6 +311,7 @@ function Element({
       )}
       {isModificationModalOpen && (
         <ElementEditModal
+          inputsDisabled={!element.isEditor}
           handleSetIsOpen={setModificationModalOpen}
           triggerSuccessToast={triggerSuccessToast}
           isOpen={isModificationModalOpen}
@@ -318,7 +319,7 @@ function Element({
           mode={ElementEditMode.EDIT}
         />
       )}
-      {isDuplicationModalOpen && element.isEditor && (
+      {isDuplicationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setDuplicationModalOpen}
           triggerSuccessToast={triggerSuccessToast}
