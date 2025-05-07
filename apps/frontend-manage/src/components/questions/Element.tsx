@@ -4,6 +4,7 @@ import {
   faEllipsis,
   faPencil,
   faShare,
+  faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -182,6 +183,12 @@ function Element({
             </div>
           </div>
 
+          {element.numSharedUsers ? (
+            <div className="mr-2 flex h-max flex-row items-center gap-1.5 py-1">
+              <div>{element.numSharedUsers}</div>
+              <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
+            </div>
+          ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
             {element.isEditor ? (
               <Button

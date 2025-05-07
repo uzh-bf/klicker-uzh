@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   GetAnswerCollectionsInfoDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   ImportCatalogObjectDocument,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -44,7 +44,7 @@ function useImportCatalogObject({
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
           ...(objectType === SharingObjectType.Element
-            ? [{ query: GetUserQuestionsDocument }]
+            ? [{ query: GetUserElementsDocument }]
             : []),
         ],
       })

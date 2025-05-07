@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementType,
   GetSingleQuestionDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
@@ -145,7 +145,7 @@ function ElementEditModal({
             const result = await manipulateContentElement({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -169,7 +169,7 @@ function ElementEditModal({
             const result = await manipulateFlashcardElement({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -195,7 +195,7 @@ function ElementEditModal({
             const result = await manipulateChoicesQuestion({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -219,7 +219,7 @@ function ElementEditModal({
             const result = await manipulateNumericalQuestion({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -243,7 +243,7 @@ function ElementEditModal({
             const result = await manipulateFreeTextQuestion({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -267,7 +267,7 @@ function ElementEditModal({
             const result = await manipulateSelectionQuestion({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })
@@ -291,7 +291,7 @@ function ElementEditModal({
             const result = await manipulateCaseStudyQuestion({
               variables: args,
               refetchQueries: [
-                { query: GetUserQuestionsDocument },
+                { query: GetUserElementsDocument },
                 { query: GetUserTagsDocument },
               ],
             })

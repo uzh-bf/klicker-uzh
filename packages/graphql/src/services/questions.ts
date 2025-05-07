@@ -24,7 +24,7 @@ import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
-export async function getUserQuestions(ctx: ContextWithUser) {
+export async function getUserElements(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -37,6 +37,11 @@ export async function getUserQuestions(ctx: ContextWithUser) {
               tags: {
                 where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
                 orderBy: { order: 'asc' },
+              },
+              _count: {
+                select: {
+                  permissions: true,
+                },
               },
             },
           },
@@ -53,6 +58,7 @@ export async function getUserQuestions(ctx: ContextWithUser) {
             ...object.element,
             permissionLevel: object.permissionLevel,
             derivedAccess: object.derived,
+            numSharedUsers: object.element._count.permissions - 1,
             isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
             isManager:
               object.permissionLevel === DB.PermissionLevel.OWNER ||

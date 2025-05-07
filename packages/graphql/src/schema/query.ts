@@ -239,11 +239,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: t.withAuth(asUser).field({
+      userElements: t.withAuth(asUser).field({
         nullable: true,
         type: [Element],
         resolve: async (_, __, ctx) => {
-          return await QuestionService.getUserQuestions(ctx)
+          return await QuestionService.getUserElements(ctx)
         },
       }),
 

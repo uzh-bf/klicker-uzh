@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   Element,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -78,7 +78,7 @@ function Index() {
     loading: loadingQuestions,
     error: errorQuestions,
     data: dataQuestions,
-  } = useQuery(GetUserQuestionsDocument)
+  } = useQuery(GetUserElementsDocument)
 
   const {
     filters,
@@ -122,8 +122,8 @@ function Index() {
   }, [creationMode])
 
   const index = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
-      const dataQuestionsFlatTags = dataQuestions.userQuestions.map(
+    if (dataQuestions?.userElements) {
+      const dataQuestionsFlatTags = dataQuestions.userElements.map(
         (question) => ({
           ...question,
           tagsString: (question.tags ?? []).map((tag) => tag.name).join(' '),
@@ -138,19 +138,19 @@ function Index() {
       ])
     }
     return null
-  }, [dataQuestions?.userQuestions])
+  }, [dataQuestions?.userElements])
 
   const processedQuestions = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
+    if (dataQuestions?.userElements) {
       const items = processItems(
-        dataQuestions?.userQuestions,
+        dataQuestions?.userElements,
         filters,
         sort,
         index
       )
       return items
     }
-  }, [dataQuestions?.userQuestions, filters, index, sort])
+  }, [dataQuestions?.userElements, filters, index, sort])
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {
@@ -195,7 +195,7 @@ function Index() {
       )}
 
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        {dataQuestions && dataQuestions.userQuestions && (
+        {dataQuestions && dataQuestions.userElements && (
           <div>
             <div className="hidden h-full md:block">
               <TagList

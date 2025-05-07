@@ -1,5 +1,5 @@
-query GetUserQuestions {
-  userQuestions {
+query GetUserElements {
+  userElements {
     __typename
 
     ... on ChoicesElement {
@@ -19,6 +19,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -64,6 +65,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -116,6 +118,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -159,6 +162,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -197,6 +201,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -254,6 +259,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager
@@ -286,6 +292,7 @@ query GetUserQuestions {
       updatedAt
 
       derivedAccess
+      numSharedUsers
       permissionLevel
       isOwner
       isManager

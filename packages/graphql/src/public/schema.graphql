@@ -48,6 +48,7 @@ type ActivityInfo {
   name: String!
   numOfElements: Int!
   numOfStacks: Int!
+  numSharedUsers: Int
   permissionLevel: PermissionLevel!
   stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
@@ -318,6 +319,7 @@ type CaseStudyElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   options: CaseStudyElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
@@ -522,6 +524,7 @@ type ChoicesElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   options: ChoiceElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
@@ -612,6 +615,7 @@ type ContentElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
@@ -951,6 +955,7 @@ type FlashcardElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   status: ElementStatus!
@@ -1038,6 +1043,7 @@ type FreeTextElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   options: FreeTextElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
@@ -1598,6 +1604,7 @@ type NumericalElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   options: NumericalElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
@@ -2018,11 +2025,11 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities: [ActivityInfo!]
   userCourses: [Course!]
+  userElements: [Element!]
   userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
-  userQuestions: [Element!]
   userRunningLiveQuizzes: [LiveQuizInfo!]
   userScope: UserLoginScope
   userTags: [Tag!]
@@ -2083,6 +2090,7 @@ type SelectionElement {
   isRemovable: Boolean
   isShared: Boolean
   name: String!
+  numSharedUsers: Int
   options: SelectionElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!

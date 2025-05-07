@@ -26,6 +26,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { name: true } },
               templateInfo: { select: { id: true } },
               blocks: { include: { elements: true } },
+              _count: { select: { permissions: true } },
             },
           },
           practiceQuiz: {
@@ -33,6 +34,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { name: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
+              _count: { select: { permissions: true } },
             },
           },
           microLearning: {
@@ -40,6 +42,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { name: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
+              _count: { select: { permissions: true } },
             },
           },
           groupActivity: {
@@ -47,6 +50,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { name: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
+              _count: { select: { permissions: true } },
             },
           },
         },
@@ -109,6 +113,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
+        numSharedUsers: object.liveQuiz._count.permissions - 1,
         isOwner,
         isManager,
         isEditor,

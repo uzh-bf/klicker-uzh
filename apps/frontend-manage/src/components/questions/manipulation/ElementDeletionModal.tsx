@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteElementDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
@@ -59,7 +59,7 @@ function ElementDeletionModal({
           variables: {
             id: elementId,
           },
-          refetchQueries: [{ query: GetUserQuestionsDocument }],
+          refetchQueries: [{ query: GetUserElementsDocument }],
         })
         unsetDeletedQuestion(elementId)
         setModalOpen(false)

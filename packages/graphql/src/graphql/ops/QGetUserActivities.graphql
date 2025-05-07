@@ -23,6 +23,7 @@ query GetUserActivities {
 
     permissionLevel
     derivedAccess
+    numSharedUsers
     isOwner
     isManager
     isEditor

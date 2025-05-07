@@ -4,6 +4,7 @@ import {
   faFilePen,
   faPencil,
   faPlay,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -107,18 +108,26 @@ function ActivityListEntry({
           </div>
         </div>
 
-        {activity.type === ActivityType.LiveQuiz ? (
-          <LiveQuizActions quiz={activity} />
-        ) : null}
-        {activity.type === ActivityType.PracticeQuiz ? (
-          <PracticeQuizActions />
-        ) : null}
-        {activity.type === ActivityType.MicroLearning ? (
-          <MicrolearningActions />
-        ) : null}
-        {activity.type === ActivityType.GroupActivity ? (
-          <GroupActivityActions />
-        ) : null}
+        <div className="flex flex-row items-center gap-4">
+          {activity.numSharedUsers ? (
+            <div className="flex h-max flex-row items-center gap-1.5 py-1">
+              <div>{activity.numSharedUsers}</div>
+              <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
+            </div>
+          ) : null}
+          {activity.type === ActivityType.LiveQuiz ? (
+            <LiveQuizActions quiz={activity} />
+          ) : null}
+          {activity.type === ActivityType.PracticeQuiz ? (
+            <PracticeQuizActions />
+          ) : null}
+          {activity.type === ActivityType.MicroLearning ? (
+            <MicrolearningActions />
+          ) : null}
+          {activity.type === ActivityType.GroupActivity ? (
+            <GroupActivityActions />
+          ) : null}
+        </div>
       </div>
       <ActivityDetailsModal
         activity={activity}

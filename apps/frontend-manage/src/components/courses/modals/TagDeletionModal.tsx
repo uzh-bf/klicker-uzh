@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteTagDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -38,7 +38,7 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
         },
       })
     },
-    refetchQueries: [{ query: GetUserQuestionsDocument }],
+    refetchQueries: [{ query: GetUserElementsDocument }],
     optimisticResponse: {
       deleteTag: {
         id: id,

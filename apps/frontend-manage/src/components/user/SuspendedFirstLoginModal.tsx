@@ -2,7 +2,7 @@ import { useLazyQuery, useMutation, useSuspenseQuery } from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
   CheckShortnameAvailableDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -90,7 +90,7 @@ function SuspendedFirstLoginModal() {
                 locale: values.locale,
                 sendUpdates: values.sendProjectUpdates,
               },
-              refetchQueries: [{ query: GetUserQuestionsDocument }],
+              refetchQueries: [{ query: GetUserElementsDocument }],
             })
 
             if (!result) {
