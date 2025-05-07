@@ -10,11 +10,13 @@ import { ElementFormTypes } from './types'
 
 function ElementformScoringSection({
   isTemplate,
+  disabled,
   values,
   setFieldValue,
   isSubmitting,
 }: {
   isTemplate: boolean
+  disabled: boolean
   values: ElementFormTypes
   setFieldValue: (
     field: string,
@@ -51,7 +53,10 @@ function ElementformScoringSection({
           </Link>
         </div>
 
-        <SampleSolutionSetting disabled={isTemplate} type={values.type} />
+        <SampleSolutionSetting
+          disabled={isTemplate || disabled}
+          type={values.type}
+        />
       </div>
 
       <div className="mt-2 flex flex-col lg:flex-row lg:gap-4">
@@ -71,11 +76,11 @@ function ElementformScoringSection({
             </div>
           </div>
           <Switch
+            disabled={isSubmitting || disabled}
             checked={values.basePoints}
             onCheckedChange={() =>
               setFieldValue('basePoints', !values.basePoints)
             }
-            disabled={isSubmitting}
             className={{
               root: 'mt-2 self-center',
             }}
@@ -105,7 +110,7 @@ function ElementformScoringSection({
               <MultiplierSelector
                 withoutLabel
                 name="pointsMultiplier"
-                disabled={isSubmitting}
+                disabled={isSubmitting || disabled}
                 className={{
                   trigger: 'mt-1 h-8 w-full',
                 }}

@@ -21,6 +21,7 @@ import { ElementFormTypes, ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCaseDeletionButton from './CaseStudyCaseDeletionButton'
 
 export interface CaseStudySetterProps {
+  inputsDisabled: boolean
   setFieldValue: (
     field: string,
     value: any,
@@ -39,6 +40,7 @@ interface CaseStudyCasesFieldsProps extends CaseStudySetterProps {
 }
 
 function CaseStudyCasesFields({
+  inputsDisabled,
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
@@ -63,14 +65,17 @@ function CaseStudyCasesFields({
                   <H3>
                     {t('shared.generic.case')} {ix + 1}
                   </H3>
-                  <CaseStudyCaseDeletionButton
-                    hasSampleSolution={hasSampleSolution}
-                    onConfirm={() => remove(ix)}
-                    index={ix}
-                  />
+                  {!inputsDisabled ? (
+                    <CaseStudyCaseDeletionButton
+                      hasSampleSolution={hasSampleSolution}
+                      onConfirm={() => remove(ix)}
+                      index={ix}
+                    />
+                  ) : null}
                 </div>
                 <FormikTextField
                   required
+                  disabled={inputsDisabled}
                   name={`options.cases.${ix}.title`}
                   label={t('manage.elements.caseTitle')}
                   tooltip={t('manage.elements.caseStudyCaseTitleTooltip')}
@@ -97,6 +102,7 @@ function CaseStudyCasesFields({
                       <ContentInput
                         error={meta.error}
                         touched={meta.touched}
+                        disabled={inputsDisabled}
                         content={field.value || '<br>'}
                         onChange={(newValue: string) => {
                           setFieldValue(
@@ -111,7 +117,7 @@ function CaseStudyCasesFields({
                         placeholder={t(
                           'manage.elements.caseDescriptionPlaceholder'
                         )}
-                        showToolbarOnFocus={false}
+                        showToolbarOnFocus={inputsDisabled}
                         className={{ content: 'max-w-none' }}
                         data={{ cy: `case-description-${ix}` }}
                       />
@@ -172,6 +178,7 @@ function CaseStudyCasesFields({
                                     <div className="flex gap-4">
                                       <FormikNumberField
                                         required
+                                        disabled={inputsDisabled}
                                         precision={
                                           criterion.mode === 'steps'
                                             ? 0
@@ -193,6 +200,7 @@ function CaseStudyCasesFields({
                                       />
                                       <FormikNumberField
                                         required
+                                        disabled={inputsDisabled}
                                         precision={
                                           criterion.mode === 'steps'
                                             ? 0
@@ -227,19 +235,21 @@ function CaseStudyCasesFields({
                 <hr className="border-uzh-grey-40 mt-4 w-full border-2" />
               </div>
             ))}
-            <Button
-              type="button"
-              onClick={() =>
-                push({ id: nanoid(), name: undefined, description: '' })
-              }
-              className={{
-                root: 'border-primary-80 h-9 font-semibold',
-              }}
-              data={{ cy: 'add-new-case' }}
-            >
-              <Button.Icon icon={faPlus} />
-              <Button.Label>{t('manage.elements.addCase')}</Button.Label>
-            </Button>
+            {!inputsDisabled ? (
+              <Button
+                type="button"
+                onClick={() =>
+                  push({ id: nanoid(), name: undefined, description: '' })
+                }
+                className={{
+                  root: 'border-primary-80 h-9 font-semibold',
+                }}
+                data={{ cy: 'add-new-case' }}
+              >
+                <Button.Icon icon={faPlus} />
+                <Button.Label>{t('manage.elements.addCase')}</Button.Label>
+              </Button>
+            ) : null}
           </div>
         )}
       </FieldArray>

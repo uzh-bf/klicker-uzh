@@ -5,8 +5,10 @@ import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesNumerical } from '../types'
 
 function NumericalSolutionTypeSwitch({
+  disabled,
   solutionType,
 }: {
+  disabled?: boolean
   solutionType: ElementFormTypesNumerical['options']['solutionType']
 }) {
   const t = useTranslations()
@@ -22,6 +24,7 @@ function NumericalSolutionTypeSwitch({
       />
       <div className="flex flex-row">
         <Button
+          disabled={disabled}
           onClick={() => helpers.setValue('range')}
           className={{
             root: twMerge(
@@ -36,6 +39,7 @@ function NumericalSolutionTypeSwitch({
           <Button.Label>{t('manage.elements.solutionRanges')}</Button.Label>
         </Button>
         <Button
+          disabled={disabled}
           onClick={() => helpers.setValue('exact')}
           className={{
             root: twMerge(

@@ -1205,7 +1205,7 @@ export default defineConfig({
               })
 
               if (!practiceQuiz) {
-                throw new Error(`Live quiz ${activityName} not found`)
+                throw new Error(`Practice quiz ${activityName} not found`)
               }
 
               await prisma.practiceQuiz.update({
@@ -1218,7 +1218,7 @@ export default defineConfig({
               })
 
               if (!microLearning) {
-                throw new Error(`Live quiz ${activityName} not found`)
+                throw new Error(`Microlearning ${activityName} not found`)
               }
 
               await prisma.microLearning.update({
@@ -1231,7 +1231,7 @@ export default defineConfig({
               })
 
               if (!groupActivity) {
-                throw new Error(`Live quiz ${activityName} not found`)
+                throw new Error(`Group activity ${activityName} not found`)
               }
 
               await prisma.groupActivity.update({

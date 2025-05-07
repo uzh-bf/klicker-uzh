@@ -23,6 +23,7 @@ interface CaseStudyOptionsProps extends CaseStudySetterProps {
 function CaseStudyOptions({
   templateId,
   isTemplate,
+  inputsDisabled = false,
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
@@ -67,6 +68,7 @@ function CaseStudyOptions({
     <div className="flex flex-col gap-4">
       <CaseStudyCollectionSelection
         loading={loading}
+        disabled={inputsDisabled}
         isTemplate={isTemplate}
         collections={collections}
         setSelectedItems={setSelectedItems}
@@ -77,9 +79,10 @@ function CaseStudyOptions({
         }
       />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
-      <CaseStudyCriteriaFields />
+      <CaseStudyCriteriaFields disabled={inputsDisabled} />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCasesFields
+        inputsDisabled={inputsDisabled}
         setFieldTouched={setFieldTouched}
         setFieldValue={setFieldValue}
         hasSampleSolution={hasSampleSolution}

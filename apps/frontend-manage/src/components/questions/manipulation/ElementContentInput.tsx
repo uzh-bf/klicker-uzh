@@ -6,6 +6,7 @@ import ContentInput from '../../common/ContentInput'
 import { ElementFormTypes } from './types'
 
 interface ElementContentInputProps {
+  disabled?: boolean
   values: ElementFormTypes
   setFieldValue: (
     field: string,
@@ -15,6 +16,7 @@ interface ElementContentInputProps {
 }
 
 function ElementContentInput({
+  disabled = false,
   values,
   setFieldValue,
 }: ElementContentInputProps) {
@@ -92,13 +94,14 @@ function ElementContentInput({
               tooltip={t(tooltipMap[values.type])}
             />
             <ContentInput
+              disabled={disabled}
               error={meta.error}
               touched={meta.touched}
               content={field.value || '<br>'}
               onChange={(newValue: string) =>
                 setFieldValue('content', newValue)
               }
-              showToolbarOnFocus={false}
+              showToolbarOnFocus={disabled} // show toolbar only when not disabled
               placeholder={t(placeholderMap[values.type])}
               key={`${values.type}-content`}
               data={{ cy: 'insert-question-text' }}

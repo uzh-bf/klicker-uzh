@@ -27,6 +27,7 @@ import useValidationSchema from './useValidationSchema'
 
 function ElementEditForm({
   isTemplate = false,
+  inputsDisabled = false,
   templateId,
   open,
   onClose,
@@ -44,6 +45,8 @@ function ElementEditForm({
   includeTemplateUpdates,
   setIncludeTemplateUpdates,
 }: {
+  // flag to disable inputs (edit mode and read permissions)
+  inputsDisabled?: boolean
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
@@ -123,20 +126,22 @@ function ElementEditForm({
             onClose={() => onClose()}
             escapeDisabled={true}
             onPrimaryAction={
-              <Button
-                primary
-                type="submit"
-                loading={isSubmitting}
-                disabled={!isValid}
-                className={{ root: 'mt-2' }}
-                form="question-manipulation-form"
-                data={{ cy: 'save-new-question' }}
-              >
-                <Button.Label>{t('shared.generic.save')}</Button.Label>
-              </Button>
+              !inputsDisabled ? (
+                <Button
+                  primary
+                  type="submit"
+                  loading={isSubmitting}
+                  disabled={!isValid}
+                  className={{ root: 'mt-2' }}
+                  form="question-manipulation-form"
+                  data={{ cy: 'save-new-question' }}
+                >
+                  <Button.Label>{t('shared.generic.save')}</Button.Label>
+                </Button>
+              ) : undefined
             }
             onSecondaryAction={
-              !isTemplate ? (
+              !isTemplate && !inputsDisabled ? (
                 <Button
                   className={{ root: 'mt-2' }}
                   onClick={() => onClose()}
@@ -147,11 +152,13 @@ function ElementEditForm({
               ) : undefined
             }
           >
-            <AutoSaveMonitor
-              values={values}
-              initialValuesString={JSON.stringify(initialValues)}
-              setAutoSavedElement={setAutoSavedElement}
-            />
+            {!inputsDisabled && (
+              <AutoSaveMonitor
+                values={values}
+                initialValuesString={JSON.stringify(initialValues)}
+                setAutoSavedElement={setAutoSavedElement}
+              />
+            )}
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
               setElementDataTypename={setElementDataTypename}
@@ -162,15 +169,18 @@ function ElementEditForm({
                 <Form className="w-full" id="question-manipulation-form">
                   <ElementInformationFields
                     isTemplate={isTemplate}
+                    inputsDisabled={inputsDisabled}
                     mode={mode}
                     values={values}
                     isSubmitting={isSubmitting}
                   />
                   <ElementContentInput
+                    disabled={inputsDisabled}
                     values={values}
                     setFieldValue={setFieldValue}
                   />
                   <ElementExplanationField
+                    disabled={inputsDisabled}
                     values={values}
                     setFieldValue={setFieldValue}
                   />
@@ -181,6 +191,7 @@ function ElementEditForm({
                     values.type !== ElementType.Flashcard && (
                       <ElementformScoringSection
                         isTemplate={isTemplate}
+                        disabled={inputsDisabled}
                         values={values}
                         setFieldValue={setFieldValue}
                         isSubmitting={isSubmitting}
@@ -189,35 +200,45 @@ function ElementEditForm({
 
                   <div className="mt-4 flex flex-row gap-4">
                     <OptionsLabel type={values.type} />
-
                     <AnswerFeedbackSetting
-                      disabled={isTemplate}
+                      disabled={isTemplate || inputsDisabled}
                       values={values}
                     />
-                    <DisplayModeSetting type={values.type} />
+                    <DisplayModeSetting
+                      disabled={inputsDisabled}
+                      type={values.type}
+                    />
                   </div>
 
                   {values.type === ElementType.Sc ||
                   values.type === ElementType.Mc ||
                   values.type === ElementType.Kprim ? (
                     <ChoicesOptions
+                      inputsDisabled={inputsDisabled}
                       values={values}
                       setFieldValue={setFieldValue}
                     />
                   ) : null}
 
                   {values.type === ElementType.Numerical && (
-                    <NumericalOptions values={values} />
+                    <NumericalOptions
+                      inputsDisabled={inputsDisabled}
+                      values={values}
+                    />
                   )}
 
                   {values.type === ElementType.FreeText && (
-                    <FreeTextOptions values={values} />
+                    <FreeTextOptions
+                      inputsDisabled={inputsDisabled}
+                      values={values}
+                    />
                   )}
 
                   {values.type === ElementType.Selection && (
                     <SelectionOptions
                       templateId={templateId}
                       isTemplate={isTemplate}
+                      inputsDisabled={inputsDisabled}
                       values={values}
                       setAnswerCollectionEntries={setAnswerCollectionEntries}
                     />
@@ -227,6 +248,7 @@ function ElementEditForm({
                     <CaseStudyOptions
                       templateId={templateId}
                       isTemplate={isTemplate}
+                      inputsDisabled={inputsDisabled}
                       setFieldValue={setFieldValue}
                       setFieldTouched={setFieldTouched}
                       hasSampleSolution={values.options.hasSampleSolution}
@@ -246,7 +268,7 @@ function ElementEditForm({
               />
             </div>
 
-            {mode === ElementEditMode.EDIT && elementId && (
+            {mode === ElementEditMode.EDIT && elementId && !inputsDisabled && (
               <InstanceUpdateSwitch
                 elementId={elementId}
                 hasSampleSolution={

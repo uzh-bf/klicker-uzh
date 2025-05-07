@@ -5,10 +5,9 @@ import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Creatable from 'react-select/creatable'
 
-function SuspendedTagInput() {
+function SuspendedTagInput({ disabled }: { disabled: boolean }) {
   const t = useTranslations()
   const [field, _, helpers] = useField<string[]>('tags')
-
   const { data } = useSuspenseQuery(GetUserTagsDocument)
 
   const tags = useMemo(
@@ -28,6 +27,7 @@ function SuspendedTagInput() {
     <Creatable
       isClearable
       isMulti
+      isDisabled={disabled}
       value={tags}
       options={options}
       classNames={{

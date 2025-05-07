@@ -17,7 +17,7 @@ import {
 } from '../types'
 import CaseStudyCriterionModeMonitor from './CaseStudyCriterionModeMonitor'
 
-function CaseStudyCriteriaFields() {
+function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
   const t = useTranslations()
   const [criteriaField, _, criteriaHelpers] =
     useField<ElementFormTypesCaseStudyCriterion[]>('options.criteria')
@@ -56,56 +56,59 @@ function CaseStudyCriteriaFields() {
                         ? t('manage.elements.caseStudyRangeCriterion')
                         : t('manage.elements.caseStudyStepCriterion')}
                     </div>
-                    <Button
-                      destructive
-                      onClick={() => {
-                        const removedCriterionId =
-                          criteriaField.value?.[index]?.id
-                        remove(index)
+                    {!disabled ? (
+                      <Button
+                        destructive
+                        onClick={() => {
+                          const removedCriterionId =
+                            criteriaField.value?.[index]?.id
+                          remove(index)
 
-                        // Remove all solutions for this criterion
-                        const newCases = casesField.value?.map((caseItem) => {
-                          if (
-                            !('solutions' in caseItem) ||
-                            !caseItem.solutions
-                          ) {
-                            return caseItem
-                          }
+                          // Remove all solutions for this criterion
+                          const newCases = casesField.value?.map((caseItem) => {
+                            if (
+                              !('solutions' in caseItem) ||
+                              !caseItem.solutions
+                            ) {
+                              return caseItem
+                            }
 
-                          const newSolutions = Object.fromEntries(
-                            Object.entries(caseItem.solutions).map(
-                              ([itemIdString, itemSolutions]) => {
-                                const newItemSolutions = Object.fromEntries(
-                                  Object.entries(itemSolutions).filter(
-                                    ([criterionId, _]) =>
-                                      criterionId !== removedCriterionId
+                            const newSolutions = Object.fromEntries(
+                              Object.entries(caseItem.solutions).map(
+                                ([itemIdString, itemSolutions]) => {
+                                  const newItemSolutions = Object.fromEntries(
+                                    Object.entries(itemSolutions).filter(
+                                      ([criterionId, _]) =>
+                                        criterionId !== removedCriterionId
+                                    )
                                   )
-                                )
-                                return [itemIdString, newItemSolutions]
-                              }
+                                  return [itemIdString, newItemSolutions]
+                                }
+                              )
                             )
-                          )
 
-                          return {
-                            ...caseItem,
-                            solutions: newSolutions,
-                          }
-                        })
+                            return {
+                              ...caseItem,
+                              solutions: newSolutions,
+                            }
+                          })
 
-                        casesHelpers.setValue(newCases)
-                      }}
-                      className={{
-                        root: 'h-7 w-7',
-                      }}
-                      data={{ cy: `remove-criterion-${index}` }}
-                    >
-                      <FontAwesomeIcon icon={faTrashCan} />
-                    </Button>
+                          casesHelpers.setValue(newCases)
+                        }}
+                        className={{
+                          root: 'h-7 w-7',
+                        }}
+                        data={{ cy: `remove-criterion-${index}` }}
+                      >
+                        <FontAwesomeIcon icon={faTrashCan} />
+                      </Button>
+                    ) : null}
                   </div>
 
                   <FormikTextField
                     required
                     hideError
+                    disabled={disabled}
                     name={`options.criteria.${index}.name`}
                     label={t('shared.generic.name')}
                     tooltip={t('manage.elements.caseStudyCriteriaNameTooltip')}
@@ -123,6 +126,7 @@ function CaseStudyCriteriaFields() {
                       <FormikNumberField
                         required
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.min`}
                         label={t('shared.generic.minimumShort')}
                         tooltip={t(
@@ -137,6 +141,7 @@ function CaseStudyCriteriaFields() {
                       <FormikNumberField
                         required
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.max`}
                         label={t('shared.generic.maximumShort')}
                         tooltip={t(
@@ -151,6 +156,7 @@ function CaseStudyCriteriaFields() {
                       <FormikNumberField
                         required
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.step`}
                         label={t('shared.generic.step')}
                         tooltip={t(
@@ -164,6 +170,7 @@ function CaseStudyCriteriaFields() {
                       />
                       <FormikTextField
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.unit`}
                         label={t('shared.generic.unit')}
                         tooltip={t(
@@ -184,6 +191,7 @@ function CaseStudyCriteriaFields() {
                       <FormikTextField
                         required
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.labels.min`}
                         label={t('shared.generic.lowerEnd')}
                         placeholder={t('shared.generic.textInput')}
@@ -199,6 +207,7 @@ function CaseStudyCriteriaFields() {
                       />
                       <FormikTextField
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.labels.mid`}
                         label={t('shared.generic.midValue')}
                         placeholder={t('shared.generic.textInput')}
@@ -215,6 +224,7 @@ function CaseStudyCriteriaFields() {
                       <FormikTextField
                         required
                         hideError
+                        disabled={disabled}
                         name={`options.criteria.${index}.labels.max`}
                         label={t('shared.generic.upperEnd')}
                         placeholder={t('shared.generic.textInput')}
@@ -231,6 +241,7 @@ function CaseStudyCriteriaFields() {
                       <NumberField
                         required
                         hideError
+                        disabled={disabled}
                         value={
                           criteriaField.value[index].max &&
                           criteriaField.value[index].min
@@ -271,52 +282,58 @@ function CaseStudyCriteriaFields() {
                   )}
                 </div>
               ))}
-              <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-                <Button
-                  onClick={() =>
-                    push({
-                      id: nanoid(),
-                      mode: 'range',
-                      name: undefined,
-                      min: undefined,
-                      max: undefined,
-                      step: undefined,
-                      unit: undefined,
-                    })
-                  }
-                  className={{ root: 'border-primary-80 h-9 w-full sm:w-1/2' }}
-                  data={{ cy: 'add-range-criterion' }}
-                >
-                  <Button.Icon icon={faPlus} />
-                  <Button.Label>
-                    {t('manage.elements.addRangeCriterion')}
-                  </Button.Label>
-                </Button>
-                <Button
-                  onClick={() =>
-                    push({
-                      id: nanoid(),
-                      mode: 'steps',
-                      name: undefined,
-                      min: 1,
-                      max: 5,
-                      step: 1,
-                      unit: undefined,
-                      labels: {
+              {!disabled ? (
+                <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    onClick={() =>
+                      push({
+                        id: nanoid(),
+                        mode: 'range',
+                        name: undefined,
                         min: undefined,
                         max: undefined,
-                      },
-                    })
-                  }
-                  className={{ root: 'border-primary-80 h-9 w-full sm:w-1/2' }}
-                  data={{ cy: 'add-steps-criterion' }}
-                >
-                  <Button.Icon icon={faPlus} />
-                  <Button.Label>
-                    {t('manage.elements.addStepsCriterion')}
-                  </Button.Label>
-                </Button>
-              </div>
+                        step: undefined,
+                        unit: undefined,
+                      })
+                    }
+                    className={{
+                      root: 'border-primary-80 h-9 w-full sm:w-1/2',
+                    }}
+                    data={{ cy: 'add-range-criterion' }}
+                  >
+                    <Button.Icon icon={faPlus} />
+                    <Button.Label>
+                      {t('manage.elements.addRangeCriterion')}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      push({
+                        id: nanoid(),
+                        mode: 'steps',
+                        name: undefined,
+                        min: 1,
+                        max: 5,
+                        step: 1,
+                        unit: undefined,
+                        labels: {
+                          min: undefined,
+                          max: undefined,
+                        },
+                      })
+                    }
+                    className={{
+                      root: 'border-primary-80 h-9 w-full sm:w-1/2',
+                    }}
+                    data={{ cy: 'add-steps-criterion' }}
+                  >
+                    <Button.Icon icon={faPlus} />
+                    <Button.Label>
+                      {t('manage.elements.addStepsCriterion')}
+                    </Button.Label>
+                  </Button>
+                </div>
+              ) : null}
             </>
           )}
         </FieldArray>

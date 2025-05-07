@@ -36,6 +36,7 @@ export enum ElementEditMode {
 }
 
 interface ElementEditModalProps {
+  inputsDisabled?: boolean
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
   triggerSuccessToast: () => void
@@ -44,6 +45,7 @@ interface ElementEditModalProps {
 }
 
 function ElementEditModal({
+  inputsDisabled = false,
   isOpen,
   handleSetIsOpen,
   triggerSuccessToast,
@@ -120,6 +122,7 @@ function ElementEditModal({
     <ElementEditForm
       mode={mode}
       elementId={elementId}
+      inputsDisabled={inputsDisabled}
       loading={loadingQuestion}
       initialValues={formikInitialValues}
       open={isOpen}

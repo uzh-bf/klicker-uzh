@@ -23,6 +23,7 @@ import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 interface SelectionOptionsProps {
   templateId?: string
   isTemplate: boolean
+  inputsDisabled?: boolean
   values: ElementFormTypesSelection
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -32,6 +33,7 @@ interface SelectionOptionsProps {
 function SelectionOptions({
   templateId,
   isTemplate,
+  inputsDisabled,
   values,
   setAnswerCollectionEntries,
 }: SelectionOptionsProps) {
@@ -93,6 +95,7 @@ function SelectionOptions({
         <div className="flex flex-row items-end gap-1">
           <FormikSelectField
             required
+            disabled={inputsDisabled}
             name="options.answerCollection"
             label={t('manage.elements.answerCollection')}
             labelType="small"
@@ -111,7 +114,7 @@ function SelectionOptions({
             }}
           />
           <Button
-            disabled={loading}
+            disabled={loading || inputsDisabled}
             onClick={async () => await refetch()}
             className={{ root: 'h-9 w-9' }}
             data={{ cy: 'refresh-answer-collections' }}
@@ -126,6 +129,7 @@ function SelectionOptions({
 
         <FormikNumberField
           required
+          disabled={inputsDisabled}
           min={1}
           name="options.numberOfInputs"
           label={t('manage.elements.numberOfInputs')}
@@ -148,6 +152,7 @@ function SelectionOptions({
             <Select
               isClearable
               isMulti
+              isDisabled={inputsDisabled}
               value={selectedAnswers}
               options={collectionAnswers}
               menuPlacement="auto"

@@ -17,6 +17,7 @@ interface ElementInformationFieldsProps {
   mode: ElementEditMode
   values: ElementFormTypes
   isSubmitting: boolean
+  inputsDisabled?: boolean
 }
 
 function ElementInformationFields({
@@ -24,6 +25,7 @@ function ElementInformationFields({
   mode,
   values,
   isSubmitting,
+  inputsDisabled = false,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -36,7 +38,7 @@ function ElementInformationFields({
           name="type"
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
-          disabled={mode === ElementEditMode.EDIT || isTemplate}
+          disabled={mode === ElementEditMode.EDIT || isTemplate || isSubmitting}
           label={t('manage.elements.elementType')}
           placeholder={t('manage.elements.selectQuestionType')}
           items={questionTypeOptions}
@@ -48,6 +50,7 @@ function ElementInformationFields({
           <FormikSelectField
             name="status"
             contentPosition="popper"
+            disabled={inputsDisabled || isSubmitting}
             label={t('manage.elements.questionStatus')}
             placeholder={t('manage.elements.selectQuestionStatus')}
             items={statusOptions}
@@ -61,6 +64,7 @@ function ElementInformationFields({
         <FormikTextField
           name="name"
           required
+          disabled={inputsDisabled || isSubmitting}
           label={t('manage.elements.elementTitle')}
           tooltip={t('manage.elements.titleTooltip')}
           className={{
@@ -80,7 +84,7 @@ function ElementInformationFields({
               tooltip={t('manage.elements.tagsTooltip')}
             />
             <Suspense fallback={<Loader />}>
-              <SuspendedTagInput />
+              <SuspendedTagInput disabled={inputsDisabled || isSubmitting} />
             </Suspense>
           </div>
         ) : null}
