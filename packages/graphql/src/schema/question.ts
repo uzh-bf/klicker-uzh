@@ -680,6 +680,19 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+  tags?: ITag[] | null
+  permissionLevel?: DB.PermissionLevel
+  derivedAccess?: boolean // = derived from other object => removal disabled
+  numSharedUsers?: number
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
+  isImported?: boolean // imported flag for UI icon
+  isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
+}
+
 const sharedElementProps = (t: any) => ({
   id: t.exposeInt('id'),
 
@@ -717,18 +730,6 @@ const sharedElementProps = (t: any) => ({
   }),
 })
 
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
-  tags?: ITag[] | null
-  permissionLevel?: DB.PermissionLevel
-  derivedAccess?: boolean // = derived from other object => removal disabled
-  numSharedUsers?: number
-  isOwner?: boolean // = OWNER
-  isManager?: boolean // = OWNER / ADMIN
-  isEditor?: boolean // = OWNER / ADMIN / WRITE
-  isImported?: boolean // imported flag for UI icon
-  isShared?: boolean // flag to signal whether the object is owned or shared
-  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
-}
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType
 }

@@ -4,6 +4,9 @@ DROP INDEX "Element_ownerId_originalId_key";
 -- DropIndex
 DROP INDEX "LiveSession_ownerId_originalId_key";
 
+-- AlterTable
+ALTER TABLE "Course" ADD COLUMN     "originalId" TEXT;
+
 -- CreateTable
 CREATE TABLE "_TemplateAnswerCollectionUsedItems" (
     "A" UUID NOT NULL,

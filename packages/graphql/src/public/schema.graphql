@@ -664,27 +664,40 @@ type Course {
   awards: [AwardEntry!]
   color: String!
   createdAt: Date
+  derivedAccess: Boolean
   description: String
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
+  groupActivityActivities: [ActivityInfo!]
   groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
+  isEditor: Boolean
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isRemovable: Boolean
+  isShared: Boolean
+  liveQuizActivities: [ActivityInfo!]
   liveQuizzes: [LiveQuiz!]
   maxGroupSize: Int!
+  microLearningActivities: [ActivityInfo!]
   microLearnings: [MicroLearning!]
   name: String!
   notificationEmail: String
   numOfParticipantGroups: Int
   numOfParticipants: Int
+  numSharedUsers: Int
   owner: User
   participantGroups: [ParticipantGroup!]
+  permissionLevel: PermissionLevel
   pinCode: Int
+  practiceQuizActivities: [ActivityInfo!]
   practiceQuizzes: [PracticeQuiz!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!

@@ -20,6 +20,16 @@ query GetSingleCourse($courseId: String!) {
     preferredGroupSize
     randomAssignmentFinalized
 
+    derivedAccess
+    numSharedUsers
+    permissionLevel
+    isOwner
+    isManager
+    isEditor
+    isImported
+    isShared
+    isRemovable
+
     liveQuizzes {
       id
       name
@@ -65,6 +75,19 @@ query GetSingleCourse($courseId: String!) {
       scheduledEndAt
       pointsMultiplier
       numOfStacks
+    }
+
+    liveQuizActivities {
+      ...ActivityInfoData
+    }
+    practiceQuizActivities {
+      ...ActivityInfoData
+    }
+    microLearningActivities {
+      ...ActivityInfoData
+    }
+    groupActivityActivities {
+      ...ActivityInfoData
     }
   }
 }

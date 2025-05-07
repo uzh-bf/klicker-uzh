@@ -230,8 +230,10 @@ function CourseOverviewPage() {
             className={{ root: 'overflow-y-auto px-0 py-1' }}
           >
             <LiveQuizList
+              privatePreview={user?.userProfile?.privatePreview ?? false}
               courseId={course.id}
               liveQuizzes={course.liveQuizzes ?? []}
+              liveQuizActivities={course.liveQuizActivities ?? []}
             />
           </Tabs.TabContent>
           <Tabs.TabContent
@@ -240,6 +242,7 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <PracticeQuizList
+              privatePreview={user?.userProfile?.privatePreview ?? false}
               practiceQuizzes={course.practiceQuizzes ?? []}
               courseId={course.id}
               courseStartDate={course.startDate}
@@ -252,6 +255,7 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <MicroLearningList
+              privatePreview={user?.userProfile?.privatePreview ?? false}
               microLearnings={course.microLearnings ?? []}
               courseId={course.id}
               userCatalyst={user?.userProfile?.catalyst}
@@ -263,6 +267,7 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-2' }}
           >
             <GroupActivityList
+              privatePreview={user?.userProfile?.privatePreview ?? false}
               groupActivities={course.groupActivities ?? []}
               groupDeadlineDate={course.groupDeadlineDate}
               numOfParticipantGroups={course.numOfParticipantGroups ?? 0}

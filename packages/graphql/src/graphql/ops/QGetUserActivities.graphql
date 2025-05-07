@@ -1,35 +1,5 @@
 query GetUserActivities {
   userActivities {
-    id
-    templateId
-    type
-    status
-    course
-    numOfStacks
-    numOfElements
-
-    stacks {
-      id
-      numOfParticipants
-      elements {
-        id
-        name
-        type
-      }
-    }
-
-    name
-    displayName
-
-    permissionLevel
-    derivedAccess
-    numSharedUsers
-    isOwner
-    isManager
-    isEditor
-    isExecutor
-    isShared
-    isRemovable
-    updatedAt
+    ...ActivityInfoData
   }
 }
