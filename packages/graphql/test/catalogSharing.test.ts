@@ -1400,6 +1400,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         permissionId: readPermission.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1465,6 +1466,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         permissionId: readPermission.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1958,6 +1960,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: 'non-existing-user',
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1969,6 +1972,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userTwo.email,
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1984,6 +1988,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userThree.shortname,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1999,6 +2004,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userFour.shortname,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2117,6 +2123,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         userGroupId: group.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2139,6 +2146,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
         catalogCollectionId: publicCatalog.id,
         userGroupId: group2.id,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )

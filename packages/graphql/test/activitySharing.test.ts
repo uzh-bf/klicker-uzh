@@ -656,6 +656,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -664,6 +665,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.EXECUTE,
         shortnameOrEmail: userThree.shortname,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -672,6 +674,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.WRITE,
         shortnameOrEmail: userFour.email,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -680,6 +683,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userFive.email,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -983,6 +987,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.READ,
         userGroupId: group1.id,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -993,6 +998,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.EXECUTE,
         userGroupId: group2.id,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1003,6 +1009,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.WRITE,
         userGroupId: group3.id,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1013,6 +1020,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.ADMIN,
         userGroupId: group4.id,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1362,6 +1370,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userThree.email,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1475,6 +1484,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionLevel: PermissionLevel.ADMIN,
         userGroupId: group1.id,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1885,6 +1895,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directPermission!.id,
         permissionLevel: PermissionLevel.EXECUTE,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1922,6 +1933,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directPermission!.id,
         permissionLevel: PermissionLevel.WRITE,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1957,6 +1969,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directPermission!.id,
         permissionLevel: PermissionLevel.ADMIN,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2079,6 +2092,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directGroupReadPermission!.id,
         permissionLevel: PermissionLevel.EXECUTE,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2116,6 +2130,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directGroupReadPermission!.id,
         permissionLevel: PermissionLevel.WRITE,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2151,6 +2166,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directGroupReadPermission!.id,
         permissionLevel: PermissionLevel.ADMIN,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2267,6 +2283,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directPermission!.id,
         permissionLevel: PermissionLevel.ADMIN,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2394,6 +2411,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         permissionId: directGroupReadPermission!.id,
         permissionLevel: PermissionLevel.ADMIN,
         liveQuizId: liveQuiz.id,
+        propagation: false,
       },
       userOneCtx
     )

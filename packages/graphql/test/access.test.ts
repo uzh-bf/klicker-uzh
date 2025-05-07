@@ -3001,6 +3001,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: catalogPermission.id,
         permissionLevel: PermissionLevel.ADMIN,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3009,6 +3010,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: answerCollectionPermission.id,
         permissionLevel: PermissionLevel.ADMIN,
         answerCollectionId: AC1!.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3127,6 +3129,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: groupPermission.id,
         permissionLevel: PermissionLevel.ADMIN,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3298,6 +3301,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: catalogPermission.id,
         permissionLevel: PermissionLevel.WRITE,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3306,6 +3310,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: answerCollectionPermission.id,
         permissionLevel: PermissionLevel.READ,
         answerCollectionId: AC1!.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3440,6 +3445,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: groupPermission.id,
         permissionLevel: PermissionLevel.WRITE,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3631,6 +3637,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: permission2.id,
         permissionLevel: PermissionLevel.WRITE,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3655,6 +3662,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: groupPermission1.id,
         permissionLevel: PermissionLevel.WRITE,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -3689,6 +3697,7 @@ describe('Unit tests for object access validation', () => {
         permissionId: permission5.id,
         permissionLevel: PermissionLevel.WRITE,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -4473,6 +4482,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.shortname,
         catalogCollectionId: publicCatalog.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -4481,6 +4491,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.shortname,
         answerCollectionId: AC1!.id,
+        propagation: false,
       },
       userOneCtx
     )

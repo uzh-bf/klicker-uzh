@@ -2165,7 +2165,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       viewActivities: 'View Activities',
       executeActivities: 'Execute Activities',
       modifyCourseSettings: 'Modify Course Settings',
-      modfiyContainedActivities: 'Modify Activities in Course',
+      modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
       deleteCourse: 'Delete Course',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',

@@ -187,7 +187,7 @@ function useObjectActionPermissions({
         permissions: [false, false, true, true, true],
       },
       {
-        action: t('manage.course.modfiyContainedActivities'),
+        action: t('manage.course.modifyContainedActivities'),
         permissions: [false, false, true, true, true],
       },
       {

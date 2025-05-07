@@ -129,6 +129,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         permissionId: permission1!.id,
         permissionLevel: PermissionLevel.WRITE,
         elementId: SC!.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -255,6 +256,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         permissionId: groupPermission!.id,
         permissionLevel: PermissionLevel.ADMIN,
         elementId: SE.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -361,6 +363,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         shortnameOrEmail: 'nonExistingUser',
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -372,6 +375,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         shortnameOrEmail: userTwo.email,
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -387,6 +391,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         shortnameOrEmail: userThree.email,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -402,6 +407,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         shortnameOrEmail: userFour.email,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )
@@ -961,6 +967,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         userGroupId: group.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -983,6 +990,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         userGroupId: group2.id,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1013,6 +1021,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
         elementId: SE.id,
         userGroupId: 123456789,
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )

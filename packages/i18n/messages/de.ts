@@ -2203,7 +2203,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       viewActivities: 'Aktivitäten einsehen',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
-      modfiyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
+      modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
       deleteCourse: 'Kurs löschen',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',

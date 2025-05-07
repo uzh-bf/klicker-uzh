@@ -86,7 +86,7 @@ function SharingRequestApprovalModal({
                 requestId: request.requestId,
                 userId: request.userId,
                 permissionLevel,
-                propagation: false, // TODO: update this parameter based on user input
+                propagation: false, // TODO: update this value once the propagation parameter can be toggled in the UI (only relevant for courses at the moment - which cannot be requested)
               },
               optimisticResponse: {
                 approveObjectSharingRequest: true,
