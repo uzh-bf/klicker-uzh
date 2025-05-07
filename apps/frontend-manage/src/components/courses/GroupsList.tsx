@@ -10,9 +10,11 @@ import AssignmentConfirmationModal from './groups/AssignmentConfirmationModal'
 function GroupsList({
   courseId,
   groupCreationFinalized,
+  actionsDisabled,
 }: {
   courseId: string
   groupCreationFinalized: boolean
+  actionsDisabled: boolean
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -70,7 +72,7 @@ function GroupsList({
           />
         )}
 
-        {!groupCreationFinalized && (
+        {!groupCreationFinalized && !actionsDisabled && (
           <Button
             primary
             className={{ root: 'my-1 h-8 w-max self-end' }}
