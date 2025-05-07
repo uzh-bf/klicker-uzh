@@ -1,9 +1,14 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import { faChartPie, faPencil } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChartPie,
+  faPencil,
+  faShare,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   Course,
   GetSingleCourseDocument,
+  SharingObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,8 +21,8 @@ import {
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
+import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
@@ -47,9 +52,9 @@ function CourseOverviewHeader({
   latestEndDate,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
-  const router = useRouter()
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
+  const [sharingModal, setSharingModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
@@ -72,14 +77,26 @@ function CourseOverviewHeader({
             number: numOfParticipants,
           })}
         </div>
-        <Button
-          onClick={() => setCourseSettingsModal(true)}
-          className={{ root: 'h-8' }}
-          data={{ cy: 'course-settings-button' }}
-        >
-          <Button.Icon icon={faPencil} />
-          <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
-        </Button>
+        {course.isEditor ? (
+          <Button
+            onClick={() => setCourseSettingsModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-settings-button' }}
+          >
+            <Button.Icon icon={faPencil} />
+            <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
+          </Button>
+        ) : null}
+        {course.isManager ? (
+          <Button
+            onClick={() => setSharingModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-share-button' }}
+          >
+            <Button.Icon icon={faShare} />
+            <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
+          </Button>
+        ) : null}
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}
@@ -166,68 +183,82 @@ function CourseOverviewHeader({
           />
         )}
       </div>
-      <CourseManipulationModal
-        initialValues={course}
-        modalOpen={courseSettingsModal}
-        earliestGroupDeadline={earliestGroupDeadline}
-        earliestStartDate={earliestStartDate}
-        latestEndDate={latestEndDate}
-        onModalClose={() => setCourseSettingsModal(false)}
-        onSubmit={async (
-          values: CourseManipulationFormData,
-          setSubmitting,
-          setShowErrorToast
-        ) => {
-          try {
-            // convert dates to UTC
-            const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-              .utc()
-              .toISOString()
-            const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-              .utc()
-              .toISOString()
-            const groupDeadlineDateUTC = dayjs(
-              values.groupCreationDeadline + 'T23:59:59.999'
-            )
-              .utc()
-              .toISOString()
 
-            const result = await updateCourseSettings({
-              variables: {
-                id: course.id,
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                color: values.color,
-                startDate: startDateUTC,
-                endDate: endDateUTC,
-                isGamificationEnabled: values.isGamificationEnabled,
-                isGroupCreationEnabled: values.isGroupCreationEnabled,
-                groupDeadlineDate: groupDeadlineDateUTC,
-              },
-              refetchQueries: [
-                {
-                  query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: course.id,
-                  },
+      {courseSettingsModal && (
+        <CourseManipulationModal
+          initialValues={course}
+          modalOpen={courseSettingsModal}
+          earliestGroupDeadline={earliestGroupDeadline}
+          earliestStartDate={earliestStartDate}
+          latestEndDate={latestEndDate}
+          onModalClose={() => setCourseSettingsModal(false)}
+          onSubmit={async (
+            values: CourseManipulationFormData,
+            setSubmitting,
+            setShowErrorToast
+          ) => {
+            try {
+              // convert dates to UTC
+              const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
+                .utc()
+                .toISOString()
+              const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
+                .utc()
+                .toISOString()
+              const groupDeadlineDateUTC = dayjs(
+                values.groupCreationDeadline + 'T23:59:59.999'
+              )
+                .utc()
+                .toISOString()
+
+              const result = await updateCourseSettings({
+                variables: {
+                  id: course.id,
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  color: values.color,
+                  startDate: startDateUTC,
+                  endDate: endDateUTC,
+                  isGamificationEnabled: values.isGamificationEnabled,
+                  isGroupCreationEnabled: values.isGroupCreationEnabled,
+                  groupDeadlineDate: groupDeadlineDateUTC,
                 },
-              ],
-            })
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: {
+                      courseId: course.id,
+                    },
+                  },
+                ],
+              })
 
-            if (result.data?.updateCourseSettings) {
-              setCourseSettingsModal(false)
-            } else {
+              if (result.data?.updateCourseSettings) {
+                setCourseSettingsModal(false)
+              } else {
+                setShowErrorToast(true)
+                setSubmitting(false)
+              }
+            } catch (error) {
               setShowErrorToast(true)
               setSubmitting(false)
+              console.log(error)
             }
-          } catch (error) {
-            setShowErrorToast(true)
-            setSubmitting(false)
-            console.log(error)
-          }
-        }}
-      />
+          }}
+        />
+      )}
+
+      {sharingModal && course.isManager && (
+        <ObjectSharingModalWrapper
+          objectUuid={course.id}
+          objectName={course.name}
+          objectType={SharingObjectType.Course}
+          isOwner={course.isOwner ?? false}
+          open={sharingModal}
+          onClose={() => setSharingModal(false)}
+        />
+      )}
 
       <Toast
         type="success"

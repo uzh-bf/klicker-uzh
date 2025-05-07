@@ -623,17 +623,24 @@ Cypress.Commands.add(
 
 interface DeleteElementArgs {
   elementName: string
+  privatePreview?: boolean
 }
 
-Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
-  cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
-  cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
-  cy.get(`[data-cy="confirm-deletion-final"]`).click()
-  cy.get(`[data-cy="confirm-other-users-access"]`).click()
-  cy.get(`[data-cy="confirm-derived-access"]`).click()
-  cy.get(`[data-cy="confirm-dependency-access"]`).click()
-  cy.get('[data-cy="confirmation-modal-confirm"]').click()
-})
+Cypress.Commands.add(
+  'deleteElement',
+  ({ elementName, privatePreview = false }: DeleteElementArgs) => {
+    if (!privatePreview) {
+      cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+    }
+
+    cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
+    cy.get(`[data-cy="confirm-deletion-final"]`).click()
+    cy.get(`[data-cy="confirm-other-users-access"]`).click()
+    cy.get(`[data-cy="confirm-derived-access"]`).click()
+    cy.get(`[data-cy="confirm-dependency-access"]`).click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
+  }
+)
 
 Cypress.Commands.add('deleteAllElements', () => {
   // trigger the deletion of all elements
@@ -1262,7 +1269,10 @@ declare global {
         content,
         userId,
       }: CreateContentArgs): Chainable<void>
-      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
+      deleteElement({
+        elementName,
+        privatePreview,
+      }: DeleteElementArgs): Chainable<void>
       deleteAllElements(): Chainable<void>
       createLiveQuiz({
         name,

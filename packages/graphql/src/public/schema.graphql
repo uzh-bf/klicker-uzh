@@ -678,7 +678,6 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
-  isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -2170,6 +2169,7 @@ type SelectionInstanceEvaluation {
 enum SharingObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  COURSE
   ELEMENT
   LIVE_QUIZ
   LIVE_QUIZ_TEMPLATE

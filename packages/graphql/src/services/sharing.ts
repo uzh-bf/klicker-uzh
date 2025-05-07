@@ -2460,6 +2460,26 @@ export async function transferCatalogCollectionOwnership(
     : null
 }
 
+function mapDirectPermissions(permissions, userId) {
+  return permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
+      permissionLevel: permission.permissionLevel,
+      isOwn: permission.user?.id === userId,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
 export async function getAnswerCollectionPermissions(
   { id }: { id: number },
   ctx: ContextWithUser
@@ -2480,23 +2500,7 @@ export async function getAnswerCollectionPermissions(
     return []
   }
 
-  return collection.directPermissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      userId: permission.user?.id,
-      username: permission.user?.shortname,
-      userEmail: permission.user?.email,
-      userGroupId: permission.userGroup?.id,
-      userGroupName: permission.userGroup?.name,
-      permissionLevel: permission.permissionLevel,
-      isOwn: permission.user?.id === ctx.user.sub,
-    }))
-    .sort((a, b) => {
-      if (a.username === b.username) {
-        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
-      }
-      return (a.username ?? '').localeCompare(b.username ?? '')
-    })
+  return mapDirectPermissions(collection.directPermissions, ctx.user.sub)
 }
 
 export async function getElementPermissions(
@@ -2519,30 +2523,14 @@ export async function getElementPermissions(
     return []
   }
 
-  return element.directPermissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      userId: permission.user?.id,
-      username: permission.user?.shortname,
-      userEmail: permission.user?.email,
-      userGroupId: permission.userGroup?.id,
-      userGroupName: permission.userGroup?.name,
-      permissionLevel: permission.permissionLevel,
-      isOwn: permission.user?.id === ctx.user.sub,
-    }))
-    .sort((a, b) => {
-      if (a.username === b.username) {
-        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
-      }
-      return (a.username ?? '').localeCompare(b.username ?? '')
-    })
+  return mapDirectPermissions(element.directPermissions, ctx.user.sub)
 }
 
-export async function getLiveQuizPermissions(
+export async function getCoursePermissions(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const element = await ctx.prisma.liveQuiz.findUnique({
+  const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
       directPermissions: {
@@ -2554,27 +2542,34 @@ export async function getLiveQuizPermissions(
     },
   })
 
-  if (!element) {
+  if (!course) {
     return []
   }
 
-  return element.directPermissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      userId: permission.user?.id,
-      username: permission.user?.shortname,
-      userEmail: permission.user?.email,
-      userGroupId: permission.userGroup?.id,
-      userGroupName: permission.userGroup?.name,
-      permissionLevel: permission.permissionLevel,
-      isOwn: permission.user?.id === ctx.user.sub,
-    }))
-    .sort((a, b) => {
-      if (a.username === b.username) {
-        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
-      }
-      return (a.username ?? '').localeCompare(b.username ?? '')
-    })
+  return mapDirectPermissions(course.directPermissions, ctx.user.sub)
+}
+
+export async function getLiveQuizPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) {
+    return []
+  }
+
+  return mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub)
 }
 
 function mapDerivedPermissions({
@@ -2904,6 +2899,112 @@ export async function transferElementOwnership(
     : null
 }
 
+export async function transferCourseOwnership(
+  { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { courseId: id } } },
+  })
+
+  // find the course
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !course) {
+    return null
+  }
+
+  const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the course and grant admin permissions to the current user
+    const updated = await prisma.course.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              courseId_userId: {
+                courseId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the live quiz, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          courseId_userId: {
+            courseId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.COURSE,
+        objectId: id,
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.COURSE} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the course for both users
+    await recomputeDerivedPermissions(
+      { courseId: id, userId: newOwner.id, updateAccessRequests: true },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { courseId: id, userId: ctx.user.sub, updateAccessRequests: false },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedCourse.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        isOwn: true,
+      }
+    : null
+}
+
 export async function transferLiveQuizOwnership(
   { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
   ctx: ContextWithUser
@@ -2925,7 +3026,7 @@ export async function transferLiveQuizOwnership(
     return null
   }
 
-  const updatedElement = await ctx.prisma.$transaction(async (prisma) => {
+  const updatedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
     // update the owner of the live quiz and grant admin permissions to the current user
     const updated = await prisma.liveQuiz.update({
       where: { id },
@@ -2995,7 +3096,7 @@ export async function transferLiveQuizOwnership(
   })
 
   // return info for new admin permission and corresponding cache update
-  const permission = updatedElement.directPermissions[0]
+  const permission = updatedLiveQuiz.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,

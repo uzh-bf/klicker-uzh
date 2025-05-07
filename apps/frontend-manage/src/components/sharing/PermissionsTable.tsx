@@ -22,7 +22,9 @@ function PermissionsTable({
   const actionPermissions = useObjectActionPermissions({ objectType })
 
   // execution rights are only available for activities and courses
-  const showExecution = objectType === SharingObjectType.LiveQuiz
+  const showExecution =
+    objectType === SharingObjectType.Course ||
+    objectType === SharingObjectType.LiveQuiz
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {

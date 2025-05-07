@@ -1,10 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityInfo,
-  PublicationStatus,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
@@ -34,13 +29,6 @@ function LiveQuizList({
   privatePreview: boolean
 }) {
   const t = useTranslations()
-
-  // TODO: once the sharing feature is available for all users, remove this feature flag check
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-
-  console.log
 
   return (
     <div className="flex w-full flex-col items-end">
@@ -72,9 +60,7 @@ function LiveQuizList({
       </div>
 
       {/* // TODO: remove this old activity overview, once sharing is enabled for all users */}
-      {liveQuizzes &&
-      liveQuizzes.length > 0 &&
-      !dataUser?.userProfile?.privatePreview ? (
+      {liveQuizzes && liveQuizzes.length > 0 && !privatePreview ? (
         <div className="flex w-full flex-col gap-2">
           {sort(liveQuizzes, (a, b) => {
             if (!a.status || !b.status) return 0
@@ -91,21 +77,16 @@ function LiveQuizList({
         <UserNotification
           type="warning"
           className={{
-            root: twMerge(
-              'w-full text-left',
-              dataUser?.userProfile?.privatePreview && 'hidden'
-            ),
+            root: twMerge('w-full text-left', privatePreview && 'hidden'),
           }}
         >
           {t('manage.course.noLiveQuizzes')}
         </UserNotification>
       )}
 
-      {liveQuizActivities &&
-      liveQuizActivities.length > 0 &&
-      dataUser?.userProfile?.privatePreview ? (
-        <div className="mt-2 flex w-full flex-col">
-          {dataUser?.userProfile?.privatePreview ? (
+      {liveQuizActivities && liveQuizActivities.length > 0 && privatePreview ? (
+        <div className="mt-0.5 flex w-full flex-col">
+          {privatePreview ? (
             <ActivityList
               activities={liveQuizActivities}
               noActivities={false}
@@ -116,10 +97,7 @@ function LiveQuizList({
         <UserNotification
           type="warning"
           className={{
-            root: twMerge(
-              'w-full text-left',
-              !dataUser?.userProfile?.privatePreview && 'hidden'
-            ),
+            root: twMerge('w-full text-left', !privatePreview && 'hidden'),
           }}
         >
           {t('manage.course.noLiveQuizzes')}

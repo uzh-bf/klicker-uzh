@@ -109,7 +109,7 @@ function ActivityListEntry({
         </div>
 
         <div className="flex flex-row items-center gap-4">
-          {activity.numSharedUsers ? (
+          {activity.numSharedUsers && activity.isManager ? (
             <div className="flex h-max flex-row items-center gap-1.5 py-1">
               <div>{activity.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />

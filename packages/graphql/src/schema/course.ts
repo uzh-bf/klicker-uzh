@@ -43,7 +43,6 @@ export interface ICourse extends DB.Course {
   isOwner?: boolean // = OWNER
   isManager?: boolean // = OWNER / ADMIN
   isEditor?: boolean // = OWNER / ADMIN / WRITE
-  isImported?: boolean // imported flag for UI icon
   isShared?: boolean // flag to signal whether the object is owned or shared
   isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
 }
@@ -108,7 +107,6 @@ export const Course = builder.objectType(CourseRef, {
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
     isManager: t.exposeBoolean('isManager', { nullable: true }),
     isEditor: t.exposeBoolean('isEditor', { nullable: true }),
-    isImported: t.exposeBoolean('isImported', { nullable: true }),
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
 

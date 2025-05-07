@@ -798,7 +798,9 @@ describe('Unit tests covering the creation of derived permissions for courses', 
       },
     })
     expect(derivedPermissionUserTwo).toBeTruthy()
-    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
     expect(derivedPermissionUserTwo!.directPermissionId).toBe(
       individualWritePermission.id
     )
@@ -1771,7 +1773,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
       })
     expect(derivedPermissionActivityUserFour).toBeTruthy()
     expect(derivedPermissionActivityUserFour!.permissionLevel).toBe(
-      propagation ? PermissionLevel.WRITE : PermissionLevel.READ
+      propagation ? PermissionLevel.WRITE : PermissionLevel.EXECUTE
     )
     expect(derivedPermissionActivityUserFour!.directPermissionId).toBe(
       directWritePermission.id
@@ -2221,7 +2223,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
       })
     expect(derivedPermissionActivityUserFour).toBeTruthy()
     expect(derivedPermissionActivityUserFour!.permissionLevel).toBe(
-      propagation ? PermissionLevel.WRITE : PermissionLevel.READ
+      propagation ? PermissionLevel.WRITE : PermissionLevel.EXECUTE
     )
     expect(derivedPermissionActivityUserFour!.directPermissionId).toBe(
       directWritePermission.id

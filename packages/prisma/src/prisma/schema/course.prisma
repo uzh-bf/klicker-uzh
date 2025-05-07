@@ -1,6 +1,5 @@
 model Course {
-  id         String  @id @default(uuid()) @db.Uuid
-  originalId String?
+  id String @id @default(uuid()) @db.Uuid
 
   isArchived Boolean @default(false)
   pinCode    Int     @unique

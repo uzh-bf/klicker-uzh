@@ -7862,18 +7862,6 @@
             "deprecationReason": null
           },
           {
-            "name": "isImported",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "isManager",
             "description": null,
             "args": [],
@@ -33334,6 +33322,12 @@
           },
           {
             "name": "CATALOG_COLLECTION",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "COURSE",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
