@@ -26,10 +26,12 @@ function useObjectSharing({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => Promise<boolean>
   objectSharing: boolean
 } {
@@ -40,10 +42,12 @@ function useObjectSharing({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => {
     try {
       const res = await shareObject({
@@ -56,7 +60,8 @@ function useObjectSharing({
               : undefined,
           userGroupId:
             typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
-          permissionLevel: permissionLevel,
+          permissionLevel,
+          propagation,
         },
         update: (cache, { data }) => {
           if (!data?.shareObject) return

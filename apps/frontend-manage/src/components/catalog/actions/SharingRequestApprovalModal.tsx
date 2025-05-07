@@ -6,6 +6,7 @@ import {
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
   PermissionLevel,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -157,6 +158,7 @@ function SharingRequestApprovalModal({
       <PropagatedPermissionsTable
         objectType={request.objectType}
         activePermissionLevel={permissionLevel}
+        showPropagationSetting={request.objectType === SharingObjectType.Course}
       />
 
       <Toast

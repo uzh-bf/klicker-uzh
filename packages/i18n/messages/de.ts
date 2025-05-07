@@ -329,6 +329,7 @@ export default {
       template: 'Vorlage',
       noPoints: 'keine Punkte',
       criterionN: 'Kriterium {number}',
+      propagation: 'Propagation',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2671,6 +2672,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       transferOwnership: 'Eigentumsrechte übertragen',
       showDerivedPermissions: 'Abgeleitete Berechtigungen anzeigen',
       hideDerivedPermissions: 'Abgeleitete Berechtigungen ausblenden',
+      minimumRequired: 'Minimale Berechtigungen',
+      propagationOfPermissions: 'Propagierung von Berechtigungen',
       derivedPermissions: 'Abgeleitete Berechtigungen',
       derivedPermissionsDescription:
         'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',

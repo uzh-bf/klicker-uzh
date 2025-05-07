@@ -4,7 +4,7 @@ import {
   PermissionLevel,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Select } from '@uzh-bf/design-system'
+import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
@@ -15,18 +15,22 @@ function ExistingPermissionEntries({
   type,
   permissions,
   changeLoading,
+  showPropagationSetting,
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
   type: SharingObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
+  showPropagationSetting: boolean
   onPermissionLevelChange: ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
 }) {
@@ -38,6 +42,7 @@ function ExistingPermissionEntries({
     open: boolean
     permissionId?: number
     newPermissionLevel?: PermissionLevel
+    newPropagation?: boolean
     action: 'change' | 'remove'
   }>({
     open: false,
@@ -58,6 +63,7 @@ function ExistingPermissionEntries({
   const handlePermissionLevelChange = async (
     permissionId: number,
     newPermissionLevel: PermissionLevel,
+    newPropagation: boolean,
     isOwn: boolean
   ) => {
     if (isOwn) {
@@ -65,12 +71,14 @@ function ExistingPermissionEntries({
         open: true,
         permissionId,
         newPermissionLevel,
+        newPropagation,
         action: 'change',
       })
     } else {
       await onPermissionLevelChange({
         permissionId,
         newPermissionLevel,
+        newPropagation,
       })
     }
   }
@@ -104,6 +112,7 @@ function ExistingPermissionEntries({
       await onPermissionLevelChange({
         permissionId: modifyOwnPermissionsModal.permissionId!,
         newPermissionLevel: modifyOwnPermissionsModal.newPermissionLevel!,
+        newPropagation: modifyOwnPermissionsModal.newPropagation!,
       })
     } else {
       await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!)
@@ -153,6 +162,7 @@ function ExistingPermissionEntries({
                   await handlePermissionLevelChange(
                     permission.permissionId,
                     value as PermissionLevel,
+                    permission.propagation ?? false,
                     permission.isOwn ?? false
                   )
                 }}
@@ -166,6 +176,29 @@ function ExistingPermissionEntries({
                 }}
               />
             </td>
+            {showPropagationSetting ? (
+              <td className="w-24">
+                <Switch
+                  size="sm"
+                  checked={permission.propagation ?? false}
+                  onCheckedChange={async (newValue) => {
+                    await handlePermissionLevelChange(
+                      permission.permissionId,
+                      permission.permissionLevel,
+                      newValue,
+                      permission.isOwn ?? false
+                    )
+                  }}
+                  disabled={changeLoading}
+                  data={{
+                    cy: permission.username
+                      ? `permission-propagation-${permission.username}`
+                      : `permission-propagation-${permission.userGroupName}`,
+                  }}
+                  className={{ root: 'justify-center' }}
+                />
+              </td>
+            ) : null}
             <td className="w-10 text-center">
               <Button
                 basic

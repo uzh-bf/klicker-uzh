@@ -2,19 +2,27 @@ import {
   PermissionLevel,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useObjectPropagatedPermissions from './useObjectPropagatedPermissions'
 
 function PropagatedPermissionsTable({
   objectType,
   activePermissionLevel,
+  showPropagationSetting = false,
 }: {
   objectType: SharingObjectType
   activePermissionLevel?: PermissionLevel
+  showPropagationSetting?: boolean
 }) {
   const t = useTranslations()
-  const propagatedPermissions = useObjectPropagatedPermissions({ objectType })
+  const [propagation, setPropagation] = useState(false)
+  const propagatedPermissions = useObjectPropagatedPermissions({
+    objectType,
+    propagation,
+  })
 
   // execution rights are only available for activities and courses
   const showExecution =
@@ -47,6 +55,19 @@ function PropagatedPermissionsTable({
       <div className="mb-3">
         {t(`manage.sharing.propagatedPermissions${objectType}`)}
       </div>
+      {showPropagationSetting ? (
+        <div className="mb-3 flex flex-row gap-3">
+          <div className="font-bold">{t('manage.sharing.minimumRequired')}</div>
+          <Switch
+            size="sm"
+            checked={propagation}
+            onCheckedChange={(newValue) => setPropagation(newValue)}
+          />
+          <div className="font-bold">
+            {t('manage.sharing.propagationOfPermissions')}
+          </div>
+        </div>
+      ) : null}
       <table className="w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
         <thead>
           <tr className="bg-gray-50">

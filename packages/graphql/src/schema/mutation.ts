@@ -2126,6 +2126,7 @@ export const Mutation = builder.mutationType({
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
+          propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
@@ -2184,6 +2185,7 @@ export const Mutation = builder.mutationType({
               permissionLevel: args.permissionLevel,
               shortnameOrEmail: args.shortnameOrEmail,
               userGroupId: args.userGroupId,
+              propagation: args.propagation,
               catalogCollectionId:
                 args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
@@ -2310,6 +2312,7 @@ export const Mutation = builder.mutationType({
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: SharingObjectType, required: true }),
+          propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
@@ -2367,6 +2370,7 @@ export const Mutation = builder.mutationType({
             {
               permissionId: args.permissionId,
               permissionLevel: args.permissionLevel,
+              propagation: args.propagation,
               catalogCollectionId:
                 args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId

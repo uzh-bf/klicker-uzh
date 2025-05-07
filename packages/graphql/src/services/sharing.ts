@@ -1858,6 +1858,7 @@ export async function changeObjectPermissionLevel(
   {
     permissionId,
     permissionLevel,
+    propagation,
     catalogCollectionId,
     answerCollectionId,
     elementId,
@@ -1869,6 +1870,7 @@ export async function changeObjectPermissionLevel(
   }: {
     permissionId: number
     permissionLevel: DB.PermissionLevel
+    propagation: boolean
     catalogCollectionId?: string
     answerCollectionId?: number
     elementId?: number
@@ -1924,6 +1926,7 @@ export async function changeObjectPermissionLevel(
       },
       data: {
         permissionLevel,
+        propagation,
       },
     })
 
@@ -2470,6 +2473,7 @@ function mapDirectPermissions(permissions, userId) {
       userGroupId: permission.userGroup?.id,
       userGroupName: permission.userGroup?.name,
       permissionLevel: permission.permissionLevel,
+      propagation: permission.propagation,
       isOwn: permission.user?.id === userId,
     }))
     .sort((a, b) => {
@@ -2788,6 +2792,7 @@ export async function transferAnswerCollectionOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
         isOwn: true,
       }
     : null
@@ -2894,6 +2899,7 @@ export async function transferElementOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
         isOwn: true,
       }
     : null
@@ -3000,6 +3006,7 @@ export async function transferCourseOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
         isOwn: true,
       }
     : null
@@ -3106,6 +3113,7 @@ export async function transferLiveQuizOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
         isOwn: true,
       }
     : null
@@ -3116,6 +3124,7 @@ export async function shareObject(
     permissionLevel,
     shortnameOrEmail,
     userGroupId,
+    propagation,
     catalogCollectionId,
     answerCollectionId,
     elementId,
@@ -3128,6 +3137,7 @@ export async function shareObject(
     permissionLevel: DB.PermissionLevel
     shortnameOrEmail?: string | null
     userGroupId?: number | null
+    propagation: boolean
     catalogCollectionId?: string
     answerCollectionId?: number
     elementId?: number
@@ -3221,6 +3231,7 @@ export async function shareObject(
         },
         create: {
           permissionLevel,
+          propagation,
           user: {
             connect: {
               id: userId,
@@ -3293,6 +3304,7 @@ export async function shareObject(
         },
         update: {
           permissionLevel,
+          propagation,
         },
       })
 
@@ -3396,6 +3408,7 @@ export async function shareObject(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
+      propagation: permission.propagation,
       isOwn: false,
     }
   } else if (typeof userGroupId !== 'undefined' && userGroupId !== null) {
@@ -3479,6 +3492,7 @@ export async function shareObject(
         },
         create: {
           permissionLevel,
+          propagation,
           userGroup: {
             connect: {
               id: userGroupId,
@@ -3551,6 +3565,7 @@ export async function shareObject(
         },
         update: {
           permissionLevel,
+          propagation,
         },
       })
 

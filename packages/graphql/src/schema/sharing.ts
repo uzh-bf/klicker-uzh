@@ -113,6 +113,7 @@ interface IPermissionInfo {
   userEmail?: string
   userGroupName?: string
   permissionLevel: DB.PermissionLevel
+  propagation?: boolean
   isOwn?: boolean
 }
 export const PermissionInfoRef =
@@ -125,6 +126,7 @@ export const PermissionInfo = PermissionInfoRef.implement({
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
+    propagation: t.exposeBoolean('propagation', { nullable: true }),
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),
 })

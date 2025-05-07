@@ -328,6 +328,7 @@ export default {
       template: 'Template',
       noPoints: 'no points',
       criterionN: 'Criterion {number}',
+      propagation: 'Propagation',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2647,6 +2648,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       transferOwnership: 'Transfer Ownership',
       showDerivedPermissions: 'Show Derived Permissions',
       hideDerivedPermissions: 'Hide Derived Permissions',
+      minimumRequired: 'Minimum Required',
+      propagationOfPermissions: 'Propagation of Permissions',
       derivedPermissions: 'Derived Permissions',
       derivedPermissionsDescription:
         'Derived permissions are permissions that allow users to access this element without having a direct permission (anymore). This is for example due to the inheritance of access rights when other objects are based on this object and therefore require it. Derived access rights cannot be changed or revoked and always correspond to the minimum technically required permissions. For more details, please refer to the official documentation.',

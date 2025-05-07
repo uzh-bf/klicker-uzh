@@ -4,6 +4,7 @@ mutation ShareObject(
   $permissionLevel: PermissionLevel!
   $shortnameOrEmail: String
   $userGroupId: Int
+  $propagation: Boolean!
 ) {
   shareObject(
     objectId: $objectId
@@ -11,6 +12,7 @@ mutation ShareObject(
     permissionLevel: $permissionLevel
     shortnameOrEmail: $shortnameOrEmail
     userGroupId: $userGroupId
+    propagation: $propagation
   ) {
     ...PermissionInfoData
   }

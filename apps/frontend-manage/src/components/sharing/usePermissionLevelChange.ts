@@ -23,9 +23,11 @@ function usePermissionLevelChange({
   onPermissionLevelChange: ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => Promise<boolean>
   permissionChanging: boolean
 } {
@@ -35,9 +37,11 @@ function usePermissionLevelChange({
   const onPermissionLevelChange = async ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => {
     try {
       const res = await changePermissionLevel({
@@ -46,6 +50,7 @@ function usePermissionLevelChange({
           objectType,
           permissionId,
           permissionLevel: newPermissionLevel,
+          propagation: newPropagation,
         },
         update: (cache, { data }) => {
           if (!data?.changePermissionLevel) return
@@ -69,6 +74,7 @@ function usePermissionLevelChange({
                     ? {
                         ...permission,
                         permissionLevel: newPermissionLevel,
+                        propagation: newPropagation,
                       }
                     : permission
               ),
