@@ -650,7 +650,7 @@ describe('Test course creation and editing functionalities', function () {
       courseName: this.data.deletion.courseName,
       blocks: [{ elements: [this.data.deletion.qTitle] }],
     })
-    cy.get('[data-cy="create-new-element"]').click()
+    cy.get('[data-cy="create-new-activity"]').click()
 
     // create a practice quiz in the course
     cy.createPracticeQuiz({
@@ -660,7 +660,7 @@ describe('Test course creation and editing functionalities', function () {
       courseName: this.data.deletion.courseName,
       stacks: [{ elements: [this.data.deletion.qTitle] }],
     })
-    cy.get('[data-cy="create-new-element"]').click()
+    cy.get('[data-cy="create-new-activity"]').click()
 
     // create a microlearning in the course
     cy.createMicroLearning({
@@ -672,7 +672,7 @@ describe('Test course creation and editing functionalities', function () {
       courseName: this.data.deletion.courseName,
       stacks: [{ elements: [this.data.deletion.qTitle] }],
     })
-    cy.get('[data-cy="create-new-element"]').click()
+    cy.get('[data-cy="create-new-activity"]').click()
 
     // delete the course and check that it is not visible anymore after a reload
     cy.get('[data-cy="courses"]').click()

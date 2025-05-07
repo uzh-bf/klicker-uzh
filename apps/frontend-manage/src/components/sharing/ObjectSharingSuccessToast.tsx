@@ -18,6 +18,7 @@ function ObjectSharingSuccessToast({
       onCloseExternal={onClose}
       duration={3000}
       className={{ root: 'max-w-[30rem]' }}
+      dataDismissible={{ cy: 'close-sharing-success-toast' }}
     >
       {t('manage.sharing.sharingSuccessful')}
     </Toast>

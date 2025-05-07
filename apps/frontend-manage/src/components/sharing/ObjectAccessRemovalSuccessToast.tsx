@@ -16,8 +16,9 @@ function ObjectAccessRemovalSuccessToast({
       type="success"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={4000}
+      duration={3000}
       className={{ root: 'max-w-[30rem]' }}
+      dataDismissible={{ cy: 'close-removal-success-toast' }}
     >
       {t('manage.sharing.accessRemovalSuccessful')}
     </Toast>

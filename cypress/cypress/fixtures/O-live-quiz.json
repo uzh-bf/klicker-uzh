@@ -35,5 +35,19 @@
     "duplicateDisplayName": "Duplication of Live Quiz (Display)",
     "newSCTitle": "New SC Title",
     "newSCContent": "New SC Content"
+  },
+  "sharing": {
+    "quiz1": "Sharing Live Quiz 1",
+    "quiz1Display": "Sharing Live Quiz 1 (Display)",
+    "quiz2": "Sharing Live Quiz 2",
+    "quiz2Display": "Sharing Live Quiz 2 (Display)",
+    "quiz3": "Sharing Live Quiz 3",
+    "quiz3Display": "Sharing Live Quiz 3 (Display)",
+    "quiz4": "Sharing Live Quiz 4",
+    "quiz4Display": "Sharing Live Quiz 4 (Display)",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4"
   }
 }

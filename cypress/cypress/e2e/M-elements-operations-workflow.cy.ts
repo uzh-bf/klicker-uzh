@@ -470,7 +470,7 @@ describe('Create different types of elements (with and without sample solution) 
         courseName: this.data.update.course,
         blocks: [{ elements: [this.data.update.title1] }],
       })
-      cy.get('[data-cy="create-new-element"]').click()
+      cy.get('[data-cy="create-new-activity"]').click()
     })
 
     // create three practice quizzes
@@ -485,7 +485,7 @@ describe('Create different types of elements (with and without sample solution) 
         courseName: this.data.update.course,
         stacks: [{ elements: [this.data.update.title1] }],
       })
-      cy.get('[data-cy="create-new-element"]').click()
+      cy.get('[data-cy="create-new-activity"]').click()
     })
 
     // create three microlearnings
@@ -502,7 +502,7 @@ describe('Create different types of elements (with and without sample solution) 
         courseName: this.data.update.course,
         stacks: [{ elements: [this.data.update.title1] }],
       })
-      cy.get('[data-cy="create-new-element"]').click()
+      cy.get('[data-cy="create-new-activity"]').click()
     })
 
     // create three group activities
@@ -536,7 +536,7 @@ describe('Create different types of elements (with and without sample solution) 
           elements: [this.data.update.title1],
         },
       })
-      cy.get('[data-cy="create-new-element"]').click()
+      cy.get('[data-cy="create-new-activity"]').click()
     })
   })
 
