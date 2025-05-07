@@ -25,6 +25,7 @@ function ActivityDetailsModal({
       open={open}
       onClose={onClose}
       className={{ content: 'w-96 min-w-96 max-w-96' }}
+      data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
       <div

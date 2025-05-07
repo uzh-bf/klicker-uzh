@@ -85,7 +85,7 @@ function CompletionStep({
               setStepNumber(0)
               router.push({ pathname: '/' }, undefined, { shallow: true })
             }}
-            data={{ cy: 'create-new-element' }}
+            data={{ cy: 'create-new-activity' }}
           >
             <Button.Icon icon={faSync} />
             <Button.Label>

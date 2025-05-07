@@ -4,6 +4,7 @@ import {
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
@@ -27,6 +28,7 @@ const USER_ID_TEST2 = '76047345-3801-4628-ae7b-adbebcfe8822'
 const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
 const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
+const USER_ID_TEST6 = '8509238a-cb2e-4d50-832e-971cdf2f9e55'
 const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 const COURSE_ID_TEST = 'b8b1305e-bfe8-458b-bf26-9082fdca953f'
 const COURSE_ID_TEST2 = 'e364455a-8eab-428b-b939-21b556e4ab82'
@@ -147,6 +149,9 @@ export default defineConfig({
     LECTURER_INST2_ID: USER_ID_TEST5,
     LECTURER_INST2_SHORTNAME: 'pro3',
     LECTURER_INST2_EMAIL: 'pro3@df.uzh.ch',
+    LECTURER_INST3_ID: USER_ID_TEST6,
+    LECTURER_INST3_SHORTNAME: 'pro4',
+    LECTURER_INST3_EMAIL: 'pro4@df.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',
@@ -1167,6 +1172,80 @@ export default defineConfig({
         },
         // #endregion
 
+        // ! Activity status modifications
+        // #region
+        async changeActivityStatus({
+          activityName,
+          activityType,
+          status,
+        }: {
+          activityName: string
+          activityType: string
+          status: PublicationStatus
+        }) {
+          const prisma = await connect()
+
+          try {
+            if (activityType === 'LIVE_QUIZ') {
+              const liveQuiz = await prisma.liveQuiz.findFirst({
+                where: { name: activityName },
+              })
+
+              if (!liveQuiz) {
+                throw new Error(`Live quiz ${activityName} not found`)
+              }
+
+              await prisma.liveQuiz.update({
+                where: { id: liveQuiz.id },
+                data: { status },
+              })
+            } else if (activityType === 'PRACTICE_QUIZ') {
+              const practiceQuiz = await prisma.practiceQuiz.findFirst({
+                where: { name: activityName },
+              })
+
+              if (!practiceQuiz) {
+                throw new Error(`Live quiz ${activityName} not found`)
+              }
+
+              await prisma.practiceQuiz.update({
+                where: { id: practiceQuiz.id },
+                data: { status },
+              })
+            } else if (activityType === 'MICRO_LEARNING') {
+              const microLearning = await prisma.microLearning.findFirst({
+                where: { name: activityName },
+              })
+
+              if (!microLearning) {
+                throw new Error(`Live quiz ${activityName} not found`)
+              }
+
+              await prisma.microLearning.update({
+                where: { id: microLearning.id },
+                data: { status },
+              })
+            } else if (activityType === 'GROUP_ACTIVITY') {
+              const groupActivity = await prisma.groupActivity.findFirst({
+                where: { name: activityName },
+              })
+
+              if (!groupActivity) {
+                throw new Error(`Live quiz ${activityName} not found`)
+              }
+
+              await prisma.groupActivity.update({
+                where: { id: groupActivity.id },
+                data: { status },
+              })
+            }
+          } finally {
+            await prisma.$disconnect()
+            return true
+          }
+        },
+        // #endregion
+
         // ! Permission queries / mutations
         // #region
         async updateLecturerPreviewFlags({
@@ -1295,6 +1374,24 @@ export default defineConfig({
                 name: 'Institutional Pro User 2',
                 email: 'pro3@df.uzh.ch',
                 shortname: 'pro3',
+                catalystIndividual: false,
+                catalystInstitutional: true,
+                publicPreview: true,
+                privatePreview: true,
+                firstLogin: false,
+              },
+              update: {},
+            })
+
+            const user6 = await prisma.user.upsert({
+              where: {
+                id: USER_ID_TEST6,
+              },
+              create: {
+                id: USER_ID_TEST6,
+                name: 'Institutional Pro User 3',
+                email: 'pro4@df.uzh.ch',
+                shortname: 'pro4',
                 catalystIndividual: false,
                 catalystInstitutional: true,
                 publicPreview: true,
