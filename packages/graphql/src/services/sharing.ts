@@ -2463,7 +2463,13 @@ export async function transferCatalogCollectionOwnership(
     : null
 }
 
-function mapDirectPermissions(permissions, userId) {
+function mapDirectPermissions(
+  permissions: (DB.Permission & {
+    user?: Pick<DB.User, 'id' | 'shortname' | 'email'> | null
+    userGroup?: Pick<DB.UserGroup, 'id' | 'name'> | null
+  })[],
+  userId: string
+) {
   return permissions
     .map((permission) => ({
       permissionId: permission.id,
@@ -2615,7 +2621,7 @@ export async function getDerivedAnswerCollectionPermissions(
   })
 
   if (!answerCollection) {
-    return []
+    return null
   }
 
   // map the derived permissions to the expected format
@@ -2643,12 +2649,152 @@ export async function getDerivedElementPermissions(
   })
 
   if (!element) {
-    return []
+    return null
   }
 
   // map the derived permissions to the expected format
   return mapDerivedPermissions({
     permissions: element.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedCoursePermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch the course alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return null
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: course.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedLiveQuizPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch the live quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: liveQuiz.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedPracticeQuizPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch the practice quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: practiceQuiz.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedMicroLearningPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch the microlearning alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: microLearning.permissions,
+    userId: ctx.user.sub,
+  })
+}
+
+export async function getDerivedGroupActivityPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // fetch the practice quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // map the derived permissions to the expected format
+  return mapDerivedPermissions({
+    permissions: groupActivity.permissions,
     userId: ctx.user.sub,
   })
 }
@@ -3671,6 +3817,7 @@ export async function shareObject(
       userGroupId: userGroup.id,
       userGroupName: userGroup.name,
       permissionLevel: permission.permissionLevel,
+      propagation: permission.propagation,
       isOwn: false,
     }
   } else {

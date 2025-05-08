@@ -3,6 +3,7 @@ import {
   CatalogCollection,
   Element,
   ElementInstanceType,
+  ElementStackType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
@@ -17,6 +18,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -570,15 +572,70 @@ export async function seedLiveQuizTemplates(prisma: PrismaClient) {
   }
 }
 
+/**
+ * Creates and seeds a new course in the database.
+ *
+ * @param startDate - The start date of the course (defaults to one week ago)
+ * @param endDate - The end date of the course (defaults to two weeks in the future)
+ * @param ctx - Context with authenticated user information
+ * @returns The newly created course object
+ */
+export async function seedCourse(
+  {
+    startDate,
+    endDate,
+  }: {
+    startDate?: Date
+    endDate?: Date
+  },
+  ctx: ContextWithUser
+) {
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // one week ago
+  const defaultEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // two weeks in future
+  const course = await ctx.prisma.course.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      pinCode: Math.floor(Math.random() * 9000 + 1000),
+      startDate: startDate ?? defaultStartDate,
+      endDate: endDate ?? defaultEndDate,
+      groupDeadlineDate: endDate ?? defaultEndDate,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  return course
+}
+
+/**
+ * Seeds a LiveQuiz in the database for testing purposes.
+ *
+ * @param elements - Array of elements to include in the live quiz, each with an id and type.
+ * @param status - Optional publication status for the live quiz.
+ * @param courseId - Optional course ID to associate with the live quiz.
+ * @param ctx - Context object containing user information and Prisma client.
+ * @returns Promise resolving to the created LiveQuiz object.
+ */
 export async function seedLiveQuiz(
-  elements: { id: number; type: ElementType }[],
+  {
+    elements,
+    status,
+    courseId,
+  }: {
+    elements: { id: number; type: ElementType }[]
+    status?: PublicationStatus
+    courseId?: string
+  },
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
-      name: 'Live Quiz Test',
-      displayName: 'Live Quiz Test',
-      description: 'Test Description',
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      status,
+      courseId,
       ownerId: ctx.user.sub,
       blocks: {
         create: elements.map((element, index) => ({
@@ -588,7 +645,7 @@ export async function seedLiveQuiz(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: `migrationId-${element.id}`,
+                migrationId: uuidv4(),
                 type: ElementInstanceType.LIVE_QUIZ,
                 elementType: element.type,
                 options: {},
@@ -605,5 +662,194 @@ export async function seedLiveQuiz(
   })
 
   return liveQuiz
+}
+
+/**
+ * Seeds a practice quiz in the database with the specified parameters.
+ *
+ * @param elements - Array of elements to include in the practice quiz, each with an id and type
+ * @param courseId - The ID of the course to associate the practice quiz with
+ * @param status - Optional publication status for the practice quiz
+ * @param ctx - The context object including the authenticated user and Prisma client
+ * @returns The created practice quiz object
+ */
+export async function seedPracticeQuiz(
+  {
+    elements,
+    courseId,
+    status,
+  }: {
+    elements: { id: number; type: ElementType }[]
+    courseId: string
+    status?: PublicationStatus
+  },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status,
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: elements.map((element, index) => ({
+          order: index,
+          type: ElementStackType.PRACTICE_QUIZ,
+          elements: {
+            create: [
+              {
+                order: 0,
+                elementId: element.id,
+                migrationId: uuidv4(),
+                type: ElementInstanceType.PRACTICE_QUIZ,
+                elementType: element.type,
+                options: {},
+                elementData: {} as ElementData,
+                results: {} as ElementInstanceResults,
+                anonymousResults: {} as ElementInstanceResults,
+                ownerId: ctx.user.sub,
+              },
+            ],
+          },
+        })),
+      },
+    },
+  })
+
+  return practiceQuiz
+}
+
+/**
+ * Seeds a microlearning activity in the database with the specified parameters.
+ *
+ * @param elements - Array of elements to include in the microlearning activity, each with an id and type
+ * @param courseId - The ID of the course to associate the microlearning activity with
+ * @param scheduledStartAt - Optional start date for the microlearning activity
+ * @param scheduledEndAt - Optional end date for the microlearning activity
+ * @param status - Optional publication status for the microlearning activity
+ * @param ctx - The context object including the authenticated user and Prisma client
+ * @returns The created microlearning activity object
+ */
+export async function seedMicroLearning(
+  {
+    elements,
+    courseId,
+    scheduledStartAt,
+    scheduledEndAt,
+    status,
+  }: {
+    elements: { id: number; type: ElementType }[]
+    courseId: string
+    scheduledStartAt?: Date
+    scheduledEndAt?: Date
+    status?: PublicationStatus
+  },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status,
+      scheduledStartAt:
+        scheduledStartAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // one week ago
+      scheduledEndAt:
+        scheduledEndAt ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // two weeks in future
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: elements.map((element, index) => ({
+          order: index,
+          type: ElementStackType.MICROLEARNING,
+          elements: {
+            create: [
+              {
+                order: 0,
+                elementId: element.id,
+                migrationId: uuidv4(),
+                type: ElementInstanceType.MICROLEARNING,
+                elementType: element.type,
+                options: {},
+                elementData: {} as ElementData,
+                results: {} as ElementInstanceResults,
+                anonymousResults: {} as ElementInstanceResults,
+                ownerId: ctx.user.sub,
+              },
+            ],
+          },
+        })),
+      },
+    },
+  })
+
+  return microLearning
+}
+
+/**
+ * Seeds a group activity in the database with the specified parameters.
+ *
+ * @param elements - Array of elements to include in the group activity, each with an id and type
+ * @param courseId - The ID of the course to associate the group activity with
+ * @param scheduledStartAt - Optional start date for the group activity
+ * @param scheduledEndAt - Optional end date for the group activity
+ * @param status - Optional publication status for the group activity
+ * @param ctx - The context object including the authenticated user and Prisma client
+ * @returns The created group activity object
+ */
+export async function seedGroupActivity(
+  {
+    elements,
+    courseId,
+    scheduledStartAt,
+    scheduledEndAt,
+    status,
+  }: {
+    elements: { id: number; type: ElementType }[]
+    courseId: string
+    scheduledStartAt?: Date
+    scheduledEndAt?: Date
+    status?: PublicationStatus
+  },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status,
+      scheduledStartAt:
+        scheduledStartAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // one week ago
+      scheduledEndAt:
+        scheduledEndAt ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // two weeks in future
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: {
+          order: 0,
+          type: ElementStackType.GROUP_ACTIVITY,
+          elements: {
+            create: elements.map((element, index) => ({
+              order: index,
+              elementId: element.id,
+              migrationId: uuidv4(),
+              type: ElementInstanceType.GROUP_ACTIVITY,
+              elementType: element.type,
+              options: {},
+              elementData: {} as ElementData,
+              results: {} as ElementInstanceResults,
+              anonymousResults: {} as ElementInstanceResults,
+              ownerId: ctx.user.sub,
+            })),
+          },
+        },
+      },
+    },
+  })
+
+  return groupActivity
 }
 // #endregion
