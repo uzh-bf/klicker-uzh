@@ -40,7 +40,11 @@ interface CourseListButtonProps {
     SetStateAction<{ open: boolean; courseId: string | null }>
   >
   showRemovalModal?: Dispatch<
-    SetStateAction<{ open: boolean; courseId: string | null }>
+    SetStateAction<{
+      open: boolean
+      courseId: string | null
+      courseName: string | null
+    }>
   >
   data?: {
     cy?: string
@@ -155,6 +159,7 @@ function CourseListButton({
                 showRemovalModal?.({
                   open: true,
                   courseId: course.id,
+                  courseName: course.name,
                 })
               }}
               data={{ cy: `delete-course-${course.name}` }}

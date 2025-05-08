@@ -41,7 +41,8 @@ function CourseSelectionPage() {
   const [removalModal, showRemovalModal] = useState<{
     open: boolean
     courseId: string | null
-  }>({ open: false, courseId: null })
+    courseName: string | null
+  }>({ open: false, courseId: null, courseName: null })
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
     GetUserCoursesDocument
@@ -208,16 +209,16 @@ function CourseSelectionPage() {
               }
             }}
           />
-          {removalModal.courseId ? (
+          {removalModal.courseId && removalModal.courseName ? (
             <CourseRemovalModal
               courseId={removalModal.courseId}
-              title={t('manage.course.removeCourse')}
+              title={removalModal.courseName}
               isModalOpen={removalModal.open}
               setModalOpen={(newOpen) =>
                 showRemovalModal((prev) =>
                   newOpen
                     ? { ...prev, open: newOpen }
-                    : { open: false, courseId: null }
+                    : { open: false, courseId: null, courseName: null }
                 )
               }
             />

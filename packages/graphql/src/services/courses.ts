@@ -1128,7 +1128,7 @@ export async function removeCourse(
   })
 
   ctx.emitter.emit('invalidate', {
-    typename: 'LiveQuiz',
+    typename: 'Course',
     id,
   })
 
