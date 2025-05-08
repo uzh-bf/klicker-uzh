@@ -162,7 +162,7 @@ function CourseListButton({
                   courseName: course.name,
                 })
               }}
-              data={{ cy: `delete-course-${course.name}` }}
+              data={{ cy: `remove-course-${course.name}` }}
             >
               <Button.Icon withoutLabel icon={faX} />
             </Button>

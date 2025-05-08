@@ -25,10 +25,8 @@ function CourseRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  const [removeCourse, { loading: removing }] = useMutation(
-    RemoveCourseDocument,
-    { variables: { id: courseId } }
-  )
+  const [removeCourse, { loading: removing }] =
+    useMutation(RemoveCourseDocument)
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -51,6 +49,7 @@ function CourseRemovalModal({
       })}
       onSubmit={async () => {
         await removeCourse({
+          variables: { id: courseId },
           refetchQueries: [{ query: GetUserCoursesDocument }],
         })
         setModalOpen(false)
