@@ -643,10 +643,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -936,10 +938,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -1321,10 +1325,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -1425,10 +1431,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -1576,10 +1584,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -1778,16 +1788,15 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+        status: PublicationStatus.PUBLISHED,
+      },
       userOneCtx
     )
-    await prisma.liveQuiz.update({
-      where: { id: liveQuiz.id },
-      data: { status: PublicationStatus.PUBLISHED },
-    })
 
     // granted READ, EXECUTE, WRITE, and ADMIN permissions to the individual users
     await prisma.permission.createMany({
@@ -1845,10 +1854,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -2034,10 +2045,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -2204,7 +2217,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [{ id: SC.id, type: ElementType.SC }],
+      { elements: [{ id: SC.id, type: ElementType.SC }] },
       userOneCtx
     )
 
@@ -2324,7 +2337,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [{ id: SC.id, type: ElementType.SC }],
+      { elements: [{ id: SC.id, type: ElementType.SC }] },
       userOneCtx
     )
 
@@ -2478,7 +2491,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [{ id: SE.id, type: ElementType.SELECTION }],
+      { elements: [{ id: SE.id, type: ElementType.SELECTION }] },
       userOneCtx
     )
 
@@ -2658,10 +2671,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 
@@ -2927,10 +2942,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
     await prisma.liveQuiz.update({
@@ -3015,10 +3032,12 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SC, SE } = await seedElements(userOneCtx, AC.id)
     const liveQuiz = await seedLiveQuiz(
-      [
-        { id: SC.id, type: ElementType.SC },
-        { id: SE.id, type: ElementType.SELECTION },
-      ],
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: SE.id, type: ElementType.SELECTION },
+        ],
+      },
       userOneCtx
     )
 

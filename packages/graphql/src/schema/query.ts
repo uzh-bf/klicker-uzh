@@ -1482,9 +1482,11 @@ export const Query = builder.queryType({
               return null
             }
 
-            return await SharingService.getDerivedAnswerCollectionPermissions(
-              { id: parseInt(args.objectId) },
-              ctx
+            return (
+              (await SharingService.getDerivedAnswerCollectionPermissions(
+                { id: parseInt(args.objectId) },
+                ctx
+              )) ?? []
             )
           } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
             // >= ADMIN permissions on answer collection
@@ -1501,11 +1503,56 @@ export const Query = builder.queryType({
               return null
             }
 
-            return await SharingService.getDerivedElementPermissions(
-              { id: parseInt(args.objectId) },
+            return (
+              (await SharingService.getDerivedElementPermissions(
+                { id: parseInt(args.objectId) },
+                ctx
+              )) ?? []
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+            // >= ADMIN permissions on answer collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  courseId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
               ctx
             )
+            if (!validAccess) {
+              return null
+            }
+
+            return (
+              (await SharingService.getDerivedCoursePermissions(
+                { id: args.objectId },
+                ctx
+              )) ?? []
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+            // >= ADMIN permissions on answer collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  liveQuizId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return (
+              (await SharingService.getDerivedLiveQuizPermissions(
+                { id: args.objectId },
+                ctx
+              )) ?? []
+            )
           }
+          // TODO: implement derived permissions for other object types once supported (service functions already implemented)
 
           return null
         },

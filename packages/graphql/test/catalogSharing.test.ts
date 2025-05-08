@@ -1981,6 +1981,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(readPermission!.username).toBe(userTwo.shortname)
     expect(readPermission!.userEmail).toBe(userTwo.email)
     expect(readPermission!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(readPermission!.propagation).toBe(false)
     expect(readPermission!.isOwn).toBe(false)
 
     const writePermission = await shareObject(
@@ -1997,6 +1998,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(writePermission!.username).toBe(userThree.shortname)
     expect(writePermission!.userEmail).toBe(userThree.email)
     expect(writePermission!.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(writePermission!.propagation).toBe(false)
     expect(writePermission!.isOwn).toBe(false)
 
     const adminPermission = await shareObject(
@@ -2013,6 +2015,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(adminPermission!.username).toBe(userFour.shortname)
     expect(adminPermission!.userEmail).toBe(userFour.email)
     expect(adminPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(adminPermission!.propagation).toBe(false)
     expect(adminPermission!.isOwn).toBe(false)
 
     // verify that the permissions have been created correctly in the database
@@ -2130,6 +2133,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(groupPermission).toBeTruthy()
     expect(groupPermission!.userGroupId).toBe(group.id)
     expect(groupPermission!.userGroupName).toBe(group.name)
+    expect(groupPermission!.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(groupPermission!.propagation).toBe(false)
 
     // create a user group with users 1, 3 (ADMIN), and 4 and grant ADMIN permissions to them
     const group2 = await prisma.userGroup.create({
@@ -2153,6 +2158,8 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(groupPermission2).toBeTruthy()
     expect(groupPermission2!.userGroupId).toBe(group2.id)
     expect(groupPermission2!.userGroupName).toBe(group2.name)
+    expect(groupPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(groupPermission2!.propagation).toBe(false)
 
     // verify that the correct direct permissions have been created in the database
     const dbPermission1 = await prisma.permission.findUnique({

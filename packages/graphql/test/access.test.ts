@@ -2278,7 +2278,7 @@ describe('Unit tests for object access validation', () => {
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
     const { SE } = await seedElements(userOneCtx, AC!.id)
     const liveQuiz = await seedLiveQuiz(
-      [{ id: SE.id, type: ElementType.SELECTION }],
+      { elements: [{ id: SE.id, type: ElementType.SELECTION }] },
       userOneCtx
     )
 

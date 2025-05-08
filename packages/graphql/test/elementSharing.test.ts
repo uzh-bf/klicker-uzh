@@ -384,6 +384,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(permission1!.username).toBe(userTwo.shortname)
     expect(permission1!.userEmail).toBe(userTwo.email)
     expect(permission1!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(permission1!.propagation).toBe(false)
     expect(permission1!.isOwn).toBe(false)
 
     const permission2 = await shareObject(
@@ -400,6 +401,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(permission2!.username).toBe(userThree.shortname)
     expect(permission2!.userEmail).toBe(userThree.email)
     expect(permission2!.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(permission2!.propagation).toBe(false)
     expect(permission2!.isOwn).toBe(false)
 
     const permission3 = await shareObject(
@@ -416,6 +418,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(permission3!.username).toBe(userFour.shortname)
     expect(permission3!.userEmail).toBe(userFour.email)
     expect(permission3!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(permission3!.propagation).toBe(false)
     expect(permission3!.isOwn).toBe(false)
 
     // verify that the correct direct and derived permission entries have been stored in the database
@@ -974,6 +977,8 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(groupPermission).toBeTruthy()
     expect(groupPermission!.userGroupId).toBe(group.id)
     expect(groupPermission!.userGroupName).toBe(group.name)
+    expect(groupPermission!.permissionLevel).toBe(PermissionLevel.WRITE)
+    expect(groupPermission!.propagation).toBe(false)
 
     // create a user group with users 1, 3 (ADMIN), and 4 and grant ADMIN permissions on the element to them
     const group2 = await prisma.userGroup.create({
@@ -997,6 +1002,8 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(groupPermission2).toBeTruthy()
     expect(groupPermission2!.userGroupId).toBe(group2.id)
     expect(groupPermission2!.userGroupName).toBe(group2.name)
+    expect(groupPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(groupPermission2!.propagation).toBe(false)
 
     // seed ADMIN and READ permissions on the answer collection for users 2 and 3
     const ACPermission1 = await prisma.permission.create({
@@ -1282,20 +1289,20 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       userOneCtx
     )
     expect(derivedPermissions).not.toBeNull()
-    expect(derivedPermissions.length).toBe(3)
+    expect(derivedPermissions!.length).toBe(3)
 
-    const permissionIds = derivedPermissions.map((p) => p.permissionId)
+    const permissionIds = derivedPermissions!.map((p) => p.permissionId)
     expect(permissionIds).toEqual(
       expect.arrayContaining([permission1.id, permission2.id, permission3.id])
     )
 
-    const READPermission = derivedPermissions.find(
+    const READPermission = derivedPermissions!.find(
       (permission) => permission.userId === userTwo.id
     )
-    const WRITEPermission = derivedPermissions.find(
+    const WRITEPermission = derivedPermissions!.find(
       (permission) => permission.userId === userThree.id
     )
-    const ADMINPermission = derivedPermissions.find(
+    const ADMINPermission = derivedPermissions!.find(
       (permission) => permission.userId === userFour.id
     )
     expect(READPermission).not.toBeNull()
