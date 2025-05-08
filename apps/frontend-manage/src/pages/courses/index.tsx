@@ -1,30 +1,19 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faArchive,
-  faInbox,
-  faPeopleGroup,
-  faPlusCircle,
-} from '@fortawesome/free-solid-svg-icons'
+import { faPeopleGroup, faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  H3,
-  Switch,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CourseRemovalModal from '~/components/courses/modals/CourseRemovalModal'
 import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
@@ -40,10 +29,19 @@ function CourseSelectionPage() {
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-  const [selectedCourseArchived, setSelectedCourseArchived] = useState(false)
-  const [archiveModal, showArchiveModal] = useState(false)
-  const [deletionModal, showDeletionModal] = useState(false)
+  const [archiveModal, showArchiveModal] = useState<{
+    open: boolean
+    courseId: string | null
+    isArchived: boolean
+  }>({ open: false, courseId: null, isArchived: false })
+  const [deletionModal, showDeletionModal] = useState<{
+    open: boolean
+    courseId: string | null
+  }>({ open: false, courseId: null })
+  const [removalModal, showRemovalModal] = useState<{
+    open: boolean
+    courseId: string | null
+  }>({ open: false, courseId: null })
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
     GetUserCoursesDocument
@@ -64,15 +62,15 @@ function CourseSelectionPage() {
   return (
     <Layout>
       <div className="flex w-full justify-center">
-        <div className="flex w-[30rem] flex-col md:w-[40rem]">
-          <div className="flex w-full flex-row justify-between">
+        <div className="flex w-full flex-col md:w-[45rem]">
+          <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
             {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
               <Switch
                 checked={showArchive}
                 onCheckedChange={(newValue) => setShowArchive(newValue)}
                 className={{
-                  root: 'mr-24 flex flex-row items-center gap-3',
+                  root: 'flex flex-row items-center gap-3',
                   label: 'mr-0 font-normal',
                 }}
                 data={{ cy: 'toggle-course-archive' }}
@@ -85,77 +83,30 @@ function CourseSelectionPage() {
             <div className="w-full">
               <div className="flex flex-col gap-2">
                 {courses.map((course) => {
-                  const courseRunning = dayjs(course.endDate).isAfter(dayjs())
-
-                  const ArchiveButton = (
-                    <Button
-                      className={{
-                        root: 'h-9 w-9',
-                      }}
-                      onClick={() => {
-                        setSelectedCourseId(course.id)
-                        setSelectedCourseArchived(course.isArchived)
-                        showArchiveModal(true)
-                      }}
-                      disabled={courseRunning}
-                      data={{ cy: `archive-course-${course.name}` }}
-                    >
-                      <Button.Icon
-                        withoutLabel
-                        icon={course.isArchived ? faInbox : faArchive}
-                      />
-                    </Button>
-                  )
-
                   return (
                     <div
                       className="flex flex-row items-center gap-2"
                       key={course.id}
                     >
                       <CourseListButton
+                        course={course}
                         onClick={() => router.push(`/courses/${course.id}`)}
                         icon={faPeopleGroup}
                         label={course.name}
-                        color={course.color}
-                        isArchived={course.isArchived}
-                        startDate={course.startDate}
-                        endDate={course.endDate}
+                        showArchiveModal={showArchiveModal}
+                        showDeletionModal={showDeletionModal}
+                        showRemovalModal={showRemovalModal}
                         data={{ cy: `course-list-button-${course.name}` }}
                       />
-                      {courseRunning ? (
-                        <Tooltip
-                          tooltip={t(
-                            'manage.courseList.archiveOnlyPastCourses'
-                          )}
-                        >
-                          {ArchiveButton}
-                        </Tooltip>
-                      ) : (
-                        ArchiveButton
-                      )}
-                      <Button
-                        className={{
-                          root: 'h-9 w-9 border-red-600',
-                        }}
-                        onClick={() => {
-                          setSelectedCourseId(course.id)
-                          showDeletionModal(true)
-                        }}
-                        data={{ cy: `delete-course-${course.name}` }}
-                      >
-                        <Button.Icon withoutLabel icon={faTrashCan} />
-                      </Button>
                     </div>
                   )
                 })}
-                <div className="mr-[5.5rem]">
-                  <CourseListButton
-                    onClick={() => showCreateCourseModal(true)}
-                    icon={faPlusCircle}
-                    label={t('manage.courseList.createNewCourse')}
-                    data={{ cy: 'course-list-button-new-course' }}
-                  />
-                </div>
+                <CourseListButton
+                  onClick={() => showCreateCourseModal(true)}
+                  icon={faPlusCircle}
+                  label={t('manage.courseList.createNewCourse')}
+                  data={{ cy: 'course-list-button-new-course' }}
+                />
               </div>
             </div>
           ) : (
@@ -180,17 +131,27 @@ function CourseSelectionPage() {
             </div>
           )}
           <CourseArchiveModal
-            open={archiveModal}
-            setOpen={showArchiveModal}
-            courseId={selectedCourseId}
-            setSelectedCourseId={setSelectedCourseId}
-            isArchived={selectedCourseArchived}
+            open={archiveModal.open}
+            setOpen={(newOpen) =>
+              showArchiveModal((prev) =>
+                newOpen
+                  ? { ...prev, open: newOpen }
+                  : { open: false, courseId: null, isArchived: false }
+              )
+            }
+            courseId={archiveModal.courseId}
+            isArchived={archiveModal.isArchived}
           />
           <CourseDeletionModal
-            open={deletionModal}
-            setOpen={showDeletionModal}
-            courseId={selectedCourseId}
-            setSelectedCourseId={setSelectedCourseId}
+            open={deletionModal.open}
+            setOpen={(newOpen) =>
+              showDeletionModal((prev) =>
+                newOpen
+                  ? { ...prev, open: newOpen }
+                  : { open: false, courseId: null }
+              )
+            }
+            courseId={deletionModal.courseId}
           />
           <CourseManipulationModal
             modalOpen={createCourseModal}
@@ -247,6 +208,20 @@ function CourseSelectionPage() {
               }
             }}
           />
+          {removalModal.courseId ? (
+            <CourseRemovalModal
+              courseId={removalModal.courseId}
+              title={t('manage.course.removeCourse')}
+              isModalOpen={removalModal.open}
+              setModalOpen={(newOpen) =>
+                showRemovalModal((prev) =>
+                  newOpen
+                    ? { ...prev, open: newOpen }
+                    : { open: false, courseId: null }
+                )
+              }
+            />
+          ) : null}
         </div>
       </div>
     </Layout>

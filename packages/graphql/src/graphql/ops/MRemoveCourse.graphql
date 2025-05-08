@@ -1,0 +1,3 @@
+mutation RemoveCourse($id: String!) {
+  removeCourse(id: $id)
+}

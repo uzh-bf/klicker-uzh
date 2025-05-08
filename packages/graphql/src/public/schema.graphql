@@ -1550,6 +1550,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
+  removeCourse(id: String!): String
   removeElement(id: Int!): Int
   removeLiveQuiz(id: String!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!

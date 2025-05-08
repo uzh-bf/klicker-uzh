@@ -1101,6 +1101,40 @@ export async function deleteCourse(
   return deletedCourse
 }
 
+export async function removeCourse(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified course
+  const course = await ctx.prisma.course.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!course) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this course and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.course.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { courseId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id,
+  })
+
+  return id
+}
+
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
     where: {

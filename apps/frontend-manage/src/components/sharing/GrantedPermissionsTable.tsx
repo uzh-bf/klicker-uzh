@@ -87,9 +87,11 @@ function GrantedPermissionsTable({
             <th className="w-40 px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.permissionLevel')}
             </th>
-            <th className="w-24 px-2 text-center text-sm font-bold text-gray-700">
-              {t('shared.generic.propagation')}
-            </th>
+            {showPropagationSetting ? (
+              <th className="w-24 px-2 text-center text-sm font-bold text-gray-700">
+                {t('shared.generic.propagation')}
+              </th>
+            ) : null}
             <th className="w-10" />
           </tr>
         </thead>

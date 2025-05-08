@@ -10,7 +10,6 @@ interface CourseArchiveModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   courseId: string | null
-  setSelectedCourseId: (courseId: string | null) => void
   isArchived: boolean
 }
 
@@ -18,7 +17,6 @@ function CourseArchiveModal({
   open,
   setOpen,
   courseId,
-  setSelectedCourseId,
   isArchived,
 }: CourseArchiveModalProps) {
   const t = useTranslations()
@@ -36,7 +34,6 @@ function CourseArchiveModal({
       open={open}
       onClose={() => {
         setOpen(false)
-        setSelectedCourseId(null)
       }}
       className={{ content: 'max-w-[30rem]' }}
       title={
@@ -61,7 +58,6 @@ function CourseArchiveModal({
               },
             })
             setOpen(false)
-            setSelectedCourseId(null)
           }}
           data={{ cy: 'course-archive-modal-confirm' }}
         >
@@ -72,7 +68,6 @@ function CourseArchiveModal({
         <Button
           onClick={() => {
             setOpen(false)
-            setSelectedCourseId(null)
           }}
           data={{ cy: 'course-archive-modal-cancel' }}
         >

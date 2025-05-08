@@ -686,6 +686,16 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      removeCourse: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.removeCourse(args, ctx)
+        },
+      }),
+
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,

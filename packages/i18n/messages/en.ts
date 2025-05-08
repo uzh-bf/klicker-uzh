@@ -2168,6 +2168,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
       deleteCourse: 'Delete Course',
+      removeCourse: 'Remove Course',
+      confirmCourseRemoval:
+        'Please confirm the following effects of removing the course <b>{name}</b> from your account.',
+      courseRemovalFinal:
+        'Through the removal of the course, it will be disappear from your user account, but its content will not be deleted. The visibility of the course content towards students will not be affected. The action cannot be undone.',
+      courseRemovalDependencyAccess:
+        'Potential derived permissions on course content (activities, elements, etc.) will be automatically revoked, unless their retention is technically required.',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
       nParticipants: '{number} participants',
       saveDescription: 'Save description',

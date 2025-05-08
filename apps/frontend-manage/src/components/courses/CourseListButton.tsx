@@ -1,20 +1,47 @@
-import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
-import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faClock,
+  faTrashCan,
+  IconDefinition,
+} from '@fortawesome/free-regular-svg-icons'
+import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Course } from '@klicker-uzh/graphql/dist/ops'
+import { Button, Tooltip } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CourseArchiveButton from './CourseArchiveButton'
 
 interface CourseListButtonProps {
+  course?: Pick<
+    Course,
+    | 'id'
+    | 'name'
+    | 'color'
+    | 'startDate'
+    | 'endDate'
+    | 'isArchived'
+    | 'isManager'
+    | 'isRemovable'
+  >
   onClick: () => void
   icon: IconDefinition
   label: string
-  color?: string
-  isArchived?: boolean
-  startDate?: string
-  endDate?: string
+  showArchiveModal?: Dispatch<
+    SetStateAction<{
+      open: boolean
+      courseId: string | null
+      isArchived: boolean
+    }>
+  >
+  showDeletionModal?: Dispatch<
+    SetStateAction<{ open: boolean; courseId: string | null }>
+  >
+  showRemovalModal?: Dispatch<
+    SetStateAction<{ open: boolean; courseId: string | null }>
+  >
   data?: {
     cy?: string
     test?: string
@@ -22,27 +49,30 @@ interface CourseListButtonProps {
 }
 
 function CourseListButton({
+  course,
   onClick,
   icon,
   label,
-  color,
-  isArchived,
-  startDate,
-  endDate,
+  showArchiveModal,
+  showDeletionModal,
+  showRemovalModal,
   data,
 }: CourseListButtonProps) {
   const t = useTranslations()
-  const isPast = endDate ? dayjs(endDate).isBefore(dayjs()) : false
+  const isPast = course?.endDate
+    ? dayjs(course.endDate).isBefore(dayjs())
+    : false
+  const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
 
   return (
     <Button
       className={{
         root: twMerge(
           'border-uzh-grey-100 flex w-full flex-row justify-between rounded-md border border-solid p-2',
-          typeof color !== 'undefined' && '!border-b-4'
+          typeof course?.color !== 'undefined' && '!border-b-4'
         ),
       }}
-      style={{ borderBottomColor: color }}
+      style={{ borderBottomColor: course?.color }}
       onClick={onClick}
       data={data}
     >
@@ -51,25 +81,89 @@ function CourseListButton({
           <FontAwesomeIcon icon={icon} />
           <div>{label}</div>
         </div>
-        {startDate && endDate && (
+        {course?.startDate && course?.endDate && (
           <div className="text-uzh-grey-100 ml-1 flex flex-row items-center gap-1.5 text-sm">
             <FontAwesomeIcon icon={faClock} />
             <div>
-              {dayjs(startDate).format('DD.MM.YYYY').toString()} -{' '}
-              {dayjs(endDate).format('DD.MM.YYYY').toString()}
+              {dayjs(course.startDate).format('DD.MM.YYYY').toString()} -{' '}
+              {dayjs(course.endDate).format('DD.MM.YYYY').toString()}
             </div>
           </div>
         )}
       </div>
-      <div className="flex flex-row gap-2">
-        {isPast && (
-          <Badge className="gap-2 bg-green-700 hover:bg-green-800">
-            <FontAwesomeIcon icon={faCheck} />
-            {t('shared.generic.ended')}
-          </Badge>
-        )}
-        {isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
-      </div>
+      {typeof course !== 'undefined' ? (
+        <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row gap-2">
+            {isPast && (
+              <Badge className="gap-2 bg-green-700 hover:bg-green-800">
+                <FontAwesomeIcon icon={faCheck} />
+                {t('shared.generic.ended')}
+              </Badge>
+            )}
+            {course.isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
+          </div>
+
+          {course.isManager ? (
+            <>
+              {courseRunning ? (
+                <Tooltip
+                  tooltip={t('manage.courseList.archiveOnlyPastCourses')}
+                >
+                  <CourseArchiveButton
+                    id={course.id}
+                    name={course.name}
+                    isArchived={course.isArchived}
+                    running={courseRunning}
+                    showArchiveModal={showArchiveModal}
+                  />
+                </Tooltip>
+              ) : (
+                <CourseArchiveButton
+                  id={course.id}
+                  name={course.name}
+                  isArchived={course.isArchived}
+                  running={courseRunning}
+                  showArchiveModal={showArchiveModal}
+                />
+              )}
+              <Button
+                className={{
+                  root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
+                }}
+                onClick={(e) => {
+                  e?.stopPropagation()
+                  e?.preventDefault()
+                  showDeletionModal?.({
+                    open: true,
+                    courseId: course.id,
+                  })
+                }}
+                data={{ cy: `delete-course-${course.name}` }}
+              >
+                <Button.Icon withoutLabel icon={faTrashCan} />
+              </Button>
+            </>
+          ) : null}
+          {course.isRemovable ? (
+            <Button
+              className={{
+                root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
+              }}
+              onClick={(e) => {
+                e?.stopPropagation()
+                e?.preventDefault()
+                showRemovalModal?.({
+                  open: true,
+                  courseId: course.id,
+                })
+              }}
+              data={{ cy: `delete-course-${course.name}` }}
+            >
+              <Button.Icon withoutLabel icon={faX} />
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </Button>
   )
 }
