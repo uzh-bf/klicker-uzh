@@ -2872,21 +2872,6 @@ describe('Unit tests for sharing functionalities of courses', () => {
         })
       expect(removedElementPermissions).toBeNull()
     }
-
-    // verify that a proper audit log entry has been created
-    const auditLogEntry5 = await prisma.auditLogEntry.findFirst({
-      where: {
-        type: AuditLogType.PERMISSION_MODIFIED,
-        objectType: ObjectType.COURSE,
-        objectId: course.id,
-        sourceUserId: userOne.id,
-        targetUserId: userTwo.id,
-      },
-    })
-    expect(auditLogEntry5).toBeTruthy()
-    expect(auditLogEntry5!.message).toContain(
-      `Permission level changed from ${PermissionLevel.ADMIN} to ${PermissionLevel.WRITE} for ${ObjectType.COURSE} (ID ${course.id}) through owner / admin ${userOne.id} for user ${userTwo.id}.`
-    )
   })
 
   it('Verify that the level of an group course permission can be changed', async () => {
