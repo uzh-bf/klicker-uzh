@@ -23,14 +23,12 @@ interface CourseDeletionModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   courseId: string | null
-  setSelectedCourseId: (courseId: string | null) => void
 }
 
 function CourseDeletionModal({
   open,
   setOpen,
   courseId,
-  setSelectedCourseId,
 }: CourseDeletionModalProps) {
   const initialConfirmations: CourseDeletionConfirmationType = {
     deleteParticipations: false,
@@ -104,7 +102,6 @@ function CourseDeletionModal({
       open={open}
       onClose={() => {
         setOpen(false)
-        setSelectedCourseId(null)
         setConfirmations({ ...initialConfirmations })
       }}
       className={{ content: '!w-full max-w-[60rem]' }}
@@ -130,7 +127,6 @@ function CourseDeletionModal({
               },
             })
             setOpen(false)
-            setSelectedCourseId(null)
             setConfirmations({ ...initialConfirmations })
           }}
           data={{ cy: 'course-deletion-modal-confirm' }}
@@ -142,7 +138,6 @@ function CourseDeletionModal({
         <Button
           onClick={() => {
             setOpen(false)
-            setSelectedCourseId(null)
             setConfirmations({ ...initialConfirmations })
           }}
           data={{ cy: 'course-deletion-modal-cancel' }}

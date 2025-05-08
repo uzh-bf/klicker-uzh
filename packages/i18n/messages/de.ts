@@ -2206,6 +2206,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
       deleteCourse: 'Kurs löschen',
+      removeCourse: 'Kurs entfernen',
+      confirmCourseRemoval:
+        'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Kurses <b>{name}</b> aus Ihrem Nutzerkonto.',
+      courseRemovalFinal:
+        'Durch die Entfernung des Kurses wird dieser aus Ihrem Benutzerkonto entfernt, aber nicht dessen Inhalt gelöscht. Zudem bleiben alle Kursinhalte für die Studierenden weiterhin verfügbar. Die Aktion kann nicht rückgängig gemacht werden.',
+      courseRemovalDependencyAccess:
+        'Allfällige abgeleitete Berechtigungen auf Kursinhalte (Aktivitäten, Elemente, etc.) werden automatisch widerrufen, sofern deren Erhalt nicht technisch erforderlich ist.',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
