@@ -3483,9 +3483,24 @@ function getMaxAccessLevelIndividual({
     directPermissionId: number | undefined
   }>(
     (acc, directPermission) => {
+      // if the newly identified permission level is higher then the currently known highest one,
+      // update the maximum permission level and the corresponding direct permission ID
       if (
         permissionLevelMap[directPermission.permissionLevel] >
         acc.maxDirectPermission
+      ) {
+        return {
+          maxDirectPermission:
+            permissionLevelMap[directPermission.permissionLevel],
+          directPermissionId: directPermission.id,
+        }
+      }
+      // another direct permission with the same level was found, but one of them has propagation enabled
+      // (higher derived permission rights), keep the one with propagation enabled
+      else if (
+        permissionLevelMap[directPermission.permissionLevel] ===
+          acc.maxDirectPermission &&
+        directPermission.propagation
       ) {
         return {
           maxDirectPermission:
@@ -3532,10 +3547,24 @@ function getMaxAccessLevelCombined({
     (acc, directPermission) => {
       if (directPermission.userId) {
         // if user already has a permission, check if the new one is higher
+        // if the newly identified permission level is higher then the currently known highest one,
+        // update the maximum permission level and the corresponding direct permission ID
         if (
           typeof acc[directPermission.userId] !== 'undefined' &&
           permissionLevelMap[directPermission.permissionLevel] >
             permissionLevelMap[acc[directPermission.userId]!.maxAccessLevel]
+        ) {
+          acc[directPermission.userId]!.maxAccessLevel =
+            directPermission.permissionLevel
+          acc[directPermission.userId]!.parentPermissionId = directPermission.id
+        }
+        // another direct permission with the same level was found, but one of them has propagation enabled
+        // (higher derived permission rights), keep the one with propagation enabled
+        else if (
+          typeof acc[directPermission.userId] !== 'undefined' &&
+          permissionLevelMap[directPermission.permissionLevel] ===
+            permissionLevelMap[acc[directPermission.userId]!.maxAccessLevel] &&
+          directPermission.propagation
         ) {
           acc[directPermission.userId]!.maxAccessLevel =
             directPermission.permissionLevel
@@ -3559,10 +3588,23 @@ function getMaxAccessLevelCombined({
         ]
 
         groupMembers.forEach((user) => {
+          // if the newly identified permission level is higher then the currently known highest one,
+          // update the maximum permission level and the corresponding direct permission ID
           if (
             typeof acc[user.id] !== 'undefined' &&
             permissionLevelMap[directPermission.permissionLevel] >
               permissionLevelMap[acc[user.id]!.maxAccessLevel]
+          ) {
+            acc[user.id]!.maxAccessLevel = directPermission.permissionLevel
+            acc[user.id]!.parentPermissionId = directPermission.id
+          }
+          // another direct permission with the same level was found, but one of them has propagation enabled
+          // (higher derived permission rights), keep the one with propagation enabled
+          if (
+            typeof acc[user.id] !== 'undefined' &&
+            permissionLevelMap[directPermission.permissionLevel] ===
+              permissionLevelMap[acc[user.id]!.maxAccessLevel] &&
+            directPermission.propagation
           ) {
             acc[user.id]!.maxAccessLevel = directPermission.permissionLevel
             acc[user.id]!.parentPermissionId = directPermission.id
