@@ -107,7 +107,10 @@ function ObjectSharingModal({
           <PermissionsTable objectType={objectType} />
         </div>
 
-        <PropagatedPermissionsTable objectType={objectType} />
+        <PropagatedPermissionsTable
+          objectType={objectType}
+          showPropagationSetting={objectType === SharingObjectType.Course}
+        />
 
         <div className="mt-8">
           <GrantedPermissionsTable
@@ -116,13 +119,16 @@ function ObjectSharingModal({
             permissionsLoading={permissionsLoading}
             changeLoading={permissionChanging}
             isOwner={isOwner}
+            showPropagationSetting={objectType === SharingObjectType.Course}
             onPermissionLevelChange={async ({
               permissionId,
               newPermissionLevel,
+              newPropagation,
             }) => {
               await onPermissionLevelChange({
                 permissionId,
                 newPermissionLevel,
+                newPropagation,
               })
             }}
             onPermissionRemoval={async (permissionId) => {

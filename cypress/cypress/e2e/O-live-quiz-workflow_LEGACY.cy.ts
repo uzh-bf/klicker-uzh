@@ -1332,8 +1332,11 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
 
     // modify single choice question
-    cy.deleteElement({ elementName: this.data.liveQuiz.newSCTitle })
-    cy.deleteElement({ elementName: this.data.MC2.title })
+    cy.deleteElement({
+      elementName: this.data.liveQuiz.newSCTitle,
+      privatePreview: true,
+    })
+    cy.deleteElement({ elementName: this.data.MC2.title, privatePreview: true })
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="live-quizzes"]').click()

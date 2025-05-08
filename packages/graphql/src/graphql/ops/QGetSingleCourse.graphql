@@ -26,7 +26,6 @@ query GetSingleCourse($courseId: String!) {
     isOwner
     isManager
     isEditor
-    isImported
     isShared
     isRemovable
 

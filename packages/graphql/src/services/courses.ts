@@ -865,9 +865,6 @@ export async function getUserCourses(ctx: ContextWithUser) {
                 object.permissionLevel === PermissionLevel.OWNER ||
                 object.permissionLevel === PermissionLevel.ADMIN ||
                 object.permissionLevel === PermissionLevel.WRITE,
-              isImported:
-                object.permissionLevel === PermissionLevel.OWNER &&
-                object.course.originalId !== null,
               isShared: object.permissionLevel !== PermissionLevel.OWNER,
               // object can be removed, if the object is shared and the permission is not derived / granted through a user group
               isRemovable:
@@ -1164,7 +1161,11 @@ export async function getCourseData(
   const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
-      _count: { select: { participantGroups: true } },
+      _count: { select: { participantGroups: true, permissions: true } },
+      permissions: {
+        where: { userId: ctx.user.sub },
+        include: { directPermission: true },
+      },
       liveQuizzes: {
         where: { isDeleted: false },
         include: {
@@ -1232,6 +1233,23 @@ export async function getCourseData(
   })
 
   if (!course) return null
+
+  // if no derived permission was found, return null
+  const coursePermission = course.permissions[0]
+  if (!coursePermission) {
+    return null
+  }
+
+  const {
+    isOwner: courseOwner,
+    isManager: courseManager,
+    isEditor: courseEditor,
+    isExecutor: courseExecutor,
+    isShared: courseShared,
+    isRemovable: courseRemovable,
+  } = getPermissionBooleans({
+    permission: coursePermission,
+  })
 
   const reducedLiveQuizzes = !user?.privatePreview
     ? course.liveQuizzes.map((session) => {
@@ -1338,6 +1356,15 @@ export async function getCourseData(
 
   return {
     ...course,
+    permissionLevel: coursePermission.permissionLevel,
+    derivedAccess: coursePermission.derived,
+    numSharedUsers: course._count.permissions - 1,
+    isOwner: courseOwner,
+    isManager: courseManager,
+    isEditor: courseEditor,
+    isExecutor: courseExecutor,
+    isShared: courseShared,
+    isRemovable: courseRemovable,
     liveQuizzes: reducedLiveQuizzes,
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: reducedGroupActivities,

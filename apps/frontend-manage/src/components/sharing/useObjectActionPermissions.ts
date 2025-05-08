@@ -168,6 +168,53 @@ function useObjectActionPermissions({
         permissions: [false, false, false, false, true],
       },
     ]
+  } else if (objectType === SharingObjectType.Course) {
+    return [
+      {
+        action: t('manage.course.viewCourse'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.course.viewActivities'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.course.executeActivities'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.course.modifyCourseSettings'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.course.modifyContainedActivities'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.course.manageParticipantGroups'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.course.shareCourse'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.deleteCourse'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, false, true],
+      },
+    ]
   }
 
   return []

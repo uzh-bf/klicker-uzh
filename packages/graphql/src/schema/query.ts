@@ -1410,6 +1410,25 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
+          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+            // >= ADMIN permissions on course
+            const validAccess = await checkAccess(
+              [
+                {
+                  courseId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getCoursePermissions(
+              { id: args.objectId },
+              ctx
+            )
           } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
             // >= ADMIN permissions on live quiz
             const validAccess = await checkAccess(

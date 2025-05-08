@@ -78,6 +78,7 @@ function CourseGamificationInfos({
       <GroupsList
         courseId={course.id}
         groupCreationFinalized={course.randomAssignmentFinalized}
+        actionsDisabled={!course.isEditor}
       />
     </Tabs>
   )

@@ -1706,15 +1706,15 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
-              courseId: undefined,
+              courseId: undefined, // not supported in catalog at the moment
               liveQuizId:
-                // TODO: add live quiz with or clause
+                // not supported in catalog at the moment (except templates)
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ_TEMPLATE
                   ? args.objectId
                   : undefined,
-              practiceQuizId: undefined,
-              microLearningId: undefined,
-              groupActivityId: undefined,
+              practiceQuizId: undefined, // not supported in catalog at the moment (except templates)
+              microLearningId: undefined, // not supported in catalog at the moment (except templates)
+              groupActivityId: undefined, // not supported in catalog at the moment (except templates)
             },
             ctx
           )
@@ -2126,6 +2126,7 @@ export const Mutation = builder.mutationType({
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
+          propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
@@ -2155,6 +2156,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                 ? [
                     {
@@ -2176,6 +2185,7 @@ export const Mutation = builder.mutationType({
               permissionLevel: args.permissionLevel,
               shortnameOrEmail: args.shortnameOrEmail,
               userGroupId: args.userGroupId,
+              propagation: args.propagation,
               catalogCollectionId:
                 args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
@@ -2188,7 +2198,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
-              courseId: undefined,
+              courseId:
+                args.objectType === SharingObjectTypeEnum.COURSE
+                  ? args.objectId
+                  : undefined,
               liveQuizId:
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
@@ -2236,6 +2249,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                 ? [
                     {
@@ -2267,7 +2288,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
-              courseId: undefined,
+              courseId:
+                args.objectType === SharingObjectTypeEnum.COURSE
+                  ? args.objectId
+                  : undefined,
               liveQuizId:
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
@@ -2288,6 +2312,7 @@ export const Mutation = builder.mutationType({
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: SharingObjectType, required: true }),
+          propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
@@ -2317,6 +2342,14 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
+              ...(args.objectType === SharingObjectTypeEnum.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
               ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                 ? [
                     {
@@ -2337,6 +2370,7 @@ export const Mutation = builder.mutationType({
             {
               permissionId: args.permissionId,
               permissionLevel: args.permissionLevel,
+              propagation: args.propagation,
               catalogCollectionId:
                 args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
                   ? args.objectId
@@ -2349,7 +2383,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
-              courseId: undefined,
+              courseId:
+                args.objectType === SharingObjectTypeEnum.COURSE
+                  ? args.objectId
+                  : undefined,
               liveQuizId:
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
@@ -2436,6 +2473,28 @@ export const Mutation = builder.mutationType({
             return await SharingService.transferElementOwnership(
               {
                 id: parseInt(args.objectId),
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+            // == OWNER permissions on course required
+            const validAccess = await checkAccess(
+              [
+                {
+                  courseId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferCourseOwnership(
+              {
+                id: args.objectId,
                 shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx

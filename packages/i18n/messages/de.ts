@@ -329,8 +329,10 @@ export default {
       template: 'Vorlage',
       noPoints: 'keine Punkte',
       criterionN: 'Kriterium {number}',
+      propagation: 'Propagation',
     },
     types: {
+      ACTIVITIES: 'Aktivitäten',
       LIVE_QUIZ: 'Live Quiz',
       LIVE_QUIZ_TEMPLATE: 'Live Quiz Vorlage',
       PRACTICE_QUIZ: 'Übungs-Quiz',
@@ -2193,9 +2195,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
+      shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
+      viewCourse: 'Kurs einsehen',
+      viewActivities: 'Aktivitäten einsehen',
+      executeActivities: 'Aktivitäten ausführen',
+      modifyCourseSettings: 'Kurseinstellungen ändern',
+      modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
+      manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      deleteCourse: 'Kurs löschen',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
@@ -2573,7 +2583,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeLIVE_QUIZ: 'Live-Quiz entfernen',
-      removeLIVE_QUIZtitle: 'Live-Quiz aus Katalog entfernen',
+      removeLIVE_QUIZtitle: '',
+      removeCOURSE: 'Kurs entfernen',
+      removeCOURSEtitle: '',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -2619,6 +2631,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
       requestCatalogObjectSuccess:
@@ -2659,6 +2672,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       transferOwnership: 'Eigentumsrechte übertragen',
       showDerivedPermissions: 'Abgeleitete Berechtigungen anzeigen',
       hideDerivedPermissions: 'Abgeleitete Berechtigungen ausblenden',
+      minimumRequired: 'Minimale Berechtigungen',
+      propagationOfPermissions: 'Propagierung von Berechtigungen',
       derivedPermissions: 'Abgeleitete Berechtigungen',
       derivedPermissionsDescription:
         'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',
@@ -2693,11 +2708,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       infoTransferOwnershipELEMENT:
         'Sie sind dabei, die Eigentumsrechte für das Element <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Element, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ:
-        'Sie sind dabei, die Eigentumsrechte für das Live-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungvererbung), während Sie Admin-Zugriff auf das Live-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+        'Sie sind dabei, die Eigentumsrechte für das Live-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Live-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipCOURSE:
+        'Sie sind dabei, die Eigentumsrechte für den Kurs <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diesen Kurs und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Aktivitäten und Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
       shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
       shareLIVE_QUIZ: 'Live-Quiz teilen',
+      shareCOURSE: 'Kurs teilen',
       shareELEMENT: 'Element teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
@@ -2707,6 +2725,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
       infoSharingLIVE_QUIZ:
         'Diese Ansicht erlaubt es Ihnen, das Live-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Live-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingCOURSE:
+        'Diese Ansicht erlaubt es Ihnen, den Kurs "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Kurs bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingELEMENT:
         'Diese Ansicht erlaubt es Ihnen, das Element "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Element bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       propagatedPermissions: 'Abgeleitete Berechtigungen',
@@ -2716,7 +2736,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       propagatedPermissionsELEMENT:
         'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
       propagatedPermissionsLIVE_QUIZ:
-        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Live-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb des vorliegenden Quizzes wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Elemente oder die offizielle Dokumentation.',
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Live-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb des vorliegenden Quizzes wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsCOURSE:
+        'Abhängig von der gewährten Berechtigungsstufe und Ihrer Auswahl, ob höhere Berechtigungen propagiert werden sollen, werden die technisch benötigten oder propagierten Berechtigungen auf den im Kurs enthaltenen Aktivitäten, Elementen, etc. wie in der folgenden Tabelle aufgeführt, gewährt. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2727,6 +2749,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ: 'Live-Quiz entfernen',
+      removeCOURSE: 'Kurs entfernen',
       removeELEMENT: 'Element entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
@@ -2736,6 +2759,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalLIVE_QUIZ:
         'Sind Sie sicher, dass Sie das Live-Quiz "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalCOURSE:
+        'Sind Sie sicher, dass Sie den Kurs "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalELEMENT:
         'Sind Sie sicher, dass Sie das Element "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',

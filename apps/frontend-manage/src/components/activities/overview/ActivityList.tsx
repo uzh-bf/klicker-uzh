@@ -56,7 +56,7 @@ function ActivityList({
 
   return (
     <>
-      <div className="border-uzh-grey-60 flex flex-row flex-wrap items-center justify-end space-x-5 pb-1.5 text-sm">
+      <div className="border-uzh-grey-60 flex flex-row flex-wrap items-center justify-end gap-y-1.5 space-x-5 pb-1.5 text-sm">
         <div className="flex h-4 flex-row items-center gap-2">
           <FontAwesomeIcon icon={faPencil} className="h-4 w-4" />
           <div>{t(`shared.${PublicationStatus.Draft}.statusLabel`)}</div>

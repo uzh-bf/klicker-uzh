@@ -8,7 +8,8 @@ function usePermissionLevelSelection({ type }: { type: SharingObjectType }) {
   const t = useTranslations()
 
   // execution rights are only available for activities and courses
-  const showExecution = type === SharingObjectType.LiveQuiz
+  const showExecution =
+    type === SharingObjectType.Course || type === SharingObjectType.LiveQuiz
 
   // default case: no execution permissions, all other access levels
   return [

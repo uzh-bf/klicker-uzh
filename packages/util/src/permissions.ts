@@ -3631,11 +3631,11 @@ function getActivityAccessFromCourse({
       derived = true
       break
 
-    // if the user has WRITE permissions on the course, READ or WRITE access is derived (depending on propagation setting)
+    // if the user has WRITE permissions on the course, EXECUTE or WRITE access is derived (depending on propagation setting)
     case DB.PermissionLevel.WRITE:
       maxAccessLevel = directCoursePermission?.propagation
         ? DB.PermissionLevel.WRITE
-        : DB.PermissionLevel.READ
+        : DB.PermissionLevel.EXECUTE
       parentPermissionId = directCoursePermission?.id
       derived = true
       break

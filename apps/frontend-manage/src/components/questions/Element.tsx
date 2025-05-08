@@ -190,7 +190,7 @@ function Element({
             </div>
           </div>
 
-          {element.numSharedUsers ? (
+          {element.numSharedUsers && element.isManager ? (
             <div className="mr-2 flex h-max flex-row items-center gap-1.5 py-1">
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />

@@ -3,11 +3,13 @@ mutation ChangePermissionLevel(
   $objectType: SharingObjectType!
   $permissionId: Int!
   $permissionLevel: PermissionLevel!
+  $propagation: Boolean!
 ) {
   changePermissionLevel(
     objectId: $objectId
     objectType: $objectType
     permissionId: $permissionId
     permissionLevel: $permissionLevel
+    propagation: $propagation
   )
 }

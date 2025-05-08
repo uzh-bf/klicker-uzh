@@ -53,6 +53,7 @@ function CatalogObjectItem({
       [SharingObjectType.AnswerCollection]: faList,
       [SharingObjectType.CatalogCollection]: faFolder,
       [SharingObjectType.LiveQuizTemplate]: faFileLines,
+      [SharingObjectType.Course]: undefined,
       [SharingObjectType.LiveQuiz]: undefined,
       [SharingObjectType.Element]: faQuestion,
     }

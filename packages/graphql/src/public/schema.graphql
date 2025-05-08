@@ -678,7 +678,6 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
-  isImported: Boolean
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -1457,7 +1456,7 @@ type Mutation {
   changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
-  changePermissionLevel(objectId: String!, objectType: SharingObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!): Boolean!
+  changePermissionLevel(objectId: String!, objectType: SharingObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
@@ -1564,7 +1563,7 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  shareObject(objectId: String!, objectType: SharingObjectType!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  shareObject(objectId: String!, objectType: SharingObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1896,6 +1895,7 @@ type PermissionInfo {
   isOwn: Boolean
   permissionId: Int!
   permissionLevel: PermissionLevel!
+  propagation: Boolean
   userEmail: String
   userGroupName: String
   userId: String
@@ -2170,6 +2170,7 @@ type SelectionInstanceEvaluation {
 enum SharingObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  COURSE
   ELEMENT
   LIVE_QUIZ
   LIVE_QUIZ_TEMPLATE

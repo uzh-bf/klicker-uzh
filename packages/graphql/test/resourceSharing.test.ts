@@ -898,6 +898,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         permissionId: permission1!.id,
         permissionLevel: PermissionLevel.WRITE,
         answerCollectionId: AC1!.id,
+        propagation: false,
       },
       userOneCtx
     )
@@ -972,6 +973,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         permissionId: readPermission.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1760,6 +1762,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         shortnameOrEmail: 'nonExistingUser',
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1771,6 +1774,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         shortnameOrEmail: userTwo.email,
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1786,6 +1790,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         shortnameOrEmail: userThree.email,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1801,6 +1806,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         shortnameOrEmail: userFour.email,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1940,6 +1946,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         userGroupId: group.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
       },
       userOneCtx
     )
@@ -1962,6 +1969,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         answerCollectionId: AC1!.id,
         userGroupId: group2.id,
         permissionLevel: PermissionLevel.ADMIN,
+        propagation: false,
       },
       userOneCtx
     )

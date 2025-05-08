@@ -20,7 +20,6 @@ query GetUserCourses {
     isOwner
     isManager
     isEditor
-    isImported
     isShared
     isRemovable
   }

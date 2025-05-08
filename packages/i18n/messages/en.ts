@@ -328,8 +328,10 @@ export default {
       template: 'Template',
       noPoints: 'no points',
       criterionN: 'Criterion {number}',
+      propagation: 'Propagation',
     },
     types: {
+      ACTIVITIES: 'Activities',
       LIVE_QUIZ: 'Live Quiz',
       LIVE_QUIZ_TEMPLATE: 'Live Quiz Template',
       PRACTICE_QUIZ: 'Practice Quiz',
@@ -2155,9 +2157,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     course: {
       modifyCourse: 'Modify course',
+      shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
+      viewCourse: 'View Course',
+      viewActivities: 'View Activities',
+      executeActivities: 'Execute Activities',
+      modifyCourseSettings: 'Modify Course Settings',
+      modifyContainedActivities: 'Modify Activities in Course',
+      manageParticipantGroups: 'Manage Participant Groups',
+      deleteCourse: 'Delete Course',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
@@ -2550,6 +2560,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeLIVE_QUIZ: 'Remove Live-Quiz',
       removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
+      removeCOURSE: 'Remove Course',
+      removeCOURSEtitle: '',
       removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
@@ -2596,6 +2608,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Once the owner accepts your request, you will be able to view the element and potentially re-use it in your own activities, depending on the granted permissions.',
       requestCatalogObjectSuccess:
@@ -2635,6 +2648,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       transferOwnership: 'Transfer Ownership',
       showDerivedPermissions: 'Show Derived Permissions',
       hideDerivedPermissions: 'Hide Derived Permissions',
+      minimumRequired: 'Minimum Required',
+      propagationOfPermissions: 'Propagation of Permissions',
       derivedPermissions: 'Derived Permissions',
       derivedPermissionsDescription:
         'Derived permissions are permissions that allow users to access this element without having a direct permission (anymore). This is for example due to the inheritance of access rights when other objects are based on this object and therefore require it. Derived access rights cannot be changed or revoked and always correspond to the minimum technically required permissions. For more details, please refer to the official documentation.',
@@ -2668,10 +2683,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ:
         'You are about to transfer all ownership rights of the live quiz <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this quiz and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the live quiz. This action cannot be undone.',
+      infoTransferOwnershipCOURSE:
+        'You are about to transfer all ownership rights of the course <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this course and get irrevokable admin access to all contained activities and elements (according to the permission propagation), while you will retain admin access to the course. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       shareLIVE_QUIZ: 'Share Live Quiz',
+      shareCOURSE: 'Share Course',
       shareELEMENT: 'Share Element',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
@@ -2681,6 +2699,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       infoSharingLIVE_QUIZ:
         'This view allows you to share the live quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
+      infoSharingCOURSE:
+        'This view allows you to share the course "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the course or make other changes.',
       infoSharingELEMENT:
         'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
       propagatedPermissions: 'Propagated Permissions',
@@ -2690,7 +2710,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       propagatedPermissionsELEMENT:
         'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
       propagatedPermissionsLIVE_QUIZ:
-        'Depending on the granted permission level, permissions will propagate to the elements in this live quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside the live quiz. For more details regarding the allowed actions, please check out the permission tables for the corresponding elements or refer to the official documentation.',
+        'Depending on the granted permission level, permissions will propagate to the elements in this live quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside the live quiz. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
+      propagatedPermissionsCOURSE:
+        'Depending on the granted permission level and your choice whether to propagate higher permission levels, the technically required or propagated permissions will be granted to the activities, elements, etc. assigned to the course as listed in the table below. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',
@@ -2701,7 +2723,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live Quiz Template',
       removeLIVE_QUIZ: 'Remove Live Quiz',
-      removeLIVE_QUIZtitle: 'Remove Live Quiz from Catalog',
+      removeCOURSE: 'Remove Course',
       removeELEMENT: 'Remove Element',
       confirmRemovalCATALOG_COLLECTION:
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
@@ -2711,6 +2733,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
       confirmRemovalLIVE_QUIZ:
         'Are you sure you want to remove the live quiz "{objectName}" from your profile?',
+      confirmRemovalCOURSE:
+        'Are you sure you want to remove the course "{objectName}" from your profile?',
       confirmRemovalELEMENT:
         'Are you sure you want to remove the element "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',

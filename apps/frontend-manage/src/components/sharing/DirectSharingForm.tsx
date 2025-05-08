@@ -8,6 +8,7 @@ import {
 import {
   Button,
   FormikSelectField,
+  FormikSwitchField,
   SelectField,
   TextField,
 } from '@uzh-bf/design-system'
@@ -20,21 +21,25 @@ import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelec
 
 function DirectSharingForm({
   type,
+  showPropagationSetting,
   onSuccess,
   onFailure,
   shareObjectCallback,
 }: {
   type: SharingObjectType
+  showPropagationSetting: boolean
   onSuccess: () => void
   onFailure: () => void
   shareObjectCallback: ({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
@@ -51,6 +56,7 @@ function DirectSharingForm({
         shortnameOrEmail: '',
         userGroupId: undefined,
         permissionLevel: PermissionLevel.Read,
+        propagation: false,
       }}
       onSubmit={async (values, { setSubmitting, resetForm }) => {
         setSubmitting(true)
@@ -71,6 +77,7 @@ function DirectSharingForm({
                 ? parseInt(values.userGroupId)
                 : undefined,
             permissionLevel: values.permissionLevel,
+            propagation: values.propagation,
           })
 
           if (success) {
@@ -108,6 +115,7 @@ function DirectSharingForm({
           }
         ),
         permissionLevel: Yup.string().required(),
+        propagation: Yup.boolean(),
       })}
     >
       {({
@@ -202,6 +210,17 @@ function DirectSharingForm({
               data={{ cy: 'new-permission-access-level' }}
             />
           </td>
+          {showPropagationSetting ? (
+            <td className="w-24 text-center">
+              <FormikSwitchField
+                name="propagation"
+                size="sm"
+                disabled={isSubmitting}
+                data={{ cy: 'new-permission-propagation' }}
+                className={{ root: 'justify-center' }}
+              />
+            </td>
+          ) : null}
           <td className="w-10 text-center">
             <Button
               basic
