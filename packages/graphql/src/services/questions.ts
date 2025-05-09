@@ -154,7 +154,7 @@ export async function getArtificialElementInstance(
     id: 0,
     elementId: element.id,
     migrationId: '',
-    originalId: '',
+    originalId: null,
     elementType: element.type,
     order: 0,
     type: DB.ElementInstanceType.LIVE_QUIZ,
@@ -1203,7 +1203,7 @@ export async function updateElementInstances(
                   activityId: liveQuizId,
                   activityType: ActivityType.LIVE_QUIZ,
                 },
-                ctx
+                ctx.prisma
               )
 
               instanceCollectionIds = ids
@@ -1217,7 +1217,7 @@ export async function updateElementInstances(
                   activityId: practiceQuizId,
                   activityType: ActivityType.PRACTICE_QUIZ,
                 },
-                ctx
+                ctx.prisma
               )
 
               instanceCollectionIds = ids
@@ -1231,7 +1231,7 @@ export async function updateElementInstances(
                   activityId: microLearningId,
                   activityType: ActivityType.MICRO_LEARNING,
                 },
-                ctx
+                ctx.prisma
               )
 
               instanceCollectionIds = ids
@@ -1245,7 +1245,7 @@ export async function updateElementInstances(
                   activityId: groupActivityId,
                   activityType: ActivityType.GROUP_ACTIVITY,
                 },
-                ctx
+                ctx.prisma
               )
 
               instanceCollectionIds = ids
