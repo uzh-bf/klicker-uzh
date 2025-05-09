@@ -342,7 +342,9 @@ export async function updateAccessRequestInstances(
     })
 
     // upsert access requests for all requesting users for the user (admin / owner) under consideration
-    await Promise.all(
+    // ? we need to use Promise.allSettled here to ensure that all access requests are processed and a rollback works correctly in case of a failure
+    // ? when using Promise.all, it can happen that, due to the concurrency, certain changes might still be committed to the database
+    const results = await Promise.allSettled(
       accessRequests.map(
         async ({ userId: requestingUserId, permissionLevel }) =>
           await prisma.accessRequest.upsert({
@@ -455,6 +457,18 @@ export async function updateAccessRequestInstances(
           })
       )
     )
+
+    // check if any promise was rejected and throw an error
+    const rejectedPromises = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (rejectedPromises.length > 0) {
+      throw new Error(
+        `Failed to update access requests: ${rejectedPromises
+          .map((result) => result.reason?.message || 'Unknown error')
+          .join(', ')}`
+      )
+    }
   } else {
     // find all users with admin or owner permissions on the object under consideration
     const adminUsers = await prisma.derivedPermission.findMany({
@@ -517,7 +531,7 @@ export async function updateAccessRequestInstances(
         adminOrOwnerUserId: adminUserId,
       }))
     )
-    await Promise.all(
+    const results = await Promise.allSettled(
       combinations.map(
         async ({
           requestingUserId,
@@ -634,6 +648,18 @@ export async function updateAccessRequestInstances(
           })
       )
     )
+
+    // check if any promise was rejected and throw an error
+    const rejectedPromises = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (rejectedPromises.length > 0) {
+      throw new Error(
+        `Failed to update access requests: ${rejectedPromises
+          .map((result) => result.reason?.message || 'Unknown error')
+          .join(', ')}`
+      )
+    }
   }
 }
 
@@ -813,10 +839,7 @@ async function recomputeCatalogCollectionPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -849,13 +872,6 @@ async function recomputeCatalogCollectionPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this catalog collection
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      catalogCollectionId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups
   const catalogCollection = await prisma.catalogCollection.findUnique({
     where: {
@@ -887,17 +903,58 @@ async function recomputeCatalogCollectionPermissionsObject(
     ownerId: catalogCollection.ownerId,
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId }]) => ({
-        permissionLevel: maxAccessLevel,
-        userId,
-        catalogCollectionId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      catalogCollectionId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            catalogCollectionId_userId: {
+              catalogCollectionId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            catalogCollection: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for catalog collection (ID: ${catalogCollection.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -1144,10 +1201,7 @@ async function recomputeAnswerCollectionPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -1202,13 +1256,6 @@ async function recomputeAnswerCollectionPermissionsObject(
   { id, updateAccessRequests }: { id: number; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this catalog collection
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      answerCollectionId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups
   const answerCollection = await prisma.answerCollection.findUnique({
     where: {
@@ -1315,18 +1362,60 @@ async function recomputeAnswerCollectionPermissionsObject(
         )
       : extendedUserAccess1
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(extendedUserAccess2).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        answerCollectionId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      answerCollectionId: id,
+      userId: {
+        notIn: Object.keys(extendedUserAccess2),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(extendedUserAccess2).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            answerCollectionId_userId: {
+              answerCollectionId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            answerCollection: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for answer collection (ID: ${answerCollection.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -1676,10 +1765,7 @@ async function recomputeElementPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -1748,13 +1834,6 @@ async function recomputeElementPermissionsObject(
   { id, updateAccessRequests }: { id: number; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this element
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      elementId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
   // (ADMIN / OWNER permissions on the activity should automatically imply ADMIN permissions on the contained elements to enable propagation)
   const element = await prisma.element.findUnique({
@@ -1898,18 +1977,60 @@ async function recomputeElementPermissionsObject(
         )
       : directUserAccess
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        elementId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      elementId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            elementId_userId: {
+              elementId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            element: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for element (ID: ${element.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -2106,10 +2227,7 @@ async function recomputeLiveQuizPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -2173,13 +2291,6 @@ async function recomputeLiveQuizPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this element
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      liveQuizId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
   // permissions on the course should automatically imply corresponding permissions on the contained live quizzes
   // depending on the permission level on the activity, derived permissions on the contained elements might be required
@@ -2230,18 +2341,60 @@ async function recomputeLiveQuizPermissionsObject(
     coursePermissions: liveQuiz.course?.permissions ?? [],
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        liveQuizId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      liveQuizId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            liveQuizId_userId: {
+              liveQuizId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            liveQuiz: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for live quiz (ID: ${liveQuiz.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -2431,10 +2584,7 @@ async function recomputePracticeQuizPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -2498,13 +2648,6 @@ async function recomputePracticeQuizPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this element
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      practiceQuizId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
   // permissions on the course should automatically imply corresponding permissions on the contained practice quizzes
   // depending on the permission level on the activity, derived permissions on the contained elements might be required
@@ -2557,18 +2700,60 @@ async function recomputePracticeQuizPermissionsObject(
     coursePermissions: practiceQuiz.course?.permissions ?? [],
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        practiceQuizId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      practiceQuizId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            practiceQuizId_userId: {
+              practiceQuizId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            practiceQuiz: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for practice quiz (ID: ${practiceQuiz.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -2758,10 +2943,7 @@ async function recomputeMicroLearningPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -2829,13 +3011,6 @@ async function recomputeMicroLearningPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this element
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      microLearningId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
   // permissions on the course should automatically imply corresponding permissions on the contained microlearning
   // depending on the permission level on the activity, derived permissions on the contained elements might be required
@@ -2888,18 +3063,60 @@ async function recomputeMicroLearningPermissionsObject(
     coursePermissions: microLearning.course?.permissions ?? [],
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        microLearningId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      microLearningId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            microLearningId_userId: {
+              microLearningId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            microLearning: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for microlearning (ID: ${microLearning.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -3089,10 +3306,7 @@ async function recomputeGroupActivityPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -3160,13 +3374,6 @@ async function recomputeGroupActivityPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this element
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      groupActivityId: id,
-    },
-  })
-
   // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
   // permissions on the course should automatically imply corresponding permissions on the contained group activities
   // depending on the permission level on the activity, derived permissions on the contained elements might be required
@@ -3219,18 +3426,60 @@ async function recomputeGroupActivityPermissionsObject(
     coursePermissions: groupActivity.course?.permissions ?? [],
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        groupActivityId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      groupActivityId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            groupActivityId_userId: {
+              groupActivityId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            groupActivity: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for group activity (ID: ${groupActivity.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -3411,10 +3660,7 @@ async function recomputeCoursePermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -3488,13 +3734,6 @@ async function recomputeCoursePermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // delete all derived permissions for this course
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      courseId: id,
-    },
-  })
-
   // fetch the course and all direct permissions on it, including user groups, as well as all activities on the course for propagation
   const course = await prisma.course.findUnique({
     where: {
@@ -3531,18 +3770,60 @@ async function recomputeCoursePermissionsObject(
     ownerId: course.ownerId,
   })
 
-  // create derived permissions for each user with access
-  await prisma.derivedPermission.createMany({
-    data: Object.entries(userAccess).map(
-      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
-        permissionLevel: maxAccessLevel,
-        derived,
-        userId,
-        courseId: id,
-        directPermissionId: parentPermissionId,
-      })
-    ),
+  // remove the derived permissions for all users that do not have access (anymore)
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      courseId: id,
+      userId: {
+        notIn: Object.keys(userAccess),
+      },
+    },
   })
+
+  // create / update derived permissions for each user with access
+  const results = await Promise.allSettled(
+    Object.entries(userAccess).map(
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
+          where: {
+            courseId_userId: {
+              courseId: id,
+              userId,
+            },
+          },
+          create: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : undefined,
+            course: { connect: { id } },
+            user: { connect: { id: userId } },
+          },
+          update: {
+            permissionLevel: maxAccessLevel,
+            derived,
+            directPermission:
+              typeof parentPermissionId !== 'undefined'
+                ? { connect: { id: parentPermissionId } }
+                : { disconnect: true },
+          },
+        })
+    )
+  )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for course (ID: ${course.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
