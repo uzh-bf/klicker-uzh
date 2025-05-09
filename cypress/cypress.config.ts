@@ -29,6 +29,7 @@ const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
 const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
 const USER_ID_TEST6 = '8509238a-cb2e-4d50-832e-971cdf2f9e55'
+const USER_ID_TEST7 = '2437de71-b552-48c8-865a-1d9c12fb7975'
 const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 const COURSE_ID_TEST = 'b8b1305e-bfe8-458b-bf26-9082fdca953f'
 const COURSE_ID_TEST2 = 'e364455a-8eab-428b-b939-21b556e4ab82'
@@ -152,6 +153,9 @@ export default defineConfig({
     LECTURER_INST3_ID: USER_ID_TEST6,
     LECTURER_INST3_SHORTNAME: 'pro4',
     LECTURER_INST3_EMAIL: 'pro4@df.uzh.ch',
+    LECTURER_INST4_ID: USER_ID_TEST7,
+    LECTURER_INST4_SHORTNAME: 'pro5',
+    LECTURER_INST4_EMAIL: 'pro5@df.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',
@@ -1392,6 +1396,24 @@ export default defineConfig({
                 name: 'Institutional Pro User 3',
                 email: 'pro4@df.uzh.ch',
                 shortname: 'pro4',
+                catalystIndividual: false,
+                catalystInstitutional: true,
+                publicPreview: true,
+                privatePreview: true,
+                firstLogin: false,
+              },
+              update: {},
+            })
+
+            const user7 = await prisma.user.upsert({
+              where: {
+                id: USER_ID_TEST7,
+              },
+              create: {
+                id: USER_ID_TEST7,
+                name: 'Institutional Pro User 4',
+                email: 'pro5@df.uzh.ch',
+                shortname: 'pro5',
                 catalystIndividual: false,
                 catalystInstitutional: true,
                 publicPreview: true,

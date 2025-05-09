@@ -79,6 +79,7 @@ function AnswerCollectionItem({
             <span className="font-medium">{collection.name}</span>
             {collection.permissionLevel && (
               <ObjectPermissionLevel
+                objectName={collection.name}
                 permissionLevel={collection.permissionLevel}
               />
             )}

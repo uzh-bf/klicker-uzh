@@ -145,6 +145,7 @@ function Element({
                   {element.name}
                   {element.permissionLevel && (
                     <ObjectPermissionLevel
+                      objectName={element.name}
                       permissionLevel={element.permissionLevel}
                       className="ml-3"
                     />

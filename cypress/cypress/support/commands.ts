@@ -135,6 +135,18 @@ Cypress.Commands.add(
   })
 )
 
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst4',
+  loginFactory({
+    email: 'pro5@df.uzh.ch',
+    sub: '2437de71-b552-48c8-865a-1d9c12fb7975',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
 Cypress.Commands.add('logoutUser', () => {
   cy.clearCookie('next-auth.session-token')
 })
@@ -1174,6 +1186,7 @@ declare global {
       loginInstitutionalCatalyst(): Chainable<void>
       loginInstitutionalCatalyst2(): Chainable<void>
       loginInstitutionalCatalyst3(): Chainable<void>
+      loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
