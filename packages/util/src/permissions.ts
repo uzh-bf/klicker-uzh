@@ -839,10 +839,7 @@ async function recomputeCatalogCollectionPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -919,7 +916,7 @@ async function recomputeCatalogCollectionPermissionsObject(
   // create / update derived permissions for each user with access
   const results = await Promise.allSettled(
     Object.entries(userAccess).map(
-      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+      async ([userId, { maxAccessLevel, parentPermissionId }]) =>
         await prisma.derivedPermission.upsert({
           where: {
             catalogCollectionId_userId: {
@@ -941,7 +938,7 @@ async function recomputeCatalogCollectionPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -1204,10 +1201,7 @@ async function recomputeAnswerCollectionPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -1405,7 +1399,7 @@ async function recomputeAnswerCollectionPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -1771,10 +1765,7 @@ async function recomputeElementPermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -2023,7 +2014,7 @@ async function recomputeElementPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -2236,10 +2227,7 @@ async function recomputeLiveQuizPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -2390,7 +2378,7 @@ async function recomputeLiveQuizPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -2596,10 +2584,7 @@ async function recomputePracticeQuizPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -2752,7 +2737,7 @@ async function recomputePracticeQuizPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -2958,10 +2943,7 @@ async function recomputeMicroLearningPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -3118,7 +3100,7 @@ async function recomputeMicroLearningPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -3324,10 +3306,7 @@ async function recomputeGroupActivityPermissionsUser(
           directPermission:
             typeof parentPermissionId !== 'undefined'
               ? { connect: { id: parentPermissionId } }
-              : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                  existingPermission.directPermissionId !== null
-                ? { disconnect: true }
-                : undefined,
+              : { disconnect: true },
         },
       })
     }
@@ -3484,7 +3463,7 @@ async function recomputeGroupActivityPermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
@@ -3681,10 +3660,7 @@ async function recomputeCoursePermissionsUser(
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
-            : typeof existingPermission?.directPermissionId !== 'undefined' &&
-                existingPermission.directPermissionId !== null
-              ? { disconnect: true }
-              : undefined,
+            : { disconnect: true },
       },
     })
   }
@@ -3831,7 +3807,7 @@ async function recomputeCoursePermissionsObject(
             directPermission:
               typeof parentPermissionId !== 'undefined'
                 ? { connect: { id: parentPermissionId } }
-                : undefined,
+                : { disconnect: true },
           },
         })
     )
