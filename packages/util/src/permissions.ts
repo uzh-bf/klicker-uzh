@@ -713,18 +713,6 @@ async function recomputeCatalogCollectionPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check if the user is the owner of the catalog collection or has a direct permission
   const catalogCollection = await prisma.catalogCollection.findUnique({
     where: {
@@ -781,21 +769,54 @@ async function recomputeCatalogCollectionPermissionsUser(
       })
     }
 
+    // if a derived permission exists, remove it
+    if (existingPermission) {
+      await prisma.derivedPermission.delete({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: id,
+            userId,
+          },
+        },
+      })
+    }
+
     // no permission found that would justify access
     return
   }
 
   // if the user still has access, add a corresponding derived permission
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
+  if (
+    typeof maxAccessLevel !== 'undefined' &&
+    (!existingPermission ||
+      existingPermission.permissionLevel !== maxAccessLevel ||
+      existingPermission.directPermissionId !== parentPermissionId)
+  ) {
+    await prisma.derivedPermission.upsert({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId: id,
+          userId,
+        },
+      },
+      create: {
         permissionLevel: maxAccessLevel,
-        catalogCollection: { connect: { id } },
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
             : undefined,
+        catalogCollection: { connect: { id } },
         user: { connect: { id: userId } },
+      },
+      update: {
+        permissionLevel: maxAccessLevel,
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? { connect: { id: parentPermissionId } }
+            : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                existingPermission.directPermissionId !== null
+              ? { disconnect: true }
+              : undefined,
       },
     })
   }
@@ -959,18 +980,6 @@ async function recomputeAnswerCollectionPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        answerCollectionId_userId: {
-          answerCollectionId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check for ownership, direct permissions or links to other objects that would imply derived permissions
   const answerCollection = await prisma.answerCollection.findUnique({
     where: {
@@ -1105,28 +1114,50 @@ async function recomputeAnswerCollectionPermissionsUser(
   }
 
   // if the user still has access, add a corresponding derived permission
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
+  if (
+    typeof maxAccessLevel !== 'undefined' &&
+    (!existingPermission ||
+      existingPermission.permissionLevel !== maxAccessLevel ||
+      existingPermission.derived !== derived ||
+      existingPermission.directPermissionId !== parentPermissionId)
+  ) {
+    await prisma.derivedPermission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: id,
+          userId,
+        },
+      },
+      create: {
         permissionLevel: maxAccessLevel,
         derived,
-        answerCollection: {
-          connect: {
-            id,
-          },
-        },
         directPermission:
           typeof parentPermissionId !== 'undefined'
-            ? {
-                connect: {
-                  id: parentPermissionId,
-                },
-              }
+            ? { connect: { id: parentPermissionId } }
             : undefined,
-        user: {
-          connect: {
-            id: userId,
-          },
+        answerCollection: { connect: { id } },
+        user: { connect: { id: userId } },
+      },
+      update: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? { connect: { id: parentPermissionId } }
+            : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                existingPermission.directPermissionId !== null
+              ? { disconnect: true }
+              : undefined,
+      },
+    })
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && typeof maxAccessLevel === 'undefined') {
+    await prisma.derivedPermission.delete({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: id,
+          userId,
         },
       },
     })
@@ -1397,18 +1428,6 @@ async function recomputeElementPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        elementId_userId: {
-          elementId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check if the user has a direct permission or ownership on the element, fetch linked answer collections and activities the element is included in
   const element = await prisma.element.findUnique({
     where: {
@@ -1627,17 +1646,51 @@ async function recomputeElementPermissionsUser(
   }
 
   // if the user has access, add a corresponding derived permission
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
+  if (
+    typeof maxAccessLevel !== 'undefined' &&
+    (!existingPermission ||
+      existingPermission.permissionLevel !== maxAccessLevel ||
+      existingPermission.derived !== derived ||
+      existingPermission.directPermissionId !== parentPermissionId)
+  ) {
+    await prisma.derivedPermission.upsert({
+      where: {
+        elementId_userId: {
+          elementId: id,
+          userId,
+        },
+      },
+      create: {
         permissionLevel: maxAccessLevel,
         derived,
-        element: { connect: { id } },
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
             : undefined,
+        element: { connect: { id } },
         user: { connect: { id: userId } },
+      },
+      update: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? { connect: { id: parentPermissionId } }
+            : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                existingPermission.directPermissionId !== null
+              ? { disconnect: true }
+              : undefined,
+      },
+    })
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && typeof maxAccessLevel === 'undefined') {
+    await prisma.derivedPermission.delete({
+      where: {
+        elementId_userId: {
+          elementId: id,
+          userId,
+        },
       },
     })
   }
@@ -1962,18 +2015,6 @@ async function recomputeLiveQuizPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        liveQuizId_userId: {
-          liveQuizId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check for ownership, direct permissions, links to a course that would imply derived permissions
   const liveQuiz = await prisma.liveQuiz.findUnique({
     where: {
@@ -2035,32 +2076,54 @@ async function recomputeLiveQuizPermissionsUser(
   // if the user still has access, add a corresponding derived permission
   if (res !== null) {
     const { maxAccessLevel, parentPermissionId, derived } = res
-    if (typeof maxAccessLevel !== 'undefined') {
-      await prisma.derivedPermission.create({
-        data: {
+    if (
+      typeof maxAccessLevel !== 'undefined' &&
+      (!existingPermission ||
+        existingPermission.permissionLevel !== maxAccessLevel ||
+        existingPermission.derived !== derived ||
+        existingPermission.directPermissionId !== parentPermissionId)
+    ) {
+      await prisma.derivedPermission.upsert({
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: id,
+            userId,
+          },
+        },
+        create: {
           permissionLevel: maxAccessLevel,
           derived,
-          liveQuiz: {
-            connect: {
-              id,
-            },
-          },
           directPermission:
             typeof parentPermissionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: parentPermissionId,
-                  },
-                }
+              ? { connect: { id: parentPermissionId } }
               : undefined,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          liveQuiz: { connect: { id } },
+          user: { connect: { id: userId } },
+        },
+        update: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? { connect: { id: parentPermissionId } }
+              : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                  existingPermission.directPermissionId !== null
+                ? { disconnect: true }
+                : undefined,
         },
       })
     }
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && res === null) {
+    await prisma.derivedPermission.delete({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: id,
+          userId,
+        },
+      },
+    })
   }
 
   // if the corresponding flag is set, update the access requests for the object
@@ -2277,18 +2340,6 @@ async function recomputePracticeQuizPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        practiceQuizId_userId: {
-          practiceQuizId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check for ownership, direct permissions, links to a course that would imply derived permissions
   const practiceQuiz = await prisma.practiceQuiz.findUnique({
     where: {
@@ -2350,32 +2401,54 @@ async function recomputePracticeQuizPermissionsUser(
   // if the user still has access, add a corresponding derived permission
   if (res !== null) {
     const { maxAccessLevel, parentPermissionId, derived } = res
-    if (typeof maxAccessLevel !== 'undefined') {
-      await prisma.derivedPermission.create({
-        data: {
+    if (
+      typeof maxAccessLevel !== 'undefined' &&
+      (!existingPermission ||
+        existingPermission.permissionLevel !== maxAccessLevel ||
+        existingPermission.derived !== derived ||
+        existingPermission.directPermissionId !== parentPermissionId)
+    ) {
+      await prisma.derivedPermission.upsert({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: id,
+            userId,
+          },
+        },
+        create: {
           permissionLevel: maxAccessLevel,
           derived,
-          practiceQuiz: {
-            connect: {
-              id,
-            },
-          },
           directPermission:
             typeof parentPermissionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: parentPermissionId,
-                  },
-                }
+              ? { connect: { id: parentPermissionId } }
               : undefined,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          practiceQuiz: { connect: { id } },
+          user: { connect: { id: userId } },
+        },
+        update: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? { connect: { id: parentPermissionId } }
+              : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                  existingPermission.directPermissionId !== null
+                ? { disconnect: true }
+                : undefined,
         },
       })
     }
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && res === null) {
+    await prisma.derivedPermission.delete({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: id,
+          userId,
+        },
+      },
+    })
   }
 
   // if the corresponding flag is set, update the access requests for the object
@@ -2594,18 +2667,6 @@ async function recomputeMicroLearningPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        microLearningId_userId: {
-          microLearningId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check for ownership, direct permissions, links to a course that would imply derived permissions
   const microLearning = await prisma.microLearning.findUnique({
     where: {
@@ -2667,32 +2728,54 @@ async function recomputeMicroLearningPermissionsUser(
   // if the user still has access, add a corresponding derived permission
   if (res !== null) {
     const { maxAccessLevel, parentPermissionId, derived } = res
-    if (typeof maxAccessLevel !== 'undefined') {
-      await prisma.derivedPermission.create({
-        data: {
+    if (
+      typeof maxAccessLevel !== 'undefined' &&
+      (!existingPermission ||
+        existingPermission.permissionLevel !== maxAccessLevel ||
+        existingPermission.derived !== derived ||
+        existingPermission.directPermissionId !== parentPermissionId)
+    ) {
+      await prisma.derivedPermission.upsert({
+        where: {
+          microLearningId_userId: {
+            microLearningId: id,
+            userId,
+          },
+        },
+        create: {
           permissionLevel: maxAccessLevel,
           derived,
-          microLearning: {
-            connect: {
-              id,
-            },
-          },
           directPermission:
             typeof parentPermissionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: parentPermissionId,
-                  },
-                }
+              ? { connect: { id: parentPermissionId } }
               : undefined,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          microLearning: { connect: { id } },
+          user: { connect: { id: userId } },
+        },
+        update: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? { connect: { id: parentPermissionId } }
+              : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                  existingPermission.directPermissionId !== null
+                ? { disconnect: true }
+                : undefined,
         },
       })
     }
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && res === null) {
+    await prisma.derivedPermission.delete({
+      where: {
+        microLearningId_userId: {
+          microLearningId: id,
+          userId,
+        },
+      },
+    })
   }
 
   // if the corresponding flag is set, update the access requests for the object
@@ -2915,18 +2998,6 @@ async function recomputeGroupActivityPermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        groupActivityId_userId: {
-          groupActivityId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check for ownership, direct permissions, links to a course that would imply derived permissions
   const groupActivity = await prisma.groupActivity.findUnique({
     where: {
@@ -2988,32 +3059,54 @@ async function recomputeGroupActivityPermissionsUser(
   // if the user still has access, add a corresponding derived permission
   if (res !== null) {
     const { maxAccessLevel, parentPermissionId, derived } = res
-    if (typeof maxAccessLevel !== 'undefined') {
-      await prisma.derivedPermission.create({
-        data: {
+    if (
+      typeof maxAccessLevel !== 'undefined' &&
+      (!existingPermission ||
+        existingPermission.permissionLevel !== maxAccessLevel ||
+        existingPermission.derived !== derived ||
+        existingPermission.directPermissionId !== parentPermissionId)
+    ) {
+      await prisma.derivedPermission.upsert({
+        where: {
+          groupActivityId_userId: {
+            groupActivityId: id,
+            userId,
+          },
+        },
+        create: {
           permissionLevel: maxAccessLevel,
           derived,
-          groupActivity: {
-            connect: {
-              id,
-            },
-          },
           directPermission:
             typeof parentPermissionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: parentPermissionId,
-                  },
-                }
+              ? { connect: { id: parentPermissionId } }
               : undefined,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          groupActivity: { connect: { id } },
+          user: { connect: { id: userId } },
+        },
+        update: {
+          permissionLevel: maxAccessLevel,
+          derived,
+          directPermission:
+            typeof parentPermissionId !== 'undefined'
+              ? { connect: { id: parentPermissionId } }
+              : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                  existingPermission.directPermissionId !== null
+                ? { disconnect: true }
+                : undefined,
         },
       })
     }
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && res === null) {
+    await prisma.derivedPermission.delete({
+      where: {
+        groupActivityId_userId: {
+          groupActivityId: id,
+          userId,
+        },
+      },
+    })
   }
 
   // if the corresponding flag is set, update the access requests for the object
@@ -3234,18 +3327,6 @@ async function recomputeCoursePermissionsUser(
     },
   })
 
-  // if a derived permission exists, remove it
-  if (existingPermission) {
-    await prisma.derivedPermission.delete({
-      where: {
-        courseId_userId: {
-          courseId: id,
-          userId,
-        },
-      },
-    })
-  }
-
   // check if the user has a direct permission or ownership on the course and fetch all linked activities for dependency updates
   const course = await prisma.course.findUnique({
     where: {
@@ -3300,17 +3381,51 @@ async function recomputeCoursePermissionsUser(
   }
 
   // if the user has access, add a corresponding derived permission
-  if (typeof maxAccessLevel !== 'undefined') {
-    await prisma.derivedPermission.create({
-      data: {
+  if (
+    typeof maxAccessLevel !== 'undefined' &&
+    (!existingPermission ||
+      existingPermission.permissionLevel !== maxAccessLevel ||
+      existingPermission.derived !== derived ||
+      existingPermission.directPermissionId !== parentPermissionId)
+  ) {
+    await prisma.derivedPermission.upsert({
+      where: {
+        courseId_userId: {
+          courseId: id,
+          userId,
+        },
+      },
+      create: {
         permissionLevel: maxAccessLevel,
         derived,
-        course: { connect: { id } },
         directPermission:
           typeof parentPermissionId !== 'undefined'
             ? { connect: { id: parentPermissionId } }
             : undefined,
+        course: { connect: { id } },
         user: { connect: { id: userId } },
+      },
+      update: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? { connect: { id: parentPermissionId } }
+            : typeof existingPermission?.directPermissionId !== 'undefined' &&
+                existingPermission.directPermissionId !== null
+              ? { disconnect: true }
+              : undefined,
+      },
+    })
+  }
+  // if a derived permission exists, remove it
+  else if (existingPermission && typeof maxAccessLevel === 'undefined') {
+    await prisma.derivedPermission.delete({
+      where: {
+        courseId_userId: {
+          courseId: id,
+          userId,
+        },
       },
     })
   }
