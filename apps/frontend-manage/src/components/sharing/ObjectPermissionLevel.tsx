@@ -22,9 +22,11 @@ const PermissionLevelIcons: Record<
 }
 
 function ObjectPermissionLevel({
+  objectName,
   permissionLevel,
   className,
 }: {
+  objectName: string
   permissionLevel: PermissionLevel
   className?: string
 }) {
@@ -43,6 +45,7 @@ function ObjectPermissionLevel({
         badge.color,
         className
       )}
+      data-cy={`permission-level-${objectName}-${permissionLevel}`}
     >
       <FontAwesomeIcon icon={badge.icon} className="flex-shrink-0" size="sm" />
       <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm transition-all duration-300 ease-in-out group-hover:max-w-xs">

@@ -86,6 +86,7 @@ function ActivityListEntry({
               )}
 
             <ObjectPermissionLevel
+              objectName={activity.name}
               permissionLevel={activity.permissionLevel}
               className="px-0.5"
             />
