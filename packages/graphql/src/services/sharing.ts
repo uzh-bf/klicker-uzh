@@ -774,53 +774,70 @@ export async function requestCatalogCollection(
   const ownerAdminIds = adminOwnerPermissions.map(
     (permission) => permission.userId
   )
-  await Promise.all(
-    ownerAdminIds.map(async (adminOwnerId) => {
-      // create the actual access request
-      await ctx.prisma.accessRequest.upsert({
-        where: {
-          catalogCollectionId_userId_objectAdminOrOwnerId: {
-            catalogCollectionId,
-            userId: ctx.user.sub,
-            objectAdminOrOwnerId: adminOwnerId,
-          },
-        },
-        create: {
-          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
-          catalogCollection: {
-            connect: {
-              id: catalogCollectionId,
+  await ctx.prisma.$transaction(async (prisma) => {
+    // use promise.allSettled to ensure a correct and complete rollback in case of failure
+    const results = await Promise.allSettled(
+      ownerAdminIds.map(async (adminOwnerId) => {
+        // create the actual access request
+        await prisma.accessRequest.upsert({
+          where: {
+            catalogCollectionId_userId_objectAdminOrOwnerId: {
+              catalogCollectionId,
+              userId: ctx.user.sub,
+              objectAdminOrOwnerId: adminOwnerId,
             },
           },
-          user: {
-            connect: {
-              id: ctx.user.sub,
+          create: {
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+            catalogCollection: {
+              connect: {
+                id: catalogCollectionId,
+              },
+            },
+            user: {
+              connect: {
+                id: ctx.user.sub,
+              },
+            },
+            objectAdminOrOwner: {
+              connect: {
+                id: adminOwnerId,
+              },
             },
           },
-          objectAdminOrOwner: {
-            connect: {
-              id: adminOwnerId,
-            },
+          update: {
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
           },
-        },
-        update: {
-          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
-        },
-      })
+        })
 
-      // create an entry in the audit log
-      await ctx.prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.REQUEST_CREATED,
-          objectType: DB.ObjectType.CATALOG_COLLECTION,
-          objectId: catalogCollectionId,
-          sourceUserId: ctx.user.sub,
-          targetUserId: adminOwnerId,
-          message: `Access request (permission level ${requestedPermissionLevel ?? DB.PermissionLevel.READ}) created for ${DB.ObjectType.CATALOG_COLLECTION} (ID ${catalogCollectionId}) by user ${ctx.user.sub} for owner / admin ${adminOwnerId}.`,
-        },
+        // create an entry in the audit log
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.REQUEST_CREATED,
+            objectType: DB.ObjectType.CATALOG_COLLECTION,
+            objectId: catalogCollectionId,
+            sourceUserId: ctx.user.sub,
+            targetUserId: adminOwnerId,
+            message: `Access request (permission level ${requestedPermissionLevel ?? DB.PermissionLevel.READ}) created for ${DB.ObjectType.CATALOG_COLLECTION} (ID ${catalogCollectionId}) by user ${ctx.user.sub} for owner / admin ${adminOwnerId}.`,
+          },
+        })
       })
-    })
-  )
+    )
+
+    // check if all promises were fulfilled
+    const allFulfilled = results.every(
+      (result) => result.status === 'fulfilled'
+    )
+    if (!allFulfilled) {
+      throw new Error(
+        `Failed to create access requests for catalog collection ${catalogCollectionId}: ${JSON.stringify(
+          results
+        )}`
+      )
+    }
+  })
 
   // invalidate cache for the imported collection
   ctx.emitter.emit('invalidate', {
@@ -1140,180 +1157,197 @@ export async function requestCatalogObject(
   const ownerAdminIds = adminOwnerPermissions.map(
     (permission) => permission.userId
   )
-  await Promise.all(
-    ownerAdminIds.map(async (adminOwnerId) => {
-      // create the actual access request
-      await ctx.prisma.accessRequest.upsert({
-        where: {
-          answerCollectionId_userId_objectAdminOrOwnerId:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  answerCollectionId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          elementId_userId_objectAdminOrOwnerId:
-            typeof elementId !== 'undefined'
-              ? {
-                  elementId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          courseId_userId_objectAdminOrOwnerId:
-            typeof courseId !== 'undefined'
-              ? {
-                  courseId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          liveQuizId_userId_objectAdminOrOwnerId:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  liveQuizId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          practiceQuizId_userId_objectAdminOrOwnerId:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  practiceQuizId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          microLearningId_userId_objectAdminOrOwnerId:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  microLearningId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-          groupActivityId_userId_objectAdminOrOwnerId:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  groupActivityId,
-                  userId: ctx.user.sub,
-                  objectAdminOrOwnerId: adminOwnerId,
-                }
-              : undefined,
-        },
-        create: {
-          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
-          user: {
-            connect: {
-              id: ctx.user.sub,
-            },
+  await ctx.prisma.$transaction(async (prisma) => {
+    // use promise.allSettled to ensure a correct and complete rollback in case of failure
+    const results = await Promise.allSettled(
+      ownerAdminIds.map(async (adminOwnerId) => {
+        // create the actual access request
+        await prisma.accessRequest.upsert({
+          where: {
+            answerCollectionId_userId_objectAdminOrOwnerId:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    answerCollectionId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            elementId_userId_objectAdminOrOwnerId:
+              typeof elementId !== 'undefined'
+                ? {
+                    elementId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            courseId_userId_objectAdminOrOwnerId:
+              typeof courseId !== 'undefined'
+                ? {
+                    courseId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            liveQuizId_userId_objectAdminOrOwnerId:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    liveQuizId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            practiceQuizId_userId_objectAdminOrOwnerId:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    practiceQuizId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            microLearningId_userId_objectAdminOrOwnerId:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    microLearningId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
+            groupActivityId_userId_objectAdminOrOwnerId:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    groupActivityId,
+                    userId: ctx.user.sub,
+                    objectAdminOrOwnerId: adminOwnerId,
+                  }
+                : undefined,
           },
-          objectAdminOrOwner: {
-            connect: {
-              id: adminOwnerId,
+          create: {
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+            user: {
+              connect: {
+                id: ctx.user.sub,
+              },
             },
+            objectAdminOrOwner: {
+              connect: {
+                id: adminOwnerId,
+              },
+            },
+            answerCollection:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    connect: {
+                      id: answerCollectionId,
+                    },
+                  }
+                : undefined,
+            element:
+              typeof elementId !== 'undefined'
+                ? {
+                    connect: {
+                      id: elementId,
+                    },
+                  }
+                : undefined,
+            course:
+              typeof courseId !== 'undefined'
+                ? {
+                    connect: {
+                      id: courseId,
+                    },
+                  }
+                : undefined,
+            liveQuiz:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: liveQuizId,
+                    },
+                  }
+                : undefined,
+            practiceQuiz:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: practiceQuizId,
+                    },
+                  }
+                : undefined,
+            microLearning:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    connect: {
+                      id: microLearningId,
+                    },
+                  }
+                : undefined,
+            groupActivity:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    connect: {
+                      id: groupActivityId,
+                    },
+                  }
+                : undefined,
           },
-          answerCollection:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: answerCollectionId,
-                  },
-                }
-              : undefined,
-          element:
-            typeof elementId !== 'undefined'
-              ? {
-                  connect: {
-                    id: elementId,
-                  },
-                }
-              : undefined,
-          course:
-            typeof courseId !== 'undefined'
-              ? {
-                  connect: {
-                    id: courseId,
-                  },
-                }
-              : undefined,
-          liveQuiz:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: liveQuizId,
-                  },
-                }
-              : undefined,
-          practiceQuiz:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: practiceQuizId,
-                  },
-                }
-              : undefined,
-          microLearning:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  connect: {
-                    id: microLearningId,
-                  },
-                }
-              : undefined,
-          groupActivity:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  connect: {
-                    id: groupActivityId,
-                  },
-                }
-              : undefined,
-        },
-        update: {
-          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
-        },
-      })
-
-      // create an entry in the audit log
-      const { objectType, objectId } = getAuditLogObjectType({
-        answerCollectionId,
-        elementId,
-        courseId,
-        liveQuizId,
-        practiceQuizId,
-        microLearningId,
-        groupActivityId,
-      })
-      if (objectType && objectId) {
-        await ctx.prisma.auditLogEntry.create({
-          data: {
-            type: DB.AuditLogType.REQUEST_CREATED,
-            objectType,
-            objectId,
-            sourceUserId: ctx.user.sub,
-            targetUserId: adminOwnerId,
-            message: `Access request (permission level ${requestedPermissionLevel ?? DB.PermissionLevel.READ}) created for ${objectType} (ID ${objectId}) by user ${ctx.user.sub} for owner / admin ${adminOwnerId}.`,
+          update: {
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
           },
         })
-      } else {
-        throw new Error(
-          `Could not determine object type or ID for audit log entry. Request ID: ${answerCollectionId}, Details: ${JSON.stringify(
-            {
-              answerCollectionId,
-              elementId,
-              courseId,
-              liveQuizId,
-              practiceQuizId,
-              microLearningId,
-              groupActivityId,
-            }
-          )}`
-        )
-      }
-    })
-  )
+
+        // create an entry in the audit log
+        const { objectType, objectId } = getAuditLogObjectType({
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        })
+        if (objectType && objectId) {
+          await prisma.auditLogEntry.create({
+            data: {
+              type: DB.AuditLogType.REQUEST_CREATED,
+              objectType,
+              objectId,
+              sourceUserId: ctx.user.sub,
+              targetUserId: adminOwnerId,
+              message: `Access request (permission level ${requestedPermissionLevel ?? DB.PermissionLevel.READ}) created for ${objectType} (ID ${objectId}) by user ${ctx.user.sub} for owner / admin ${adminOwnerId}.`,
+            },
+          })
+        } else {
+          throw new Error(
+            `Could not determine object type or ID for audit log entry. Request ID: ${answerCollectionId}, Details: ${JSON.stringify(
+              {
+                answerCollectionId,
+                elementId,
+                courseId,
+                liveQuizId,
+                practiceQuizId,
+                microLearningId,
+                groupActivityId,
+              }
+            )}`
+          )
+        }
+      })
+    )
+
+    // check if all promises were fulfilled
+    const allFulfilled = results.every(
+      (result) => result.status === 'fulfilled'
+    )
+    if (!allFulfilled) {
+      throw new Error(
+        `Failed to create access requests for catalog collection ${catalogCollectionId}: ${JSON.stringify(
+          results
+        )}`
+      )
+    }
+  })
 
   // invalidate cache for the imported object
   if (typeof catalogCollectionId !== 'undefined') {

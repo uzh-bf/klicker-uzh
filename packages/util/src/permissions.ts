@@ -342,7 +342,9 @@ export async function updateAccessRequestInstances(
     })
 
     // upsert access requests for all requesting users for the user (admin / owner) under consideration
-    await Promise.all(
+    // ? we need to use Promise.allSettled here to ensure that all access requests are processed and a rollback works correctly in case of a failure
+    // ? when using Promise.all, it can happen that, due to the concurrency, certain changes might still be committed to the database
+    const results = await Promise.allSettled(
       accessRequests.map(
         async ({ userId: requestingUserId, permissionLevel }) =>
           await prisma.accessRequest.upsert({
@@ -455,6 +457,18 @@ export async function updateAccessRequestInstances(
           })
       )
     )
+
+    // check if any promise was rejected and throw an error
+    const rejectedPromises = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (rejectedPromises.length > 0) {
+      throw new Error(
+        `Failed to update access requests: ${rejectedPromises
+          .map((result) => result.reason?.message || 'Unknown error')
+          .join(', ')}`
+      )
+    }
   } else {
     // find all users with admin or owner permissions on the object under consideration
     const adminUsers = await prisma.derivedPermission.findMany({
@@ -517,7 +531,7 @@ export async function updateAccessRequestInstances(
         adminOrOwnerUserId: adminUserId,
       }))
     )
-    await Promise.all(
+    const results = await Promise.allSettled(
       combinations.map(
         async ({
           requestingUserId,
@@ -634,6 +648,18 @@ export async function updateAccessRequestInstances(
           })
       )
     )
+
+    // check if any promise was rejected and throw an error
+    const rejectedPromises = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (rejectedPromises.length > 0) {
+      throw new Error(
+        `Failed to update access requests: ${rejectedPromises
+          .map((result) => result.reason?.message || 'Unknown error')
+          .join(', ')}`
+      )
+    }
   }
 }
 
@@ -891,10 +917,10 @@ async function recomputeCatalogCollectionPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
-      async ([userId, { maxAccessLevel, parentPermissionId }]) => {
-        return await prisma.derivedPermission.upsert({
+      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
+        await prisma.derivedPermission.upsert({
           where: {
             catalogCollectionId_userId: {
               catalogCollectionId: id,
@@ -918,9 +944,20 @@ async function recomputeCatalogCollectionPermissionsObject(
                 : undefined,
           },
         })
-      }
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for catalog collection (ID: ${catalogCollection.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -1342,7 +1379,7 @@ async function recomputeAnswerCollectionPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(extendedUserAccess2).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -1373,6 +1410,18 @@ async function recomputeAnswerCollectionPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for answer collection (ID: ${answerCollection.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -1948,7 +1997,7 @@ async function recomputeElementPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -1979,6 +2028,18 @@ async function recomputeElementPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for element (ID: ${element.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -2303,7 +2364,7 @@ async function recomputeLiveQuizPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -2334,6 +2395,18 @@ async function recomputeLiveQuizPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for live quiz (ID: ${liveQuiz.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -2653,7 +2726,7 @@ async function recomputePracticeQuizPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -2684,6 +2757,18 @@ async function recomputePracticeQuizPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for practice quiz (ID: ${practiceQuiz.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -3007,7 +3092,7 @@ async function recomputeMicroLearningPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -3038,6 +3123,18 @@ async function recomputeMicroLearningPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for microlearning (ID: ${microLearning.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -3361,7 +3458,7 @@ async function recomputeGroupActivityPermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -3392,6 +3489,18 @@ async function recomputeGroupActivityPermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for group activity (ID: ${groupActivity.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
@@ -3696,7 +3805,7 @@ async function recomputeCoursePermissionsObject(
   })
 
   // create / update derived permissions for each user with access
-  await Promise.all(
+  const results = await Promise.allSettled(
     Object.entries(userAccess).map(
       async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
         await prisma.derivedPermission.upsert({
@@ -3727,6 +3836,18 @@ async function recomputeCoursePermissionsObject(
         })
     )
   )
+
+  // check if any promise was rejected and throw an error
+  const rejectedPromises = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  )
+  if (rejectedPromises.length > 0) {
+    throw new Error(
+      `Failed to update derived permissions for course (ID: ${course.id}): ${rejectedPromises
+        .map((result) => result.reason?.message || 'Unknown error')
+        .join(', ')}`
+    )
+  }
 
   // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
