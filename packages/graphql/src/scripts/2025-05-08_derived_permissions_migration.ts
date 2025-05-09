@@ -149,8 +149,6 @@ async function run() {
   //     these values need to be recomputed for all objects
   // --> to ensure consistency, we need to start with the recomputation of the derived permissions at the top
   // #region
-  // TODO
-  // #endregion
 
   console.log('-----------------------  Step 3 -----------------------')
   console.log(
@@ -330,6 +328,8 @@ async function run() {
     'Successfully recomputed derived permissions for all answer collections\n'
   )
   console.log('-------------------------------------------------------\n\n')
+
+  // #endregion
 
   // disconnect from the database
   prisma.$disconnect()
