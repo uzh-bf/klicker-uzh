@@ -10,6 +10,7 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
+  PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -140,13 +141,12 @@ export async function validateTemplateAccessible(
 
 // ! Template management functions
 // #region
-
 export async function getActivityAnswerCollectionIds(
   {
     activityId,
     activityType,
   }: { activityId: string; activityType: ActivityType },
-  ctx: PrismaTransactionContextWithUser
+  prisma: PrismaTransactionClient
 ): Promise<{
   error: boolean
   activity:
@@ -174,7 +174,7 @@ export async function getActivityAnswerCollectionIds(
   let instances: DB.ElementInstance[] = []
   let activity
   if (activityType === ActivityType.LIVE_QUIZ) {
-    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    const liveQuiz = await prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
       },
@@ -200,7 +200,7 @@ export async function getActivityAnswerCollectionIds(
     activity = liveQuiz
     instances = liveQuiz.blocks.flatMap((block) => block.elements)
   } else if (activityType === ActivityType.PRACTICE_QUIZ) {
-    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    const practiceQuiz = await prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
       },
@@ -226,7 +226,7 @@ export async function getActivityAnswerCollectionIds(
     activity = practiceQuiz
     instances = practiceQuiz.stacks.flatMap((stack) => stack.elements)
   } else if (activityType === ActivityType.MICRO_LEARNING) {
-    const microLearning = await ctx.prisma.microLearning.findUnique({
+    const microLearning = await prisma.microLearning.findUnique({
       where: {
         id: activityId,
       },
@@ -252,7 +252,7 @@ export async function getActivityAnswerCollectionIds(
     activity = microLearning
     instances = microLearning.stacks.flatMap((stack) => stack.elements)
   } else if (activityType === ActivityType.GROUP_ACTIVITY) {
-    const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    const groupActivity = await prisma.groupActivity.findUnique({
       where: {
         id: activityId,
       },
@@ -357,8 +357,10 @@ export async function checkTemplateInfoAvailable(
 ) {
   // fetch all answer collections linked to elements in the activity
   const { error, noInstances, answerCollectionIds, answerCollectionEntryIds } =
-    (await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)) ??
-    {}
+    (await getActivityAnswerCollectionIds(
+      { activityId, activityType },
+      ctx.prisma
+    )) ?? {}
 
   if (error) {
     return null
@@ -444,7 +446,10 @@ export async function createActivityTemplate(
     noInstances,
     answerCollectionIds,
     answerCollectionEntryIds,
-  } = await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)
+  } = await getActivityAnswerCollectionIds(
+    { activityId, activityType },
+    ctx.prisma
+  )
 
   if (error || noInstances) {
     return false
