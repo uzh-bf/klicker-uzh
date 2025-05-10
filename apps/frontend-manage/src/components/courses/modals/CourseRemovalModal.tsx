@@ -1,7 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetUserCoursesDocument,
-  RemoveCourseDocument,
+  RemoveObjectDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -25,8 +26,8 @@ function CourseRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  const [removeCourse, { loading: removing }] =
-    useMutation(RemoveCourseDocument)
+  const [removeObject, { loading: removing }] =
+    useMutation(RemoveObjectDocument)
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -48,8 +49,11 @@ function CourseRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeCourse({
-          variables: { id: courseId },
+        await removeObject({
+          variables: {
+            objectId: courseId,
+            objectType: SharingObjectType.Course,
+          },
           refetchQueries: [{ query: GetUserCoursesDocument }],
         })
         setModalOpen(false)

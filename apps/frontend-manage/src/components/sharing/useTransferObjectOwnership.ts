@@ -5,6 +5,8 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
   GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
   SharingObjectType,
@@ -59,9 +61,53 @@ function useTransferObjectOwnership({
           ...(objectType === SharingObjectType.Element
             ? [{ query: GetUserElementsDocument }]
             : []),
-          ...(objectType === SharingObjectType.LiveQuiz
-            ? [{ query: GetUserLiveQuizzesDocument }]
+          ...(objectType === SharingObjectType.Course
+            ? [
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: String(objectId) },
+                },
+              ]
             : []),
+          ...(objectType === SharingObjectType.LiveQuiz
+            ? [
+                { query: GetUserLiveQuizzesDocument },
+                { query: GetUserActivitiesDocument },
+                // TODO: re-introduce this and make sure that the courseId is passed correctly
+                // {
+                //   query: GetSingleCourseDocument,
+                //   variables: { courseId },
+                // },
+              ]
+            : []),
+          // TODO: re-introduce this and make sure that the courseId is passed correctly
+          // ...(objectType === SharingObjectType.PracticeQuiz
+          // ? [
+          //     { query: GetUserActivitiesDocument },
+          //     {
+          //       query: GetSingleCourseDocument,
+          //       variables: { courseId },
+          //     },
+          //   ]
+          // : []),
+          // ...(objectType === SharingObjectType.MicroLearning
+          // ? [
+          //     { query: GetUserActivitiesDocument },
+          //     {
+          //       query: GetSingleCourseDocument,
+          //       variables: { courseId },
+          //     },
+          //   ]
+          // : []),
+          // ...(objectType === SharingObjectType.GroupActivity
+          // ? [
+          //     { query: GetUserActivitiesDocument },
+          //     {
+          //       query: GetSingleCourseDocument,
+          //       variables: { courseId },
+          //     },
+          //   ]
+          // : []),
         ],
       })
 

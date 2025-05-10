@@ -8,6 +8,7 @@ interface ObjectSharingModalBaseProps {
   objectUuid?: string
   objectName: string
   objectType: SharingObjectType
+  courseId?: string
   catalogCollectionId?: string
   isOwner: boolean
   open: boolean

@@ -572,7 +572,7 @@ export async function removeElement(
     id,
   })
 
-  return id
+  return String(id)
 }
 
 export async function editTag(

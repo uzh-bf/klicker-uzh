@@ -686,16 +686,6 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      removeCourse: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await CourseService.removeCourse(args, ctx)
-        },
-      }),
-
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,
@@ -720,16 +710,6 @@ export const Mutation = builder.mutationType({
             return await QuestionService.deleteElement(args, ctx)
           }
         ),
-      }),
-
-      removeElement: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await QuestionService.removeElement(args, ctx)
-        },
       }),
 
       editTag: t.withAuth(asUserFullAccess).field({
@@ -1420,16 +1400,6 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      removeLiveQuiz: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await LiveQuizService.removeLiveQuiz(args, ctx)
-        },
-      }),
-
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1824,17 +1794,6 @@ export const Mutation = builder.mutationType({
             },
             ctx
           )
-        },
-      }),
-
-      removeAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: 'Int',
-        args: {
-          collectionId: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ResourcesService.removeAnswerCollection(args, ctx)
         },
       }),
 
@@ -2699,6 +2658,51 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      removeObject: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
+            return await ResourcesService.removeAnswerCollection(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+            return await QuestionService.removeElement(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+            return await CourseService.removeCourse({ id: args.objectId }, ctx)
+          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+            return await LiveQuizService.removeLiveQuiz(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+            return await PracticeQuizService.removePracticeQuiz(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+            return await MicroLearningService.removeMicroLearning(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+            return await GroupService.removeGroupActivity(
+              { id: args.objectId },
+              ctx
+            )
+          }
+
+          return null
+        },
+      }),
+
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -3041,16 +3045,6 @@ export const Mutation = builder.mutationType({
           ),
         }),
 
-      removePracticeQuiz: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await PracticeQuizService.removePracticeQuiz(args, ctx)
-        },
-      }),
-
       deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -3067,16 +3061,6 @@ export const Mutation = builder.mutationType({
             }
           ),
         }),
-
-      removeMicroLearning: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await MicroLearningService.removeMicroLearning(args, ctx)
-        },
-      }),
 
       publishGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
@@ -3162,16 +3146,6 @@ export const Mutation = builder.mutationType({
             }
           ),
         }),
-
-      removeGroupActivity: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await GroupService.removeGroupActivity(args, ctx)
-        },
-      }),
 
       gradeGroupActivitySubmission: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
