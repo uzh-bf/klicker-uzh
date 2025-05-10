@@ -50,7 +50,8 @@ export interface IActivityInfo {
   type: ActivityTypeEnum
   status: DB.PublicationStatus
 
-  course?: string | null
+  courseId?: string | null
+  courseName?: string | null
   numOfStacks: number
   numOfElements: number
   stacks: IActivityInfoStack[]
@@ -79,7 +80,8 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     type: t.expose('type', { type: ActivityType }),
     status: t.expose('status', { type: PublicationStatus }),
 
-    course: t.exposeString('course', { nullable: true }),
+    courseId: t.exposeString('courseId', { nullable: true }),
+    courseName: t.exposeString('courseName', { nullable: true }),
     numOfStacks: t.exposeInt('numOfStacks'),
     numOfElements: t.exposeInt('numOfElements'),
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),

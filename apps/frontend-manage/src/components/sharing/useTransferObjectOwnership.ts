@@ -73,41 +73,17 @@ function useTransferObjectOwnership({
             ? [
                 { query: GetUserLiveQuizzesDocument },
                 { query: GetUserActivitiesDocument },
-                // TODO: re-introduce this and make sure that the courseId is passed correctly
-                // {
-                //   query: GetSingleCourseDocument,
-                //   variables: { courseId },
-                // },
               ]
             : []),
-          // TODO: re-introduce this and make sure that the courseId is passed correctly
-          // ...(objectType === SharingObjectType.PracticeQuiz
-          // ? [
-          //     { query: GetUserActivitiesDocument },
-          //     {
-          //       query: GetSingleCourseDocument,
-          //       variables: { courseId },
-          //     },
-          //   ]
-          // : []),
-          // ...(objectType === SharingObjectType.MicroLearning
-          // ? [
-          //     { query: GetUserActivitiesDocument },
-          //     {
-          //       query: GetSingleCourseDocument,
-          //       variables: { courseId },
-          //     },
-          //   ]
-          // : []),
-          // ...(objectType === SharingObjectType.GroupActivity
-          // ? [
-          //     { query: GetUserActivitiesDocument },
-          //     {
-          //       query: GetSingleCourseDocument,
-          //       variables: { courseId },
-          //     },
-          //   ]
-          // : []),
+          ...(objectType === SharingObjectType.PracticeQuiz
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === SharingObjectType.MicroLearning
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === SharingObjectType.GroupActivity
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
         ],
       })
 

@@ -1337,7 +1337,8 @@ export async function getCourseData(
           displayName: liveQuiz.displayName,
           type: ActivityType.LIVE_QUIZ,
           status: liveQuiz.status,
-          course: course.name,
+          courseId: course.id,
+          courseName: course.name,
           numOfStacks: liveQuiz.blocks.length,
           numOfElements: liveQuiz.blocks.reduce(
             (acc, block) => acc + block.elements.length,

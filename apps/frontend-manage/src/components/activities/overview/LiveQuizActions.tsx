@@ -42,7 +42,6 @@ import TemplateEditErrorToast from '../../courses/modals/TemplateEditErrorToast'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
 import TemplateEditSuccessToast from '../../courses/modals/TemplateEditSuccessToast'
 import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
-import LiveQuizNameChangeModal from '../../liveQuiz/LiveQuizNameChangeModal'
 import ActivityActionButton from './ActivityActionButton'
 import ActivityRemovalModal from './ActivityRemovalModal'
 
@@ -126,7 +125,6 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   const [templateDeletionModal, setTemplateDeletionModal] =
     useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
-  const [nameChangeModal, setNameChangeModal] = useState<boolean>(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
   const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
@@ -474,6 +472,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
         )}
       </div>
       <div>
+        {/* // TODO: generalize this modal for all activity types */}
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={quiz.id}
@@ -481,16 +480,6 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
             setOpen={setDeletionModal}
             onDelete={deleteLiveQuiz}
             deleting={deletingLiveQuiz}
-          />
-        )}
-
-        {nameChangeModal && (
-          <LiveQuizNameChangeModal
-            quizId={quiz.id}
-            name={quiz.name}
-            displayName={quiz.displayName}
-            open={nameChangeModal}
-            setOpen={setNameChangeModal}
           />
         )}
 

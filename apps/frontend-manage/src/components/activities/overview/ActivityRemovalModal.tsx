@@ -60,7 +60,6 @@ function ActivityRemovalModal({
               objectId: activityId,
               objectType: SharingObjectType.LiveQuiz,
             },
-            // TODO: add single course refetch query - if mutation was triggere from course (same for other activity types)
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
         } else if (activityType === ActivityType.PracticeQuiz) {
