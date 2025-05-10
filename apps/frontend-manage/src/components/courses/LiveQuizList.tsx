@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 import QRCodePopover from './QRCodePopover'
 
@@ -87,10 +88,13 @@ function LiveQuizList({
       {liveQuizActivities && liveQuizActivities.length > 0 && privatePreview ? (
         <div className="mt-0.5 flex w-full flex-col">
           {privatePreview ? (
-            <ActivityList
-              activities={liveQuizActivities}
-              noActivities={false}
-            />
+            <>
+              <ActivityListLegend className="mr-2" />
+              <ActivityList
+                activities={liveQuizActivities}
+                noActivities={false}
+              />
+            </>
           ) : null}
         </div>
       ) : (

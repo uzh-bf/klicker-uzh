@@ -528,6 +528,40 @@ export async function deletePracticeQuiz(
   }
 }
 
+export async function removePracticeQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified practice quiz
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this practice quiz and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.practiceQuiz.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { practiceQuizId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id,
+  })
+
+  return id
+}
+
 export async function publishPracticeQuiz(
   { id, availableFrom }: { id: string; availableFrom?: Date | null },
   ctx: ContextWithUser

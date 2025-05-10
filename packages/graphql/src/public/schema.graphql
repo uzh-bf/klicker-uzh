@@ -1552,7 +1552,10 @@ type Mutation {
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeCourse(id: String!): String
   removeElement(id: Int!): Int
+  removeGroupActivity(id: String!): String
   removeLiveQuiz(id: String!): String
+  removeMicroLearning(id: String!): String
+  removePracticeQuiz(id: String!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
@@ -2173,8 +2176,11 @@ enum SharingObjectType {
   CATALOG_COLLECTION
   COURSE
   ELEMENT
+  GROUP_ACTIVITY
   LIVE_QUIZ
   LIVE_QUIZ_TEMPLATE
+  MICRO_LEARNING
+  PRACTICE_QUIZ
 }
 
 type SharingRequestResponse {

@@ -51,8 +51,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           {
             type: 'button',
             key: 'activities-menubar-item',
-            // label: t('shared.generic.activities'),
-            label: t('manage.general.liveQuizzes'), // TODO: once activity overview supports all activity types, change this back to activities label
+            label: t('shared.generic.activities'),
             onClick: () => router.push('/activities'),
             active: router.pathname == '/activities',
             data: { cy: 'activities' },

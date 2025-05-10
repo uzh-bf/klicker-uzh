@@ -1680,7 +1680,10 @@ export type Mutation = {
   removeCatalogObjectAssignment: Scalars['Boolean']['output'];
   removeCourse?: Maybe<Scalars['String']['output']>;
   removeElement?: Maybe<Scalars['Int']['output']>;
+  removeGroupActivity?: Maybe<Scalars['String']['output']>;
   removeLiveQuiz?: Maybe<Scalars['String']['output']>;
+  removeMicroLearning?: Maybe<Scalars['String']['output']>;
+  removePracticeQuiz?: Maybe<Scalars['String']['output']>;
   removeUserFromGroup: Scalars['Boolean']['output'];
   renameParticipantGroup?: Maybe<ParticipantGroup>;
   requestCatalogCollection?: Maybe<CatalogCollection>;
@@ -2493,7 +2496,22 @@ export type MutationRemoveElementArgs = {
 };
 
 
+export type MutationRemoveGroupActivityArgs = {
+  id: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveLiveQuizArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type MutationRemoveMicroLearningArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type MutationRemovePracticeQuizArgs = {
   id: Scalars['String']['input'];
 };
 
@@ -3695,8 +3713,11 @@ export enum SharingObjectType {
   CatalogCollection = 'CATALOG_COLLECTION',
   Course = 'COURSE',
   Element = 'ELEMENT',
+  GroupActivity = 'GROUP_ACTIVITY',
   LiveQuiz = 'LIVE_QUIZ',
-  LiveQuizTemplate = 'LIVE_QUIZ_TEMPLATE'
+  LiveQuizTemplate = 'LIVE_QUIZ_TEMPLATE',
+  MicroLearning = 'MICRO_LEARNING',
+  PracticeQuiz = 'PRACTICE_QUIZ'
 }
 
 export type SharingRequestResponse = {
@@ -5093,12 +5114,33 @@ export type RemoveElementMutationVariables = Exact<{
 
 export type RemoveElementMutation = { __typename?: 'Mutation', removeElement?: number | null };
 
+export type RemoveGroupActivityMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type RemoveGroupActivityMutation = { __typename?: 'Mutation', removeGroupActivity?: string | null };
+
 export type RemoveLiveQuizMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
 export type RemoveLiveQuizMutation = { __typename?: 'Mutation', removeLiveQuiz?: string | null };
+
+export type RemoveMicroLearningMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type RemoveMicroLearningMutation = { __typename?: 'Mutation', removeMicroLearning?: string | null };
+
+export type RemovePracticeQuizMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type RemovePracticeQuizMutation = { __typename?: 'Mutation', removePracticeQuiz?: string | null };
 
 export type RemoveUserFromGroupMutationVariables = Exact<{
   groupId: Scalars['Int']['input'];
@@ -6262,7 +6304,10 @@ export const RemoveAnswerCollectionDocument = {"kind":"Document","definitions":[
 export const RemoveCatalogObjectAssignmentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveCatalogObjectAssignment"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"assignmentId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeCatalogObjectAssignment"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"assignmentId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"assignmentId"}}}]}]}}]} as unknown as DocumentNode<RemoveCatalogObjectAssignmentMutation, RemoveCatalogObjectAssignmentMutationVariables>;
 export const RemoveCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemoveCourseMutation, RemoveCourseMutationVariables>;
 export const RemoveElementDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveElement"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeElement"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemoveElementMutation, RemoveElementMutationVariables>;
+export const RemoveGroupActivityDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveGroupActivity"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeGroupActivity"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemoveGroupActivityMutation, RemoveGroupActivityMutationVariables>;
 export const RemoveLiveQuizDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveLiveQuiz"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeLiveQuiz"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemoveLiveQuizMutation, RemoveLiveQuizMutationVariables>;
+export const RemoveMicroLearningDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveMicroLearning"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeMicroLearning"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemoveMicroLearningMutation, RemoveMicroLearningMutationVariables>;
+export const RemovePracticeQuizDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemovePracticeQuiz"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removePracticeQuiz"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<RemovePracticeQuizMutation, RemovePracticeQuizMutationVariables>;
 export const RemoveUserFromGroupDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveUserFromGroup"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeUserFromGroup"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"groupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}}},{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}]}]}}]} as unknown as DocumentNode<RemoveUserFromGroupMutation, RemoveUserFromGroupMutationVariables>;
 export const RenameParticipantGroupDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RenameParticipantGroup"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"renameParticipantGroup"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"groupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<RenameParticipantGroupMutation, RenameParticipantGroupMutationVariables>;
 export const RequestCatalogCollectionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RequestCatalogCollection"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"requestedPermissionLevel"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requestCatalogCollection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"catalogCollectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"requestedPermissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"requestedPermissionLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"access"}},{"kind":"Field","name":{"kind":"Name","value":"ownerShortname"}},{"kind":"Field","name":{"kind":"Name","value":"isOwner"}},{"kind":"Field","name":{"kind":"Name","value":"isManager"}},{"kind":"Field","name":{"kind":"Name","value":"isRequested"}},{"kind":"Field","name":{"kind":"Name","value":"isShared"}}]}}]}}]} as unknown as DocumentNode<RequestCatalogCollectionMutation, RequestCatalogCollectionMutationVariables>;
