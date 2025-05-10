@@ -3278,7 +3278,7 @@ export async function transferLiveQuizOwnership(
     where: { id },
   })
 
-  if (!newOwner || !liveQuiz) {
+  if (!newOwner || !liveQuiz || liveQuiz.ownerId === newOwner.id) {
     return null
   }
 
@@ -3385,7 +3385,7 @@ export async function transferPracticeQuizOwnership(
     where: { id },
   })
 
-  if (!newOwner || !practiceQuiz) {
+  if (!newOwner || !practiceQuiz || practiceQuiz.ownerId === newOwner.id) {
     return null
   }
 
@@ -3492,7 +3492,7 @@ export async function transferMicroLearningOwnership(
     where: { id },
   })
 
-  if (!newOwner || !microLearning) {
+  if (!newOwner || !microLearning || microLearning.ownerId === newOwner.id) {
     return null
   }
 
@@ -3603,7 +3603,7 @@ export async function transferGroupActivityOwnership(
     where: { id },
   })
 
-  if (!newOwner || !groupActivity) {
+  if (!newOwner || !groupActivity || groupActivity.ownerId === newOwner.id) {
     return null
   }
 
