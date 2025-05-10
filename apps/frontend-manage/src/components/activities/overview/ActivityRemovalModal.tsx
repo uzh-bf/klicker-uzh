@@ -2,7 +2,8 @@ import { useMutation } from '@apollo/client'
 import {
   ActivityType,
   GetUserActivitiesDocument,
-  RemoveLiveQuizDocument,
+  RemoveObjectDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
@@ -29,10 +30,8 @@ function ActivityRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  const [removeLiveQuiz, { loading: removing }] = useMutation(
-    RemoveLiveQuizDocument,
-    { variables: { id: activityId } }
-  )
+  const [removeObject, { loading: removing }] =
+    useMutation(RemoveObjectDocument)
 
   // on modal opening, reset the confirmation state
   useEffect(() => {
@@ -56,14 +55,38 @@ function ActivityRemovalModal({
       })}
       onSubmit={async () => {
         if (activityType === ActivityType.LiveQuiz) {
-          await removeLiveQuiz({
+          await removeObject({
             variables: {
-              id: activityId,
+              objectId: activityId,
+              objectType: SharingObjectType.LiveQuiz,
+            },
+            // TODO: add single course refetch query - if mutation was triggere from course (same for other activity types)
+            refetchQueries: [{ query: GetUserActivitiesDocument }],
+          })
+        } else if (activityType === ActivityType.PracticeQuiz) {
+          await removeObject({
+            variables: {
+              objectId: activityId,
+              objectType: SharingObjectType.PracticeQuiz,
             },
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
-        } else {
-          // TODO: implement remaining activity types
+        } else if (activityType === ActivityType.MicroLearning) {
+          await removeObject({
+            variables: {
+              objectId: activityId,
+              objectType: SharingObjectType.MicroLearning,
+            },
+            refetchQueries: [{ query: GetUserActivitiesDocument }],
+          })
+        } else if (activityType === ActivityType.GroupActivity) {
+          await removeObject({
+            variables: {
+              objectId: activityId,
+              objectType: SharingObjectType.GroupActivity,
+            },
+            refetchQueries: [{ query: GetUserActivitiesDocument }],
+          })
         }
         setModalOpen(false)
       }}

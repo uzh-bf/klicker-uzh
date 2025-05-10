@@ -1,0 +1,3 @@
+mutation RemoveObject($objectId: String!, $objectType: SharingObjectType!) {
+  removeObject(objectId: $objectId, objectType: $objectType)
+}

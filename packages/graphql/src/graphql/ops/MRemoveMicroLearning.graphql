@@ -1,3 +1,0 @@
-mutation RemoveMicroLearning($id: String!) {
-  removeMicroLearning(id: $id)
-}

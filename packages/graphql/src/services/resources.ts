@@ -504,14 +504,14 @@ export async function deleteAnswerCollection(
 }
 
 export async function removeAnswerCollection(
-  { collectionId }: { collectionId: number },
+  { id }: { id: number },
   ctx: ContextWithUser
 ) {
   // fetch existing permission and collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       answerCollectionId_userId: {
-        answerCollectionId: collectionId,
+        answerCollectionId: id,
         userId: ctx.user.sub,
       },
     },
@@ -573,7 +573,7 @@ export async function removeAnswerCollection(
 
   // if no other users have access to this collection and the owner is already soft-deleted, fully delete it
   if (collection._count.permissions === 1 && collection.isDeleted === true) {
-    await ctx.prisma.answerCollection.delete({ where: { id: collectionId } })
+    await ctx.prisma.answerCollection.delete({ where: { id: id } })
   } else {
     // otherwise, delete the sharing permission
     await ctx.prisma.$transaction(async (prisma) => {
@@ -583,16 +583,16 @@ export async function removeAnswerCollection(
       await prisma.auditLogEntry.create({
         data: {
           type: DB.AuditLogType.PERMISSION_REMOVED,
-          objectId: String(collectionId),
+          objectId: String(id),
           objectType: DB.ObjectType.ANSWER_COLLECTION,
           sourceUserId: ctx.user.sub,
-          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${collectionId})`,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
         },
       })
 
       // trigger recomputation of derived permissions
       await recomputeDerivedPermissions(
-        { answerCollectionId: collectionId, userId: ctx.user.sub },
+        { answerCollectionId: id, userId: ctx.user.sub },
         prisma
       )
     })
@@ -603,7 +603,7 @@ export async function removeAnswerCollection(
     id: collection.id,
   })
 
-  return collection.id
+  return String(collection.id)
 }
 
 export async function editAnswerCollectionEntry(
