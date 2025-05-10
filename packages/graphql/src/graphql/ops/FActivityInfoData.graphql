@@ -3,7 +3,8 @@ fragment ActivityInfoData on ActivityInfo {
   templateId
   type
   status
-  course
+  courseId
+  courseName
   numOfStacks
   numOfElements
 

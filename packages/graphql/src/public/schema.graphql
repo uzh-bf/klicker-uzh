@@ -35,7 +35,8 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
-  course: String
+  courseId: String
+  courseName: String
   derivedAccess: Boolean!
   displayName: String!
   id: String!
