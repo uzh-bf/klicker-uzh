@@ -794,10 +794,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(derivedPermissionElement!.derived).toBeFalsy()
 
     // verify that the answer collection cannot be removed from the account of user 2 (used in element)
-    const failure1 = await removeAnswerCollection(
-      { collectionId: AC1!.id },
-      userTwoCtx
-    )
+    const failure1 = await removeAnswerCollection({ id: AC1!.id }, userTwoCtx)
     expect(failure1).toBeNull()
 
     // remove the element and add an activity template with the answer collection as dependency
@@ -831,20 +828,14 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     await recomputeDerivedPermissions({ liveQuizId: activityId }, prisma)
 
     // verify that the answer collection cannot be removed from the account of user 2 (used in template)
-    const failure2 = await removeAnswerCollection(
-      { collectionId: AC1!.id },
-      userTwoCtx
-    )
+    const failure2 = await removeAnswerCollection({ id: AC1!.id }, userTwoCtx)
     expect(failure2).toBeNull()
 
     // remove the template and verify that the answer collection can now be removed
     await prisma.liveQuiz.delete({ where: { id: activityId } }) // template is automatically deleted through cascading
     await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
-    const removalId = await removeAnswerCollection(
-      { collectionId: AC1!.id },
-      userTwoCtx
-    )
-    expect(removalId).toBe(AC1!.id)
+    const removalId = await removeAnswerCollection({ id: AC1!.id }, userTwoCtx)
+    expect(removalId).toBe(String(AC1!.id))
 
     // verify that an audit log entry has been created for the removal
     const auditLogEntry = await prisma.auditLogEntry.findFirst({
@@ -885,10 +876,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(derivedOwnerPermission!.derived).toBeFalsy()
 
     // verify that the owner cannot use the removal function, but only delete the answer collection
-    const failure3 = await removeAnswerCollection(
-      { collectionId: AC1!.id },
-      userOneCtx
-    )
+    const failure3 = await removeAnswerCollection({ id: AC1!.id }, userOneCtx)
     expect(failure3).toBeNull()
   })
 
