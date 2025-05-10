@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPeopleGroup, faPlusCircle } from '@fortawesome/free-solid-svg-icons'
+import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateCourseDocument,
   GetUserCoursesDocument,
@@ -92,7 +92,7 @@ function CourseSelectionPage() {
                       <CourseListButton
                         course={course}
                         onClick={() => router.push(`/courses/${course.id}`)}
-                        icon={faPeopleGroup}
+                        // icon={faPeopleGroup}
                         label={course.name}
                         showArchiveModal={showArchiveModal}
                         showDeletionModal={showDeletionModal}

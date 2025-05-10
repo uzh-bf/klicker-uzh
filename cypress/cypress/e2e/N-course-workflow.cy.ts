@@ -813,7 +813,11 @@ describe('Test course creation and editing functionalities', function () {
     // course should be accessible and READ permissions should be granted on all activities
     // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.course}-READ"]`)
+      .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-share-button"]').should('not.exist')
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -866,7 +870,11 @@ describe('Test course creation and editing functionalities', function () {
     // course should be accessible and READ permissions should be granted on all activities
     // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.course}-EXECUTE"]`)
+      .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-share-button"]').should('not.exist')
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -923,7 +931,11 @@ describe('Test course creation and editing functionalities', function () {
     // course should be accessible and READ permissions should be granted on all activities
     // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.course}-WRITE"]`)
+      .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-share-button"]').should('not.exist')
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -983,7 +995,11 @@ describe('Test course creation and editing functionalities', function () {
     // course should be accessible and READ permissions should be granted on all activities
     // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.course}-ADMIN"]`)
+      .should('exist')
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`).click()
+    cy.get('[data-cy="course-share-button"]').should('exist')
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'

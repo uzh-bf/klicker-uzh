@@ -5,13 +5,14 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course } from '@klicker-uzh/graphql/dist/ops'
+import { Course, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
 
 interface CourseListButtonProps {
@@ -22,12 +23,13 @@ interface CourseListButtonProps {
     | 'color'
     | 'startDate'
     | 'endDate'
+    | 'permissionLevel'
     | 'isArchived'
     | 'isManager'
     | 'isRemovable'
   >
   onClick: () => void
-  icon: IconDefinition
+  icon?: IconDefinition
   label: string
   showArchiveModal?: Dispatch<
     SetStateAction<{
@@ -82,8 +84,16 @@ function CourseListButton({
     >
       <div>
         <div className="ml-1 flex flex-row items-center gap-3">
-          <FontAwesomeIcon icon={icon} />
+          {icon ? <FontAwesomeIcon icon={icon} /> : null}
           <div>{label}</div>
+          {typeof course?.permissionLevel !== 'undefined' &&
+            course?.permissionLevel !== null &&
+            course.permissionLevel !== PermissionLevel.Owner && (
+              <ObjectPermissionLevel
+                objectName={course.name}
+                permissionLevel={course.permissionLevel}
+              />
+            )}
         </div>
         {course?.startDate && course?.endDate && (
           <div className="text-uzh-grey-100 ml-1 flex flex-row items-center gap-1.5 text-sm">
