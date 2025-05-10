@@ -122,107 +122,124 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isRemovable,
         updatedAt: object.liveQuiz.updatedAt,
       }
+    } else if (object.practiceQuiz) {
+      const stacks = object.practiceQuiz.stacks.map((block) => ({
+        id: block.id,
+        numOfParticipants: block.elements[0]
+          ? block.elements[0].results.total +
+            block.elements[0].anonymousResults.total
+          : 0,
+        elements: block.elements.map((instance) => ({
+          id: instance.id,
+          name: instance.elementData.name,
+          type: instance.elementType,
+        })),
+      }))
+
+      return {
+        id: object.practiceQuiz.id,
+        templateId: object.practiceQuiz.templateInfo?.id ?? null,
+        name: object.practiceQuiz.name,
+        displayName: object.practiceQuiz.displayName,
+        type: ActivityType.PRACTICE_QUIZ,
+        status: object.practiceQuiz.status,
+        course: object.practiceQuiz.course?.name,
+        numOfStacks: object.practiceQuiz.stacks.length,
+        numOfElements: object.practiceQuiz.stacks.reduce(
+          (acc, block) => acc + block.elements.length,
+          0
+        ),
+        stacks,
+        permissionLevel: object.permissionLevel,
+        derivedAccess: object.derived,
+        numSharedUsers: object.practiceQuiz._count.permissions - 1,
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        updatedAt: object.practiceQuiz.updatedAt,
+      }
+    } else if (object.microLearning) {
+      const stacks = object.microLearning.stacks.map((block) => ({
+        id: block.id,
+        numOfParticipants: block.elements[0]
+          ? block.elements[0].results.total +
+            block.elements[0].anonymousResults.total
+          : 0,
+        elements: block.elements.map((instance) => ({
+          id: instance.id,
+          name: instance.elementData.name,
+          type: instance.elementType,
+        })),
+      }))
+
+      return {
+        id: object.microLearning.id,
+        templateId: object.microLearning.templateInfo?.id ?? null,
+        name: object.microLearning.name,
+        displayName: object.microLearning.displayName,
+        type: ActivityType.MICRO_LEARNING,
+        status: object.microLearning.status,
+        course: object.microLearning.course?.name,
+        numOfStacks: object.microLearning.stacks.length,
+        numOfElements: object.microLearning.stacks.reduce(
+          (acc, block) => acc + block.elements.length,
+          0
+        ),
+        stacks,
+        permissionLevel: object.permissionLevel,
+        derivedAccess: object.derived,
+        numSharedUsers: object.microLearning._count.permissions - 1,
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        updatedAt: object.microLearning.updatedAt,
+      }
+    } else if (object.groupActivity) {
+      const stacks = object.groupActivity.stacks.map((block) => ({
+        id: block.id,
+        numOfParticipants: block.elements[0]
+          ? block.elements[0].results.total +
+            block.elements[0].anonymousResults.total
+          : 0,
+        elements: block.elements.map((instance) => ({
+          id: instance.id,
+          name: instance.elementData.name,
+          type: instance.elementType,
+        })),
+      }))
+
+      return {
+        id: object.groupActivity.id,
+        templateId: object.groupActivity.templateInfo?.id ?? null,
+        name: object.groupActivity.name,
+        displayName: object.groupActivity.displayName,
+        type: ActivityType.GROUP_ACTIVITY,
+        status: object.groupActivity.status,
+        course: object.groupActivity.course?.name,
+        numOfStacks: object.groupActivity.stacks.length,
+        numOfElements: object.groupActivity.stacks.reduce(
+          (acc, block) => acc + block.elements.length,
+          0
+        ),
+        stacks,
+        permissionLevel: object.permissionLevel,
+        derivedAccess: object.derived,
+        numSharedUsers: object.groupActivity._count.permissions - 1,
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        updatedAt: object.groupActivity.updatedAt,
+      }
     }
-
-    // TODO: include other activity types again, once the activity overview supports them
-    // if (object.practiceQuiz) {
-    //   const elements = object.practiceQuiz.stacks
-    //     .flatMap((block) => block.elements)
-    //     .map((instance) => ({
-    //       id: instance.id,
-    //       name: instance.elementData.name,
-    //     }))
-
-    //   return {
-    //     id: object.practiceQuiz.id,
-    //     templateId: object.practiceQuiz.templateInfo?.id ?? null,
-    //     name: object.practiceQuiz.name,
-    //     displayName: object.practiceQuiz.displayName,
-    //     type: ActivityType.PRACTICE_QUIZ,
-    //     status: object.practiceQuiz.status,
-    //     course: object.practiceQuiz.course?.name,
-    //     numOfStacks: object.practiceQuiz.stacks.length,
-    //     numOfElements: object.practiceQuiz.stacks.reduce(
-    //       (acc, stack) => acc + stack.elements.length,
-    //       0
-    //     ),
-    //     elements,
-    //     permissionLevel: object.permissionLevel,
-    //     derivedAccess: object.derived,
-    //     isOwner,
-    //     isManager,
-    //     isEditor,
-    //     isShared,
-    //     isRemovable,
-    //     updatedAt: object.practiceQuiz.updatedAt,
-    //   }
-    // }
-
-    // if (object.microLearning) {
-    //   const elements = object.microLearning.stacks
-    //     .flatMap((block) => block.elements)
-    //     .map((instance) => ({
-    //       id: instance.id,
-    //       name: instance.elementData.name,
-    //     }))
-
-    //   return {
-    //     id: object.microLearning.id,
-    //     templateId: object.microLearning.templateInfo?.id ?? null,
-    //     name: object.microLearning.name,
-    //     displayName: object.microLearning.displayName,
-    //     type: ActivityType.MICRO_LEARNING,
-    //     status: object.microLearning.status,
-    //     course: object.microLearning.course?.name,
-    //     numOfStacks: object.microLearning.stacks.length,
-    //     numOfElements: object.microLearning.stacks.reduce(
-    //       (acc, stack) => acc + stack.elements.length,
-    //       0
-    //     ),
-    //     elements,
-    //     permissionLevel: object.permissionLevel,
-    //     derivedAccess: object.derived,
-    //     isOwner,
-    //     isManager,
-    //     isEditor,
-    //     isShared,
-    //     isRemovable,
-    //     updatedAt: object.microLearning.updatedAt,
-    //   }
-    // }
-
-    // if (object.groupActivity) {
-    //   const elements = object.groupActivity.stacks
-    //     .flatMap((block) => block.elements)
-    //     .map((instance) => ({
-    //       id: instance.id,
-    //       name: instance.elementData.name,
-    //     }))
-
-    //   return {
-    //     id: object.groupActivity.id,
-    //     templateId: object.groupActivity.templateInfo?.id ?? null,
-    //     name: object.groupActivity.name,
-    //     displayName: object.groupActivity.displayName,
-    //     type: ActivityType.GROUP_ACTIVITY,
-    //     status: object.groupActivity.status,
-    //     course: object.groupActivity.course?.name,
-    //     numOfStacks: object.groupActivity.stacks.length,
-    //     numOfElements: object.groupActivity.stacks.reduce(
-    //       (acc, stack) => acc + stack.elements.length,
-    //       0
-    //     ),
-    //     elements,
-    //     permissionLevel: object.permissionLevel,
-    //     derivedAccess: object.derived,
-    //     isOwner,
-    //     isManager,
-    //     isEditor,
-    //     isShared,
-    //     isRemovable,
-    //     updatedAt: object.groupActivity.updatedAt,
-    //   }
-    // }
 
     return []
   })

@@ -2616,6 +2616,75 @@ export async function getLiveQuizPermissions(
   return mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub)
 }
 
+export async function getPracticeQuizPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return []
+  }
+
+  return mapDirectPermissions(practiceQuiz.directPermissions, ctx.user.sub)
+}
+
+export async function getMicroLearningPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return []
+  }
+
+  return mapDirectPermissions(microLearning.directPermissions, ctx.user.sub)
+}
+
+export async function getGroupActivityPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!groupActivity) {
+    return []
+  }
+
+  return mapDirectPermissions(groupActivity.directPermissions, ctx.user.sub)
+}
+
 function mapDerivedPermissions({
   permissions,
   userId,
@@ -3284,6 +3353,335 @@ export async function transferLiveQuizOwnership(
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedLiveQuiz.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferPracticeQuizOwnership(
+  { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { practiceQuizId: id } } },
+  })
+
+  // find the practice quiz
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !practiceQuiz) {
+    return null
+  }
+
+  const updatedPracticeQuiz = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the practice quiz and grant admin permissions to the current user
+    const updated = await prisma.practiceQuiz.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              practiceQuizId_userId: {
+                practiceQuizId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the practice quiz, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.PRACTICE_QUIZ,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.PRACTICE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the practice quiz for both users
+    await recomputeDerivedPermissions(
+      { practiceQuizId: id, userId: newOwner.id, updateAccessRequests: true },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { practiceQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedPracticeQuiz.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferMicroLearningOwnership(
+  { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { microLearningId: id } } },
+  })
+
+  // find the microlearning
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !microLearning) {
+    return null
+  }
+
+  const updatedMicroLearning = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the microlearning and grant admin permissions to the current user
+    const updated = await prisma.microLearning.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              microLearningId_userId: {
+                microLearningId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the microlearning, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          microLearningId_userId: {
+            microLearningId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.MICRO_LEARNING,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.MICRO_LEARNING} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the microlearning for both users
+    await recomputeDerivedPermissions(
+      { microLearningId: id, userId: newOwner.id, updateAccessRequests: true },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      {
+        microLearningId: id,
+        userId: ctx.user.sub,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedMicroLearning.directPermissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function transferGroupActivityOwnership(
+  { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+    include: { sharedObjects: { where: { groupActivityId: id } } },
+  })
+
+  // find the group activity
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !groupActivity) {
+    return null
+  }
+
+  const updatedGroupActivity = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the group activity and grant admin permissions to the current user
+    const updated = await prisma.groupActivity.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwner.id } },
+        directPermissions: {
+          upsert: {
+            where: {
+              groupActivityId_userId: {
+                groupActivityId: id,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: { connect: { id: ctx.user.sub } },
+            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: { userId: ctx.user.sub },
+          include: {
+            user: { select: { id: true, shortname: true, email: true } },
+          },
+        },
+      },
+    })
+
+    // if the new owner previously had a permission on the group activity, delete it
+    if (newOwner.sharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          groupActivityId_userId: {
+            groupActivityId: id,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // create an audit log entry for the ownership transfer
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.OWNER_TRANSFERRED,
+        objectType: DB.ObjectType.GROUP_ACTIVITY,
+        objectId: String(id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwner.id,
+        message: `Ownership of ${DB.ObjectType.GROUP_ACTIVITY} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the group activity for both users
+    await recomputeDerivedPermissions(
+      { groupActivityId: id, userId: newOwner.id, updateAccessRequests: true },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      {
+        groupActivityId: id,
+        userId: ctx.user.sub,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+
+    return updated
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedGroupActivity.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,
@@ -4247,7 +4645,10 @@ export async function getCatalogObjects(
             typeof permission !== 'undefined' &&
             permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
-      } else if (assignment.liveQuiz) {
+      } else if (
+        assignment.liveQuiz &&
+        assignment.liveQuiz.status === DB.PublicationStatus.TEMPLATE
+      ) {
         const liveQuiz = assignment.liveQuiz
         const permission = liveQuiz.permissions[0]
 
@@ -4256,11 +4657,7 @@ export async function getCatalogObjects(
           objectUuid: liveQuiz.id,
           name: liveQuiz.name,
           templateId: liveQuiz.templateInfo?.id,
-          objectType:
-            // TODO: replace or type with normal live quiz catalog object type
-            liveQuiz.status === DB.PublicationStatus.TEMPLATE
-              ? SharingObjectType.LIVE_QUIZ_TEMPLATE
-              : SharingObjectType.LIVE_QUIZ_TEMPLATE,
+          objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4272,6 +4669,7 @@ export async function getCatalogObjects(
             typeof permission !== 'undefined' &&
             permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
+        // TODO: add more entries here, once templates also support practice quizzes, microlearnings, and group activities
       }
 
       return []
@@ -4484,50 +4882,6 @@ export async function addObjectToCatalog(
       ownerId: answerCollection.ownerId,
       isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
-  } else if (typeof liveQuizId !== 'undefined') {
-    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-      where: {
-        id: liveQuizId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-            },
-          },
-        },
-      },
-      include: {
-        owner: { select: { shortname: true } },
-        templateInfo: { select: { id: true } },
-        permissions: { where: { userId: ctx.user.sub } },
-      },
-    })
-
-    if (!liveQuiz) {
-      return null
-    }
-
-    // get (unique) derived permission of this user on the live quiz
-    const permission = liveQuiz.permissions[0]
-    if (!permission) {
-      return null
-    }
-
-    // set object info
-    objectInfo = {
-      objectId: undefined,
-      objectUuid: liveQuiz.id,
-      objectType:
-        liveQuiz.status === DB.PublicationStatus.TEMPLATE
-          ? SharingObjectType.LIVE_QUIZ_TEMPLATE
-          : SharingObjectType.LIVE_QUIZ_TEMPLATE, // TODO: replace with LIVE_QUIZ
-      objectName: liveQuiz.name,
-      ownerShortname: liveQuiz.owner?.shortname,
-      ownerId: liveQuiz.ownerId,
-      templateId: liveQuiz.templateInfo?.id,
-      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
-    }
   } else if (typeof elementId !== 'undefined') {
     const element = await ctx.prisma.element.findUnique({
       where: {
@@ -4567,8 +4921,50 @@ export async function addObjectToCatalog(
       ownerId: element.ownerId,
       isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
+  } else if (typeof liveQuizId !== 'undefined') {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId,
+        status: DB.PublicationStatus.TEMPLATE, // live quizzes are not supported by the catalog at the moment
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+      include: {
+        owner: { select: { shortname: true } },
+        templateInfo: { select: { id: true } },
+        permissions: { where: { userId: ctx.user.sub } },
+      },
+    })
+
+    if (!liveQuiz) {
+      return null
+    }
+
+    // get (unique) derived permission of this user on the live quiz
+    const permission = liveQuiz.permissions[0]
+    if (!permission) {
+      return null
+    }
+
+    // set object info
+    objectInfo = {
+      objectId: undefined,
+      objectUuid: liveQuiz.id,
+      objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
+      objectName: liveQuiz.name,
+      ownerShortname: liveQuiz.owner?.shortname,
+      ownerId: liveQuiz.ownerId,
+      templateId: liveQuiz.templateInfo?.id,
+      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
+    }
   }
-  // TODO: ... implement more supported object types
+  // TODO: add more activity template types here, as soon as they are available
   else {
     return null
   }

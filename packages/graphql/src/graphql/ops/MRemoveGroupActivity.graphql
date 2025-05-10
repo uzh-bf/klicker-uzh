@@ -1,0 +1,3 @@
+mutation RemoveGroupActivity($id: String!) {
+  removeGroupActivity(id: $id)
+}
