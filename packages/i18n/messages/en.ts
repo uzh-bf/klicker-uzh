@@ -2304,8 +2304,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishGroupActivity: 'Publish group activity',
       groupActivityPublishingHint:
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
-      editGroupActivity: 'Edit group activity',
-      endGroupActivity: 'End group activity',
+      editGroupActivity: 'Edit Group Activity',
+      endGroupActivity: 'End Group Activity',
       endGroupActivityMessage:
         'Please confirm that you want to end this group activity. Note that no further submissions will be accepted after triggering this action.',
       endMicroLearning: 'End microlearning',
@@ -2327,7 +2327,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
         '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
-      startGroupActivityNow: 'Start group activity now',
+      startGroupActivityNow: 'Start Group Activity Now',
       startGroupActivityNowMessage:
         'Please confirm that you want to start the group activity now. Note that a group activity cannot be edited after starting.',
       noParticipantGroupsAvailable:
@@ -2338,8 +2338,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '{number} group(s) will get immediate access to the corresponding content after the group activity is started.',
       groupActivityAvailableUntil:
         'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
-      shareGroupActivity: 'Share group activity',
-      deleteGroupActivity: 'Delete group activity',
+      shareGroupActivity: 'Share Group Activity',
+      deleteGroupActivity: 'Delete Group Activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
       noStartedInstancesToDelete:
@@ -2350,11 +2350,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity.',
       deleteSubmissions:
         '{number} submission(s) by separate groups for this activity will be deleted.',
-      unpublishGroupActivity: 'Unpublish group activity',
-      extendGroupActivity: 'Extend group activity',
+      unpublishGroupActivity: 'Unpublish Group Activity',
+      extendGroupActivity: 'Extend Group Activity',
       extendGroupActivityDescription:
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
-      gradeGroupActivity: 'Grade group activity',
+      gradeGroupActivity: 'Grade Group Activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
       enableGamification: 'Enable gamification',

@@ -57,6 +57,8 @@ export interface IActivityInfo {
   numOfElements: number
   scheduledStartAt?: Date | null
   scheduledEndAt?: Date | null
+  groupDeadlineDate?: Date | null
+  numOfParticipantGroups?: number | null
   stacks: IActivityInfoStack[]
 
   permissionLevel: DB.PermissionLevel
@@ -98,6 +100,13 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     }),
     scheduledEndAt: t.expose('scheduledEndAt', {
       type: 'Date',
+      nullable: true,
+    }),
+    groupDeadlineDate: t.expose('groupDeadlineDate', {
+      type: 'Date',
+      nullable: true,
+    }),
+    numOfParticipantGroups: t.exposeInt('numOfParticipantGroups', {
       nullable: true,
     }),
 

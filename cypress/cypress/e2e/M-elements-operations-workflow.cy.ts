@@ -23,11 +23,11 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 1: Question duplication
   // #region
@@ -406,7 +406,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     // publish the first group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="publish-groupActivity-${groupActivity}"]`).click()
+    cy.get(`[data-cy="publish-group-activity-${groupActivity}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
   }
 
@@ -906,11 +906,10 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.groupActivity2,
       this.data.update.groupActivity3,
     ]).each((ga: string) => {
-      cy.get(`[data-cy="groupActivity-actions-${ga}"]`).click()
-      cy.get(`[data-cy="delete-groupActivity-${ga}"]`).click()
+      cy.get(`[data-cy="delete-group-activity-${ga}"]`).click()
       cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="groupActivity-actions-${ga}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-GROUP_ACTIVITY-${ga}"]`).should('not.exist')
     })
   })
   // #endregion

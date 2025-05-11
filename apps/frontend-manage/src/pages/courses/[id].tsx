@@ -271,6 +271,7 @@ function CourseOverviewPage() {
             <GroupActivityList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               groupActivities={course.groupActivities ?? []}
+              groupActivityActivities={course.groupActivityActivities ?? []}
               groupDeadlineDate={course.groupDeadlineDate}
               numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
               courseId={course.id}

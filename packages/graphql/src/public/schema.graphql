@@ -40,6 +40,7 @@ type ActivityInfo {
   courseStartDate: Date
   derivedAccess: Boolean!
   displayName: String!
+  groupDeadlineDate: Date
   id: String!
   isEditor: Boolean!
   isExecutor: Boolean!
@@ -49,6 +50,7 @@ type ActivityInfo {
   isShared: Boolean!
   name: String!
   numOfElements: Int!
+  numOfParticipantGroups: Int
   numOfStacks: Int!
   numSharedUsers: Int
   permissionLevel: PermissionLevel!

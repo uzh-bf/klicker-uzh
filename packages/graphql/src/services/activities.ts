@@ -47,7 +47,9 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           groupActivity: {
             include: {
-              course: { select: { id: true, name: true, startDate: true } },
+              course: {
+                include: { _count: { select: { participantGroups: true } } },
+              },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
               _count: { select: { permissions: true } },
@@ -240,6 +242,9 @@ export async function getUserActivities(ctx: ContextWithUser) {
         ),
         scheduledStartAt: object.groupActivity.scheduledStartAt,
         scheduledEndAt: object.groupActivity.scheduledEndAt,
+        groupDeadlineDate: object.groupActivity.course.groupDeadlineDate,
+        numOfParticipantGroups:
+          object.groupActivity.course._count.participantGroups,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
