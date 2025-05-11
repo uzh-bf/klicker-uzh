@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.50...v3.3.0-alpha.51) (2025-05-11)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve styling of activity overview components and add filtering by activity type ([90028c5](https://github.com/uzh-bf/klicker-uzh/commit/90028c5a75edf0369fb6876a578045f60ac07637))
+
 ## [3.3.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.49...v3.3.0-alpha.50) (2025-05-11)
 
 
