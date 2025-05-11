@@ -1428,8 +1428,11 @@ describe('Different microlearning workflows', function () {
     // check if the practice quiz is listed in the course overview
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.conversion.pqName}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.conversion.pqName}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.conversion.pqName}-DRAFT"]`).should(
+      'exist'
     )
   })
   // #endregion

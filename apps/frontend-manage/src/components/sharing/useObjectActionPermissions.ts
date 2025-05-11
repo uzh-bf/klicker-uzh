@@ -132,6 +132,10 @@ function useObjectActionPermissions({
         permissions: [false, true, true, true, true],
       },
       {
+        action: t('manage.liveQuizzes.viewLiveQuizEvaluation'),
+        permissions: [false, true, true, true, true],
+      },
+      {
         action: t('manage.liveQuizzes.modifyActivitySettings'),
         permissions: [false, false, true, true, true],
       },
@@ -161,6 +165,159 @@ function useObjectActionPermissions({
       },
       {
         action: t('manage.liveQuizzes.deleteLiveQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, false, true],
+      },
+    ]
+  } else if (objectType === SharingObjectType.PracticeQuiz) {
+    return [
+      {
+        action: t('manage.practiceQuizzes.viewPracticeQuiz'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.publishUnpublishPracticeQuiz'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.viewPracticeQuizEvaluation'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.modifyActivitySettings'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.modifyContainedElements'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.modifyCourseAssignment'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.practiceQuizzes.duplicatePracticeQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.sharePracticeQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.deletePracticeQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, false, true],
+      },
+    ]
+  } else if (objectType === SharingObjectType.MicroLearning) {
+    return [
+      {
+        action: t('manage.microLearnings.viewMicroLearning'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.publishUnpublishMicroLearning'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.viewMicroLearningEvaluation'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.modifyActivitySettings'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.modifyContainedElements'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.modifyCourseAssignment'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.microLearnings.duplicateMicroLearning'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.shareMicroLearning'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.deleteMicroLearning'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.transferOwnership'),
+        permissions: [false, false, false, false, true],
+      },
+    ]
+  } else if (objectType === SharingObjectType.GroupActivity) {
+    return [
+      {
+        action: t('manage.groupActivities.viewGroupActivity'),
+        permissions: [true, true, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.publishUnpublishGroupActivity'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.gradeGroupActivitySubmissions'),
+        permissions: [false, true, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.modifyActivitySettings'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.modifyContainedElements'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.modifyCourseAssignment'),
+        permissions: [false, false, true, true, true],
+      },
+      {
+        action: t('manage.groupActivities.duplicateGroupActivity'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.shareGroupActivity'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.modifyPermissions'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.resources.revokeAccess'),
+        permissions: [false, false, false, true, true],
+      },
+      {
+        action: t('manage.course.deleteGroupActivity'),
         permissions: [false, false, false, true, true],
       },
       {

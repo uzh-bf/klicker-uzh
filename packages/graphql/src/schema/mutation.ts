@@ -1400,21 +1400,78 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      changeLiveQuizName: t.withAuth(asUserFullAccess).field({
+      changeActivityName: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
-        type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
+          type: t.arg({ required: true, type: ActivityType }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
-        resolve: withPermission(
-          (args) => ({ liveQuizId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
+        resolve: async (_, args, ctx) => {
+          if (args.type === ActivityTypeEnum.LIVE_QUIZ) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
             return await LiveQuizService.changeLiveQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.changePracticeQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.MICRO_LEARNING) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.changeMicroLearningName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.GROUP_ACTIVITY) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.changeGroupActivityName(args, ctx)
           }
-        ),
+          return null
+        },
       }),
 
       getFileUploadSas: t.withAuth(asUserFullAccess).field({

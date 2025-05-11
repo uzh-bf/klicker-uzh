@@ -55,6 +55,9 @@ function CatalogObjectItem({
       [SharingObjectType.LiveQuizTemplate]: faFileLines,
       [SharingObjectType.Course]: undefined,
       [SharingObjectType.LiveQuiz]: undefined,
+      [SharingObjectType.PracticeQuiz]: undefined,
+      [SharingObjectType.MicroLearning]: undefined,
+      [SharingObjectType.GroupActivity]: undefined,
       [SharingObjectType.Element]: faQuestion,
     }
   const actionsDisabled = object.isOwner || object.isShared

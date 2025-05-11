@@ -426,6 +426,24 @@ export async function unpublishPracticeQuiz(
   return practiceQuiz
 }
 
+export async function changePracticeQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.practiceQuiz.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return true
+  } catch (error) {
+    console.error('Error changing practice quiz name:', error)
+    return false
+  }
+}
+
 export async function getPracticeQuizSummary(
   { id }: { id: string },
   ctx: ContextWithUser

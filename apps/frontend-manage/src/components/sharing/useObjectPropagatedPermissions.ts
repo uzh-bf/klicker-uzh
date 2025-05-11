@@ -29,7 +29,12 @@ function useObjectPropagatedPermissions({
         ],
       },
     ]
-  } else if (objectType === SharingObjectType.LiveQuiz) {
+  } else if (
+    objectType === SharingObjectType.LiveQuiz ||
+    objectType === SharingObjectType.PracticeQuiz ||
+    objectType === SharingObjectType.MicroLearning ||
+    objectType === SharingObjectType.GroupActivity
+  ) {
     return [
       {
         object: t('shared.types.ELEMENT'),

@@ -16,40 +16,68 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LiveQuizNameChangeModal from '../../liveQuiz/LiveQuizNameChangeModal'
+import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
 import MicrolearningActions from './MicrolearningActions'
 import PracticeQuizActions from './PracticeQuizActions'
+
 function ActivityListEntry({
   activity,
   highlighted = false,
+  hideType = false,
 }: {
   activity: ActivityInfo
   highlighted?: boolean
+  hideType?: boolean
 }) {
   const t = useTranslations()
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
 
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
-    [PublicationStatus.Draft]: <FontAwesomeIcon icon={faPencil} />,
+    [PublicationStatus.Draft]: (
+      <FontAwesomeIcon
+        icon={faPencil}
+        data-cy={`status-${activity.name}-${PublicationStatus.Draft}`}
+      />
+    ),
     [PublicationStatus.Scheduled]: (
-      <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-orange-600" />
+      <FontAwesomeIcon
+        icon={faClock}
+        className="h-4 w-4 text-orange-600"
+        data-cy={`status-${activity.name}-${PublicationStatus.Scheduled}`}
+      />
     ),
     [PublicationStatus.Published]: (
-      <FontAwesomeIcon icon={faPlay} className="h-4 w-4 text-green-700" />
+      <FontAwesomeIcon
+        icon={faPlay}
+        className="h-4 w-4 text-green-700"
+        data-cy={`status-${activity.name}-${PublicationStatus.Published}`}
+      />
     ),
     [PublicationStatus.Ended]: (
-      <FontAwesomeIcon icon={faCheck} className="h-4 w-4 text-gray-500" />
+      <FontAwesomeIcon
+        icon={faCheck}
+        className="h-4 w-4 text-gray-500"
+        data-cy={`status-${activity.name}-${PublicationStatus.Ended}`}
+      />
     ),
     [PublicationStatus.Graded]: (
-      <FontAwesomeIcon icon={faSquareCheck} className="h-4 w-4 text-gray-500" />
+      <FontAwesomeIcon
+        icon={faSquareCheck}
+        className="h-4 w-4 text-gray-500"
+        data-cy={`status-${activity.name}-${PublicationStatus.Graded}`}
+      />
     ),
     [PublicationStatus.Template]: (
-      <FontAwesomeIcon icon={faFilePen} className="h-4 w-4 text-red-700" />
+      <FontAwesomeIcon
+        icon={faFilePen}
+        className="h-4 w-4 text-red-700"
+        data-cy={`status-${activity.name}-${PublicationStatus.Template}`}
+      />
     ),
   }
 
@@ -70,7 +98,9 @@ function ActivityListEntry({
               onClick={() => setShowDetails(true)}
               data-cy={`activity-name-${activity.name}`}
             >
-              {`${t(`shared.types.${activity.type}`)}: ${activity.name}`}
+              {hideType
+                ? activity.name
+                : `${t(`shared.types.${activity.type}`)}: ${activity.name}`}
             </div>
 
             {activity.status !== PublicationStatus.Template &&
@@ -117,10 +147,10 @@ function ActivityListEntry({
             </div>
           ) : null}
           {activity.type === ActivityType.LiveQuiz ? (
-            <LiveQuizActions quiz={activity} />
+            <LiveQuizActions liveQuiz={activity} />
           ) : null}
           {activity.type === ActivityType.PracticeQuiz ? (
-            <PracticeQuizActions />
+            <PracticeQuizActions practiceQuiz={activity} />
           ) : null}
           {activity.type === ActivityType.MicroLearning ? (
             <MicrolearningActions />
@@ -135,10 +165,10 @@ function ActivityListEntry({
         open={showDetails}
         onClose={() => setShowDetails(false)}
       />
-      {/* // TODO: once the activity overview is available for all activities, extend this modal accordingly */}
-      <LiveQuizNameChangeModal
-        quizId={activity.id}
+      <ActivityNameChangeModal
+        id={activity.id}
         name={activity.name}
+        type={activity.type}
         displayName={activity.displayName}
         open={changeName}
         setOpen={setChangeName}

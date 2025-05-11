@@ -93,6 +93,7 @@ function LiveQuizList({
               <ActivityList
                 activities={liveQuizActivities}
                 noActivities={false}
+                hideActivityType
               />
             </>
           ) : null}

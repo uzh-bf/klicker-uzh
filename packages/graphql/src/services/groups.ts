@@ -1809,6 +1809,24 @@ export async function getGroupActivityInstances(
   return instances
 }
 
+export async function changeGroupActivityName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    return true
+  } catch (error) {
+    console.error('Error changing group activity name:', error)
+    return false
+  }
+}
+
 export async function getGroupActivitySummary(
   { id }: { id: string },
   ctx: ContextWithUser

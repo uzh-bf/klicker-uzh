@@ -244,6 +244,7 @@ function CourseOverviewPage() {
             <PracticeQuizList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               practiceQuizzes={course.practiceQuizzes ?? []}
+              practiceQuizActivities={course.practiceQuizActivities ?? []}
               courseId={course.id}
               courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}

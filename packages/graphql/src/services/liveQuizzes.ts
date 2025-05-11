@@ -1755,13 +1755,18 @@ export async function changeLiveQuizName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
-  const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: { id },
-    data: { name, displayName },
-  })
+  try {
+    await ctx.prisma.liveQuiz.update({
+      where: { id },
+      data: { name, displayName },
+    })
 
-  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
-  return updatedQuiz
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+    return true
+  } catch (error) {
+    console.error('Error changing live quiz name:', error)
+    return false
+  }
 }
 
 export async function getLiveQuizSummary(

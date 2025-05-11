@@ -37,6 +37,7 @@ type ActivityFeedback {
 type ActivityInfo {
   courseId: String
   courseName: String
+  courseStartDate: Date
   derivedAccess: Boolean!
   displayName: String!
   id: String!
@@ -1449,12 +1450,12 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: SharingObjectType!): Boolean!
+  changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
-  changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changePermissionLevel(objectId: String!, objectType: SharingObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!

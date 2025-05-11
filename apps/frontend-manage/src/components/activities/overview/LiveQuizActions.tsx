@@ -1,14 +1,9 @@
-import { faEllipsis } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
   PublicationStatus,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Dropdown } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import EmbeddingModal from '~/components/liveQuiz/EmbeddingModal'
 import ObjectSharingModalWrapper from '~/components/sharing/ObjectSharingModalWrapper'
@@ -27,7 +22,7 @@ import useAvailableActions from '../actions/useAvailableActions'
 import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
-import ActivityActionButton from './ActivityActionButton'
+import ActivityActions from './ActivityActions'
 import ActivityRemovalModal from './ActivityRemovalModal'
 
 // create a map between the activity status and the available actions (in order)
@@ -97,10 +92,7 @@ const permissionActionMap = {
   isRemovable: ['removeLiveQuiz'],
 }
 
-function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
-  const t = useTranslations()
-  const router = useRouter()
-
+function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
@@ -114,7 +106,6 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   const [templateEditError, setTemplateEditError] = useState(false)
   const [templateDeletionSuccess, setTemplateDeletionSuccess] = useState(false)
   const [templateDeletionError, setTemplateDeletionError] = useState(false)
-
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
     activityId: string
@@ -122,13 +113,13 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
   }>({ open: false, activityId: '', activityType: ActivityType.LiveQuiz })
 
   const { onStart, starting } = useStartLiveQuiz({
-    id: quiz.id,
-    name: quiz.name,
+    id: liveQuiz.id,
+    name: liveQuiz.name,
   })
-  const { onDelete, deleting } = useDeleteLiveQuiz({ id: quiz.id })
+  const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
   const actions = useLiveQuizActions({
-    quiz,
+    quiz: liveQuiz,
     onStart,
     starting,
     setEmbeddingModal,
@@ -145,70 +136,27 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
     actions,
     statusActionMap,
     permissionActionMap,
-    status: quiz.status,
-    isEditor: quiz.isEditor,
-    isExecutor: quiz.isExecutor,
-    isManager: quiz.isManager,
-    isOwner: quiz.isOwner,
-    isRemovable: quiz.isRemovable,
-    isShared: quiz.isShared,
+    status: liveQuiz.status,
+    isEditor: liveQuiz.isEditor,
+    isExecutor: liveQuiz.isExecutor,
+    isManager: liveQuiz.isManager,
+    isOwner: liveQuiz.isOwner,
+    isRemovable: liveQuiz.isRemovable,
+    isShared: liveQuiz.isShared,
   })
 
   return (
     <div>
-      <div className="flex flex-row items-center gap-2">
-        {availableActions.slice(0, 3).map((action) => {
-          return (
-            <ActivityActionButton
-              key={`live-quiz-${quiz.id}-${action.id}`}
-              icon={action.icon}
-              tooltip={action.label}
-              onClick={action.onClick}
-              disabled={action.disabled}
-              data={action.data}
-              className={action.className}
-            />
-          )
-        })}
-
-        {availableActions.length > 3 && (
-          <Dropdown
-            items={availableActions.slice(3).map((action) => ({
-              label: (
-                <div
-                  className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100 ${
-                    action.className ?? ''
-                  }`}
-                >
-                  <FontAwesomeIcon
-                    icon={action.icon}
-                    className="mr-2.5 h-4 w-4"
-                  />
-                  {action.label}
-                </div>
-              ),
-              onClick: action.onClick,
-              data: action.data,
-            }))}
-            trigger={
-              <ActivityActionButton
-                icon={faEllipsis}
-                onClick={() => {}}
-                data={{ cy: `actions-live-quiz-${quiz.name}` }}
-              />
-            }
-            className={{
-              viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
-              item: 'text-sm',
-            }}
-          />
-        )}
-      </div>
+      <ActivityActions
+        availableActions={availableActions}
+        activityId={liveQuiz.id}
+        activityName={liveQuiz.name}
+        activityType={liveQuiz.type}
+      />
       <div>
-        {/* // TODO: generalize this modal for all activity types */}
         {deletionModal && (
           <LiveQuizDeletionModal
-            quizId={quiz.id}
+            quizId={liveQuiz.id}
             open={deletionModal}
             setOpen={setDeletionModal}
             onDelete={onDelete}
@@ -218,7 +166,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
 
         {templateDeletionModal && (
           <TemplateDeletionModal
-            activityId={quiz.id}
+            activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
             open={templateDeletionModal}
             setOpen={setTemplateDeletionModal}
@@ -228,7 +176,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
         )}
         {templateEditingModal && (
           <TemplateEditModal
-            activityId={quiz.id}
+            activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
             open={templateEditingModal}
             setOpen={setTemplateEditingModal}
@@ -239,7 +187,7 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
 
         {qrModal && (
           <LiveQuizQRModal
-            quizId={quiz.id}
+            quizId={liveQuiz.id}
             open={qrModal}
             setOpen={setQRModal}
           />
@@ -247,11 +195,11 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
 
         {embeddingModal && (
           <EmbeddingModal
-            key={quiz.id}
+            key={liveQuiz.id}
             open={embeddingModal}
             onClose={() => setEmbeddingModal(false)}
-            quizId={quiz.id}
-            elements={quiz.stacks.flatMap((stack) =>
+            quizId={liveQuiz.id}
+            elements={liveQuiz.stacks.flatMap((stack) =>
               stack.elements.map((instance) => ({
                 id: instance.id,
                 name: instance.name,
@@ -260,22 +208,22 @@ function LiveQuizActions({ quiz }: { quiz: ActivityInfo }) {
           />
         )}
 
-        {sharingModal && quiz.isManager && (
+        {sharingModal && liveQuiz.isManager && (
           <ObjectSharingModalWrapper
-            objectUuid={quiz.id}
-            objectName={quiz.name}
+            objectUuid={liveQuiz.id}
+            objectName={liveQuiz.name}
             objectType={SharingObjectType.LiveQuiz}
-            isOwner={quiz.isOwner ?? false}
+            isOwner={liveQuiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
         )}
 
-        {removalModal && quiz.isRemovable && (
+        {removalModal && liveQuiz.isRemovable && (
           <ActivityRemovalModal
-            activityId={quiz.id}
+            activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
-            title={quiz.name}
+            title={liveQuiz.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
           />
