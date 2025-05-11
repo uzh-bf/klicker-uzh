@@ -4,8 +4,6 @@
  * - Re-exports all `recomputeXxxPermissions` functions across entities and `updateAccessRequestInstances`.
  */
 
-import { type PrismaTransactionClient } from './types.js'
-
 import { recomputeAnswerCollectionPermissions } from './permissions/answerCollection.js'
 import { recomputeCatalogCollectionPermissions } from './permissions/catalog.js'
 import { recomputeCoursePermissions } from './permissions/course.js'
@@ -14,6 +12,7 @@ import { recomputeGroupActivityPermissions } from './permissions/groupActivity.j
 import { recomputeLiveQuizPermissions } from './permissions/liveQuiz.js'
 import { recomputeMicroLearningPermissions } from './permissions/microlearning.js'
 import { recomputePracticeQuizPermissions } from './permissions/practiceQuiz.js'
+import { type PrismaTransactionClient } from './types.js'
 export * from './permissions/accessRequest.js'
 export * from './permissions/answerCollection.js'
 export * from './permissions/catalog.js'
@@ -23,6 +22,7 @@ export * from './permissions/groupActivity.js'
 export * from './permissions/liveQuiz.js'
 export * from './permissions/microlearning.js'
 export * from './permissions/practiceQuiz.js'
+export * from './permissions/util.js'
 
 /**
  * This function serves as the main entry point for recomputing derived permissions
