@@ -2,6 +2,84 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.49...v3.3.0-alpha.50) (2025-05-11)
+
+
+### Features
+
+* implement direct object sharing functionalities for user groups ([#4655](https://github.com/uzh-bf/klicker-uzh/issues/4655)) ([bdc0367](https://github.com/uzh-bf/klicker-uzh/commit/bdc0367f839955360860bb485cfa2c7593e3144c))
+* implement general sharing, import and requesting functionalities for elements ([#4646](https://github.com/uzh-bf/klicker-uzh/issues/4646)) ([39ef723](https://github.com/uzh-bf/klicker-uzh/commit/39ef72349350a92ec8314c92c01ff2443073e954))
+* implement new activity overview with support for live quizzes ([#4662](https://github.com/uzh-bf/klicker-uzh/issues/4662)) ([72d67f9](https://github.com/uzh-bf/klicker-uzh/commit/72d67f9b350a6e162f30d81fb11cc416d799f4f9))
+* implement sharing functionalities for live quizzes ([#4663](https://github.com/uzh-bf/klicker-uzh/issues/4663)) ([42b7109](https://github.com/uzh-bf/klicker-uzh/commit/42b7109f9d851020453ff2e745c09789f99e1462))
+* implement sharing functionality for courses ([#4669](https://github.com/uzh-bf/klicker-uzh/issues/4669)) ([d86b58e](https://github.com/uzh-bf/klicker-uzh/commit/d86b58e4657ef222510da284391f1f5779bcca12))
+
+
+### Bug Fixes
+
+* add direct link between activity template and required answer collection entries ([#4648](https://github.com/uzh-bf/klicker-uzh/issues/4648)) ([13d984d](https://github.com/uzh-bf/klicker-uzh/commit/13d984d69f398e3c97d14ff4570409f49a08588a))
+* ensure that admin permissions are treated as a superset of user permissions and set correctly on login ([#4635](https://github.com/uzh-bf/klicker-uzh/issues/4635)) ([c8f0452](https://github.com/uzh-bf/klicker-uzh/commit/c8f04527df90262ab431d7486b2414fda6524c8a))
+* ensure that in addition to user courses, the one linked to an activity is fetched during activity editing ([#4647](https://github.com/uzh-bf/klicker-uzh/issues/4647)) ([9de4142](https://github.com/uzh-bf/klicker-uzh/commit/9de41422d298d0e9da0b2fe5fd5da1ebcf87f9fc))
+* handle edge cases during access request updates correctly and extend unit testing for access request update coverage ([#4661](https://github.com/uzh-bf/klicker-uzh/issues/4661)) ([bb49a30](https://github.com/uzh-bf/klicker-uzh/commit/bb49a308a94b2c535752e49e98a2e56f761adaa0))
+* hide or disable the object removal option for objects shared through user groups ([#4659](https://github.com/uzh-bf/klicker-uzh/issues/4659)) ([460ab6a](https://github.com/uzh-bf/klicker-uzh/commit/460ab6a5d2d515a9ee9bf6ec62eadd290edaa86b))
+* **packages/graphql:** ensure that all required derived permissions are recomputed on object manipulation with dependencies ([#4616](https://github.com/uzh-bf/klicker-uzh/issues/4616)) ([dbe870e](https://github.com/uzh-bf/klicker-uzh/commit/dbe870ef1c4ebd3f5c32ff75a010ab773f545f6a))
+* **packages/graphql:** ensure that on new owner or owner permission creation, existing access requests to the object are also extended ([#4628](https://github.com/uzh-bf/klicker-uzh/issues/4628)) ([e214910](https://github.com/uzh-bf/klicker-uzh/commit/e214910421f42d5c914c423f8b9d75525190104c))
+* **packages/graphql:** refine logic for access request removal to be limited to cases where users do not retain ADMIN object access through other paths ([#4632](https://github.com/uzh-bf/klicker-uzh/issues/4632)) ([72436f4](https://github.com/uzh-bf/klicker-uzh/commit/72436f4ebc0af169bf3ce12763e666a6cd8517ba))
+* **packages/graphql:** resolve issues with uniqueness constraints on answer collection ownership transfer ([50765ba](https://github.com/uzh-bf/klicker-uzh/commit/50765bad9f73aa42e44f3a55c4080fe490d76461))
+* **packages/util:** ensure that object ownership also results in minimum required derived permissions and extend unit tests accordingly ([ba72abe](https://github.com/uzh-bf/klicker-uzh/commit/ba72abe4878f6b6f2bd2e9538b665e0e242d872c))
+* **packages/util:** ensure that user group owners are also granted permissions on objects shared with the group ([#4656](https://github.com/uzh-bf/klicker-uzh/issues/4656)) ([6e173f7](https://github.com/uzh-bf/klicker-uzh/commit/6e173f77a89635390995985d89ef91fb4cdf3f3b))
+* **packages/util:** favor direct permissions with propagation enabled over direct permissions with same permission level without ([#4671](https://github.com/uzh-bf/klicker-uzh/issues/4671)) ([cc72f98](https://github.com/uzh-bf/klicker-uzh/commit/cc72f98fc124c7c82d231d9e64e40cc5f55022b7))
+* resolve issue in permission validation for element ownership transfer logic ([#4649](https://github.com/uzh-bf/klicker-uzh/issues/4649)) ([09e30ca](https://github.com/uzh-bf/klicker-uzh/commit/09e30ca46d59f599cd0c31d48c93acf535f15122))
+* resolve issues with object removal logic and implement a single graphql endpoint for all object types ([#4678](https://github.com/uzh-bf/klicker-uzh/issues/4678)) ([46d50de](https://github.com/uzh-bf/klicker-uzh/commit/46d50de52c2a85c4f824fb0db919bc8e3665b3fd))
+
+
+### Other
+
+* **packages/graphql:** add derived permission recomputation calls after every relevant object modification ([3e2abc2](https://github.com/uzh-bf/klicker-uzh/commit/3e2abc2721d319c13eb60e255f8009d41725d206))
+* **packages/graphql:** implement derived permission computation logic for all activity types ([#4609](https://github.com/uzh-bf/klicker-uzh/issues/4609)) ([906b16f](https://github.com/uzh-bf/klicker-uzh/commit/906b16fe1bf5261b4f3042ee23da8ff7d8d92b92))
+* **packages/graphql:** implement derived permission recomputation logic for courses ([#4610](https://github.com/uzh-bf/klicker-uzh/issues/4610)) ([c05d170](https://github.com/uzh-bf/klicker-uzh/commit/c05d170b13ceab0941b3bac80b0d0fd174f8cc11))
+* **packages/graphql:** implement derived permission recomputation logic for elements ([#4608](https://github.com/uzh-bf/klicker-uzh/issues/4608)) ([57145bd](https://github.com/uzh-bf/klicker-uzh/commit/57145bda3b857b71da31ed153c3797ddec665db3))
+
+
+### Refactors
+
+* **apps/frontend-manage:** simplify structure of live quiz activity list entries in preparation for generalization ([a601eb5](https://github.com/uzh-bf/klicker-uzh/commit/a601eb5905568eab94bc8d9295d6f2c9c5adc3e1))
+* migrate existing backend logic for answer and catalog collections to new data structure including computation of derived permissions in these cases ([#4607](https://github.com/uzh-bf/klicker-uzh/issues/4607)) ([6977de9](https://github.com/uzh-bf/klicker-uzh/commit/6977de9746d8b8435900030c6452d04b2b895de3))
+* move derived permissions computation to utils package and update seed with corresponding function calls ([#4612](https://github.com/uzh-bf/klicker-uzh/issues/4612)) ([5a8e2c2](https://github.com/uzh-bf/klicker-uzh/commit/5a8e2c2704c7b59b0e53afd15cd1f8cbaa63a031))
+* **packages/graphql:** ensure test suite atomicity and improve structure of sharing and resource workflows ([#4626](https://github.com/uzh-bf/klicker-uzh/issues/4626)) ([f084276](https://github.com/uzh-bf/klicker-uzh/commit/f084276b1ab51331dc73c29fb0385e04312a3f43))
+* **packages/graphql:** update sharing and template unit test suites to be consistent with new derived permissions approach ([#4615](https://github.com/uzh-bf/klicker-uzh/issues/4615)) ([6b17c60](https://github.com/uzh-bf/klicker-uzh/commit/6b17c60a793f07c195a855281c58b95d9ddfac2b))
+* **packages/util:** split permissions functionality into submodules ([#4683](https://github.com/uzh-bf/klicker-uzh/issues/4683)) ([3315c13](https://github.com/uzh-bf/klicker-uzh/commit/3315c13ebf99455c7ea7dcad7e29e530eea9f24e))
+* simplify formulation of access checks on mutation and query resolver level ([#4636](https://github.com/uzh-bf/klicker-uzh/issues/4636)) ([47274a6](https://github.com/uzh-bf/klicker-uzh/commit/47274a687565661b85b94e0c4ff0adfddd3aca30))
+
+
+### Enhancements
+
+* add a list of all derived permissions on a specific object to the sharing dialog ([#4634](https://github.com/uzh-bf/klicker-uzh/issues/4634)) ([04ab726](https://github.com/uzh-bf/klicker-uzh/commit/04ab726bf4bbc22fc84ba0091d23e30589ffe504))
+* add functionality to create user groups through UI ([#4637](https://github.com/uzh-bf/klicker-uzh/issues/4637)) ([53366de](https://github.com/uzh-bf/klicker-uzh/commit/53366de28d5fdaa6876345848cb27d04861bf235))
+* add functionality to remove shared elements from library and update cypress test suite ([#4652](https://github.com/uzh-bf/klicker-uzh/issues/4652)) ([059d575](https://github.com/uzh-bf/klicker-uzh/commit/059d57559d54bc472ca0f7ed951dba9e6c286571))
+* add possibilities to modify user groups (member promotion, demotion, removal, addition; name changes; ownership transfer) ([#4639](https://github.com/uzh-bf/klicker-uzh/issues/4639)) ([63127fd](https://github.com/uzh-bf/klicker-uzh/commit/63127fde610ee23421c735e3d6cd3602e69cf6ae))
+* add possibility to remove live quizzes that are not shared through user groups, owner or accessed through group permissions ([#4664](https://github.com/uzh-bf/klicker-uzh/issues/4664)) ([44cb56e](https://github.com/uzh-bf/klicker-uzh/commit/44cb56ea493943b8a6c496e717148fcfecdf09cb))
+* add possibility to remove shared courses from account ([#4670](https://github.com/uzh-bf/klicker-uzh/issues/4670)) ([bbae00d](https://github.com/uzh-bf/klicker-uzh/commit/bbae00d49c1fa6c6e5e9ba8d0df0faed0165d7fb))
+* add simple admin panel to grant private preview access to other users ([#4633](https://github.com/uzh-bf/klicker-uzh/issues/4633)) ([58b2fc6](https://github.com/uzh-bf/klicker-uzh/commit/58b2fc6c3ed3348e50793ab3b7d64d4f0a751f88))
+* add UI components for microlearning sharing functionalities ([#4681](https://github.com/uzh-bf/klicker-uzh/issues/4681)) ([864641f](https://github.com/uzh-bf/klicker-uzh/commit/864641f5601f2525a8b420373067febe8233e870))
+* add UI components for practice quiz sharing and improve activity list ([#4680](https://github.com/uzh-bf/klicker-uzh/issues/4680)) ([6220809](https://github.com/uzh-bf/klicker-uzh/commit/62208096604970f1245eb70972587effbb62b283))
+* **apps/frontend-manage:** add missing sharing dialog for group activities ([4ba6c30](https://github.com/uzh-bf/klicker-uzh/commit/4ba6c300b01f06929b4fe3ea122632568f9978a6))
+* **apps/frontend-manage:** add separate confirmation step for permission revocation including hint to derived permissions ([#4654](https://github.com/uzh-bf/klicker-uzh/issues/4654)) ([2654079](https://github.com/uzh-bf/klicker-uzh/commit/26540798022041758bd2c0c196f5d5bdaaf78082))
+* **apps/frontend-manage:** indicate the number of users an element or activity is shared with directly on object ([7b9362e](https://github.com/uzh-bf/klicker-uzh/commit/7b9362ea3bae06df4a796e03b4a8d3cbb110cf3d))
+* implement logic to leave or delete user groups ([#4638](https://github.com/uzh-bf/klicker-uzh/issues/4638)) ([b760716](https://github.com/uzh-bf/klicker-uzh/commit/b760716129c06adc2d744bd7ab9dd1fe20362858))
+* implement UI components for group activity sharing ([#4682](https://github.com/uzh-bf/klicker-uzh/issues/4682)) ([9a833f9](https://github.com/uzh-bf/klicker-uzh/commit/9a833f98e5cc49b6535ef26954a10967859d0a9f))
+* improve and restructure the recomputation logic for access requests (including user group support) ([#4660](https://github.com/uzh-bf/klicker-uzh/issues/4660)) ([83ae5ce](https://github.com/uzh-bf/klicker-uzh/commit/83ae5ce84f9c393f9fc108394ec52941fddde2d7))
+* **packages/graphql:** add audit log entries for implemented sharing and catalog functionalities ([#4631](https://github.com/uzh-bf/klicker-uzh/issues/4631)) ([aee8d37](https://github.com/uzh-bf/klicker-uzh/commit/aee8d376559f92d3b862f1b48214ec806335803b))
+* **packages/graphql:** add minor improvement to backend sharing logic and extend rigorous coverage of critical functionalities in improved atomic unit tests ([#4627](https://github.com/uzh-bf/klicker-uzh/issues/4627)) ([48e2506](https://github.com/uzh-bf/klicker-uzh/commit/48e25063900afc81f79f52283d5c925d153433bd))
+* **packages/graphql:** implement access validation function and corresponding unit tests ([#4622](https://github.com/uzh-bf/klicker-uzh/issues/4622)) ([a4e4bbe](https://github.com/uzh-bf/klicker-uzh/commit/a4e4bbe89731b082f2be07aa5fba4826d1a38cdb))
+* **packages/graphql:** implement backend logic for sharing functionalities of practice quizzes, microlearning and group activities ([#4676](https://github.com/uzh-bf/klicker-uzh/issues/4676)) ([592d997](https://github.com/uzh-bf/klicker-uzh/commit/592d99765be0ee9c0fa1927beecd1af6c6d3d60b))
+* **packages/graphql:** implement catalog assignment validation function and corresponding unit tests ([#4623](https://github.com/uzh-bf/klicker-uzh/issues/4623)) ([d48f193](https://github.com/uzh-bf/klicker-uzh/commit/d48f1935c29a08bb336a034690cbd704ca104deb))
+* **packages/graphql:** validate required access rights directly on mutation list ([#4624](https://github.com/uzh-bf/klicker-uzh/issues/4624)) ([82e7e1f](https://github.com/uzh-bf/klicker-uzh/commit/82e7e1f79cddc9a3386ed79c65c1b19eb715cbce))
+* **packages/graphql:** validate required access rights directly on query list ([#4625](https://github.com/uzh-bf/klicker-uzh/issues/4625)) ([031ec7e](https://github.com/uzh-bf/klicker-uzh/commit/031ec7ef2537279a8fa716b4757ae443d28691ad))
+* **packages/util:** improve efficiency of derived permission recomputation for entire objects ([#4674](https://github.com/uzh-bf/klicker-uzh/issues/4674)) ([7c28746](https://github.com/uzh-bf/klicker-uzh/commit/7c28746b51d79043b283ff0514341148327843fa))
+* **packages/util:** improve efficiency of derived permission recomputation for specific users in permissions module ([1478dc3](https://github.com/uzh-bf/klicker-uzh/commit/1478dc3957e16294e206e1fb44d9ae917138b61e))
+* replace live quiz overview on course with new activity list when feature flag is set ([#4668](https://github.com/uzh-bf/klicker-uzh/issues/4668)) ([a31e5d5](https://github.com/uzh-bf/klicker-uzh/commit/a31e5d55b97982c8e641e30405a3242848324f01))
+* update frontend and backend logic for existing sharing functionalities to be consistent with new derived permissions scheme ([#4614](https://github.com/uzh-bf/klicker-uzh/issues/4614)) ([e8b8fe2](https://github.com/uzh-bf/klicker-uzh/commit/e8b8fe2e31f5e66b2003bbffd6bb25fee8469c01))
+
 ## [3.3.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.48...v3.3.0-alpha.49) (2025-04-13)
 
 
