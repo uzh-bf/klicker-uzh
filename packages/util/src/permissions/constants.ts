@@ -1,13 +1,10 @@
-{
-  {
-    /**
-     * Constants and types for KlickerUZH permissions:
-     * - UserAccessMap: maps user IDs to { maxAccessLevel, parentPermissionId, derived }.
-     * - permissionLevelMap: defines numeric ordering for PermissionLevel enums.
-     * - inversePermissionLevelMap: maps numeric levels back to PermissionLevel.
-     */
-  }
-}
+/**
+ * Constants and types for KlickerUZH permissions:
+ * - UserAccessMap: maps user IDs to { maxAccessLevel, parentPermissionId, derived }.
+ * - permissionLevelMap: defines numeric ordering for PermissionLevel enums.
+ * - inversePermissionLevelMap: maps numeric levels back to PermissionLevel.
+ */
+
 import * as DB from '@klicker-uzh/prisma'
 
 export type UserAccessMap = {
