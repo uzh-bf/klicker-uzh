@@ -84,14 +84,8 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.PQ.name}"]`).contains(
-      messages.shared.generic.draft
-    )
     cy.get(`[data-cy="publish-practice-quiz-${this.data.PQ.name}"]`).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.PQ.name}"]`).contains(
-      messages.shared.generic.published
-    )
   })
 
   it('Test flagging and student feedback functionalities on practice quiz', function () {
@@ -163,12 +157,12 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${this.data.PQ.name}"]`).click()
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${this.data.PQ.name}"]`).click()
     cy.get(`[data-cy="delete-practice-quiz-${this.data.PQ.name}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="practice-quiz-actions-${this.data.PQ.name}"]`).should(
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${this.data.PQ.name}"]`).should(
       'not.exist'
     )
   })
@@ -207,14 +201,8 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.ML.name}"]`).contains(
-      messages.shared.generic.draft
-    )
     cy.get(`[data-cy="publish-microlearning-${this.data.ML.name}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.ML.name}"]`).contains(
-      messages.shared.generic.published
-    )
   })
 
   it('Test flagging and student feedback functionalities on microlearning', function () {

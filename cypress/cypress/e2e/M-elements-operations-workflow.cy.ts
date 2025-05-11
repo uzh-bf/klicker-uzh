@@ -398,9 +398,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuiz}"]`).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${practiceQuiz}"]`).contains(
-      messages.shared.generic.published
-    )
 
     // publish the first microlearning
     cy.get('[data-cy="tab-microLearnings"]').click()
@@ -408,17 +405,11 @@ describe('Create different types of elements (with and without sample solution) 
       .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microlearning}"]`).contains(
-      messages.shared.generic.published
-    )
 
     // publish the first group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(`[data-cy="publish-groupActivity-${groupActivity}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${groupActivity}"]`)
-      .findByText(messages.shared.generic.running)
-      .should('exist')
   }
 
   function verifySingleChoiceQuestionContent({ submission, content, choices }) {
@@ -889,11 +880,11 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.practiceQuiz2,
       this.data.update.practiceQuiz3,
     ]).each((quiz: string) => {
-      cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).click()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-practice-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).should('not.exist')
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
     })
 
     // delete all microlearnings

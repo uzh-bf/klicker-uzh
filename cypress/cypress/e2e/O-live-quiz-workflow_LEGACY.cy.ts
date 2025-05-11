@@ -1,7 +1,7 @@
 import messages from '../../../packages/i18n/messages/en'
 
 // ! LECACY TEST WORKFLOW FOR LIVE QUIZ WITHOUT SELECTION / CASE STUDY ELEMENTS AND OLD LIVE QUIZ LIST
-// ! -> TO BE REMOVED ONCE UNIFIED ACTIVITY OVERVIEW IS AVAILABLE
+// ! -> TO BE REMOVED ONCE UNIFIED ACTIVITY OVERVIEW IS AVAILABLE FOR ALL USERS
 describe('Different live-quiz workflows', function () {
   before(() => {
     cy.seed()
@@ -1334,9 +1334,12 @@ describe('Different live-quiz workflows', function () {
     // modify single choice question
     cy.deleteElement({
       elementName: this.data.liveQuiz.newSCTitle,
-      privatePreview: true,
+      privatePreview: false,
     })
-    cy.deleteElement({ elementName: this.data.MC2.title, privatePreview: true })
+    cy.deleteElement({
+      elementName: this.data.MC2.title,
+      privatePreview: false,
+    })
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="live-quizzes"]').click()

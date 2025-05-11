@@ -1339,6 +1339,7 @@ export async function getCourseData(
           status: liveQuiz.status,
           courseId: course.id,
           courseName: course.name,
+          courseStartDate: course.startDate,
           numOfStacks: liveQuiz.blocks.length,
           numOfElements: liveQuiz.blocks.reduce(
             (acc, block) => acc + block.elements.length,
@@ -1366,8 +1367,67 @@ export async function getCourseData(
     }
   })
 
-  // TODO: return practice quizzes in the activity format for the new frontend visualizations
-  const practiceQuizActivities = user?.privatePreview ? [] : []
+  const practiceQuizActivities = user?.privatePreview
+    ? course.practiceQuizzes.flatMap((practiceQuiz) => {
+        const permission = practiceQuiz.permissions[0]
+
+        if (!permission) {
+          return []
+        }
+
+        const {
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+        } = getPermissionBooleans({
+          permission,
+        })
+
+        const stacks = practiceQuiz.stacks.map((block) => ({
+          id: block.id,
+          numOfParticipants: block.elements[0]
+            ? block.elements[0].results.total +
+              block.elements[0].anonymousResults.total
+            : 0,
+          elements: block.elements.map((instance) => ({
+            id: instance.id,
+            name: instance.elementData.name,
+            type: instance.elementType,
+          })),
+        }))
+
+        return {
+          id: practiceQuiz.id,
+          templateId: practiceQuiz.templateInfo?.id ?? null,
+          name: practiceQuiz.name,
+          displayName: practiceQuiz.displayName,
+          type: ActivityType.PRACTICE_QUIZ,
+          status: practiceQuiz.status,
+          courseId: course.id,
+          courseName: course.name,
+          courseStartDate: course.startDate,
+          numOfStacks: practiceQuiz.stacks.length,
+          numOfElements: practiceQuiz.stacks.reduce(
+            (acc, block) => acc + block.elements.length,
+            0
+          ),
+          stacks,
+          permissionLevel: permission.permissionLevel,
+          derivedAccess: permission.derived,
+          numSharedUsers: practiceQuiz._count.permissions - 1,
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+          updatedAt: practiceQuiz.updatedAt,
+        }
+      })
+    : []
 
   const reducedMicroLearnings = course.microLearnings.map((microLearning) => {
     return {

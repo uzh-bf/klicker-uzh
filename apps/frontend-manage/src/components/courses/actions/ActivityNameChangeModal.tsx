@@ -1,6 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
-  ChangeLiveQuizNameDocument,
+  ActivityType,
+  ChangeActivityNameDocument,
+  GetSingleCourseDocument,
   GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
@@ -9,23 +11,27 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
 
-interface LiveQuizNameChangeModalProps {
-  quizId: string
+interface ActivityNameChangeModalProps {
+  id: string
+  type: ActivityType
   name: string
   displayName: string
+  courseId?: string | null
   open: boolean
   setOpen: (value: boolean) => void
 }
 
-function LiveQuizNameChangeModal({
-  quizId,
+function ActivityNameChangeModal({
+  id,
+  type,
   name,
   displayName,
+  courseId,
   open,
   setOpen,
-}: LiveQuizNameChangeModalProps) {
+}: ActivityNameChangeModalProps) {
   const t = useTranslations()
-  const [changeLiveQuizName] = useMutation(ChangeLiveQuizNameDocument)
+  const [changeActivityName] = useMutation(ChangeActivityNameDocument)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
 
@@ -43,9 +49,9 @@ function LiveQuizNameChangeModal({
         escapeDisabled
         open={open}
         onClose={(): void => setOpen(false)}
-        title={t('manage.liveQuizzes.changeLiveQuizName')}
+        title={t('manage.activities.changeActivityName')}
         className={{
-          content: 'w-[30rem]',
+          content: 'max-w-[35rem]',
           title: 'text-xl',
         }}
       >
@@ -56,24 +62,20 @@ function LiveQuizNameChangeModal({
           }}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const result = await changeLiveQuizName({
+            const result = await changeActivityName({
               variables: {
-                id: quizId,
+                id,
+                type,
                 name: values.name,
                 displayName: values.displayName,
               },
-              optimisticResponse: {
-                __typename: 'Mutation',
-                changeLiveQuizName: {
-                  id: quizId,
-                  name: values.name,
-                  displayName: values.displayName,
-                },
-              },
-              refetchQueries: [{ query: GetUserActivitiesDocument }],
+              refetchQueries: [
+                { query: GetUserActivitiesDocument },
+                { query: GetSingleCourseDocument, variables: { id: courseId } },
+              ],
             })
 
-            if (result.data?.changeLiveQuizName?.id) {
+            if (result.data?.changeActivityName) {
               setSuccessToast(true)
               setSubmitting(false)
               setOpen(false)
@@ -112,13 +114,13 @@ function LiveQuizNameChangeModal({
                   tooltip: 'z-20 w-80',
                   label: 'w-36',
                 }}
-                data-cy="insert-live-quiz-display-name"
+                data-cy="insert-activity-display-name"
               />
               <div className="mt-3 flex flex-row justify-between">
                 <Button
                   type="button"
                   onClick={(): void => setOpen(false)}
-                  data={{ cy: 'live-quiz-name-change-cancel' }}
+                  data={{ cy: 'activity-name-change-cancel' }}
                 >
                   <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                 </Button>
@@ -128,7 +130,7 @@ function LiveQuizNameChangeModal({
                   disabled={!isValid}
                   loading={isSubmitting}
                   onClick={submitForm}
-                  data={{ cy: 'live-quiz-name-change-confirm' }}
+                  data={{ cy: 'activity-name-change-confirm' }}
                 >
                   <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                 </Button>
@@ -144,7 +146,7 @@ function LiveQuizNameChangeModal({
         type="success"
         duration={4000}
       >
-        {t('manage.liveQuizzes.liveQuizNameChangeSuccess')}
+        {t('manage.activities.activityNameChangeSuccess')}
       </Toast>
       <Toast
         dismissible
@@ -153,10 +155,10 @@ function LiveQuizNameChangeModal({
         type="error"
         duration={6000}
       >
-        {t('manage.liveQuizzes.liveQuizNameChangeError')}
+        {t('manage.activities.activityNameChangeError')}
       </Toast>
     </>
   )
 }
 
-export default LiveQuizNameChangeModal
+export default ActivityNameChangeModal

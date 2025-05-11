@@ -7,9 +7,11 @@ import PracticeQuizPublishingModal from '../modals/PracticeQuizPublishingModal'
 
 function PublishPracticeQuizButton({
   practiceQuiz,
+  courseId,
   courseStartDate,
 }: {
   practiceQuiz: Pick<PracticeQuiz, 'id' | 'name'>
+  courseId: string
   courseStartDate: string
 }) {
   const t = useTranslations()
@@ -33,6 +35,7 @@ function PublishPracticeQuizButton({
         title={practiceQuiz.name}
         open={publishModal}
         setOpen={setPublishModal}
+        courseId={courseId}
         courseStartDate={courseStartDate}
       />
     </>

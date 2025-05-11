@@ -52,6 +52,7 @@ export interface IActivityInfo {
 
   courseId?: string | null
   courseName?: string | null
+  courseStartDate?: Date | null
   numOfStacks: number
   numOfElements: number
   stacks: IActivityInfoStack[]
@@ -82,6 +83,10 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     courseId: t.exposeString('courseId', { nullable: true }),
     courseName: t.exposeString('courseName', { nullable: true }),
+    courseStartDate: t.expose('courseStartDate', {
+      type: 'Date',
+      nullable: true,
+    }),
     numOfStacks: t.exposeInt('numOfStacks'),
     numOfElements: t.exposeInt('numOfElements'),
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),

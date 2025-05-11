@@ -8,9 +8,11 @@ import ActivityListEntry from './ActivityListEntry'
 function ActivityList({
   activities,
   noActivities,
+  hideActivityType = false,
 }: {
   activities: ActivityInfo[]
   noActivities: boolean
+  hideActivityType?: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -57,6 +59,7 @@ function ActivityList({
               ? (router.query.highlight as string) === activity.id
               : undefined
           }
+          hideType={hideActivityType}
         />
       ))}
     </div>

@@ -23,7 +23,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           directPermission: true,
           liveQuiz: {
             include: {
-              course: { select: { id: true, name: true } },
+              course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               blocks: { include: { elements: true } },
               _count: { select: { permissions: true } },
@@ -31,7 +31,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           practiceQuiz: {
             include: {
-              course: { select: { id: true, name: true } },
+              course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
               _count: { select: { permissions: true } },
@@ -39,7 +39,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           microLearning: {
             include: {
-              course: { select: { id: true, name: true } },
+              course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
               _count: { select: { permissions: true } },
@@ -47,7 +47,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           groupActivity: {
             include: {
-              course: { select: { id: true, name: true } },
+              course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               stacks: { include: { elements: true } },
               _count: { select: { permissions: true } },
@@ -106,6 +106,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.liveQuiz.status,
         courseId: object.liveQuiz.course?.id,
         courseName: object.liveQuiz.course?.name,
+        courseStartDate: object.liveQuiz.course?.startDate,
         numOfStacks: object.liveQuiz.blocks.length,
         numOfElements: object.liveQuiz.blocks.reduce(
           (acc, block) => acc + block.elements.length,
@@ -146,6 +147,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.practiceQuiz.status,
         courseId: object.practiceQuiz.course?.id,
         courseName: object.practiceQuiz.course?.name,
+        courseStartDate: object.practiceQuiz.course?.startDate,
         numOfStacks: object.practiceQuiz.stacks.length,
         numOfElements: object.practiceQuiz.stacks.reduce(
           (acc, block) => acc + block.elements.length,
@@ -186,6 +188,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.microLearning.status,
         courseId: object.microLearning.course?.id,
         courseName: object.microLearning.course?.name,
+        courseStartDate: object.microLearning.course?.startDate,
         numOfStacks: object.microLearning.stacks.length,
         numOfElements: object.microLearning.stacks.reduce(
           (acc, block) => acc + block.elements.length,
@@ -226,6 +229,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.groupActivity.status,
         courseId: object.groupActivity.course?.id,
         courseName: object.groupActivity.course?.name,
+        courseStartDate: object.groupActivity.course?.startDate,
         numOfStacks: object.groupActivity.stacks.length,
         numOfElements: object.groupActivity.stacks.reduce(
           (acc, block) => acc + block.elements.length,

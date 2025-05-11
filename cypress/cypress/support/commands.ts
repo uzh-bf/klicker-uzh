@@ -640,8 +640,8 @@ interface DeleteElementArgs {
 
 Cypress.Commands.add(
   'deleteElement',
-  ({ elementName, privatePreview = false }: DeleteElementArgs) => {
-    if (!privatePreview) {
+  ({ elementName, privatePreview = true }: DeleteElementArgs) => {
+    if (privatePreview) {
       cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
     }
 
