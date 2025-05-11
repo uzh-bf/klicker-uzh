@@ -60,7 +60,7 @@ function LiveQuizList({
         </Button>
       </div>
 
-      {/* // TODO: remove this old activity overview, once sharing is enabled for all users */}
+      {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
       {liveQuizzes && liveQuizzes.length > 0 && !privatePreview ? (
         <div className="flex w-full flex-col gap-2">
           {sort(liveQuizzes, (a, b) => {

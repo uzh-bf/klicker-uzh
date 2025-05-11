@@ -1,6 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstanceType,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -8,40 +10,48 @@ import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
+  open: boolean
+  setOpen: (value: boolean) => void
   elementType:
     | ElementInstanceType.Microlearning
     | ElementInstanceType.GroupActivity
   elementId: string
   title: string
+  courseId: string
   publicationHint: string
-  open: boolean
-  setOpen: (value: boolean) => void
 }
 
 function PublishConfirmationModal({
+  open,
+  setOpen,
   elementType,
   elementId,
   title,
+  courseId,
   publicationHint,
-  open,
-  setOpen,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
     {
-      variables: {
-        id: elementId,
-      },
+      variables: { id: elementId },
+      // TODO: replace with proper cache update
+      refetchQueries: [
+        { query: GetUserActivitiesDocument },
+        { query: GetSingleCourseDocument, variables: { id: courseId } },
+      ],
     }
   )
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
     {
-      variables: {
-        id: elementId,
-      },
+      variables: { id: elementId },
+      // TODO: replace with proper cache update
+      refetchQueries: [
+        { query: GetUserActivitiesDocument },
+        { query: GetSingleCourseDocument, variables: { id: courseId } },
+      ],
     }
   )
 

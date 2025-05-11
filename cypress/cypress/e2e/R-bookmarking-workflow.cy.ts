@@ -253,12 +253,12 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
 
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-actions-${this.data.ML.name}"]`).click()
+    cy.get(`[data-cy="actions-MICRO_LEARNING-${this.data.ML.name}"]`).click()
     cy.get(`[data-cy="delete-microlearning-${this.data.ML.name}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${this.data.ML.name}"]`).should(
+    cy.get(`[data-cy="actions-MICRO_LEARNING-${this.data.ML.name}"]`).should(
       'not.exist'
     )
   })

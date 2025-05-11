@@ -43,7 +43,6 @@ function usePracticeQuizActions({
   const router = useRouter()
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
-
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 

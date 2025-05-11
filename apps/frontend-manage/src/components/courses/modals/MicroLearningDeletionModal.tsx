@@ -3,6 +3,7 @@ import {
   DeleteMicroLearningDocument,
   GetMicroLearningSummaryDocument,
   GetSingleCourseDocument,
+  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -42,7 +43,9 @@ function MicroLearningDeletionModal({
           id: activityId,
         },
       },
+      // TODO: replace with proper cache update
       refetchQueries: [
+        { query: GetUserActivitiesDocument },
         { query: GetSingleCourseDocument, variables: { courseId } },
       ],
     }

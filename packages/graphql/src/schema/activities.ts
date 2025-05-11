@@ -55,6 +55,8 @@ export interface IActivityInfo {
   courseStartDate?: Date | null
   numOfStacks: number
   numOfElements: number
+  scheduledStartAt?: Date | null
+  scheduledEndAt?: Date | null
   stacks: IActivityInfoStack[]
 
   permissionLevel: DB.PermissionLevel
@@ -87,8 +89,18 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
       type: 'Date',
       nullable: true,
     }),
+
     numOfStacks: t.exposeInt('numOfStacks'),
     numOfElements: t.exposeInt('numOfElements'),
+    scheduledStartAt: t.expose('scheduledStartAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    scheduledEndAt: t.expose('scheduledEndAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
 
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),

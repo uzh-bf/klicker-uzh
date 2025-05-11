@@ -52,9 +52,15 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
     // (public) learning analytics link on microlearnings
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(
-      `[data-cy="microlearning-actions-${data.seed.microlearning}"]`
-    ).click()
+    if (privatePreview) {
+      cy.get(
+        `[data-cy="actions-MICRO_LEARNING-${data.seed.microlearning}"]`
+      ).click()
+    } else {
+      cy.get(
+        `[data-cy="microlearning-actions-${data.seed.microlearning}"]`
+      ).click()
+    }
     cy.get(`[data-cy="copy-lti-link-${data.seed.microlearning}"]`).click()
 
     // (public) learning analytics link on practice quizzes

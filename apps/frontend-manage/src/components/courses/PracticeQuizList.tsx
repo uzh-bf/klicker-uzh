@@ -60,7 +60,7 @@ function PracticeQuizList({
         </Button>
       </div>
 
-      {/* // TODO: remove this old activity overview, once sharing is enabled for all users */}
+      {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
       {practiceQuizzes && practiceQuizzes.length > 0 && !privatePreview ? (
         <div className="flex w-full flex-col gap-2">
           {practiceQuizzes.map((quiz) => (
@@ -107,7 +107,7 @@ function PracticeQuizList({
             root: twMerge('w-full text-left', !privatePreview && 'hidden'),
           }}
         >
-          {t('manage.course.noLiveQuizzes')}
+          {t('manage.course.noPracticeQuizzes')}
         </UserNotification>
       )}
     </div>
