@@ -59,9 +59,15 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
     // (public) learning analytics link on practice quizzes
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${data.seed.practiceQuiz}"]`
-    ).click()
+    if (privatePreview) {
+      cy.get(
+        `[data-cy="actions-PRACTICE_QUIZ-${data.seed.practiceQuiz}"]`
+      ).click()
+    } else {
+      cy.get(
+        `[data-cy="practice-quiz-actions-${data.seed.practiceQuiz}"]`
+      ).click()
+    }
     cy.get(`[data-cy="copy-lti-link-${data.seed.practiceQuiz}"]`).click()
 
     // private preview features in menubar
