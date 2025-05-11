@@ -3,6 +3,7 @@ import {
   ExtendGroupActivityDocument,
   ExtendMicroLearningDocument,
   GetSingleCourseDocument,
+  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDateField, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -32,16 +33,8 @@ function ExtensionModal({
   setOpen,
 }: ExtensionModalProps) {
   const t = useTranslations()
-  const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument, {
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
-  })
-  const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument, {
-    refetchQueries: [
-      { query: GetSingleCourseDocument, variables: { courseId: courseId } },
-    ],
-  })
+  const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
+  const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
 
   return (
     <Modal
@@ -50,7 +43,7 @@ function ExtensionModal({
       hideCloseButton={true}
       title={title}
       className={{
-        content: 'w-[40rem]',
+        content: 'max-w-[40rem]',
         title: 'text-xl',
       }}
     >
@@ -83,6 +76,14 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
+                // TODO: replace with proper cache update
+                refetchQueries: [
+                  { query: GetUserActivitiesDocument },
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { courseId: courseId },
+                  },
+                ],
               })
             } else if (type === 'groupActivity') {
               await extendGroupActivity({
@@ -98,6 +99,14 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
+                // TODO: replace with proper cache update
+                refetchQueries: [
+                  { query: GetUserActivitiesDocument },
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { courseId: courseId },
+                  },
+                ],
               })
             }
 

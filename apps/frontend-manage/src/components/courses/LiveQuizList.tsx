@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 import QRCodePopover from './QRCodePopover'
 
@@ -59,7 +60,7 @@ function LiveQuizList({
         </Button>
       </div>
 
-      {/* // TODO: remove this old activity overview, once sharing is enabled for all users */}
+      {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
       {liveQuizzes && liveQuizzes.length > 0 && !privatePreview ? (
         <div className="flex w-full flex-col gap-2">
           {sort(liveQuizzes, (a, b) => {
@@ -87,10 +88,14 @@ function LiveQuizList({
       {liveQuizActivities && liveQuizActivities.length > 0 && privatePreview ? (
         <div className="mt-0.5 flex w-full flex-col">
           {privatePreview ? (
-            <ActivityList
-              activities={liveQuizActivities}
-              noActivities={false}
-            />
+            <>
+              <ActivityListLegend className="mr-2" />
+              <ActivityList
+                activities={liveQuizActivities}
+                noActivities={false}
+                hideActivityType
+              />
+            </>
           ) : null}
         </div>
       ) : (

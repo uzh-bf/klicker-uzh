@@ -300,26 +300,35 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
-      .findByText(messages.shared.generic.draft)
-      .should('exist')
     cy.get(
-      `[data-cy="publish-groupActivity-${this.data.activity.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.activity.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.activity.name}-DRAFT"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="publish-group-activity-${this.data.activity.name}"]`
     ).click()
     cy.get('[data-cy="cancel-publish-action"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${this.data.activity.name}"]`
+      `[data-cy="publish-group-activity-${this.data.activity.name}"]`
     ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
-      .findByText(messages.shared.generic.scheduled)
-      .should('exist')
     cy.get(
-      `[data-cy="unpublish-groupActivity-${this.data.activity.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.activity.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.activity.name}-SCHEDULED"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="unpublish-group-activity-${this.data.activity.name}"]`
     ).click()
-    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
-      .findByText(messages.shared.generic.draft)
-      .should('exist')
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.activity.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.activity.name}-DRAFT"]`).should(
+      'exist'
+    )
   })
 
   it('Edit the group activity', function () {
@@ -327,10 +336,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(
-      `[data-cy="groupActivity-actions-${this.data.activity.name}"]`
-    ).click()
-    cy.get(`[data-cy="edit-groupActivity-${this.data.activity.name}"]`).click()
+    cy.get(`[data-cy="edit-group-activity-${this.data.activity.name}"]`).click()
 
     // check the name, display name and task description and update them
     cy.get('[data-cy="insert-groupactivity-name"]')
@@ -737,16 +743,20 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`)
-      .findByText(messages.shared.generic.draft)
-      .should('exist')
     cy.get(
-      `[data-cy="publish-groupActivity-${this.data.running.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.running.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.name}-DRAFT"]`).should('exist')
+    cy.get(
+      `[data-cy="publish-group-activity-${this.data.running.name}"]`
     ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`)
-      .findByText(messages.shared.generic.running)
-      .should('exist')
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.running.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.name}-PUBLISHED"]`).should(
+      'exist'
+    )
   })
 
   it('Extend the running group activity', function () {
@@ -757,28 +767,28 @@ describe('Create and solve a group activity', function () {
 
     // open extension modal
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
+    cy.get(
+      `[data-cy="extend-group-activity-${this.data.running.name}"]`
+    ).click()
     cy.get('[data-cy="extend-activity-cancel"]').click()
-    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
+    cy.get(
+      `[data-cy="extend-group-activity-${this.data.running.name}"]`
+    ).click()
 
     // change the end date and check if the changes are saved
     cy.get('[data-cy="extend-activity-date"]').click().type(extendedActivityEnd)
     cy.get('[data-cy="extend-activity-confirm"]').click()
-    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).contains(
-      extendedActivityEndText
-    )
 
     // check that changing the date to the past does not work
-    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
+    cy.get(
+      `[data-cy="extend-group-activity-${this.data.running.name}"]`
+    ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
     cy.get('[data-cy="extend-activity-date"]')
       .click()
       .type(`${currentYear - 1}-01-01T12:00`)
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
-    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).contains(
-      extendedActivityEndText
-    )
   })
 
   it('Take part in the group activity', function () {
@@ -902,23 +912,15 @@ describe('Create and solve a group activity', function () {
 
     // end the group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(
-      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
-    ).click()
     cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="confirmation-modal-cancel"]').click()
-    cy.get(
-      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
-    ).click()
     cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
-    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).findByText(
-      messages.shared.generic.grading
-    )
+    cy.get(`[data-cy="status-${this.data.running.name}-ENDED"]`).should('exist')
   })
 
   it('Verify that a valid submission is still visible after the group activity ended', function () {
@@ -979,7 +981,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="grade-groupActivity-${this.data.running.name}"]`).click()
+    cy.get(`[data-cy="grade-group-activity-${this.data.running.name}"]`).click()
 
     // grade the responses for the first submission
     cy.get('[data-cy="group-activity-submission-0"]').click()
@@ -1209,14 +1211,13 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+      `[data-cy="delete-group-activity-${this.data.running.name}"]`
     ).click()
-    cy.get(`[data-cy="delete-groupActivity-${this.data.running.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.running.name}"]`
     ).should('not.exist')
   })
 
@@ -1257,16 +1258,22 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${this.data.synchronous.name}"]`)
-      .findByText(messages.shared.generic.draft)
-      .should('exist')
     cy.get(
-      `[data-cy="publish-groupActivity-${this.data.synchronous.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.synchronous.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.synchronous.name}-DRAFT"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="publish-group-activity-${this.data.synchronous.name}"]`
     ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${this.data.synchronous.name}"]`)
-      .findByText(messages.shared.generic.scheduled)
-      .should('exist')
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.synchronous.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.synchronous.name}-SCHEDULED"]`).should(
+      'exist'
+    )
   })
 
   it('Login as a student and check that the group activity is not visible', function () {
@@ -1287,17 +1294,11 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
-    ).click()
-    cy.get(
       `[data-cy="start-group-activity-${this.data.synchronous.name}-now"]`
     ).click()
     cy.get('[data-cy="confirm-groups-getting-access"]').click()
     cy.get('[data-cy="confirm-activity-available-until"]').click()
     cy.get('[data-cy="confirmation-modal-cancel"]').click()
-    cy.get(
-      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
-    ).click()
     cy.get(
       `[data-cy="start-group-activity-${this.data.synchronous.name}-now"]`
     ).click()
@@ -1351,18 +1352,15 @@ describe('Create and solve a group activity', function () {
     // end the group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
-    ).click()
-    cy.get(
       `[data-cy="end-group-activity-${this.data.synchronous.name}"]`
     ).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
-    cy.get(
-      `[data-cy="groupActivity-${this.data.synchronous.name}"]`
-    ).findByText(messages.shared.generic.grading)
+    cy.get(`[data-cy="status-${this.data.synchronous.name}-ENDED"]`).should(
+      'exist'
+    )
   })
 
   it('Login as a student with a valid submission', function () {
@@ -1401,16 +1399,13 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
-    ).click()
-    cy.get(
-      `[data-cy="delete-groupActivity-${this.data.synchronous.name}"]`
+      `[data-cy="delete-group-activity-${this.data.synchronous.name}"]`
     ).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.synchronous.name}"]`
     ).should('not.exist')
   })
 

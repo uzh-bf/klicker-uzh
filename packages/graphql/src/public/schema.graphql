@@ -35,9 +35,12 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
-  course: String
+  courseId: String
+  courseName: String
+  courseStartDate: Date
   derivedAccess: Boolean!
   displayName: String!
+  groupDeadlineDate: Date
   id: String!
   isEditor: Boolean!
   isExecutor: Boolean!
@@ -47,9 +50,12 @@ type ActivityInfo {
   isShared: Boolean!
   name: String!
   numOfElements: Int!
+  numOfParticipantGroups: Int
   numOfStacks: Int!
   numSharedUsers: Int
   permissionLevel: PermissionLevel!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
   stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String
@@ -1448,12 +1454,12 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: SharingObjectType!): Boolean!
+  changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
-  changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changePermissionLevel(objectId: String!, objectType: SharingObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
@@ -1548,11 +1554,8 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
-  removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
-  removeCourse(id: String!): String
-  removeElement(id: Int!): Int
-  removeLiveQuiz(id: String!): String
+  removeObject(objectId: String!, objectType: SharingObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
@@ -2173,8 +2176,11 @@ enum SharingObjectType {
   CATALOG_COLLECTION
   COURSE
   ELEMENT
+  GROUP_ACTIVITY
   LIVE_QUIZ
   LIVE_QUIZ_TEMPLATE
+  MICRO_LEARNING
+  PRACTICE_QUIZ
 }
 
 type SharingRequestResponse {

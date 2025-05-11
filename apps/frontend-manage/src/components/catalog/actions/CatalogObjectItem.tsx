@@ -31,11 +31,11 @@ import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogImportModal from './CatalogImportModal'
 import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
+import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
 import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
 import CatalogRequestSuccessToast from './CatalogRequestSuccessToast'
-import ObjectRemovalModal from './ObjectRemovalModal'
 
 function CatalogObjectItem({
   object,
@@ -55,6 +55,9 @@ function CatalogObjectItem({
       [SharingObjectType.LiveQuizTemplate]: faFileLines,
       [SharingObjectType.Course]: undefined,
       [SharingObjectType.LiveQuiz]: undefined,
+      [SharingObjectType.PracticeQuiz]: undefined,
+      [SharingObjectType.MicroLearning]: undefined,
+      [SharingObjectType.GroupActivity]: undefined,
       [SharingObjectType.Element]: faQuestion,
     }
   const actionsDisabled = object.isOwner || object.isShared
@@ -288,7 +291,7 @@ function CatalogObjectItem({
             newAccess={newAccess}
             catalogCollectionId={catalogCollectionId}
           />
-          <ObjectRemovalModal
+          <CatalogObjectRemovalModal
             object={object}
             open={removalModal}
             catalogCollectionId={catalogCollectionId}

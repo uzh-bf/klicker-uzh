@@ -7,7 +7,7 @@ import {
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function ObjectRemovalModal({
+function CatalogObjectRemovalModal({
   object,
   open,
   catalogCollectionId,
@@ -100,4 +100,4 @@ function ObjectRemovalModal({
   )
 }
 
-export default ObjectRemovalModal
+export default CatalogObjectRemovalModal

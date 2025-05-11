@@ -24,7 +24,10 @@ function PermissionsTable({
   // execution rights are only available for activities and courses
   const showExecution =
     objectType === SharingObjectType.Course ||
-    objectType === SharingObjectType.LiveQuiz
+    objectType === SharingObjectType.LiveQuiz ||
+    objectType === SharingObjectType.PracticeQuiz ||
+    objectType === SharingObjectType.MicroLearning ||
+    objectType === SharingObjectType.GroupActivity
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {

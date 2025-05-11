@@ -978,6 +978,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn diese Aktivität einem Kurs zugewiesen ist, auf den Sie Zugriff haben, kann sie aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall erhalten Sie automatisch eine abgeleitete Berechtigung für die Aktivität, nachdem Sie deren Entfernung ausgelöst haben. Sobald der zugehörige Kurs gelöscht oder entfernt wird, wird das Element ebenfalls automatisch entfernt.',
       activityRemovalDependencyAccess:
         'Abgeleitete Zugriffsrechte auf enthaltene Elemente und Ressourcen werden automatisch widerrufen (es sei denn, diese sind technisch erforderlich).',
+      changeActivityName: 'Aktivitätsnamen ändern',
+      activityNameChangeSuccess:
+        'Der Name der Aktivität wurde erfolgreich geändert.',
+      activityNameChangeError:
+        'Der Name der Aktivität konnte nicht geändert werden.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1880,6 +1885,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       viewLiveQuiz: 'Live Quiz einsehen',
       executeLiveQuiz: 'Live Quiz ausführen',
       manageFeedbacksExecution: 'Feedbacks während der Ausführung verwalten',
+      viewLiveQuizEvaluation: 'Live Quiz Evaluation einsehen',
       modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
       modifyContainedElements: 'Elemente im Live Quiz verwalten',
       modifyCourseAssignment: 'Kurszuweisung ändern',
@@ -1906,11 +1912,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
-      changeLiveQuizName: 'Änderung Live Quiz Namen',
-      liveQuizNameChangeSuccess:
-        'Der Name des Live Quizzes wurde erfolgreich geändert.',
-      liveQuizNameChangeError:
-        'Der Name des Live Quizzes konnte nicht geändert werden.',
+    },
+    practiceQuizzes: {
+      viewPracticeQuiz: 'Übungs-Quiz einsehen',
+      publishUnpublishPracticeQuiz:
+        'Übungs-Quiz veröffentlichen / Veröffentlichung aufheben',
+      viewPracticeQuizEvaluation: 'Übungs-Quiz Evaluation einsehen',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente im Übungs-Quiz verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
+    },
+    microLearnings: {
+      viewMicroLearning: 'Microlearning einsehen',
+      publishUnpublishMicroLearning:
+        'Microlearning veröffentlichen / Veröffentlichung aufheben',
+      viewMicroLearningEvaluation: 'Microlearning Evaluation einsehen',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente im Microlearning verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicateMicroLearning: 'Microlearning duplizieren',
+    },
+    groupActivities: {
+      viewGroupActivity: 'Gruppenaktivität einsehen',
+      publishUnpublishGroupActivity:
+        'Gruppenaktivität veröffentlichen / Veröffentlichung aufheben',
+      gradeGroupActivitySubmissions: 'Abgaben zur Gruppenaktivität bewerten',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente in der Gruppenaktivität verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicateGroupActivity: 'Gruppenaktivität duplizieren',
     },
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Codes',
@@ -2278,6 +2309,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
+      shareMicroLearning: 'Microlearning teilen',
       deleteMicroLearning: 'Microlearning löschen',
       deleteMicroLearningMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
@@ -2295,6 +2327,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
+      sharePracticeQuiz: 'Übungs-Quiz teilen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2336,6 +2369,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{number} Teilnehmergruppe(n) erhalten nach dem Start der Gruppenaktivität sofort Zugriff auf den entsprechenden Inhalt.',
       groupActivityAvailableUntil:
         'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
+      shareGroupActivity: 'Gruppenaktivität teilen',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2591,6 +2625,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeLIVE_QUIZ: 'Live-Quiz entfernen',
       removeLIVE_QUIZtitle: '',
+      removePRACTICE_QUIZ: 'Übungs-Quiz entfernen',
+      removePRACTICE_QUIZtitle: '',
+      removeMICRO_LEARNING: 'Microlearning entfernen',
+      removeMICRO_LEARNINGtitle: '',
+      removeGROUP_ACTIVITY: 'Gruppenaktivität entfernen',
+      removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Kurs entfernen',
       removeCOURSEtitle: '',
       removeObjectDescription:
@@ -2638,6 +2678,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoPRACTICE_QUIZ: '',
+      requestSuccessInfoMICRO_LEARNING: '',
+      requestSuccessInfoGROUP_ACTIVITY: '',
       requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
@@ -2716,12 +2759,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für das Element <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Element, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ:
         'Sie sind dabei, die Eigentumsrechte für das Live-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Live-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipPRACTICE_QUIZ:
+        'Sie sind dabei, die Eigentumsrechte für das Übungs-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Übungs-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipMICRO_LEARNING:
+        'Sie sind dabei, die Eigentumsrechte für das Microlearning <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Micro-Learning und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Micro-Learning behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipGROUP_ACTIVITY:
+        'Sie sind dabei, die Eigentumsrechte für die Gruppen-Aktivität <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Gruppen-Aktivität, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipCOURSE:
         'Sie sind dabei, die Eigentumsrechte für den Kurs <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diesen Kurs und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Aktivitäten und Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
       shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
       shareLIVE_QUIZ: 'Live-Quiz teilen',
+      sharePRACTICE_QUIZ: 'Übungs-Quiz teilen',
+      shareMICRO_LEARNING: 'Microlearning teilen',
+      shareGROUP_ACTIVITY: 'Gruppen-Aktivität teilen',
       shareCOURSE: 'Kurs teilen',
       shareELEMENT: 'Element teilen',
       infoSharingANSWER_COLLECTION:
@@ -2732,6 +2784,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
       infoSharingLIVE_QUIZ:
         'Diese Ansicht erlaubt es Ihnen, das Live-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Live-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingPRACTICE_QUIZ:
+        'Diese Ansicht erlaubt es Ihnen, das Übungs-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Übungs-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingMICRO_LEARNING:
+        'Diese Ansicht erlaubt es Ihnen, das Microlearning "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Microlearning bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingGROUP_ACTIVITY:
+        'Diese Ansicht erlaubt es Ihnen, die Gruppen-Aktivität "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Gruppen-Aktivität bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCOURSE:
         'Diese Ansicht erlaubt es Ihnen, den Kurs "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Kurs bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingELEMENT:
@@ -2743,7 +2801,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       propagatedPermissionsELEMENT:
         'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
       propagatedPermissionsLIVE_QUIZ:
-        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Live-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb des vorliegenden Quizzes wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Live-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsPRACTICE_QUIZ:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Übungs-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsMICRO_LEARNING:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Microlearning übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsGROUP_ACTIVITY:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in dieser Gruppen-Aktivität übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
       propagatedPermissionsCOURSE:
         'Abhängig von der gewährten Berechtigungsstufe und Ihrer Auswahl, ob höhere Berechtigungen propagiert werden sollen, werden die technisch benötigten oder propagierten Berechtigungen auf den im Kurs enthaltenen Aktivitäten, Elementen, etc. wie in der folgenden Tabelle aufgeführt, gewährt. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',

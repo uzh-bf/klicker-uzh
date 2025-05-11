@@ -244,6 +244,7 @@ function CourseOverviewPage() {
             <PracticeQuizList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               practiceQuizzes={course.practiceQuizzes ?? []}
+              practiceQuizActivities={course.practiceQuizActivities ?? []}
               courseId={course.id}
               courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
@@ -257,6 +258,7 @@ function CourseOverviewPage() {
             <MicroLearningList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               microLearnings={course.microLearnings ?? []}
+              microLearningActivities={course.microLearningActivities ?? []}
               courseId={course.id}
               userCatalyst={user?.userProfile?.catalyst}
             />
@@ -269,6 +271,7 @@ function CourseOverviewPage() {
             <GroupActivityList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               groupActivities={course.groupActivities ?? []}
+              groupActivityActivities={course.groupActivityActivities ?? []}
               groupDeadlineDate={course.groupDeadlineDate}
               numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
               courseId={course.id}

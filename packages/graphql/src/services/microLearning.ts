@@ -450,6 +450,24 @@ export async function endMicroLearning(
   return updatedMicroLearning
 }
 
+export async function changeMicroLearningName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.microLearning.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return true
+  } catch (error) {
+    console.error('Error changing microlearning name:', error)
+    return false
+  }
+}
+
 export async function getMicroLearningSummary(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -543,4 +561,38 @@ export async function deleteMicroLearning(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
   }
+}
+
+export async function removeMicroLearning(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified microlearning
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this microlarning and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.microLearning.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { microLearningId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'MicroLearning',
+    id,
+  })
+
+  return id
 }

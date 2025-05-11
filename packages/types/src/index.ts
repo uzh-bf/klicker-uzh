@@ -20,7 +20,7 @@ export enum SharingObjectType {
   CATALOG_COLLECTION = 'CATALOG_COLLECTION',
   LIVE_QUIZ_TEMPLATE = 'LIVE_QUIZ_TEMPLATE',
 
-  // TODO: add more object types once they are supported
+  // TODO: add more activity template types once they are supported
   // PRACTICE_QUIZ_TEMPLATE = 'PRACTICE_QUIZ_TEMPLATE',
   // MICRO_LEARNING_TEMPLATE = 'MICRO_LEARNING_TEMPLATE',
   // GROUP_ACTIVITY_TEMPLATE = 'GROUP_ACTIVITY_TEMPLATE',
@@ -28,9 +28,9 @@ export enum SharingObjectType {
   ELEMENT = 'ELEMENT',
   COURSE = 'COURSE',
   LIVE_QUIZ = 'LIVE_QUIZ',
-  // PRACTICE_QUIZ = 'PRACTICE_QUIZ',
-  // MICRO_LEARNING = 'MICRO_LEARNING',
-  // GROUP_ACTIVITY = 'GROUP_ACTIVITY',
+  PRACTICE_QUIZ = 'PRACTICE_QUIZ',
+  MICRO_LEARNING = 'MICRO_LEARNING',
+  GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
 export enum ActivityType {

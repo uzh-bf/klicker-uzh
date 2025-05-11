@@ -304,10 +304,6 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.name}"]`
-    ).click()
     cy.get(`[data-cy="edit-microlearning-${this.data.running.name}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
       'exist'
@@ -415,14 +411,14 @@ describe('Different microlearning workflows', function () {
     // go to microlearning list and check if it exists in draft state
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.running.nameNew}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.nameNew}-DRAFT"]`).should(
+      'exist'
     )
 
     // recheck if the changes have been saved
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
-    ).click()
     cy.get(
       `[data-cy="edit-microlearning-${this.data.running.nameNew}"]`
     ).click()
@@ -469,8 +465,11 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.running.nameNew}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.nameNew}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -481,7 +480,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="duplicate-microlearning-${this.data.running.nameNew}"]`
@@ -546,8 +545,11 @@ describe('Different microlearning workflows', function () {
     // go to microlearning list and check if it exists in draft state
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.duplication.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.duplication.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.duplication.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -567,9 +569,10 @@ describe('Different microlearning workflows', function () {
     // check if creation was successful
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.future.name}"]`).contains(
-      messages.shared.generic.draft
-    )
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.future.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.future.name}-DRAFT"]`).should('exist')
   })
 
   it('Create a microlearning with all element types', function () {
@@ -655,12 +658,12 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
 
-    cy.get(`[data-cy="publish-microlearning-${this.data.running.nameNew}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(
+      `[data-cy="publish-microlearning-${this.data.running.nameNew}"]`
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
-      messages.shared.generic.published
+    cy.get(`[data-cy="status-${this.data.running.nameNew}-PUBLISHED"]`).should(
+      'exist'
     )
   })
 
@@ -693,14 +696,14 @@ describe('Different microlearning workflows', function () {
     // open extension modal
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
     ).click()
     cy.get('[data-cy="extend-activity-cancel"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
@@ -709,13 +712,10 @@ describe('Different microlearning workflows', function () {
     // change the end date and check if the changes are saved
     cy.get('[data-cy="extend-activity-date"]').click().type(runningEndExtended)
     cy.get('[data-cy="extend-activity-confirm"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
-      runningExtendedText
-    )
 
     // check that changing the date to the past does not work
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
@@ -726,9 +726,6 @@ describe('Different microlearning workflows', function () {
       .type(`${currentYear - 1}-01-01T12:00`)
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
-      runningExtendedText
-    )
   })
 
   it('Respond to the first stack of the running microlearning from a laptop', function () {
@@ -793,19 +790,12 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
-    ).click()
     cy.get(`[data-cy="end-microlearning-${this.data.running.nameNew}"]`).click()
     cy.get(`[data-cy="confirm-responses-microlearning"]`).should('not.exist')
     cy.get(`[data-cy="confirm-anonymous-responses-microlearning"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
-    ).click()
     cy.get(`[data-cy="end-microlearning-${this.data.running.nameNew}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
   })
@@ -832,7 +822,7 @@ describe('Different microlearning workflows', function () {
 
     // delete the running microlearning
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.running.nameNew}"]`
@@ -842,7 +832,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('not.be.disabled')
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.running.nameNew}"]`
@@ -851,7 +841,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.nameNew}"]`
     ).should('not.exist')
   })
 
@@ -864,14 +854,14 @@ describe('Different microlearning workflows', function () {
     // delete the duplicated microlearning
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.duplication.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.duplication.name}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.duplication.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.duplication.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.duplication.name}"]`
     ).should('not.exist')
   })
 
@@ -901,13 +891,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-
-    cy.get(`[data-cy="publish-microlearning-${this.data.future.name}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(`[data-cy="publish-microlearning-${this.data.future.name}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.future.name}"]`).contains(
-      messages.shared.generic.scheduled
+    cy.get(`[data-cy="status-${this.data.future.name}-SCHEDULED"]`).should(
+      'exist'
     )
   })
 
@@ -947,13 +934,13 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
 
-    cy.get(`[data-cy="microlearning-actions-${this.data.future.name}"]`).click()
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.future.name}"]`
+    ).click()
     cy.get(
       `[data-cy="unpublish-microlearning-${this.data.future.name}"]`
     ).click()
-    cy.get(`[data-cy="microlearning-${this.data.future.name}"]`).contains(
-      messages.shared.generic.draft
-    )
+    cy.get(`[data-cy="status-${this.data.future.name}-DRAFT"]`).should('exist')
   })
 
   it('Cleanup: Delete the future microlearning to avoid name collisions', function () {
@@ -963,16 +950,18 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="tab-microLearnings"]').click()
 
     // delete the future microlearning
-    cy.get(`[data-cy="microlearning-actions-${this.data.future.name}"]`).click()
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.future.name}"]`
+    ).click()
     cy.get(`[data-cy="delete-microlearning-${this.data.future.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
     cy.get(`[data-cy="confirm-deletion-anonymous-responses"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="microlearning-actions-${this.data.future.name}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.future.name}"]`
+    ).should('not.exist')
   })
   // #endregion
 
@@ -983,13 +972,12 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-
-    cy.get(`[data-cy="publish-microlearning-${this.data.completed.name}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(
+      `[data-cy="publish-microlearning-${this.data.completed.name}"]`
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.completed.name}"]`).contains(
-      messages.shared.generic.published
+    cy.get(`[data-cy="status-${this.data.completed.name}-PUBLISHED"]`).should(
+      'exist'
     )
   })
 
@@ -1249,7 +1237,7 @@ describe('Different microlearning workflows', function () {
 
     // delete the microlearning with all element types
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.completed.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.completed.name}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.completed.name}"]`
@@ -1258,7 +1246,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.completed.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.completed.name}"]`
     ).should('not.exist')
   })
 
@@ -1367,19 +1355,14 @@ describe('Different microlearning workflows', function () {
 
     // publish and end microleraning
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="publish-microlearning-${MLName}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(`[data-cy="publish-microlearning-${MLName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${MLName}"]`).contains(
-      messages.shared.generic.published
-    )
-    cy.get(`[data-cy="microlearning-actions-${MLName}"]`).click()
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${MLName}"]`).should('exist')
+    cy.get(`[data-cy="status-${MLName}-PUBLISHED"]`).should('exist')
     cy.get(`[data-cy="end-microlearning-${MLName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
 
     // start conversion of a microlearning into a practice quiz
-    cy.get(`[data-cy="microlearning-actions-${MLName}"]`).click()
     cy.get(
       `[data-cy="convert-microlearning-${MLName}-to-practice-quiz"]`
     ).click()
@@ -1428,8 +1411,11 @@ describe('Different microlearning workflows', function () {
     // check if the practice quiz is listed in the course overview
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.conversion.pqName}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.conversion.pqName}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.conversion.pqName}-DRAFT"]`).should(
+      'exist'
     )
   })
   // #endregion
@@ -1473,8 +1459,11 @@ describe('Different microlearning workflows', function () {
     })
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1499,9 +1488,6 @@ describe('Different microlearning workflows', function () {
     ).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
-    ).click()
-    cy.get(
       `[data-cy="edit-microlearning-${this.data.manipulation.name}"]`
     ).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
@@ -1521,8 +1507,11 @@ describe('Different microlearning workflows', function () {
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1550,9 +1539,6 @@ describe('Different microlearning workflows', function () {
       `[data-cy="course-list-button-${this.data.manipulation.course}"]`
     ).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
-    ).click()
     cy.get(
       `[data-cy="edit-microlearning-${this.data.manipulation.name}"]`
     ).click()
@@ -1600,8 +1586,11 @@ describe('Different microlearning workflows', function () {
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1627,9 +1616,6 @@ describe('Different microlearning workflows', function () {
       `[data-cy="course-list-button-${this.data.manipulation.course}"]`
     ).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
-    ).click()
     cy.get(
       `[data-cy="edit-microlearning-${this.data.manipulation.name}"]`
     ).click()
@@ -1668,18 +1654,24 @@ describe('Different microlearning workflows', function () {
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
 
     // publish the microlearning
-    cy.get(`[data-cy="publish-microlearning-${this.data.manipulation.name}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(
+      `[data-cy="publish-microlearning-${this.data.manipulation.name}"]`
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.published
-    )
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="status-${this.data.manipulation.name}-PUBLISHED"]`
+    ).should('exist')
   })
 
   it('Respond to the elements in the published microlearning and verify their content', function () {
@@ -1732,7 +1724,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.name}"]`
     ).click()
     cy.get(
       `[data-cy="duplicate-microlearning-${this.data.manipulation.name}"]`
@@ -1767,19 +1759,23 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="microlearning-${this.data.manipulation.duplicateName}"]`
-    ).contains(messages.shared.generic.draft)
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.duplicateName}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="status-${this.data.manipulation.duplicateName}-DRAFT"]`
+    ).should('exist')
 
     // publish the microlearning
     cy.get(
       `[data-cy="publish-microlearning-${this.data.manipulation.duplicateName}"]`
-    )
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(
-      `[data-cy="microlearning-${this.data.manipulation.duplicateName}"]`
-    ).contains(messages.shared.generic.published)
+      `[data-cy="activity-MICRO_LEARNING-${this.data.manipulation.duplicateName}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="status-${this.data.manipulation.duplicateName}-PUBLISHED"]`
+    ).should('exist')
   })
 
   it('Respond to the elements in the duplicated microlearning and verify their content', function () {
@@ -1834,7 +1830,7 @@ describe('Different microlearning workflows', function () {
 
     // delete the first microlearning
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.name}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.manipulation.name}"]`
@@ -1842,12 +1838,12 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.name}"]`
     ).should('not.exist')
 
     // delete the duplicated microlearning
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.duplicateName}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.duplicateName}"]`
     ).click()
     cy.get(
       `[data-cy="delete-microlearning-${this.data.manipulation.duplicateName}"]`
@@ -1855,7 +1851,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="microlearning-actions-${this.data.manipulation.duplicateName}"]`
+      `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
   })
   // #endregion

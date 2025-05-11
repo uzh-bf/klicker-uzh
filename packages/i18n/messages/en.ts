@@ -978,6 +978,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If this activity is assigned to a course that you have access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the activity after triggering its removal. Once the associated course is deleted or removed, the element will be automatically removed as well.',
       activityRemovalDependencyAccess:
         'Derived access rights to included elements and resources will be automatically revoked (unless technically required).',
+      changeActivityName: 'Change Activity Name',
+      activityNameChangeSuccess:
+        'The name of the activity has been successfully changed.',
+      activityNameChangeError:
+        'The name of the activity could not be changed. Please try again later.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1850,6 +1855,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       viewLiveQuiz: 'View Live Quiz',
       executeLiveQuiz: 'Execute Live Quiz',
       manageFeedbacksExecution: 'Manage Feedbacks, ... during Execution',
+      viewLiveQuizEvaluation: 'View Live Quiz Evaluation',
       modifyActivitySettings: 'Modify Activity Settings',
       modifyContainedElements: 'Manage Elements in Live Quiz',
       modifyCourseAssignment: 'Modify Course Assignment',
@@ -1877,9 +1883,33 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       changeLiveQuizName: 'Change live quiz name',
-      liveQuizNameChangeSuccess: 'The name of the live quiz has been changed.',
-      liveQuizNameChangeError:
-        'The name of the live quiz could not be changed.',
+    },
+    practiceQuizzes: {
+      viewPracticeQuiz: 'View Practice Quiz',
+      publishUnpublishPracticeQuiz: 'Publish / Unpublish Practice Quiz',
+      viewPracticeQuizEvaluation: 'View Practice Quiz Evaluation',
+      modifyActivitySettings: 'Modify Activity Settings',
+      modifyContainedElements: 'Manage Elements in Practice Quiz',
+      modifyCourseAssignment: 'Modify Course Assignment',
+      duplicatePracticeQuiz: 'Duplicate Practice Quiz',
+    },
+    microLearnings: {
+      viewMicroLearning: 'View Microlearning',
+      publishUnpublishMicroLearning: 'Publish / Unpublish Microlearning',
+      viewMicroLearningEvaluation: 'View Microlearning Evaluation',
+      modifyActivitySettings: 'Modify Activity Settings',
+      modifyContainedElements: 'Manage Elements in Microlearning',
+      modifyCourseAssignment: 'Modify Course Assignment',
+      duplicateMicroLearning: 'Duplicate Microlearning',
+    },
+    groupActivities: {
+      viewGroupActivity: 'View Group Activity',
+      publishUnpublishGroupActivity: 'Publish / Unpublish Group Activity',
+      gradeGroupActivitySubmissions: 'Grade Group Activity Submissions',
+      modifyActivitySettings: 'Modify Activity Settings',
+      modifyContainedElements: 'Manage Elements in Group Activity',
+      modifyCourseAssignment: 'Modify Course Assignment',
+      duplicateGroupActivity: 'Duplicate Group Activity',
     },
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Code',
@@ -2115,8 +2145,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
       gamificationFixed:
         'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
-      openPreview: 'Open preview',
-      openEvaluation: 'Open evaluation',
+      openPreview: 'Open Preview',
+      openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
       archiveCourse: 'Archive course',
@@ -2215,8 +2245,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nQuestions: '{number} questions',
       courseQRDescription:
         'Share this link or QR code with your course participants to allow them to join.',
-      copyAccessLink: 'Copy access link',
-      copyLTIAccessLink: 'Copy LTI link',
+      copyAccessLink: 'Copy Access Link',
+      copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
       practiceQuizList: 'Practice Quiz List',
       microLearningList: 'Microlearning List',
@@ -2230,22 +2260,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
-      editMicrolearning: 'Edit microlearning',
-      duplicateMicroLearning: 'Duplicate microlearning',
-      extendMicroLearning: 'Extend microlearning',
+      editMicrolearning: 'Edit Microlearning',
+      duplicateMicroLearning: 'Duplicate Microlearning',
+      extendMicroLearning: 'Extend Microlearning',
       extendMicroLearningDescription:
         'Use this dialogue to modify the end date of the microlearning. Please note that only future dates can be set as end dates.',
       newEndDate: 'New end date',
       futureEndDateRequired:
         'Please enter an end date that lies in the future.',
-      publishMicrolearning: 'Publish microlearning',
-      unpublishMicrolearning: 'Unpublish microlearning',
+      publishMicrolearning: 'Publish Microlearning',
+      unpublishMicrolearning: 'Unpublish Microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
-      deleteMicroLearning: 'Delete microlearning',
+      shareMicroLearning: 'Share Microlearning',
+      deleteMicroLearning: 'Delete Microlearning',
       deleteMicroLearningMessage:
         'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
-      publishItemMICROLEARNING: 'Publish microlearning',
+      publishItemMICROLEARNING: 'Publish Microlearning',
       publishItemGROUP_ACTIVITY: 'Publish group activity',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       practicePublishingHint:
@@ -2254,10 +2285,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
       microPublishingHint:
         'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
-      editPracticeQuiz: 'Edit practice quiz',
-      duplicatePracticeQuiz: 'Duplicate practice quiz',
-      publishPracticeQuiz: 'Publish practice quiz',
-      deletePracticeQuiz: 'Delete practice quiz',
+      editPracticeQuiz: 'Edit Practice Quiz',
+      duplicatePracticeQuiz: 'Duplicate Practice Quiz',
+      publishPracticeQuiz: 'Publish Practice Quiz',
+      sharePracticeQuiz: 'Share Practice Quiz',
+      deletePracticeQuiz: 'Delete Practice Quiz',
       deletePracticeQuizMessage:
         'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
       noResponsesToDelete:
@@ -2268,12 +2300,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No anonymous responses have been submitted for this activity',
       deleteAnonymousResponses:
         '{number} anonymous response(s) for this activity will be deleted.',
-      unpublishPracticeQuiz: 'Unpublish practice quiz',
+      unpublishPracticeQuiz: 'Unpublish Practice Quiz',
       publishGroupActivity: 'Publish group activity',
       groupActivityPublishingHint:
         'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
-      editGroupActivity: 'Edit group activity',
-      endGroupActivity: 'End group activity',
+      editGroupActivity: 'Edit Group Activity',
+      endGroupActivity: 'End Group Activity',
       endGroupActivityMessage:
         'Please confirm that you want to end this group activity. Note that no further submissions will be accepted after triggering this action.',
       endMicroLearning: 'End microlearning',
@@ -2295,7 +2327,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
         '{number} group(s) have successfully submitted their results to this group activity and will not be affected by ending the group activity.',
-      startGroupActivityNow: 'Start group activity now',
+      startGroupActivityNow: 'Start Group Activity Now',
       startGroupActivityNowMessage:
         'Please confirm that you want to start the group activity now. Note that a group activity cannot be edited after starting.',
       noParticipantGroupsAvailable:
@@ -2306,7 +2338,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '{number} group(s) will get immediate access to the corresponding content after the group activity is started.',
       groupActivityAvailableUntil:
         'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
-      deleteGroupActivity: 'Delete group activity',
+      shareGroupActivity: 'Share Group Activity',
+      deleteGroupActivity: 'Delete Group Activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',
       noStartedInstancesToDelete:
@@ -2317,11 +2350,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There are no submissions for this group activity.',
       deleteSubmissions:
         '{number} submission(s) by separate groups for this activity will be deleted.',
-      unpublishGroupActivity: 'Unpublish group activity',
-      extendGroupActivity: 'Extend group activity',
+      unpublishGroupActivity: 'Unpublish Group Activity',
+      extendGroupActivity: 'Extend Group Activity',
       extendGroupActivityDescription:
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
-      gradeGroupActivity: 'Grade group activity',
+      gradeGroupActivity: 'Grade Group Activity',
       courseElements: 'Course Elements',
       otherActions: 'Other actions',
       enableGamification: 'Enable gamification',
@@ -2567,6 +2600,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeLIVE_QUIZ: 'Remove Live-Quiz',
       removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
+      removePRACTICE_QUIZ: 'Remove Practice Quiz',
+      removePRACTICE_QUIZtitle: '',
+      removeMICRO_LEARNING: 'Remove Microlearning',
+      removeMICRO_LEARNINGtitle: '',
+      removeGROUP_ACTIVITY: 'Remove Group Activity',
+      removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Remove Course',
       removeCOURSEtitle: '',
       removeObjectTitle: 'Remove Object from Catalog Collection',
@@ -2615,6 +2654,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoPRACTICE_QUIZ: '',
+      requestSuccessInfoMICRO_LEARNING: '',
+      requestSuccessInfoGROUP_ACTIVITY: '',
       requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Once the owner accepts your request, you will be able to view the element and potentially re-use it in your own activities, depending on the granted permissions.',
@@ -2690,12 +2732,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ:
         'You are about to transfer all ownership rights of the live quiz <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this quiz and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the live quiz. This action cannot be undone.',
+      infoTransferOwnershipPRACTICE_QUIZ:
+        'You are about to transfer all ownership rights of the practice quiz <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this quiz and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the practice quiz. This action cannot be undone.',
+      infoTransferOwnershipMICRO_LEARNING:
+        'You are about to transfer all ownership rights of the microlearning <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this microlearning and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the microlearning. This action cannot be undone.',
+      infoTransferOwnershipGROUP_ACTIVITY:
+        'You are about to transfer all ownership rights of the group activity <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this group activity and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the group activity. This action cannot be undone.',
       infoTransferOwnershipCOURSE:
         'You are about to transfer all ownership rights of the course <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this course and get irrevokable admin access to all contained activities and elements (according to the permission propagation), while you will retain admin access to the course. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       shareLIVE_QUIZ: 'Share Live Quiz',
+      sharePRACTICE_QUIZ: 'Share Practice Quiz',
+      shareMICRO_LEARNING: 'Share Microlearning',
+      shareGROUP_ACTIVITY: 'Share Group Activity',
       shareCOURSE: 'Share Course',
       shareELEMENT: 'Share Element',
       infoSharingANSWER_COLLECTION:
@@ -2706,6 +2757,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       infoSharingLIVE_QUIZ:
         'This view allows you to share the live quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
+      infoSharingPRACTICE_QUIZ:
+        'This view allows you to share the practice quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
+      infoSharingMICRO_LEARNING:
+        'This view allows you to share the microlearning "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the microlearning or make other changes.',
+      infoSharingGROUP_ACTIVITY:
+        'This view allows you to share the group activity "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the group activity or make other changes.',
       infoSharingCOURSE:
         'This view allows you to share the course "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the course or make other changes.',
       infoSharingELEMENT:
@@ -2717,7 +2774,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       propagatedPermissionsELEMENT:
         'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
       propagatedPermissionsLIVE_QUIZ:
-        'Depending on the granted permission level, permissions will propagate to the elements in this live quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside the live quiz. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
+        'Depending on the granted permission level, permissions will propagate to the elements in this live quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside this activity. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
+      propagatedPermissionsPRACTICE_QUIZ:
+        'Depending on the granted permission level, permissions will propagate to the elements in this practice quiz and the corresponding users will be able to re-use or share elements and linked resources with other users outside this activity. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
+      propagatedPermissionsMICRO_LEARNING:
+        'Depending on the granted permission level, permissions will propagate to the elements in this microlearning and the corresponding users will be able to re-use or share elements and linked resources with other users outside this activity. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
+      propagatedPermissionsGROUP_ACTIVITY:
+        'Depending on the granted permission level, permissions will propagate to the elements in this group activity and the corresponding users will be able to re-use or share elements and linked resources with other users outside this activity. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
       propagatedPermissionsCOURSE:
         'Depending on the granted permission level and your choice whether to propagate higher permission levels, the technically required or propagated permissions will be granted to the activities, elements, etc. assigned to the course as listed in the table below. For more details regarding the allowed actions, please check out the permission tables for the corresponding objects or refer to the official documentation.',
       sharingSuccessful: 'The object was shared successfully.',

@@ -3,9 +3,16 @@ fragment ActivityInfoData on ActivityInfo {
   templateId
   type
   status
-  course
+  courseId
+  courseName
+  courseStartDate
+
   numOfStacks
   numOfElements
+  scheduledStartAt
+  scheduledEndAt
+  groupDeadlineDate
+  numOfParticipantGroups
 
   stacks {
     id

@@ -1448,6 +1448,63 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
+          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+            // >= ADMIN permissions on practice quiz
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getPracticeQuizPermissions(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+            // >= ADMIN permissions on microlearning
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getMicroLearningPermissions(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+            // >= ADMIN permissions on group activity
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getGroupActivityPermissions(
+              { id: args.objectId },
+              ctx
+            )
           }
 
           return null
@@ -1531,7 +1588,7 @@ export const Query = builder.queryType({
               )) ?? []
             )
           } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
-            // >= ADMIN permissions on answer collection
+            // >= ADMIN permissions on live quiz
             const validAccess = await checkAccess(
               [
                 {
@@ -1551,8 +1608,70 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
+          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+            // >= ADMIN permissions on practice quiz
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return (
+              (await SharingService.getDerivedPracticeQuizPermissions(
+                { id: args.objectId },
+                ctx
+              )) ?? []
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+            // >= ADMIN permissions on microlearning
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return (
+              (await SharingService.getDerivedMicroLearningPermissions(
+                { id: args.objectId },
+                ctx
+              )) ?? []
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+            // >= ADMIN permissions on group activity
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return (
+              (await SharingService.getDerivedGroupActivityPermissions(
+                { id: args.objectId },
+                ctx
+              )) ?? []
+            )
           }
-          // TODO: implement derived permissions for other object types once supported (service functions already implemented)
 
           return null
         },

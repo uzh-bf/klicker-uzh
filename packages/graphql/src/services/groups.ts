@@ -1726,6 +1726,40 @@ export async function deleteGroupActivity(
   }
 }
 
+export async function removeGroupActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified group activity
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this group activity and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.groupActivity.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { groupActivityId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'GroupActivity',
+    id,
+  })
+
+  return id
+}
+
 export async function getCourseGroupActivities(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
@@ -1773,6 +1807,24 @@ export async function getGroupActivityInstances(
   })
 
   return instances
+}
+
+export async function changeGroupActivityName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    return true
+  } catch (error) {
+    console.error('Error changing group activity name:', error)
+    return false
+  }
 }
 
 export async function getGroupActivitySummary(

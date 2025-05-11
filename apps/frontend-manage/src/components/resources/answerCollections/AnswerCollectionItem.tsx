@@ -14,8 +14,8 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
+import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
-import ObjectRemovalModal from '../../sharing/ObjectRemovalModal'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
@@ -171,10 +171,9 @@ function AnswerCollectionItem({
 
       {/* removal modal for non-owners */}
       {!collection.isOwner && (
-        <ObjectRemovalModal
-          objectId={collection.id}
-          objectType={SharingObjectType.AnswerCollection}
-          objectName={collection.name}
+        <AnswerCollectionRemovalModal
+          id={collection.id}
+          name={collection.name}
           removalModal={removalModal}
           setRemovalModal={setRemovalModal}
           setRemovalSuccess={setRemovalSuccess}

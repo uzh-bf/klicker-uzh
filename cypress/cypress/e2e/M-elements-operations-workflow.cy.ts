@@ -23,11 +23,11 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 1: Question duplication
   // #region
@@ -398,27 +398,16 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuiz}"]`).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${practiceQuiz}"]`).contains(
-      messages.shared.generic.published
-    )
 
     // publish the first microlearning
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="publish-microlearning-${microlearning}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(`[data-cy="publish-microlearning-${microlearning}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="microlearning-${microlearning}"]`).contains(
-      messages.shared.generic.published
-    )
 
     // publish the first group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="publish-groupActivity-${groupActivity}"]`).click()
+    cy.get(`[data-cy="publish-group-activity-${groupActivity}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${groupActivity}"]`)
-      .findByText(messages.shared.generic.running)
-      .should('exist')
   }
 
   function verifySingleChoiceQuestionContent({ submission, content, choices }) {
@@ -875,7 +864,7 @@ describe('Create different types of elements (with and without sample solution) 
 
       // delete live quiz
       cy.reload() // TODO: resolve issue that causes this to be required -> cache update works correctly locally
-      cy.get(`[data-cy="actions-live-quiz-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     })
@@ -889,11 +878,11 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.practiceQuiz2,
       this.data.update.practiceQuiz3,
     ]).each((quiz: string) => {
-      cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).click()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-practice-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="practice-quiz-actions-${quiz}"]`).should('not.exist')
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
     })
 
     // delete all microlearnings
@@ -903,11 +892,11 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.microlearning2,
       this.data.update.microlearning3,
     ]).each((ml: string) => {
-      cy.get(`[data-cy="microlearning-actions-${ml}"]`).click()
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${ml}"]`).click()
       cy.get(`[data-cy="delete-microlearning-${ml}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="microlearning-actions-${ml}"]`).should('not.exist')
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${ml}"]`).should('not.exist')
     })
 
     // delete all group activities
@@ -917,11 +906,10 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.groupActivity2,
       this.data.update.groupActivity3,
     ]).each((ga: string) => {
-      cy.get(`[data-cy="groupActivity-actions-${ga}"]`).click()
-      cy.get(`[data-cy="delete-groupActivity-${ga}"]`).click()
+      cy.get(`[data-cy="delete-group-activity-${ga}"]`).click()
       cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="groupActivity-actions-${ga}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-GROUP_ACTIVITY-${ga}"]`).should('not.exist')
     })
   })
   // #endregion

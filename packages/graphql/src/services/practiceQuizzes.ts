@@ -426,6 +426,24 @@ export async function unpublishPracticeQuiz(
   return practiceQuiz
 }
 
+export async function changePracticeQuizName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.practiceQuiz.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return true
+  } catch (error) {
+    console.error('Error changing practice quiz name:', error)
+    return false
+  }
+}
+
 export async function getPracticeQuizSummary(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -526,6 +544,40 @@ export async function deletePracticeQuiz(
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
     return updatedPracticeQuiz
   }
+}
+
+export async function removePracticeQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified practice quiz
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this practice quiz and user
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.practiceQuiz.update({
+      where: { id },
+      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+    })
+
+    await recomputeDerivedPermissions(
+      { practiceQuizId: id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id,
+  })
+
+  return id
 }
 
 export async function publishPracticeQuiz(

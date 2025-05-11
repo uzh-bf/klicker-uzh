@@ -5,6 +5,8 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
   GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
   SharingObjectType,
@@ -59,8 +61,28 @@ function useTransferObjectOwnership({
           ...(objectType === SharingObjectType.Element
             ? [{ query: GetUserElementsDocument }]
             : []),
+          ...(objectType === SharingObjectType.Course
+            ? [
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: String(objectId) },
+                },
+              ]
+            : []),
           ...(objectType === SharingObjectType.LiveQuiz
-            ? [{ query: GetUserLiveQuizzesDocument }]
+            ? [
+                { query: GetUserLiveQuizzesDocument },
+                { query: GetUserActivitiesDocument },
+              ]
+            : []),
+          ...(objectType === SharingObjectType.PracticeQuiz
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === SharingObjectType.MicroLearning
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === SharingObjectType.GroupActivity
+            ? [{ query: GetUserActivitiesDocument }]
             : []),
         ],
       })

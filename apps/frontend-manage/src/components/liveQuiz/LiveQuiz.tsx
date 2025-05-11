@@ -38,6 +38,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ActivityNameChangeModal from '../courses/actions/ActivityNameChangeModal'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
@@ -48,9 +49,8 @@ import TemplateDeletionSuccessToast from '../courses/modals/TemplateDeletionSucc
 import TemplateEditErrorToast from '../courses/modals/TemplateEditErrorToast'
 import TemplateEditModal from '../courses/modals/TemplateEditModal'
 import TemplateEditSuccessToast from '../courses/modals/TemplateEditSuccessToast'
-import EmbeddingModal from './EmbeddingModal'
-import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
+import EmbeddingModal from './EmbeddingModal'
 
 function LiveQuiz({
   isTemplate = false,
@@ -225,7 +225,7 @@ function LiveQuiz({
                     size="sm"
                     onClick={() => setChangeName(true)}
                     className="hover:cursor-pointer"
-                    data-cy={`change-liveQuiz-name-${quiz.name}`}
+                    data-cy={`change-live-quiz-name-${quiz.name}`}
                   />
                 )}
                 {quiz.templateName !== null &&
@@ -562,9 +562,10 @@ function LiveQuiz({
           onDelete={deleteLiveQuiz}
           deleting={deletingLiveQuiz}
         />
-        <LiveQuizNameChangeModal
-          quizId={quiz.id}
+        <ActivityNameChangeModal
+          id={quiz.id}
           name={quiz.name}
+          type={ActivityType.LiveQuiz}
           displayName={quiz.displayName}
           open={changeName}
           setOpen={setChangeName}

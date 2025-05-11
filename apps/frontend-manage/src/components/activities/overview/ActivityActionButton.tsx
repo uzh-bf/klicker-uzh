@@ -19,7 +19,7 @@ function ActivityActionButton({
 }) {
   if (tooltip) {
     return (
-      <Tooltip tooltip={tooltip}>
+      <Tooltip tooltip={tooltip} className={{ tooltip: 'text-sm' }}>
         <Button
           disabled={disabled}
           onClick={onClick}

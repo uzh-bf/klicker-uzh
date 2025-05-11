@@ -686,16 +686,6 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      removeCourse: t.withAuth(asUserFullAccess).string({
-        nullable: true,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await CourseService.removeCourse(args, ctx)
-        },
-      }),
-
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,
@@ -720,16 +710,6 @@ export const Mutation = builder.mutationType({
             return await QuestionService.deleteElement(args, ctx)
           }
         ),
-      }),
-
-      removeElement: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await QuestionService.removeElement(args, ctx)
-        },
       }),
 
       editTag: t.withAuth(asUserFullAccess).field({
@@ -1420,31 +1400,78 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      removeLiveQuiz: t.withAuth(asUserFullAccess).string({
+      changeActivityName: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
           id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await LiveQuizService.removeLiveQuiz(args, ctx)
-        },
-      }),
-
-      changeLiveQuizName: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
+          type: t.arg({ required: true, type: ActivityType }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
-        resolve: withPermission(
-          (args) => ({ liveQuizId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
+        resolve: async (_, args, ctx) => {
+          if (args.type === ActivityTypeEnum.LIVE_QUIZ) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
             return await LiveQuizService.changeLiveQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.changePracticeQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.MICRO_LEARNING) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.changeMicroLearningName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.GROUP_ACTIVITY) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.changeGroupActivityName(args, ctx)
           }
-        ),
+          return null
+        },
       }),
 
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
@@ -1827,17 +1854,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      removeAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: 'Int',
-        args: {
-          collectionId: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ResourcesService.removeAnswerCollection(args, ctx)
-        },
-      }),
-
       deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -2182,7 +2198,30 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              // TODO: add further object types, once they are supported by the sharing function
+              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
             ],
             ctx
           )
@@ -2216,9 +2255,18 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
-              practiceQuizId: undefined,
-              microLearningId: undefined,
-              groupActivityId: undefined,
+              practiceQuizId:
+                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                  ? args.objectId
+                  : undefined,
+              microLearningId:
+                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                  ? args.objectId
+                  : undefined,
+              groupActivityId:
+                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -2275,7 +2323,30 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              // TODO: add further object types, once they are supported by the sharing function
+              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
             ],
             ctx
           )
@@ -2306,9 +2377,18 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
-              practiceQuizId: undefined,
-              microLearningId: undefined,
-              groupActivityId: undefined,
+              practiceQuizId:
+                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                  ? args.objectId
+                  : undefined,
+              microLearningId:
+                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                  ? args.objectId
+                  : undefined,
+              groupActivityId:
+                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -2368,7 +2448,30 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              // TODO: add further object types, once they are supported by the sharing function
+              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
             ],
             ctx
           )
@@ -2401,9 +2504,18 @@ export const Mutation = builder.mutationType({
                 args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
-              practiceQuizId: undefined,
-              microLearningId: undefined,
-              groupActivityId: undefined,
+              practiceQuizId:
+                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                  ? args.objectId
+                  : undefined,
+              microLearningId:
+                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                  ? args.objectId
+                  : undefined,
+              groupActivityId:
+                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -2529,6 +2641,117 @@ export const Mutation = builder.mutationType({
                 id: args.objectId,
                 shortnameOrEmail: args.shortnameOrEmail,
               },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+            // == OWNER permissions on practice quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferPracticeQuizOwnership(
+              {
+                id: args.objectId,
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+            // == OWNER permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferMicroLearningOwnership(
+              {
+                id: args.objectId,
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+            // == OWNER permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferGroupActivityOwnership(
+              {
+                id: args.objectId,
+                shortnameOrEmail: args.shortnameOrEmail,
+              },
+              ctx
+            )
+          }
+
+          return null
+        },
+      }),
+
+      removeObject: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: SharingObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
+            return await ResourcesService.removeAnswerCollection(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+            return await QuestionService.removeElement(
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+            return await CourseService.removeCourse({ id: args.objectId }, ctx)
+          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+            return await LiveQuizService.removeLiveQuiz(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+            return await PracticeQuizService.removePracticeQuiz(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+            return await MicroLearningService.removeMicroLearning(
+              { id: args.objectId },
+              ctx
+            )
+          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+            return await GroupService.removeGroupActivity(
+              { id: args.objectId },
               ctx
             )
           }

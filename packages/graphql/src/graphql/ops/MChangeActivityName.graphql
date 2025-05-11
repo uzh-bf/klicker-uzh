@@ -1,0 +1,13 @@
+mutation ChangeActivityName(
+  $id: String!
+  $type: ActivityType!
+  $name: String!
+  $displayName: String!
+) {
+  changeActivityName(
+    id: $id
+    type: $type
+    name: $name
+    displayName: $displayName
+  )
+}

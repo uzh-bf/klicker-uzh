@@ -18,6 +18,7 @@ function TransferOwnershipSuccessToast({
       openExternal={open}
       onCloseExternal={onClose}
       className={{ root: 'max-w-[32rem]' }}
+      duration={3000}
     >
       {t('manage.sharing.ownershipTransferSuccess')}
     </Toast>

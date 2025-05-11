@@ -226,6 +226,7 @@ function PracticeQuizElement({
             <>
               <PublishPracticeQuizButton
                 practiceQuiz={practiceQuiz}
+                courseId={courseId}
                 courseStartDate={courseStartDate}
               />
               <Dropdown
@@ -339,7 +340,7 @@ function PracticeQuizElement({
                     ),
                     onClick: async () => await unpublishPracticeQuiz(),
                     data: {
-                      cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
+                      cy: `unpublish-practice-quiz-${practiceQuiz.name}`,
                     },
                   },
                   deletionItem,

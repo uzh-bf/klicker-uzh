@@ -2,7 +2,11 @@ import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PublishPracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
+  PublishPracticeQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDateField, H3, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -12,6 +16,7 @@ import * as yup from 'yup'
 interface PracticeQuizPublishingModalProps {
   elementId: string
   title: string
+  courseId: string
   courseStartDate: string
   open: boolean
   setOpen: (value: boolean) => void
@@ -20,6 +25,7 @@ interface PracticeQuizPublishingModalProps {
 function PracticeQuizPublishingModal({
   elementId,
   title,
+  courseId,
   courseStartDate,
   open,
   setOpen,
@@ -52,6 +58,14 @@ function PracticeQuizPublishingModal({
                 variables: {
                   id: elementId,
                 },
+                // TODO: replace with cache update
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { id: courseId },
+                  },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
               setOpen(false)
             }}
@@ -83,6 +97,14 @@ function PracticeQuizPublishingModal({
                   id: elementId,
                   availableFrom: dayjs(values.availableFrom).utc().format(),
                 },
+                // TODO: replace with cache update
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { id: courseId },
+                  },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
               setOpen(false)
             }}

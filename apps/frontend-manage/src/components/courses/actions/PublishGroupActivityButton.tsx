@@ -8,13 +8,13 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import PublishConfirmationModal from '../modals/PublishConfirmationModal'
 
-interface PublishGroupActivityButtonProps {
-  groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
-}
-
 function PublishGroupActivityButton({
   groupActivity,
-}: PublishGroupActivityButtonProps) {
+  courseId,
+}: {
+  groupActivity: Partial<GroupActivity> & Pick<GroupActivity, 'id' | 'name'>
+  courseId: string
+}) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
 
@@ -32,12 +32,13 @@ function PublishGroupActivityButton({
         <Button.Label>{t('manage.course.publishGroupActivity')}</Button.Label>
       </Button>
       <PublishConfirmationModal
+        open={publishModal}
+        setOpen={setPublishModal}
         elementType={ElementInstanceType.GroupActivity}
         elementId={groupActivity.id}
         title={groupActivity.name}
+        courseId={courseId}
         publicationHint={t('manage.course.groupActivityPublishingHint')}
-        open={publishModal}
-        setOpen={setPublishModal}
       />
     </>
   )

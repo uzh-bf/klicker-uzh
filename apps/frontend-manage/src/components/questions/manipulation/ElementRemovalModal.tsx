@@ -1,7 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetUserElementsDocument,
-  RemoveElementDocument,
+  RemoveObjectDocument,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
@@ -28,9 +29,14 @@ function ElementRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  const [removeElement, { loading: removing }] = useMutation(
-    RemoveElementDocument,
-    { variables: { id: elementId } }
+  const [removeObject, { loading: removing }] = useMutation(
+    RemoveObjectDocument,
+    {
+      variables: {
+        objectId: String(elementId),
+        objectType: SharingObjectType.Element,
+      },
+    }
   )
 
   // on modal opening, reset the confirmation state
@@ -54,9 +60,10 @@ function ElementRemovalModal({
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeElement({
+        await removeObject({
           variables: {
-            id: elementId,
+            objectId: String(elementId),
+            objectType: SharingObjectType.Element,
           },
           refetchQueries: [{ query: GetUserElementsDocument }],
         })

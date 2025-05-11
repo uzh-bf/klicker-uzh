@@ -65,6 +65,7 @@ function ActivityConfirmationModal({
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
+      dataCloseButton={{ cy: 'confirmation-modal-close' }}
     >
       <UserNotification type="warning" className={{ root: 'mb-3 text-base' }}>
         {message}

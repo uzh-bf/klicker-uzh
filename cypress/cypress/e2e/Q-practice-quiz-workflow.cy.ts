@@ -244,9 +244,10 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.running.name}"]`).contains(
-      messages.shared.generic.draft
-    )
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.name}-DRAFT"]`).should('exist')
   })
 
   it('Edit the first created practice quiz', function () {
@@ -254,9 +255,6 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.name}"]`
-    ).click()
     cy.get(`[data-cy="edit-practice-quiz-${this.data.running.name}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
@@ -358,8 +356,11 @@ describe('Different practice quiz workflows', function () {
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.nameNew}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -368,9 +369,6 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
-    ).click()
     cy.get(
       `[data-cy="edit-practice-quiz-${this.data.running.nameNew}"]`
     ).click()
@@ -460,7 +458,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="duplicate-practice-quiz-${this.data.running.nameNew}"]`
@@ -539,14 +537,14 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameDupl}"]`
     ).click()
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.running.nameDupl}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameDupl}"]`
     ).should('not.exist')
   })
   // #endregion
@@ -946,8 +944,11 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="publish-practice-quiz-${this.data.running.nameNew}"]`
     ).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).contains(
-      messages.shared.generic.published
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.running.nameNew}-PUBLISHED"]`).should(
+      'exist'
     )
   })
 
@@ -999,7 +1000,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
     ).click()
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.running.nameNew}"]`
@@ -1008,7 +1009,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
     ).should('not.exist')
   })
 
@@ -1066,8 +1067,11 @@ describe('Different practice quiz workflows', function () {
       .click()
       .type(`${currentYear + 5}-01-01T02:00`)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
-      messages.shared.generic.scheduled
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.scheduled.name}-SCHEDULED"]`).should(
+      'exist'
     )
   })
 
@@ -1108,13 +1112,16 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
     ).click()
     cy.get(
-      `[data-cy="unpublish-practiceQuiz-${this.data.scheduled.name}"]`
+      `[data-cy="unpublish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.scheduled.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1130,8 +1137,11 @@ describe('Different practice quiz workflows', function () {
       .click()
       .type(`${currentYear - 1}-01-01T02:00`)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
-      messages.shared.generic.published
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.scheduled.name}-PUBLISHED"]`).should(
+      'exist'
     )
   })
 
@@ -1150,14 +1160,14 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
     ).click()
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
     ).should('not.exist')
   })
 
@@ -1189,8 +1199,11 @@ describe('Different practice quiz workflows', function () {
 
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1215,9 +1228,6 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
-    ).click()
-    cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
@@ -1237,8 +1247,11 @@ describe('Different practice quiz workflows', function () {
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.draft
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(`[data-cy="status-${this.data.manipulation.name}-DRAFT"]`).should(
+      'exist'
     )
   })
 
@@ -1259,9 +1272,6 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="course-list-button-${this.data.manipulation.course}"]`
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
-    ).click()
     cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
@@ -1318,9 +1328,6 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
-    ).click()
-    cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
@@ -1346,7 +1353,7 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
     ).click()
     cy.get(
       `[data-cy="duplicate-practice-quiz-${this.data.manipulation.name}"]`
@@ -1381,17 +1388,23 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="publish-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
-      messages.shared.generic.published
-    )
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="status-${this.data.manipulation.name}-PUBLISHED"]`
+    ).should('exist')
 
     cy.get(
       `[data-cy="publish-practice-quiz-${this.data.manipulation.duplicateName}"]`
     ).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
     cy.get(
-      `[data-cy="practice-quiz-${this.data.manipulation.duplicateName}"]`
-    ).contains(messages.shared.generic.published)
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="status-${this.data.manipulation.duplicateName}-PUBLISHED"]`
+    ).should('exist')
   })
 
   it('Answer the first practice quiz through the student view and verify its content', function () {
@@ -1453,7 +1466,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
     ).click()
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.manipulation.name}"]`
@@ -1462,11 +1475,11 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
     ).should('not.exist')
 
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
     ).click()
     cy.get(
       `[data-cy="delete-practice-quiz-${this.data.manipulation.duplicateName}"]`
@@ -1475,7 +1488,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
   })
   // #endregion

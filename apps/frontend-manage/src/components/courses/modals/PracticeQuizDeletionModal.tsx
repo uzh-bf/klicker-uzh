@@ -3,6 +3,7 @@ import {
   DeletePracticeQuizDocument,
   GetPracticeQuizSummaryDocument,
   GetSingleCourseDocument,
+  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -42,8 +43,10 @@ function PracticeQuizDeletionModal({
           __typename: 'PracticeQuiz',
         },
       },
+      // TODO: replace this with a more efficient cache update
       refetchQueries: [
         { query: GetSingleCourseDocument, variables: { courseId } },
+        { query: GetUserActivitiesDocument },
       ],
     }
   )
