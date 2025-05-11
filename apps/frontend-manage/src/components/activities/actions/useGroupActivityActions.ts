@@ -6,6 +6,7 @@ import {
   faLock,
   faPencil,
   faPlay,
+  faShare,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -27,6 +28,7 @@ function useGroupActivityActions({
   setStartingModal,
   setPublishingModal,
   setExtensionModal,
+  setSharingModal,
 }: {
   groupActivity: ActivityInfo
   setDeletionModal: Dispatch<SetStateAction<boolean>>
@@ -34,6 +36,7 @@ function useGroupActivityActions({
   setStartingModal: Dispatch<SetStateAction<boolean>>
   setPublishingModal: Dispatch<SetStateAction<boolean>>
   setExtensionModal: Dispatch<SetStateAction<boolean>>
+  setSharingModal: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -125,6 +128,15 @@ function useGroupActivityActions({
           }),
         data: { cy: `grade-group-activity-${groupActivity.name}` },
       },
+      {
+        id: 'shareGroupActivity',
+        label: t('manage.course.shareGroupActivity'),
+        icon: faShare,
+        onClick: () => {
+          setSharingModal(true)
+        },
+        data: { cy: `share-group-activity-${groupActivity.name}` },
+      },
     ],
     [
       t,
@@ -137,6 +149,7 @@ function useGroupActivityActions({
       setStartingModal,
       setExtensionModal,
       setEndingModal,
+      setSharingModal,
     ]
   )
 

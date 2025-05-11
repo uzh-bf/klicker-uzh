@@ -2,14 +2,16 @@ import {
   ActivityInfo,
   ElementInstanceType,
   PublicationStatus,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import ExtensionModal from '~/components/courses/modals/ExtensionModal'
+import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
 import GroupActivityStartingModal from '../../courses/modals/GroupActivityStartingModal'
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
+import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useGroupActivityActions from '../actions/useGroupActivityActions'
 import ActivityActions from './ActivityActions'
@@ -19,26 +21,37 @@ const statusActionMap = {
   [PublicationStatus.Draft]: [
     'publishGroupActivity',
     'editGroupActivity',
+    'shareGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Scheduled]: [
     'startGroupActivityNow',
+    'shareGroupActivity',
     'unpublishGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Published]: [
     'extendGroupActivity',
     'endGroupActivity',
+    'shareGroupActivity',
     'deleteGroupActivity',
   ],
-  [PublicationStatus.Ended]: ['gradeGroupActivity', 'deleteGroupActivity'],
-  [PublicationStatus.Graded]: ['gradeGroupActivity', 'deleteGroupActivity'],
+  [PublicationStatus.Ended]: [
+    'gradeGroupActivity',
+    'shareGroupActivity',
+    'deleteGroupActivity',
+  ],
+  [PublicationStatus.Graded]: [
+    'gradeGroupActivity',
+    'shareGroupActivity',
+    'deleteGroupActivity',
+  ],
   [PublicationStatus.Template]: [],
 }
 
 // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
 const permissionActionMap = {
-  isManager: ['deleteGroupActivity'],
+  isManager: ['shareGroupActivity', 'deleteGroupActivity'],
   isEditor: ['editGroupActivity'],
   isExecutor: [
     'publishGroupActivity',
@@ -63,6 +76,7 @@ function GroupActivityActions({
   const [startingModal, setStartingModal] = useState(false)
   const [publishingModal, setPublishingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
+  const [sharingModal, setSharingModal] = useState(false)
 
   const actions = useGroupActivityActions({
     groupActivity,
@@ -71,6 +85,7 @@ function GroupActivityActions({
     setStartingModal,
     setPublishingModal,
     setExtensionModal,
+    setSharingModal,
   })
 
   const availableActions = useAvailableActions({
@@ -95,6 +110,16 @@ function GroupActivityActions({
         activityType={groupActivity.type}
       />
       <div>
+        {sharingModal && groupActivity.isManager && (
+          <ObjectSharingModalWrapper
+            objectUuid={groupActivity.id}
+            objectName={groupActivity.name}
+            objectType={SharingObjectType.GroupActivity}
+            isOwner={groupActivity.isOwner ?? false}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+          />
+        )}
         {publishingModal && (
           <PublishConfirmationModal
             open={publishingModal}

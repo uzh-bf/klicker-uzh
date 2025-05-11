@@ -21,7 +21,7 @@ function ActivityList({
     return (
       <UserNotification
         data={{ cy: 'no-activities-message' }}
-        className={{ root: 'text-base' }}
+        className={{ root: 'mt-2 text-sm' }}
       >
         {t.rich('manage.activities.noActivitiesAvailable', {
           link: (text) => (

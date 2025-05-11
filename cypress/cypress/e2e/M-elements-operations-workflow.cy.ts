@@ -23,11 +23,11 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Part 1: Question duplication
   // #region
@@ -896,7 +896,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="delete-microlearning-${ml}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="actions-MICRO_LEARNING-${ml}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${ml}"]`).should('not.exist')
     })
 
     // delete all group activities
@@ -906,6 +906,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.groupActivity2,
       this.data.update.groupActivity3,
     ]).each((ga: string) => {
+      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${ga}"]`).click()
       cy.get(`[data-cy="delete-group-activity-${ga}"]`).click()
       cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
