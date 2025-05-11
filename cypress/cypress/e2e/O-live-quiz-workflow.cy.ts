@@ -3028,7 +3028,7 @@ describe('Different live-quiz workflows', function () {
       cy.get('[data-cy="confirm-derived-access"]').click()
       cy.get('[data-cy="confirm-dependency-access"]').click()
       cy.get('[data-cy="confirmation-modal-confirm"]').click()
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).should('not.exist')
+      cy.get(`[data-cy="actions-live-quiz-${quiz}"]`).should('not.exist')
       cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
     })
     cy.logoutUser()
