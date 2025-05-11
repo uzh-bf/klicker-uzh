@@ -8,13 +8,13 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import PublishConfirmationModal from '../modals/PublishConfirmationModal'
 
-interface PublishMicroLearningButtonProps {
-  microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
-}
-
 function PublishMicroLearningButton({
   microLearning,
-}: PublishMicroLearningButtonProps) {
+  courseId,
+}: {
+  microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
+  courseId: string
+}) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
 
@@ -32,12 +32,13 @@ function PublishMicroLearningButton({
         <Button.Label>{t('manage.course.publishMicrolearning')}</Button.Label>
       </Button>
       <PublishConfirmationModal
+        open={publishModal}
+        setOpen={setPublishModal}
         elementType={ElementInstanceType.Microlearning}
         elementId={microLearning.id}
         title={microLearning.name}
+        courseId={courseId}
         publicationHint={t('manage.course.microPublishingHint')}
-        open={publishModal}
-        setOpen={setPublishModal}
       />
     </div>
   )

@@ -156,7 +156,7 @@ function ActivityListEntry({
             <MicrolearningActions microLearning={activity} />
           ) : null}
           {activity.type === ActivityType.GroupActivity ? (
-            <GroupActivityActions />
+            <GroupActivityActions groupActivity={activity} />
           ) : null}
         </div>
       </div>

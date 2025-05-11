@@ -801,7 +801,6 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -824,8 +823,14 @@ describe('Test course creation and editing functionalities', function () {
       .get(`[data-cy="permission-level-${data.sharing.microLearning}-READ"]`)
       .should('exist')
 
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-READ"]`)
+      .should('exist')
+
     // course should be accessible and READ permissions should be granted on all activities
-    // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
       .get(`[data-cy="permission-level-${data.sharing.course}-READ"]`)
@@ -859,8 +864,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${data.sharing.groupActivity}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-READ"]`)
+      .should('exist')
   }
 
   function verifyCourseExecutePermissions({ data }: { data: any }) {
@@ -882,7 +890,6 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -905,8 +912,14 @@ describe('Test course creation and editing functionalities', function () {
       .get(`[data-cy="permission-level-${data.sharing.microLearning}-EXECUTE"]`)
       .should('exist')
 
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-EXECUTE"]`)
+      .should('exist')
+
     // course should be accessible and READ permissions should be granted on all activities
-    // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
       .get(`[data-cy="permission-level-${data.sharing.course}-EXECUTE"]`)
@@ -940,8 +953,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${data.sharing.groupActivity}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-EXECUTE"]`)
+      .should('exist')
   }
 
   function verifyCourseWritePermissions({
@@ -969,7 +985,6 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -1004,8 +1019,18 @@ describe('Test course creation and editing functionalities', function () {
       )
       .should('exist')
 
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(
+        propagation
+          ? `[data-cy="permission-level-${data.sharing.groupActivity}-WRITE"]`
+          : `[data-cy="permission-level-${data.sharing.groupActivity}-EXECUTE"]`
+      )
+      .should('exist')
+
     // course should be accessible and READ permissions should be granted on all activities
-    // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
       .get(`[data-cy="permission-level-${data.sharing.course}-WRITE"]`)
@@ -1051,8 +1076,15 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${data.sharing.groupActivity}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(
+        propagation
+          ? `[data-cy="permission-level-${data.sharing.groupActivity}-WRITE"]`
+          : `[data-cy="permission-level-${data.sharing.groupActivity}-EXECUTE"]`
+      )
+      .should('exist')
   }
 
   function verifyCourseAdminPermissions({
@@ -1083,7 +1115,6 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // verify that all activities are shown on the activity overview
-    // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
@@ -1106,8 +1137,14 @@ describe('Test course creation and editing functionalities', function () {
       .get(`[data-cy="permission-level-${data.sharing.microLearning}-ADMIN"]`)
       .should('exist')
 
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-ADMIN"]`)
+      .should('exist')
+
     // course should be accessible and READ permissions should be granted on all activities
-    // TODO: modify these checks as soon as the lists for the remaining activities have been migrated to the new activity list component
     cy.get('[data-cy="courses"]').click()
     if (checkBadge) {
       cy.get(`[data-cy="course-list-button-${data.sharing.course}"]`)
@@ -1143,8 +1180,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${data.sharing.groupActivity}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-GROUP_ACTIVITY-${data.sharing.groupActivity}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.groupActivity}-ADMIN"]`)
+      .should('exist')
   }
 
   function verifyCourseAccessLost(data) {
@@ -1324,7 +1364,7 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="publish-groupActivity-${this.data.sharing.groupActivity}"]`
+      `[data-cy="publish-group-activity-${this.data.sharing.groupActivity}"]`
     ).should('exist')
   })
 

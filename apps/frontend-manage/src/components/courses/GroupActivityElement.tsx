@@ -195,7 +195,10 @@ function GroupActivityElement({
         <div className="flex flex-row items-center gap-2 text-sm">
           {groupActivity.status === PublicationStatus.Draft && (
             <>
-              <PublishGroupActivityButton groupActivity={groupActivity} />
+              <PublishGroupActivityButton
+                groupActivity={groupActivity}
+                courseId={courseId}
+              />
               <Dropdown
                 data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
                 className={{

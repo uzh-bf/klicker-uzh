@@ -11,6 +11,8 @@ fragment ActivityInfoData on ActivityInfo {
   numOfElements
   scheduledStartAt
   scheduledEndAt
+  groupDeadlineDate
+  numOfParticipantGroups
 
   stacks {
     id

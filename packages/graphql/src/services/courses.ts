@@ -1437,7 +1437,6 @@ export async function getCourseData(
     }
   })
 
-  // TODO: return microlearnings in the activity format for the new frontend visualizations
   const microLearningActivities = user?.privatePreview
     ? course.microLearnings.flatMap((microLearning) => {
         const permission = microLearning.permissions[0]
@@ -1509,8 +1508,71 @@ export async function getCourseData(
     }
   })
 
-  // TODO: return group activities in the activity format for the new frontend visualizations
-  const groupActivityActivities = user?.privatePreview ? [] : []
+  const groupActivityActivities = user?.privatePreview
+    ? course.groupActivities.flatMap((groupActivity) => {
+        const permission = groupActivity.permissions[0]
+
+        if (!permission) {
+          return []
+        }
+
+        const {
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+        } = getPermissionBooleans({
+          permission,
+        })
+
+        const stacks = groupActivity.stacks.map((block) => ({
+          id: block.id,
+          numOfParticipants: block.elements[0]
+            ? block.elements[0].results.total +
+              block.elements[0].anonymousResults.total
+            : 0,
+          elements: block.elements.map((instance) => ({
+            id: instance.id,
+            name: instance.elementData.name,
+            type: instance.elementType,
+          })),
+        }))
+
+        return {
+          id: groupActivity.id,
+          templateId: groupActivity.templateInfo?.id ?? null,
+          name: groupActivity.name,
+          displayName: groupActivity.displayName,
+          type: ActivityType.GROUP_ACTIVITY,
+          status: groupActivity.status,
+          courseId: course.id,
+          courseName: course.name,
+          courseStartDate: course.startDate,
+          numOfStacks: groupActivity.stacks.length,
+          numOfElements: groupActivity.stacks.reduce(
+            (acc, block) => acc + block.elements.length,
+            0
+          ),
+          scheduledStartAt: groupActivity.scheduledStartAt,
+          scheduledEndAt: groupActivity.scheduledEndAt,
+          groupDeadlineDate: course.groupDeadlineDate,
+          numOfParticipantGroups: course._count.participantGroups,
+          stacks,
+          permissionLevel: permission.permissionLevel,
+          derivedAccess: permission.derived,
+          numSharedUsers: groupActivity._count.permissions - 1,
+          isOwner,
+          isManager,
+          isEditor,
+          isExecutor,
+          isShared,
+          isRemovable,
+          updatedAt: groupActivity.updatedAt,
+        }
+      })
+    : []
 
   return {
     ...course,

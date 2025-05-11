@@ -173,7 +173,10 @@ function MicroLearningElement({
         <div className="flex flex-row items-center gap-2 text-sm">
           {microLearning.status === PublicationStatus.Draft && (
             <>
-              <PublishMicroLearningButton microLearning={microLearning} />
+              <PublishMicroLearningButton
+                microLearning={microLearning}
+                courseId={courseId}
+              />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}
                 className={{
