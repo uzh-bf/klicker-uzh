@@ -875,7 +875,7 @@ describe('Create different types of elements (with and without sample solution) 
 
       // delete live quiz
       cy.reload() // TODO: resolve issue that causes this to be required -> cache update works correctly locally
-      cy.get(`[data-cy="actions-live-quiz-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     })

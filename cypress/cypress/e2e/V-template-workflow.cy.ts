@@ -506,7 +506,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     )
 
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
     ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
@@ -524,7 +524,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
     ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
@@ -549,7 +549,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="close-template-conversion-modal"]').click()
 
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
     ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
@@ -596,7 +596,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     )
 
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
     ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
@@ -614,7 +614,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.liveQuiz.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
     ).realClick()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
@@ -2487,7 +2487,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       'exist'
     )
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.activity1.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.activity1.name}"]`
     ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.activity1.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
@@ -2504,7 +2504,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       'exist'
     )
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.activity2.name}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.activity2.name}"]`
     ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.activity2.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions

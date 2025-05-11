@@ -746,7 +746,7 @@ describe('Test course creation and editing functionalities', function () {
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
     cy.get(
-      `[data-cy="actions-live-quiz-${this.data.deletion.lqName}"]`
+      `[data-cy="actions-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).realClick()
     cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
