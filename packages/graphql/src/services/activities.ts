@@ -153,6 +153,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           (acc, block) => acc + block.elements.length,
           0
         ),
+        scheduledStartAt: object.practiceQuiz.availableFrom,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
@@ -194,6 +195,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
           (acc, block) => acc + block.elements.length,
           0
         ),
+        scheduledStartAt: object.microLearning.scheduledStartAt,
+        scheduledEndAt: object.microLearning.scheduledEndAt,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
@@ -235,6 +238,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
           (acc, block) => acc + block.elements.length,
           0
         ),
+        scheduledStartAt: object.groupActivity.scheduledStartAt,
+        scheduledEndAt: object.groupActivity.scheduledEndAt,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,

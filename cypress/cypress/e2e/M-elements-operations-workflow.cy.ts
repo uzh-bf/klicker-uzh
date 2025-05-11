@@ -401,9 +401,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     // publish the first microlearning
     cy.get('[data-cy="tab-microLearnings"]').click()
-    cy.get(`[data-cy="publish-microlearning-${microlearning}"]`)
-      .contains(messages.manage.course.publishMicrolearning)
-      .click()
+    cy.get(`[data-cy="publish-microlearning-${microlearning}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
 
     // publish the first group activity
@@ -894,11 +892,11 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.microlearning2,
       this.data.update.microlearning3,
     ]).each((ml: string) => {
-      cy.get(`[data-cy="microlearning-actions-${ml}"]`).click()
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${ml}"]`).click()
       cy.get(`[data-cy="delete-microlearning-${ml}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get(`[data-cy="microlearning-actions-${ml}"]`).should('not.exist')
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${ml}"]`).should('not.exist')
     })
 
     // delete all group activities

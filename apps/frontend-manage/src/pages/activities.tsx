@@ -7,8 +7,8 @@ import * as JsSearch from 'js-search'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import ActivityListLegend from '~/components/activities/overview/ActivityListLegend'
 import ActivityList from '../components/activities/overview/ActivityList'
+import ActivityListLegend from '../components/activities/overview/ActivityListLegend'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'

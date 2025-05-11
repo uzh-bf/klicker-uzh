@@ -254,6 +254,10 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true, true],
       },
       {
+        action: t('manage.course.convertMicroLearningToPracticeQuiz'),
+        permissions: [false, false, false, true, true],
+      },
+      {
         action: t('manage.course.shareMicroLearning'),
         permissions: [false, false, false, true, true],
       },

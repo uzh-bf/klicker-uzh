@@ -153,7 +153,7 @@ function ActivityListEntry({
             <PracticeQuizActions practiceQuiz={activity} />
           ) : null}
           {activity.type === ActivityType.MicroLearning ? (
-            <MicrolearningActions />
+            <MicrolearningActions microLearning={activity} />
           ) : null}
           {activity.type === ActivityType.GroupActivity ? (
             <GroupActivityActions />

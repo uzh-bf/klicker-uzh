@@ -13,14 +13,14 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import CourseRemovalModal from '~/components/courses/modals/CourseRemovalModal'
-import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
 import CourseDeletionModal from '../../components/courses/modals/CourseDeletionModal'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from '../../components/courses/modals/CourseManipulationModal'
+import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
+import Layout from '../../components/Layout'
 
 function CourseSelectionPage() {
   const router = useRouter()

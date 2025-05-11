@@ -258,6 +258,7 @@ function CourseOverviewPage() {
             <MicroLearningList
               privatePreview={user?.userProfile?.privatePreview ?? false}
               microLearnings={course.microLearnings ?? []}
+              microLearningActivities={course.microLearningActivities ?? []}
               courseId={course.id}
               userCatalyst={user?.userProfile?.catalyst}
             />

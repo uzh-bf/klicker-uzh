@@ -52,6 +52,8 @@ type ActivityInfo {
   numOfStacks: Int!
   numSharedUsers: Int
   permissionLevel: PermissionLevel!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
   stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String

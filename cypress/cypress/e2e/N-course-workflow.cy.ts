@@ -800,7 +800,7 @@ describe('Test course creation and editing functionalities', function () {
       'not.exist'
     )
 
-    // verify that the live quiz is shown on the activity overview
+    // verify that all activities are shown on the activity overview
     // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -815,6 +815,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('exist')
     cy.get(`[data-cy="activity-PRACTICE_QUIZ-${data.sharing.practiceQuiz}"]`)
       .get(`[data-cy="permission-level-${data.sharing.practiceQuiz}-READ"]`)
+      .should('exist')
+
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-READ"]`)
       .should('exist')
 
     // course should be accessible and READ permissions should be granted on all activities
@@ -844,8 +851,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="publish-microlearning-${data.sharing.microLearning}"]`
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-READ"]`)
+      .should('exist')
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -871,7 +881,7 @@ describe('Test course creation and editing functionalities', function () {
       'not.exist'
     )
 
-    // verify that the live quiz is shown on the activity overview
+    // verify that all activities are shown on the activity overview
     // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -886,6 +896,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('exist')
     cy.get(`[data-cy="activity-PRACTICE_QUIZ-${data.sharing.practiceQuiz}"]`)
       .get(`[data-cy="permission-level-${data.sharing.practiceQuiz}-EXECUTE"]`)
+      .should('exist')
+
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-EXECUTE"]`)
       .should('exist')
 
     // course should be accessible and READ permissions should be granted on all activities
@@ -915,8 +932,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="publish-microlearning-${data.sharing.microLearning}"]`
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-EXECUTE"]`)
+      .should('exist')
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -948,7 +968,7 @@ describe('Test course creation and editing functionalities', function () {
       'not.exist'
     )
 
-    // verify that the live quiz is shown on the activity overview
+    // verify that all activities are shown on the activity overview
     // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -970,6 +990,17 @@ describe('Test course creation and editing functionalities', function () {
         propagation
           ? `[data-cy="permission-level-${data.sharing.practiceQuiz}-WRITE"]`
           : `[data-cy="permission-level-${data.sharing.practiceQuiz}-EXECUTE"]`
+      )
+      .should('exist')
+
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(
+        propagation
+          ? `[data-cy="permission-level-${data.sharing.microLearning}-WRITE"]`
+          : `[data-cy="permission-level-${data.sharing.microLearning}-EXECUTE"]`
       )
       .should('exist')
 
@@ -1008,8 +1039,15 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="publish-microlearning-${data.sharing.microLearning}"]`
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(
+        propagation
+          ? `[data-cy="permission-level-${data.sharing.microLearning}-WRITE"]`
+          : `[data-cy="permission-level-${data.sharing.microLearning}-EXECUTE"]`
+      )
+      .should('exist')
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -1044,7 +1082,7 @@ describe('Test course creation and editing functionalities', function () {
       'exist'
     )
 
-    // verify that the live quiz is shown on the activity overview
+    // verify that all activities are shown on the activity overview
     // TODO: as soon as the other activities are also shown on the activity overview, check that they are visible
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
@@ -1059,6 +1097,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('exist')
     cy.get(`[data-cy="activity-PRACTICE_QUIZ-${data.sharing.practiceQuiz}"]`)
       .get(`[data-cy="permission-level-${data.sharing.practiceQuiz}-ADMIN"]`)
+      .should('exist')
+
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-ADMIN"]`)
       .should('exist')
 
     // course should be accessible and READ permissions should be granted on all activities
@@ -1090,8 +1135,11 @@ describe('Test course creation and editing functionalities', function () {
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="publish-microlearning-${data.sharing.microLearning}"]`
+      `[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.microLearning}"]`)
+      .get(`[data-cy="permission-level-${data.sharing.microLearning}-ADMIN"]`)
+      .should('exist')
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -1262,16 +1310,16 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.sharing.liveQuiz}"]`
-    ).click()
+    ).should('exist')
 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.sharing.practiceQuiz}"]`
-    ).click()
+    ).should('exist')
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
-      `[data-cy="publish-microlearning-${this.data.sharing.microLearning}"]`
+      `[data-cy="activity-MICRO_LEARNING-${this.data.sharing.microLearning}"]`
     ).should('exist')
 
     cy.get('[data-cy="tab-groupActivities"]').click()
