@@ -38,11 +38,12 @@ export async function getUserElements(ctx: ContextWithUser) {
                 where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
                 orderBy: { order: 'asc' },
               },
-              _count: {
-                select: {
-                  permissions: true,
-                },
-              },
+              // ? hide number of shared users for now due to performance drawbacks
+              // _count: {
+              //   select: {
+              //     permissions: true,
+              //   },
+              // },
             },
           },
         },
@@ -58,7 +59,7 @@ export async function getUserElements(ctx: ContextWithUser) {
             ...object.element,
             permissionLevel: object.permissionLevel,
             derivedAccess: object.derived,
-            numSharedUsers: object.element._count.permissions - 1,
+            numSharedUsers: undefined, // object.element._count.permissions - 1,
             isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
             isManager:
               object.permissionLevel === DB.PermissionLevel.OWNER ||
