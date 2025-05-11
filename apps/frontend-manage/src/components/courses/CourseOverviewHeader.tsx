@@ -87,7 +87,7 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
           </Button>
         ) : null}
-        {course.isManager ? (
+        {course.isManager && user?.privatePreview ? (
           <Button
             onClick={() => setSharingModal(true)}
             className={{ root: 'h-8' }}

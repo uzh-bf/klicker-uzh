@@ -8,7 +8,6 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import ActivityList from '../components/activities/overview/ActivityList'
-import ActivityListLegend from '../components/activities/overview/ActivityListLegend'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
@@ -19,6 +18,7 @@ function Activities() {
   const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
+    type: undefined,
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
@@ -58,8 +58,13 @@ function Activities() {
       )
     }
 
+    // apply type filters (if defined)
+    if (typeof filters.type !== 'undefined') {
+      filtered = filtered.filter((activity) => activity.type === filters.type)
+    }
+
     return filtered
-  }, [dataActivities, searchInput, search, filters.status])
+  }, [dataActivities, searchInput, search, filters.status, filters.type])
 
   return (
     <Layout
@@ -94,7 +99,6 @@ function Activities() {
                 />
                 {/* // TODO: introduce customized ordering for activity overview */}
               </div>
-              <ActivityListLegend />
             </div>
 
             <div className="border-uzh-grey-60 h-full overflow-y-auto">

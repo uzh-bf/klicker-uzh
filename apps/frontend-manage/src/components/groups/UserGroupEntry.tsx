@@ -30,7 +30,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
     <>
       <div
         data-cy={`user-group-${group.name}`}
-        className="flex flex-row justify-between border-b-2 border-gray-300 px-1.5 py-1.5 last:border-b-0"
+        className="border-uzh-grey-60 flex flex-row justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md"
       >
         <div>
           <div className="flex flex-row items-center gap-4">
@@ -107,6 +107,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 <Button.Icon withoutLabel icon={faEllipsisVertical} />
               </Button>
             }
+            className={{ item: 'text-sm' }}
             data={{ cy: `user-group-actions-${group.name}` }}
           />
         </div>

@@ -260,6 +260,7 @@ function Element({
             {element.isManager && dataUser?.userProfile?.privatePreview ? (
               <Dropdown
                 disabled={disabled}
+                className={{ item: 'text-sm' }}
                 items={[
                   {
                     label: (

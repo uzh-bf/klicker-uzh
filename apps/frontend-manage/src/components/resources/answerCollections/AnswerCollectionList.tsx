@@ -36,26 +36,21 @@ function AnswerCollectionList({
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (
-        <div className="mt-1.5 bg-white">
-          {collections?.map((collection, index) => (
-            <div key={`answer-collection-${collection.id}`}>
-              <AnswerCollectionItem
-                collection={collection}
-                highlighted={
-                  router.query?.highlight
-                    ? parseInt(router.query.highlight as string) ===
-                      collection.id
-                    : undefined
-                }
-                setDeletionSuccess={setDeletionSuccess}
-                setDeletionFailure={setDeletionFailure}
-                setRemovalSuccess={setRemovalSuccess}
-                setRemovalFailure={setRemovalFailure}
-              />
-              {index < collections.length - 1 && (
-                <hr className="border-t-2 border-gray-300" />
-              )}
-            </div>
+        <div className="mt-1 flex flex-col">
+          {collections?.map((collection) => (
+            <AnswerCollectionItem
+              key={`answer-collection-${collection.id}`}
+              collection={collection}
+              highlighted={
+                router.query?.highlight
+                  ? parseInt(router.query.highlight as string) === collection.id
+                  : undefined
+              }
+              setDeletionSuccess={setDeletionSuccess}
+              setDeletionFailure={setDeletionFailure}
+              setRemovalSuccess={setRemovalSuccess}
+              setRemovalFailure={setRemovalFailure}
+            />
           ))}
         </div>
       )}

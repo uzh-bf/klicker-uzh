@@ -961,6 +961,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
     },
     activities: {
+      activityType: 'Activity Type',
       noActivitiesAvailable:
         'Currently, no activities are available. You can easily create new activities by combining questions in the <link>library</link>.',
       noActivitiesForFilters:

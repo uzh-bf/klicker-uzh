@@ -1,9 +1,13 @@
-import { faClock, faSquareCheck } from '@fortawesome/free-regular-svg-icons'
 import {
-  faCheck,
+  faCheckCircle,
+  faClock,
+  faPenToSquare,
+} from '@fortawesome/free-regular-svg-icons'
+import {
   faFilePen,
   faPencil,
   faPlay,
+  faStamp,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -40,7 +44,7 @@ function ActivityListEntry({
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
       <FontAwesomeIcon
-        icon={faPencil}
+        icon={faPenToSquare}
         data-cy={`status-${activity.name}-${PublicationStatus.Draft}`}
       />
     ),
@@ -60,14 +64,14 @@ function ActivityListEntry({
     ),
     [PublicationStatus.Ended]: (
       <FontAwesomeIcon
-        icon={faCheck}
+        icon={faCheckCircle}
         className="h-4 w-4 text-gray-500"
         data-cy={`status-${activity.name}-${PublicationStatus.Ended}`}
       />
     ),
     [PublicationStatus.Graded]: (
       <FontAwesomeIcon
-        icon={faSquareCheck}
+        icon={faStamp}
         className="h-4 w-4 text-gray-500"
         data-cy={`status-${activity.name}-${PublicationStatus.Graded}`}
       />
@@ -85,12 +89,12 @@ function ActivityListEntry({
     <>
       <div
         className={twMerge(
-          'border-uzh-grey-60 flex flex-row items-center justify-between border-b-2 border-solid px-2 py-2',
-          highlighted && 'border-primary-100 border-2 bg-orange-50'
+          'border-uzh-grey-60 flex flex-row items-center justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
+          highlighted && 'border-primary-100 bg-orange-50'
         )}
         data-cy={`activity-${activity.type}-${activity.name}`}
       >
-        <div>
+        <div className="flex-1">
           <div className="flex flex-row items-center gap-2.5">
             {publicationStatusMap[activity.status]}
             <div

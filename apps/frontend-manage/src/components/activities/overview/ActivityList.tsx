@@ -49,7 +49,7 @@ function ActivityList({
   }
 
   return (
-    <div className="border-uzh-grey-60 border-t-2">
+    <div className="flex flex-col gap-[0.15rem]">
       {activities.map((activity) => (
         <ActivityListEntry
           key={`activity-list-entry-${activity.id}`}

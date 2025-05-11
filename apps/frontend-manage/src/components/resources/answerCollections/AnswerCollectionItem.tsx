@@ -62,8 +62,8 @@ function AnswerCollectionItem({
     <>
       <div
         className={twMerge(
-          'flex items-center justify-between px-1 py-2 hover:bg-gray-50',
-          highlighted && 'bg-orange-100 hover:bg-orange-200'
+          'border-uzh-grey-60 my-[0.2rem] flex items-center justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
+          highlighted && 'border-primary-100 bg-orange-50'
         )}
         data-cy={`answer-collection-${collection.name}`}
       >
@@ -126,6 +126,7 @@ function AnswerCollectionItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </Button>
               }
+              className={{ item: 'text-sm' }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />
           )}

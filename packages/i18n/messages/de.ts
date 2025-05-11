@@ -961,6 +961,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
     },
     activities: {
+      activityType: 'Aktivitätstyp',
       noActivitiesAvailable:
         'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Fragen in der <link>Bibliothek</link> erstellen.',
       noActivitiesForFilters:

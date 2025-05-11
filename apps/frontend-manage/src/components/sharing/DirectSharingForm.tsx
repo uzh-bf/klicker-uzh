@@ -205,6 +205,7 @@ function DirectSharingForm({
               className={{
                 select: {
                   trigger: 'h-7 text-sm text-gray-900',
+                  item: 'text-sm',
                 },
               }}
               data={{ cy: 'new-permission-access-level' }}
