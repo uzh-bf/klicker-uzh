@@ -2600,6 +2600,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeLIVE_QUIZ: 'Remove Live-Quiz',
       removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
+      removePRACTICE_QUIZ: 'Remove Practice Quiz',
+      removePRACTICE_QUIZtitle: '',
+      removeMICRO_LEARNING: 'Remove Microlearning',
+      removeMICRO_LEARNINGtitle: '',
+      removeGROUP_ACTIVITY: 'Remove Group Activity',
+      removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Remove Course',
       removeCOURSEtitle: '',
       removeObjectTitle: 'Remove Object from Catalog Collection',
@@ -2648,6 +2654,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoPRACTICE_QUIZ: '',
+      requestSuccessInfoMICRO_LEARNING: '',
+      requestSuccessInfoGROUP_ACTIVITY: '',
       requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Once the owner accepts your request, you will be able to view the element and potentially re-use it in your own activities, depending on the granted permissions.',

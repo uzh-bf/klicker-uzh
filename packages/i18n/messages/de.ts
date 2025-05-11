@@ -2625,6 +2625,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeLIVE_QUIZ: 'Live-Quiz entfernen',
       removeLIVE_QUIZtitle: '',
+      removePRACTICE_QUIZ: 'Übungs-Quiz entfernen',
+      removePRACTICE_QUIZtitle: '',
+      removeMICRO_LEARNING: 'Microlearning entfernen',
+      removeMICRO_LEARNINGtitle: '',
+      removeGROUP_ACTIVITY: 'Gruppenaktivität entfernen',
+      removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Kurs entfernen',
       removeCOURSEtitle: '',
       removeObjectDescription:
@@ -2672,6 +2678,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestSuccessInfoLIVE_QUIZ_TEMPLATE:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoPRACTICE_QUIZ: '',
+      requestSuccessInfoMICRO_LEARNING: '',
+      requestSuccessInfoGROUP_ACTIVITY: '',
       requestSuccessInfoCOURSE: '',
       requestSuccessInfoELEMENT:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
