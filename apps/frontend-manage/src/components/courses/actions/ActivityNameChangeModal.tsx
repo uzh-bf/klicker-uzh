@@ -71,7 +71,14 @@ function ActivityNameChangeModal({
               },
               refetchQueries: [
                 { query: GetUserActivitiesDocument },
-                { query: GetSingleCourseDocument, variables: { id: courseId } },
+                ...(courseId
+                  ? [
+                      {
+                        query: GetSingleCourseDocument,
+                        variables: { id: courseId },
+                      },
+                    ]
+                  : []),
               ],
             })
 

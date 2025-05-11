@@ -175,7 +175,15 @@ function usePracticeQuizActions({
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
     ],
-    [t, router, practiceQuiz]
+    [
+      t,
+      router,
+      practiceQuiz,
+      setPublishModal,
+      setDeletionModal,
+      setSharingModal,
+      setCopyToast,
+    ]
   )
 
   return actions
