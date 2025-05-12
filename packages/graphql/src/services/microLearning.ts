@@ -273,7 +273,6 @@ export async function manipulateMicroLearning(
         }
       }),
     },
-
     course: { connect: { id: courseId } },
   }
 

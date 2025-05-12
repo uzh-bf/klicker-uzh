@@ -210,6 +210,8 @@ function ElementCreation({
                   ? {
                       ...dataLiveQuiz.liveQuiz,
                       name: `${dataLiveQuiz.liveQuiz.name} (Copy)`,
+                      // do not link previous course during duplication -> might not be available to user / not running anymore
+                      course: { id: '' },
                     }
                   : dataLiveQuiz.liveQuiz
                 : undefined
@@ -231,6 +233,8 @@ function ElementCreation({
                   ? ({
                       ...dataMicroLearning.getSingleMicroLearning,
                       name: `${dataMicroLearning.getSingleMicroLearning.name} (Copy)`,
+                      // do not link previous course during duplication -> might not be available to user / not running anymore
+                      course: { id: '' },
                     } as MicroLearning)
                   : (dataMicroLearning.getSingleMicroLearning as MicroLearning)
                 : undefined
@@ -253,6 +257,8 @@ function ElementCreation({
                   ? ({
                       ...dataPracticeQuiz.getSinglePracticeQuiz,
                       name: `${dataPracticeQuiz.getSinglePracticeQuiz.name} (Copy)`,
+                      // do not link previous course during duplication -> might not be available to user / not running anymore
+                      course: { id: '' },
                     } as PracticeQuiz)
                   : (dataPracticeQuiz.getSinglePracticeQuiz as PracticeQuiz)
                 : initialDataPracticeQuiz

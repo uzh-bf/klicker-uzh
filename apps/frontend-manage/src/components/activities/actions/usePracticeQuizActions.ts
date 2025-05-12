@@ -176,12 +176,15 @@ function usePracticeQuizActions({
     ],
     [
       t,
-      router,
       practiceQuiz,
+      href,
+      evaluationHref,
+      router,
       setPublishModal,
-      setDeletionModal,
-      setSharingModal,
       setCopyToast,
+      setSharingModal,
+      unpublishPracticeQuiz,
+      setDeletionModal,
     ]
   )
 
