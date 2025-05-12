@@ -416,7 +416,6 @@ export async function splitActivityInstances(
   const persistentInstances = await ctx.prisma.elementInstance.findMany({
     where: {
       id: { in: persistentInstanceIds },
-      owner: { id: ctx.user.sub },
     },
   })
 
@@ -435,7 +434,18 @@ export async function splitActivityInstances(
   const duplicationInstances = await ctx.prisma.elementInstance.findMany({
     where: {
       id: { in: duplicateInstanceIds },
-      owner: { id: ctx.user.sub },
+      // for duplication of an activity, ADMIN permissions on the activity are required -> propagates to element
+      // verify that user has at least ADMIN permissions on the element linked to this instance
+      element: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
     },
   })
 
@@ -600,7 +610,6 @@ export async function manipulateLiveQuiz(
         },
       })),
     },
-    owner: { connect: { id: ctx.user.sub } },
   }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
@@ -641,6 +650,7 @@ export async function manipulateLiveQuiz(
       create: {
         ...createOrUpdateJSON,
         course: courseId !== null ? { connect: { id: courseId } } : undefined,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
       },
       update: {
         ...createOrUpdateJSON,
