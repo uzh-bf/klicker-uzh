@@ -25,7 +25,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              blocks: { include: { elements: true } },
+              blocks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } }, // ? shared user counts left out for efficiency on activity list
             },
           },
@@ -33,7 +36,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },
@@ -41,7 +47,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },
@@ -51,7 +60,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
                 include: { _count: { select: { participantGroups: true } } },
               },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },

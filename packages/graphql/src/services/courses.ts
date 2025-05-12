@@ -1203,7 +1203,10 @@ export async function getCourseData(
       liveQuizzes: {
         where: { isDeleted: false },
         include: {
-          blocks: { include: { elements: true } },
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1216,7 +1219,10 @@ export async function getCourseData(
       practiceQuizzes: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1229,7 +1235,10 @@ export async function getCourseData(
       groupActivities: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1242,7 +1251,10 @@ export async function getCourseData(
       microLearnings: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
