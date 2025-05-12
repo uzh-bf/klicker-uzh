@@ -9,6 +9,7 @@ module.exports = {
       'tutorials/element_management',
       'tutorials/course_management',
       'tutorials/element_stacks',
+      'tutorials/answer_collection',
       'tutorials/live_quiz',
       'tutorials/live_qa',
       'tutorials/microlearning',
