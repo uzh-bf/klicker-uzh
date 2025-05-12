@@ -573,7 +573,11 @@ describe('Create different types of elements (with and without sample solution) 
     )
 
     // trigger instance updates and verify that list of shown activities that should be updates is correct
-    cy.get('[data-cy="instance-update-switch"]').click()
+    cy.get('[data-cy="instance-update-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
     cy.wrap([
       this.data.update.liveQuiz2,
       this.data.update.practiceQuiz2,
@@ -641,7 +645,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
     // trigger instance updates and verify that list of shown activities that should be updates is correct
-    cy.get('[data-cy="instance-update-switch"]').click()
+    cy.get('[data-cy="instance-update-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
     cy.wrap([this.data.update.liveQuiz3, this.data.update.groupActivity3]).each(
       (activityName: string) => {
         cy.get(

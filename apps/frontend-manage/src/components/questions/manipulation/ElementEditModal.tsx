@@ -55,7 +55,7 @@ function ElementEditModal({
   const t = useTranslations()
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
-  const [updateInstances, setUpdateInstances] = useState(false)
+  const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
 
