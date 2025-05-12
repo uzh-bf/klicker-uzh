@@ -289,7 +289,6 @@ export async function manipulatePracticeQuiz(
         },
       })),
     },
-    owner: { connect: { id: ctx.user.sub } },
     course: { connect: { id: courseId } },
   }
 
@@ -327,7 +326,10 @@ export async function manipulatePracticeQuiz(
 
     const upsertedQuiz = await prisma.practiceQuiz.upsert({
       where: { id: id ?? uuidv4() },
-      create: createOrUpdateJSON,
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
       update: createOrUpdateJSON,
       include: {
         course: true,

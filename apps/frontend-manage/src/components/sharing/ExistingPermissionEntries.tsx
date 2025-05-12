@@ -168,6 +168,7 @@ function ExistingPermissionEntries({
                 }}
                 className={{
                   trigger: 'h-7 text-sm text-gray-900',
+                  item: 'text-sm',
                 }}
                 data={{
                   cy: permission.username
