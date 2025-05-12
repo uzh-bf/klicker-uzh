@@ -30,7 +30,7 @@ For **students**, single choice questions are viewed as follows, with the soluti
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Single Choice Question - Lecturer View](/img/supported_element_types/SC_lecturer.png)
 
@@ -53,7 +53,7 @@ For **students**, multiple choice questions are viewed as follows, with the solu
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Multiple Choice Question - Lecturer View](/img/supported_element_types/MC_lecturer.png)
 
@@ -76,7 +76,7 @@ For **students**, Kprime questions are viewed as follows, with the solution (and
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Kprime Question - Lecturer View](/img/supported_element_types/KP_lecturer.png)
 
@@ -99,7 +99,7 @@ For **students**, numerical response questions are viewed as follows, with the s
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Numerical Response Question - Lecturer View](/img/supported_element_types/NR_lecturer.png)
 
@@ -120,7 +120,7 @@ For **students**, free text questions are viewed as follows. This is the view fr
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Free Text Question - Lecturer View](/img/supported_element_types/FT_lecturer.png)
 
@@ -130,7 +130,7 @@ This is how it looks from the **lecturer’s** perspective.
 ## Selection (SE)
 
 :::info
-Selection questions enable students to respond to the question by selecting one or more of the available answer options (from an answer collection). You can specify additional restrictions, like the number of possible answers, as well as sample solutions for graded and gamified settings (note that the student response must match one of the sample solutions exactly to be counted as correct). All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+Selection questions require students to choose a specific number of items from a predefined list, known as an **Answer Collection**. You present a question or scenario, define how many answers the student must select, specify which items from the linked Answer Collection are the correct solutions, and optionally provide a general explanation. This type is useful for scenarios where students need to identify multiple correct elements from a larger set (e.g., identifying indicated medications, relevant symptoms, or applicable concepts). All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
 :::
 
 <Tabs>
@@ -141,7 +141,7 @@ For **students**, selection questions are viewed as follows. This is the view fr
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Selection Question - Lecturer View](/img/supported_element_types/SE_lecturer.png)
 
@@ -151,7 +151,16 @@ This is how it looks from the **lecturer’s** perspective.
 ## Case Study (CS)
 
 :::info
-Case study questions enable students to respond to the question by selecting one or more of the available answer options. You can specify additional restrictions, like the number of possible answers, as well as sample solutions for graded and gamified settings (note that the student response must match one of the sample solutions exactly to be counted as correct). All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+Case Study questions allow for complex, multi-faceted evaluations. They enable students to assess multiple **Items** (e.g., potential diagnoses, treatment options, investment strategies) based on predefined **Criteria** (e.g., probability, cost, risk level, effectiveness) within the context of one or more specific **Cases** (scenarios).
+
+Here's how it works:
+
+1.  **Define Items:** You specify the set of items students will evaluate, typically by linking an **Answer Collection**.
+2.  **Define Criteria:** You establish the dimensions for evaluation (e.g., "Probability", "Treatment Cost"). Each criterion has a defined range (Min/Max), step size, and optional unit (e.g., %, €).
+3.  **Create Cases:** You write one or more detailed scenarios or case descriptions.
+4.  **Set Solutions:** For _each_ Case, you define the "correct" range (Lower and Upper Bounds) for _each_ Item against _each_ Criterion.
+
+Students are presented with a case and must provide a value for each criterion for every listed item, usually via sliders or input fields constrained by the defined ranges. This type is ideal for simulating complex decision-making processes where multiple factors must be weighed across different scenarios. All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
 :::
 
 <Tabs>
@@ -162,7 +171,7 @@ For **students**, case study questions are viewed as follows. This is the view f
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-This is how it looks from the **lecturer’s** perspective.
+This is how it looks from the **lecturer's** perspective.
 
 ![Case Study Question - Lecturer View](/img/supported_element_types/CS_lecturer.png)
 
@@ -177,13 +186,13 @@ Content elements are a great way to provide additional information to students. 
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-    This is how it looks from the **student’s** perspective.
+    This is how it looks from the **student's** perspective.
 
 ![Content Element - Student View](/img/supported_element_types/CT_student.png)
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-    This is how it looks from the **lecturer’s** perspective.
+    This is how it looks from the **lecturer's** perspective.
 
 ![Content Element - Lecturer View](/img/supported_element_types/CT_lecturer.png)
 
@@ -206,7 +215,7 @@ For **students**, flashcards are viewed as follows, with the solution and gradin
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
-    This is how it looks from the **lecturer’s** perspective.
+    This is how it looks from the **lecturer's** perspective.
 
 ![Flashcard - Lecturer View](/img/supported_element_types/FC_lecturer.png)
 

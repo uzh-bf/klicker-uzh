@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 function CatalystTitle({ title }: { title: string }) {
   return (
-    <div className="-mb-4 flex flex-row flex-wrap items-center justify-between -space-y-4">
+    <div className="-mb-4 flex flex-row flex-wrap items-center justify-between -space-y-4 md:-mb-10">
       <h1>{title}</h1>
       <a href="/catalyst" className="w-max">
         <div className="h-12 w-full rounded-md bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 p-0.5">
