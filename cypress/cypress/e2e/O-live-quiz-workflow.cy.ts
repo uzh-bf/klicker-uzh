@@ -701,6 +701,9 @@ describe('Different live-quiz workflows', function () {
       .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
@@ -1471,11 +1474,7 @@ describe('Different live-quiz workflows', function () {
       name: this.data.liveQuiz.name,
       displayName: this.data.liveQuiz.displayName,
       courseName: this.data.liveQuiz.course,
-      blocks: [
-        {
-          elements: [this.data.SC2.title],
-        },
-      ],
+      blocks: [{ elements: [this.data.SC2.title] }],
     })
 
     // open the overview and check its content
@@ -1735,6 +1734,9 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.liveQuiz.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.liveQuiz.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.liveQuiz.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]')
       .should('exist')

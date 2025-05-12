@@ -447,9 +447,9 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -1239,7 +1239,9 @@ describe('Different practice quiz workflows', function () {
       .clear()
       .type(this.data.manipulation.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.manipulation.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.manipulation.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-stack-0"]').contains(
       this.data.FTML2.title.substring(0, 20)

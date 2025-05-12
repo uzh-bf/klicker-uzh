@@ -507,9 +507,9 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .should('have.value', runningStart)
@@ -1742,7 +1742,9 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.manipulation.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.manipulation.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-stack-0"]').contains(
       this.data.CSML2.title.substring(0, 20)

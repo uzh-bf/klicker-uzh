@@ -482,9 +482,9 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .should('have.value', runningStart)
