@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.51...v3.3.0-alpha.52) (2025-05-12)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure that practice quiz and microlearning previews are only visible to users with sufficient permissions ([98a2e10](https://github.com/uzh-bf/klicker-uzh/commit/98a2e103d19eae36d54be9d32e47cb65bca56dec))
+* **packages/graphql:** resolve permission validation issues on element instances when editing or duplicating activity ([#4684](https://github.com/uzh-bf/klicker-uzh/issues/4684)) ([8363b36](https://github.com/uzh-bf/klicker-uzh/commit/8363b369fcbb3ace45dc1923a3b5b3b41b9e1808))
+* **packages/grpahql:** make sure that stacks and elements are ordered correctly on activity overview ([d16ccba](https://github.com/uzh-bf/klicker-uzh/commit/d16ccbade3dfd59c86fc64023e30f1e94d0a438e))
+
+
+### Other
+
+* **apps/frontend-manage:** make direct sharing submission button clearly recognizable ([2d503a8](https://github.com/uzh-bf/klicker-uzh/commit/2d503a805be4db3ca59e9d24874c151cd6fb7da0))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** activate element instance update trigger by default ([#4685](https://github.com/uzh-bf/klicker-uzh/issues/4685)) ([76ea578](https://github.com/uzh-bf/klicker-uzh/commit/76ea578465ec942cf20568f17eb8fb3c10081c92))
+
 ## [3.3.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.50...v3.3.0-alpha.51) (2025-05-11)
 
 
