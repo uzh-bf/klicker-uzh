@@ -227,10 +227,11 @@ function DirectSharingForm({
               basic
               type="button"
               onClick={() => submitForm()}
-              disabled={!isValid || isSubmitting}
+              primary={isValid}
+              disabled={!isValid}
               className={{
                 root: twMerge(
-                  'px-2 py-2 text-green-700 hover:text-green-800',
+                  'px-2 py-2 hover:text-white',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}
