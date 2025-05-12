@@ -1071,6 +1071,7 @@ describe('Different practice quiz workflows', function () {
 
     // modify numerical question
     cy.get(`[data-cy="edit-element-${this.data.NRML2.title}"]`).click()
+    cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.manipulation.newNRTitle)

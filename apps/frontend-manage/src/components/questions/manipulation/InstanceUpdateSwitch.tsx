@@ -37,18 +37,15 @@ function InstanceUpdateSwitch({
     { fetchPolicy: 'cache-first' }
   )
 
-  const { data, loading, refetch } = useQuery(
-    GetInstanceUpdateActivitiesDocument,
-    {
-      variables: {
-        elementId,
-        hasSampleSolution,
-        includeTemplateInstances: true,
-      },
-      fetchPolicy: 'cache-and-network',
-      skip: !updateInstances,
-    }
-  )
+  const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
+    variables: {
+      elementId,
+      hasSampleSolution,
+      includeTemplateInstances: true,
+    },
+    fetchPolicy: 'cache-and-network',
+    skip: !updateInstances,
+  })
 
   const usedInTemplates = useMemo(() => {
     return (
@@ -101,11 +98,13 @@ function InstanceUpdateSwitch({
         )}
 
       <div className="ml-[4.25rem]">
-        {loading && <Loader />}
+        {loading && (
+          <Loader data={{ cy: 'instance-update-activities-loading' }} />
+        )}
         {!loading && data?.getInstanceUpdateActivities && (
           <div className="mt-2 border-t border-gray-200">
-            {data?.getInstanceUpdateActivities
-              ?.filter(
+            {data.getInstanceUpdateActivities
+              .filter(
                 (activity) =>
                   includeTemplateUpdates ||
                   activity.status !== PublicationStatus.Template
