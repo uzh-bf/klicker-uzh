@@ -23,9 +23,9 @@
     "displayName": "Course to be deleted display",
     "qTitle": "Question Title",
     "qContent": "Question Content",
-    "lqName": "Live Quiz",
-    "pqName": "Practice Quiz",
-    "mlName": "Micro Learning"
+    "lqName": "Course Live Quiz",
+    "pqName": "Course Practice Quiz",
+    "mlName": "Course Micro Learning"
   },
   "sharing": {
     "course": "Sharing Course Name",
