@@ -652,6 +652,9 @@ describe('Different live-quiz workflows', function () {
       .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course1.name}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
@@ -1233,6 +1236,7 @@ describe('Different live-quiz workflows', function () {
 
     // modify single choice question
     cy.get(`[data-cy="edit-element-${this.data.SC2.title}"]`).click()
+    cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.liveQuiz.newSCTitle)
@@ -1484,6 +1488,9 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.liveQuiz.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.liveQuiz.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.liveQuiz.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
