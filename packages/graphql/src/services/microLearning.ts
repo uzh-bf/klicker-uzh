@@ -27,7 +27,9 @@ export async function getMicroLearningData(
       OR: [
         { AND: { status: PublicationStatus.PUBLISHED, isDeleted: false } },
         // if user has access to the microlearning, the query should be enabled for loading the preview
-        { permissions: { some: { userId: ctx.user?.sub } } },
+        ...(ctx.user?.sub
+          ? [{ permissions: { some: { userId: ctx.user.sub } } }]
+          : []),
       ],
     },
     include: {

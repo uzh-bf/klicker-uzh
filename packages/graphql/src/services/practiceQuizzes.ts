@@ -30,7 +30,9 @@ export async function getPracticeQuizData(
         { status: PublicationStatus.PUBLISHED, isDeleted: false },
         { status: PublicationStatus.SCHEDULED },
         // if user has access to the microlearning, the query should be enabled for loading the preview
-        { permissions: { some: { userId: ctx.user?.sub } } },
+        ...(ctx.user?.sub
+          ? [{ permissions: { some: { userId: ctx.user.sub } } }]
+          : []),
       ],
     },
     include: {
