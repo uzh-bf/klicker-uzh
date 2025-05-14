@@ -152,8 +152,6 @@ function Element({
                     />
                   )}
                 </a>
-
-                {element.isArchived && <FontAwesomeIcon icon={faArchive} />}
               </div>
 
               <div className="flex-1 text-sm">
@@ -191,6 +189,10 @@ function Element({
               />
             </div>
           </div>
+
+          {element.isArchived && (
+            <FontAwesomeIcon icon={faArchive} className="mr-3 mt-2" />
+          )}
 
           <SharingTypeBadge sharingType={element.sharingType} />
 

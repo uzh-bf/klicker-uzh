@@ -649,12 +649,12 @@ export async function updateTagOrdering(
 }
 
 export async function toggleIsArchived(
-  { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
+  { elementIds, isArchived }: { elementIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
 ) {
   await ctx.prisma.element.updateMany({
     where: {
-      id: { in: questionIds },
+      id: { in: elementIds },
       permissions: {
         some: {
           userId: ctx.user.sub,
@@ -667,7 +667,7 @@ export async function toggleIsArchived(
     data: { isArchived },
   })
 
-  return questionIds.map((id) => ({ id, isArchived }))
+  return elementIds.map((id) => ({ id, isArchived }))
 }
 
 // map mime types of images to file extensions

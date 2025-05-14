@@ -1365,7 +1365,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: [ArchivedElement],
         args: {
-          questionIds: t.arg.intList({ required: true }),
+          elementIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {

@@ -395,16 +395,46 @@ function Index() {
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
                           disabled={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: true,
+                              },
+                              update: (cache, { data }) => {
+                                // check if request was successful
+                                const updatedElements = data?.toggleIsArchived
+                                if (!updatedElements) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds = updatedElements.map(
+                                  (element) => element.id
+                                )
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: true,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
                               },
                             })
                             setSelectedQuestions({})
@@ -418,17 +448,47 @@ function Index() {
                         tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
                         <Button
-                          loading={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          disabled={toggelingArchive}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: false,
+                              },
+                              update: (cache, { data }) => {
+                                // check if request was successful
+                                const updatedElements = data?.toggleIsArchived
+                                if (!updatedElements) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds = updatedElements.map(
+                                  (element) => element.id
+                                )
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: false,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
                               },
                             })
                             setSelectedQuestions({})
