@@ -39,13 +39,13 @@ import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
 
-const elementStatusFilters: Record<ElementStatus, IconDefinition[]> = {
+const ELEMENT_STATUS_FILTERS: Record<ElementStatus, IconDefinition[]> = {
   [ElementStatus.Draft]: [faPenRegular, faPenSolid],
   [ElementStatus.Review]: [faEyeRegular, faEyeSolid],
   [ElementStatus.Ready]: [faCheckCircleRegular, faCheckCircleSolid],
 }
 
-const sharingTypeFilters: Record<SharingType, IconDefinition[]> = {
+export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
   [SharingType.Owned]: [faUserTie, faUserTie],
   [SharingType.Shared]: [faLink, faLink],
   [SharingType.Dependency]: [faFolderTree, faFolderTree],
@@ -101,22 +101,24 @@ function TagList({
   const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
     fetchPolicy: 'cache-first',
   })
-  const elementTypeFilters: Record<ElementType, IconDefinition[] | undefined> =
-    {
-      CONTENT: [faCommentRegular, faCommentSolid],
-      FLASHCARD: [faListRegular, faListSolid],
-      SC: [faQuestionRegular, faQuestionSolid],
-      MC: [faQuestionRegular, faQuestionSolid],
-      KPRIM: [faQuestionRegular, faQuestionSolid],
-      FREE_TEXT: [faQuestionRegular, faQuestionSolid],
-      NUMERICAL: [faQuestionRegular, faQuestionSolid],
-      SELECTION: data?.checkPrivatePreviewAvailable
-        ? [faSquareCheckRegular, faSquareCheckSolid]
-        : undefined,
-      CASE_STUDY: data?.checkPrivatePreviewAvailable
-        ? [faListCheck, faListCheck]
-        : undefined,
-    }
+  const ELEMENT_TYPE_FILTERS: Record<
+    ElementType,
+    IconDefinition[] | undefined
+  > = {
+    CONTENT: [faCommentRegular, faCommentSolid],
+    FLASHCARD: [faListRegular, faListSolid],
+    SC: [faQuestionRegular, faQuestionSolid],
+    MC: [faQuestionRegular, faQuestionSolid],
+    KPRIM: [faQuestionRegular, faQuestionSolid],
+    FREE_TEXT: [faQuestionRegular, faQuestionSolid],
+    NUMERICAL: [faQuestionRegular, faQuestionSolid],
+    SELECTION: data?.checkPrivatePreviewAvailable
+      ? [faSquareCheckRegular, faSquareCheckSolid]
+      : undefined,
+    CASE_STUDY: data?.checkPrivatePreviewAvailable
+      ? [faListCheck, faListCheck]
+      : undefined,
+  }
 
   const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
@@ -159,7 +161,7 @@ function TagList({
 
       {questionStatusVisible && (
         <ul className="list-none">
-          {Object.entries(elementStatusFilters).map(([status, icons]) => (
+          {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
             <TagItem
               key={status}
               text={t(`shared.${status as ElementStatus}.statusLabel`)}
@@ -186,7 +188,7 @@ function TagList({
       />
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.entries(elementTypeFilters).map(([type, icons]) => {
+          {Object.entries(ELEMENT_TYPE_FILTERS).map(([type, icons]) => {
             if (!icons) return null
 
             return (
@@ -218,7 +220,7 @@ function TagList({
       />
       {sharingTypesVisible && (
         <ul className="list-none">
-          {Object.entries(sharingTypeFilters).map(([type, icons]) => {
+          {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
             if (!icons) return null
 
             return (

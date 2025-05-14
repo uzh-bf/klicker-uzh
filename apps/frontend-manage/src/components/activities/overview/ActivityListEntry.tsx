@@ -20,6 +20,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SharingTypeBadge from '~/components/sharing/SharingTypeBadge'
 import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ActivityDetailsModal from './ActivityDetailsModal'
@@ -136,10 +137,16 @@ function ActivityListEntry({
                   numOfElements: activity.numOfElements,
                 })}
           </div>
-          <div className="ml-[1.65rem] text-sm text-gray-500">
-            {t('manage.activities.lastModifiedAt', {
-              date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
-            })}
+          <div className="flex h-[1.4rem] flex-row items-center gap-4 text-gray-500">
+            <div className="ml-[1.65rem] text-sm">
+              {t('manage.activities.lastModifiedAt', {
+                date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
+            <SharingTypeBadge
+              sharingType={activity.sharingType}
+              className={{ root: 'text-sm' }}
+            />
           </div>
         </div>
 

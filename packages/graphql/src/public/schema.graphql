@@ -166,6 +166,7 @@ type AnswerCollection {
   numSharedUsers: Int
   ownerShortname: String
   permissionLevel: PermissionLevel
+  sharingType: SharingType
 }
 
 type AnswerCollectionEntry {

@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
+import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { PermissionLevel } from './sharing.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -48,6 +49,7 @@ interface IAnswerCollection extends DB.AnswerCollection {
   isShared?: boolean // flag to signal whether the object is owned or shared
   isRemovable?: boolean // flag to signal the option to remove the direct individual permission & the existence of dependent objects
   isDeletable?: boolean // flag to signal whether the object can be deleted / the existence of dependent objects
+  sharingType?: SharingTypeEnum // owned / shared / dependency
 }
 
 export const AnswerCollectionRef =
@@ -76,6 +78,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
     isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
+    sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
   }),
 })
 

@@ -13,6 +13,7 @@ import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SharingTypeBadge from '~/components/sharing/SharingTypeBadge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
@@ -69,7 +70,7 @@ function AnswerCollectionItem({
       >
         <div className="flex flex-col items-start">
           <div className="flex items-center gap-2">
-            {!(collection.isOwner && !collection.isImported) && (
+            {collection.isImported && (
               <FontAwesomeIcon
                 icon={collection.isImported ? faDownload : faLink}
                 className="text-gray-500"
@@ -85,23 +86,34 @@ function AnswerCollectionItem({
             )}
           </div>
 
-          <div className="text-sm text-gray-500">
+          <div className="flex flex-row gap-4 text-sm text-gray-500">
             {!collection.isOwner && (
-              <span className="mr-3">
+              <div>
                 {t('manage.resources.byOwner', {
                   owner:
                     collection.ownerShortname ?? t('shared.generic.unknown'),
                 })}
-              </span>
+              </div>
             )}
             {typeof collection.numOfEntries !== 'undefined' &&
               collection.numOfEntries !== null && (
-                <span>
+                <div>
                   {t('manage.resources.numOfAnswers', {
                     number: collection.numOfEntries ?? 0,
                   })}
-                </span>
+                </div>
               )}
+            {collection.isImported ? (
+              <div className="flex h-5 flex-row items-center gap-2 py-1">
+                <FontAwesomeIcon icon={faDownload} className="h-4 w-4" />
+                <div>{t('shared.generic.imported')}</div>
+              </div>
+            ) : (
+              <SharingTypeBadge
+                sharingType={collection.sharingType}
+                className={{ root: 'h-5' }}
+              />
+            )}
           </div>
         </div>
 

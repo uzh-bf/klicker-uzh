@@ -3,8 +3,6 @@ import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
   faEllipsis,
-  faFolderTree,
-  faLink,
   faPencil,
   faShare,
   faUserGroup,
@@ -16,7 +14,6 @@ import {
   ElementStatus,
   type ElementType,
   SharingObjectType,
-  SharingType,
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -30,6 +27,7 @@ import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import SharingTypeBadge from '../sharing/SharingTypeBadge'
 import ElementTags from './ElementTags'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
@@ -194,18 +192,8 @@ function Element({
             </div>
           </div>
 
-          {element.sharingType === SharingType.Shared ? (
-            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
-              <FontAwesomeIcon icon={faLink} className="h-4 w-4" />
-              <div>{t('shared.generic.shared')}</div>
-            </div>
-          ) : null}
-          {element.sharingType === SharingType.Dependency ? (
-            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
-              <FontAwesomeIcon icon={faFolderTree} className="h-4 w-4" />
-              <div>{t('shared.generic.dependency')}</div>
-            </div>
-          ) : null}
+          <SharingTypeBadge sharingType={element.sharingType} />
+
           {element.numSharedUsers && element.isManager ? (
             <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
               <div>{element.numSharedUsers}</div>

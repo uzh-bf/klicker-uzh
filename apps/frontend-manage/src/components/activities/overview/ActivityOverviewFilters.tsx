@@ -15,9 +15,14 @@ import {
   faStamp,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { ActivityType, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  PublicationStatus,
+  SharingType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { SHARING_TYPE_FILTERS } from '~/components/questions/tags/TagList'
 import TagHeader from '../../questions/tags/TagHeader'
 import TagItem from '../../questions/tags/TagItem'
 
@@ -39,6 +44,7 @@ const TYPE_ICONS = {
 
 export type ActivityOverviewFilterType = {
   status: PublicationStatus[]
+  sharingType?: SharingType[]
   type?: ActivityType
 }
 
@@ -51,6 +57,7 @@ function ActivityOverviewFilters({
 }) {
   const t = useTranslations()
   const [statusVisible, setStatusVisible] = useState(true)
+  const [sharingTypeVisible, setSharingTypeVisible] = useState(true)
   const [typesVisible, setTypesVisible] = useState(true)
 
   const toggleStatusFilter = (status: PublicationStatus) => {
@@ -64,6 +71,21 @@ function ActivityOverviewFilters({
       return {
         ...prev,
         status: [...prev.status, status],
+      }
+    })
+  }
+
+  const toggleSharingTypeFilter = (type: SharingType) => {
+    setFilters((prev) => {
+      if (prev.sharingType?.includes(type)) {
+        return {
+          ...prev,
+          sharingType: prev.sharingType.filter((s) => s !== type),
+        }
+      }
+      return {
+        ...prev,
+        sharingType: [...(prev.sharingType ?? []), type],
       }
     })
   }
@@ -103,6 +125,28 @@ function ActivityOverviewFilters({
               data={{ cy: `status-filter-${status.toLowerCase()}` }}
             />
           ))}
+        </ul>
+      )}
+
+      <TagHeader
+        text={t('shared.generic.sharing')}
+        state={sharingTypeVisible}
+        setState={setSharingTypeVisible}
+      />
+      {sharingTypeVisible && (
+        <ul className="list-none">
+          {[SharingType.Owned, SharingType.Shared, SharingType.Dependency].map(
+            (type) => (
+              <TagItem
+                key={type}
+                text={t(`manage.sharing.label${type as SharingType}`)}
+                icon={SHARING_TYPE_FILTERS[type]}
+                active={filters.sharingType?.includes(type) ?? false}
+                onClick={() => toggleSharingTypeFilter(type)}
+                data={{ cy: `sharing-filter-${type.toLowerCase()}` }}
+              />
+            )
+          )}
         </ul>
       )}
 

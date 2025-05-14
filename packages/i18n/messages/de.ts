@@ -332,6 +332,7 @@ export default {
       propagation: 'Propagation',
       sharing: 'Sharing',
       shared: 'Geteilt',
+      imported: 'Importiert',
       dependency: 'Abhängigkeit',
     },
     types: {
