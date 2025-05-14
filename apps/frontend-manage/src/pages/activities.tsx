@@ -95,14 +95,9 @@ function Activities() {
       className={{ children: 'pb-2' }}
     >
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        {dataActivities && dataActivities.userActivities && (
-          <div>
-            <ActivityOverviewFilters
-              filters={filters}
-              setFilters={setFilters}
-            />
-          </div>
-        )}
+        <div>
+          <ActivityOverviewFilters filters={filters} setFilters={setFilters} />
+        </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
             <div>

@@ -153,6 +153,14 @@ function TagList({
     ]
   )
 
+  // TODO: remove as soon as sharing functionalities are available for all users
+  const { data: previewCheck } = useQuery(
+    CheckPrivatePreviewAvailableDocument,
+    {
+      fetchPolicy: 'cache-first',
+    }
+  )
+
   return (
     <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-[14rem]">
       <TagHeader
@@ -215,39 +223,43 @@ function TagList({
         </ul>
       )}
 
-      <TagHeader
-        text={t('shared.generic.sharing')}
-        state={sharingTypesVisible}
-        setState={setSharingTypesVisible}
-      />
-      {sharingTypesVisible && (
-        <ul className="list-none">
-          {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
-            if (!icons) return null
+      {previewCheck?.checkPrivatePreviewAvailable ? (
+        <>
+          <TagHeader
+            text={t('shared.generic.sharing')}
+            state={sharingTypesVisible}
+            setState={setSharingTypesVisible}
+          />
+          {sharingTypesVisible && (
+            <ul className="list-none">
+              {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
+                if (!icons) return null
 
-            return (
-              <TagItem
-                key={type}
-                text={t(`manage.sharing.label${type as SharingType}`)}
-                icon={icons}
-                active={
-                  activeSharingTypes?.includes(type as SharingType) ?? false
-                }
-                onClick={(): void =>
-                  handleTagClick({
-                    tagName: type,
-                    isTypeTag: false,
-                    isStatusTag: false,
-                    isSharingTypeTag: true,
-                    isUntagged: false,
-                  })
-                }
-                data={{ cy: `element-sharing-filter-${type}` }}
-              />
-            )
-          })}
-        </ul>
-      )}
+                return (
+                  <TagItem
+                    key={type}
+                    text={t(`manage.sharing.label${type as SharingType}`)}
+                    icon={icons}
+                    active={
+                      activeSharingTypes?.includes(type as SharingType) ?? false
+                    }
+                    onClick={(): void =>
+                      handleTagClick({
+                        tagName: type,
+                        isTypeTag: false,
+                        isStatusTag: false,
+                        isSharingTypeTag: true,
+                        isUntagged: false,
+                      })
+                    }
+                    data={{ cy: `element-sharing-filter-${type}` }}
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </>
+      ) : null}
 
       <TagHeader
         text={t('manage.questionPool.tags')}
