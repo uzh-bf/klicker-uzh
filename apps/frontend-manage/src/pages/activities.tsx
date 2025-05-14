@@ -21,7 +21,11 @@ function Activities() {
   const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
-    sharingType: [SharingType.Owned, SharingType.Shared],
+    sharingType: [
+      SharingType.Owned,
+      SharingType.Shared,
+      SharingType.Dependency,
+    ],
     type: undefined,
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(

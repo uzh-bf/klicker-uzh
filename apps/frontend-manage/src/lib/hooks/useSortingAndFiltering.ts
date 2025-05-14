@@ -64,7 +64,11 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
   filters: {
     status: undefined,
     type: undefined,
-    sharingType: [SharingType.Owned, SharingType.Shared],
+    sharingType: [
+      SharingType.Owned,
+      SharingType.Shared,
+      SharingType.Dependency,
+    ],
     archive: false,
     untagged: false,
     tags: [],
