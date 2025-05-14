@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { prop, sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 
@@ -96,6 +96,12 @@ export async function getUserActivities(ctx: ContextWithUser) {
       object.permissionLevel !== DB.PermissionLevel.OWNER &&
       !object.derived &&
       object.directPermission?.userGroupId === null
+    const sharingType =
+      object.permissionLevel === DB.PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : object.derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED
 
     if (object.liveQuiz) {
       const stacks = object.liveQuiz.blocks.map((block) => ({
@@ -136,6 +142,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
     } else if (object.practiceQuiz) {
@@ -178,6 +185,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
     } else if (object.microLearning) {
@@ -221,6 +229,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
     } else if (object.groupActivity) {
@@ -267,6 +276,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }
     }

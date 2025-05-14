@@ -78,8 +78,8 @@ function filterQuestions(
   }
 
   // if either type or tags were selected, filter the results
-  if (filters.type || filters.tags || filters.status) {
-    results = results.filter(({ type, tags, status }): boolean => {
+  if (filters.type || filters.sharingType || filters.tags || filters.status) {
+    results = results.filter(({ type, sharingType, tags, status }): boolean => {
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
         return false
@@ -87,6 +87,16 @@ function filterQuestions(
 
       // compare the status selected and the status of each question
       if (filters.status && status !== filters.status) {
+        return false
+      }
+
+      // compare the sharing type and check whether the element fulfills any of them
+      if (
+        filters.sharingType &&
+        sharingType !== undefined &&
+        sharingType !== null &&
+        !filters.sharingType.includes(sharingType)
+      ) {
         return false
       }
 

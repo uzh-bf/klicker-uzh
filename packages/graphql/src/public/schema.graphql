@@ -56,6 +56,7 @@ type ActivityInfo {
   permissionLevel: PermissionLevel!
   scheduledEndAt: Date
   scheduledStartAt: Date
+  sharingType: SharingType!
   stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String
@@ -329,6 +330,7 @@ type CaseStudyElement {
   options: CaseStudyElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -534,6 +536,7 @@ type ChoicesElement {
   options: ChoiceElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -624,6 +627,7 @@ type ContentElement {
   numSharedUsers: Int
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -976,6 +980,7 @@ type FlashcardElement {
   numSharedUsers: Int
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -1065,6 +1070,7 @@ type FreeTextElement {
   options: FreeTextElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -1624,6 +1630,7 @@ type NumericalElement {
   options: NumericalElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -2111,6 +2118,7 @@ type SelectionElement {
   options: SelectionElementOptions!
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
+  sharingType: SharingType
   status: ElementStatus!
   tags: [Tag!]
   type: ElementType!
@@ -2186,6 +2194,12 @@ enum SharingObjectType {
 type SharingRequestResponse {
   collectionId: Int!
   userId: String!
+}
+
+enum SharingType {
+  DEPENDENCY
+  OWNED
+  SHARED
 }
 
 type SingleCaseStudyResponse {

@@ -3,6 +3,8 @@ import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
   faEllipsis,
+  faFolderTree,
+  faLink,
   faPencil,
   faShare,
   faUserGroup,
@@ -14,6 +16,7 @@ import {
   ElementStatus,
   type ElementType,
   SharingObjectType,
+  SharingType,
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -191,8 +194,20 @@ function Element({
             </div>
           </div>
 
+          {element.sharingType === SharingType.Shared ? (
+            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
+              <FontAwesomeIcon icon={faLink} className="h-4 w-4" />
+              <div>{t('shared.generic.shared')}</div>
+            </div>
+          ) : null}
+          {element.sharingType === SharingType.Dependency ? (
+            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
+              <FontAwesomeIcon icon={faFolderTree} className="h-4 w-4" />
+              <div>{t('shared.generic.dependency')}</div>
+            </div>
+          ) : null}
           {element.numSharedUsers && element.isManager ? (
-            <div className="mr-2 flex h-max flex-row items-center gap-1.5 py-1">
+            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>

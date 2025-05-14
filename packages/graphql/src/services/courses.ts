@@ -11,7 +11,7 @@ import {
   type Participant,
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
@@ -1185,6 +1185,12 @@ function getPermissionBooleans({
       permission.permissionLevel !== PermissionLevel.OWNER &&
       !permission.derived &&
       permission.directPermission?.userGroupId === null,
+    sharingType:
+      permission.permissionLevel === PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : permission.derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED,
   }
 }
 
@@ -1325,6 +1331,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1367,6 +1374,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: liveQuiz.updatedAt,
         }
       })
@@ -1394,6 +1402,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1437,6 +1446,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: practiceQuiz.updatedAt,
         }
       })
@@ -1464,6 +1474,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1508,6 +1519,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: microLearning.updatedAt,
         }
       })
@@ -1535,6 +1547,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1581,6 +1594,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: groupActivity.updatedAt,
         }
       })

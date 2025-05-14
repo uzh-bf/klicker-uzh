@@ -40,6 +40,12 @@ export enum ActivityType {
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
+export enum SharingType {
+  OWNED = 'OWNED', // owned objects
+  SHARED = 'SHARED', // objects shared directly with the user (potentially through user group)
+  DEPENDENCY = 'DEPENDENCY', // objects shared with the user indirectly (through the object being a dependency of another object)
+}
+
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null

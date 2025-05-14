@@ -19,11 +19,13 @@ interface Props {
     tagName,
     isTypeTag,
     isStatusTag,
+    isSharingTypeTag,
     isUntagged,
   }: {
     tagName: string
     isTypeTag: boolean
     isStatusTag: boolean
+    isSharingTypeTag: boolean
     isUntagged: boolean
   }) => void
 }
@@ -97,6 +99,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
                   tagName: tag,
                   isTypeTag: false,
                   isStatusTag: false,
+                  isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
@@ -128,6 +131,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               tagName: tag,
               isTypeTag: false,
               isStatusTag: false,
+              isSharingTypeTag: false,
               isUntagged: true,
             })
           }

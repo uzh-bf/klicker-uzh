@@ -64,7 +64,7 @@ import {
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
-import { PermissionLevel } from './sharing.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -377,6 +377,7 @@ export const SingleQuestionResponseContent = builder
 // #endregion
 
 // ----- INSTANCE EVALUATION INTERFACE -----
+// #region
 export const QuestionFeedback = builder
   .objectRef<IQuestionFeedback>('QuestionFeedback')
   .implement({
@@ -723,6 +724,7 @@ const sharedElementProps = (t: any) => ({
   isImported: t.exposeBoolean('isImported', { nullable: true }),
   isShared: t.exposeBoolean('isShared', { nullable: true }),
   isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+  sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
 
   tags: t.expose('tags', {
     type: [TagRef],
