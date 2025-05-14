@@ -203,6 +203,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -221,6 +222,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -439,6 +441,7 @@ function Index() {
                       tagName: tag,
                       isTypeTag: false,
                       isStatusTag: false,
+                      isSharingTypeTag: false,
                       isUntagged: false,
                     })
                   }

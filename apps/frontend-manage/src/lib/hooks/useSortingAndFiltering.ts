@@ -1,10 +1,15 @@
-import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementStatus,
+  ElementType,
+  SharingType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
 export type QuestionPoolFilters = {
   archive: boolean
   untagged: boolean
   tags: string[]
+  sharingType: SharingType[]
   name: string | null
   status?: ElementStatus
   type?: ElementType
@@ -48,6 +53,7 @@ type ReducerAction = {
   tagName?: ElementType | ElementStatus | string
   isTypeTag?: boolean
   isStatusTag?: boolean
+  isSharingTypeTag?: boolean
   isUntagged?: boolean
   newValue?: boolean
   name?: string
@@ -58,6 +64,7 @@ const INITIAL_STATE: FilterSortType = {
   filters: {
     status: undefined,
     type: undefined,
+    sharingType: [SharingType.Owned, SharingType.Shared],
     archive: false,
     untagged: false,
     tags: [],
@@ -111,6 +118,23 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
           filters: {
             ...state.filters,
             status: action.tagName as ElementStatus,
+          },
+        }
+      }
+
+      // if the sharing type was modified
+      if (action.isSharingTypeTag) {
+        return {
+          ...state,
+          filters: {
+            ...state.filters,
+            sharingType: state.filters.sharingType.includes(
+              action.tagName as SharingType
+            )
+              ? state.filters.sharingType.filter(
+                  (type): boolean => type !== action.tagName
+                )
+              : [...state.filters.sharingType, action.tagName as SharingType],
           },
         }
       }
@@ -231,11 +255,13 @@ function useSortingAndFiltering() {
       tagName,
       isTypeTag,
       isStatusTag,
+      isSharingTypeTag,
       isUntagged,
     }: {
       tagName: string
       isTypeTag: boolean
       isStatusTag: boolean
+      isSharingTypeTag: boolean
       isUntagged: boolean
     }): void =>
       dispatch({
@@ -243,6 +269,7 @@ function useSortingAndFiltering() {
         tagName,
         isTypeTag,
         isStatusTag,
+        isSharingTypeTag,
         isUntagged,
       }),
     toggleSampleSolutionFilter: (): void =>

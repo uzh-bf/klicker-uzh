@@ -27,6 +27,7 @@ import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import SharingTypeBadge from '../sharing/SharingTypeBadge'
 import ElementTags from './ElementTags'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
@@ -191,8 +192,10 @@ function Element({
             </div>
           </div>
 
+          <SharingTypeBadge sharingType={element.sharingType} />
+
           {element.numSharedUsers && element.isManager ? (
-            <div className="mr-2 flex h-max flex-row items-center gap-1.5 py-1">
+            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>

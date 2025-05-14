@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { GetUserActivitiesDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserActivitiesDocument,
+  SharingType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
@@ -18,6 +21,7 @@ function Activities() {
   const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
+    sharingType: [SharingType.Owned, SharingType.Shared],
     type: undefined,
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(
@@ -58,13 +62,27 @@ function Activities() {
       )
     }
 
+    // apply sharing type filters (if defined)
+    if (filters.sharingType && filters.sharingType.length > 0) {
+      filtered = filtered.filter((activity) =>
+        filters.sharingType?.includes(activity.sharingType)
+      )
+    }
+
     // apply type filters (if defined)
     if (typeof filters.type !== 'undefined') {
       filtered = filtered.filter((activity) => activity.type === filters.type)
     }
 
     return filtered
-  }, [dataActivities, searchInput, search, filters.status, filters.type])
+  }, [
+    dataActivities,
+    searchInput,
+    search,
+    filters.status,
+    filters.sharingType,
+    filters.type,
+  ])
 
   return (
     <Layout

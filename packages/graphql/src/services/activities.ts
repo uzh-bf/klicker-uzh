@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { prop, sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 
@@ -96,8 +96,19 @@ export async function getUserActivities(ctx: ContextWithUser) {
       object.permissionLevel !== DB.PermissionLevel.OWNER &&
       !object.derived &&
       object.directPermission?.userGroupId === null
+    const sharingType =
+      object.permissionLevel === DB.PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : object.derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED
 
     if (object.liveQuiz) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.liveQuiz.isDeleted) {
+        return []
+      }
+
       const stacks = object.liveQuiz.blocks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -136,9 +147,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
     } else if (object.practiceQuiz) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.practiceQuiz.isDeleted) {
+        return []
+      }
+
       const stacks = object.practiceQuiz.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -178,9 +195,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
     } else if (object.microLearning) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.microLearning.isDeleted) {
+        return []
+      }
+
       const stacks = object.microLearning.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -221,9 +244,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
     } else if (object.groupActivity) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.groupActivity.isDeleted) {
+        return []
+      }
+
       const stacks = object.groupActivity.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -267,6 +296,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }
     }

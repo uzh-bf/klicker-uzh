@@ -15,5 +15,6 @@ query GetAnswerCollectionsInfo {
     isShared
     isDeletable
     isRemovable
+    sharingType
   }
 }

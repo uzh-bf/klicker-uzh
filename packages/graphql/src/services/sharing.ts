@@ -3886,6 +3886,21 @@ export async function shareObject(
         },
       })
 
+      // remove any pending access requests for the user
+      await prisma.accessRequest.deleteMany({
+        where: {
+          userId,
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+      })
+
       // trigger recomputation of derived permissions for the object
       const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
       if (typeof catalogCollectionId !== 'undefined') {

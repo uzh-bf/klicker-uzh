@@ -1040,13 +1040,13 @@ describe('Create, edit and share answer collections', function () {
     )
   })
 
-  it('Verify that the used access to the collection for user pro2 is still intact, delete the question and remove the collection', function () {
+  it('Verify that the user pro2 can no longer the answer collection in the overview or add it to the catalog, but the depenedent element remained intact', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
-      'exist'
+      'not.exist'
     )
 
     // object can no longer be added to the catalog (since it was deleted by the owner)
@@ -1063,19 +1063,14 @@ describe('Create, edit and share answer collections', function () {
 
     // delete the dependent question
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="edit-element-${this.data.question.title}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="close-element-modal"]').click()
     cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
       'exist'
     )
     cy.deleteElement({ elementName: this.data.question.title })
     cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
-
-    // since the user only retained a derived permission on the collection, the removal of
-    // the parent element should have resulted in the automatic removal of the access
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })

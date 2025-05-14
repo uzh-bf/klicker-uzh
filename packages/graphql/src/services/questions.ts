@@ -5,7 +5,11 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  ElementManipulationInput,
+  SharingType,
+} from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   processElementData,
@@ -54,7 +58,8 @@ export async function getUserElements(ctx: ContextWithUser) {
 
   return (
     user?.objects.flatMap((object) =>
-      object.element !== null
+      // filter out objects where the user only has derived access to and they were deleted before
+      object.element !== null && !(object.derived && object.element.isDeleted)
         ? {
             ...object.element,
             permissionLevel: object.permissionLevel,
@@ -77,6 +82,12 @@ export async function getUserElements(ctx: ContextWithUser) {
               object.permissionLevel !== DB.PermissionLevel.OWNER &&
               !object.derived &&
               object.directPermission?.userGroupId === null,
+            sharingType:
+              object.permissionLevel === DB.PermissionLevel.OWNER
+                ? SharingType.OWNED
+                : object.derived
+                  ? SharingType.DEPENDENCY
+                  : SharingType.SHARED,
           }
         : []
     ) ?? []

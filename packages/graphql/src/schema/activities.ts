@@ -1,10 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  SharingType as SharingTypeEnum,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { ElementType } from './elementData.js'
 import { PublicationStatus } from './practiceQuiz.js'
-import { PermissionLevel } from './sharing.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 interface IActivityInfoElement {
   id: number
@@ -59,6 +62,7 @@ export interface IActivityInfo {
   scheduledEndAt?: Date | null
   groupDeadlineDate?: Date | null
   numOfParticipantGroups?: number | null
+
   stacks: IActivityInfoStack[]
 
   permissionLevel: DB.PermissionLevel
@@ -70,6 +74,8 @@ export interface IActivityInfo {
   isShared: boolean
   isExecutor: boolean
   isRemovable: boolean
+  sharingType: SharingTypeEnum
+
   updatedAt: Date
 }
 
@@ -121,6 +127,8 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     isExecutor: t.exposeBoolean('isExecutor'),
     isShared: t.exposeBoolean('isShared'),
     isRemovable: t.exposeBoolean('isRemovable'),
+    sharingType: t.expose('sharingType', { type: SharingType }),
+
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })

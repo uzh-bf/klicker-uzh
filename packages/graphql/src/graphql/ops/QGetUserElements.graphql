@@ -27,6 +27,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       options {
         __typename
@@ -73,6 +74,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       options {
         __typename
@@ -126,6 +128,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       options {
         __typename
@@ -170,6 +173,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       options {
         __typename
@@ -209,6 +213,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       options {
         __typename
@@ -267,6 +272,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       tags {
         id
@@ -300,6 +306,7 @@ query GetUserElements {
       isImported
       isShared
       isRemovable
+      sharingType
 
       tags {
         id
