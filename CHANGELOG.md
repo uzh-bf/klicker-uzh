@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.52...v3.3.0-alpha.53) (2025-05-14)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add proper cache updates for element archiving and vice versa ([edfa11a](https://github.com/uzh-bf/klicker-uzh/commit/edfa11ac84585f2caf5b770495b832643aca3c1f))
+* **apps/frontend-manage:** make sure that redirect on live quiz start works correctly ([015e4a8](https://github.com/uzh-bf/klicker-uzh/commit/015e4a833cddb7545ee774a5353736ac049187b7))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** store filters and sorting states from library in local storage ([#4687](https://github.com/uzh-bf/klicker-uzh/issues/4687)) ([ee921fa](https://github.com/uzh-bf/klicker-uzh/commit/ee921fa1c48da61383c49f70beaf174c701f1cc4))
+* improve display of shared or dependent objects in user accounts ([#4686](https://github.com/uzh-bf/klicker-uzh/issues/4686)) ([73981b8](https://github.com/uzh-bf/klicker-uzh/commit/73981b82cbce3f00de272a721f831872d0759d71))
+
 ## [3.3.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.51...v3.3.0-alpha.52) (2025-05-12)
 
 
