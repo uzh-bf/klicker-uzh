@@ -5,7 +5,9 @@ import {
   Tag,
   UpdateTagOrderingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import useSortingAndFiltering from '@lib/hooks/useSortingAndFiltering'
+import useSortingAndFiltering, {
+  SORTING_FILTERING_INITIAL,
+} from '@lib/hooks/useSortingAndFiltering'
 import { TextField, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
@@ -40,7 +42,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
     refetchQueries: [{ query: GetUserTagsDocument }],
   })
 
-  const { handleSearch } = useSortingAndFiltering()
+  const { handleSearch } = useSortingAndFiltering(SORTING_FILTERING_INITIAL)
 
   const filteredTags = useMemo(() => {
     if (data?.userTags) {

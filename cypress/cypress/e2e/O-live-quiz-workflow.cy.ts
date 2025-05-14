@@ -2317,7 +2317,6 @@ describe('Different live-quiz workflows', function () {
     cy.loginInstitutionalCatalyst3()
 
     // elements should be shared for users with ADMIN permissions on activity
-    cy.get('[data-cy="element-sharing-filter-DEPENDENCY"]').click()
     cy.wrap([
       data.SCML.title,
       data.MCML.title,

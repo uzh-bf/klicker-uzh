@@ -35,6 +35,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
@@ -136,6 +137,7 @@ function TagList({
         activeSharingTypes?.length !== 2 ||
         !activeSharingTypes.includes(SharingType.Owned) ||
         !activeSharingTypes.includes(SharingType.Shared) ||
+        !activeSharingTypes.includes(SharingType.Dependency) ||
         sampleSolution ||
         answerFeedbacks ||
         showUntagged
@@ -295,7 +297,9 @@ function TagList({
       </div>
 
       <Button
-        className={{ root: 'mt-2 h-8 text-sm' }}
+        className={{
+          root: twMerge('mt-2 h-8 text-sm', !resetDisabled && 'border-red-600'),
+        }}
         disabled={resetDisabled}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}

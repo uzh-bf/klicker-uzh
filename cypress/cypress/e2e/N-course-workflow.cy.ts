@@ -784,7 +784,6 @@ describe('Test course creation and editing functionalities', function () {
   // #region
   function verifyCourseReadPermissions({ data }: { data: any }) {
     // check that the elements used in the activities are not visible to the user
-    cy.get('[data-cy="element-sharing-filter-DEPENDENCY"]').click()
     cy.wrap([
       data.SCML.title,
       data.NRML.title,
@@ -803,7 +802,6 @@ describe('Test course creation and editing functionalities', function () {
 
     // verify that all activities are shown on the activity overview
     cy.get('[data-cy="activities"]').click()
-    cy.get('[data-cy="sharing-filter-DEPENDENCY"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -875,7 +873,6 @@ describe('Test course creation and editing functionalities', function () {
 
   function verifyCourseExecutePermissions({ data }: { data: any }) {
     // check that the elements used in the activities are not visible to the user
-    cy.get('[data-cy="element-sharing-filter-DEPENDENCY"]').click()
     cy.wrap([
       data.SCML.title,
       data.NRML.title,
@@ -894,7 +891,6 @@ describe('Test course creation and editing functionalities', function () {
 
     // verify that all activities are shown on the activity overview
     cy.get('[data-cy="activities"]').click()
-    cy.get('[data-cy="sharing-filter-DEPENDENCY"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -972,7 +968,6 @@ describe('Test course creation and editing functionalities', function () {
     propagation: boolean
   }) {
     // check that the elements used in the activities are not visible to the user
-    cy.get('[data-cy="element-sharing-filter-DEPENDENCY"]').click()
     cy.wrap([
       data.SCML.title,
       data.NRML.title,
@@ -991,7 +986,6 @@ describe('Test course creation and editing functionalities', function () {
 
     // verify that all activities are shown on the activity overview
     cy.get('[data-cy="activities"]').click()
-    cy.get('[data-cy="sharing-filter-DEPENDENCY"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )
@@ -1101,7 +1095,6 @@ describe('Test course creation and editing functionalities', function () {
     checkBadge: boolean
   }) {
     // check that the elements used in the activities are not visible to the user
-    cy.get('[data-cy="element-sharing-filter-DEPENDENCY"]').click()
     cy.wrap([
       data.SCML.title,
       data.NRML.title,
@@ -1123,7 +1116,6 @@ describe('Test course creation and editing functionalities', function () {
 
     // verify that all activities are shown on the activity overview
     cy.get('[data-cy="activities"]').click()
-    cy.get('[data-cy="sharing-filter-DEPENDENCY"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${data.sharing.liveQuiz}"]`).should(
       'exist'
     )

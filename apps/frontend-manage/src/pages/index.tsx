@@ -40,6 +40,7 @@ import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
+  SORTING_FILTERING_INITIAL,
   SortyByType,
 } from '../lib/hooks/useSortingAndFiltering'
 
@@ -80,6 +81,22 @@ function Index() {
     data: dataQuestions,
   } = useQuery(GetUserElementsDocument)
 
+  // initialize the sorting and filtering state from local storage (if available)
+  const [storedFiltering, _] = useState(() => {
+    // only try to access localStorage if we're on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFilters = localStorage.getItem('library-sorting-filters')
+        if (savedFilters) {
+          return JSON.parse(savedFilters)
+        }
+      } catch (error) {
+        console.error('Error loading stored filters from localStorage', error)
+      }
+    }
+    return SORTING_FILTERING_INITIAL
+  })
+
   const {
     filters,
     sort,
@@ -91,8 +108,28 @@ function Index() {
     handleToggleArchive,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
-  } = useSortingAndFiltering()
+  } = useSortingAndFiltering(storedFiltering)
 
+  // if the filters or sorting state changes, save it to local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const newState = { filters, sort }
+        // only save if there are actual changes
+        const currentStored = localStorage.getItem('library-sorting-filters')
+        if (!currentStored || JSON.stringify(newState) !== currentStored) {
+          localStorage.setItem(
+            'library-sorting-filters',
+            JSON.stringify(newState)
+          )
+        }
+      } catch (error) {
+        console.error('Error saving filters to localStorage', error)
+      }
+    }
+  }, [filters, sort])
+
+  // on initial render, preload the pages that might be visited next
   useEffect((): void => {
     router.prefetch('/quizzes/running')
     router.prefetch('/quizzes')
