@@ -60,7 +60,7 @@ type ReducerAction = {
   by?: SortyByType
 }
 
-const INITIAL_STATE: FilterSortType = {
+export const SORTING_FILTERING_INITIAL: FilterSortType = {
   filters: {
     status: undefined,
     type: undefined,
@@ -226,15 +226,15 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
       }
 
     case QuestionPoolReducerActionType.RESET:
-      return { ...state, filters: INITIAL_STATE.filters }
+      return { ...state, filters: SORTING_FILTERING_INITIAL.filters }
 
     default:
       return state
   }
 }
 
-function useSortingAndFiltering() {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
+function useSortingAndFiltering(initialValue: FilterSortType) {
+  const [state, dispatch] = useReducer(reducer, initialValue)
 
   return {
     ...state,
