@@ -143,7 +143,7 @@ function ActivityOverviewFilters({
                 icon={SHARING_TYPE_FILTERS[type]}
                 active={filters.sharingType?.includes(type) ?? false}
                 onClick={() => toggleSharingTypeFilter(type)}
-                data={{ cy: `sharing-filter-${type.toLowerCase()}` }}
+                data={{ cy: `sharing-filter-${type}` }}
               />
             )
           )}
