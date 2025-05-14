@@ -59,7 +59,7 @@ function useLiveQuizActions({
         icon: faPlay,
         onClick: async () => {
           await onStart()
-          router.push(`quizzes/${quiz.id}/cockpit`)
+          router.push(`/quizzes/${quiz.id}/cockpit`)
         },
         disabled: starting,
         data: { cy: `start-live-quiz-${quiz.name}` },
