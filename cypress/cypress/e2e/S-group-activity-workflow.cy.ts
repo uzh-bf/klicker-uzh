@@ -2648,9 +2648,17 @@ describe('Create and solve a group activity', function () {
       this.data.sharing.ga1,
       this.data.sharing.ga2,
       this.data.sharing.ga3,
-      this.data.sharing.ga4,
-      this.data.sharing.ga5,
     ]).each((quiz) => {
+      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${quiz}"]`).realClick()
+      cy.get(`[data-cy="remove-group-activity-${quiz}"]`).click()
+      cy.get('[data-cy="confirm-deletion-final"]').click()
+      cy.get('[data-cy="confirm-derived-access"]').click()
+      cy.get('[data-cy="confirm-dependency-access"]').click()
+      cy.get('[data-cy="confirmation-modal-confirm"]').click()
+      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${quiz}"]`).should('not.exist')
+      cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
+    })
+    cy.wrap([this.data.sharing.ga4, this.data.sharing.ga5]).each((quiz) => {
       cy.get(`[data-cy="remove-group-activity-${quiz}"]`).click()
       cy.get('[data-cy="confirm-deletion-final"]').click()
       cy.get('[data-cy="confirm-derived-access"]').click()
