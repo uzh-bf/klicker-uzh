@@ -2006,21 +2006,21 @@ describe('Create and solve a group activity', function () {
     )
 
     if (!groupPermission) {
-      cy.get(`[data-cy="remove-group-activity-${data.sharing.ga4}"]`).should(
+      cy.get(`[data-cy="remove-group-activity-${data.sharing.ga5}"]`).should(
         'exist'
       )
       cy.get(
-        `[data-cy="actions-GROUP_ACTIVITY-${data.sharing.ga4}"]`
+        `[data-cy="actions-GROUP_ACTIVITY-${data.sharing.ga5}"]`
       ).realClick()
-      cy.get(`[data-cy="delete-group-activity-${data.sharing.ga4}"]`).should(
+      cy.get(`[data-cy="delete-group-activity-${data.sharing.ga5}"]`).should(
         'exist'
       )
-      cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).realClick() // close dropdown
+      cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).realClick() // close dropdown
     } else {
-      cy.get(`[data-cy="delete-group-activity-${data.sharing.ga4}"]`).should(
+      cy.get(`[data-cy="delete-group-activity-${data.sharing.ga5}"]`).should(
         'exist'
       )
-      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${data.sharing.ga4}"]`).should(
+      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${data.sharing.ga5}"]`).should(
         'not.exist'
       )
     }
