@@ -4,7 +4,7 @@ import {
   PublicationStatus,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../../courses/modals/TemplateCreationErrorToast'
@@ -92,14 +92,21 @@ const permissionActionMap = {
   isRemovable: ['removeLiveQuiz'],
 }
 
-function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
+function LiveQuizActions({
+  liveQuiz,
+  sharingModal,
+  setSharingModal,
+}: {
+  liveQuiz: ActivityInfo
+  sharingModal: boolean
+  setSharingModal: Dispatch<SetStateAction<boolean>>
+}) {
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
-  const [sharingModal, setSharingModal] = useState(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
   const [templateEditSuccess, setTemplateEditSuccess] = useState(false)

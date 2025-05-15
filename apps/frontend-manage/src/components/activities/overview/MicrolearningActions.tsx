@@ -7,7 +7,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import MicroLearningDeletionModal from '../../courses/modals/MicroLearningDeletionModal'
 import MicroLearningEndingModal from '../../courses/modals/MicroLearningEndingModal'
@@ -66,8 +66,12 @@ const statusActionMap = {
 
 function MicrolearningActions({
   microLearning,
+  sharingModal,
+  setSharingModal,
 }: {
   microLearning: ActivityInfo
+  sharingModal: boolean
+  setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
@@ -75,7 +79,6 @@ function MicrolearningActions({
   const [deletionModal, setDeletionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
-  const [sharingModal, setSharingModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',

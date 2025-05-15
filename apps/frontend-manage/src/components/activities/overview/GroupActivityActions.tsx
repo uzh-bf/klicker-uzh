@@ -5,7 +5,7 @@ import {
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
@@ -67,8 +67,12 @@ const permissionActionMap = {
 
 function GroupActivityActions({
   groupActivity,
+  sharingModal,
+  setSharingModal,
 }: {
   groupActivity: ActivityInfo
+  sharingModal: boolean
+  setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [deletionModal, setDeletionModal] = useState(false)
@@ -76,7 +80,6 @@ function GroupActivityActions({
   const [startingModal, setStartingModal] = useState(false)
   const [publishingModal, setPublishingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
-  const [sharingModal, setSharingModal] = useState(false)
 
   const actions = useGroupActivityActions({
     groupActivity,

@@ -41,6 +41,7 @@ function ActivityListEntry({
   const t = useTranslations()
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
+  const [sharingModal, setSharingModal] = useState<boolean>(false)
 
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
@@ -152,22 +153,45 @@ function ActivityListEntry({
 
         <div className="flex flex-row items-center gap-4">
           {activity.numSharedUsers && activity.isManager ? (
-            <div className="flex h-max flex-row items-center gap-1.5 py-1">
+            <div
+              className="hover:text-primary-100 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSharingModal(true)
+              }}
+            >
               <div>{activity.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
           {activity.type === ActivityType.LiveQuiz ? (
-            <LiveQuizActions liveQuiz={activity} />
+            <LiveQuizActions
+              liveQuiz={activity}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.PracticeQuiz ? (
-            <PracticeQuizActions practiceQuiz={activity} />
+            <PracticeQuizActions
+              practiceQuiz={activity}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.MicroLearning ? (
-            <MicrolearningActions microLearning={activity} />
+            <MicrolearningActions
+              microLearning={activity}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.GroupActivity ? (
-            <GroupActivityActions groupActivity={activity} />
+            <GroupActivityActions
+              groupActivity={activity}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
         </div>
       </div>

@@ -119,7 +119,15 @@ function AnswerCollectionItem({
 
         <div className="flex items-center gap-4">
           {collection.isManager && (collection.numSharedUsers ?? 0) > 0 && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div
+              className="hover:text-primary-100 flex cursor-pointer items-center text-sm text-gray-600"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSharingModal(true)
+              }}
+              data-cy="open-sharing-modal"
+            >
               <span className="mr-1">{collection.numSharedUsers}</span>
               <FontAwesomeIcon icon={faUserGroup} />
             </div>

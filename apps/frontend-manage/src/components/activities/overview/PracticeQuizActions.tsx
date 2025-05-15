@@ -5,7 +5,7 @@ import {
   SharingObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
@@ -50,10 +50,17 @@ const statusActionMap = {
   [PublicationStatus.Graded]: [],
 }
 
-function PracticeQuizActions({ practiceQuiz }: { practiceQuiz: ActivityInfo }) {
+function PracticeQuizActions({
+  practiceQuiz,
+  sharingModal,
+  setSharingModal,
+}: {
+  practiceQuiz: ActivityInfo
+  sharingModal: boolean
+  setSharingModal: Dispatch<SetStateAction<boolean>>
+}) {
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
-  const [sharingModal, setSharingModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {

@@ -197,7 +197,14 @@ function Element({
           <SharingTypeBadge sharingType={element.sharingType} />
 
           {element.numSharedUsers && element.isManager ? (
-            <div className="mr-3 flex h-max flex-row items-center gap-2 py-1">
+            <div
+              className="hover:text-primary-100 mr-3 flex h-max cursor-pointer flex-row items-center gap-2 py-1 text-gray-600"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSharingModalOpen(true)
+              }}
+            >
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>

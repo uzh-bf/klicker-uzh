@@ -134,10 +134,7 @@ function TagList({
         activeTags.length > 0 ||
         activeType ||
         activeStatus ||
-        activeSharingTypes?.length !== 2 ||
-        !activeSharingTypes.includes(SharingType.Owned) ||
-        !activeSharingTypes.includes(SharingType.Shared) ||
-        !activeSharingTypes.includes(SharingType.Dependency) ||
+        activeSharingTypes?.length !== 3 ||
         sampleSolution ||
         answerFeedbacks ||
         showUntagged
