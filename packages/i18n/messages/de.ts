@@ -2316,6 +2316,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
       shareMicroLearning: 'Microlearning teilen',
+      removeMicroLearning: 'Microlearning entfernen',
       deleteMicroLearning: 'Microlearning löschen',
       deleteMicroLearningMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
@@ -2334,6 +2335,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       sharePracticeQuiz: 'Übungs-Quiz teilen',
+      removePracticeQuiz: 'Übungs-Quiz entfernen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2376,6 +2378,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityAvailableUntil:
         'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
       shareGroupActivity: 'Gruppenaktivität teilen',
+      removeGroupActivity: 'Gruppenaktivität entfernen',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',

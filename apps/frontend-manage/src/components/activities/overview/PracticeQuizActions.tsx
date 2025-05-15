@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
+  ActivityType,
   PublicationStatus,
   SharingObjectType,
   UserProfileDocument,
@@ -13,6 +14,7 @@ import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import usePracticeQuizActions from '../actions/usePracticeQuizActions'
 import ActivityActions from './ActivityActions'
+import ActivityRemovalModal from './ActivityRemovalModal'
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -24,6 +26,7 @@ const statusActionMap = {
     'copyLTIAccessLink',
     'duplicatePracticeQuiz',
     'sharePracticeQuiz',
+    'removePracticeQuiz',
     'deletePracticeQuiz',
   ],
   [PublicationStatus.Scheduled]: [
@@ -33,6 +36,7 @@ const statusActionMap = {
     'duplicatePracticeQuiz',
     'sharePracticeQuiz',
     'unpublishPracticeQuiz',
+    'removePracticeQuiz',
     'deletePracticeQuiz',
   ],
   [PublicationStatus.Published]: [
@@ -43,6 +47,7 @@ const statusActionMap = {
     'duplicatePracticeQuiz',
     'analyticsPracticeQuiz',
     'sharePracticeQuiz',
+    'removePracticeQuiz',
     'deletePracticeQuiz',
   ],
   [PublicationStatus.Ended]: [],
@@ -61,6 +66,7 @@ function PracticeQuizActions({
 }) {
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [removalModal, setRemovalModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -85,7 +91,7 @@ function PracticeQuizActions({
         'openEvaluation',
         ...(user?.publicPreview ? ['analyticsPracticeQuiz'] : []),
       ],
-      isRemovable: [],
+      isRemovable: ['removePracticeQuiz'],
     }),
     [user?.publicPreview]
   )
@@ -95,6 +101,7 @@ function PracticeQuizActions({
     setPublishModal,
     setDeletionModal,
     setSharingModal,
+    setRemovalModal,
     setCopyToast,
   })
 
@@ -146,6 +153,15 @@ function PracticeQuizActions({
             isOwner={practiceQuiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
+          />
+        )}
+        {removalModal && practiceQuiz.isRemovable && (
+          <ActivityRemovalModal
+            activityId={practiceQuiz.id}
+            activityType={ActivityType.PracticeQuiz}
+            title={practiceQuiz.name}
+            isModalOpen={removalModal}
+            setModalOpen={setRemovalModal}
           />
         )}
         <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
