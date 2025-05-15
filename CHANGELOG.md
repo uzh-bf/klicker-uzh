@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.53...v3.3.0-alpha.54) (2025-05-15)
+
+
+### Enhancements
+
+* add possibility to show information on origin of derived permission ([#4688](https://github.com/uzh-bf/klicker-uzh/issues/4688)) ([7682efa](https://github.com/uzh-bf/klicker-uzh/commit/7682efa04d5b5158d53b20d5308476e3585a6144))
+* **apps/frontend-manage:** support activity removal functionality for practice quizzes, microlearning and group activities ([#4689](https://github.com/uzh-bf/klicker-uzh/issues/4689)) ([f095c03](https://github.com/uzh-bf/klicker-uzh/commit/f095c0307d73bc1f6e1a08582e3cc7c8efd1fdfb))
+
 ## [3.3.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.52...v3.3.0-alpha.53) (2025-05-14)
 
 
