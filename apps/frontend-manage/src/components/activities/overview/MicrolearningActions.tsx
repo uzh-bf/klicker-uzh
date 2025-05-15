@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
+  ActivityType,
   ElementInstanceType,
   PublicationStatus,
   SharingObjectType,
@@ -17,6 +18,7 @@ import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import useMicroLearningActions from '../actions/useMicroLearningActions'
 import ActivityActions from './ActivityActions'
+import ActivityRemovalModal from './ActivityRemovalModal'
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -28,6 +30,7 @@ const statusActionMap = {
     'copyLTIAccessLink',
     'duplicateMicroLearning',
     'shareMicroLearning',
+    'removeMicroLearning',
     'deleteMicroLearning',
   ],
   [PublicationStatus.Scheduled]: [
@@ -37,6 +40,7 @@ const statusActionMap = {
     'duplicateMicroLearning',
     'shareMicroLearning',
     'unpublishMicrolearning',
+    'removeMicroLearning',
     'deleteMicroLearning',
   ],
   [PublicationStatus.Published]: [
@@ -49,6 +53,7 @@ const statusActionMap = {
     'duplicateMicroLearning',
     'analyticsMicroLearning',
     'shareMicroLearning',
+    'removeMicroLearning',
     'deleteMicroLearning',
   ],
   [PublicationStatus.Ended]: [
@@ -58,6 +63,7 @@ const statusActionMap = {
     'analyticsMicroLearning',
     'openPreview',
     'shareMicroLearning',
+    'removeMicroLearning',
     'deleteMicroLearning',
   ],
   [PublicationStatus.Template]: [],
@@ -79,6 +85,7 @@ function MicrolearningActions({
   const [deletionModal, setDeletionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
+  const [removalModal, setRemovalModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -108,7 +115,7 @@ function MicrolearningActions({
         'openEvaluation',
         ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
-      isRemovable: [],
+      isRemovable: ['removeMicroLearning'],
     }),
     [user?.publicPreview]
   )
@@ -117,6 +124,7 @@ function MicrolearningActions({
     microLearning,
     setCopyToast,
     setPublishModal,
+    setRemovalModal,
     setDeletionModal,
     setEndingModal,
     setExtensionModal,
@@ -166,6 +174,16 @@ function MicrolearningActions({
             publicationHint={t('manage.course.microPublishingHint')}
           />
         )}
+
+        {removalModal && microLearning.isRemovable && (
+          <ActivityRemovalModal
+            activityId={microLearning.id}
+            activityType={ActivityType.MicroLearning}
+            title={microLearning.name}
+            isModalOpen={removalModal}
+            setModalOpen={setRemovalModal}
+          />
+        )}
         {deletionModal && (
           <MicroLearningDeletionModal
             open={deletionModal}
@@ -174,6 +192,7 @@ function MicrolearningActions({
             courseId={microLearning.courseId!}
           />
         )}
+
         {endingModal && (
           <MicroLearningEndingModal
             open={endingModal}

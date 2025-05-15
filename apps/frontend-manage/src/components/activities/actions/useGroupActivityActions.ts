@@ -8,6 +8,7 @@ import {
   faPlay,
   faShare,
   faUserGroup,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
@@ -23,6 +24,7 @@ import { ActivityAction } from './useAvailableActions'
 
 function useGroupActivityActions({
   groupActivity,
+  setRemovalModal,
   setDeletionModal,
   setEndingModal,
   setStartingModal,
@@ -31,6 +33,7 @@ function useGroupActivityActions({
   setSharingModal,
 }: {
   groupActivity: ActivityInfo
+  setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setEndingModal: Dispatch<SetStateAction<boolean>>
   setStartingModal: Dispatch<SetStateAction<boolean>>
@@ -81,14 +84,6 @@ function useGroupActivityActions({
         data: { cy: `edit-group-activity-${groupActivity.name}` },
       },
       {
-        id: 'deleteGroupActivity',
-        label: t('manage.course.deleteGroupActivity'),
-        icon: faTrashCan,
-        onClick: () => setDeletionModal(true),
-        data: { cy: `delete-group-activity-${groupActivity.name}` },
-        className: 'border-red-600 text-red-600 hover:text-red-600',
-      },
-      {
         id: 'unpublishGroupActivity',
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
@@ -137,6 +132,24 @@ function useGroupActivityActions({
         },
         data: { cy: `share-group-activity-${groupActivity.name}` },
       },
+      {
+        id: 'removeGroupActivity',
+        label: t('manage.course.removeGroupActivity'),
+        icon: faX,
+        onClick: () => {
+          setRemovalModal(true)
+        },
+        data: { cy: `remove-group-activity-${groupActivity.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'deleteGroupActivity',
+        label: t('manage.course.deleteGroupActivity'),
+        icon: faTrashCan,
+        onClick: () => setDeletionModal(true),
+        data: { cy: `delete-group-activity-${groupActivity.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
     ],
     [
       t,
@@ -144,6 +157,7 @@ function useGroupActivityActions({
       groupActivity,
       unpublishing,
       setPublishingModal,
+      setRemovalModal,
       setDeletionModal,
       unpublishGroupActivity,
       setStartingModal,

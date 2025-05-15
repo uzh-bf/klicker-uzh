@@ -2278,6 +2278,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       unpublishMicrolearning: 'Unpublish Microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       shareMicroLearning: 'Share Microlearning',
+      removeMicroLearning: 'Remove Microlearning',
       deleteMicroLearning: 'Delete Microlearning',
       deleteMicroLearningMessage:
         'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
@@ -2295,6 +2296,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       duplicatePracticeQuiz: 'Duplicate Practice Quiz',
       publishPracticeQuiz: 'Publish Practice Quiz',
       sharePracticeQuiz: 'Share Practice Quiz',
+      removePracticeQuiz: 'Remove Practice Quiz',
       deletePracticeQuiz: 'Delete Practice Quiz',
       deletePracticeQuizMessage:
         'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
@@ -2345,6 +2347,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityAvailableUntil:
         'The end date of the group activity is not influenced by the early start. The group activity ends as planned on {date}. You can end the group activity early using the corresponding action.',
       shareGroupActivity: 'Share Group Activity',
+      removeGroupActivity: 'Remove Group Activity',
       deleteGroupActivity: 'Delete Group Activity',
       deleteGroupActivityMessage:
         'Please confirm the deletion of all submissions associated with this group activity. Note that all students will lose access to the group activity, its contents and all their submissions and grading results.',

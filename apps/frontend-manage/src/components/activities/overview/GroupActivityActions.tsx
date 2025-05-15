@@ -1,5 +1,6 @@
 import {
   ActivityInfo,
+  ActivityType,
   ElementInstanceType,
   PublicationStatus,
   SharingObjectType,
@@ -15,6 +16,7 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useGroupActivityActions from '../actions/useGroupActivityActions'
 import ActivityActions from './ActivityActions'
+import ActivityRemovalModal from './ActivityRemovalModal'
 
 // create a map between the activity status and the available actions (in order)
 const statusActionMap = {
@@ -22,28 +24,33 @@ const statusActionMap = {
     'publishGroupActivity',
     'editGroupActivity',
     'shareGroupActivity',
+    'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Scheduled]: [
     'startGroupActivityNow',
     'shareGroupActivity',
     'unpublishGroupActivity',
+    'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Published]: [
     'extendGroupActivity',
     'endGroupActivity',
     'shareGroupActivity',
+    'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Ended]: [
     'gradeGroupActivity',
     'shareGroupActivity',
+    'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Graded]: [
     'gradeGroupActivity',
     'shareGroupActivity',
+    'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Template]: [],
@@ -62,7 +69,7 @@ const permissionActionMap = {
     'gradeGroupActivity',
   ],
   isShared: [],
-  isRemovable: [],
+  isRemovable: ['removeGroupActivity'],
 }
 
 function GroupActivityActions({
@@ -80,9 +87,11 @@ function GroupActivityActions({
   const [startingModal, setStartingModal] = useState(false)
   const [publishingModal, setPublishingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
+  const [removalModal, setRemovalModal] = useState(false)
 
   const actions = useGroupActivityActions({
     groupActivity,
+    setRemovalModal,
     setDeletionModal,
     setEndingModal,
     setStartingModal,
@@ -144,6 +153,16 @@ function GroupActivityActions({
           title={t('manage.course.extendGroupActivity')}
           description={t('manage.course.extendGroupActivityDescription')}
         />
+
+        {removalModal && groupActivity.isRemovable && (
+          <ActivityRemovalModal
+            activityId={groupActivity.id}
+            activityType={ActivityType.GroupActivity}
+            title={groupActivity.name}
+            isModalOpen={removalModal}
+            setModalOpen={setRemovalModal}
+          />
+        )}
         {deletionModal && (
           <GroupActivityDeletionModal
             open={deletionModal}
@@ -152,6 +171,7 @@ function GroupActivityActions({
             courseId={groupActivity.courseId!}
           />
         )}
+
         {endingModal && (
           <GroupActivityEndingModal
             open={endingModal}

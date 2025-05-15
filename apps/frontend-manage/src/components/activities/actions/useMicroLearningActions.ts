@@ -16,6 +16,7 @@ import {
   faPencil,
   faShare,
   faUserGroup,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
@@ -34,6 +35,7 @@ function useMicroLearningActions({
   setCopyToast,
   setPublishModal,
   setDeletionModal,
+  setRemovalModal,
   setEndingModal,
   setExtensionModal,
   setSharingModal,
@@ -42,6 +44,7 @@ function useMicroLearningActions({
   setCopyToast: Dispatch<SetStateAction<boolean>>
   setPublishModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
+  setRemovalModal: Dispatch<SetStateAction<boolean>>
   setEndingModal: Dispatch<SetStateAction<boolean>>
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
@@ -204,6 +207,16 @@ function useMicroLearningActions({
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {
+        id: 'removeMicroLearning',
+        label: t('manage.course.removeMicroLearning'),
+        icon: faX,
+        onClick: () => {
+          setRemovalModal(true)
+        },
+        data: { cy: `remove-microlearning-${microLearning.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
         id: 'deleteMicroLearning',
         label: t('manage.course.deleteMicroLearning'),
         icon: faTrashCan,
@@ -225,6 +238,7 @@ function useMicroLearningActions({
       setSharingModal,
       unpublishMicroLearning,
       setDeletionModal,
+      setRemovalModal,
     ]
   )
 

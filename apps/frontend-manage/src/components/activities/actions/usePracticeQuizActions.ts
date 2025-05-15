@@ -13,6 +13,7 @@ import {
   faPencil,
   faShare,
   faUserGroup,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
@@ -31,12 +32,14 @@ function usePracticeQuizActions({
   setPublishModal,
   setDeletionModal,
   setSharingModal,
+  setRemovalModal,
   setCopyToast,
 }: {
   practiceQuiz: ActivityInfo
   setPublishModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setRemovalModal: Dispatch<SetStateAction<boolean>>
   setCopyToast: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
@@ -166,6 +169,16 @@ function usePracticeQuizActions({
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {
+        id: 'removePracticeQuiz',
+        label: t('manage.course.removePracticeQuiz'),
+        icon: faX,
+        onClick: () => {
+          setRemovalModal(true)
+        },
+        data: { cy: `remove-practice-quiz-${practiceQuiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
         id: 'deletePracticeQuiz',
         label: t('manage.course.deletePracticeQuiz'),
         icon: faTrashCan,
@@ -183,6 +196,7 @@ function usePracticeQuizActions({
       setPublishModal,
       setCopyToast,
       setSharingModal,
+      setRemovalModal,
       unpublishPracticeQuiz,
       setDeletionModal,
     ]
