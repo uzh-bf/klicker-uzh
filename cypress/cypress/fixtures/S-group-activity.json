@@ -105,5 +105,21 @@
         "content": "Content 3"
       }
     ]
+  },
+  "sharing": {
+    "ga1": "Sharing Group Activity 1",
+    "ga1Display": "Sharing Group Activity 1 (Display)",
+    "ga2": "Sharing Group Activity 2",
+    "ga2Display": "Sharing Group Activity 2 (Display)",
+    "ga3": "Sharing Group Activity 3",
+    "ga3Display": "Sharing Group Activity 3 (Display)",
+    "ga4": "Sharing Group Activity 4",
+    "ga4Display": "Sharing Group Activity 4 (Display)",
+    "ga5": "Sharing Group Activity 5",
+    "ga5Display": "Sharing Group Activity 5 (Display)",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4"
   }
 }

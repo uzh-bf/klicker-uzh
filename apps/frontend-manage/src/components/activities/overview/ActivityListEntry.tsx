@@ -111,6 +111,7 @@ function ActivityListEntry({
 
             {activity.status !== PublicationStatus.Template &&
               activity.status !== PublicationStatus.Ended &&
+              activity.status !== PublicationStatus.Graded &&
               activity.isEditor && (
                 <FontAwesomeIcon
                   icon={faPencil}
