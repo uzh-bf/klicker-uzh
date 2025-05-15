@@ -357,6 +357,7 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+      USER_GROUP: 'User Group',
     },
     contentInput: {
       boldStyle:
@@ -2712,6 +2713,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Derived permissions are permissions that allow users to access this element without having a direct permission (anymore). This is for example due to the inheritance of access rights when other objects are based on this object and therefore require it. Derived access rights cannot be changed or revoked and always correspond to the minimum technically required permissions. For more details, please refer to the official documentation.',
       noDerivedPermissions:
         'No derived permissions are available for this object.',
+      whereDoesThisPermissionOriginate:
+        'Where does this permission originate from?',
+      derivedPermissionOrigin: 'Origin of the derived permission',
+      derivedAccessFor:
+        'The derived access of user {user} to this object originates from the following object:',
+      originalObjectOwner: 'Owner of the parent object',
+      originalObjectType: 'Type of the parent object',
+      originalObjectName: 'Name of the parent object',
+      reasonDerivedAccess: 'Reason for the derived access',
+      ownerOfOriginalObject: 'Owner of the parent object',
+      originalObjectSharedREAD: 'Read permissions on parent object',
+      originalObjectSharedEXECUTE: 'Execution permissions on parent object',
+      originalObjectSharedWRITE: 'Write permissions on parent object',
+      originalObjectSharedADMIN: 'Admin permissions on parent object',
+      viaUserGroup: 'via user group {name}',
       importantInformation: 'Important Information',
       shortnameOrEmailRequired: 'Please enter a username or email address.',
       confirmTransferOwnership: 'Transfer Ownership',

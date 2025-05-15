@@ -3697,6 +3697,207 @@ export async function transferGroupActivityOwnership(
     : null
 }
 
+export async function getDerivedPermissionOrigin(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the requested derived permissions
+  const permission = await ctx.prisma.derivedPermission.findUnique({
+    where: { id, derived: true },
+    include: {
+      user: { select: { shortname: true, email: true } },
+      directPermission: {
+        include: {
+          user: { select: { shortname: true } },
+          userGroup: { select: { name: true } },
+          catalogCollection: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          answerCollection: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          element: { include: { owner: { select: { shortname: true } } } },
+          course: { include: { owner: { select: { shortname: true } } } },
+          liveQuiz: { include: { owner: { select: { shortname: true } } } },
+          practiceQuiz: { include: { owner: { select: { shortname: true } } } },
+          microLearning: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          groupActivity: {
+            include: { owner: { select: { shortname: true } } },
+          },
+        },
+      },
+    },
+  })
+
+  if (!permission) {
+    return null
+  }
+
+  // verify that the requesting user is OWNER / ADMIN on the associated object
+  // = allowed to open the sharing dialog and requesting the corresponding origin of a derived permission
+  const validAccess = await checkAccess(
+    [
+      ...(permission.catalogCollectionId !== null
+        ? [
+            {
+              catalogCollectionId: permission.catalogCollectionId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.answerCollectionId !== null
+        ? [
+            {
+              answerCollectionId: permission.answerCollectionId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.elementId !== null
+        ? [
+            {
+              elementId: permission.elementId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.courseId !== null
+        ? [
+            {
+              courseId: permission.courseId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.liveQuizId !== null
+        ? [
+            {
+              liveQuizId: permission.liveQuizId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.practiceQuizId !== null
+        ? [
+            {
+              practiceQuizId: permission.practiceQuizId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.microLearningId !== null
+        ? [
+            {
+              microLearningId: permission.microLearningId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.groupActivityId !== null
+        ? [
+            {
+              groupActivityId: permission.groupActivityId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+    ],
+    ctx
+  )
+
+  if (!validAccess) {
+    return null
+  }
+
+  // case 1: direct permission id is null -> parent object owned by user with derived access
+  if (permission.directPermission === null) {
+    return {
+      permissionUser: `${permission.user.shortname} (${permission.user.email})`,
+      parentObjectType: undefined, // parent object unknown
+      parentObjectName: undefined, // parent object unknown
+      parentObjectOwner: undefined, // parent object unknown
+      parentTargetUser: undefined, // parent object unknown
+      parentTargetUserGroup: undefined, // parent object unknown
+      parentPermissionLevel: undefined, // parent object unknown
+    }
+  }
+
+  // case 2: direct permission id is not null -> parent object shared with user / user group
+  else {
+    const sharedDerivedPermissionInfo = {
+      permissionUser: `${permission.user.shortname} (${permission.user.email})`,
+      parentTargetUser: permission.directPermission.user?.shortname,
+      parentTargetUserGroup: permission.directPermission.userGroup?.name,
+      parentPermissionLevel: permission.directPermission.permissionLevel,
+    }
+
+    if (permission.directPermission.catalogCollection) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.CATALOG_COLLECTION,
+        parentObjectName: permission.directPermission.catalogCollection.name,
+        parentObjectOwner:
+          permission.directPermission.catalogCollection.owner?.shortname ?? '',
+      }
+    } else if (permission.directPermission.answerCollection) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.ANSWER_COLLECTION,
+        parentObjectName: permission.directPermission.answerCollection.name,
+        parentObjectOwner:
+          permission.directPermission.answerCollection.owner.shortname,
+      }
+    } else if (permission.directPermission.element) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.ELEMENT,
+        parentObjectName: permission.directPermission.element.name,
+        parentObjectOwner: permission.directPermission.element.owner.shortname,
+      }
+    } else if (permission.directPermission.course) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.COURSE,
+        parentObjectName: permission.directPermission.course.name,
+        parentObjectOwner: permission.directPermission.course.owner.shortname,
+      }
+    } else if (permission.directPermission.liveQuiz) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.LIVE_QUIZ,
+        parentObjectName: permission.directPermission.liveQuiz.name,
+        parentObjectOwner: permission.directPermission.liveQuiz.owner.shortname,
+      }
+    } else if (permission.directPermission.practiceQuiz) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.PRACTICE_QUIZ,
+        parentObjectName: permission.directPermission.practiceQuiz.name,
+        parentObjectOwner:
+          permission.directPermission.practiceQuiz.owner.shortname,
+      }
+    } else if (permission.directPermission.microLearning) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.MICRO_LEARNING,
+        parentObjectName: permission.directPermission.microLearning.name,
+        parentObjectOwner:
+          permission.directPermission.microLearning.owner.shortname,
+      }
+    } else if (permission.directPermission.groupActivity) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.GROUP_ACTIVITY,
+        parentObjectName: permission.directPermission.groupActivity.name,
+        parentObjectOwner:
+          permission.directPermission.groupActivity.owner.shortname,
+      }
+    }
+  }
+}
+
 export async function shareObject(
   {
     permissionLevel,

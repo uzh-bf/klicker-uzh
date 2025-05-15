@@ -358,6 +358,7 @@ export default {
       CASE_STUDY: 'Fallstudie',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
+      USER_GROUP: 'Nutzergruppe',
     },
     contentInput: {
       boldStyle:
@@ -2737,6 +2738,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',
       noDerivedPermissions:
         'Für dieses Objekt sind keine abgeleiteten Berechtigungen vorhanden.',
+      whereDoesThisPermissionOriginate: 'Woher stammt diese Berechtigung?',
+      derivedPermissionOrigin: 'Herkunft der abgeleiteten Berechtigung',
+      derivedAccessFor:
+        'Der abgeleitete Zugriff von Nutzer {user} auf diese Objekt stammt von folgendem Objekt ab:',
+      originalObjectOwner: 'Besitzer des übergeordneten Objekts',
+      originalObjectType: 'Typ des übergeordneten Objekts',
+      originalObjectName: 'Name des übergeordneten Objekts',
+      reasonDerivedAccess: 'Grund für den abgeleiteten Zugriff',
+      ownerOfOriginalObject: 'Besitzer des übergeordneten Objekts',
+      originalObjectSharedREAD: 'Leserechte auf übergeordnetes Objekt',
+      originalObjectSharedEXECUTE:
+        'Ausführungsrechte auf übergeordnetes Objekt',
+      originalObjectSharedWRITE: 'Schreibrechte auf übergeordnetes Objekt',
+      originalObjectSharedADMIN: 'Adminrechte auf übergeordnetes Objekt',
+      viaUserGroup: 'über Nutzergruppe {name}',
       importantInformation: 'Wichtige Information',
       shortnameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',

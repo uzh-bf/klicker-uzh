@@ -78,6 +78,7 @@ import {
   CatalogObject,
   CatalogSelectionObject,
   DerivedPermissionInfo,
+  DerivedPermissionOriginInformation,
   ObjectSharingRequest,
   PermissionInfo,
   SharingObjectType,
@@ -1674,6 +1675,17 @@ export const Query = builder.queryType({
           }
 
           return null
+        },
+      }),
+
+      getDerivedPermissionOrigin: t.withAuth(asUser).field({
+        nullable: true,
+        type: DerivedPermissionOriginInformation,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.getDerivedPermissionOrigin(args, ctx)
         },
       }),
 

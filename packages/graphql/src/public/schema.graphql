@@ -785,6 +785,16 @@ type DerivedPermissionInfo {
   username: String!
 }
 
+type DerivedPermissionOriginInformation {
+  parentObjectName: String
+  parentObjectOwner: String
+  parentObjectType: ObjectType
+  parentPermissionLevel: PermissionLevel
+  parentTargetUser: String
+  parentTargetUserGroup: String
+  permissionUser: String!
+}
+
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
@@ -1733,6 +1743,18 @@ type ObjectSharingRequest {
   userShortname: String!
 }
 
+enum ObjectType {
+  ANSWER_COLLECTION
+  CATALOG_COLLECTION
+  COURSE
+  ELEMENT
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+  MICRO_LEARNING
+  PRACTICE_QUIZ
+  USER_GROUP
+}
+
 input OptionsCaseStudyInput {
   answerCollection: Int
   cases: [CaseStudyCaseInput!]
@@ -2002,6 +2024,7 @@ type Query {
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: SharingObjectType!): [DerivedPermissionInfo!]
+  getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
