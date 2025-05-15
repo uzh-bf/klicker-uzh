@@ -16,6 +16,10 @@ export const SharingObjectType = builder.enumType('SharingObjectType', {
   values: Object.values(SharingObjectTypeEnum),
 })
 
+export const ObjectType = builder.enumType('ObjectType', {
+  values: Object.values(DB.ObjectType),
+})
+
 export const SharingType = builder.enumType('SharingType', {
   values: Object.values(SharingTypeEnum),
 })
@@ -156,6 +160,47 @@ export const DerivedPermissionInfo = DerivedPermissionInfoRef.implement({
     isOwn: t.exposeBoolean('isOwn'),
   }),
 })
+
+interface IDerivedPermissionOriginInformation {
+  permissionUser: string
+  parentObjectType?: DB.ObjectType
+  parentObjectName?: string
+  parentObjectOwner?: string
+  parentTargetUser?: string
+  parentTargetUserGroup?: string
+  parentPermissionLevel?: DB.PermissionLevel
+}
+
+export const DerivedPermissionOriginInformationRef =
+  builder.objectRef<IDerivedPermissionOriginInformation>(
+    'DerivedPermissionOriginInformation'
+  )
+export const DerivedPermissionOriginInformation =
+  DerivedPermissionOriginInformationRef.implement({
+    fields: (t) => ({
+      permissionUser: t.exposeString('permissionUser'),
+      parentObjectType: t.expose('parentObjectType', {
+        type: ObjectType,
+        nullable: true,
+      }),
+      parentObjectName: t.exposeString('parentObjectName', {
+        nullable: true,
+      }),
+      parentObjectOwner: t.exposeString('parentObjectOwner', {
+        nullable: true,
+      }),
+      parentTargetUser: t.exposeString('parentTargetUser', {
+        nullable: true,
+      }),
+      parentTargetUserGroup: t.exposeString('parentTargetUserGroup', {
+        nullable: true,
+      }),
+      parentPermissionLevel: t.expose('parentPermissionLevel', {
+        type: PermissionLevel,
+        nullable: true,
+      }),
+    }),
+  })
 // #endregion
 
 // ----- USER GROUPS -----
