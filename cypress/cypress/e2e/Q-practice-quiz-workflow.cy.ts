@@ -17,8 +17,8 @@ describe('Different practice quiz workflows', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('Q-practice-quiz.json').then((liveQuizData) => {
-      this.data = { ...this.data, ...liveQuizData }
+    cy.fixture('Q-practice-quiz.json').then((practiceQuizData) => {
+      this.data = { ...this.data, ...practiceQuizData }
     })
   })
 
@@ -549,7 +549,7 @@ describe('Different practice quiz workflows', function () {
   })
   // #endregion
 
-  // ! Part 2: Running Practice Quiz
+  // ! Part 2: Running Practice Quizzes
   // #region
   // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function answerRunningPracticeQuiz(data) {
@@ -1040,7 +1040,7 @@ describe('Different practice quiz workflows', function () {
   })
   // #endregion
 
-  // ! Part 3: Future Practice Quiz
+  // ! Part 3: Future Practice Quizzes
   // #region
   it('Publish the future practice quiz and verify scheduled state', function () {
     cy.loginLecturer()
@@ -1493,6 +1493,1092 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
+  })
+  // #endregion
+
+  // ! Part 5: Sharing Practice Quizzes
+  // #region
+  function verifyPracticeQuizDetailsModalContent(
+    activityName: string,
+    data: any
+  ) {
+    cy.get(`[data-cy="activity-name-${activityName}"]`).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.SCML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.MCML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.KPML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.NRML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.FTML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.SEML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.CSML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  }
+
+  function verifyPracticeQuizOwnerPermissions(data: any) {
+    // for a draft practice quiz the following options should be available: publish, edit, open preview, access link, lti link, duplicate, share, delete
+    cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
+
+    // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
+    ).realClick()
+
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
+
+    // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, delete
+    cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+  }
+
+  function verifyPracticeQuizREADPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginIndividualCatalyst()
+
+    // elements should not be shared for users with READ permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('exist')
+        cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
+      }
+    )
+
+    // for a draft practice quiz the following options should be available: open preview, access link, lti link,remove
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+
+    if (!groupPermission) {
+      cy.get(
+        `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
+      ).realClick()
+      cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
+        'exist'
+      )
+      cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    }
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
+
+    // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, remove
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+
+    if (!groupPermission) {
+      cy.get(
+        `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
+      ).realClick()
+      cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
+        'exist'
+      )
+      cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    }
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
+
+    // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
+    cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+  }
+
+  function verifyPracticeQuizEXECUTEPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst()
+
+    // elements should not be shared for users with EXECUTE permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('exist')
+        cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
+      }
+    )
+
+    // for a draft practice quiz the following options should be available: publish, open preview, access link, lti link,remove
+    cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
+
+    // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
+    ).realClick()
+    cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
+
+    // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
+    cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+  }
+
+  function verifyPracticeQuizWRITEPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst2()
+
+    // elements should not be shared for users with WRITE permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('exist')
+        cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
+      }
+    )
+
+    // for a draft practice quiz the following options should be available: publish, edit, open preview, access link, lti link,remove
+    cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
+
+    // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
+    ).realClick()
+    cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
+
+    // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
+    cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+  }
+
+  function verifyPracticeQuizADMINPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst3()
+
+    // elements should be shared for users with ADMIN permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('exist')
+        cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
+      }
+    )
+
+    // for a draft practice quiz the following options should be available: publish, edit, open preview, access link, lti link, duplicate, share, remove, delete
+    cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
+
+    // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
+    ).realClick()
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
+
+    // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, remove, delete
+    cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
+  }
+
+  function verifyREADPermissionsRevoked(data: any) {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared practice quizzes should no longer be visible
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+      }
+    )
+  }
+
+  function verifyEXECUTEPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared practice quizzes should no longer be visible
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+      }
+    )
+  }
+
+  function verifyWRITEPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared practice quizzes should no longer be visible
+    cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
+      (quiz) => {
+        cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+      }
+    )
+  }
+
+  function verifyADMINPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst3()
+
+    // previously indirectly shared elements should no longer be visible
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((element) => {
+      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    })
+
+    // previously shared practice quizzes should no longer be visible
+    cy.get('[data-cy="activities"]').click()
+    const quizzes = [data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+    })
+  }
+
+  it('Create four different practice quizzes and make sure that all required actions are shown to the object owner', function () {
+    cy.loginLecturer()
+
+    // create four different practice quizzes
+    for (let i = 1; i <= 3; i++) {
+      cy.createPracticeQuiz({
+        name: this.data.sharing[`quiz${i}`],
+        displayName: this.data.sharing[`quiz${i}Display`],
+        courseName: this.data.seededCourse,
+        stacks: [
+          {
+            elements: [
+              this.data.SCML.title,
+              this.data.MCML.title,
+              this.data.KPML.title,
+              this.data.NRML.title,
+              this.data.FTML.title,
+              this.data.SEML.title,
+              this.data.CSML.title,
+              this.data.CT.title,
+            ],
+          },
+        ],
+      })
+      cy.get('[data-cy="create-new-activity"]').click()
+    }
+
+    // change the status of the second practice quiz to scheduled
+    cy.task('changeActivityStatus', {
+      activityName: this.data.sharing.quiz2,
+      activityType: 'PRACTICE_QUIZ',
+      status: 'SCHEDULED',
+    }).then((result: boolean) => {
+      // check if the modification was successful
+      if (result === false) {
+        throw new Error(
+          'Practice quiz to change status was not found in the database'
+        )
+      }
+    })
+
+    // change the status of the third practice quiz to published
+    cy.task('changeActivityStatus', {
+      activityName: this.data.sharing.quiz3,
+      activityType: 'PRACTICE_QUIZ',
+      status: 'PUBLISHED',
+    }).then((result: boolean) => {
+      // check if the modification was successful
+      if (result === false) {
+        throw new Error(
+          'Practice quiz to change status was not found in the database'
+        )
+      }
+    })
+    cy.reload()
+
+    // verify that the owner sees all the correct actions
+    cy.get('[data-cy="activities"]').click()
+    verifyPracticeQuizOwnerPermissions(this.data)
+  })
+
+  it('Share the practice quizzes individual with different users and different permissions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    // grant READ, EXECUTE, WRITE and ADMIN permissions on all practice quizzes to the users 2, 3, 4 and 5, respectively
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // grant READ permission to user 2
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsREAD
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsREAD)
+
+      // grant EXECUTE permission to user 3
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsEXECUTE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsEXECUTE)
+
+      // grand WRITE permissions to user 4
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST2_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+      )
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // grant ADMIN permissions to user 5
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST3_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsADMIN
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`
+      )
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsADMIN)
+
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Log in as the user with READ permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizREADPermissions(this.data, false)
+  })
+
+  it('Log in as the user with EXECUTE permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizEXECUTEPermissions(this.data, false)
+  })
+
+  it('Log in as the user with WRITE permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizWRITEPermissions(this.data, false)
+  })
+
+  it('Log in as the user with ADMIN permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizADMINPermissions(this.data, false)
+  })
+
+  it('Revoke the direct individual permissions for all users through the activity owner account', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    const quizzes = [
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]
+    const users = [
+      Cypress.env('LECTURER_IND_SHORTNAME'),
+      Cypress.env('LECTURER_INST_SHORTNAME'),
+      Cypress.env('LECTURER_INST2_SHORTNAME'),
+      Cypress.env('LECTURER_INST3_SHORTNAME'),
+    ]
+
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // revoke permissions for users 2, 3, 4 and 5
+      cy.wrap(users).each((user) => {
+        cy.get(`[data-cy="permission-${user}"]`).should('exist')
+        cy.get(`[data-cy="revoke-permission-${user}"]`).click()
+        cy.get('[data-cy="confirm-revocation"]').click()
+        cy.get(`[data-cy="permission-${user}"]`).should('not.exist')
+      })
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Verify that user with previous READ permissions can no longer see / access the activity', function () {
+    verifyREADPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous EXECUTE permissions can no longer see / access the activity', function () {
+    verifyEXECUTEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous WRITE permissions can no longer see / access the activity', function () {
+    verifyWRITEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous ADMIN permissions can no longer see / access the activity', function () {
+    verifyADMINPermissionsRevoked(this.data)
+  })
+
+  it('Create user groups with users 2, 3, 4, and 5 as members, admins or owners and share the practice quizzes with them', function () {
+    // create user groups with users 1 & 2 / 3 as member / admin
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group1)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group2)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME')) // pro2 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).should('exist')
+
+    // create user group with users 1 and 4 with user 4 as owner
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group3)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).should('exist')
+
+    // create user group with users 1 and 5 with user 5 as owner
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group4)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
+    cy.logoutUser()
+
+    // share the practice quizzes with the user groups with READ, EXECUTE, WRITE and ADMIN permissions
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // grant READ permission to user group 1
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsREAD
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsREAD)
+
+      // grant EXECUTE permission to user group 2
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsEXECUTE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsEXECUTE)
+
+      // grand WRITE permissions to user group 3
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // grant ADMIN permissions to user group 4
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsADMIN
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Log in as the user with READ permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizREADPermissions(this.data, true)
+  })
+
+  it('Log in as the user with EXECUTE permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizEXECUTEPermissions(this.data, true)
+  })
+
+  it('Log in as the user with WRITE permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizWRITEPermissions(this.data, true)
+  })
+
+  it('Log in as the user with ADMIN permissions on all activities and check that the correct actions are available', function () {
+    verifyPracticeQuizADMINPermissions(this.data, true)
+  })
+
+  it('Revoke the direct group permissions for all users through the activity owner account', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    const quizzes = [
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]
+    const groups = [
+      this.data.sharing.group1,
+      this.data.sharing.group2,
+      this.data.sharing.group3,
+      this.data.sharing.group4,
+    ]
+
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // revoke permissions for all user groups
+      cy.wrap(groups).each((group) => {
+        cy.get(`[data-cy="permission-${group}"]`).should('exist')
+        cy.get(`[data-cy="revoke-permission-${group}"]`).click()
+        cy.get('[data-cy="confirm-revocation"]').click()
+        cy.get(`[data-cy="permission-${group}"]`).should('not.exist')
+      })
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Verify that user with previous READ permissions can no longer see / access the activity', function () {
+    verifyREADPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous EXECUTE permissions can no longer see / access the activity', function () {
+    verifyEXECUTEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous WRITE permissions can no longer see / access the activity', function () {
+    verifyWRITEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous ADMIN permissions can no longer see / access the activity', function () {
+    verifyADMINPermissionsRevoked(this.data)
+  })
+
+  it("Transfer ownership of all practice quizzes to user 'pro1' using the username", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // share the course with WRITE permissions with user pro1
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // transfer ownership to user pro1
+      cy.get('[data-cy="transfer-ownership"]').click()
+      cy.get('[data-cy="new-owner-username-email-input"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+      // verify that the correct permissions are displayed
+      cy.get('[data-cy="transfer-ownership"]').should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      ).contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it("Verify that user 'pro1' is the new owner and transfer the ownership back to the main user", function () {
+    cy.loginIndividualCatalyst()
+
+    // verify that the new owner sees all the correct actions
+    cy.get('[data-cy="activities"]').click()
+    verifyPracticeQuizOwnerPermissions(this.data)
+
+    // transfer the ownership of all quizzes back to the main user
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+
+      // grant a WRITE permission to the main user (should change the existing permission in this case)
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // transfer ownership back to the main user
+      cy.get('[data-cy="transfer-ownership"]').click()
+      cy.get('[data-cy="new-owner-username-email-input"]').type(
+        Cypress.env('LECTURER_SHORTNAME')
+      )
+      cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+      // verify that the correct permissions are displayed
+      cy.get('[data-cy="transfer-ownership"]').should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it("Remove the shared practice quizzes from user 'pro1' using the removal functionality", function () {
+    cy.loginIndividualCatalyst()
+
+    // remove the shared practice quizzes from user pro1
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="remove-practice-quiz-${quiz}"]`).click()
+      cy.get('[data-cy="confirm-deletion-final"]').click()
+      cy.get('[data-cy="confirm-derived-access"]').click()
+      cy.get('[data-cy="confirm-dependency-access"]').click()
+      cy.get('[data-cy="confirmation-modal-confirm"]').click()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+      cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
+    })
+    cy.logoutUser()
+
+    // verify in the main user account that the corresponding permissions were removed
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.quiz1,
+      this.data.sharing.quiz2,
+      this.data.sharing.quiz3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
   })
   // #endregion
 })
