@@ -39,5 +39,19 @@
     "newSEContent": "New Selection Question Content",
     "duplicateName": "Duplicated Microlearning",
     "duplicateDisplayName": "Duplicated Microlearning (Display)"
+  },
+  "sharing": {
+    "micro1": "Sharing Microlearning 1",
+    "micro1Display": "Sharing Microlearning 1 (Display)",
+    "micro2": "Sharing Microlearning 2",
+    "micro2Display": "Sharing Microlearning 2 (Display)",
+    "micro3": "Sharing Microlearning 3",
+    "micro3Display": "Sharing Microlearning 3 (Display)",
+    "micro4": "Sharing Microlearning 4",
+    "micro4Display": "Sharing Microlearning 4 (Display)",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4"
   }
 }

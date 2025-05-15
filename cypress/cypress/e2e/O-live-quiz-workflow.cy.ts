@@ -1993,9 +1993,6 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
-      'exist'
-    )
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz4}"]`).should(
       'exist'
     )
