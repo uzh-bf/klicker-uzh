@@ -2651,7 +2651,6 @@ describe('Create and solve a group activity', function () {
       this.data.sharing.ga4,
       this.data.sharing.ga5,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-GROUP_ACTIVITY-${quiz}"]`).realClick()
       cy.get(`[data-cy="remove-group-activity-${quiz}"]`).click()
       cy.get('[data-cy="confirm-deletion-final"]').click()
       cy.get('[data-cy="confirm-derived-access"]').click()
