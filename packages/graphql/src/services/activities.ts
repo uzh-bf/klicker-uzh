@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
-import { prop, sortBy } from 'remeda'
+import { sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 
 export async function getUserActivities(ctx: ContextWithUser) {
@@ -304,11 +304,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
     return []
   })
 
-  // sort the activities first by type and then by status and name
+  // the activities should be ordered as follows:
+  // 1) first by active vs inactive status (active: published, scheduled, draft, template; inactive: ended, graded)
+  // 2) then by type: live quiz, microlearning, practice quiz, group activity
+  // 3) then by status within the active/inactive groups
+  // 4) then by start date / updated date
   const activityTypeOrder = {
     [ActivityType.LIVE_QUIZ]: 1,
-    [ActivityType.PRACTICE_QUIZ]: 2,
-    [ActivityType.MICRO_LEARNING]: 3,
+    [ActivityType.MICRO_LEARNING]: 2,
+    [ActivityType.PRACTICE_QUIZ]: 3,
     [ActivityType.GROUP_ACTIVITY]: 4,
   }
 
@@ -316,19 +320,35 @@ export async function getUserActivities(ctx: ContextWithUser) {
     [DB.PublicationStatus.PUBLISHED]: 1,
     [DB.PublicationStatus.SCHEDULED]: 2,
     [DB.PublicationStatus.DRAFT]: 3,
-    [DB.PublicationStatus.TEMPLATE]: 6,
-    [DB.PublicationStatus.ENDED]: 4,
-    [DB.PublicationStatus.GRADED]: 5,
+    [DB.PublicationStatus.TEMPLATE]: 4,
+    [DB.PublicationStatus.ENDED]: 2,
+    [DB.PublicationStatus.GRADED]: 1,
+  }
+
+  // Helper function to determine if a status is active or inactive
+  const isActiveStatus = (status: DB.PublicationStatus): boolean => {
+    return (
+      status === DB.PublicationStatus.PUBLISHED ||
+      status === DB.PublicationStatus.SCHEDULED ||
+      status === DB.PublicationStatus.DRAFT ||
+      status === DB.PublicationStatus.TEMPLATE
+    )
   }
 
   return sortBy(
     activities,
-    (activity) =>
-      activityTypeOrder[activity.type as keyof typeof activityTypeOrder],
-    (activity) =>
-      activityStatusOrder[
-        activity.status as keyof typeof activityStatusOrder
-      ] || 999, // Use a high number for any unknown status
-    prop('name') // sort by name
+    // first order by active/inactive (active first)
+    (activity) => (isActiveStatus(activity.status) ? 0 : 1),
+    // then order by activity type
+    (activity) => activityTypeOrder[activity.type],
+    // then order by status within each group
+    (activity) => activityStatusOrder[activity.status] || 100,
+    // then by scheduled start date or updated date
+    (activity) => {
+      if (activity.scheduledStartAt) {
+        return -new Date(activity.scheduledStartAt).getTime()
+      }
+      return -new Date(activity.updatedAt).getTime()
+    }
   )
 }
