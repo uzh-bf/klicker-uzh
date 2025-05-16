@@ -1,3 +1,4 @@
+import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useState } from 'react'
 import ElementEditForm from '../../questions/manipulation/ElementEditForm'
 import { ElementEditMode } from '../../questions/manipulation/ElementEditModal'
@@ -38,6 +39,7 @@ function TemplateNewElementModal({
       mode={ElementEditMode.CREATE}
       loading={false}
       initialValues={formValues}
+      initialStatus={ElementStatus.Ready}
       onSubmitElement={async (values) => {
         onSaveNewElement(values)
       }}

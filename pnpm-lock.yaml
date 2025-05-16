@@ -72,8 +72,8 @@ importers:
         specifier: 1.0.7
         version: 1.0.7(@prisma/client@6.1.0(prisma@6.1.0))(next-auth@4.24.8(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       axios:
         specifier: 1.7.7
         version: 1.7.7(debug@4.4.0)
@@ -91,7 +91,7 @@ importers:
         version: 1.10.0
       next:
         specifier: 15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-auth:
         specifier: 4.24.8
         version: 4.24.8(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -305,8 +305,8 @@ importers:
         specifier: ^8.5.12
         version: 8.5.13
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       axios:
         specifier: ~1.7.7
         version: 1.7.7(debug@4.4.0)
@@ -407,8 +407,8 @@ importers:
         specifier: ^18.3.11
         version: 18.3.18
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       autoprefixer:
         specifier: ~10.4.20
         version: 10.4.20(postcss@8.4.49)
@@ -503,8 +503,8 @@ importers:
         specifier: 1.9.1
         version: 1.9.1(next@15.0.0(@babel/core@7.21.8)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -628,7 +628,7 @@ importers:
         version: 12.25.0
       '@ducanh2912/next-pwa':
         specifier: 7.3.3
-        version: 7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
+        version: 7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
       '@fortawesome/fontawesome-svg-core':
         specifier: 6.6.0
         version: 6.6.0
@@ -664,7 +664,7 @@ importers:
         version: link:../../packages/shared-components
       '@socialgouv/matomo-next':
         specifier: 1.9.1
-        version: 1.9.1(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        version: 1.9.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@tanstack/react-table':
         specifier: 8.20.5
         version: 8.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -672,8 +672,8 @@ importers:
         specifier: 2.4.1
         version: 2.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       dayjs:
         specifier: 1.11.13
         version: 1.11.13
@@ -715,7 +715,7 @@ importers:
         version: 5.0.8
       next:
         specifier: 15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-intl:
         specifier: 3.21.1
         version: 3.21.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -869,7 +869,7 @@ importers:
         version: 5.0.6(@capacitor/core@5.3.0)
       '@ducanh2912/next-pwa':
         specifier: 7.3.3
-        version: 7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
+        version: 7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
       '@fortawesome/fontawesome-svg-core':
         specifier: 6.6.0
         version: 6.6.0
@@ -911,13 +911,13 @@ importers:
         version: 1.1.1(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@socialgouv/matomo-next':
         specifier: 1.9.1
-        version: 1.9.1(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        version: 1.9.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@uidotdev/usehooks':
         specifier: 2.4.1
         version: 2.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       body-parser:
         specifier: 1.20.3
         version: 1.20.3
@@ -953,7 +953,7 @@ importers:
         version: 1.10.0
       next:
         specifier: 15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-intl:
         specifier: 3.21.1
         version: 3.21.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -1080,8 +1080,8 @@ importers:
         specifier: ^20.16.1
         version: 20.17.12
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       azure-functions-core-tools:
         specifier: ~4.0.6610
         version: 4.0.6610
@@ -1132,8 +1132,8 @@ importers:
         specifier: ^20.16.1
         version: 20.17.12
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       azure-functions-core-tools:
         specifier: ~4.0.6610
         version: 4.0.6610
@@ -1202,8 +1202,8 @@ importers:
   apps/office-addin:
     dependencies:
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       core-js:
         specifier: 3.30.2
         version: 3.30.2
@@ -1653,11 +1653,11 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1)
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       next:
         specifier: ^15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1757,7 +1757,7 @@ importers:
     dependencies:
       next:
         specifier: ^15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   packages/prisma:
     dependencies:
@@ -1853,8 +1853,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1)
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
@@ -1869,7 +1869,7 @@ importers:
         version: 1.10.0
       next:
         specifier: ^15.0.0
-        version: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-intl:
         specifier: ^3.21.1
         version: 3.21.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -1986,8 +1986,8 @@ importers:
         specifier: ^18.3.11
         version: 18.3.18
       '@uzh-bf/design-system':
-        specifier: 3.0.0-alpha.78
-        version: 3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
+        specifier: 3.0.0-alpha.79
+        version: 3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)
       react:
         specifier: ~18.3.1
         version: 18.3.1
@@ -7934,8 +7934,8 @@ packages:
   '@ungap/structured-clone@1.2.1':
     resolution: {integrity: sha512-fEzPV3hSkSMltkw152tJKNARhOupqbH96MZWyRjNaYZOMIzbrTeQDG+MTc6Mr2pgzFQzFxAfmhGDNP5QK++2ZA==}
 
-  '@uzh-bf/design-system@3.0.0-alpha.78':
-    resolution: {integrity: sha512-7fvyDowpMmkQkFk78Y1NIqBCGwXAxNCNJ2xjYBJ53OcTOacozRJeExeZ2Edp2DIPMrx3ghbQ+wvre0W/kN5sEg==}
+  '@uzh-bf/design-system@3.0.0-alpha.79':
+    resolution: {integrity: sha512-IAGtOwIGX29J9riF+MAOzu5642KaWVD0ngGtNcfMhN0RnA7kYyAfV5S7GafM9FhvuA0o6U/vuQCcr9FTnS3rgw==}
     engines: {node: '=20'}
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ^6.6.0
@@ -21073,11 +21073,11 @@ snapshots:
       - supports-color
       - uglify-js
 
-  '@ducanh2912/next-pwa@7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))':
+  '@ducanh2912/next-pwa@7.3.3(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/babel__core@7.20.5)(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(swc-loader@0.2.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))':
     dependencies:
       clean-webpack-plugin: 4.0.0(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
       fast-glob: 3.2.12
-      next: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       terser-webpack-plugin: 5.3.6(@swc/core@1.10.7(@swc/helpers@0.5.15))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
       webpack: 5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))
       workbox-build: 6.5.4(@types/babel__core@7.20.5)
@@ -24955,9 +24955,9 @@ snapshots:
     dependencies:
       next: 15.0.0(@babel/core@7.21.8)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@socialgouv/matomo-next@1.9.1(next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@socialgouv/matomo-next@1.9.1(next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
-      next: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   '@socket.io/component-emitter@3.1.2': {}
 
@@ -25985,7 +25985,7 @@ snapshots:
 
   '@ungap/structured-clone@1.2.1': {}
 
-  '@uzh-bf/design-system@3.0.0-alpha.78(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)':
+  '@uzh-bf/design-system@3.0.0-alpha.79(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.49))(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3))))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)))(yup@1.4.0)':
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.6.0
       '@fortawesome/free-regular-svg-icons': 6.6.0
@@ -32818,7 +32818,7 @@ snapshots:
       '@panva/hkdf': 1.2.1
       cookie: 0.5.0
       jose: 4.15.9
-      next: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       oauth: 0.9.15
       openid-client: 5.7.1
       preact: 10.25.4
@@ -32858,7 +32858,7 @@ snapshots:
     dependencies:
       '@formatjs/intl-localematcher': 0.5.10
       negotiator: 0.6.4
-      next: 15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       use-intl: 3.26.3(react@18.3.1)
 
@@ -32901,7 +32901,7 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@15.0.0(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next@15.0.0(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@next/env': 15.0.0
       '@swc/counter': 0.1.3
