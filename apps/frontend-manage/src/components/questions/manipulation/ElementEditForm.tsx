@@ -1,8 +1,19 @@
-import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import {
+  ElementData,
+  ElementType,
+  ObjectType,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@uzh-bf/design-system/dist/future'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import Changelog from '../../sharing/Changelog'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
@@ -261,11 +272,47 @@ function ElementEditForm({
                   <ElementFormErrors errors={errors} />
                 )}
               </div>
-              <StudentElementPreview
-                values={values}
-                elementDataTypename={elementDataTypename}
-                answerCollectionEntries={answerCollectionEntries}
-              />
+
+              {mode === ElementEditMode.EDIT ? (
+                <Tabs defaultValue="preview" className="w-full max-w-sm">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="preview" className="w-1/2 font-bold">
+                      {t('shared.generic.preview')}
+                    </TabsTrigger>
+                    <TabsTrigger value="changelog" className="w-1/2 font-bold">
+                      {t('shared.generic.activity')}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="preview">
+                    <StudentElementPreview
+                      values={values}
+                      elementDataTypename={elementDataTypename}
+                      answerCollectionEntries={answerCollectionEntries}
+                    />
+                  </TabsContent>
+                  <TabsContent value="changelog">
+                    <div className="w-sm w-full flex-1">
+                      <Changelog
+                        entries={[]}
+                        objectId={elementId?.toString() || ''}
+                        objectType={ObjectType.Element}
+                        onMessageAdded={() => {
+                          // TODO: Refresh changelog entries when implemented
+                        }}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="w-full max-w-sm">
+                  <H3>{t('shared.generic.preview')}</H3>
+                  <StudentElementPreview
+                    values={values}
+                    elementDataTypename={elementDataTypename}
+                    answerCollectionEntries={answerCollectionEntries}
+                  />
+                </div>
+              )}
             </div>
 
             {mode === ElementEditMode.EDIT && elementId && !inputsDisabled && (

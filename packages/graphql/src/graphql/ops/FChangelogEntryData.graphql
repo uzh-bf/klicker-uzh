@@ -1,0 +1,9 @@
+fragment ChangelogEntryData on ChangelogEntry {
+  id
+  type
+  message
+  username
+  isEdited
+  createdAt
+  updatedAt
+}

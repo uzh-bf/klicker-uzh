@@ -55,6 +55,7 @@ model Element {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  changelog          ChangelogEntry[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid

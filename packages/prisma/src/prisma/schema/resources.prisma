@@ -22,6 +22,7 @@ model AnswerCollection {
     directPermissions Permission[]
     permissions       DerivedPermission[]
     accessRequests    AccessRequest[]
+    changelog         ChangelogEntry[]
 
     owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     ownerId String @db.Uuid

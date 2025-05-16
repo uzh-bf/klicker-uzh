@@ -24,6 +24,10 @@ export const SharingType = builder.enumType('SharingType', {
   values: Object.values(SharingTypeEnum),
 })
 
+export const ChangelogType = builder.enumType('ChangelogType', {
+  values: Object.values(DB.ChangelogType),
+})
+
 export const PermissionLevel = builder.enumType('PermissionLevel', {
   values: Object.values(DB.PermissionLevel),
 })
@@ -248,4 +252,26 @@ export const UserGroup = UserGroupRef.implement({
   }),
 })
 
+// #endregion
+
+// ----- CHANGELOG -----
+// #region
+interface IChangelogEntry extends DB.ChangelogEntry {
+  username?: string // username of the user who created the changelog entry
+  isEdited?: boolean // boolean to signal if a changelog entry has been edited after its creation
+}
+
+export const ChangelogEntryRef =
+  builder.objectRef<IChangelogEntry>('ChangelogEntry')
+export const ChangelogEntry = ChangelogEntryRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    type: t.expose('type', { type: ChangelogType }),
+    message: t.exposeString('message'),
+    username: t.exposeString('username', { nullable: true }),
+    isEdited: t.exposeBoolean('isEdited', { nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
 // #endregion

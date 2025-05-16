@@ -77,6 +77,7 @@ import {
   CatalogCollection,
   CatalogObject,
   CatalogSelectionObject,
+  ChangelogEntry,
   DerivedPermissionInfo,
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
@@ -1687,6 +1688,21 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await SharingService.getDerivedPermissionOrigin(args, ctx)
         },
+      }),
+
+      getElementChangelog: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ChangelogEntry],
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getElementChangelog(args, ctx)
+          }
+        ),
       }),
 
       getCatalogCollectionsList: t.withAuth(asUser).field({

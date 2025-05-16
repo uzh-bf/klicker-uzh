@@ -1,0 +1,13 @@
+mutation AddChangelogMessage(
+  $objectId: String!
+  $objectType: ObjectType!
+  $message: String!
+) {
+  addChangelogMessage(
+    objectId: $objectId
+    objectType: $objectType
+    message: $message
+  ) {
+    ...ChangelogEntryData
+  }
+}

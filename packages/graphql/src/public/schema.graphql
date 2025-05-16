@@ -478,6 +478,21 @@ type CatalogSelectionObject {
   name: String!
 }
 
+type ChangelogEntry {
+  createdAt: Date!
+  id: Int!
+  isEdited: Boolean
+  message: String!
+  type: ChangelogType!
+  updatedAt: Date!
+  username: String
+}
+
+enum ChangelogType {
+  MESSAGE
+  MODIFICATION
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -1463,6 +1478,7 @@ type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
+  addChangelogMessage(message: String!, objectId: String!, objectType: ObjectType!): ChangelogEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!): CatalogObject
@@ -2025,6 +2041,7 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: SharingObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
+  getElementChangelog(id: Int!): [ChangelogEntry!]
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]

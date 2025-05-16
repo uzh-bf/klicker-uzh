@@ -73,7 +73,9 @@ import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
+  ChangelogEntry,
   ObjectAccess,
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
   SharingObjectType,
@@ -1700,6 +1702,93 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.addUserToUserGroup(args, ctx)
+        },
+      }),
+
+      addChangelogMessage: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ChangelogEntry,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+          message: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // changelog entries are not supported for catalog collections and user groups
+          if (
+            args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
+            args.objectType === DB.ObjectType.USER_GROUP
+          ) {
+            return null
+          }
+
+          // >= READ permissions on the object required
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await SharingService.addChangelogMessage(args, ctx)
         },
       }),
 

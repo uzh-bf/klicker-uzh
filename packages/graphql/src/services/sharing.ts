@@ -6548,3 +6548,70 @@ export async function addUserToUserGroup(
   }
 }
 // #endregion
+
+// ! Changelog Entries
+// #region
+export async function addChangelogMessage(
+  {
+    objectId,
+    objectType,
+    message,
+  }: { objectId: string; objectType: DB.ObjectType; message: string },
+  ctx: ContextWithUser
+) {
+  const newChangeLogEntry = await ctx.prisma.changelogEntry.create({
+    data: {
+      type: DB.ChangelogType.MESSAGE,
+      message,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId)
+          : undefined,
+      elementId:
+        objectType === DB.ObjectType.ELEMENT ? parseInt(objectId) : undefined,
+      courseId: objectType === DB.ObjectType.COURSE ? objectId : undefined,
+      liveQuizId: objectType === DB.ObjectType.LIVE_QUIZ ? objectId : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ ? objectId : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING ? objectId : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY ? objectId : undefined,
+      userId: ctx.user.sub,
+    },
+    include: {
+      user: { select: { shortname: true } },
+    },
+  })
+
+  return {
+    ...newChangeLogEntry,
+    username: newChangeLogEntry.user?.shortname,
+    isEdited: false, // flag to signal if an object has been edited
+  }
+}
+
+export async function getElementChangelog(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      changelog: {
+        include: { user: { select: { shortname: true } } },
+      },
+    },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  return element.changelog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(), // check if the entry has been edited
+  }))
+}
+// #endregion
