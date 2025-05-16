@@ -18,6 +18,36 @@ import {
   getMaxAccessLevelIndividual,
 } from './util.js'
 
+// WHERE clause component to filter relevant activities, which would result in permissions on the contained elements
+const ACTIVITY_PERMISSIONS_WHERE_CLAUSE = [
+  // ? ADMIN / OWNER permissions on activity
+  {
+    permissionLevel: {
+      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+    },
+  },
+  // ? propagation enabled & READ / WRITE / EXECUTE permissions on activity
+  // --> if this is modified, the logic in the function body below also needs to be adapted
+  {
+    permissionLevel: {
+      in: [
+        DB.PermissionLevel.READ,
+        DB.PermissionLevel.EXECUTE,
+        DB.PermissionLevel.WRITE,
+      ],
+    },
+    directPermission: {
+      propagation: true,
+      OR: [
+        { liveQuizId: { not: null } },
+        { practiceQuizId: { not: null } },
+        { microLearningId: { not: null } },
+        { groupActivityId: { not: null } },
+      ],
+    },
+  },
+]
+
 /**
  * Dispatch function for the recomputation of derived permissions for elements.
  *
@@ -141,12 +171,7 @@ export async function recomputeElementPermissionsUser(
                       permissions: {
                         some: {
                           userId,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
+                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                         },
                       },
                     },
@@ -156,12 +181,7 @@ export async function recomputeElementPermissionsUser(
                       permissions: {
                         some: {
                           userId,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
+                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                         },
                       },
                     },
@@ -171,12 +191,7 @@ export async function recomputeElementPermissionsUser(
                       permissions: {
                         some: {
                           userId,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
+                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                         },
                       },
                     },
@@ -190,12 +205,7 @@ export async function recomputeElementPermissionsUser(
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -211,12 +221,7 @@ export async function recomputeElementPermissionsUser(
                   permissions: {
                     where: {
                       userId,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -230,12 +235,7 @@ export async function recomputeElementPermissionsUser(
                   permissions: {
                     where: {
                       userId,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -245,12 +245,7 @@ export async function recomputeElementPermissionsUser(
                   permissions: {
                     where: {
                       userId,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -260,12 +255,7 @@ export async function recomputeElementPermissionsUser(
                   permissions: {
                     where: {
                       userId,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -302,8 +292,8 @@ export async function recomputeElementPermissionsUser(
       parentPermissionId = directPermissionId
     }
 
-    // if the element is included in an activity where the user has ADMIN / OWNER permissions
-    // --> owner requires derived admin permissions (at least) - skip if direct ADMIn permissions are already granted
+    // if the element is included in an activity where the user has ADMIN / OWNER permissions or propagation is enabled
+    // --> owner requires derived admin permissions (at least) - skip if direct ADMIN permissions are already granted
     if (
       element.elementInstances.length > 0 &&
       maxAccessLevel !== DB.PermissionLevel.ADMIN
@@ -315,10 +305,25 @@ export async function recomputeElementPermissionsUser(
         instance.elementStack?.microLearning?.permissions[0] ??
         instance.elementStack?.groupActivity?.permissions[0]
 
-      if (permission) {
+      // OWNER / ADMIN permissions on the activity -> ADMIN on element
+      if (
+        permission &&
+        (permission.permissionLevel === DB.PermissionLevel.OWNER ||
+          permission.permissionLevel === DB.PermissionLevel.ADMIN)
+      ) {
         maxAccessLevel = DB.PermissionLevel.ADMIN
         parentPermissionId = permission.directPermissionId ?? undefined
-        derived = true // permission was derived from another element
+        derived = true // permission was derived from an activity
+      }
+      // READ / EXECUTE / WRITE on the activity AND propagation enabled (only these are fetched above!)
+      // --> READ / WRITE on element
+      else if (permission) {
+        maxAccessLevel =
+          permission.permissionLevel === DB.PermissionLevel.WRITE
+            ? DB.PermissionLevel.WRITE
+            : DB.PermissionLevel.READ
+        parentPermissionId = permission.directPermissionId ?? undefined
+        derived = true // permission was derived from an activity
       }
     }
   }
@@ -448,12 +453,7 @@ export async function recomputeElementPermissionsObject(
                 include: {
                   permissions: {
                     where: {
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -466,12 +466,7 @@ export async function recomputeElementPermissionsObject(
                 include: {
                   permissions: {
                     where: {
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -480,12 +475,7 @@ export async function recomputeElementPermissionsObject(
                 include: {
                   permissions: {
                     where: {
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -494,12 +484,7 @@ export async function recomputeElementPermissionsObject(
                 include: {
                   permissions: {
                     where: {
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
                     },
                   },
                 },
@@ -524,7 +509,7 @@ export async function recomputeElementPermissionsObject(
   })
 
   // get all activity permissions (ADMIN and OWNER level), which make a user qualify for ADMIN access on the element
-  const adminActivityPermissions: DB.DerivedPermission[] =
+  const activityPermissions: DB.DerivedPermission[] =
     element.elementInstances.flatMap((instance) => [
       ...(instance.elementBlock?.liveQuiz.permissions ?? []),
       ...(instance.elementStack?.practiceQuiz?.permissions ?? []),
@@ -534,29 +519,76 @@ export async function recomputeElementPermissionsObject(
 
   // extend the user access map based on the activity permissions resulting in derived ADMIN access
   const userAccess =
-    adminActivityPermissions.length > 0
-      ? adminActivityPermissions.reduce<UserAccessMap>(
+    activityPermissions.length > 0
+      ? activityPermissions.reduce<UserAccessMap>(
           (acc, permission) => {
-            // if the user already has a permission, check if it is already on ADMIN level
+            // if the user already has a ADMIN / OWNER permission, no derived access can be higher
             if (
               typeof acc[permission.userId] !== 'undefined' &&
-              acc[permission.userId]!.maxAccessLevel !==
-                DB.PermissionLevel.ADMIN &&
-              acc[permission.userId]!.maxAccessLevel !==
-                DB.PermissionLevel.OWNER
+              (acc[permission.userId]!.maxAccessLevel ===
+                DB.PermissionLevel.ADMIN ||
+                acc[permission.userId]!.maxAccessLevel ===
+                  DB.PermissionLevel.OWNER)
             ) {
-              acc[permission.userId]!.maxAccessLevel = DB.PermissionLevel.ADMIN
-              acc[permission.userId]!.parentPermissionId =
-                permission.directPermissionId ?? undefined
-              acc[permission.userId]!.derived = true // permission was derived from an activity with ADMIN permissions
+              return acc
             }
 
-            // if user does not have a permission yet, add it
-            if (typeof acc[permission.userId] === 'undefined') {
-              acc[permission.userId] = {
-                maxAccessLevel: DB.PermissionLevel.ADMIN,
-                parentPermissionId: permission.directPermissionId ?? undefined,
-                derived: true, // permission was derived from an activity with ADMIN permissions
+            // if the user has ADMIN / OWNER permissions on the activity, grant ADMIN access on the element
+            if (
+              permission.permissionLevel === DB.PermissionLevel.OWNER ||
+              permission.permissionLevel === DB.PermissionLevel.ADMIN
+            ) {
+              if (acc[permission.userId]) {
+                acc[permission.userId]!.maxAccessLevel =
+                  DB.PermissionLevel.ADMIN
+                acc[permission.userId]!.parentPermissionId =
+                  permission.directPermissionId ?? undefined
+                acc[permission.userId]!.derived = true // permission was derived from an activity with ADMIN permissions
+              } else {
+                acc[permission.userId] = {
+                  maxAccessLevel: DB.PermissionLevel.ADMIN,
+                  parentPermissionId:
+                    permission.directPermissionId ?? undefined,
+                  derived: true, // permission was derived from an activity with ADMIN permissions
+                }
+              }
+            }
+            // if the user has WRITE permissions on the activity and propagation is enabled, grant WRITE access on the element
+            // ? where clause already ensures that fetched WRITE permissions have propagation enabled on activity
+            else if (permission.permissionLevel === DB.PermissionLevel.WRITE) {
+              if (acc[permission.userId]) {
+                acc[permission.userId]!.maxAccessLevel =
+                  DB.PermissionLevel.WRITE
+                acc[permission.userId]!.parentPermissionId =
+                  permission.directPermissionId ?? undefined
+                acc[permission.userId]!.derived = true // permission was derived from an activity with WRITE permissions
+              } else {
+                acc[permission.userId] = {
+                  maxAccessLevel: DB.PermissionLevel.WRITE,
+                  parentPermissionId:
+                    permission.directPermissionId ?? undefined,
+                  derived: true, // permission was derived from an activity with WRITE permissions
+                }
+              }
+            }
+            // if the user has READ / EXECUTE permissions on the activity and propagation is enabled, grant READ access on the element
+            // ? where clause already ensures that fetched READ / EXECUTE permissions have propagation enabled on activity
+            else if (
+              permission.permissionLevel === DB.PermissionLevel.READ ||
+              permission.permissionLevel === DB.PermissionLevel.EXECUTE
+            ) {
+              if (acc[permission.userId]) {
+                acc[permission.userId]!.maxAccessLevel = DB.PermissionLevel.READ
+                acc[permission.userId]!.parentPermissionId =
+                  permission.directPermissionId ?? undefined
+                acc[permission.userId]!.derived = true // permission was derived from an activity with READ / EXECUTE permissions
+              } else {
+                acc[permission.userId] = {
+                  maxAccessLevel: DB.PermissionLevel.READ,
+                  parentPermissionId:
+                    permission.directPermissionId ?? undefined,
+                  derived: true, // permission was derived from an activity with READ / EXECUTE permissions
+                }
               }
             }
 

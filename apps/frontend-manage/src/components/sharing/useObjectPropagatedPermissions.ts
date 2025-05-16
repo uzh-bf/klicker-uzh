@@ -30,10 +30,11 @@ function useObjectPropagatedPermissions({
       },
     ]
   } else if (
-    objectType === SharingObjectType.LiveQuiz ||
-    objectType === SharingObjectType.PracticeQuiz ||
-    objectType === SharingObjectType.MicroLearning ||
-    objectType === SharingObjectType.GroupActivity
+    propagation === false &&
+    (objectType === SharingObjectType.LiveQuiz ||
+      objectType === SharingObjectType.PracticeQuiz ||
+      objectType === SharingObjectType.MicroLearning ||
+      objectType === SharingObjectType.GroupActivity)
   ) {
     return [
       {
@@ -52,6 +53,35 @@ function useObjectPropagatedPermissions({
           undefined,
           undefined,
           undefined,
+          PermissionLevel.Read,
+          PermissionLevel.Read,
+        ],
+      },
+    ]
+  } else if (
+    propagation === true &&
+    (objectType === SharingObjectType.LiveQuiz ||
+      objectType === SharingObjectType.PracticeQuiz ||
+      objectType === SharingObjectType.MicroLearning ||
+      objectType === SharingObjectType.GroupActivity)
+  ) {
+    return [
+      {
+        object: t('shared.types.ELEMENT'),
+        permissions: [
+          PermissionLevel.Read,
+          PermissionLevel.Read,
+          PermissionLevel.Write,
+          PermissionLevel.Admin,
+          PermissionLevel.Admin,
+        ],
+      },
+      {
+        object: t('shared.types.ANSWER_COLLECTION'),
+        permissions: [
+          PermissionLevel.Read,
+          PermissionLevel.Read,
+          PermissionLevel.Read,
           PermissionLevel.Read,
           PermissionLevel.Read,
         ],
