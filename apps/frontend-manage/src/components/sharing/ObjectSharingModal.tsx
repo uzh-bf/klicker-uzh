@@ -45,6 +45,14 @@ function ObjectSharingModal({
   const [removalFailure, setRemovalFailure] = useState(false)
   const [showDerivedPermissions, setShowDerivedPermissions] = useState(false)
 
+  // boolean to determine whether to show the propagation option on the permissions
+  const showPropagationSetting =
+    objectType === SharingObjectType.Course ||
+    objectType === SharingObjectType.LiveQuiz ||
+    objectType === SharingObjectType.PracticeQuiz ||
+    objectType === SharingObjectType.MicroLearning ||
+    objectType === SharingObjectType.GroupActivity
+
   // get all permissions that have already been granted for this object
   const { permissions, loading: permissionsLoading } = useObjectPermissions({
     objectId,
@@ -109,7 +117,7 @@ function ObjectSharingModal({
 
         <PropagatedPermissionsTable
           objectType={objectType}
-          showPropagationSetting={objectType === SharingObjectType.Course}
+          showPropagationSetting={showPropagationSetting}
         />
 
         <div className="mt-8">
@@ -119,7 +127,7 @@ function ObjectSharingModal({
             permissionsLoading={permissionsLoading}
             changeLoading={permissionChanging}
             isOwner={isOwner}
-            showPropagationSetting={objectType === SharingObjectType.Course}
+            showPropagationSetting={showPropagationSetting}
             onPermissionLevelChange={async ({
               permissionId,
               newPermissionLevel,
