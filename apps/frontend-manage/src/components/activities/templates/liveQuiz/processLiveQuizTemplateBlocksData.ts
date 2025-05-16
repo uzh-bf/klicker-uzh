@@ -1,4 +1,5 @@
 import {
+  ElementStatus,
   ElementType,
   TemplateElementManipulationInput,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -74,7 +75,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareChoicesArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               // options key needs to be removed to avoid GraphQL error on submission
@@ -88,7 +89,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareNumericalArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...omitBy(args, (_, key) => key === 'options'),
@@ -101,7 +102,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareFreeTextArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...omitBy(args, (_, key) => key === 'options'),
@@ -114,7 +115,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareSelectionArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...omitBy(args, (_, key) => key === 'options'),
@@ -127,7 +128,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareCaseStudyArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...omitBy(args, (_, key) => key === 'options'),
@@ -140,7 +141,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareFlashcardArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...args,
@@ -152,7 +153,7 @@ function processLiveQuizTemplateBlocksData({
             const args = prepareContentArgs({
               elementId: undefined,
               isDuplication: false,
-              values,
+              values: { ...values, status: ElementStatus.Ready },
             })
             elementManipulationData = {
               ...args,
