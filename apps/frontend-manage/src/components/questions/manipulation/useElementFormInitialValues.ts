@@ -1,7 +1,6 @@
 import {
   Element,
   ElementDisplayMode,
-  ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { nanoid } from 'nanoid'
@@ -28,7 +27,6 @@ function useElementFormInitialValues({
   return useMemo((): ElementFormTypes | undefined => {
     if (mode === ElementEditMode.CREATE) {
       return {
-        status: ElementStatus.Ready,
         type: ElementType.Sc,
         name: '',
         content: '',
@@ -57,7 +55,6 @@ function useElementFormInitialValues({
     }
 
     const sharedAttributes = {
-      status: question.status,
       name: isDuplication ? `${question.name} (Copy)` : question.name,
       content: question.content,
       explanation: question.explanation ?? '',

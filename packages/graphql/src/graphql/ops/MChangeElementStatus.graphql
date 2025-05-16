@@ -1,0 +1,3 @@
+mutation ChangeElementStatus($elementId: Int!, $status: ElementStatus!) {
+  changeElementStatus(elementId: $elementId, status: $status)
+}

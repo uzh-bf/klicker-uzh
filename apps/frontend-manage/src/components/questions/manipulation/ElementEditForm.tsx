@@ -1,4 +1,8 @@
-import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementData,
+  ElementStatus,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -36,6 +40,7 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
+  initialStatus,
   onSubmitElement,
   setAutoSavedElement,
   failureToast,
@@ -61,7 +66,10 @@ function ElementEditForm({
   loading: boolean
   // form data props
   initialValues: ElementFormTypes
-  onSubmitElement: (values: ElementFormTypes) => Promise<void>
+  initialStatus: ElementStatus
+  onSubmitElement: (
+    values: ElementFormTypes & { status: ElementStatus }
+  ) => Promise<void>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
   // failure handling
   failureToast: boolean
@@ -73,7 +81,7 @@ function ElementEditForm({
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
-
+  const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -93,7 +101,7 @@ function ElementEditForm({
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
-        await onSubmitElement(values)
+        await onSubmitElement({ ...values, status: elementStatus })
 
         // close modal, set success toast
         setSubmitting(false)
@@ -169,6 +177,9 @@ function ElementEditForm({
                 <Form className="w-full" id="question-manipulation-form">
                   <ElementInformationFields
                     isTemplate={isTemplate}
+                    elementId={elementId}
+                    elementStatus={elementStatus}
+                    setElementStatus={setElementStatus}
                     inputsDisabled={inputsDisabled}
                     mode={mode}
                     values={values}

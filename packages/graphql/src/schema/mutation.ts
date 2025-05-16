@@ -981,6 +981,21 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      changeElementStatus: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          elementId: t.arg.int({ required: true }),
+          status: t.arg({ type: ElementStatus, required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await QuestionService.changeElementStatus(args, ctx)
+          }
+        ),
+      }),
+
       manipulateContentElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,

@@ -1,12 +1,7 @@
-import {
-  ElementDisplayMode,
-  ElementStatus,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 
 interface SharedQuestionFormProps {
   name: string
-  status: ElementStatus
   content: string
   basePoints: boolean
   pointsMultiplier: string
