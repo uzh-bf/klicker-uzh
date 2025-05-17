@@ -1705,6 +1705,96 @@ export const Query = builder.queryType({
         ),
       }),
 
+      getCourseActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getCourseActivity(args, ctx)
+          }
+        ),
+      }),
+
+      getLiveQuizActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getLiveQuizActivity(args, ctx)
+          }
+        ),
+      }),
+
+      getPracticeQuizActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ practiceQuizId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getPracticeQuizActivity(args, ctx)
+          }
+        ),
+      }),
+
+      getMicroLearningActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ microLearningId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getMicroLearningActivity(args, ctx)
+          }
+        ),
+      }),
+
+      getGroupActivityActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ groupActivityId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getGroupActivityActivity(args, ctx)
+          }
+        ),
+      }),
+
+      getAnswerCollectionActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await SharingService.getAnswerCollectionActivity(args, ctx)
+          }
+        ),
+      }),
+
       getCatalogCollectionsList: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogCollection],

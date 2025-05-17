@@ -6600,6 +6600,7 @@ export async function getElementActivity(
     include: {
       activityLog: {
         include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
       },
     },
   })
@@ -6612,6 +6613,156 @@ export async function getElementActivity(
     ...entry,
     username: entry.user?.shortname,
     isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(), // check if the entry has been edited
+  }))
+}
+
+export async function getCourseActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!course) {
+    return null
+  }
+
+  return course.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+  }))
+}
+
+export async function getLiveQuizActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  return liveQuiz.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+  }))
+}
+
+export async function getPracticeQuizActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  return practiceQuiz.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+  }))
+}
+
+export async function getMicroLearningActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  return microLearning.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+  }))
+}
+
+export async function getGroupActivityActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  return groupActivity.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+  }))
+}
+
+export async function getAnswerCollectionActivity(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const answerCollection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+    include: {
+      activityLog: {
+        include: { user: { select: { shortname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!answerCollection) {
+    return null
+  }
+
+  return answerCollection.activityLog.map((entry) => ({
+    ...entry,
+    username: entry.user?.shortname,
+    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
   }))
 }
 // #endregion

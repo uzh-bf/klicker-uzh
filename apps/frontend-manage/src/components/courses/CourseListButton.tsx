@@ -5,13 +5,18 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  ObjectType,
+  PermissionLevel,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ActivityLogButton from '../sharing/ActivityLogButton'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
 
@@ -116,6 +121,13 @@ function CourseListButton({
             )}
             {course.isArchived && <Badge>{t('shared.generic.archived')}</Badge>}
           </div>
+
+          <ActivityLogButton
+            objectId={course.id}
+            objectType={ObjectType.Course}
+            size="sm"
+            className="h-8 w-8 p-0"
+          />
 
           {course.isManager ? (
             <>

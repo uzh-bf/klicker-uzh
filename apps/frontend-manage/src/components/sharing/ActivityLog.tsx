@@ -1,14 +1,13 @@
-import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityLogEntry,
   ActivityLogType,
-  AddActivityMessageDocument,
-  GetElementActivityDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
 
@@ -45,94 +44,65 @@ function ActivityLog({
   onAddMessage: propOnAddMessage,
   isAddingMessage: propIsAddingMessage,
 }: ActivityLogProps) {
+  const t = useTranslations()
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Ensure objectId is a string for GraphQL operations
-  const stringObjectId = objectId?.toString() || ''
-
-  // Convert string ID to number for element queries if needed
-  const queryId =
-    objectType === ObjectType.Element && typeof objectId === 'string'
-      ? parseInt(objectId)
-      : objectId
 
   // Determine if we should use internal data fetching
   const useInternalDataFetching = propEntries === undefined
 
-  // Query for fetching activity log entries (only if entries not provided)
+  // Log object information in development
+  if (process.env.NODE_ENV !== 'production') {
+    console.debug(
+      `[ActivityLog] objectType: ${objectType}, objectId: ${objectId}, using internal fetching: ${useInternalDataFetching}`
+    )
+  }
+
+  // Use the generic hook for activity log handling
   const {
-    data,
+    entries: hookEntries,
     loading: queryLoading,
     error: queryError,
+    addActivityMessage,
+    isAddingMessage: hookIsAddingMessage,
     refetch,
-  } = useQuery(GetElementActivityDocument, {
-    variables: { id: Number(queryId) },
-    fetchPolicy: 'cache-and-network',
+  } = useObjectActivity({
+    objectId,
+    objectType,
     skip: !useInternalDataFetching || !objectId,
+    fetchPolicy: 'cache-and-network',
   })
-
-  // Mutation for adding messages
-  const [addMessage, { loading: mutationLoading }] = useMutation(
-    AddActivityMessageDocument,
-    {
-      onCompleted: () => {
-        // Refetch to update the activity log
-        if (refetch) refetch()
-        if (onMessageAdded) onMessageAdded()
-      },
-      onError: (error) => {
-        console.error('Error adding message:', error)
-      },
-    }
-  )
-
-  /**
-   * Add a new message to the activity log
-   */
-  const handleAddMessage = async (messageText: string) => {
-    if (!objectId) return
-
-    if (propOnAddMessage) {
-      return propOnAddMessage(messageText)
-    }
-
-    return addMessage({
-      variables: {
-        objectId: stringObjectId,
-        objectType,
-        message: messageText,
-      },
-    })
-  }
 
   // Handle message submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!message.trim()) return
+    if (!message.trim() || !objectId) return
 
     setIsSubmitting(true)
 
     try {
-      await handleAddMessage(message.trim())
+      if (propOnAddMessage) {
+        await propOnAddMessage(message.trim())
+      } else {
+        await addActivityMessage(message.trim())
+      }
+
+      if (onMessageAdded) onMessageAdded()
       setMessage('')
     } catch (error) {
-      console.error('Failed to submit message:', error)
+      console.error('[ActivityLog] Failed to submit message:', error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   // Determine which entries, loading and error states to use
-  const entries = useInternalDataFetching
-    ? (data?.getElementActivity ?? [])
-    : propEntries || []
-
+  const entries = useInternalDataFetching ? hookEntries : propEntries || []
   const loading = useInternalDataFetching ? queryLoading : propLoading || false
   const error = useInternalDataFetching ? !!queryError : propError || false
   const isAddingMessage = useInternalDataFetching
-    ? mutationLoading
+    ? hookIsAddingMessage
     : propIsAddingMessage || false
 
   // Render loading state
@@ -140,7 +110,7 @@ function ActivityLog({
     return (
       <div className="flex w-full flex-col rounded-md border p-4">
         <div className="flex items-center justify-center">
-          <p className="text-sm text-gray-500">Loading activity...</p>
+          <p className="text-sm text-gray-500">{t('shared.generic.loading')}</p>
         </div>
       </div>
     )
@@ -151,19 +121,21 @@ function ActivityLog({
     return (
       <div className="flex w-full flex-col rounded-md border border-red-300 bg-red-50 p-4">
         <div className="flex flex-col items-center justify-center">
-          <p className="text-sm text-red-600">Failed to load activity log</p>
-          <button
-            className="mt-2 text-xs text-blue-600 hover:underline"
-            onClick={() => {
-              if (useInternalDataFetching) {
-                refetch()
-              } else {
-                onMessageAdded?.()
-              }
-            }}
-          >
-            Try again
-          </button>
+          <p className="text-sm text-red-600">{t('shared.generic.error')}</p>
+          {
+            <button
+              className="mt-2 text-xs text-blue-600 hover:underline"
+              onClick={() => {
+                if (useInternalDataFetching) {
+                  refetch?.()
+                } else {
+                  onMessageAdded?.()
+                }
+              }}
+            >
+              {t('shared.generic.tryAgain')}
+            </button>
+          }
         </div>
       </div>
     )
@@ -194,12 +166,10 @@ function ActivityLog({
           <div className="flex flex-col items-center justify-center p-4 text-center">
             <div className="mb-2 text-4xl text-gray-300">📝</div>
             <p className="text-sm font-medium text-gray-500">
-              {/* // TODO: translate */}
-              No activity yet.
+              {t('shared.activity.noActivity')}
             </p>
             <p className="mt-1 text-xs text-gray-400">
-              {/* // TODO: translate */}
-              Use the form below to add the first message.
+              {t('shared.activity.addMessage')}
             </p>
           </div>
         ) : (
@@ -261,7 +231,7 @@ function ActivityLog({
         <input
           type="text"
           className="flex-1 rounded-l-md border-r-0 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-          placeholder="Type a message..."
+          placeholder={t('shared.activity.messageInputPlaceholder')}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           disabled={isSubmitting || isAddingMessage}
@@ -275,7 +245,9 @@ function ActivityLog({
           }`}
           disabled={isSubmitting || isAddingMessage || !message.trim()}
         >
-          {isSubmitting || isAddingMessage ? 'Sending...' : 'Send'}
+          {isSubmitting || isAddingMessage
+            ? t('shared.activity.sending')
+            : t('shared.activity.send')}
         </button>
       </form>
     </div>

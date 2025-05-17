@@ -7,6 +7,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
+  ObjectType,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
@@ -14,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
+import ActivityLogButton from '../../sharing/ActivityLogButton'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
@@ -132,6 +134,13 @@ function AnswerCollectionItem({
               <FontAwesomeIcon icon={faUserGroup} />
             </div>
           )}
+
+          <ActivityLogButton
+            objectId={collection.id}
+            objectType={ObjectType.AnswerCollection}
+            size="sm"
+            className="h-8 w-8 p-0"
+          />
 
           {dropdownItems.length > 0 && (
             <Dropdown

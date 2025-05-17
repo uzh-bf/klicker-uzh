@@ -2015,6 +2015,7 @@ type Query {
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
+  getAnswerCollectionActivity(id: Int!): [ActivityLogEntry!]
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
   getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
@@ -2028,6 +2029,7 @@ type Query {
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
+  getCourseActivity(id: String!): [ActivityLogEntry!]
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
@@ -2043,17 +2045,21 @@ type Query {
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
   getElementActivity(id: Int!): [ActivityLogEntry!]
   getGradingGroupActivity(id: String!): GroupActivity
+  getGroupActivityActivity(id: String!): [ActivityLogEntry!]
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
+  getLiveQuizActivity(id: String!): [ActivityLogEntry!]
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
+  getMicroLearningActivity(id: String!): [ActivityLogEntry!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectPermissions(objectId: String!, objectType: SharingObjectType!): [PermissionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
+  getPracticeQuizActivity(id: String!): [ActivityLogEntry!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [Course!]
   getPracticeQuizSummary(id: String!): ActivitySummary

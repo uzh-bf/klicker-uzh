@@ -15,6 +15,7 @@ import {
   ActivityInfo,
   ActivityType,
   PublicationStatus,
+  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -23,6 +24,7 @@ import { twMerge } from 'tailwind-merge'
 import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
+import ActivityLogButton from '../../sharing/ActivityLogButton'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
@@ -166,6 +168,16 @@ function ActivityListEntry({
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
+          
+          <ActivityLogButton 
+            objectId={String(activity.id)} 
+            objectType={activity.type === ActivityType.LiveQuiz ? SharingObjectType.LiveQuiz :
+                       activity.type === ActivityType.PracticeQuiz ? SharingObjectType.PracticeQuiz :
+                       activity.type === ActivityType.MicroLearning ? SharingObjectType.MicroLearning :
+                       SharingObjectType.GroupActivity} 
+            size="sm"
+            className="h-8 w-8 p-0"
+          />
           {activity.type === ActivityType.LiveQuiz ? (
             <LiveQuizActions
               liveQuiz={activity}

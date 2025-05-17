@@ -63,28 +63,35 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
    - Add resolvers and subscriptions for real-time updates
 
 2. **Expand Frontend Integration**:
-   - Add ActivityLog to course views
-   - Add ActivityLog to activity management pages
-   - Add ActivityLog to answer collection management
-   - Create standalone dialog for accessing activity logs from list views
+   - ✅ Add ActivityLog to course views
+   - ✅ Add ActivityLog to activity management pages
+   - ✅ Add ActivityLog to answer collection management
+   - ✅ Create standalone dialog for accessing activity logs from list views
+   - Add ActivityLog access to dropdown menus on list items
+   - Implement consistent positioning within different contexts
 
 3. **User Experience Enhancements**:
    - Add "resolved" status toggle for messages requiring action
    - Improve visual differentiation between message types
    - Add formatting options for messages (markdown, mentions)
    - Implement pagination for large activity logs
+   - Add visual notification indicators for new activity
+   - Create system for tracking read/unread status
 
 4. **Notification System**:
    - Design scalable notification concept
    - Implement badge/indicator system for new activity
    - Add email notification options for important activity
    - Create notification preferences settings
+   - Add red dot indicators on dropdown buttons and menu items
+   - Track which activities have been viewed by users
 
 5. **Testing and Documentation**:
    - Write unit tests for activity log logic
    - Add E2E tests for activity log UI
    - Update user documentation to explain activity log features
    - Provide administrator guide for managing activity logs
+   - Test notification indicators in various contexts
 
 ## Technical Considerations
 
@@ -105,32 +112,36 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 
 ## Implementation Priorities and Next Tasks
 
-### Current Priority: Generic ActivityLog Dialog
+### Current Priority: Dropdown Integration & Notification Indicators
 
-The current implementation works within the element edit modal. Our immediate priority is to:
+With the generic ActivityLog dialog now implemented, our current priorities are:
 
-1. **Create Generic ActivityLog Dialog Component**:
-   - Build a standalone, reusable dialog component for activity logs
-   - Ensure it works with all object types (elements, courses, activities, answer collections)
-   - Support consistent UI/UX across all contexts
+1. **Dropdown Menu Integration**:
+   - Integrate ActivityLog access within ellipsis (...) dropdown menus across the application:
+     - Activity list item dropdown menu
+     - Answer collection item dropdown menu
+     - Element library item dropdown menu
+   - Maintain consistent positioning and styling within each dropdown
+   - Ensure proper event handling to prevent navigation issues
 
-2. **Integration with List Views**:
-   - Add activity log access from Activity Overview
-   - Add activity log access from Course Overview
-   - Add activity log access from Answer Collection Overview
-   - Implement consistent access pattern (icon/button in list items)
+2. **Activity Notification Indicators**:
+   - Add visual indicators (red dot) to highlight new activity:
+     - On the ellipsis (...) dropdown button itself
+     - On the specific ActivityLog menu item within dropdowns
+   - Implement logic to determine "new" vs. viewed activity
+   - Create system for tracking which activities user has seen
 
-3. **Comment Functionality**:
-   - Ensure robust comment posting works across all object types
-   - Support proper user attribution and timestamps
-   - Implement basic formatting if feasible
+3. **Enhanced Visibility**:
+   - Optimize placement within dropdowns for discoverability
+   - Add clear, consistent labeling for activity log access
+   - Implement hover states and tooltips for improved UX
 
 ### Subsequent Tasks
 
-Once the generic dialog is implemented and integrated across these primary views:
+After completing the dropdown integration and notification indicators:
 
 1. Add automatic tracking of modifications
-2. Design and implement notification concept  
+2. Implement comprehensive notification system
 3. Enhance UI with additional features (resolved status, formatting)
 4. Extend to additional object types if needed
 
@@ -141,3 +152,150 @@ Once the generic dialog is implemented and integrated across these primary views
 3. Attachments in activity messages
 4. Activity analytics and reporting
 5. Integration with external notification systems
+
+## Centralized Activity Dashboard
+
+A dedicated Activity Dashboard will provide users with a centralized overview of all activities across their accessible resources. This comprehensive view will enhance collaboration and awareness.
+
+### Key Features
+
+1. **Unified Activity Feed**:
+   - Real-time aggregated view of all activity on user-accessible objects
+   - Chronological display with newest activities first
+   - Visual indicators for different activity types (comments, modifications, actions)
+
+2. **Advanced Filtering Options**:
+   - Filter by object type (Elements, Courses, Activities, Answer Collections)
+   - Filter by activity type (messages, modifications, actions)
+   - Filter by time period (today, this week, this month)
+   - Filter by collaboration context (owned by me, shared with me, etc.)
+
+3. **Interactive Components**:
+   - Quick response functionality directly from feed
+   - Jump-to-object navigation
+   - Batch actions for similar activities
+   - Read/unread status tracking
+
+4. **Notification Integration**:
+   - Visual indicators for new activities
+   - Option to mark activities as read/resolved
+   - Email notification preferences per object or activity type
+   - Muting options for specific objects or threads
+
+### Technical Implementation
+
+1. **Data Requirements**:
+   - Efficient querying across multiple object types
+   - Optimized loading with pagination and infinite scroll
+   - Real-time updates using subscriptions or polling
+   - Proper permission validation for all displayed activities
+
+2. **Frontend Implementation**:
+   - Dedicated route at `/manage/activities`
+   - Responsive layout supporting various device sizes
+   - Optimized rendering for large activity volumes
+   - Progressive loading and virtualization for performance
+
+3. **Backend Support**:
+   - New GraphQL query `getAllUserActivity` with comprehensive filtering options
+   - Efficient database joins to minimize query complexity
+   - Caching strategy for frequently accessed activity data
+   - Rate limiting to prevent performance issues
+
+### Development Phases
+
+1. **Phase 1: Foundation**
+   - Create basic Activity Dashboard page structure
+   - Implement simple aggregated activity feed
+   - Add essential filtering by object type
+
+2. **Phase 2: Enhanced Functionality**
+   - Add advanced filtering options
+   - Implement interactive response capabilities
+   - Integrate with existing activity log dialogs
+
+3. **Phase 3: Notification Integration**
+   - Add read/unread status tracking
+   - Implement notification preferences
+   - Create email notification system for important activity
+
+4. **Phase 4: Performance Optimization**
+   - Optimize querying and rendering for large volumes
+   - Implement virtualization for infinite scrolling
+   - Add caching for improved response times
+
+This feature will significantly enhance collaboration capabilities within KlickerUZH, providing users with complete visibility into the development and discussion of shared resources.
+
+## Enhanced Activity Details Modal
+
+The current Activity Details Modal provides basic information about activities but lacks interactive elements and efficient navigation. An improved modal will streamline the user experience and integrate activity logs directly into the workflow.
+
+### Key Features
+
+1. **Interactive Timeline Navigation**:
+   - Visual step-by-step timeline of activity instances
+   - Click-through navigation between instances
+   - Progress indicators showing completion status
+   - Immediate preview of selected instance content
+
+2. **Split-Panel Interface**:
+   - Left panel: Instance content preview with full details
+   - Right panel: Activity log feed specific to the activity
+   - Responsive design adapting to various screen sizes
+   - Collapsible panels for focusing on specific content
+
+3. **Content Preview**:
+   - Direct embedding of instance content (questions, options, media)
+   - Preview of participant responses and statistics when available
+   - Quick links to full editing interface
+   - Visual indicators for instance status (draft, published, etc.)
+
+4. **Integrated Collaboration**:
+   - Comment directly on specific instances from the preview
+   - @mention colleagues for targeted notifications
+   - Add context-specific notes visible to collaborators
+   - Activity timestamps showing when changes were made
+
+### Technical Implementation
+
+1. **UI Components**:
+   - Timeline component with interactive steps
+   - Split-pane layout with adjustable divider
+   - Content preview cards for different element types
+   - Real-time activity feed with filtering
+
+2. **Data Requirements**:
+   - Efficient loading of instance content in the modal
+   - Integration with existing activity log system
+   - Optimized queries to reduce loading time
+   - Cached content to improve navigation performance
+
+3. **Navigation Logic**:
+   - Maintain modal state during instance navigation
+   - History support for browser back/forward buttons
+   - Deep linking capabilities for sharing specific views
+   - Keyboard shortcuts for quick navigation
+
+### Development Phases
+
+1. **Phase 1: Modal Redesign**
+   - Create new modal layout with timeline and split-panel design
+   - Implement basic navigation between instances
+   - Add content preview for basic element types
+
+2. **Phase 2: Activity Log Integration**
+   - Integrate activity log component in right panel
+   - Implement context-specific filtering
+   - Add commenting capabilities for visible instances
+
+3. **Phase 3: Enhanced Interactivity**
+   - Add animation and transitions for smoother navigation
+   - Implement keyboard navigation and shortcuts
+   - Create mobile-friendly responsive design
+
+4. **Phase 4: Performance Optimization**
+   - Optimize content loading strategies
+   - Implement lazy loading for timeline items
+   - Add caching for frequently accessed content
+
+This enhanced modal will transform the activity management experience, making it more intuitive and efficient for users to navigate, preview, and collaborate on activities without leaving the context of their workflow.

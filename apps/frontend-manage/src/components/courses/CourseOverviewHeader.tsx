@@ -8,6 +8,7 @@ import {
 import {
   Course,
   GetSingleCourseDocument,
+  ObjectType,
   SharingObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
@@ -22,6 +23,7 @@ import {
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import ActivityLogButton from '../sharing/ActivityLogButton'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import CourseManipulationModal, {
   CourseManipulationFormData,
@@ -97,6 +99,12 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
           </Button>
         ) : null}
+        <ActivityLogButton
+          objectId={course.id}
+          objectType={ObjectType.Course}
+          size="sm"
+          className="h-8"
+        />
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}

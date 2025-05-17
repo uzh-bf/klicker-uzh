@@ -13,6 +13,7 @@ import {
   type Element as ElementObject,
   ElementStatus,
   type ElementType,
+  ObjectType,
   SharingObjectType,
   type Tag,
   UserProfileDocument,
@@ -25,6 +26,7 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import ActivityLogButton from '../sharing/ActivityLogButton'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../sharing/SharingTypeBadge'
@@ -210,6 +212,12 @@ function Element({
             </div>
           ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
+            <ActivityLogButton
+              objectId={element.id}
+              objectType={ObjectType.Element}
+              size="sm"
+              className="h-8 w-8 p-0"
+            />
             {element.isEditor ? (
               <Button
                 disabled={disabled}
