@@ -3,42 +3,49 @@ http:
     api:
       rule: 'Host(`api.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'api'
 
     pwa:
       rule: 'Host(`pwa.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'pwa'
 
     manage:
       rule: 'Host(`manage.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'manage'
 
     control:
       rule: 'Host(`control.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'control'
 
     auth:
       rule: 'Host(`auth.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'auth'
 
     func-responses:
       rule: 'Host(`func-responses.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'func-responses'
 
     func-response-processor:
       rule: 'Host(`func-response-processor.klicker.com`)'
       entrypoints:
+        - 'web'
         - 'websecure'
       service: 'func-response-processor'
 

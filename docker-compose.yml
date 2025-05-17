@@ -20,8 +20,8 @@ services:
       - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
 
       # HTTP to HTTPS redirect
-      - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
-      - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
       - 443:443
@@ -55,8 +55,8 @@ services:
       - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
 
       # HTTP to HTTPS redirect
-      - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
-      - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
       - 443:443
@@ -88,8 +88,8 @@ services:
       - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
 
       # HTTP to HTTPS redirect
-      - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
-      - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
       - 443:443
