@@ -1,5 +1,0 @@
-query GetPracticeQuizActivity($id: String!) {
-  getPracticeQuizActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}

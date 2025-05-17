@@ -36,7 +36,7 @@ function ActivityLogDialog({
 
   // Use controlled or uncontrolled state based on props
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
-  
+
   // Handle closing the modal
   const handleClose = () => {
     if (controlledOnOpenChange) {
@@ -47,18 +47,22 @@ function ActivityLogDialog({
   }
 
   // If a custom trigger is provided and we're in uncontrolled mode, add click handler
-  const triggerElement = trigger && controlledOpen === undefined ? (
-    <div onClick={() => setInternalOpen(true)}>{trigger}</div>
-  ) : trigger
+  const triggerElement =
+    trigger && controlledOpen === undefined ? (
+      <div onClick={() => setInternalOpen(true)}>{trigger}</div>
+    ) : (
+      trigger
+    )
 
   // Use a generic "Activity" title by default
-  const modalTitle = title || "Activity"
+  const modalTitle = title || 'Activity'
 
   return (
     <>
       {triggerElement}
-      
+
       <Modal
+        asPortal={false}
         open={isOpen}
         onClose={handleClose}
         title={modalTitle}
@@ -67,7 +71,7 @@ function ActivityLogDialog({
           content: 'max-w-3xl',
         }}
       >
-        <div className="mt-2 mb-4">
+        <div className="mb-4 mt-2">
           <ActivityLog
             objectId={objectId}
             objectType={objectType}
@@ -76,9 +80,13 @@ function ActivityLogDialog({
             }}
           />
         </div>
-        
-        <div className="mt-4 border-t border-gray-200 pt-4 flex justify-end">
-          <Button onClick={handleClose} variant="primary" data-cy="activity-log-close">
+
+        <div className="mt-4 flex justify-end border-t border-gray-200 pt-4">
+          <Button
+            onClick={handleClose}
+            variant="primary"
+            data-cy="activity-log-close"
+          >
             {t('shared.generic.close')}
           </Button>
         </div>

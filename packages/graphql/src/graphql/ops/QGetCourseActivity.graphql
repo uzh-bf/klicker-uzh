@@ -1,5 +1,0 @@
-query GetCourseActivity($id: String!) {
-  getCourseActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}

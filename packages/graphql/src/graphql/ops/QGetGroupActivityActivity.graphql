@@ -1,5 +1,0 @@
-query GetGroupActivityActivity($id: String!) {
-  getGroupActivityActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}

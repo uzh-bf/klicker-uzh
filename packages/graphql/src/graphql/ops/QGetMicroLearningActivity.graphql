@@ -1,5 +1,0 @@
-query GetMicroLearningActivity($id: String!) {
-  getMicroLearningActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}

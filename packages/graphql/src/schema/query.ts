@@ -81,6 +81,7 @@ import {
   DerivedPermissionInfo,
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
+  ObjectType,
   PermissionInfo,
   SharingObjectType,
   UserGroup,
@@ -1690,109 +1691,73 @@ export const Query = builder.queryType({
         },
       }),
 
-      getElementActivity: t.withAuth(asUser).field({
+      getObjectActivity: t.withAuth(asUser).field({
         nullable: true,
         type: [ActivityLogEntry],
         args: {
-          id: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
-        resolve: withPermission(
-          (args) => ({ elementId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getElementActivity(args, ctx)
-          }
-        ),
-      }),
+        resolve: async (_, args, ctx) => {
+          // Create a properly typed permission object based on the object type
+          let permissionObject: SharingService.PermissionCheck
 
-      getCourseActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getCourseActivity(args, ctx)
+          switch (args.objectType) {
+            case DB.ObjectType.ELEMENT:
+              permissionObject = {
+                elementId: parseInt(args.objectId),
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.ANSWER_COLLECTION:
+              permissionObject = {
+                answerCollectionId: parseInt(args.objectId),
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.COURSE:
+              permissionObject = {
+                courseId: args.objectId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.LIVE_QUIZ:
+              permissionObject = {
+                liveQuizId: args.objectId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.PRACTICE_QUIZ:
+              permissionObject = {
+                practiceQuizId: args.objectId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.MICRO_LEARNING:
+              permissionObject = {
+                microLearningId: args.objectId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            case DB.ObjectType.GROUP_ACTIVITY:
+              permissionObject = {
+                groupActivityId: args.objectId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              }
+              break
+            default:
+              return null
           }
-        ),
-      }),
 
-      getLiveQuizActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ liveQuizId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getLiveQuizActivity(args, ctx)
-          }
-        ),
-      }),
+          // Check access with the appropriate permission object
+          const validAccess = await checkAccess([permissionObject], ctx)
 
-      getPracticeQuizActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ practiceQuizId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getPracticeQuizActivity(args, ctx)
+          if (!validAccess) {
+            return null
           }
-        ),
-      }),
 
-      getMicroLearningActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.string({ required: true }),
+          return await SharingService.getObjectActivity(args, ctx)
         },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getMicroLearningActivity(args, ctx)
-          }
-        ),
-      }),
-
-      getGroupActivityActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getGroupActivityActivity(args, ctx)
-          }
-        ),
-      }),
-
-      getAnswerCollectionActivity: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ActivityLogEntry],
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ answerCollectionId: args.id }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await SharingService.getAnswerCollectionActivity(args, ctx)
-          }
-        ),
       }),
 
       getCatalogCollectionsList: t.withAuth(asUser).field({

@@ -1,5 +1,0 @@
-query GetLiveQuizActivity($id: String!) {
-  getLiveQuizActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}

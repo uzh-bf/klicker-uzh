@@ -73,11 +73,24 @@ The ActivityLog component has been successfully implemented and integrated acros
   - [ ] Test refactored component with all object types
 
 #### Testing
-- [ ] Test with different object types
+- [ ] Test the unified query with different object types
+  - [ ] Test with Element (numeric ID)
+  - [ ] Test with AnswerCollection (numeric ID)
+  - [ ] Test with Course (string ID)
+  - [ ] Test with LiveQuiz (string ID)
+  - [ ] Test with PracticeQuiz (string ID)
+  - [ ] Test with MicroLearning (string ID)
+  - [ ] Test with GroupActivity (string ID)
 - [ ] Test permissions and access control
+  - [ ] Verify users without permissions cannot see activity logs
+  - [ ] Verify users with READ permissions can view but not add messages
+  - [ ] Verify users with WRITE permissions can add messages
 - [ ] Verify real-time updates 
 - [ ] Test UI responsiveness and accessibility
 - [ ] Test error handling and edge cases
+  - [ ] Test with invalid IDs
+  - [ ] Test with invalid object types
+  - [ ] Test adding empty messages
 
 #### Documentation
 - [ ] Add documentation for the useObjectActivity hook
@@ -89,19 +102,58 @@ The ActivityLog component has been successfully implemented and integrated acros
 - [ ] Fix any remaining TypeScript errors in the GraphQL imports
 
 #### Backend Refactoring
-- [ ] Unify activity queries into a single polymorphic query
-  - [ ] Create a generic `getObjectActivity` query that takes objectType parameter
-  - [ ] Consolidate the existing type-specific resolvers into a single resolver
-  - [ ] Update schema with a unified query definition
-  - [ ] Make the resolver branch based on objectType to appropriate DB query
-  - [ ] Add proper validation for ID and objectType combinations
+- [x] Unify activity queries into a single polymorphic query
+  - [x] Create a generic `getObjectActivity` query that takes objectType parameter
+  - [x] Consolidate the existing type-specific resolvers into a single resolver
+  - [x] Update schema with a unified query definition
+  - [x] Make the resolver branch based on objectType to appropriate DB query
+  - [x] Add proper validation for ID and objectType combinations
 
 #### Frontend Refactoring
-- [ ] Update GraphQL operations to use the unified query
-  - [ ] Create new `QGetObjectActivity.graphql` operation
-  - [ ] Simplify `useObjectActivity` hook to use only one query
-  - [ ] Remove type-specific query documents and hooks
-  - [ ] Ensure proper type checking with GraphQL codegen
+- [x] Update GraphQL operations to use the unified query
+  - [x] Create new `QGetObjectActivity.graphql` operation
+  - [x] Simplify `useObjectActivity` hook to use only one query
+  - [ ] Remove type-specific query documents and hooks (after testing confirms the unified query works well)
+  - [x] Ensure proper type checking with GraphQL codegen
+
+## Manual Testing for Unified Query
+
+Follow these steps to test the unified activity query implementation:
+
+1. **Setup**
+   - [ ] Run the application locally
+   - [ ] Ensure you have access to various object types (Element, Course, LiveQuiz, etc.)
+
+2. **Core Functionality Testing**
+   - [ ] Open activity log for an Element
+   - [ ] Open activity log for a Course
+   - [ ] Open activity log for a LiveQuiz
+   - [ ] Open activity log for a PracticeQuiz
+   - [ ] Open activity log for a MicroLearning
+   - [ ] Open activity log for a GroupActivity
+   - [ ] Open activity log for an AnswerCollection
+
+3. **Data Operations**
+   - [ ] Add a message to an activity log
+   - [ ] Verify the message appears in the list
+   - [ ] Check that timestamps are displayed correctly
+   - [ ] Verify user information is shown correctly
+
+4. **Error Handling**
+   - [ ] Attempt to open the activity log with an invalid ID
+   - [ ] Try to add an empty message
+   - [ ] Test with an unsupported object type
+
+5. **Performance**
+   - [ ] Monitor network requests to ensure only one query is being made
+   - [ ] Check Apollo cache behavior with the unified query
+   - [ ] Test with logs containing many entries
+
+6. **Browser Console**
+   - [ ] Check for any errors or warnings in the browser console
+   - [ ] Verify that debug logging shows appropriate information
+
+Once all tests pass, the implementation can be considered complete. If issues are found, fix them before removing the legacy queries and functions.
 
 ## Future Enhancements (Post-MVP)
 - [ ] Add resolved status toggle for messages

@@ -5407,23 +5407,24 @@ const acceptedPermissionLevels: {
   ],
 }
 
+export type PermissionCheck =
+  | {
+      catalogCollectionId: string
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | {
+      answerCollectionId: number
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
+  | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+
 export async function checkAccess(
-  checks: (
-    | {
-        catalogCollectionId: string
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | {
-        answerCollectionId: number
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
-    | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
-  )[],
+  checks: PermissionCheck[],
   ctx: PrismaTransactionContextWithUser
 ) {
   for (const check of checks) {
@@ -6591,177 +6592,131 @@ export async function addActivityMessage(
   }
 }
 
-export async function getElementActivity(
-  { id }: { id: number },
+/**
+ * Generic function to get activity log entries for any object type
+ * This replaces the need for individual getXActivity functions
+ */
+export async function getObjectActivity(
+  { objectId, objectType }: { objectId: string; objectType: DB.ObjectType },
   ctx: ContextWithUser
 ) {
-  const element = await ctx.prisma.element.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
+  // For numeric ID types (Element and AnswerCollection), convert string ID to number
+  const id =
+    objectType === DB.ObjectType.ELEMENT ||
+    objectType === DB.ObjectType.ANSWER_COLLECTION
+      ? parseInt(objectId, 10)
+      : objectId
 
-  if (!element) {
+  // Get the appropriate model based on object type
+  let activityLog: (DB.ActivityLogEntry & {
+    user: { shortname: string } | null
+  })[] = []
+
+  switch (objectType) {
+    case DB.ObjectType.ELEMENT:
+      const elementWithActivity = await ctx.prisma.element.findUnique({
+        where: { id: id as number },
+        include: {
+          activityLog: {
+            include: { user: { select: { shortname: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      })
+      activityLog = elementWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.COURSE:
+      const courseWithActivity = await ctx.prisma.course.findUnique({
+        where: { id: id as string },
+        include: {
+          activityLog: {
+            include: { user: { select: { shortname: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      })
+      activityLog = courseWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.LIVE_QUIZ:
+      const liveQuizWithActivity = await ctx.prisma.liveQuiz.findUnique({
+        where: { id: id as string },
+        include: {
+          activityLog: {
+            include: { user: { select: { shortname: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      })
+      activityLog = liveQuizWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.PRACTICE_QUIZ:
+      const practiceQuizWithActivity = await ctx.prisma.practiceQuiz.findUnique(
+        {
+          where: { id: id as string },
+          include: {
+            activityLog: {
+              include: { user: { select: { shortname: true } } },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        }
+      )
+      activityLog = practiceQuizWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.MICRO_LEARNING:
+      const microLearningWithActivity =
+        await ctx.prisma.microLearning.findUnique({
+          where: { id: id as string },
+          include: {
+            activityLog: {
+              include: { user: { select: { shortname: true } } },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        })
+      activityLog = microLearningWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.GROUP_ACTIVITY:
+      const groupActivityWithActivity =
+        await ctx.prisma.groupActivity.findUnique({
+          where: { id: id as string },
+          include: {
+            activityLog: {
+              include: { user: { select: { shortname: true } } },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        })
+      activityLog = groupActivityWithActivity?.activityLog ?? []
+      break
+
+    case DB.ObjectType.ANSWER_COLLECTION:
+      const answerCollectionWithActivity =
+        await ctx.prisma.answerCollection.findUnique({
+          where: { id: id as number },
+          include: {
+            activityLog: {
+              include: { user: { select: { shortname: true } } },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        })
+      activityLog = answerCollectionWithActivity?.activityLog ?? []
+      break
+  }
+
+  if (!activityLog) {
     return null
   }
 
-  return element.activityLog.map((entry) => ({
+  return activityLog.map((entry) => ({
     ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(), // check if the entry has been edited
-  }))
-}
-
-export async function getCourseActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!course) {
-    return null
-  }
-
-  return course.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
-  }))
-}
-
-export async function getLiveQuizActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!liveQuiz) {
-    return null
-  }
-
-  return liveQuiz.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
-  }))
-}
-
-export async function getPracticeQuizActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!practiceQuiz) {
-    return null
-  }
-
-  return practiceQuiz.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
-  }))
-}
-
-export async function getMicroLearningActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!microLearning) {
-    return null
-  }
-
-  return microLearning.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
-  }))
-}
-
-export async function getGroupActivityActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!groupActivity) {
-    return null
-  }
-
-  return groupActivity.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
-  }))
-}
-
-export async function getAnswerCollectionActivity(
-  { id }: { id: number },
-  ctx: ContextWithUser
-) {
-  const answerCollection = await ctx.prisma.answerCollection.findUnique({
-    where: { id },
-    include: {
-      activityLog: {
-        include: { user: { select: { shortname: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  })
-
-  if (!answerCollection) {
-    return null
-  }
-
-  return answerCollection.activityLog.map((entry) => ({
-    ...entry,
-    username: entry.user?.shortname,
+    username: entry.user?.shortname ?? 'Unknown User',
     isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
   }))
 }

@@ -1,5 +1,0 @@
-query GetElementActivity($id: Int!) {
-  getElementActivity(id: $id) {
-    ...ActivityEntryData
-  }
-}
