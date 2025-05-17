@@ -3,8 +3,8 @@ import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
@@ -72,10 +72,12 @@ const statusActionMap = {
 
 function MicrolearningActions({
   microLearning,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   microLearning: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
@@ -157,7 +159,8 @@ function MicrolearningActions({
           <ObjectSharingModalWrapper
             objectUuid={microLearning.id}
             objectName={microLearning.name}
-            objectType={SharingObjectType.MicroLearning}
+            objectType={ObjectType.MicroLearning}
+            isTemplate={isTemplate}
             isOwner={microLearning.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}

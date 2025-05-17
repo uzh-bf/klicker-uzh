@@ -1,8 +1,8 @@
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
@@ -94,10 +94,12 @@ const permissionActionMap = {
 
 function LiveQuizActions({
   liveQuiz,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   liveQuiz: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
@@ -219,7 +221,8 @@ function LiveQuizActions({
           <ObjectSharingModalWrapper
             objectUuid={liveQuiz.id}
             objectName={liveQuiz.name}
-            objectType={SharingObjectType.LiveQuiz}
+            objectType={ObjectType.LiveQuiz}
+            isTemplate={isTemplate}
             isOwner={liveQuiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}

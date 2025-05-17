@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CatalogObject,
   GetCatalogObjectsDocument,
+  ObjectType,
   RemoveCatalogObjectAssignmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -26,7 +27,15 @@ function CatalogObjectRemovalModal({
   return (
     <Modal
       open={open}
-      title={t(`manage.catalog.remove${object.objectType}title`)}
+      title={
+        (object.objectType === ObjectType.LiveQuiz ||
+          object.objectType === ObjectType.PracticeQuiz ||
+          object.objectType === ObjectType.MicroLearning ||
+          object.objectType === ObjectType.GroupActivity) &&
+        !!object.templateId
+          ? t(`manage.catalog.remove${object.objectType}_TEMPLATEtitle`)
+          : t(`manage.catalog.remove${object.objectType}title`)
+      }
       onClose={onClose}
       className={{ content: 'w-full max-w-lg' }}
       data={{ cy: 'remove-object-modal' }}
@@ -91,7 +100,13 @@ function CatalogObjectRemovalModal({
             data={{ cy: 'confirm-removal' }}
           >
             <Button.Label>
-              {t(`manage.catalog.remove${object.objectType}`)}
+              {(object.objectType === ObjectType.LiveQuiz ||
+                object.objectType === ObjectType.PracticeQuiz ||
+                object.objectType === ObjectType.MicroLearning ||
+                object.objectType === ObjectType.GroupActivity) &&
+              !!object.templateId
+                ? t(`manage.catalog.remove${object.objectType}_TEMPLATE`)
+                : t(`manage.catalog.remove${object.objectType}`)}
             </Button.Label>
           </Button>
         </div>

@@ -62,7 +62,7 @@ export const CatalogObject = CatalogObjectRef.implement({
     objectId: t.exposeInt('objectId', { nullable: true }), // object id
     objectUuid: t.exposeString('objectUuid', { nullable: true }), // object uuid
     name: t.exposeString('name'),
-    objectType: t.expose('objectType', { type: SharingObjectType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     templateId: t.exposeString('templateId', { nullable: true }),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
@@ -92,7 +92,7 @@ export const ObjectSharingRequest = ObjectSharingRequestRef.implement({
   fields: (t) => ({
     requestId: t.exposeInt('requestId'),
     objectName: t.exposeString('objectName'),
-    objectType: t.expose('objectType', { type: SharingObjectType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     userId: t.exposeString('userId'),
     userShortname: t.exposeString('userShortname'),
     userEmail: t.exposeString('userEmail'),

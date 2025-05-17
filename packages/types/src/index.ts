@@ -3,6 +3,7 @@ import type {
   ElementStatus,
   ElementType,
   ObjectAccess,
+  ObjectType,
   ParameterType,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
@@ -347,7 +348,7 @@ export type AvatarSettings = {
 export type ObjectSharingRequest = {
   requestId: number
   objectName: string
-  objectType: SharingObjectType
+  objectType: ObjectType
   userId: string
   userShortname: string
   userEmail: string
@@ -361,7 +362,7 @@ export type CatalogObject = {
   objectId?: number // object id
   objectUuid?: string // object uuid
   name: string
-  objectType: SharingObjectType
+  objectType: ObjectType
   templateId?: string
   access: ObjectAccess
   ownerShortname?: string

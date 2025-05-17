@@ -5378,7 +5378,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "SharingObjectType",
+                "name": "ObjectType",
                 "ofType": null
               }
             },
@@ -17254,7 +17254,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -17760,7 +17760,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -21582,7 +21582,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -23702,7 +23702,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -23986,7 +23986,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -24108,7 +24108,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -24536,7 +24536,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -26686,7 +26686,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "SharingObjectType",
+                "name": "ObjectType",
                 "ofType": null
               }
             },
@@ -30616,7 +30616,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -31010,7 +31010,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },

@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   GetUserGroupsUserDocument,
+  ObjectType,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -26,7 +26,7 @@ function DirectSharingForm({
   onFailure,
   shareObjectCallback,
 }: {
-  type: SharingObjectType
+  type: ObjectType
   showPropagationSetting: boolean
   onSuccess: () => void
   onFailure: () => void

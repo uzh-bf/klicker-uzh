@@ -13,7 +13,7 @@ import {
   type Element as ElementObject,
   ElementStatus,
   type ElementType,
-  SharingObjectType,
+  ObjectType,
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -391,7 +391,7 @@ function Element({
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
-          objectType={SharingObjectType.Element}
+          objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
           open={isSharingModalOpen}
           onClose={() => setSharingModalOpen(false)}

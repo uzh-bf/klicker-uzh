@@ -1,5 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -31,7 +31,7 @@ function ObjectSharingModal({
   open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectName: string
   onOwnershipTransfer: () => void
   catalogCollectionId?: string
@@ -47,11 +47,11 @@ function ObjectSharingModal({
 
   // boolean to determine whether to show the propagation option on the permissions
   const showPropagationSetting =
-    objectType === SharingObjectType.Course ||
-    objectType === SharingObjectType.LiveQuiz ||
-    objectType === SharingObjectType.PracticeQuiz ||
-    objectType === SharingObjectType.MicroLearning ||
-    objectType === SharingObjectType.GroupActivity
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // get all permissions that have already been granted for this object
   const { permissions, loading: permissionsLoading } = useObjectPermissions({

@@ -6,8 +6,8 @@ import {
   GetCatalogSharingRequestsDocument,
   GetDerivedObjectPermissionsDocument,
   GetObjectPermissionsDocument,
+  ObjectType,
   RevokeObjectAccessDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -18,7 +18,7 @@ function usePermissionRevocation({
   onError,
 }: {
   objectId: string | number
-  objectType: SharingObjectType
+  objectType: ObjectType
   catalogCollectionId?: string
   onError: () => void
 }): {
@@ -79,7 +79,7 @@ function usePermissionRevocation({
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          ...(objectType === SharingObjectType.CatalogCollection
+          ...(objectType === ObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -87,7 +87,7 @@ function usePermissionRevocation({
                 },
               ]
             : []),
-          ...(objectType === SharingObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],

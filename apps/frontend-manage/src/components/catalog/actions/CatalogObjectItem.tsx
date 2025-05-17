@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogObject,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
@@ -48,18 +48,17 @@ function CatalogObjectItem({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const objectTypeIcons: Record<SharingObjectType, IconDefinition | undefined> =
-    {
-      [SharingObjectType.AnswerCollection]: faList,
-      [SharingObjectType.CatalogCollection]: faFolder,
-      [SharingObjectType.LiveQuizTemplate]: faFileLines,
-      [SharingObjectType.Course]: undefined,
-      [SharingObjectType.LiveQuiz]: undefined,
-      [SharingObjectType.PracticeQuiz]: undefined,
-      [SharingObjectType.MicroLearning]: undefined,
-      [SharingObjectType.GroupActivity]: undefined,
-      [SharingObjectType.Element]: faQuestion,
-    }
+  const objectTypeIcons: Record<ObjectType, IconDefinition | undefined> = {
+    [ObjectType.UserGroup]: undefined, // dummy value - user groups cannot be shared
+    [ObjectType.AnswerCollection]: faList,
+    [ObjectType.CatalogCollection]: faFolder,
+    [ObjectType.Course]: undefined,
+    [ObjectType.LiveQuiz]: faFileLines, // icon for activities & activity templates
+    [ObjectType.PracticeQuiz]: faFileLines, // icon for activities & activity templates
+    [ObjectType.MicroLearning]: faFileLines, // icon for activities & activity templates
+    [ObjectType.GroupActivity]: faFileLines, // icon for activities & activity templates
+    [ObjectType.Element]: faQuestion,
+  }
   const actionsDisabled = object.isOwner || object.isShared
 
   // TODO: remove, once migration to single activity overwiew has been completed
@@ -103,16 +102,17 @@ function CatalogObjectItem({
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object
-            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
+            if (
+              object.objectType === ObjectType.LiveQuiz &&
+              !!object.templateId
+            ) {
               router.push({
                 pathname: dataUser?.userProfile?.privatePreview
                   ? '/activities'
                   : '/quizzes',
                 query: { highlight: object.objectUuid },
               })
-            } else if (
-              object.objectType === SharingObjectType.AnswerCollection
-            ) {
+            } else if (object.objectType === ObjectType.AnswerCollection) {
               router.push({
                 pathname: '/resources/answerCollections',
                 query: { highlight: object.objectId },
@@ -125,7 +125,10 @@ function CatalogObjectItem({
             // primary action for restricted objects with pending request: open request withdrawal modal
             setRequestCancellationModal(true)
           } else if (object.access === ObjectAccess.Public) {
-            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
+            if (
+              object.objectType === ObjectType.LiveQuiz &&
+              !!object.templateId
+            ) {
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
             } else {
@@ -184,7 +187,8 @@ function CatalogObjectItem({
               <ObjectAccessSelection
                 compact
                 restrictedDisabled={
-                  object.objectType === SharingObjectType.LiveQuizTemplate
+                  object.objectType === ObjectType.LiveQuiz &&
+                  !!object.templateId
                 }
                 value={object.access}
                 onChange={(access) => {
