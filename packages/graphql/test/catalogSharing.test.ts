@@ -5,7 +5,6 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -1309,32 +1308,30 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const catalogObject1 = catalogObjects.find(
       (object) =>
         object.objectId === AC1!.id &&
-        object.objectType === SharingObjectType.ANSWER_COLLECTION
+        object.objectType === ObjectType.ANSWER_COLLECTION
     )
     const catalogObject2 = catalogObjects.find(
       (object) => object.objectUuid === activityId1
     )
     const catalogObject3 = catalogObjects.find(
       (object) =>
-        object.objectId === SC.id &&
-        object.objectType === SharingObjectType.ELEMENT
+        object.objectId === SC.id && object.objectType === ObjectType.ELEMENT
     )
     expect(catalogObject1).toBeDefined()
     expect(catalogObject2).toBeDefined()
     expect(catalogObject3).toBeDefined()
 
     expect(catalogObject1!.objectId).toBe(AC1!.id)
-    expect(catalogObject1!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
+    expect(catalogObject1!.objectType).toBe(ObjectType.ANSWER_COLLECTION)
     expect(catalogObject1!.id).toBe(assignment1.id)
 
     expect(catalogObject2!.objectUuid).toBe(activityId1)
-    expect(catalogObject2!.objectType).toBe(
-      SharingObjectType.LIVE_QUIZ_TEMPLATE
-    )
+    expect(catalogObject2!.objectType).toBe(ObjectType.LIVE_QUIZ)
+    expect(catalogObject2!.templateId).not.toBeNull()
     expect(catalogObject2!.id).toBe(assignment2.id)
 
     expect(catalogObject3!.objectId).toBe(SC.id)
-    expect(catalogObject3!.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(catalogObject3!.objectType).toBe(ObjectType.ELEMENT)
     expect(catalogObject3!.id).toBe(assignment3.id)
 
     // verify that the correct objects are returned for the public catalog collection
@@ -1348,30 +1345,28 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     const catalogObject4 = catalogObjects2.find(
       (object) =>
         object.objectId === AC2!.id &&
-        object.objectType === SharingObjectType.ANSWER_COLLECTION
+        object.objectType === ObjectType.ANSWER_COLLECTION
     )
     const catalogObject5 = catalogObjects2.find(
       (object) => object.objectUuid === activityId2
     )
     const catalogObject6 = catalogObjects2.find(
       (object) =>
-        object.objectId === MC.id &&
-        object.objectType === SharingObjectType.ELEMENT
+        object.objectId === MC.id && object.objectType === ObjectType.ELEMENT
     )
     expect(catalogObject4).toBeDefined()
     expect(catalogObject5).toBeDefined()
     expect(catalogObject6).toBeDefined()
 
     expect(catalogObject4!.objectId).toBe(AC2!.id)
-    expect(catalogObject4!.objectType).toBe(SharingObjectType.ANSWER_COLLECTION)
+    expect(catalogObject4!.objectType).toBe(ObjectType.ANSWER_COLLECTION)
     expect(catalogObject4!.id).toBe(assignment4.id)
     expect(catalogObject5!.objectUuid).toBe(activityId2)
-    expect(catalogObject5!.objectType).toBe(
-      SharingObjectType.LIVE_QUIZ_TEMPLATE
-    )
+    expect(catalogObject5!.objectType).toBe(ObjectType.LIVE_QUIZ)
+    expect(catalogObject5!.templateId).not.toBeNull()
     expect(catalogObject5!.id).toBe(assignment5.id)
     expect(catalogObject6!.objectId).toBe(MC.id)
-    expect(catalogObject6!.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(catalogObject6!.objectType).toBe(ObjectType.ELEMENT)
     expect(catalogObject6!.id).toBe(assignment6.id)
   })
   // #endregion
@@ -2328,7 +2323,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour).not.toBeNull()
     expect(restrictedRequestUserThree).not.toBeNull()
     expect(publicRequestUserThree?.objectType).toBe(
-      SharingObjectType.CATALOG_COLLECTION
+      ObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
@@ -2336,7 +2331,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserThree?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour?.objectType).toBe(
-      SharingObjectType.CATALOG_COLLECTION
+      ObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserFour?.requestId).toBe(request4.id)
     expect(publicRequestUserFour?.userId).toBe(userFour.id)
@@ -2344,7 +2339,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour?.userShortname).toBe(userFour.shortname)
 
     expect(restrictedRequestUserThree?.objectType).toBe(
-      SharingObjectType.CATALOG_COLLECTION
+      ObjectType.CATALOG_COLLECTION
     )
     expect(restrictedRequestUserThree?.requestId).toBe(request3.id)
     expect(restrictedRequestUserThree?.userId).toBe(userThree.id)
@@ -2365,7 +2360,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserFour2).not.toBeNull()
 
     expect(publicRequestUserThree2?.objectType).toBe(
-      SharingObjectType.CATALOG_COLLECTION
+      ObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
     expect(publicRequestUserThree2?.userId).toBe(userThree.id)
@@ -2373,7 +2368,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(publicRequestUserThree2?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour2?.objectType).toBe(
-      SharingObjectType.CATALOG_COLLECTION
+      ObjectType.CATALOG_COLLECTION
     )
     expect(publicRequestUserFour2?.requestId).toBe(request5.id)
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)

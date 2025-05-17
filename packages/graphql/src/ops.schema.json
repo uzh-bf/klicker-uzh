@@ -16973,7 +16973,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -23510,7 +23510,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "SharingObjectType",
+                    "name": "ObjectType",
                     "ofType": null
                   }
                 },
@@ -33745,72 +33745,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "SharingObjectType",
-        "description": null,
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "ANSWER_COLLECTION",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "CATALOG_COLLECTION",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "COURSE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ELEMENT",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "GROUP_ACTIVITY",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "LIVE_QUIZ",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "LIVE_QUIZ_TEMPLATE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "MICRO_LEARNING",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "PRACTICE_QUIZ",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {

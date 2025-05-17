@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetUserElementsDocument,
+  ObjectType,
   RemoveObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
@@ -34,7 +34,7 @@ function ElementRemovalModal({
     {
       variables: {
         objectId: String(elementId),
-        objectType: SharingObjectType.Element,
+        objectType: ObjectType.Element,
       },
     }
   )
@@ -63,7 +63,7 @@ function ElementRemovalModal({
         await removeObject({
           variables: {
             objectId: String(elementId),
-            objectType: SharingObjectType.Element,
+            objectType: ObjectType.Element,
           },
           refetchQueries: [{ query: GetUserElementsDocument }],
         })

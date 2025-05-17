@@ -1,8 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import {
-  ActivityType as ActivityTypeEnum,
-  SharingObjectType as SharingObjectTypeEnum,
-} from '@klicker-uzh/types'
+import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
@@ -77,7 +74,6 @@ import {
   ObjectType,
   PermissionInfo,
   PermissionLevel,
-  SharingObjectType,
   UserGroup,
   UserGroupMembersInput,
 } from './sharing.js'
@@ -1724,7 +1720,7 @@ export const Mutation = builder.mutationType({
         type: CatalogObject,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
@@ -1752,17 +1748,17 @@ export const Mutation = builder.mutationType({
               access: args.access,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined, // not supported in catalog at the moment
               liveQuizId:
                 // not supported in catalog at the moment (except templates)
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ_TEMPLATE
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId: undefined, // not supported in catalog at the moment (except templates)
@@ -2252,35 +2248,35 @@ export const Mutation = builder.mutationType({
               userGroupId: args.userGroupId,
               propagation: args.propagation,
               catalogCollectionId:
-                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === DB.ObjectType.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId:
-                args.objectType === SharingObjectTypeEnum.COURSE
+                args.objectType === DB.ObjectType.COURSE
                   ? args.objectId
                   : undefined,
               liveQuizId:
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId:
-                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                args.objectType === DB.ObjectType.PRACTICE_QUIZ
                   ? args.objectId
                   : undefined,
               microLearningId:
-                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                args.objectType === DB.ObjectType.MICRO_LEARNING
                   ? args.objectId
                   : undefined,
               groupActivityId:
-                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
             },
@@ -2501,35 +2497,35 @@ export const Mutation = builder.mutationType({
               permissionLevel: args.permissionLevel,
               propagation: args.propagation,
               catalogCollectionId:
-                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === DB.ObjectType.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId:
-                args.objectType === SharingObjectTypeEnum.COURSE
+                args.objectType === DB.ObjectType.COURSE
                   ? args.objectId
                   : undefined,
               liveQuizId:
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId:
-                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                args.objectType === DB.ObjectType.PRACTICE_QUIZ
                   ? args.objectId
                   : undefined,
               microLearningId:
-                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                args.objectType === DB.ObjectType.MICRO_LEARNING
                   ? args.objectId
                   : undefined,
               groupActivityId:
-                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
             },
@@ -2733,37 +2729,37 @@ export const Mutation = builder.mutationType({
         nullable: true,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
+          if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             return await ResourcesService.removeAnswerCollection(
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             return await QuestionService.removeElement(
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+          } else if (args.objectType === DB.ObjectType.COURSE) {
             return await CourseService.removeCourse({ id: args.objectId }, ctx)
-          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
             return await LiveQuizService.removeLiveQuiz(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
             return await PracticeQuizService.removePracticeQuiz(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
             return await MicroLearningService.removeMicroLearning(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
             return await GroupService.removeGroupActivity(
               { id: args.objectId },
               ctx

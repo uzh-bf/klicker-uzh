@@ -3,7 +3,7 @@ import {
   AddObjectToCatalogDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -21,7 +21,8 @@ interface AddObjectToCatalogModalProps {
 }
 
 export interface CatalogObjectAdditionFormValues {
-  objectType?: SharingObjectType
+  objectType?: ObjectType
+  isTemplate?: boolean
   access: ObjectAccess
   objectId?: string
 }
@@ -48,6 +49,7 @@ function AddObjectToCatalogModal({
         initialValues={
           {
             objectType: undefined,
+            isTemplate: undefined,
             access: ObjectAccess.Restricted,
             objectId: undefined,
           } as CatalogObjectAdditionFormValues
@@ -162,7 +164,8 @@ function AddObjectToCatalogModal({
                 <H4>2. {t('manage.catalog.selectSpecificObject')}</H4>
                 {values.objectType ? (
                   <SelectObjectForCatalog
-                    objectType={values.objectType as SharingObjectType}
+                    objectType={values.objectType as ObjectType}
+                    isTemplate={values.isTemplate}
                     setFieldValue={setFieldValue}
                   />
                 ) : (

@@ -1465,7 +1465,7 @@ type Mutation {
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!): CatalogObject
+  addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: ObjectType!): CatalogObject
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -1573,7 +1573,7 @@ type Mutation {
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
-  removeObject(objectId: String!, objectType: SharingObjectType!): String
+  removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
@@ -2202,18 +2202,6 @@ type SelectionInstanceEvaluation {
   selectionResponses: [SingleSelectionResponse!]
   xp: Int
   xpAwarded: Int
-}
-
-enum SharingObjectType {
-  ANSWER_COLLECTION
-  CATALOG_COLLECTION
-  COURSE
-  ELEMENT
-  GROUP_ACTIVITY
-  LIVE_QUIZ
-  LIVE_QUIZ_TEMPLATE
-  MICRO_LEARNING
-  PRACTICE_QUIZ
 }
 
 type SharingRequestResponse {

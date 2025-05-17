@@ -3,7 +3,6 @@ import {
   ActivityType,
   CatalogObject,
   ObjectSharingRequest,
-  SharingObjectType,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -5131,7 +5130,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: element.id,
       objectUuid: undefined,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: DB.ObjectType.ELEMENT,
       objectName: element.name,
       ownerShortname: element.owner?.shortname,
       ownerId: element.ownerId,

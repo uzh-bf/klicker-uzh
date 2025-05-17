@@ -2,7 +2,6 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   CatalogObject as CatalogObjectInterface,
   ObjectSharingRequest as ObjectSharingRequestType,
-  SharingObjectType as SharingObjectTypeEnum,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
@@ -10,10 +9,6 @@ import { IUserInfo, UserInfo } from './user.js'
 
 export const ObjectAccess = builder.enumType('ObjectAccess', {
   values: Object.values(DB.ObjectAccess),
-})
-
-export const SharingObjectType = builder.enumType('SharingObjectType', {
-  values: Object.values(SharingObjectTypeEnum),
 })
 
 export const ObjectType = builder.enumType('ObjectType', {

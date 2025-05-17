@@ -2,8 +2,8 @@ import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   GetAnswerCollectionsInfoDocument,
+  ObjectType,
   RemoveObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -30,18 +30,15 @@ function AnswerCollectionRemovalModal({
 
   return (
     <Modal
-      title={t(`manage.sharing.remove${SharingObjectType.AnswerCollection}`)}
+      title={t(`manage.sharing.remove${ObjectType.AnswerCollection}`)}
       open={removalModal}
       onClose={() => setRemovalModal(false)}
       dataCloseButton={{ cy: 'close-remove-object' }}
     >
       <div>
-        {t(
-          `manage.sharing.confirmRemoval${SharingObjectType.AnswerCollection}`,
-          {
-            objectName: name,
-          }
-        )}
+        {t(`manage.sharing.confirmRemoval${ObjectType.AnswerCollection}`, {
+          objectName: name,
+        })}
       </div>
       <Button
         destructive
@@ -51,7 +48,7 @@ function AnswerCollectionRemovalModal({
             const res = await removeObject({
               variables: {
                 objectId: String(id),
-                objectType: SharingObjectType.AnswerCollection,
+                objectType: ObjectType.AnswerCollection,
               },
               optimisticResponse: {
                 removeObject: String(id),
