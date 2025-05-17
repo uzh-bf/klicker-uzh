@@ -917,3 +917,12 @@ export type ActivityQuizAnalytics = {
   totalCorrectRate: number
 }
 // #endregion
+
+// ----- ACTIVITY LOG -----
+// #region
+export type ActivityLogModificationDetails = {
+  field: string
+  oldValue: string
+  newValue: string
+}
+// #endregion

@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
 import type {
+  ActivityLogModificationDetails,
   AvatarSettings,
   ElementData,
   ElementInstanceOptions,
@@ -36,6 +37,7 @@ declare global {
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
+    type PrismaActivityModificationDetails = ActivityLogModificationDetails
   }
 }
 // #endregion

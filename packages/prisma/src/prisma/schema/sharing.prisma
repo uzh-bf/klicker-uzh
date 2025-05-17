@@ -414,6 +414,9 @@ model ActivityLogEntry {
     // generic message containing more information on the action
     message String
 
+    /// [PrismaActivityModificationDetails]
+    modificationDetails Json?
+
     // whether the entry has been resolved (for type MESSAGE)
     resolved   Boolean   @default(false)
     resolvedAt DateTime?

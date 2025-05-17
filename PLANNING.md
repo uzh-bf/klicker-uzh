@@ -70,6 +70,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ### Current Limitations
 
 - Only supports basic message creation and viewing
+- Message resolution feature is partially implemented (frontend ready, backend incomplete)
 - No notification system implemented
 - No automatic tracking of modifications yet
 - No centralized activity dashboard
@@ -94,7 +95,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 
 3. **User Experience Enhancements**:
 
-   - Add "resolved" status toggle for messages requiring action
+   - ⚠️ Complete "resolved" status toggle implementation (frontend ready, backend pending)
    - Improve visual differentiation between message types
    - Add formatting options for messages (markdown, mentions)
    - Implement pagination for large activity logs
@@ -168,14 +169,37 @@ With the generic ActivityLog dialog now implemented, our current priorities are:
    - Add clear, consistent labeling for activity log access
    - Implement hover states and tooltips for improved UX
 
+### Current Priority: Automatic Tracking of Element Modifications
+
+With the ActivityLog now integrated throughout the application, our immediate priority is implementing automatic tracking of element modifications:
+
+1. **Element Change Tracking**:
+   - Track title changes to elements
+   - Track status changes (draft, ready, archived, etc.)
+   - Record who made the changes and when
+   - Display changes in a clear, readable format in the activity log
+
+2. **Implementation Focus**:
+   - Intercept element update operations in the backend
+   - Compare before/after values to detect meaningful changes
+   - Automatically create MODIFICATION type activity log entries
+   - Display modifications distinctly from user messages in the UI
+
+3. **Technical Approach**:
+   - Enhance element update service to record activity
+   - Store structured data about changes for proper display
+   - Ensure efficient querying of modification history
+   - Add specialized rendering for modification entries
+
 ### Subsequent Tasks
 
-After completing the dropdown integration and notification indicators:
+After implementing element modification tracking:
 
-1. Add automatic tracking of modifications
-2. Implement comprehensive notification system
-3. Enhance UI with additional features (resolved status, formatting)
-4. Extend to additional object types if needed
+1. Complete resolution feature implementation
+2. Extend modification tracking to other object types (courses, activities)
+3. Implement comprehensive notification system
+4. Enhance UI with additional features (formatting options, markdown support)
+5. Add visual indicators for new activity
 
 ## Future Enhancements (Post-MVP)
 
