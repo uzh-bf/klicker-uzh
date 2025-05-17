@@ -267,7 +267,10 @@ export const ActivityLogEntry = ActivityLogEntryRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     type: t.expose('type', { type: ActivityLogType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     message: t.exposeString('message'),
+    resolved: t.exposeBoolean('resolved'),
+    resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     username: t.exposeString('username', { nullable: true }),
     isEdited: t.exposeBoolean('isEdited', { nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),

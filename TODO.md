@@ -1,4 +1,4 @@
-# TODO: ActivityLog Implementation
+# ActivityLog Implementation
 
 ## Current Implementation Status
 
@@ -59,53 +59,54 @@ The ActivityLog component has been successfully implemented and integrated acros
 
 - [ ] Always run type-checks before completing a specific task to catch type errors early
 - [ ] Fix any remaining TypeScript errors in the GraphQL imports
+- [ ] Remove type-specific activity query documents and imports
 
-## Next Steps: Activity Log Integration in Dropdown Menus
+### ✅ Recent Accomplishments
 
-Now that we have a working unified query implementation for activity logs, our next priority is integrating the ActivityLog functionality into dropdown menus across the application. This will make it easier for users to access activity logs from any context.
+- [x] Added simplified activity log translations for all components
+- [x] Implemented message resolution functionality in the activity log
+- [x] Added filtering options to show/hide resolved messages
+- [x] Created visual indicators for resolved messages
 
-### Implementation Progress
+## Message Resolution in Activity Log: Completed ✅
 
-1. **Dropdown Integration**
+The ability for users to mark messages as resolved in the activity log has been implemented. This helps users track which issues or discussions have been addressed.
 
-   - ✅ Created reusable `useActivityLogAction` hook for consistent dropdown integration
-   - ✅ Added ActivityLog option to dropdown menus:
-     - ✅ Element list items in the library
-     - ✅ Answer collection list items
-     - ✅ Activity list items
-   - ✅ Replaced standalone buttons with textual buttons:
-     - ✅ Course Overview header
-   - ✅ Replaced standalone buttons with icon buttons:
-     - ✅ Course list items
-   - ✅ Added i18n translations for viewActivityLog key in English and German
-   - ✅ Simplified the viewActivityLog translation to "View activity log" without the type parameter
-   - ✅ Ensure proper event handling (stopPropagation) to prevent navigation issues
-   - ✅ Use consistent positioning and styling within all dropdown menus
+### Implementation Summary
 
-2. **Visual Indicator Implementation**
+1. **Backend Changes**
 
-   - Add visual indicators (red dots) to show when there's new activity
-   - Implement logic to determine when activity is "new" versus already viewed
-   - Create a system for tracking which activities a user has seen
+   - ✅ Confirmed that ActivityLogEntry model already had the resolved status field (default false)
+   - ✅ Created GraphQL mutation for resolving/unresolving messages
+   - ✅ Implemented resolver and service function with proper checks
+   - ✅ Added validation and permission checks
 
-3. **User Experience Enhancements**
+2. **Frontend Implementation**
 
-   - Ensure consistent labeling and iconography across all dropdown instances
-   - Add tooltips for improved discoverability
-   - Implement mobile-friendly touch targets
+   - ✅ Updated ActivityLog component to show resolution status
+   - ✅ Added toggle button for marking messages as resolved/unresolved
+   - ✅ Implemented optimistic UI updates for better user experience
+   - ✅ Added visual indicators for resolved messages (strikethrough text, green checkmark, "Resolved" label)
 
-4. **Performance Considerations**
-   - Optimize queries to check for new activity without excessive database load
-   - Implement caching for recently accessed activity data
-   - Use efficient state management to minimize unnecessary re-renders
+3. **UX Improvements**
+   - ✅ Added filtering options to show/hide resolved messages with a checkbox
+   - ✅ Added clear visual indicators for resolution status
+   - ✅ Implemented proper error handling and feedback for resolution actions
 
-This integration will significantly improve the usability and discoverability of the ActivityLog feature throughout the application.
+### Future Enhancements
+   - [ ] Add resolution metadata (who resolved, when)
+   - [ ] Add bulk resolution actions for multiple messages
 
 ## Future Enhancements (Post-MVP)
 
-- [ ] Add resolved status toggle for messages
 - [ ] Implement pagination for large activity logs
+- [ ] Add visual indicators (red dots) to show when there's new activity
+- [ ] Implement logic to determine when activity is "new" versus already viewed
+- [ ] Create a system for tracking which activities a user has seen
 - [ ] Add formatting options for messages (markdown)
 - [ ] Implement user mentions (@username)
 - [ ] Create notification system for new activity
 - [ ] Add automatic tracking of modifications
+- [ ] Optimize queries to check for new activity without excessive database load
+- [ ] Implement caching for recently accessed activity data
+- [ ] Use efficient state management to minimize unnecessary re-renders

@@ -100,12 +100,18 @@ export default {
       title: 'Aktivitätsprotokoll',
       viewActivityLog: 'Aktivitätsprotokoll anzeigen',
       noActivity: 'Noch keine Aktivität',
+      noUnresolvedActivity: 'Keine unerledigten Nachrichten',
       addMessage:
         'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
       messageInputPlaceholder: 'Nachricht schreiben...',
       sending: 'Senden...',
       send: 'Senden',
       tooltip: 'Aktivitätsprotokoll anzeigen',
+      markResolved: 'Als erledigt markieren',
+      markUnresolved: 'Als unerledigt markieren',
+      resolved: 'Erledigt',
+      hideResolved: 'Erledigte Nachrichten ausblenden',
+      resolvedAt: 'Erledigt {time}',
     },
     generic: {
       date: 'Datum',

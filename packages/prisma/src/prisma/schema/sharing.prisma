@@ -407,14 +407,16 @@ enum ActivityLogType {
 }
 
 model ActivityLogEntry {
-    id   Int             @id @default(autoincrement())
-    type ActivityLogType // type of the change log entry
+    id         Int             @id @default(autoincrement())
+    type       ActivityLogType // type of the change log entry
+    objectType ObjectType // type of the object
 
     // generic message containing more information on the action
     message String
 
     // whether the entry has been resolved (for type MESSAGE)
-    resolved Boolean @default(false)
+    resolved   Boolean   @default(false)
+    resolvedAt DateTime?
 
     // user who performed the action
     user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)

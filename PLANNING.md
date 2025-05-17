@@ -7,17 +7,20 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ### Main Goals
 
 1. **Comprehensive Activity Tracking**: Log all activity on key objects in the system:
+
    - Elements (questions and content)
    - Courses
    - Activities (LiveQuizzes, PracticeQuizzes, MicroLearnings, GroupActivities)
    - Answer Collections
 
 2. **Activity Types**:
+
    - **User Messages/Comments**: Allow users to communicate about specific objects
    - **Modifications**: Track changes made to objects (field modifications, status changes)
    - **Actions**: Record important events like sharing, publishing, or status changes
 
 3. **UI Integration**:
+
    - Display activity logs directly in edit modals (e.g., ElementEditForm)
    - Provide dedicated activity log dialog for all object types
    - Contextual access from list views (e.g., element library page)
@@ -31,12 +34,14 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ### Completed
 
 1. **Database Schema**:
+
    - Added `ActivityLogEntry` model in `sharing.prisma`
    - Defined fields for type, message, resolved status, timestamps
    - Created polymorphic relations to supported object types
    - Established migration script (20250517154709_activity_log)
 
 2. **GraphQL Layer**:
+
    - Defined GraphQL types in `sharing.ts` schema
    - Created query for fetching activity (`getElementActivity`)
    - Implemented mutation for adding messages (`addActivityMessage`)
@@ -50,6 +55,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ### Current Implementation Status
 
 1. **Backend**:
+
    - ✅ Basic ActivityLogEntry model with polymorphic relations
    - ✅ GraphQL types and resolvers for all object types
    - ✅ Unified query with object type parameter (`getObjectActivity`)
@@ -71,20 +77,23 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ## High-Level Tasks Remaining
 
 1. **Complete Backend Implementation**:
+
    - ✅ Expand service functionality in `sharing.ts` to fully support all entity types
    - ✅ Implement unified query with object type as parameter (`getObjectActivity`)
    - Create automatic logging for modifications (field changes)
    - Add resolvers and subscriptions for real-time updates
 
 2. **Expand Frontend Integration**:
+
    - ✅ Add ActivityLog to course views
    - ✅ Add ActivityLog to activity management pages
    - ✅ Add ActivityLog to answer collection management
    - ✅ Create standalone dialog for accessing activity logs from list views
-   - Add ActivityLog access to dropdown menus on list items
-   - Implement consistent positioning within different contexts
+   - ✅ Add ActivityLog access to dropdown menus on list items
+   - ✅ Implement consistent positioning within different contexts
 
 3. **User Experience Enhancements**:
+
    - Add "resolved" status toggle for messages requiring action
    - Improve visual differentiation between message types
    - Add formatting options for messages (markdown, mentions)
@@ -93,6 +102,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
    - Create system for tracking read/unread status
 
 4. **Notification System**:
+
    - Design scalable notification concept
    - Implement badge/indicator system for new activity
    - Add email notification options for important activity
@@ -110,11 +120,13 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ## Technical Considerations
 
 1. **Performance**:
+
    - Consider pagination for objects with extensive activity history
    - Implement efficient querying for polymorphic relationships
    - Use read/unread status to optimize notification checks
 
 2. **Security**:
+
    - Ensure activity logs respect permission models
    - Validate user access before displaying activity data
    - Consider privacy implications of detailed activity tracking
@@ -131,6 +143,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 With the generic ActivityLog dialog now implemented, our current priorities are:
 
 1. **Dropdown Menu Integration**:
+
    - ✅ Integrate ActivityLog access within ellipsis (...) dropdown menus across the application:
      - ✅ Element library item dropdown menu
      - ✅ Answer collection item dropdown menu
@@ -143,6 +156,7 @@ With the generic ActivityLog dialog now implemented, our current priorities are:
    - ✅ Ensure proper event handling to prevent navigation issues
 
 2. **Activity Notification Indicators**:
+
    - Add visual indicators (red dot) to highlight new activity:
      - On the ellipsis (...) dropdown button itself
      - On the specific ActivityLog menu item within dropdowns
@@ -178,17 +192,20 @@ A dedicated Activity Dashboard will provide users with a centralized overview of
 ### Key Features
 
 1. **Unified Activity Feed**:
+
    - Real-time aggregated view of all activity on user-accessible objects
    - Chronological display with newest activities first
    - Visual indicators for different activity types (comments, modifications, actions)
 
 2. **Advanced Filtering Options**:
+
    - Filter by object type (Elements, Courses, Activities, Answer Collections)
    - Filter by activity type (messages, modifications, actions)
    - Filter by time period (today, this week, this month)
    - Filter by collaboration context (owned by me, shared with me, etc.)
 
 3. **Interactive Components**:
+
    - Quick response functionality directly from feed
    - Jump-to-object navigation
    - Batch actions for similar activities
@@ -203,12 +220,14 @@ A dedicated Activity Dashboard will provide users with a centralized overview of
 ### Technical Implementation
 
 1. **Data Requirements**:
+
    - ✅ Unified query interface (`getObjectActivity`) supporting all object types
    - Optimized loading with pagination and infinite scroll
    - Real-time updates using subscriptions or polling
    - ✅ Proper permission validation for all displayed activities
 
 2. **Frontend Implementation**:
+
    - Dedicated route at `/manage/activities`
    - Responsive layout supporting various device sizes
    - Optimized rendering for large activity volumes
@@ -224,16 +243,19 @@ A dedicated Activity Dashboard will provide users with a centralized overview of
 ### Development Phases
 
 1. **Phase 1: Foundation**
+
    - Create basic Activity Dashboard page structure
    - Implement simple aggregated activity feed
    - Add essential filtering by object type
 
 2. **Phase 2: Enhanced Functionality**
+
    - Add advanced filtering options
    - Implement interactive response capabilities
    - Integrate with existing activity log dialogs
 
 3. **Phase 3: Notification Integration**
+
    - Add read/unread status tracking
    - Implement notification preferences
    - Create email notification system for important activity
@@ -252,18 +274,21 @@ The current Activity Details Modal provides basic information about activities b
 ### Key Features
 
 1. **Interactive Timeline Navigation**:
+
    - Visual step-by-step timeline of activity instances
    - Click-through navigation between instances
    - Progress indicators showing completion status
    - Immediate preview of selected instance content
 
 2. **Split-Panel Interface**:
+
    - Left panel: Instance content preview with full details
    - Right panel: Activity log feed specific to the activity
    - Responsive design adapting to various screen sizes
    - Collapsible panels for focusing on specific content
 
 3. **Content Preview**:
+
    - Direct embedding of instance content (questions, options, media)
    - Preview of participant responses and statistics when available
    - Quick links to full editing interface
@@ -278,12 +303,14 @@ The current Activity Details Modal provides basic information about activities b
 ### Technical Implementation
 
 1. **UI Components**:
+
    - Timeline component with interactive steps
    - Split-pane layout with adjustable divider
    - Content preview cards for different element types
    - Real-time activity feed with filtering
 
 2. **Data Requirements**:
+
    - Efficient loading of instance content in the modal
    - Integration with existing activity log system
    - Optimized queries to reduce loading time
@@ -298,16 +325,19 @@ The current Activity Details Modal provides basic information about activities b
 ### Development Phases
 
 1. **Phase 1: Modal Redesign**
+
    - Create new modal layout with timeline and split-panel design
    - Implement basic navigation between instances
    - Add content preview for basic element types
 
 2. **Phase 2: Activity Log Integration**
+
    - Integrate activity log component in right panel
    - Implement context-specific filtering
    - Add commenting capabilities for visible instances
 
 3. **Phase 3: Enhanced Interactivity**
+
    - Add animation and transitions for smoother navigation
    - Implement keyboard navigation and shortcuts
    - Create mobile-friendly responsive design

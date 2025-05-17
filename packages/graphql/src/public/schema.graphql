@@ -87,6 +87,9 @@ type ActivityLogEntry {
   id: Int!
   isEdited: Boolean
   message: String!
+  objectType: ObjectType!
+  resolved: Boolean!
+  resolvedAt: Date
   type: ActivityLogType!
   updatedAt: Date!
   username: String
@@ -1593,6 +1596,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback

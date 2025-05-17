@@ -1705,6 +1705,21 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      resolveActivityLogEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityLogEntry,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return null
+
+          // TODO: implement resolveActivityLogEntry
+          // how to do permissions smartly here? permission on the source object ADMIN or higher?
+          return await SharingService.resolveActivityLogEntry(args, ctx)
+        },
+      }),
+
       addActivityMessage: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ActivityLogEntry,

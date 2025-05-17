@@ -1756,7 +1756,7 @@ export const Query = builder.queryType({
             return null
           }
 
-          return await SharingService.getObjectActivity(args, ctx)
+          return SharingService.getObjectActivity(args, ctx)
         },
       }),
 

@@ -6564,6 +6564,7 @@ export async function addActivityMessage(
     data: {
       type: DB.ActivityLogType.MESSAGE,
       message,
+      objectType,
       answerCollectionId:
         objectType === DB.ObjectType.ANSWER_COLLECTION
           ? parseInt(objectId)
@@ -6600,124 +6601,59 @@ export async function getObjectActivity(
   { objectId, objectType }: { objectId: string; objectType: DB.ObjectType },
   ctx: ContextWithUser
 ) {
-  // For numeric ID types (Element and AnswerCollection), convert string ID to number
-  const id =
-    objectType === DB.ObjectType.ELEMENT ||
-    objectType === DB.ObjectType.ANSWER_COLLECTION
-      ? parseInt(objectId, 10)
-      : objectId
-
   // Get the appropriate model based on object type
   let activityLog: (DB.ActivityLogEntry & {
     user: { shortname: string } | null
   })[] = []
 
+  // Convert the ID to the appropriate type based on object type
+  const typedId =
+    objectType === DB.ObjectType.ELEMENT ||
+    objectType === DB.ObjectType.ANSWER_COLLECTION
+      ? parseInt(objectId, 10)
+      : objectId
+
+  // Create a filter object based on the object type
+  const filter = {}
+
+  // Set the appropriate field based on object type
   switch (objectType) {
     case DB.ObjectType.ELEMENT:
-      const elementWithActivity = await ctx.prisma.element.findUnique({
-        where: { id: id as number },
-        include: {
-          activityLog: {
-            include: { user: { select: { shortname: true } } },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      })
-      activityLog = elementWithActivity?.activityLog ?? []
+      filter['elementId'] = typedId
       break
-
-    case DB.ObjectType.COURSE:
-      const courseWithActivity = await ctx.prisma.course.findUnique({
-        where: { id: id as string },
-        include: {
-          activityLog: {
-            include: { user: { select: { shortname: true } } },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      })
-      activityLog = courseWithActivity?.activityLog ?? []
-      break
-
-    case DB.ObjectType.LIVE_QUIZ:
-      const liveQuizWithActivity = await ctx.prisma.liveQuiz.findUnique({
-        where: { id: id as string },
-        include: {
-          activityLog: {
-            include: { user: { select: { shortname: true } } },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      })
-      activityLog = liveQuizWithActivity?.activityLog ?? []
-      break
-
-    case DB.ObjectType.PRACTICE_QUIZ:
-      const practiceQuizWithActivity = await ctx.prisma.practiceQuiz.findUnique(
-        {
-          where: { id: id as string },
-          include: {
-            activityLog: {
-              include: { user: { select: { shortname: true } } },
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        }
-      )
-      activityLog = practiceQuizWithActivity?.activityLog ?? []
-      break
-
-    case DB.ObjectType.MICRO_LEARNING:
-      const microLearningWithActivity =
-        await ctx.prisma.microLearning.findUnique({
-          where: { id: id as string },
-          include: {
-            activityLog: {
-              include: { user: { select: { shortname: true } } },
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        })
-      activityLog = microLearningWithActivity?.activityLog ?? []
-      break
-
-    case DB.ObjectType.GROUP_ACTIVITY:
-      const groupActivityWithActivity =
-        await ctx.prisma.groupActivity.findUnique({
-          where: { id: id as string },
-          include: {
-            activityLog: {
-              include: { user: { select: { shortname: true } } },
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        })
-      activityLog = groupActivityWithActivity?.activityLog ?? []
-      break
-
     case DB.ObjectType.ANSWER_COLLECTION:
-      const answerCollectionWithActivity =
-        await ctx.prisma.answerCollection.findUnique({
-          where: { id: id as number },
-          include: {
-            activityLog: {
-              include: { user: { select: { shortname: true } } },
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        })
-      activityLog = answerCollectionWithActivity?.activityLog ?? []
+      filter['answerCollectionId'] = typedId
+      break
+    case DB.ObjectType.COURSE:
+      filter['courseId'] = typedId
+      break
+    case DB.ObjectType.LIVE_QUIZ:
+      filter['liveQuizId'] = typedId
+      break
+    case DB.ObjectType.PRACTICE_QUIZ:
+      filter['practiceQuizId'] = typedId
+      break
+    case DB.ObjectType.MICRO_LEARNING:
+      filter['microLearningId'] = typedId
+      break
+    case DB.ObjectType.GROUP_ACTIVITY:
+      filter['groupActivityId'] = typedId
+      break
+    default:
       break
   }
 
-  if (!activityLog) {
-    return null
-  }
+  // Directly query the ActivityLogEntry table with the appropriate filter
+  activityLog = await ctx.prisma.activityLogEntry.findMany({
+    where: filter,
+    include: { user: { select: { shortname: true } } },
+    orderBy: { createdAt: 'desc' },
+  })
 
   return activityLog.map((entry) => ({
     ...entry,
     username: entry.user?.shortname ?? 'Unknown User',
-    isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(),
+    isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))
 }
 // #endregion

@@ -3,6 +3,7 @@ import {
   ActivityLogType,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
@@ -28,6 +29,12 @@ export interface ActivityLogProps {
   onAddMessage?: (message: string) => Promise<any>
   // Optional flag for adding message state (when not using internal data fetching)
   isAddingMessage?: boolean
+  // Optional function to resolve/unresolve a message (when not using internal data fetching)
+  onResolveMessage?: (id: number, resolved: boolean) => Promise<any>
+  // Optional flag for resolving message state (when not using internal data fetching)
+  isResolvingMessage?: boolean
+  // Optional flag to show/hide resolved messages
+  showResolved?: boolean
 }
 
 /**
@@ -43,10 +50,14 @@ function ActivityLog({
   error: propError,
   onAddMessage: propOnAddMessage,
   isAddingMessage: propIsAddingMessage,
+  onResolveMessage: propOnResolveMessage,
+  isResolvingMessage: propIsResolvingMessage,
+  showResolved = true,
 }: ActivityLogProps) {
   const t = useTranslations()
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [filterResolved, setFilterResolved] = useState(!showResolved)
 
   // Determine if we should use internal data fetching
   const useInternalDataFetching = propEntries === undefined
@@ -64,7 +75,9 @@ function ActivityLog({
     loading: queryLoading,
     error: queryError,
     addActivityMessage,
+    resolveActivityLogEntry,
     isAddingMessage: hookIsAddingMessage,
+    isResolvingMessage: hookIsResolvingMessage,
     refetch,
   } = useObjectActivity({
     objectId,
@@ -97,13 +110,36 @@ function ActivityLog({
     }
   }
 
+  // Handle resolving/unresolving a message
+  const handleResolve = async (id: number, currentResolvedStatus: boolean) => {
+    try {
+      if (propOnResolveMessage) {
+        await propOnResolveMessage(id, !currentResolvedStatus)
+      } else {
+        await resolveActivityLogEntry(id, !currentResolvedStatus)
+      }
+    } catch (error) {
+      console.error('[ActivityLog] Failed to toggle resolved status:', error)
+    }
+  }
+
   // Determine which entries, loading and error states to use
-  const entries = useInternalDataFetching ? hookEntries : propEntries || []
+  const allEntries = useInternalDataFetching ? hookEntries : propEntries || []
   const loading = useInternalDataFetching ? queryLoading : propLoading || false
   const error = useInternalDataFetching ? !!queryError : propError || false
   const isAddingMessage = useInternalDataFetching
     ? hookIsAddingMessage
     : propIsAddingMessage || false
+  const isResolvingMessage = useInternalDataFetching
+    ? hookIsResolvingMessage
+    : propIsResolvingMessage || false
+
+  // Filter out resolved messages if needed
+  const entries = filterResolved
+    ? allEntries.filter(
+        (entry) => entry.type !== ActivityLogType.Message || !entry.resolved
+      )
+    : allEntries
 
   // Render loading state
   if (loading) {
@@ -160,95 +196,97 @@ function ActivityLog({
   )
 
   return (
-    <div className="flex w-full flex-col rounded-md border">
+    <div className="flex w-full flex-col">
+      {/* Filter toggle */}
+      {/* <div className="flex justify-end border-b p-2">
+        <label className="flex items-center text-xs text-gray-600">
+          <input
+            type="checkbox"
+            checked={filterResolved}
+            onChange={() => setFilterResolved(!filterResolved)}
+            className="mr-2 h-3 w-3"
+          />
+          {t('shared.activity.hideResolved')}
+        </label>
+      </div> */}
+
       <div className="max-h-80 flex-1 flex-col space-y-4 overflow-y-auto p-2">
-        {entries.length === 0 ? (
+        {entries.length === 0 && (
           <div className="flex flex-col items-center justify-center p-4 text-center">
             <div className="mb-2 text-4xl text-gray-300">📝</div>
             <p className="text-sm font-medium text-gray-500">
-              {t('shared.activity.noActivity')}
+              {filterResolved && allEntries.length > 0
+                ? t('shared.activity.noUnresolvedActivity')
+                : t('shared.activity.noActivity')}
             </p>
             <p className="mt-1 text-xs text-gray-400">
               {t('shared.activity.addMessage')}
             </p>
           </div>
-        ) : (
+        )}
+
+        {entries.length > 0 &&
           dates.map((date) => (
             <div key={date} className="flex flex-col space-y-3">
-              <div className="flex justify-center">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-gray-500">
-                  {new Date(date).toLocaleDateString()}
-                </span>
+              <div className="bg-slate-100 px-3 py-1 text-center text-sm text-gray-500">
+                {dayjs(date).format('DD.MM.YYYY')}
               </div>
 
               {groupedEntries[date].map((entry) => {
                 const isUserMessage = entry.type === ActivityLogType.Message
                 const isOwnMessage = entry.username === 'self' // Replace with actual logic to check if message is from current user
+                const isResolved = entry.resolved
 
                 return (
-                  <div
-                    key={entry.id}
-                    className={`flex ${isUserMessage ? (isOwnMessage ? 'justify-end' : 'justify-start') : 'justify-center'} w-full`}
-                  >
-                    <div
-                      className={` ${
-                        isUserMessage
-                          ? isOwnMessage
-                            ? 'max-w-[85%] self-end rounded-lg bg-blue-500 px-3 py-2 text-base text-white'
-                            : 'max-w-[85%] self-start rounded-lg bg-slate-200 px-3 py-2 text-base'
-                          : 'w-full max-w-[90%] self-center rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-xs text-gray-600'
-                      } `}
-                    >
-                      {isUserMessage && !isOwnMessage && (
-                        <div className="mb-1 text-xs font-medium text-gray-700">
-                          {entry.username || 'Unknown user'}
+                  <div key={entry.id} className="border-b pb-2 last:border-b-0">
+                    <div>
+                      <div className="flex flex-row items-center justify-between text-xs text-slate-500">
+                        <div>
+                          {isUserMessage && (
+                            <div>
+                              {!isOwnMessage && (
+                                <div>{entry.username || 'Unknown user'}</div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="break-words">{entry.message}</div>
-                      <div
-                        className={`mt-1 text-right ${
-                          isUserMessage
-                            ? isOwnMessage
-                              ? 'text-xs text-blue-200'
-                              : 'text-xs text-gray-600'
-                            : 'text-[10px] text-gray-500'
-                        }`}
-                      >
-                        {dayjs(entry.createdAt).fromNow()}
-                        {entry.isEdited && ' (edited)'}
+
+                        <div>
+                          {dayjs(entry.createdAt).fromNow()}
+                          {entry.isEdited && ' (edited)'}
+                        </div>
+                      </div>
+
+                      <div className="prose prose-sm w-full max-w-none break-words">
+                        {entry.message}
                       </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-          ))
-        )}
+          ))}
       </div>
 
-      {/* Message input form */}
-      <form onSubmit={handleSubmit} className="flex items-center border-t p-2">
-        <input
-          type="text"
-          className="flex-1 rounded-l-md border-r-0 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-row items-end space-x-2"
+      >
+        <TextareaField
           placeholder={t('shared.activity.messageInputPlaceholder')}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(text) => setMessage(text)}
           disabled={isSubmitting || isAddingMessage}
         />
-        <button
+
+        <Button
           type="submit"
-          className={`rounded-r-md bg-blue-500 px-4 py-2 text-sm font-medium text-white ${
-            isSubmitting || isAddingMessage || !message.trim()
-              ? 'cursor-not-allowed opacity-70'
-              : 'hover:bg-blue-600'
-          }`}
           disabled={isSubmitting || isAddingMessage || !message.trim()}
         >
           {isSubmitting || isAddingMessage
             ? t('shared.activity.sending')
             : t('shared.activity.send')}
-        </button>
+        </Button>
       </form>
     </div>
   )

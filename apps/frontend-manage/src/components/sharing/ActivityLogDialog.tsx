@@ -76,11 +76,7 @@ function ActivityLogDialog({
         </div>
 
         <div className="mt-4 flex justify-end border-t border-gray-200 pt-4">
-          <Button
-            onClick={handleClose}
-            variant="primary"
-            data-cy="activity-log-close"
-          >
+          <Button onClick={handleClose} data-cy="activity-log-close">
             {t('shared.generic.close')}
           </Button>
         </div>

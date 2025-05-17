@@ -1,7 +1,10 @@
 fragment ActivityEntryData on ActivityLogEntry {
   id
   type
+  objectType
   message
+  resolved
+  resolvedAt
   username
   isEdited
   createdAt
