@@ -71,9 +71,9 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
+  ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
-  ChangelogEntry,
   ObjectAccess,
   ObjectType,
   PermissionInfo,
@@ -1705,16 +1705,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      addChangelogMessage: t.withAuth(asUserFullAccess).field({
+      addActivityMessage: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: ChangelogEntry,
+        type: ActivityLogEntry,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: ObjectType, required: true }),
           message: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          // changelog entries are not supported for catalog collections and user groups
+          // activity entries are not supported for catalog collections and user groups
           if (
             args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
             args.objectType === DB.ObjectType.USER_GROUP
@@ -1788,7 +1788,7 @@ export const Mutation = builder.mutationType({
             return null
           }
 
-          return await SharingService.addChangelogMessage(args, ctx)
+          return await SharingService.addActivityMessage(args, ctx)
         },
       }),
 

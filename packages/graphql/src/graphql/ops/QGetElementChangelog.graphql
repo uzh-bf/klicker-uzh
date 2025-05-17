@@ -1,5 +1,0 @@
-query GetElementChangelog($id: Int!) {
-  getElementChangelog(id: $id) {
-    ...ChangelogEntryData
-  }
-}

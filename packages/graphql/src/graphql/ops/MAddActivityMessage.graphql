@@ -1,13 +1,13 @@
-mutation AddChangelogMessage(
+mutation AddActivityMessage(
   $objectId: String!
   $objectType: ObjectType!
   $message: String!
 ) {
-  addChangelogMessage(
+  addActivityMessage(
     objectId: $objectId
     objectType: $objectType
     message: $message
   ) {
-    ...ChangelogEntryData
+    ...ActivityEntryData
   }
 }

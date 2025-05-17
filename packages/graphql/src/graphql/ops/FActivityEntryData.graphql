@@ -1,4 +1,4 @@
-fragment ChangelogEntryData on ChangelogEntry {
+fragment ActivityEntryData on ActivityLogEntry {
   id
   type
   message

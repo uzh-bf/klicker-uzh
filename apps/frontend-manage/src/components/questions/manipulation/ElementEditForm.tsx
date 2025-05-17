@@ -13,7 +13,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
-import Changelog from '../../sharing/Changelog'
+import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
@@ -292,13 +292,9 @@ function ElementEditForm({
                   </TabsContent>
                   <TabsContent value="changelog">
                     <div className="w-sm w-full flex-1">
-                      <Changelog
-                        entries={[]}
-                        objectId={elementId?.toString() || ''}
+                      <ActivityLog
+                        objectId={elementId || ''}
                         objectType={ObjectType.Element}
-                        onMessageAdded={() => {
-                          // TODO: Refresh changelog entries when implemented
-                        }}
                       />
                     </div>
                   </TabsContent>

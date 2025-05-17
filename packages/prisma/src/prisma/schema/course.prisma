@@ -50,7 +50,7 @@ model Course {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
-  changelog          ChangelogEntry[]
+  activityLog        ActivityLogEntry[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?

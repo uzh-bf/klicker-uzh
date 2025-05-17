@@ -24,8 +24,8 @@ export const SharingType = builder.enumType('SharingType', {
   values: Object.values(SharingTypeEnum),
 })
 
-export const ChangelogType = builder.enumType('ChangelogType', {
-  values: Object.values(DB.ChangelogType),
+export const ActivityLogType = builder.enumType('ActivityLogType', {
+  values: Object.values(DB.ActivityLogType),
 })
 
 export const PermissionLevel = builder.enumType('PermissionLevel', {
@@ -254,19 +254,19 @@ export const UserGroup = UserGroupRef.implement({
 
 // #endregion
 
-// ----- CHANGELOG -----
+// ----- ACTIVITY LOG -----
 // #region
-interface IChangelogEntry extends DB.ChangelogEntry {
-  username?: string // username of the user who created the changelog entry
-  isEdited?: boolean // boolean to signal if a changelog entry has been edited after its creation
+interface IActivityLogEntry extends DB.ActivityLogEntry {
+  username?: string // username of the user who created the activity/changelog entry
+  isEdited?: boolean // boolean to signal if an entry has been edited after its creation
 }
 
-export const ChangelogEntryRef =
-  builder.objectRef<IChangelogEntry>('ChangelogEntry')
-export const ChangelogEntry = ChangelogEntryRef.implement({
+export const ActivityLogEntryRef =
+  builder.objectRef<IActivityLogEntry>('ActivityLogEntry')
+export const ActivityLogEntry = ActivityLogEntryRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    type: t.expose('type', { type: ChangelogType }),
+    type: t.expose('type', { type: ActivityLogType }),
     message: t.exposeString('message'),
     username: t.exposeString('username', { nullable: true }),
     isEdited: t.exposeBoolean('isEdited', { nullable: true }),

@@ -6549,9 +6549,9 @@ export async function addUserToUserGroup(
 }
 // #endregion
 
-// ! Changelog Entries
+// ! Activity Entries
 // #region
-export async function addChangelogMessage(
+export async function addActivityMessage(
   {
     objectId,
     objectType,
@@ -6559,9 +6559,9 @@ export async function addChangelogMessage(
   }: { objectId: string; objectType: DB.ObjectType; message: string },
   ctx: ContextWithUser
 ) {
-  const newChangeLogEntry = await ctx.prisma.changelogEntry.create({
+  const newActivityEntry = await ctx.prisma.activityLogEntry.create({
     data: {
-      type: DB.ChangelogType.MESSAGE,
+      type: DB.ActivityLogType.MESSAGE,
       message,
       answerCollectionId:
         objectType === DB.ObjectType.ANSWER_COLLECTION
@@ -6585,20 +6585,20 @@ export async function addChangelogMessage(
   })
 
   return {
-    ...newChangeLogEntry,
-    username: newChangeLogEntry.user?.shortname,
+    ...newActivityEntry,
+    username: newActivityEntry.user?.shortname,
     isEdited: false, // flag to signal if an object has been edited
   }
 }
 
-export async function getElementChangelog(
+export async function getElementActivity(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
   const element = await ctx.prisma.element.findUnique({
     where: { id },
     include: {
-      changelog: {
+      activityLog: {
         include: { user: { select: { shortname: true } } },
       },
     },
@@ -6608,7 +6608,7 @@ export async function getElementChangelog(
     return null
   }
 
-  return element.changelog.map((entry) => ({
+  return element.activityLog.map((entry) => ({
     ...entry,
     username: entry.user?.shortname,
     isEdited: entry.updatedAt.getTime() !== entry.createdAt.getTime(), // check if the entry has been edited

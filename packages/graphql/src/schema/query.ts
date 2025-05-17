@@ -74,10 +74,10 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
+  ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
   CatalogSelectionObject,
-  ChangelogEntry,
   DerivedPermissionInfo,
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
@@ -1690,9 +1690,9 @@ export const Query = builder.queryType({
         },
       }),
 
-      getElementChangelog: t.withAuth(asUser).field({
+      getElementActivity: t.withAuth(asUser).field({
         nullable: true,
-        type: [ChangelogEntry],
+        type: [ActivityLogEntry],
         args: {
           id: t.arg.int({ required: true }),
         },
@@ -1700,7 +1700,7 @@ export const Query = builder.queryType({
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await SharingService.getElementChangelog(args, ctx)
+            return await SharingService.getElementActivity(args, ctx)
           }
         ),
       }),
