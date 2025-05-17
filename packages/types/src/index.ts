@@ -7,6 +7,23 @@ import type {
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
 
+// ----- ACTIVITY LOG TYPES -----
+// #region
+export enum ActivityLogModificationFieldType {
+  TITLE = 'title',
+  STATUS = 'status',
+  CONTENT = 'content',
+  OPTIONS = 'options',
+  TAGS = 'tags',
+}
+
+export interface ActivityLogModificationDetails {
+  field: ActivityLogModificationFieldType | string
+  oldValue: string
+  newValue: string
+}
+// #endregion
+
 export type ElementKeys = keyof Element
 
 // ! Types used in helpers (this file) and across GraphQL
@@ -915,14 +932,5 @@ export type ActivityQuizAnalytics = {
   totalErrorRate: number
   totalPartialRate: number
   totalCorrectRate: number
-}
-// #endregion
-
-// ----- ACTIVITY LOG -----
-// #region
-export type ActivityLogModificationDetails = {
-  field: string
-  oldValue: string
-  newValue: string
 }
 // #endregion

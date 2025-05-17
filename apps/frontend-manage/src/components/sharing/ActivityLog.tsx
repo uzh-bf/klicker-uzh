@@ -237,6 +237,25 @@ function ActivityLog({
                 const isOwnMessage = entry.username === 'self' // Replace with actual logic to check if message is from current user
                 const isResolved = entry.resolved
 
+                if (
+                  entry.type === ActivityLogType.Creation ||
+                  entry.type === ActivityLogType.Modification
+                ) {
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex flex-row justify-between border-b pb-2 text-xs text-slate-500 last:border-b-0"
+                    >
+                      <div className="break-words">{entry.message}</div>
+
+                      <div>
+                        {dayjs(entry.createdAt).fromNow()}
+                        {entry.isEdited && ' (edited)'}
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div key={entry.id} className="border-b pb-2 last:border-b-0">
                     <div>

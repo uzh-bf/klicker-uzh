@@ -6652,6 +6652,14 @@ export async function getObjectActivity(
 
   return activityLog.map((entry) => ({
     ...entry,
+    message:
+      entry.message ||
+      (entry.type === DB.ActivityLogType.CREATION
+        ? `User ${entry.user?.shortname} created this object.`
+        : null) ||
+      (entry.type === DB.ActivityLogType.MODIFICATION
+        ? `User ${entry.user?.shortname} modified ${entry.modificationDetails?.field} (${entry.modificationDetails?.oldValue} -> ${entry.modificationDetails?.newValue}).`
+        : null),
     username: entry.user?.shortname ?? 'Unknown User',
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))

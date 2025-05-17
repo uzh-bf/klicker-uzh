@@ -86,7 +86,8 @@ type ActivityLogEntry {
   createdAt: Date!
   id: Int!
   isEdited: Boolean
-  message: String!
+  message: String
+  modificationDetails: Json
   objectType: ObjectType!
   resolved: Boolean!
   resolvedAt: Date
@@ -96,8 +97,10 @@ type ActivityLogEntry {
 }
 
 enum ActivityLogType {
+  CREATION
   MESSAGE
   MODIFICATION
+  SHARING
 }
 
 type ActivityPerformance {

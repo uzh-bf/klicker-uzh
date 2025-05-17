@@ -404,6 +404,8 @@ model AuditLogEntry {
 enum ActivityLogType {
     MESSAGE // message sent by one of the users with access to the object
     MODIFICATION // modification of the object (field modified, etc.)
+    CREATION // creation of the object
+    SHARING // sharing of the object
 }
 
 model ActivityLogEntry {
@@ -412,9 +414,10 @@ model ActivityLogEntry {
     objectType ObjectType // type of the object
 
     // generic message containing more information on the action
-    message String
+    message String?
 
-    /// [PrismaActivityModificationDetails]
+    // structured data about modifications (for type MODIFICATION)
+    /// [PrismaActivityLogModificationDetails]
     modificationDetails Json?
 
     // whether the entry has been resolved (for type MESSAGE)

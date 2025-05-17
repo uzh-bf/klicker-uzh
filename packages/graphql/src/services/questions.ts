@@ -6,6 +6,8 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationDetails,
+  ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
   SharingType,
@@ -267,16 +269,19 @@ export async function manipulateQuestion(
     return null
   }
 
-  const questionPrev =
-    typeof id !== 'undefined' && id !== null
-      ? await ctx.prisma.element.findUnique({
-          where: { id: id, isDeleted: false },
-          include: {
-            tags: { orderBy: { order: 'asc' } },
-            answerCollectionItems: true,
-          },
-        })
-      : undefined
+  // Track modifications to existing elements
+  const isNewElement = typeof id === 'undefined' || id === null
+
+  // Fetch the existing element to compare before/after state
+  const questionPrev = !isNewElement
+    ? await ctx.prisma.element.findUnique({
+        where: { id: id, isDeleted: false },
+        include: {
+          tags: { orderBy: { order: 'asc' } },
+          answerCollectionItems: true,
+        },
+      })
+    : undefined
 
   // determine which tags have been deconnected
   if (questionPrev?.tags) {
@@ -457,6 +462,59 @@ export async function manipulateQuestion(
       { answerCollectionId: questionPrev.answerCollectionId },
       ctx.prisma
     )
+  }
+
+  // Track element creation or modification
+  if (isNewElement) {
+    // Create an activity log entry for element creation
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.CREATION,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId: question.id,
+        userId: ctx.user.sub,
+        createdAt: question.createdAt,
+        updatedAt: question.updatedAt,
+      },
+    })
+  } else if (questionPrev) {
+    // Track title changes
+    if (name && name !== questionPrev.name) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.TITLE,
+        oldValue: questionPrev.name,
+        newValue: name,
+      }
+
+      await ctx.prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      })
+    }
+
+    // Track status changes
+    if (status && status !== questionPrev.status) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.STATUS,
+        oldValue: questionPrev.status,
+        newValue: status,
+      }
+
+      await ctx.prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      })
+    }
   }
 
   ctx.emitter.emit('invalidate', {

@@ -113,7 +113,8 @@ export type ActivityLogEntry = {
   createdAt: Scalars['Date']['output'];
   id: Scalars['Int']['output'];
   isEdited?: Maybe<Scalars['Boolean']['output']>;
-  message: Scalars['String']['output'];
+  message?: Maybe<Scalars['String']['output']>;
+  modificationDetails?: Maybe<Scalars['Json']['output']>;
   objectType: ObjectType;
   resolved: Scalars['Boolean']['output'];
   resolvedAt?: Maybe<Scalars['Date']['output']>;
@@ -123,8 +124,10 @@ export type ActivityLogEntry = {
 };
 
 export enum ActivityLogType {
+  Creation = 'CREATION',
   Message = 'MESSAGE',
-  Modification = 'MODIFICATION'
+  Modification = 'MODIFICATION',
+  Sharing = 'SHARING'
 }
 
 export type ActivityPerformance = {
@@ -4143,7 +4146,7 @@ export type WeeklyCourseActivities = {
   weeklyActivity: Array<ParticipantActivityTimestamp>;
 };
 
-export type ActivityEntryDataFragment = { __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message: string, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any };
+export type ActivityEntryDataFragment = { __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message?: string | null, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any };
 
 export type ActivityInfoDataFragment = { __typename?: 'ActivityInfo', id: string, templateId?: string | null, type: ActivityType, status: PublicationStatus, courseId?: string | null, courseName?: string | null, courseStartDate?: any | null, numOfStacks: number, numOfElements: number, scheduledStartAt?: any | null, scheduledEndAt?: any | null, groupDeadlineDate?: any | null, numOfParticipantGroups?: number | null, name: string, displayName: string, permissionLevel: PermissionLevel, derivedAccess: boolean, numSharedUsers?: number | null, isOwner: boolean, isManager: boolean, isEditor: boolean, isExecutor: boolean, isShared: boolean, isRemovable: boolean, sharingType: SharingType, updatedAt: any, stacks: Array<{ __typename?: 'ActivityInfoStack', id: number, numOfParticipants?: number | null, elements: Array<{ __typename?: 'ActivityInfoElement', id: number, name: string, type: ElementType }> }> };
 
@@ -4191,7 +4194,7 @@ export type AddActivityMessageMutationVariables = Exact<{
 }>;
 
 
-export type AddActivityMessageMutation = { __typename?: 'Mutation', addActivityMessage?: { __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message: string, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any } | null };
+export type AddActivityMessageMutation = { __typename?: 'Mutation', addActivityMessage?: { __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message?: string | null, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any } | null };
 
 export type AddAnswerCollectionOptionMutationVariables = Exact<{
   collectionId: Scalars['Int']['input'];
@@ -5897,7 +5900,7 @@ export type GetObjectActivityQueryVariables = Exact<{
 }>;
 
 
-export type GetObjectActivityQuery = { __typename?: 'Query', getObjectActivity?: Array<{ __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message: string, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any }> | null };
+export type GetObjectActivityQuery = { __typename?: 'Query', getObjectActivity?: Array<{ __typename?: 'ActivityLogEntry', id: number, type: ActivityLogType, objectType: ObjectType, message?: string | null, resolved: boolean, resolvedAt?: any | null, username?: string | null, isEdited?: boolean | null, createdAt: any, updatedAt: any }> | null };
 
 export type GetObjectPermissionsQueryVariables = Exact<{
   objectId: Scalars['String']['input'];

@@ -1,12 +1,13 @@
 -- CreateEnum
-CREATE TYPE "ActivityLogType" AS ENUM ('MESSAGE', 'MODIFICATION');
+CREATE TYPE "ActivityLogType" AS ENUM ('MESSAGE', 'MODIFICATION', 'CREATION', 'SHARING');
 
 -- CreateTable
 CREATE TABLE "ActivityLogEntry" (
     "id" SERIAL NOT NULL,
     "type" "ActivityLogType" NOT NULL,
     "objectType" "ObjectType" NOT NULL,
-    "message" TEXT NOT NULL,
+    "message" TEXT,
+    "modificationDetails" JSONB,
     "resolved" BOOLEAN NOT NULL DEFAULT false,
     "resolvedAt" TIMESTAMP(3),
     "userId" UUID,

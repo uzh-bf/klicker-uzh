@@ -70,7 +70,6 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 ### Current Limitations
 
 - Only supports basic message creation and viewing
-- Message resolution feature is partially implemented (frontend ready, backend incomplete)
 - No notification system implemented
 - No automatic tracking of modifications yet
 - No centralized activity dashboard
@@ -95,7 +94,7 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 
 3. **User Experience Enhancements**:
 
-   - ⚠️ Complete "resolved" status toggle implementation (frontend ready, backend pending)
+   - Add "resolved" status toggle for messages requiring action
    - Improve visual differentiation between message types
    - Add formatting options for messages (markdown, mentions)
    - Implement pagination for large activity logs
@@ -139,67 +138,72 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 
 ## Implementation Priorities and Next Tasks
 
-### Current Priority: Dropdown Integration & Notification Indicators
+### Current Priority: Automatic Activity Tracking
 
-With the generic ActivityLog dialog now implemented, our current priorities are:
+With the generic ActivityLog dialog now implemented, our current focus is on automated tracking of important actions:
 
-1. **Dropdown Menu Integration**:
+1. **Track Element Modifications**:
 
-   - ✅ Integrate ActivityLog access within ellipsis (...) dropdown menus across the application:
-     - ✅ Element library item dropdown menu
-     - ✅ Answer collection item dropdown menu
-   - ✅ Replace standalone buttons with consistent access points:
-     - ✅ Activity list item buttons
-     - ✅ Course list item buttons
-     - ✅ Course detail page header button
-   - ✅ Add i18n translations for viewActivityLog in English and German
-   - ✅ Maintain consistent positioning and styling within each dropdown
-   - ✅ Ensure proper event handling to prevent navigation issues
+   - Automatically create MODIFICATION entries when elements are updated:
+     - Track title changes with before/after values
+     - Track status changes (DRAFT, REVIEW, READY)
+     - Store structured data in the modificationDetails JSON field
+     - Show user-friendly messages in the activity log
+   - Add CREATION entries when new elements are created
+   - Add SHARING entries when elements are shared with other users
 
-2. **Activity Notification Indicators**:
+2. **Track Course Modifications**:
 
-   - Add visual indicators (red dot) to highlight new activity:
-     - On the ellipsis (...) dropdown button itself
-     - On the specific ActivityLog menu item within dropdowns
-   - Implement logic to determine "new" vs. viewed activity
-   - Create system for tracking which activities user has seen
+   - Record course creation events
+   - Log changes to course properties (name, description, dates)
+   - Track adding/removing elements from courses
+   - Log registration code changes
 
-3. **Enhanced Visibility**:
-   - Optimize placement within dropdowns for discoverability
-   - Add clear, consistent labeling for activity log access
-   - Implement hover states and tooltips for improved UX
+3. **Track Activity Modifications**:
 
-### Current Priority: Automatic Tracking of Element Modifications
+   - Record creation of activities (LiveQuiz, PracticeQuiz, etc.)
+   - Log changes to activity settings
+   - Track status changes (draft, published, scheduled, ended)
+   - Record when activities are shared with other users
 
-With the ActivityLog now integrated throughout the application, our immediate priority is implementing automatic tracking of element modifications:
+4. **Enhanced Activity Display**:
+   - Create distinct visual representations for different activity types
+   - Show appropriate icons for each modification type
+   - Format modification details to be user-friendly and clear
+   - Group related modifications where appropriate
 
-1. **Element Change Tracking**:
-   - Track title changes to elements
-   - Track status changes (draft, ready, archived, etc.)
-   - Record who made the changes and when
-   - Display changes in a clear, readable format in the activity log
+### Implementation Approach
 
-2. **Implementation Focus**:
-   - Intercept element update operations in the backend
-   - Compare before/after values to detect meaningful changes
-   - Automatically create MODIFICATION type activity log entries
-   - Display modifications distinctly from user messages in the UI
+The implementation will follow this approach:
 
-3. **Technical Approach**:
-   - Enhance element update service to record activity
-   - Store structured data about changes for proper display
-   - Ensure efficient querying of modification history
-   - Add specialized rendering for modification entries
+1. **Service Layer Integration**:
+
+   - Enhance existing service functions (e.g., `manipulateQuestion`) to log modifications
+   - Add before/after comparison logic to detect changes
+   - Create structured records in the modificationDetails field
+   - Use consistent message formatting across different object types
+
+2. **User Experience**:
+
+   - Show modification details in a user-friendly format
+   - Display appropriate icons for different modification types
+   - Provide clear indication of who made changes and when
+   - Allow filtering activities by type (messages, modifications, sharing)
+
+3. **First Phase Implementation**:
+   - Focus first on element modifications (title, status)
+   - Then implement element creation tracking
+   - Finally add sharing activity tracking
+   - Extend to other object types in subsequent phases
 
 ### Subsequent Tasks
 
-After implementing element modification tracking:
+After completing the automatic activity tracking:
 
-1. Complete resolution feature implementation
-2. Extend modification tracking to other object types (courses, activities)
-3. Implement comprehensive notification system
-4. Enhance UI with additional features (formatting options, markdown support)
-5. Add visual indicators for new activity
+1. Implement notification system for new activity
+2. Enhance UI with additional features (resolved status, formatting)
+3. Create comprehensive filtering and search capabilities
+4. Add user-specific read/unread tracking
 
 ## Future Enhancements (Post-MVP)
 

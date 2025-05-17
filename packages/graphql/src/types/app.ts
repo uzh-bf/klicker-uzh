@@ -37,7 +37,7 @@ declare global {
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
-    type PrismaActivityModificationDetails = ActivityLogModificationDetails
+    type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
   }
 }
 // #endregion
