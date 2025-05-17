@@ -12,7 +12,10 @@ export const ObjectAccess = builder.enumType('ObjectAccess', {
 })
 
 export const ObjectType = builder.enumType('ObjectType', {
-  values: Object.values(DB.ObjectType),
+  values: Object.values(DB.ObjectType).filter(
+    // exclude user group from the graphql object type
+    (type) => type !== DB.ObjectType.USER_GROUP
+  ) as DB.ObjectType[],
 })
 
 export const SharingType = builder.enumType('SharingType', {

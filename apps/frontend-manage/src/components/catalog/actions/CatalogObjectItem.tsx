@@ -49,7 +49,6 @@ function CatalogObjectItem({
   const t = useTranslations()
   const router = useRouter()
   const objectTypeIcons: Record<ObjectType, IconDefinition | undefined> = {
-    [ObjectType.UserGroup]: undefined, // dummy value - user groups cannot be shared
     [ObjectType.AnswerCollection]: faList,
     [ObjectType.CatalogCollection]: faFolder,
     [ObjectType.Course]: undefined,

@@ -1753,7 +1753,6 @@ enum ObjectType {
   LIVE_QUIZ
   MICRO_LEARNING
   PRACTICE_QUIZ
-  USER_GROUP
 }
 
 input OptionsCaseStudyInput {

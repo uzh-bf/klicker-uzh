@@ -357,7 +357,6 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
-      USER_GROUP: 'User Group',
     },
     contentInput: {
       boldStyle:
@@ -2599,8 +2598,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       changeAccessDescription:
         'Are you sure you want to change the access level of the {objectType} "{objectName}" to {newAccess}?',
       changeAccessConfirm: 'Change Access',
-      removeUSER_GROUP: '',
-      removeUSER_GROUPtitle: '',
       removeCATALOG_COLLECTION: 'Remove Catalog Collection',
       removeCATALOG_COLLECTIONtitle: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
@@ -2664,7 +2661,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestCatalogObjectAccess: 'Request Access to {object}',
       requestCatalogObjectAccessDescription:
         'Here you can request access to "{name}" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request.',
-      requestSuccessInfoUSER_GROUP: '',
       requestSuccessInfoCATALOG_COLLECTION:
         'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
       requestSuccessInfoANSWER_COLLECTION:
@@ -2756,7 +2752,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noUserGroupsAvailable: 'No user groups available',
       shortnameEmailOrGroupRequired:
         'Please enter a shortname / email address or select a user group.',
-      infoTransferOwnershipUSER_GROUP: '',
       infoTransferOwnershipCATALOG_COLLECTION:
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
@@ -2778,7 +2773,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the group activity <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this group activity and get irrevokable admin access to all contained elements (according to the permission propagation), while you will retain admin access to the group activity. This action cannot be undone.',
       infoTransferOwnershipCOURSE:
         'You are about to transfer all ownership rights of the course <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this course and get irrevokable admin access to all contained activities and elements (according to the permission propagation), while you will retain admin access to the course. This action cannot be undone.',
-      shareUSER_GROUP: '',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ: 'Share Live Quiz',
@@ -2787,7 +2781,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shareGROUP_ACTIVITY: 'Share Group Activity',
       shareCOURSE: 'Share Course',
       shareELEMENT: 'Share Element',
-      infoSharingUSER_GROUP: '',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
@@ -2805,7 +2798,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       infoSharingELEMENT:
         'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
       propagatedPermissions: 'Propagated Permissions',
-      propagatedPermissionsUSER_GROUP: '',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
       propagatedPermissionsELEMENT:

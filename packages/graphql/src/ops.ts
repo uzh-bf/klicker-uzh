@@ -2864,8 +2864,7 @@ export enum ObjectType {
   GroupActivity = 'GROUP_ACTIVITY',
   LiveQuiz = 'LIVE_QUIZ',
   MicroLearning = 'MICRO_LEARNING',
-  PracticeQuiz = 'PRACTICE_QUIZ',
-  UserGroup = 'USER_GROUP'
+  PracticeQuiz = 'PRACTICE_QUIZ'
 }
 
 export type OptionsCaseStudyInput = {
