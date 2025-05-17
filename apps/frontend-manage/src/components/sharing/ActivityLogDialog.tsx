@@ -11,8 +11,6 @@ interface ActivityLogDialogProps {
   objectType: ObjectType
   // The trigger element (button, icon, etc.) to open the dialog
   trigger?: ReactNode
-  // The title of the dialog (defaults to "Activity")
-  title?: string
   // Optional controlled open state
   open?: boolean
   // Optional callback for open state change
@@ -27,7 +25,6 @@ function ActivityLogDialog({
   objectId,
   objectType,
   trigger,
-  title,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: ActivityLogDialogProps) {
@@ -54,9 +51,6 @@ function ActivityLogDialog({
       trigger
     )
 
-  // Use a generic "Activity" title by default
-  const modalTitle = title || 'Activity'
-
   return (
     <>
       {triggerElement}
@@ -65,7 +59,7 @@ function ActivityLogDialog({
         asPortal={false}
         open={isOpen}
         onClose={handleClose}
-        title={modalTitle}
+        title={t('shared.activity.title')}
         dataCloseButton={{ cy: 'close-activity-log' }}
         className={{
           content: 'max-w-3xl',

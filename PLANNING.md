@@ -47,19 +47,33 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
    - Implemented `useElementActivity` hook for data management
    - Added integration in `ElementEditForm` as a tabbed interface
 
+### Current Implementation Status
+
+1. **Backend**:
+   - ✅ Basic ActivityLogEntry model with polymorphic relations
+   - ✅ GraphQL types and resolvers for all object types
+   - ✅ Unified query with object type parameter (`getObjectActivity`)
+   - ✅ Permission checking for all supported object types
+
+2. **Frontend**:
+   - ✅ Reusable ActivityLog component
+   - ✅ Generic useObjectActivity hook supporting all object types
+   - ✅ ActivityLogDialog modal for standalone access
+   - ✅ Integration with Element, Course, Activity, and AnswerCollection views
+
 ### Current Limitations
 
 - Only supports basic message creation and viewing
-- Currently primarily integrated with Elements only
 - No notification system implemented
 - No automatic tracking of modifications yet
+- No centralized activity dashboard
 
 ## High-Level Tasks Remaining
 
 1. **Complete Backend Implementation**:
-   - Expand service functionality in `sharing.ts` to fully support all entity types
+   - ✅ Expand service functionality in `sharing.ts` to fully support all entity types
+   - ✅ Implement unified query with object type as parameter (`getObjectActivity`)
    - Create automatic logging for modifications (field changes)
-   - Implement additional query operations for other object types
    - Add resolvers and subscriptions for real-time updates
 
 2. **Expand Frontend Integration**:
@@ -117,12 +131,16 @@ The ActivityLog feature aims to track changes, actions, and comments on various 
 With the generic ActivityLog dialog now implemented, our current priorities are:
 
 1. **Dropdown Menu Integration**:
-   - Integrate ActivityLog access within ellipsis (...) dropdown menus across the application:
-     - Activity list item dropdown menu
-     - Answer collection item dropdown menu
-     - Element library item dropdown menu
-   - Maintain consistent positioning and styling within each dropdown
-   - Ensure proper event handling to prevent navigation issues
+   - ✅ Integrate ActivityLog access within ellipsis (...) dropdown menus across the application:
+     - ✅ Element library item dropdown menu
+     - ✅ Answer collection item dropdown menu
+   - ✅ Replace standalone buttons with consistent access points:
+     - ✅ Activity list item buttons
+     - ✅ Course list item buttons
+     - ✅ Course detail page header button
+   - ✅ Add i18n translations for viewActivityLog in English and German
+   - ✅ Maintain consistent positioning and styling within each dropdown
+   - ✅ Ensure proper event handling to prevent navigation issues
 
 2. **Activity Notification Indicators**:
    - Add visual indicators (red dot) to highlight new activity:
@@ -185,10 +203,10 @@ A dedicated Activity Dashboard will provide users with a centralized overview of
 ### Technical Implementation
 
 1. **Data Requirements**:
-   - Efficient querying across multiple object types
+   - ✅ Unified query interface (`getObjectActivity`) supporting all object types
    - Optimized loading with pagination and infinite scroll
    - Real-time updates using subscriptions or polling
-   - Proper permission validation for all displayed activities
+   - ✅ Proper permission validation for all displayed activities
 
 2. **Frontend Implementation**:
    - Dedicated route at `/manage/activities`
@@ -197,7 +215,8 @@ A dedicated Activity Dashboard will provide users with a centralized overview of
    - Progressive loading and virtualization for performance
 
 3. **Backend Support**:
-   - New GraphQL query `getAllUserActivity` with comprehensive filtering options
+   - ✅ Base foundation with unified `getObjectActivity` query
+   - New aggregate query `getAllUserActivity` with comprehensive filtering options
    - Efficient database joins to minimize query complexity
    - Caching strategy for frequently accessed activity data
    - Rate limiting to prevent performance issues

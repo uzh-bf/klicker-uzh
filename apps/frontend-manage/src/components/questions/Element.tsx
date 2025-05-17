@@ -26,7 +26,8 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import ActivityLogButton from '../sharing/ActivityLogButton'
+import useActivityLogAction from '../../lib/hooks/useActivityLogAction'
+import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../sharing/SharingTypeBadge'
@@ -87,11 +88,19 @@ function Element({
   const [isRemovalModalOpen, setRemovalModalOpen] = useState(false)
   const [isDeletionModalOpen, setDeletionModalOpen] = useState(false)
   const [isSharingModalOpen, setSharingModalOpen] = useState(false)
+  const [isActivityLogOpen, setActivityLogOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   // TODO: once the sharing feature is available for all users, remove this feature flag check
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
+  })
+
+  // Get activity log action for dropdown menu
+  const activityLogAction = useActivityLogAction({
+    objectId: element.id,
+    objectType: ObjectType.Element,
+    setActivityLogOpen,
   })
 
   const [collectedProps, drag] = useDrag({
@@ -212,12 +221,6 @@ function Element({
             </div>
           ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
-            <ActivityLogButton
-              objectId={element.id}
-              objectType={ObjectType.Element}
-              size="sm"
-              className="h-8 w-8 p-0"
-            />
             {element.isEditor ? (
               <Button
                 disabled={disabled}
@@ -282,6 +285,8 @@ function Element({
                 disabled={disabled}
                 className={{ item: 'text-sm' }}
                 items={[
+                  // Activity log action at the top of the dropdown
+                  activityLogAction,
                   {
                     label: (
                       <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
@@ -405,6 +410,15 @@ function Element({
           onClose={() => setSharingModalOpen(false)}
         />
       )}
+
+      {/* Activity log dialog */}
+      <ActivityLogDialog
+        objectId={element.id}
+        objectType={ObjectType.Element}
+        trigger={<></>} // Empty trigger as we're controlling the dialog open state manually
+        open={isActivityLogOpen}
+        onOpenChange={setActivityLogOpen}
+      />
     </div>
   )
 }

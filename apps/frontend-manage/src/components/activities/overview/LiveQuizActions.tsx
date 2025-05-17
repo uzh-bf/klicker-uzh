@@ -1,9 +1,11 @@
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
   SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
@@ -17,7 +19,9 @@ import TemplateEditModal from '../../courses/modals/TemplateEditModal'
 import TemplateEditSuccessToast from '../../courses/modals/TemplateEditSuccessToast'
 import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
+import useActivityLogAction from '../actions/useActivityLogAction'
 import useAvailableActions from '../actions/useAvailableActions'
 import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
@@ -101,6 +105,9 @@ function LiveQuizActions({
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
+  const t = useTranslations()
+
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
@@ -125,6 +132,13 @@ function LiveQuizActions({
   })
   const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
+  // Create activity log action
+  const activityLogAction = useActivityLogAction({
+    objectId: liveQuiz.id,
+    objectType: ObjectType.LiveQuiz,
+    setActivityLogOpen,
+  })
+
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
     onStart,
@@ -139,7 +153,8 @@ function LiveQuizActions({
     setDeletionModal,
   })
 
-  const availableActions = useAvailableActions({
+  // Get all available actions based on permissions and status
+  const baseActions = useAvailableActions({
     actions,
     statusActionMap,
     permissionActionMap,
@@ -151,6 +166,11 @@ function LiveQuizActions({
     isRemovable: liveQuiz.isRemovable,
     isShared: liveQuiz.isShared,
   })
+
+  // Add activity log action at the beginning of the dropdown, leaving the first 3 buttons unchanged
+  const visibleActions = baseActions.slice(0, 3)
+  const dropdownActions = [activityLogAction, ...baseActions.slice(3)]
+  const availableActions = [...visibleActions, ...dropdownActions]
 
   return (
     <div>
@@ -268,6 +288,16 @@ function LiveQuizActions({
           open={templateDeletionError}
           onClose={() => setTemplateDeletionError(false)}
         />
+
+        {liveQuiz && (
+          <ActivityLogDialog
+            objectId={liveQuiz.id}
+            objectType={ObjectType.LiveQuiz}
+            trigger={<></>}
+            open={activityLogOpen}
+            onOpenChange={setActivityLogOpen}
+          />
+        )}
       </div>
     </div>
   )

@@ -97,16 +97,11 @@ export default {
       installButton: 'Jetzt installieren',
     },
     activity: {
-      title: '{type} Aktivität',
-      element: 'Element',
-      course: 'Kurs',
-      liveQuiz: 'Live Quiz',
-      practiceQuiz: 'Übungsquiz',
-      microLearning: 'Mikrolernen',
-      groupActivity: 'Gruppenaktivität',
-      answerCollection: 'Antwortsammlung',
+      title: 'Aktivitätsprotokoll',
+      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
       noActivity: 'Noch keine Aktivität',
-      addMessage: 'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
+      addMessage:
+        'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
       messageInputPlaceholder: 'Nachricht schreiben...',
       sending: 'Senden...',
       send: 'Senden',
@@ -3129,6 +3124,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     activity: {
       title: '{type} Aktivitäten',
       tooltip: 'Aktivitätsprotokoll anzeigen',
+      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
       element: 'Element',
       course: 'Kurs',
       liveQuiz: 'Live-Quiz',
@@ -3137,11 +3133,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivity: 'Gruppenaktivität',
       answerCollection: 'Antwortsammlung',
       noActivity: 'Noch keine Aktivitäten.',
-      addMessage: 'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
+      addMessage:
+        'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
       messageInputPlaceholder: 'Nachricht eingeben...',
       send: 'Senden',
       sending: 'Wird gesendet...',
-      missingId: 'Objekt-ID fehlt. Aktivitätsprotokoll kann nicht angezeigt werden.',
+      missingId:
+        'Objekt-ID fehlt. Aktivitätsprotokoll kann nicht angezeigt werden.',
     },
   },
 }

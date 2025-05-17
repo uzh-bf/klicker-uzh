@@ -14,8 +14,9 @@ import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useActivityLogAction from '../../../lib/hooks/useActivityLogAction'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
-import ActivityLogButton from '../../sharing/ActivityLogButton'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
@@ -47,7 +48,16 @@ function AnswerCollectionItem({
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
+  // Get activity log action for dropdown menu
+  const activityLogAction = useActivityLogAction({
+    objectId: collection.id,
+    objectType: ObjectType.AnswerCollection,
+    setActivityLogOpen,
+  })
+
+  // Get dropdown items from hook
   const dropdownItems = useAnswerCollectionActionsDropdown({
     isOwner: collection.isOwner ?? false,
     isManager: collection.isManager ?? false,
@@ -60,6 +70,9 @@ function AnswerCollectionItem({
     setRemovalModal,
     setDeletionModal,
   })
+
+  // Add activity log action to the beginning of the dropdown items
+  const allDropdownItems = [activityLogAction, ...dropdownItems]
 
   return (
     <>
@@ -135,16 +148,9 @@ function AnswerCollectionItem({
             </div>
           )}
 
-          <ActivityLogButton
-            objectId={collection.id}
-            objectType={ObjectType.AnswerCollection}
-            size="sm"
-            className="h-8 w-8 p-0"
-          />
-
-          {dropdownItems.length > 0 && (
+          {allDropdownItems.length > 0 && (
             <Dropdown
-              items={dropdownItems}
+              items={allDropdownItems}
               trigger={
                 <Button
                   basic
@@ -210,6 +216,15 @@ function AnswerCollectionItem({
           setRemovalFailure={setRemovalFailure}
         />
       )}
+
+      {/* Activity log dialog */}
+      <ActivityLogDialog
+        objectId={collection.id}
+        objectType={ObjectType.AnswerCollection}
+        trigger={<></>} // Empty trigger as we're controlling the dialog open state manually
+        open={activityLogOpen}
+        onOpenChange={setActivityLogOpen}
+      />
     </>
   )
 }
