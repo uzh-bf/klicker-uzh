@@ -3,7 +3,6 @@ import {
   ActivityType,
   CatalogObject,
   ObjectSharingRequest,
-  SharingObjectType,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -934,7 +933,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.catalogCollection.name,
-          objectType: SharingObjectType.CATALOG_COLLECTION,
+          objectType: DB.ObjectType.CATALOG_COLLECTION,
         })
       }
 
@@ -946,7 +945,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.answerCollection.name,
-          objectType: SharingObjectType.ANSWER_COLLECTION,
+          objectType: DB.ObjectType.ANSWER_COLLECTION,
         })
       }
 
@@ -958,7 +957,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.element.name,
-          objectType: SharingObjectType.ELEMENT,
+          objectType: DB.ObjectType.ELEMENT,
         })
       }
 
@@ -4829,7 +4828,7 @@ export async function getCatalogObjects(
           id: assignment.id,
           objectId: answerCollection.id,
           name: answerCollection.name,
-          objectType: SharingObjectType.ANSWER_COLLECTION,
+          objectType: DB.ObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4849,7 +4848,7 @@ export async function getCatalogObjects(
           id: assignment.id,
           objectId: element.id,
           name: element.name,
-          objectType: SharingObjectType.ELEMENT,
+          objectType: DB.ObjectType.ELEMENT,
           access: assignment.access,
           ownerShortname: element.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4873,7 +4872,7 @@ export async function getCatalogObjects(
           objectUuid: liveQuiz.id,
           name: liveQuiz.name,
           templateId: liveQuiz.templateInfo?.id,
-          objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
+          objectType: DB.ObjectType.LIVE_QUIZ,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -5050,7 +5049,7 @@ export async function addObjectToCatalog(
   let objectInfo: {
     objectId?: number
     objectUuid?: string
-    objectType: SharingObjectType
+    objectType: DB.ObjectType
     objectName: string
     ownerShortname?: string
     ownerId?: string | null
@@ -5092,7 +5091,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: answerCollection.id,
       objectUuid: undefined,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: DB.ObjectType.ANSWER_COLLECTION,
       objectName: answerCollection.name,
       ownerShortname: answerCollection.owner?.shortname,
       ownerId: answerCollection.ownerId,
@@ -5131,7 +5130,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: element.id,
       objectUuid: undefined,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: DB.ObjectType.ELEMENT,
       objectName: element.name,
       ownerShortname: element.owner?.shortname,
       ownerId: element.ownerId,
@@ -5172,7 +5171,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: undefined,
       objectUuid: liveQuiz.id,
-      objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
+      objectType: DB.ObjectType.LIVE_QUIZ,
       objectName: liveQuiz.name,
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,

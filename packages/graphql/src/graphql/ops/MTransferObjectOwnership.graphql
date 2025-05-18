@@ -1,6 +1,6 @@
 mutation TransferObjectOwnership(
   $objectId: String!
-  $objectType: SharingObjectType!
+  $objectType: ObjectType!
   $shortnameOrEmail: String!
 ) {
   transferObjectOwnership(

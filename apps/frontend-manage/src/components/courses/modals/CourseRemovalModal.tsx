@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetUserCoursesDocument,
+  ObjectType,
   RemoveObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -52,7 +52,7 @@ function CourseRemovalModal({
         await removeObject({
           variables: {
             objectId: courseId,
-            objectType: SharingObjectType.Course,
+            objectType: ObjectType.Course,
           },
           refetchQueries: [{ query: GetUserCoursesDocument }],
         })

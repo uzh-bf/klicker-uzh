@@ -3,7 +3,7 @@ import {
   GetAnswerCollectionsInfoDocument,
   GetUserElementsDocument,
   ImportCatalogObjectDocument,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object import, returns success boolean
@@ -13,7 +13,7 @@ function useImportCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -21,7 +21,7 @@ function useImportCatalogObject({
   const [importCatalogObject, { loading: importingCatalogObject }] =
     useMutation(ImportCatalogObjectDocument)
 
-  if (objectType === SharingObjectType.CatalogCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     return {
       onImport: async () => {
         console.error('Unsupported object type', objectType)
@@ -40,10 +40,10 @@ function useImportCatalogObject({
           catalogCollectionId,
         },
         refetchQueries: [
-          ...(objectType === SharingObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
-          ...(objectType === SharingObjectType.Element
+          ...(objectType === ObjectType.Element
             ? [{ query: GetUserElementsDocument }]
             : []),
         ],

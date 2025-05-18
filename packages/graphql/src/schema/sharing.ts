@@ -2,7 +2,6 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   CatalogObject as CatalogObjectInterface,
   ObjectSharingRequest as ObjectSharingRequestType,
-  SharingObjectType as SharingObjectTypeEnum,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
@@ -12,12 +11,11 @@ export const ObjectAccess = builder.enumType('ObjectAccess', {
   values: Object.values(DB.ObjectAccess),
 })
 
-export const SharingObjectType = builder.enumType('SharingObjectType', {
-  values: Object.values(SharingObjectTypeEnum),
-})
-
 export const ObjectType = builder.enumType('ObjectType', {
-  values: Object.values(DB.ObjectType),
+  values: Object.values(DB.ObjectType).filter(
+    // exclude user group from the graphql object type
+    (type) => type !== DB.ObjectType.USER_GROUP
+  ) as DB.ObjectType[],
 })
 
 export const SharingType = builder.enumType('SharingType', {
@@ -62,7 +60,7 @@ export const CatalogObject = CatalogObjectRef.implement({
     objectId: t.exposeInt('objectId', { nullable: true }), // object id
     objectUuid: t.exposeString('objectUuid', { nullable: true }), // object uuid
     name: t.exposeString('name'),
-    objectType: t.expose('objectType', { type: SharingObjectType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     templateId: t.exposeString('templateId', { nullable: true }),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
@@ -92,7 +90,7 @@ export const ObjectSharingRequest = ObjectSharingRequestRef.implement({
   fields: (t) => ({
     requestId: t.exposeInt('requestId'),
     objectName: t.exposeString('objectName'),
-    objectType: t.expose('objectType', { type: SharingObjectType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     userId: t.exposeString('userId'),
     userShortname: t.exposeString('userShortname'),
     userEmail: t.exposeString('userEmail'),

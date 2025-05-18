@@ -1,19 +1,16 @@
-import {
-  PermissionLevel,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
-function usePermissionLevelSelection({ type }: { type: SharingObjectType }) {
+function usePermissionLevelSelection({ type }: { type: ObjectType }) {
   const t = useTranslations()
 
   // execution rights are only available for activities and courses
   const showExecution =
-    type === SharingObjectType.Course ||
-    type === SharingObjectType.LiveQuiz ||
-    type === SharingObjectType.PracticeQuiz ||
-    type === SharingObjectType.MicroLearning ||
-    type === SharingObjectType.GroupActivity
+    type === ObjectType.Course ||
+    type === ObjectType.LiveQuiz ||
+    type === ObjectType.PracticeQuiz ||
+    type === ObjectType.MicroLearning ||
+    type === ObjectType.GroupActivity
 
   // default case: no execution permissions, all other access levels
   return [

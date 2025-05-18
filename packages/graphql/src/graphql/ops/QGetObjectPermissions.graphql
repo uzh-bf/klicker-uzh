@@ -1,7 +1,4 @@
-query GetObjectPermissions(
-  $objectId: String!
-  $objectType: SharingObjectType!
-) {
+query GetObjectPermissions($objectId: String!, $objectType: ObjectType!) {
   getObjectPermissions(objectId: $objectId, objectType: $objectType) {
     ...PermissionInfoData
   }

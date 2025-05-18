@@ -3,10 +3,7 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  PermissionLevel,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import useObjectActionPermissions from './useObjectActionPermissions'
@@ -15,7 +12,7 @@ function PermissionsTable({
   objectType,
   activePermissionLevel,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()
@@ -23,11 +20,11 @@ function PermissionsTable({
 
   // execution rights are only available for activities and courses
   const showExecution =
-    objectType === SharingObjectType.Course ||
-    objectType === SharingObjectType.LiveQuiz ||
-    objectType === SharingObjectType.PracticeQuiz ||
-    objectType === SharingObjectType.MicroLearning ||
-    objectType === SharingObjectType.GroupActivity
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {

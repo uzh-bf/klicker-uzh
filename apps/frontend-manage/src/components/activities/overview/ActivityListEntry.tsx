@@ -169,6 +169,7 @@ function ActivityListEntry({
           {activity.type === ActivityType.LiveQuiz ? (
             <LiveQuizActions
               liveQuiz={activity}
+              isTemplate={!!activity.templateId}
               sharingModal={sharingModal}
               setSharingModal={setSharingModal}
             />
@@ -176,6 +177,7 @@ function ActivityListEntry({
           {activity.type === ActivityType.PracticeQuiz ? (
             <PracticeQuizActions
               practiceQuiz={activity}
+              isTemplate={!!activity.templateId}
               sharingModal={sharingModal}
               setSharingModal={setSharingModal}
             />
@@ -183,6 +185,7 @@ function ActivityListEntry({
           {activity.type === ActivityType.MicroLearning ? (
             <MicrolearningActions
               microLearning={activity}
+              isTemplate={!!activity.templateId}
               sharingModal={sharingModal}
               setSharingModal={setSharingModal}
             />
@@ -190,6 +193,7 @@ function ActivityListEntry({
           {activity.type === ActivityType.GroupActivity ? (
             <GroupActivityActions
               groupActivity={activity}
+              isTemplate={!!activity.templateId}
               sharingModal={sharingModal}
               setSharingModal={setSharingModal}
             />

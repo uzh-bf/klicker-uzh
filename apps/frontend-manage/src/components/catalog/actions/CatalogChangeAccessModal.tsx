@@ -5,7 +5,7 @@ import {
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -22,7 +22,7 @@ function CatalogChangeAccessModal({
 }: {
   open: boolean
   onClose: () => void
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectName: string
   assignmentId?: number
   newAccess: ObjectAccess

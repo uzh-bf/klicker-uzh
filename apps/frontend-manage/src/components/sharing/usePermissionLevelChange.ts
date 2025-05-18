@@ -6,8 +6,8 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  ObjectType,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to change the permission level for a certain object
@@ -17,7 +17,7 @@ function usePermissionLevelChange({
   catalogCollectionId,
 }: {
   objectId: string | number
-  objectType: SharingObjectType
+  objectType: ObjectType
   catalogCollectionId?: string
 }): {
   onPermissionLevelChange: ({
@@ -87,7 +87,7 @@ function usePermissionLevelChange({
             variables: { catalogCollectionId },
           },
           { query: GetCatalogSharingRequestsDocument },
-          ...(objectType === SharingObjectType.CatalogCollection
+          ...(objectType === ObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -95,7 +95,7 @@ function usePermissionLevelChange({
                 },
               ]
             : []),
-          ...(objectType === SharingObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],

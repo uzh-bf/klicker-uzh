@@ -1,6 +1,6 @@
 mutation CancelObjectSharingRequest(
   $objectId: String!
-  $objectType: SharingObjectType!
+  $objectType: ObjectType!
 ) {
   cancelObjectSharingRequest(objectId: $objectId, objectType: $objectType)
 }

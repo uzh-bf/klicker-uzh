@@ -357,7 +357,6 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
-      USER_GROUP: 'User Group',
     },
     contentInput: {
       boldStyle:
@@ -2607,6 +2606,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeELEMENTtitle: 'Remove Element from Catalog',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
+      removePRACTICE_QUIZ_TEMPLATE: '',
+      removePRACTICE_QUIZ_TEMPLATEtitle: '',
+      removeMICRO_LEARNING_TEMPLATE: '',
+      removeMICRO_LEARNING_TEMPLATEtitle: '',
+      removeGROUP_ACTIVITY_TEMPLATE: '',
+      removeGROUP_ACTIVITY_TEMPLATEtitle: '',
       removeLIVE_QUIZ: 'Remove Live-Quiz',
       removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
       removePRACTICE_QUIZ: 'Remove Practice Quiz',
@@ -2660,8 +2665,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
-      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
-        'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestSuccessInfoLIVE_QUIZ: '',
       requestSuccessInfoPRACTICE_QUIZ: '',
       requestSuccessInfoMICRO_LEARNING: '',
@@ -2755,6 +2758,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipPRACTICE_QUIZ_TEMPLATE: '',
+      infoTransferOwnershipMICRO_LEARNING_TEMPLATE: '',
+      infoTransferOwnershipGROUP_ACTIVITY_TEMPLATE: '',
       infoTransferOwnershipELEMENT:
         'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ:
@@ -2769,7 +2775,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the course <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this course and get irrevokable admin access to all contained activities and elements (according to the permission propagation), while you will retain admin access to the course. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
-      shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       shareLIVE_QUIZ: 'Share Live Quiz',
       sharePRACTICE_QUIZ: 'Share Practice Quiz',
       shareMICRO_LEARNING: 'Share Microlearning',
@@ -2780,8 +2785,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
-      infoSharingLIVE_QUIZ_TEMPLATE:
-        'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       infoSharingLIVE_QUIZ:
         'This view allows you to share the live quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
       infoSharingPRACTICE_QUIZ:
@@ -2797,7 +2800,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       propagatedPermissions: 'Propagated Permissions',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
-      propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
       propagatedPermissionsELEMENT:
         'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
       propagatedPermissionsLIVE_QUIZ:

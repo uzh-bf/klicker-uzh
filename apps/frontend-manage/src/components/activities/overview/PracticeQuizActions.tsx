@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
@@ -57,10 +57,12 @@ const statusActionMap = {
 
 function PracticeQuizActions({
   practiceQuiz,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   practiceQuiz: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
@@ -149,7 +151,8 @@ function PracticeQuizActions({
           <ObjectSharingModalWrapper
             objectUuid={practiceQuiz.id}
             objectName={practiceQuiz.name}
-            objectType={SharingObjectType.PracticeQuiz}
+            objectType={ObjectType.PracticeQuiz}
+            isTemplate={isTemplate}
             isOwner={practiceQuiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
