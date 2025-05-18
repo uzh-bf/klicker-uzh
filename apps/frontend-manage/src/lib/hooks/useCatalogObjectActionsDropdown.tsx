@@ -71,8 +71,7 @@ function useCatalogObjectActionsDropdown({
     if (
       !actionsDisabled &&
       !object.isRequested &&
-      object.objectType !== ObjectType.LiveQuiz &&
-      !!object.templateId
+      object.objectType !== ObjectType.LiveQuiz
     ) {
       items.push({
         id: 'requestAccess',
@@ -128,11 +127,7 @@ function useCatalogObjectActionsDropdown({
 
     // sufficient permissions on the object (ADMIN / OWNER) are always deciding for whether or not to show the sharing dialog
     // TODO: remove the case for live quiz templates once the corresponding sharing functionality is available
-    if (
-      object.isManager &&
-      object.objectType !== ObjectType.LiveQuiz &&
-      !!object.templateId
-    ) {
+    if (object.isManager && object.objectType !== ObjectType.LiveQuiz) {
       items.push({
         id: 'share',
         label: (

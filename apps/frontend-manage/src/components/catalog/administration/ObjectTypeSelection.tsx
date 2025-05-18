@@ -67,7 +67,12 @@ function ObjectTypeSelection({
                     ? `shared.types.${objectType}_TEMPLATE`
                     : `shared.types.${objectType}`
                 ),
-                data: { cy: `object-type-${objectType}` },
+                data: {
+                  cy:
+                    objectType === ObjectType.LiveQuiz
+                      ? `object-type-${objectType}_TEMPLATE`
+                      : `object-type-${objectType}`,
+                },
               }))}
             data={{ cy: 'object-type-selection' }}
             className={{ select: { trigger: 'h-9' } }}
