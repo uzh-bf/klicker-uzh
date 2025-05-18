@@ -213,6 +213,50 @@ After completing the automatic activity tracking:
 4. Activity analytics and reporting
 5. Integration with external notification systems
 
+## End-to-End Testing Plan
+
+To ensure the stability and correctness of the ActivityLog implementation, we will create comprehensive end-to-end tests using Cypress. These tests will focus on the currently implemented functionality while providing a framework for testing future enhancements.
+
+### Testing Approach
+
+1. **Test Coverage Areas**:
+
+   - ActivityLog access from element dropdown menus in the library
+   - ActivityLog access from element edit modals as a tabbed interface
+   - Message creation and submission
+   - Display of title modification entries
+
+2. **Test File Structure**:
+
+   - Create a new test file named `W-activity-log-workflow.cy.ts`
+   - Follow the existing alphabetical naming convention
+   - Organize tests in logical describe blocks
+
+3. **Test Scenarios**:
+
+   - **Basic Access Tests**:
+
+     - Verify ActivityLog dialog opens from element dropdown menu
+     - Verify ActivityLog tab is accessible in element edit modal
+     - Ensure both entry points show the same data
+
+   - **Message Functionality Tests**:
+     - Create a new message in the activity log
+     - Verify message appears in the log immediately
+     - Confirm message persistence when reopening logs
+   - **Modification Tracking Tests**:
+     - Modify an element's title
+     - Verify a MODIFICATION entry appears in the activity log
+     - Confirm the entry shows the previous and new title values
+     - Test modifying element status and verify tracking
+
+4. **Setup Requirements**:
+   - Extend existing element fixtures with activity-related data
+   - Create helper functions for common activity operations
+   - Ensure test isolation for reliable results
+
+This testing plan focuses on currently implemented functionality while providing a structure that can be expanded as new features like message resolution are fully implemented.
+
 ## Centralized Activity Dashboard
 
 A dedicated Activity Dashboard will provide users with a centralized overview of all activities across their accessible resources. This comprehensive view will enhance collaboration and awareness.

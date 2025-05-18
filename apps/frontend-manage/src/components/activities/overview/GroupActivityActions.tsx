@@ -1,12 +1,14 @@
+import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
   ObjectType,
   PublicationStatus,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
@@ -25,6 +27,7 @@ const statusActionMap = {
     'publishGroupActivity',
     'editGroupActivity',
     'shareGroupActivity',
+    'activityLog',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
@@ -32,6 +35,7 @@ const statusActionMap = {
     'startGroupActivityNow',
     'shareGroupActivity',
     'unpublishGroupActivity',
+    'activityLog',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
@@ -39,6 +43,7 @@ const statusActionMap = {
     'extendGroupActivity',
     'endGroupActivity',
     'shareGroupActivity',
+    'activityLog',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
@@ -46,31 +51,17 @@ const statusActionMap = {
     'gradeGroupActivity',
     'shareGroupActivity',
     'removeGroupActivity',
+    'activityLog',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Graded]: [
     'gradeGroupActivity',
     'shareGroupActivity',
     'removeGroupActivity',
+    'activityLog',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Template]: [],
-}
-
-// limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
-const permissionActionMap = {
-  isManager: ['shareGroupActivity', 'deleteGroupActivity'],
-  isEditor: ['editGroupActivity'],
-  isExecutor: [
-    'publishGroupActivity',
-    'unpublishGroupActivity',
-    'startGroupActivityNow',
-    'extendGroupActivity',
-    'endGroupActivity',
-    'gradeGroupActivity',
-  ],
-  isShared: [],
-  isRemovable: ['removeGroupActivity'],
 }
 
 function GroupActivityActions({
@@ -92,6 +83,29 @@ function GroupActivityActions({
   const [extensionModal, setExtensionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
+  // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
+  const permissionActionMap = useMemo(() => {
+    return {
+      isManager: ['shareGroupActivity', 'deleteGroupActivity'],
+      isEditor: ['editGroupActivity'],
+      isExecutor: [
+        'publishGroupActivity',
+        'unpublishGroupActivity',
+        'startGroupActivityNow',
+        'extendGroupActivity',
+        'endGroupActivity',
+        'gradeGroupActivity',
+      ],
+      isShared: [...(user?.publicPreview ? ['activityLog'] : [])],
+      isRemovable: ['removeGroupActivity'],
+    }
+  }, [user?.publicPreview])
 
   const actions = useGroupActivityActions({
     groupActivity,

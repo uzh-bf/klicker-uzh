@@ -1,11 +1,13 @@
+import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   ObjectType,
   PublicationStatus,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../../courses/modals/TemplateCreationErrorToast'
@@ -33,6 +35,7 @@ const statusActionMap = {
     'startLiveQuiz',
     'editLiveQuiz',
     'qrCode',
+    'activityLog',
     'embeddingEvaluation',
     'duplicateLiveQuiz',
     'templateFromLiveQuiz',
@@ -44,6 +47,7 @@ const statusActionMap = {
     'startLiveQuiz',
     'duplicateLiveQuiz',
     'qrCode',
+    'activityLog',
     'embeddingEvaluation',
     'shareLiveQuiz',
     'removeLiveQuiz',
@@ -53,6 +57,7 @@ const statusActionMap = {
     'lecturerCockpit',
     'liveQuizEvaluation',
     'qrCode',
+    'activityLog',
     'embeddingEvaluation',
     'duplicateLiveQuiz',
     'shareLiveQuiz',
@@ -62,6 +67,7 @@ const statusActionMap = {
     'liveQuizEvaluation',
     'duplicateLiveQuiz',
     'embeddingEvaluation',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -72,26 +78,6 @@ const statusActionMap = {
     'deleteTemplate',
   ],
   [PublicationStatus.Graded]: [],
-}
-
-// limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
-const permissionActionMap = {
-  isManager: [
-    'duplicateLiveQuiz',
-    'templateFromLiveQuiz',
-    'shareLiveQuiz',
-    'deleteLiveQuiz',
-    'deleteTemplate',
-  ],
-  isEditor: ['editLiveQuiz', 'editTemplate'],
-  isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
-  isShared: [
-    'qrCode',
-    'embeddingEvaluation',
-    'liveQuizEvaluation',
-    'useTemplate',
-  ],
-  isRemovable: ['removeLiveQuiz'],
 }
 
 function LiveQuizActions({
@@ -131,6 +117,34 @@ function LiveQuizActions({
     name: liveQuiz.name,
   })
   const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
+  // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
+  const permissionActionMap = useMemo(() => {
+    return {
+      isManager: [
+        'duplicateLiveQuiz',
+        'templateFromLiveQuiz',
+        'shareLiveQuiz',
+        'deleteLiveQuiz',
+        'deleteTemplate',
+      ],
+      isEditor: ['editLiveQuiz', 'editTemplate'],
+      isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+      isShared: [
+        'qrCode',
+        'embeddingEvaluation',
+        'liveQuizEvaluation',
+        'useTemplate',
+        ...(user?.publicPreview ? ['activityLog'] : []),
+      ],
+      isRemovable: ['removeLiveQuiz'],
+    }
+  }, [user?.publicPreview])
 
   const actions = useLiveQuizActions({
     quiz: liveQuiz,

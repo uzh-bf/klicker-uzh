@@ -195,7 +195,7 @@ function usePracticeQuizActions({
       ...(withActivityLog
         ? [
             {
-              id: 'activity-log',
+              id: 'activityLog',
               label: t('shared.activity.viewActivityLog'),
               icon: faMessage,
               onClick: () => setActivityLogOpen(true),
