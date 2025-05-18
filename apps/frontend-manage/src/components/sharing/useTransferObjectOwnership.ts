@@ -9,7 +9,7 @@ import {
   GetUserActivitiesDocument,
   GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
-  SharingObjectType,
+  ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -19,7 +19,7 @@ function useTransferObjectOwnership({
   catalogCollectionId,
   onError,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -46,10 +46,10 @@ function useTransferObjectOwnership({
             variables: { objectId: String(objectId), objectType },
           },
           { query: GetCatalogSharingRequestsDocument },
-          ...(objectType === SharingObjectType.CatalogCollection
+          ...(objectType === ObjectType.CatalogCollection
             ? [{ query: GetCatalogCollectionsListDocument }]
             : []),
-          ...(objectType === SharingObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [
                 {
                   query: GetCatalogObjectsDocument,
@@ -58,10 +58,10 @@ function useTransferObjectOwnership({
                 { query: GetAnswerCollectionsInfoDocument },
               ]
             : []),
-          ...(objectType === SharingObjectType.Element
+          ...(objectType === ObjectType.Element
             ? [{ query: GetUserElementsDocument }]
             : []),
-          ...(objectType === SharingObjectType.Course
+          ...(objectType === ObjectType.Course
             ? [
                 {
                   query: GetSingleCourseDocument,
@@ -69,19 +69,19 @@ function useTransferObjectOwnership({
                 },
               ]
             : []),
-          ...(objectType === SharingObjectType.LiveQuiz
+          ...(objectType === ObjectType.LiveQuiz
             ? [
                 { query: GetUserLiveQuizzesDocument },
                 { query: GetUserActivitiesDocument },
               ]
             : []),
-          ...(objectType === SharingObjectType.PracticeQuiz
+          ...(objectType === ObjectType.PracticeQuiz
             ? [{ query: GetUserActivitiesDocument }]
             : []),
-          ...(objectType === SharingObjectType.MicroLearning
+          ...(objectType === ObjectType.MicroLearning
             ? [{ query: GetUserActivitiesDocument }]
             : []),
-          ...(objectType === SharingObjectType.GroupActivity
+          ...(objectType === ObjectType.GroupActivity
             ? [{ query: GetUserActivitiesDocument }]
             : []),
         ],

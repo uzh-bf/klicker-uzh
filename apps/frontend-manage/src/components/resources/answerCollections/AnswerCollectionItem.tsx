@@ -5,11 +5,7 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollection,
-  ObjectType,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -190,7 +186,7 @@ function AnswerCollectionItem({
           <ObjectSharingModalWrapper
             objectId={collection.id}
             objectName={collection.name}
-            objectType={SharingObjectType.AnswerCollection}
+            objectType={ObjectType.AnswerCollection}
             isOwner={collection.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}

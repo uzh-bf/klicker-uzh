@@ -2,9 +2,9 @@ import { useMutation } from '@apollo/client'
 import {
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
+  ObjectType,
   RequestCatalogCollectionDocument,
   RequestCatalogObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger access request creation, returns success boolean
@@ -14,7 +14,7 @@ function useRequestCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -24,7 +24,7 @@ function useRequestCatalogObject({
   const [requestCatalogObject, { loading: requestingCatalogObject }] =
     useMutation(RequestCatalogObjectDocument)
 
-  if (objectType === SharingObjectType.CatalogCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     const onRequestCatalogCollection = async () => {
       try {
         const res = await requestCatalogCollection({

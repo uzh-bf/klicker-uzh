@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -216,7 +215,7 @@ Cypress.Commands.add(
 
 interface AddObjectToCatalogArgs {
   objectName: string
-  objectType: SharingObjectType
+  objectType: string // --> DB.ObjectType
   permissionLevel: 'public' | 'restricted'
 }
 

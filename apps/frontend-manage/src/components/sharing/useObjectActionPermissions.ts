@@ -1,14 +1,14 @@
-import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useObjectActionPermissions({
   objectType,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
 }): { action: string; permissions: boolean[] }[] {
   const t = useTranslations()
 
-  if (objectType === SharingObjectType.CatalogCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     return [
       {
         action: t('manage.catalog.browseCatalogCollection'),
@@ -19,7 +19,7 @@ function useObjectActionPermissions({
         permissions: [false, true, true, true],
       },
       {
-        action: t(`manage.sharing.share${SharingObjectType.CatalogCollection}`),
+        action: t(`manage.sharing.share${ObjectType.CatalogCollection}`),
         permissions: [false, false, true, true],
       },
       {
@@ -39,7 +39,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.AnswerCollection) {
+  } else if (objectType === ObjectType.AnswerCollection) {
     return [
       {
         action: t('manage.resources.viewUseCollectionContent'),
@@ -74,7 +74,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.Element) {
+  } else if (objectType === ObjectType.Element) {
     return [
       {
         action: t('manage.elements.viewElement'),
@@ -117,7 +117,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.LiveQuiz) {
+  } else if (objectType === ObjectType.LiveQuiz) {
     return [
       {
         action: t('manage.liveQuizzes.viewLiveQuiz'),
@@ -172,7 +172,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.PracticeQuiz) {
+  } else if (objectType === ObjectType.PracticeQuiz) {
     return [
       {
         action: t('manage.practiceQuizzes.viewPracticeQuiz'),
@@ -223,7 +223,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.MicroLearning) {
+  } else if (objectType === ObjectType.MicroLearning) {
     return [
       {
         action: t('manage.microLearnings.viewMicroLearning'),
@@ -278,7 +278,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.GroupActivity) {
+  } else if (objectType === ObjectType.GroupActivity) {
     return [
       {
         action: t('manage.groupActivities.viewGroupActivity'),
@@ -329,7 +329,7 @@ function useObjectActionPermissions({
         permissions: [false, false, false, false, true],
       },
     ]
-  } else if (objectType === SharingObjectType.Course) {
+  } else if (objectType === ObjectType.Course) {
     return [
       {
         action: t('manage.course.viewCourse'),

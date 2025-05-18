@@ -2046,9 +2046,17 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    const activityEXECUTEPermissions = await prisma.permission.create({
       data: {
         userId: userThree.id,
+        liveQuizId: activity.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const activityWRITEPermissions = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.WRITE,
         propagation,
@@ -2056,17 +2064,9 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
     const activityADMINPermissions = await prisma.permission.create({
       data: {
-        userId: userFour.id,
-        liveQuizId: activity.id,
-        permissionLevel: PermissionLevel.ADMIN,
-        propagation,
-      },
-    })
-    const activityEXECUTEPermissions = await prisma.permission.create({
-      data: {
         userId: userFive.id,
         liveQuizId: activity.id,
-        permissionLevel: PermissionLevel.EXECUTE,
+        permissionLevel: PermissionLevel.ADMIN,
         propagation,
       },
     })
@@ -2075,7 +2075,10 @@ describe('Unit tests covering the creation of derived permissions for activities
     await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
 
     // verify that the correct derived permission entries have been created on the activity (min. required = propagation enabled)
-    // user 2 (no access), user 3 (no access), user 4 (ADMIN - activity), user 5 (no access)
+    // user 2 (no access when min. required, READ access when propagation enabled),
+    // user 3 (no access when min. required, READ access when propagation enabled),
+    // user 4 (no access when min. required, WRITE access when propagation enabled),
+    // user 5 (ADMIN access - min. required = propagated)
     const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
       where: {
         elementId_userId: {
@@ -2084,7 +2087,19 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       },
     })
-    expect(derivedPermissionUserTwo).toBeNull()
+
+    if (propagation) {
+      expect(derivedPermissionUserTwo).toBeTruthy()
+      expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+        PermissionLevel.READ
+      )
+      expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+        activityREADPermissions.id
+      )
+      expect(derivedPermissionUserTwo!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserTwo).toBeNull()
+    }
 
     const derivedPermissionUserThree =
       await prisma.derivedPermission.findUnique({
@@ -2095,7 +2110,19 @@ describe('Unit tests covering the creation of derived permissions for activities
           },
         },
       })
-    expect(derivedPermissionUserThree).toBeNull()
+
+    if (propagation) {
+      expect(derivedPermissionUserThree).toBeTruthy()
+      expect(derivedPermissionUserThree!.permissionLevel).toBe(
+        PermissionLevel.READ
+      )
+      expect(derivedPermissionUserThree!.directPermissionId).toBe(
+        activityEXECUTEPermissions.id
+      )
+      expect(derivedPermissionUserThree!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserThree).toBeNull()
+    }
 
     const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
       {
@@ -2107,14 +2134,19 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       }
     )
-    expect(derivedPermissionUserFour).toBeTruthy()
-    expect(derivedPermissionUserFour!.permissionLevel).toBe(
-      PermissionLevel.ADMIN
-    )
-    expect(derivedPermissionUserFour!.directPermissionId).toBe(
-      activityADMINPermissions.id
-    )
-    expect(derivedPermissionUserFour!.derived).toBeTruthy()
+
+    if (propagation) {
+      expect(derivedPermissionUserFour).toBeTruthy()
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.WRITE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        activityWRITEPermissions.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserFour).toBeNull()
+    }
 
     const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
       {
@@ -2126,7 +2158,15 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       }
     )
-    expect(derivedPermissionUserFive).toBeNull()
+
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      activityADMINPermissions.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeTruthy()
   }
 
   it('LQ: Verify that minimum required permissions are correctly granted on elements for individual users', async () => {
@@ -2164,7 +2204,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         name: 'User Group 4',
         ownerId: userOne.id,
         members: {
-          connect: [{ id: userThree.id }, { id: userFour.id }],
+          connect: [{ id: userFour.id }],
         },
       },
     })
@@ -2173,7 +2213,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         name: 'User Group 5',
         ownerId: userOne.id,
         members: {
-          connect: [{ id: userFour.id }, { id: userFive.id }],
+          connect: [{ id: userFive.id }],
         },
       },
     })
@@ -2187,9 +2227,17 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    const activityEXECUTEPermissions = await prisma.permission.create({
       data: {
         userGroupId: userGroup3.id,
+        liveQuizId: activity.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const activityWRITEPermissions = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup4.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.WRITE,
         propagation,
@@ -2197,17 +2245,9 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
     const activityADMINPermissions = await prisma.permission.create({
       data: {
-        userGroupId: userGroup4.id,
-        liveQuizId: activity.id,
-        permissionLevel: PermissionLevel.ADMIN,
-        propagation,
-      },
-    })
-    const activityEXECUTEPermissions = await prisma.permission.create({
-      data: {
         userGroupId: userGroup5.id,
         liveQuizId: activity.id,
-        permissionLevel: PermissionLevel.EXECUTE,
+        permissionLevel: PermissionLevel.ADMIN,
         propagation,
       },
     })
@@ -2216,7 +2256,10 @@ describe('Unit tests covering the creation of derived permissions for activities
     await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
 
     // verify that the correct derived permission entries have been created on the activity (min. required = propagation enabled)
-    // user 2 (no access), user 3 (ADMIN - activity), user 4 (ADMIN - activity), user 5 (no access)
+    // user 2 (no access when min. required, READ access when propagation enabled),
+    // user 3 (no access when min. required, READ access when propagation enabled),
+    // user 4 (no access when min. required, WRITE access when propagation enabled),
+    // user 5 (ADMIN access - min. required = propagated)
     const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
       where: {
         elementId_userId: {
@@ -2225,7 +2268,19 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       },
     })
-    expect(derivedPermissionUserTwo).toBeNull()
+
+    if (propagation) {
+      expect(derivedPermissionUserTwo).toBeTruthy()
+      expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+        PermissionLevel.READ
+      )
+      expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+        activityREADPermissions.id
+      )
+      expect(derivedPermissionUserTwo!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserTwo).toBeNull()
+    }
 
     const derivedPermissionUserThree =
       await prisma.derivedPermission.findUnique({
@@ -2236,14 +2291,19 @@ describe('Unit tests covering the creation of derived permissions for activities
           },
         },
       })
-    expect(derivedPermissionUserThree).toBeTruthy()
-    expect(derivedPermissionUserThree!.permissionLevel).toBe(
-      PermissionLevel.ADMIN
-    )
-    expect(derivedPermissionUserThree!.directPermissionId).toBe(
-      activityADMINPermissions.id
-    )
-    expect(derivedPermissionUserThree!.derived).toBeTruthy()
+
+    if (propagation) {
+      expect(derivedPermissionUserThree).toBeTruthy()
+      expect(derivedPermissionUserThree!.permissionLevel).toBe(
+        PermissionLevel.READ
+      )
+      expect(derivedPermissionUserThree!.directPermissionId).toBe(
+        activityEXECUTEPermissions.id
+      )
+      expect(derivedPermissionUserThree!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserThree).toBeNull()
+    }
 
     const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
       {
@@ -2255,14 +2315,19 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       }
     )
-    expect(derivedPermissionUserFour).toBeTruthy()
-    expect(derivedPermissionUserFour!.permissionLevel).toBe(
-      PermissionLevel.ADMIN
-    )
-    expect(derivedPermissionUserFour!.directPermissionId).toBe(
-      activityADMINPermissions.id
-    )
-    expect(derivedPermissionUserFour!.derived).toBeTruthy()
+
+    if (propagation) {
+      expect(derivedPermissionUserFour).toBeTruthy()
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.WRITE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        activityWRITEPermissions.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserFour).toBeNull()
+    }
 
     const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
       {
@@ -2274,7 +2339,14 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       }
     )
-    expect(derivedPermissionUserFive).toBeNull()
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      activityADMINPermissions.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeTruthy()
   }
 
   it('LQ: Verify that minimum required permissions are correctly granted on elements for user groups', async () => {

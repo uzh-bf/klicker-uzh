@@ -1,3 +1,4 @@
+import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import {
   ElementFormTypesCaseStudy,
   ElementFormTypesChoices,
@@ -11,7 +12,7 @@ import {
 interface PrepareContentArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesContent
+  values: ElementFormTypesContent & { status: ElementStatus }
 }
 export function prepareContentArgs({
   elementId,
@@ -32,7 +33,7 @@ export function prepareContentArgs({
 interface PrepareFlashcardArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesFlashcard
+  values: ElementFormTypesFlashcard & { status: ElementStatus }
 }
 export function prepareFlashcardArgs({
   elementId,
@@ -54,7 +55,7 @@ export function prepareFlashcardArgs({
 interface PrepareChoicesArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesChoices
+  values: ElementFormTypesChoices & { status: ElementStatus }
 }
 export function prepareChoicesArgs({
   elementId,
@@ -97,7 +98,7 @@ export function prepareChoicesArgs({
 interface PrepareNumericalArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesNumerical
+  values: ElementFormTypesNumerical & { status: ElementStatus }
 }
 export function prepareNumericalArgs({
   elementId,
@@ -167,7 +168,7 @@ export function prepareNumericalArgs({
 interface PrepareFreeTextArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesFreeText
+  values: ElementFormTypesFreeText & { status: ElementStatus }
 }
 export function prepareFreeTextArgs({
   elementId,
@@ -207,7 +208,7 @@ export function prepareFreeTextArgs({
 interface PrepareSelectionArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesSelection
+  values: ElementFormTypesSelection & { status: ElementStatus }
 }
 export function prepareSelectionArgs({
   elementId,
@@ -240,7 +241,7 @@ export function prepareSelectionArgs({
 interface PrepareCaseStudyArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesCaseStudy
+  values: ElementFormTypesCaseStudy & { status: ElementStatus }
 }
 export function prepareCaseStudyArgs({
   elementId,

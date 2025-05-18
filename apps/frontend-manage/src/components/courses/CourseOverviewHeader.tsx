@@ -10,7 +10,6 @@ import {
   Course,
   GetSingleCourseDocument,
   ObjectType,
-  SharingObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -265,7 +264,7 @@ function CourseOverviewHeader({
         <ObjectSharingModalWrapper
           objectUuid={course.id}
           objectName={course.name}
-          objectType={SharingObjectType.Course}
+          objectType={ObjectType.Course}
           isOwner={course.isOwner ?? false}
           open={sharingModal}
           onClose={() => setSharingModal(false)}

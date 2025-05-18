@@ -1,11 +1,19 @@
+import { useMutation } from '@apollo/client'
+import {
+  ChangeElementStatusDocument,
+  ElementStatus,
+  GetUserElementsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
   FormikSelectField,
   FormikTextField,
+  SelectField,
 } from '@uzh-bf/design-system'
+import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Suspense } from 'react'
+import { Dispatch, SetStateAction, Suspense, useState } from 'react'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
@@ -14,6 +22,9 @@ import useStatusOptions from './useStatusOptions'
 
 interface ElementInformationFieldsProps {
   isTemplate?: boolean
+  elementId?: number
+  elementStatus: ElementStatus
+  setElementStatus: Dispatch<SetStateAction<ElementStatus>>
   mode: ElementEditMode
   values: ElementFormTypes
   isSubmitting: boolean
@@ -22,6 +33,9 @@ interface ElementInformationFieldsProps {
 
 function ElementInformationFields({
   isTemplate = false,
+  elementId,
+  elementStatus,
+  setElementStatus,
   mode,
   values,
   isSubmitting,
@@ -30,6 +44,10 @@ function ElementInformationFields({
   const t = useTranslations()
   const statusOptions = useStatusOptions()
   const questionTypeOptions = useElementTypeOptions()
+  const { setFieldValue } = useFormikContext()
+
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [changeElementStatus] = useMutation(ChangeElementStatusDocument)
 
   return (
     <>
@@ -47,10 +65,45 @@ function ElementInformationFields({
         />
 
         {!isTemplate ? (
-          <FormikSelectField
-            name="status"
+          <SelectField
+            value={elementStatus}
+            onChange={async (newValue) => {
+              setStatusSaving(true)
+
+              if (typeof elementId !== 'undefined') {
+                await changeElementStatus({
+                  variables: { elementId, status: newValue as ElementStatus },
+                  update: (cache, { data }) => {
+                    // check if request was successful
+                    const success = data?.changeElementStatus
+                    if (!success) return
+
+                    // update element list
+                    const queryData = cache.readQuery({
+                      query: GetUserElementsDocument,
+                    })
+
+                    if (queryData?.userElements) {
+                      cache.writeQuery({
+                        query: GetUserElementsDocument,
+                        data: {
+                          userElements: queryData?.userElements.map((obj) =>
+                            obj.id === elementId
+                              ? { ...obj, status: newValue as ElementStatus }
+                              : obj
+                          ),
+                        },
+                      })
+                    }
+                  },
+                })
+              }
+
+              setElementStatus(newValue as ElementStatus)
+              setStatusSaving(false)
+            }}
             contentPosition="popper"
-            disabled={inputsDisabled || isSubmitting}
+            disabled={isSubmitting || statusSaving}
             label={t('manage.elements.questionStatus')}
             placeholder={t('manage.elements.selectQuestionStatus')}
             items={statusOptions}

@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 // global variable for ensured consistency with current dates
@@ -959,7 +958,7 @@ describe('Create different types of elements (with and without sample solution) 
     // add question to catalog as restricted object
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
 
@@ -1297,7 +1296,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
   })
@@ -1336,7 +1335,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1384,7 +1383,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'public',
     })
 

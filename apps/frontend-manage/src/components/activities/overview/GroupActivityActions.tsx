@@ -2,8 +2,8 @@ import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -74,10 +74,12 @@ const permissionActionMap = {
 
 function GroupActivityActions({
   groupActivity,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   groupActivity: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
@@ -126,7 +128,8 @@ function GroupActivityActions({
           <ObjectSharingModalWrapper
             objectUuid={groupActivity.id}
             objectName={groupActivity.name}
-            objectType={SharingObjectType.GroupActivity}
+            objectType={ObjectType.GroupActivity}
+            isTemplate={isTemplate}
             isOwner={groupActivity.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}

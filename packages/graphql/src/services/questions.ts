@@ -550,6 +550,23 @@ export async function manipulateQuestion(
   }
 }
 
+export async function changeElementStatus(
+  { elementId, status }: { elementId: number; status: DB.ElementStatus },
+  ctx: ContextWithUser
+) {
+  const element = await ctx.prisma.element.update({
+    where: { id: elementId },
+    data: { status },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: element.id,
+  })
+
+  return true
+}
+
 export async function deleteElement(
   { id }: { id: number },
   ctx: ContextWithUser
