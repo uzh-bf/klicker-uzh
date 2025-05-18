@@ -6646,6 +6646,7 @@ export async function getObjectActivity(
   activityLog = await ctx.prisma.activityLogEntry.findMany({
     where: filter,
     include: { user: { select: { shortname: true } } },
+    // TODO: change to asc when we want to change the ordering of the activity log
     orderBy: { createdAt: 'desc' },
   })
 

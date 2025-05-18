@@ -89,6 +89,8 @@ function ElementEditForm({
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+
+  const [activeTab, setActiveTab] = useState('preview')
   const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -282,12 +284,18 @@ function ElementEditForm({
               </div>
 
               {mode === ElementEditMode.EDIT ? (
-                <Tabs defaultValue="preview" className="w-full max-w-sm">
+                <Tabs
+                  defaultValue="preview"
+                  className="w-full max-w-sm"
+                  onValueChange={(value) => {
+                    setActiveTab(value)
+                  }}
+                >
                   <TabsList className="w-full">
                     <TabsTrigger value="preview" className="w-1/2 font-bold">
                       {t('shared.generic.preview')}
                     </TabsTrigger>
-                    <TabsTrigger value="changelog" className="w-1/2 font-bold">
+                    <TabsTrigger value="activity" className="w-1/2 font-bold">
                       {t('shared.generic.activity')}
                     </TabsTrigger>
                   </TabsList>
@@ -298,9 +306,10 @@ function ElementEditForm({
                       answerCollectionEntries={answerCollectionEntries}
                     />
                   </TabsContent>
-                  <TabsContent value="changelog">
+                  <TabsContent value="activity">
                     <div className="w-sm w-full flex-1">
                       <ActivityLog
+                        visible={activeTab === 'activity'}
                         objectId={elementId || ''}
                         objectType={ObjectType.Element}
                       />

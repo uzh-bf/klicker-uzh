@@ -213,11 +213,9 @@ function AnswerCollectionItem({
         />
       )}
 
-      {/* Activity log dialog */}
       <ActivityLogDialog
         objectId={collection.id}
         objectType={ObjectType.AnswerCollection}
-        trigger={<></>} // Empty trigger as we're controlling the dialog open state manually
         open={activityLogOpen}
         onOpenChange={setActivityLogOpen}
       />

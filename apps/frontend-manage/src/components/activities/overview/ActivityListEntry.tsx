@@ -229,7 +229,6 @@ function ActivityListEntry({
                 ? ObjectType.MicroLearning
                 : ObjectType.GroupActivity
         }
-        trigger={<></>}
         open={isActivityLogOpen}
         onOpenChange={setActivityLogOpen}
       />

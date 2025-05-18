@@ -64,7 +64,6 @@ function ActivityLogButton({
       <ActivityLogDialog
         objectId={objectId}
         objectType={objectType}
-        trigger={<></>} // Empty trigger as we're controlling the dialog open state manually
         open={isOpen}
         onOpenChange={setIsOpen}
       />

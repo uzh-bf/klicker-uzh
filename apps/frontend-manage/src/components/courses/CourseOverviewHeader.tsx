@@ -285,7 +285,6 @@ function CourseOverviewHeader({
       <ActivityLogDialog
         objectId={course.id}
         objectType={ObjectType.Course}
-        trigger={<></>}
         open={isActivityLogOpen}
         onOpenChange={setIsActivityLogOpen}
       />

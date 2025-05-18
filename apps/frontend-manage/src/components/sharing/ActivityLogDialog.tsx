@@ -1,5 +1,5 @@
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react'
 import ActivityLog from './ActivityLog'
@@ -65,21 +65,11 @@ function ActivityLogDialog({
           content: 'max-w-3xl',
         }}
       >
-        <div className="mb-4 mt-2">
-          <ActivityLog
-            objectId={objectId}
-            objectType={objectType}
-            onMessageAdded={() => {
-              // Optionally handle message added event
-            }}
-          />
-        </div>
-
-        <div className="mt-4 flex justify-end border-t border-gray-200 pt-4">
-          <Button onClick={handleClose} data-cy="activity-log-close">
-            {t('shared.generic.close')}
-          </Button>
-        </div>
+        <ActivityLog
+          visible={isOpen}
+          objectId={objectId}
+          objectType={objectType}
+        />
       </Modal>
     </>
   )

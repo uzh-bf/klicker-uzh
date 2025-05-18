@@ -410,11 +410,9 @@ function Element({
         />
       )}
 
-      {/* Activity log dialog */}
       <ActivityLogDialog
         objectId={element.id}
         objectType={ObjectType.Element}
-        trigger={<></>} // Empty trigger as we're controlling the dialog open state manually
         open={isActivityLogOpen}
         onOpenChange={setActivityLogOpen}
       />

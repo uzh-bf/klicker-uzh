@@ -215,7 +215,6 @@ function CourseListButton({
         <ActivityLogDialog
           objectId={course.id}
           objectType={ObjectType.Course}
-          trigger={<></>}
           open={activityLogOpen}
           onOpenChange={setActivityLogOpen}
         />

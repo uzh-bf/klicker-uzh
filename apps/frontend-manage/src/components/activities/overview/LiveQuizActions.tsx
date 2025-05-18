@@ -295,7 +295,6 @@ function LiveQuizActions({
           <ActivityLogDialog
             objectId={liveQuiz.id}
             objectType={ObjectType.LiveQuiz}
-            trigger={<></>}
             open={activityLogOpen}
             onOpenChange={setActivityLogOpen}
           />
