@@ -4,6 +4,7 @@ import { getNextBaseConfig, getNextPWAConfig } from '@klicker-uzh/next-config'
 let nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
+    NODE_ENV: process.env.NODE_ENV,
   }),
 }
 
