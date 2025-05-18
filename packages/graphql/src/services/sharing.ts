@@ -6652,6 +6652,7 @@ export async function getObjectActivity(
   return activityLog.map((entry) => ({
     ...entry,
     message:
+      // TODO: translation or do this in the UI dynamically
       entry.message ||
       (entry.type === DB.ActivityLogType.CREATION
         ? `User ${entry.user?.shortname} created this object.`

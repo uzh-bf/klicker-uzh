@@ -1,6 +1,5 @@
 import { faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 
@@ -10,38 +9,14 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
  */
 function useActivityLogAction({
   objectId,
-  objectType,
   setActivityLogOpen,
 }: {
   objectId: string | number
-  objectType: ObjectType
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
   return useMemo(() => {
-    // Get a display name for the object type
-    const objectTypeDisplay = (() => {
-      switch (objectType) {
-        case ObjectType.Element:
-          return t('shared.activity.element')
-        case ObjectType.Course:
-          return t('shared.activity.course')
-        case ObjectType.LiveQuiz:
-          return t('shared.activity.liveQuiz')
-        case ObjectType.PracticeQuiz:
-          return t('shared.activity.practiceQuiz')
-        case ObjectType.MicroLearning:
-          return t('shared.activity.microLearning')
-        case ObjectType.GroupActivity:
-          return t('shared.activity.groupActivity')
-        case ObjectType.AnswerCollection:
-          return t('shared.activity.answerCollection')
-        default:
-          return objectType
-      }
-    })()
-
     return {
       id: 'activity-log',
       label: (
@@ -59,7 +34,7 @@ function useActivityLogAction({
       },
       data: { cy: `view-activity-log-${objectId}` },
     }
-  }, [objectId, objectType, setActivityLogOpen, t])
+  }, [objectId, setActivityLogOpen, t])
 }
 
 export default useActivityLogAction

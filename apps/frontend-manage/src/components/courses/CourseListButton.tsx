@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import {
   faClock,
   faTrashCan,
@@ -9,6 +10,7 @@ import {
   Course,
   ObjectType,
   PermissionLevel,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
@@ -75,6 +77,11 @@ function CourseListButton({
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+
+  // TODO: once the sharing feature is available for all users, remove this feature flag check
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   return (
     <>
@@ -204,7 +211,7 @@ function CourseListButton({
         ) : null}
       </Button>
 
-      {course && (
+      {course && dataUser?.userProfile?.privatePreview && (
         <ActivityLogDialog
           objectId={course.id}
           objectType={ObjectType.Course}
