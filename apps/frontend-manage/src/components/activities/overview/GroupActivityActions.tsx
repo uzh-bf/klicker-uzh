@@ -26,39 +26,39 @@ const statusActionMap = {
   [PublicationStatus.Draft]: [
     'publishGroupActivity',
     'editGroupActivity',
-    'shareGroupActivity',
     'activityLog',
+    'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Scheduled]: [
     'startGroupActivityNow',
+    'activityLog',
     'shareGroupActivity',
     'unpublishGroupActivity',
-    'activityLog',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Published]: [
     'extendGroupActivity',
     'endGroupActivity',
-    'shareGroupActivity',
     'activityLog',
+    'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Ended]: [
     'gradeGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
-    'activityLog',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Graded]: [
     'gradeGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
-    'activityLog',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Template]: [],
@@ -102,10 +102,10 @@ function GroupActivityActions({
         'endGroupActivity',
         'gradeGroupActivity',
       ],
-      isShared: [...(user?.publicPreview ? ['activityLog'] : [])],
+      isShared: [...(user?.privatePreview ? ['activityLog'] : [])],
       isRemovable: ['removeGroupActivity'],
     }
-  }, [user?.publicPreview])
+  }, [user?.privatePreview])
 
   const actions = useGroupActivityActions({
     groupActivity,

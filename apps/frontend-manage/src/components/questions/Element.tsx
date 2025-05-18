@@ -3,6 +3,7 @@ import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
   faEllipsis,
+  faMessage,
   faPencil,
   faShare,
   faUserGroup,
@@ -25,7 +26,6 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import useActivityLogAction from '../activities/actions/useActivityLogAction'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
@@ -93,13 +93,6 @@ function Element({
   // TODO: once the sharing feature is available for all users, remove this feature flag check
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
-  })
-
-  // Get activity log action for dropdown menu
-  const activityLogAction = useActivityLogAction({
-    objectId: element.id,
-    objectType: ObjectType.Element,
-    setActivityLogOpen,
   })
 
   const [collectedProps, drag] = useDrag({
@@ -284,8 +277,24 @@ function Element({
                 disabled={disabled}
                 className={{ item: 'text-sm' }}
                 items={[
-                  // Activity log action at the top of the dropdown
-                  activityLogAction,
+                  {
+                    id: 'activity-log',
+                    label: (
+                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+                        <FontAwesomeIcon
+                          icon={faMessage}
+                          className="mr-2.5 h-4 w-4"
+                        />
+                        {t('shared.activity.viewActivityLog')}
+                      </div>
+                    ),
+                    onClick: (e?: React.MouseEvent) => {
+                      e?.stopPropagation()
+                      e?.preventDefault()
+                      setActivityLogOpen(true)
+                    },
+                    data: { cy: `view-activity-log-${element.name}` },
+                  },
                   {
                     label: (
                       <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
@@ -299,8 +308,7 @@ function Element({
                     onClick: () => setSharingModalOpen(true),
                     data: { cy: `share-element-${element.name}` },
                   },
-                  ...(element.isManager &&
-                  !element.isOwner &&
+                  ...(!element.isOwner &&
                   !element.derivedAccess &&
                   element.isRemovable
                     ? [

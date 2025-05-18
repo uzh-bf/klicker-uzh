@@ -3,6 +3,7 @@ import {
   ActivityLogType,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -17,18 +18,6 @@ export interface ActivityLogProps {
   objectId: string | number
   // The type of object (Element, Course, etc.)
   objectType: ObjectType
-  // Optional entries for when not using internal data fetching
-  entries?: ActivityLogEntry[]
-  // Optional callback when a message is added
-  onMessageAdded?: () => void
-  // Optional flag for loading state (when not using internal data fetching)
-  loading?: boolean
-  // Optional flag for error state (when not using internal data fetching)
-  error?: boolean
-  // Optional function to add a message (when not using internal data fetching)
-  onAddMessage?: (message: string) => Promise<any>
-  // Optional flag for adding message state (when not using internal data fetching)
-  isAddingMessage?: boolean
   // Optional function to resolve/unresolve a message (when not using internal data fetching)
   onResolveMessage?: (id: number, resolved: boolean) => Promise<any>
   // Optional flag for resolving message state (when not using internal data fetching)
@@ -46,12 +35,6 @@ export interface ActivityLogProps {
 function ActivityLog({
   objectId,
   objectType,
-  entries: propEntries,
-  onMessageAdded,
-  loading: propLoading,
-  error: propError,
-  onAddMessage: propOnAddMessage,
-  isAddingMessage: propIsAddingMessage,
   onResolveMessage: propOnResolveMessage,
   isResolvingMessage: propIsResolvingMessage,
   showResolved = true,
@@ -63,12 +46,9 @@ function ActivityLog({
   const [filterResolved, setFilterResolved] = useState(!showResolved)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Determine if we should use internal data fetching
-  const useInternalDataFetching = propEntries === undefined
-
   // Use the generic hook for activity log handling
   const {
-    entries: hookEntries,
+    entries: queryEntries,
     loading: queryLoading,
     error: queryError,
     addActivityMessage,
@@ -79,11 +59,9 @@ function ActivityLog({
   } = useObjectActivity({
     objectId,
     objectType,
-    skip: !useInternalDataFetching || !objectId,
-    fetchPolicy: 'cache-and-network',
   })
 
-  // Handle message submission
+  // handle message submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -92,13 +70,7 @@ function ActivityLog({
     setIsSubmitting(true)
 
     try {
-      if (propOnAddMessage) {
-        await propOnAddMessage(message.trim())
-      } else {
-        await addActivityMessage(message.trim())
-      }
-
-      if (onMessageAdded) onMessageAdded()
+      await addActivityMessage(message.trim())
       setMessage('')
     } catch (error) {
       console.error('[ActivityLog] Failed to submit message:', error)
@@ -107,38 +79,34 @@ function ActivityLog({
     }
   }
 
-  // Handle resolving/unresolving a message
-  const handleResolve = async (id: number, currentResolvedStatus: boolean) => {
-    try {
-      if (propOnResolveMessage) {
-        await propOnResolveMessage(id, !currentResolvedStatus)
-      } else {
-        await resolveActivityLogEntry(id, !currentResolvedStatus)
-      }
-    } catch (error) {
-      console.error('[ActivityLog] Failed to toggle resolved status:', error)
-    }
-  }
+  // handle resolving/unresolving a message
+  // const handleResolve = async (id: number, currentResolvedStatus: boolean) => {
+  //   try {
+  //     if (propOnResolveMessage) {
+  //       await propOnResolveMessage(id, !currentResolvedStatus)
+  //     } else {
+  //       await resolveActivityLogEntry(id, !currentResolvedStatus)
+  //     }
+  //   } catch (error) {
+  //     console.error('[ActivityLog] Failed to toggle resolved status:', error)
+  //   }
+  // }
 
-  // Determine which entries, loading and error states to use
-  const allEntries = useInternalDataFetching ? hookEntries : propEntries || []
-  const loading = useInternalDataFetching ? queryLoading : propLoading || false
-  const error = useInternalDataFetching ? !!queryError : propError || false
-  const isAddingMessage = useInternalDataFetching
-    ? hookIsAddingMessage
-    : propIsAddingMessage || false
-  const isResolvingMessage = useInternalDataFetching
-    ? hookIsResolvingMessage
-    : propIsResolvingMessage || false
+  // determine which entries, loading and error states to use
+  const allEntries = queryEntries
+  const loading = queryLoading
+  const error = !!queryError
+  const isAddingMessage = hookIsAddingMessage
+  const isResolvingMessage = hookIsResolvingMessage
 
-  // Filter out resolved messages if needed
+  // filter out resolved messages if needed
   const entries = filterResolved
     ? allEntries.filter(
         (entry) => entry.type !== ActivityLogType.Message || !entry.resolved
       )
     : allEntries
 
-  // Scroll to bottom when new messages are added
+  // scroll to bottom when new messages are added
   // TODO: works for newly added messages and when the modals are opened the first time, but not any of the following times (modal not unloaded completely?)
   // useEffect(() => {
   //   if (messagesEndRef.current && visible) {
@@ -146,18 +114,14 @@ function ActivityLog({
   //   }
   // }, [entries.length, visible])
 
-  // Render loading state
   if (loading) {
     return (
       <div className="flex w-full flex-col rounded-md border p-4">
-        <div className="flex items-center justify-center">
-          <p className="text-sm text-gray-500">{t('shared.generic.loading')}</p>
-        </div>
+        <Loader />
       </div>
     )
   }
 
-  // Render error state
   if (error) {
     return (
       <div className="flex w-full flex-col rounded-md border border-red-300 bg-red-50 p-4">
@@ -167,11 +131,7 @@ function ActivityLog({
             <button
               className="mt-2 text-xs text-blue-600 hover:underline"
               onClick={() => {
-                if (useInternalDataFetching) {
-                  refetch?.()
-                } else {
-                  onMessageAdded?.()
-                }
+                refetch?.()
               }}
             >
               {t('shared.generic.tryAgain')}
@@ -182,7 +142,7 @@ function ActivityLog({
     )
   }
 
-  // Group entries by date for better visual separation
+  // group entries by date for better visual separation
   const groupedEntries = entries.reduce(
     (acc, entry) => {
       const date = new Date(entry.createdAt).toDateString()
@@ -195,7 +155,7 @@ function ActivityLog({
     {} as Record<string, ActivityLogEntry[]>
   )
 
-  // Get the dates in chronological order (newest to oldest)
+  // get the dates in chronological order (newest to oldest)
   const dates = Object.keys(groupedEntries).sort(
     (a, b) => new Date(b).getTime() - new Date(a).getTime()
   )
@@ -238,9 +198,7 @@ function ActivityLog({
               </div>
 
               {groupedEntries[date].map((entry) => {
-                const isUserMessage = entry.type === ActivityLogType.Message
-                const isOwnMessage = entry.username === 'self' // Replace with actual logic to check if message is from current user
-                const isResolved = entry.resolved
+                const isOwnMessage = entry.username === 'self' // TODO: replace with actual logic to check if message is from current user
 
                 if (
                   entry.type === ActivityLogType.Creation ||

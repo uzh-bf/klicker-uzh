@@ -35,10 +35,10 @@ const statusActionMap = {
     'startLiveQuiz',
     'editLiveQuiz',
     'qrCode',
-    'activityLog',
     'embeddingEvaluation',
     'duplicateLiveQuiz',
     'templateFromLiveQuiz',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -47,8 +47,8 @@ const statusActionMap = {
     'startLiveQuiz',
     'duplicateLiveQuiz',
     'qrCode',
-    'activityLog',
     'embeddingEvaluation',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -57,9 +57,9 @@ const statusActionMap = {
     'lecturerCockpit',
     'liveQuizEvaluation',
     'qrCode',
-    'activityLog',
     'embeddingEvaluation',
     'duplicateLiveQuiz',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
   ],
@@ -140,11 +140,11 @@ function LiveQuizActions({
         'embeddingEvaluation',
         'liveQuizEvaluation',
         'useTemplate',
-        ...(user?.publicPreview ? ['activityLog'] : []),
+        ...(user?.privatePreview ? ['activityLog'] : []),
       ],
       isRemovable: ['removeLiveQuiz'],
     }
-  }, [user?.publicPreview])
+  }, [user?.privatePreview])
 
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
@@ -161,7 +161,7 @@ function LiveQuizActions({
     setActivityLogOpen,
   })
 
-  // Get all available actions based on permissions and status
+  // get all available actions based on permissions and status
   const availableActions = useAvailableActions({
     actions,
     statusActionMap,

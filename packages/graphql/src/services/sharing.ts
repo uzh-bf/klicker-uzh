@@ -6592,59 +6592,38 @@ export async function addActivityMessage(
   }
 }
 
-/**
- * Generic function to get activity log entries for any object type
- * This replaces the need for individual getXActivity functions
- */
 export async function getObjectActivity(
   { objectId, objectType }: { objectId: string; objectType: DB.ObjectType },
   ctx: ContextWithUser
 ) {
-  // Get the appropriate model based on object type
-  let activityLog: (DB.ActivityLogEntry & {
-    user: { shortname: string } | null
-  })[] = []
-
-  // Convert the ID to the appropriate type based on object type
-  const typedId =
-    objectType === DB.ObjectType.ELEMENT ||
-    objectType === DB.ObjectType.ANSWER_COLLECTION
-      ? parseInt(objectId, 10)
-      : objectId
-
-  // Create a filter object based on the object type
-  const filter = {}
-
-  // Set the appropriate field based on object type
-  switch (objectType) {
-    case DB.ObjectType.ELEMENT:
-      filter['elementId'] = typedId
-      break
-    case DB.ObjectType.ANSWER_COLLECTION:
-      filter['answerCollectionId'] = typedId
-      break
-    case DB.ObjectType.COURSE:
-      filter['courseId'] = typedId
-      break
-    case DB.ObjectType.LIVE_QUIZ:
-      filter['liveQuizId'] = typedId
-      break
-    case DB.ObjectType.PRACTICE_QUIZ:
-      filter['practiceQuizId'] = typedId
-      break
-    case DB.ObjectType.MICRO_LEARNING:
-      filter['microLearningId'] = typedId
-      break
-    case DB.ObjectType.GROUP_ACTIVITY:
-      filter['groupActivityId'] = typedId
-      break
-    default:
-      break
-  }
-
-  // Directly query the ActivityLogEntry table with the appropriate filter
-  activityLog = await ctx.prisma.activityLogEntry.findMany({
-    where: filter,
+  // query the ActivityLogEntry table with the appropriate filter
+  const activityLog = await ctx.prisma.activityLogEntry.findMany({
+    where: {
+      elementId:
+        objectType === DB.ObjectType.ELEMENT
+          ? parseInt(objectId, 10)
+          : undefined,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId, 10)
+          : undefined,
+      courseId:
+        objectType === DB.ObjectType.COURSE ? String(objectId) : undefined,
+      liveQuizId:
+        objectType === DB.ObjectType.LIVE_QUIZ ? String(objectId) : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ
+          ? String(objectId)
+          : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING
+          ? String(objectId)
+          : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY
+          ? String(objectId)
+          : undefined,
+    },
     include: { user: { select: { shortname: true } } },
     // TODO: change to asc when we want to change the ordering of the activity log
     orderBy: { createdAt: 'desc' },

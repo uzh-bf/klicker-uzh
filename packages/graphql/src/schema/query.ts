@@ -1691,58 +1691,68 @@ export const Query = builder.queryType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          // Create a properly typed permission object based on the object type
-          let permissionObject: SharingService.PermissionCheck
-
-          switch (args.objectType) {
-            case DB.ObjectType.ELEMENT:
-              permissionObject = {
-                elementId: parseInt(args.objectId),
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.ANSWER_COLLECTION:
-              permissionObject = {
-                answerCollectionId: parseInt(args.objectId),
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.COURSE:
-              permissionObject = {
-                courseId: args.objectId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.LIVE_QUIZ:
-              permissionObject = {
-                liveQuizId: args.objectId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.PRACTICE_QUIZ:
-              permissionObject = {
-                practiceQuizId: args.objectId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.MICRO_LEARNING:
-              permissionObject = {
-                microLearningId: args.objectId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            case DB.ObjectType.GROUP_ACTIVITY:
-              permissionObject = {
-                groupActivityId: args.objectId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              }
-              break
-            default:
-              return null
-          }
-
-          // Check access with the appropriate permission object
-          const validAccess = await checkAccess([permissionObject], ctx)
+          // >= READ permissions on the corresponding object
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === DB.ObjectType.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
 
           if (!validAccess) {
             return null

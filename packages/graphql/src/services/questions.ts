@@ -269,10 +269,8 @@ export async function manipulateQuestion(
     return null
   }
 
-  // Track modifications to existing elements
+  // fetch the existing element to compare before/after state
   const isNewElement = typeof id === 'undefined' || id === null
-
-  // Fetch the existing element to compare before/after state
   const questionPrev = !isNewElement
     ? await ctx.prisma.element.findUnique({
         where: { id: id, isDeleted: false },
@@ -464,9 +462,10 @@ export async function manipulateQuestion(
     )
   }
 
-  // Track element creation or modification
+  // track element creation or modification
+  // ? status changes are tracked through the corresponding separate mutation
   if (isNewElement) {
-    // Create an activity log entry for element creation
+    // create an activity log entry for element creation
     await ctx.prisma.activityLogEntry.create({
       data: {
         type: DB.ActivityLogType.CREATION,
@@ -478,31 +477,12 @@ export async function manipulateQuestion(
       },
     })
   } else if (questionPrev) {
-    // Track title changes
+    // track title changes
     if (name && name !== questionPrev.name) {
       const modificationDetails: ActivityLogModificationDetails = {
         field: ActivityLogModificationFieldType.TITLE,
         oldValue: questionPrev.name,
         newValue: name,
-      }
-
-      await ctx.prisma.activityLogEntry.create({
-        data: {
-          type: DB.ActivityLogType.MODIFICATION,
-          modificationDetails,
-          objectType: DB.ObjectType.ELEMENT,
-          elementId: question.id,
-          userId: ctx.user.sub,
-        },
-      })
-    }
-
-    // Track status changes
-    if (status && status !== questionPrev.status) {
-      const modificationDetails: ActivityLogModificationDetails = {
-        field: ActivityLogModificationFieldType.STATUS,
-        oldValue: questionPrev.status,
-        newValue: status,
       }
 
       await ctx.prisma.activityLogEntry.create({
@@ -554,10 +534,36 @@ export async function changeElementStatus(
   { elementId, status }: { elementId: number; status: DB.ElementStatus },
   ctx: ContextWithUser
 ) {
+  const previousElement = await ctx.prisma.element.findUnique({
+    where: { id: elementId },
+  })
+
+  if (!previousElement) {
+    return false
+  }
+
   const element = await ctx.prisma.element.update({
     where: { id: elementId },
     data: { status },
   })
+
+  if (status && status !== previousElement.status) {
+    const modificationDetails: ActivityLogModificationDetails = {
+      field: ActivityLogModificationFieldType.STATUS,
+      oldValue: previousElement.status,
+      newValue: status,
+    }
+
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.MODIFICATION,
+        modificationDetails,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId,
+        userId: ctx.user.sub,
+      },
+    })
+  }
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',

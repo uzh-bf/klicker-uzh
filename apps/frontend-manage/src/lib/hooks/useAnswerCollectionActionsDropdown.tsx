@@ -1,17 +1,19 @@
 import { faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faInfoCircle,
+  faMessage,
   faPencil,
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Tooltip } from '@uzh-bf/design-system'
+import { DropdownWithItemsProps, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function useAnswerCollectionActionsDropdown({
+  collectionName,
   isOwner,
   isManager,
   isEditor,
@@ -22,7 +24,9 @@ function useAnswerCollectionActionsDropdown({
   setViewingModal,
   setRemovalModal,
   setDeletionModal,
+  setActivityLogOpen,
 }: {
+  collectionName: string
   isOwner: boolean
   isManager: boolean
   isEditor: boolean
@@ -33,11 +37,28 @@ function useAnswerCollectionActionsDropdown({
   setViewingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
   return useMemo(() => {
-    const items = []
+    const items: DropdownWithItemsProps['items'] = [
+      {
+        id: 'activity-log',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faMessage} className="mr-2.5 h-4 w-4" />
+            {t('shared.activity.viewActivityLog')}
+          </div>
+        ),
+        onClick: (e?: React.MouseEvent) => {
+          e?.stopPropagation()
+          e?.preventDefault()
+          setActivityLogOpen(true)
+        },
+        data: { cy: `view-activity-log-${collectionName}` },
+      },
+    ]
 
     if (isEditor) {
       // editing permissions on the answer collection

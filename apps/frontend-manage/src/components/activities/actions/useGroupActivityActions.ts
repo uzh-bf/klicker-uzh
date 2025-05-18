@@ -33,7 +33,6 @@ function useGroupActivityActions({
   setExtensionModal,
   setSharingModal,
   setActivityLogOpen,
-  withActivityLog = true,
 }: {
   groupActivity: ActivityInfo
   setRemovalModal: Dispatch<SetStateAction<boolean>>
@@ -44,7 +43,6 @@ function useGroupActivityActions({
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
-  withActivityLog?: boolean
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -155,18 +153,13 @@ function useGroupActivityActions({
         data: { cy: `delete-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
-      // Add activity log action if withActivityLog is true
-      ...(withActivityLog
-        ? [
-            {
-              id: 'activityLog',
-              label: t('shared.activity.viewActivityLog'),
-              icon: faMessage,
-              onClick: () => setActivityLogOpen(true),
-              data: { cy: `view-activity-log-${groupActivity.name}` },
-            },
-          ]
-        : []),
+      {
+        id: 'activityLog',
+        label: t('shared.activity.viewActivityLog'),
+        icon: faMessage,
+        onClick: () => setActivityLogOpen(true),
+        data: { cy: `view-activity-log-${groupActivity.name}` },
+      },
     ],
     [
       t,
@@ -183,7 +176,6 @@ function useGroupActivityActions({
       setExtensionModal,
       setSharingModal,
       setActivityLogOpen,
-      withActivityLog,
     ]
   )
 

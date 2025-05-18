@@ -11,7 +11,6 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
-import useActivityLogAction from '../../activities/actions/useActivityLogAction'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
@@ -46,15 +45,8 @@ function AnswerCollectionItem({
   const [sharingModal, setSharingModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  // Get activity log action for dropdown menu
-  const activityLogAction = useActivityLogAction({
-    objectId: collection.id,
-    objectType: ObjectType.AnswerCollection,
-    setActivityLogOpen,
-  })
-
-  // Get dropdown items from hook
   const dropdownItems = useAnswerCollectionActionsDropdown({
+    collectionName: collection.name,
     isOwner: collection.isOwner ?? false,
     isManager: collection.isManager ?? false,
     isEditor: collection.isEditor ?? false,
@@ -65,10 +57,8 @@ function AnswerCollectionItem({
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   })
-
-  // Add activity log action to the beginning of the dropdown items
-  const allDropdownItems = [activityLogAction, ...dropdownItems]
 
   return (
     <>
@@ -144,9 +134,9 @@ function AnswerCollectionItem({
             </div>
           )}
 
-          {allDropdownItems.length > 0 && (
+          {dropdownItems.length > 0 && (
             <Dropdown
-              items={allDropdownItems}
+              items={dropdownItems}
               trigger={
                 <Button
                   basic

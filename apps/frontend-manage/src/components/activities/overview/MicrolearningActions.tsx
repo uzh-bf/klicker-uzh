@@ -27,10 +27,10 @@ const statusActionMap = {
     'publishMicroLearning',
     'editMicroLearning',
     'openPreview',
-    'activityLog',
     'copyAccessLink',
     'copyLTIAccessLink',
     'duplicateMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -39,8 +39,8 @@ const statusActionMap = {
     'copyAccessLink',
     'openPreview',
     'copyLTIAccessLink',
-    'activityLog',
     'duplicateMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'unpublishMicrolearning',
     'removeMicroLearning',
@@ -50,12 +50,12 @@ const statusActionMap = {
     'copyAccessLink',
     'openEvaluation',
     'endMicroLearning',
-    'activityLog',
     'extendMicroLearning',
     'openPreview',
     'copyLTIAccessLink',
     'duplicateMicroLearning',
     'analyticsMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -64,9 +64,9 @@ const statusActionMap = {
     'openEvaluation',
     'duplicateMicroLearning',
     'convertToPracticeQuiz',
-    'activityLog',
     'analyticsMicroLearning',
     'openPreview',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -121,13 +121,12 @@ function MicrolearningActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
-        ...(user?.publicPreview
-          ? ['analyticsMicroLearning', 'activityLog']
-          : []),
+        ...(user?.privatePreview ? ['activityLog'] : []),
+        ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
       isRemovable: ['removeMicroLearning'],
     }),
-    [user?.publicPreview]
+    [user?.publicPreview, user?.privatePreview]
   )
 
   const actions = useMicroLearningActions({

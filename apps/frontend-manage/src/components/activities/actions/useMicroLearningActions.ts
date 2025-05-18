@@ -41,7 +41,6 @@ function useMicroLearningActions({
   setExtensionModal,
   setSharingModal,
   setActivityLogOpen,
-  withActivityLog = true,
 }: {
   microLearning: ActivityInfo
   setCopyToast: Dispatch<SetStateAction<boolean>>
@@ -52,7 +51,6 @@ function useMicroLearningActions({
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
-  withActivityLog?: boolean
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -229,18 +227,13 @@ function useMicroLearningActions({
         data: { cy: `delete-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
-      // Add activity log action if withActivityLog is true
-      ...(withActivityLog
-        ? [
-            {
-              id: 'activityLog',
-              label: t('shared.activity.viewActivityLog'),
-              icon: faMessage,
-              onClick: () => setActivityLogOpen(true),
-              data: { cy: `view-activity-log-${microLearning.name}` },
-            },
-          ]
-        : []),
+      {
+        id: 'activityLog',
+        label: t('shared.activity.viewActivityLog'),
+        icon: faMessage,
+        onClick: () => setActivityLogOpen(true),
+        data: { cy: `view-activity-log-${microLearning.name}` },
+      },
     ],
     [
       t,
@@ -259,7 +252,6 @@ function useMicroLearningActions({
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,
-      withActivityLog,
     ]
   )
 

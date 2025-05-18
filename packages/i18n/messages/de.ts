@@ -3133,13 +3133,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       title: '{type} Aktivitäten',
       tooltip: 'Aktivitätsprotokoll anzeigen',
       viewActivityLog: 'Aktivitätsprotokoll anzeigen',
-      element: 'Element',
-      course: 'Kurs',
-      liveQuiz: 'Live-Quiz',
-      practiceQuiz: 'Übungsquiz',
-      microLearning: 'Microlearning',
-      groupActivity: 'Gruppenaktivität',
-      answerCollection: 'Antwortsammlung',
       noActivity: 'Noch keine Aktivitäten.',
       addMessage:
         'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',

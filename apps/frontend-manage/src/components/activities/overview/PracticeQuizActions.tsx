@@ -23,10 +23,10 @@ const statusActionMap = {
     'publishPracticeQuiz',
     'editPracticeQuiz',
     'openPreview',
-    'activityLog',
     'copyAccessLink',
     'copyLTIAccessLink',
     'duplicatePracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'removePracticeQuiz',
     'deletePracticeQuiz',
@@ -35,8 +35,8 @@ const statusActionMap = {
     'copyAccessLink',
     'openPreview',
     'copyLTIAccessLink',
-    'activityLog',
     'duplicatePracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'unpublishPracticeQuiz',
     'removePracticeQuiz',
@@ -47,9 +47,9 @@ const statusActionMap = {
     'copyAccessLink',
     'openPreview',
     'copyLTIAccessLink',
-    'activityLog',
     'duplicatePracticeQuiz',
     'analyticsPracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'removePracticeQuiz',
     'deletePracticeQuiz',
@@ -96,13 +96,12 @@ function PracticeQuizActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
-        ...(user?.publicPreview
-          ? ['analyticsPracticeQuiz', 'activityLog']
-          : []),
+        ...(user?.publicPreview ? ['analyticsPracticeQuiz'] : []),
+        ...(user?.privatePreview ? ['activityLog'] : []),
       ],
       isRemovable: ['removePracticeQuiz'],
     }),
-    [user?.publicPreview]
+    [user?.publicPreview, user?.privatePreview]
   )
 
   const actions = usePracticeQuizActions({

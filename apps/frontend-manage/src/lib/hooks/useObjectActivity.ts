@@ -9,30 +9,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 /**
- * Options for the useObjectActivity hook
- */
-interface UseObjectActivityOptions {
-  /** The ID of the object to fetch activity for (can be string or number) */
-  objectId?: string | number
-  /** The type of object (Element, Course, etc.) */
-  objectType: ObjectType
-  /** Whether to skip the query (e.g., when ID is not available) */
-  skip?: boolean
-  /** Custom fetch policy for the Apollo query */
-  fetchPolicy?: 'cache-first' | 'network-only' | 'cache-and-network'
-}
-
-/**
- * Determines if the object type uses a numeric ID
- */
-function isNumericIdType(objectType: ObjectType): boolean {
-  return (
-    objectType === ObjectType.Element ||
-    objectType === ObjectType.AnswerCollection
-  )
-}
-
-/**
  * A generic hook for fetching and managing activity entries for any object type
  * Uses a unified query that takes object type as a parameter
  *
@@ -42,71 +18,37 @@ function isNumericIdType(objectType: ObjectType): boolean {
 export function useObjectActivity({
   objectId,
   objectType,
-  skip = false,
-  fetchPolicy = 'cache-and-network',
-}: UseObjectActivityOptions) {
-  // Skip if no valid ID is provided
-  const shouldSkip = skip || !objectId
-
-  // Convert all IDs to string for the unified query
-  // (the backend will handle conversion to the appropriate type)
-  const stringId = objectId ? String(objectId) : ''
-
-  // Debug logging for tracking purposes
+}: {
+  objectId: string | number
+  objectType: ObjectType
+}) {
+  // debug logging for tracking purposes
   if (process.env.NODE_ENV !== 'production') {
     console.debug(
-      `[useObjectActivity] Type: ${objectType}, Raw ID: ${objectId}, String ID: ${stringId}`
+      `[useObjectActivity] Type: ${objectType}, Raw ID: ${objectId}, String ID: ${String(objectId)}`
     )
   }
 
-  // Query for fetching activity entries using the unified query
+  // query for fetching activity entries using the unified query
   const { data, loading, error, refetch } = useQuery(
     GetObjectActivityDocument,
     {
-      variables: {
-        objectId: stringId,
-        objectType,
-      },
-      skip: shouldSkip,
-      fetchPolicy,
-      // Add error handling to help debug issues
-      onError: (err) => {
-        console.error(
-          `[useObjectActivity] Error fetching activity for ${objectType} (ID: ${stringId}):`,
-          err
-        )
-      },
+      variables: { objectId: String(objectId), objectType },
+      skip: !objectId,
+      fetchPolicy: 'cache-and-network',
     }
   )
 
-  // Mutation for adding messages
+  // mutation for adding messages
   const [addMessage, { loading: addingMessage }] = useMutation(
-    AddActivityMessageDocument,
-    {
-      onCompleted: () => {
-        // Refetch the activity log to include the new message
-        refetch()
-      },
-      onError: (error) => {
-        console.error(
-          `[useObjectActivity] Error adding message to ${objectType} (ID: ${stringId}):`,
-          error
-        )
-      },
-    }
+    AddActivityMessageDocument
   )
 
-  // Mutation for resolving/unresolving messages
+  // mutation for resolving/unresolving messages
   const [resolveMessage, { loading: resolvingMessage }] = useMutation(
     ResolveActivityLogEntryDocument,
     {
-      onCompleted: () => {
-        // Refetch the activity log to reflect the update
-        refetch()
-      },
-      onError: (error) => {
-        console.error(`[useObjectActivity] Error resolving message:`, error)
-      },
+      // TODO: implement proper cache update
     }
   )
 
@@ -124,31 +66,46 @@ export function useObjectActivity({
       return
     }
 
-    // All IDs are sent as strings in the mutation
-    const stringId =
-      typeof objectId === 'number' ? objectId.toString() : objectId
-
     return addMessage({
       variables: {
-        objectId: stringId,
+        objectId: typeof objectId === 'number' ? objectId.toString() : objectId,
         objectType,
         message,
       },
-      // Use optimistic response for better UX
       optimisticResponse: {
         addActivityMessage: {
           __typename: 'ActivityLogEntry',
-          id: -1, // Temporary ID that will be replaced by the server
+          id: -1, // temporary ID that will be replaced by the server
           type: ActivityLogType.Message,
-          objectType, // Include this for consistency
+          objectType, // include this for consistency
           message,
           resolved: false,
           resolvedAt: null,
-          username: 'self', // Indicating it's the current user's message
+          username: 'self', // indicating it's the current user's message
           isEdited: false,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
+      },
+      update: (cache, { data }) => {
+        // Update the cache with the new message
+        const existingData = cache.readQuery({
+          query: GetObjectActivityDocument,
+          variables: { objectId: String(objectId), objectType },
+        })
+
+        if (existingData && data?.addActivityMessage) {
+          cache.writeQuery({
+            query: GetObjectActivityDocument,
+            variables: { objectId: String(objectId), objectType },
+            data: {
+              getObjectActivity: [
+                data.addActivityMessage,
+                ...(existingData.getObjectActivity || []),
+              ],
+            },
+          })
+        }
       },
     })
   }
@@ -165,7 +122,6 @@ export function useObjectActivity({
       variables: {
         id,
       },
-      // Use optimistic response for better UX
       optimisticResponse: {
         resolveActivityLogEntry: {
           __typename: 'ActivityLogEntry',
@@ -175,10 +131,11 @@ export function useObjectActivity({
           resolvedAt: resolved ? new Date().toISOString() : null,
         },
       },
+      // TODO: add proper cache update here, once the corresponding mutation is implemented
     })
   }
 
-  // Extract entries from the response
+  // extract entries from the response
   const entries: ActivityLogEntry[] = data?.getObjectActivity || []
 
   return {

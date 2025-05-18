@@ -21,7 +21,8 @@ CREATE TABLE "ActivityLogEntry" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ActivityLogEntry_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ActivityLogEntry_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ObjectRequired" CHECK (("answerCollectionId" IS NOT NULL) OR ("elementId" IS NOT NULL) OR ("courseId" IS NOT NULL) OR ("liveQuizId" IS NOT NULL) OR ("practiceQuizId" IS NOT NULL) OR ("microLearningId" IS NOT NULL) OR ("groupActivityId" IS NOT NULL))
 );
 
 -- AddForeignKey
