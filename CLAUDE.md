@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. This file together with @PLANNING.md and @TODO.md should provide a complete snapshot of the project and the tasks to be performed with Claude.
 
 ## Repository Overview
 
@@ -9,7 +9,7 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 ### Core Components
 
 - **Frontend PWA**: Student frontend for live quizzes, microlearnings, practice quizzes, and leaderboards
-- **Frontend Manage**: Lecturer frontend for question management, activity management, course management, and analytics
+- **Frontend Manage**: Lecturer frontend for question management, activity management, course management, and analytics (@apps/frontend-manage/CLAUDE.md)
 - **Frontend Control**: Controller frontend for managing live quizzes from mobile devices
 - **Frontend Authentication**: Authentication frontend for Edu-ID accounts and delegated logins
 - **Backend Docker**: Main backend service
@@ -18,13 +18,19 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 
 ### Shared Packages
 
-- **Prisma**: Database schema, migrations, and client
-- **GraphQL**: GraphQL schema and resolvers with business logic
-- **Grading**: Grading logic for scoring and awarding experience points
+- **Prisma**: Database schema, migrations, and client (@packages/prisma/CLAUDE.md)
+- **GraphQL**: GraphQL schema and resolvers with business logic (@packages/graphql/CLAUDE.md)
+- **Grading**: Grading logic for scoring and awarding experience points (@packages/grading/CLAUDE.md)
+- **Types**: Type definitions shared across packages (@packages/types/CLAUDE.md)
+- **Utilities**: Common utility functions (@packages/util/CLAUDE.md)
 - **LTI**: Learning Tools Interoperability logic for course system integration
-- **i18n**: Internationalization messages
-- **shared-components**: Common React components shared between frontends
-- **markdown**: React component for rendering markdown strings
+- **i18n**: Internationalization messages (@packages/i18n/CLAUDE.md)
+- **shared-components**: Common React components shared between frontends (@packages/shared-components/CLAUDE.md)
+- **markdown**: React component for rendering markdown strings (@packages/markdown/CLAUDE.md)
+
+### Testing
+
+- **Cypress**: End-to-end tests for all applications (@cypress/CLAUDE.md)
 
 ## Development Workflow
 
@@ -141,7 +147,7 @@ The database is organized around these main entities:
 #### Content and Activities
 
 - **Element**: Questions and content elements
-  - Types include SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, etc.
+  - Types include SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, and CASE_STUDY
   - Contains content, explanation, options (type-specific JSON)
   - ElementInstances are instantiations of elements in activities
   - ElementStacks group elements for different activities
@@ -389,7 +395,7 @@ type: Description.
 
 ### 📚 Documentation & Explainability
 
-- Update README.md when new features are added, dependencies change, or setup steps are modified.
+- Update README.md and relevant CLAUDE.md files (the root CLAUDE.md and the CLAUDE.md of the packages you are working on) when new features are added, dependencies or architecture change, or setup steps are modified.
 - Comment non-obvious code and ensure everything is understandable to a mid-level developer.
 - When writing complex logic, add an inline # Reason: comment explaining the why, not just the what.
 
@@ -398,7 +404,7 @@ type: Description.
 - Never assume missing context. Ask questions if uncertain.
 - Never hallucinate libraries or functions – only use known, verified packages (e.g., from NPM or PyPI).
 - Always confirm file paths and module names exist before referencing them in code or tests or trying to update them.
-- Never delete or overwrite existing code unless explicitly instructed to or if part of a task from TASK.md.
+- Never delete or overwrite existing code unless explicitly instructed to or if part of a task from TODO.md.
 
 ## Where to Find More Information
 
@@ -406,3 +412,4 @@ type: Description.
 - User documentation: https://www.klicker.uzh.ch/getting_started/welcome
 - Frequently asked questions: https://www.klicker.uzh.ch/faq
 - Community discussions: https://community.klicker.uzh.ch/
+- Package-specific documentation: See the CLAUDE.md files in each package directory referenced above
