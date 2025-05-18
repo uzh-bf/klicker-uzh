@@ -4,6 +4,7 @@ import {
   faFlagCheckered,
   faGraduationCap,
   faLock,
+  faMessage,
   faPencil,
   faPlay,
   faShare,
@@ -31,6 +32,8 @@ function useGroupActivityActions({
   setPublishingModal,
   setExtensionModal,
   setSharingModal,
+  setActivityLogOpen,
+  withActivityLog = true,
 }: {
   groupActivity: ActivityInfo
   setRemovalModal: Dispatch<SetStateAction<boolean>>
@@ -40,6 +43,8 @@ function useGroupActivityActions({
   setPublishingModal: Dispatch<SetStateAction<boolean>>
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  withActivityLog?: boolean
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -150,20 +155,35 @@ function useGroupActivityActions({
         data: { cy: `delete-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
+      // Add activity log action if withActivityLog is true
+      ...(withActivityLog
+        ? [
+            {
+              id: 'activity-log',
+              label: t('shared.activity.viewActivityLog'),
+              icon: faMessage,
+              onClick: () => setActivityLogOpen(true),
+              data: { cy: `view-activity-log-${groupActivity.name}` },
+            },
+          ]
+        : []),
     ],
     [
       t,
       router,
-      groupActivity,
+      groupActivity.id,
+      groupActivity.name,
+      unpublishGroupActivity,
       unpublishing,
-      setPublishingModal,
       setRemovalModal,
       setDeletionModal,
-      unpublishGroupActivity,
-      setStartingModal,
-      setExtensionModal,
       setEndingModal,
+      setStartingModal,
+      setPublishingModal,
+      setExtensionModal,
       setSharingModal,
+      setActivityLogOpen,
+      withActivityLog,
     ]
   )
 

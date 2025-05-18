@@ -12,6 +12,7 @@ import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeleti
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
 import GroupActivityStartingModal from '../../courses/modals/GroupActivityStartingModal'
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useGroupActivityActions from '../actions/useGroupActivityActions'
@@ -90,6 +91,7 @@ function GroupActivityActions({
   const [publishingModal, setPublishingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const actions = useGroupActivityActions({
     groupActivity,
@@ -100,6 +102,7 @@ function GroupActivityActions({
     setPublishingModal,
     setExtensionModal,
     setSharingModal,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -192,6 +195,15 @@ function GroupActivityActions({
             groupDeadlineDate={groupActivity.groupDeadlineDate}
             numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
             courseId={groupActivity.courseId!}
+          />
+        )}
+
+        {groupActivity && (
+          <ActivityLogDialog
+            objectId={groupActivity.id}
+            objectType={ObjectType.GroupActivity}
+            open={activityLogOpen}
+            onOpenChange={setActivityLogOpen}
           />
         )}
       </div>

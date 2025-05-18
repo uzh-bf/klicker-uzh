@@ -10,6 +10,7 @@ import {
   faLink,
   faLock,
   faMagnifyingGlass,
+  faMessage,
   faPencil,
   faShare,
   faUserGroup,
@@ -34,6 +35,8 @@ function usePracticeQuizActions({
   setSharingModal,
   setRemovalModal,
   setCopyToast,
+  setActivityLogOpen,
+  withActivityLog = true,
 }: {
   practiceQuiz: ActivityInfo
   setPublishModal: Dispatch<SetStateAction<boolean>>
@@ -41,6 +44,8 @@ function usePracticeQuizActions({
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setCopyToast: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  withActivityLog?: boolean
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -186,10 +191,24 @@ function usePracticeQuizActions({
         data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
+      // Add activity log action if withActivityLog is true
+      ...(withActivityLog
+        ? [
+            {
+              id: 'activity-log',
+              label: t('shared.activity.viewActivityLog'),
+              icon: faMessage,
+              onClick: () => setActivityLogOpen(true),
+              data: { cy: `view-activity-log-${practiceQuiz.name}` },
+            },
+          ]
+        : []),
     ],
     [
       t,
-      practiceQuiz,
+      practiceQuiz.id,
+      practiceQuiz.name,
+      practiceQuiz.courseId,
       href,
       evaluationHref,
       router,
@@ -199,6 +218,8 @@ function usePracticeQuizActions({
       setRemovalModal,
       unpublishPracticeQuiz,
       setDeletionModal,
+      setActivityLogOpen,
+      withActivityLog,
     ]
   )
 

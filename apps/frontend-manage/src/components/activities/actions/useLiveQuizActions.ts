@@ -5,6 +5,7 @@ import {
   faChartSimple,
   faCode,
   faFilePen,
+  faMessage,
   faPencil,
   faPlay,
   faQrcode,
@@ -29,6 +30,8 @@ function useLiveQuizActions({
   setSharingModal,
   setRemovalModal,
   setDeletionModal,
+  setActivityLogOpen,
+  withActivityLog = true,
 }: {
   quiz: ActivityInfo
   onStart: any
@@ -47,6 +50,8 @@ function useLiveQuizActions({
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  withActivityLog?: boolean
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -194,17 +199,29 @@ function useLiveQuizActions({
         id: 'deleteLiveQuiz',
         label: t('manage.liveQuizzes.deleteLiveQuiz'),
         icon: faTrashCan,
-        onClick: () => {
-          setDeletionModal(true)
-        },
+        onClick: () => setDeletionModal(true),
         data: { cy: `delete-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
+      // Add activity log action if withActivityLog is true
+      ...(withActivityLog
+        ? [
+            {
+              id: 'activity-log',
+              label: t('shared.activity.viewActivityLog'),
+              icon: faMessage,
+              onClick: () => setActivityLogOpen(true),
+              data: { cy: `view-activity-log-${quiz.name}` },
+            },
+          ]
+        : []),
     ],
     [
       t,
       router,
-      quiz,
+      quiz.id,
+      quiz.name,
+      quiz.templateId,
       onStart,
       starting,
       setEmbeddingModal,
@@ -215,6 +232,8 @@ function useLiveQuizActions({
       setSharingModal,
       setRemovalModal,
       setDeletionModal,
+      setActivityLogOpen,
+      withActivityLog,
     ]
   )
 

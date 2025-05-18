@@ -1,12 +1,12 @@
 import { IconDefinition } from '@fortawesome/free-solid-svg-icons'
 import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
+import { MouseEvent, useMemo } from 'react'
 
 export type ActivityAction = {
   id: string
   label: string
   icon: IconDefinition
-  onClick: () => void
+  onClick: (e?: MouseEvent<Element>) => void
   data?: {
     cy?: string
   }

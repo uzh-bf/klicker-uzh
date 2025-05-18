@@ -13,6 +13,7 @@ import ExtensionModal from '../../courses/modals/ExtensionModal'
 import MicroLearningDeletionModal from '../../courses/modals/MicroLearningDeletionModal'
 import MicroLearningEndingModal from '../../courses/modals/MicroLearningEndingModal'
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
@@ -88,6 +89,7 @@ function MicrolearningActions({
   const [endingModal, setEndingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -131,6 +133,7 @@ function MicrolearningActions({
     setEndingModal,
     setExtensionModal,
     setSharingModal,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -218,6 +221,15 @@ function MicrolearningActions({
         )}
 
         <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
+
+        {microLearning && (
+          <ActivityLogDialog
+            objectId={microLearning.id}
+            objectType={ObjectType.MicroLearning}
+            open={activityLogOpen}
+            onOpenChange={setActivityLogOpen}
+          />
+        )}
       </div>
     </div>
   )

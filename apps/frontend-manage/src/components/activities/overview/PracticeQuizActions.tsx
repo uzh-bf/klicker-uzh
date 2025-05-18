@@ -9,6 +9,7 @@ import {
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
@@ -70,6 +71,7 @@ function PracticeQuizActions({
   const [deletionModal, setDeletionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -105,6 +107,7 @@ function PracticeQuizActions({
     setSharingModal,
     setRemovalModal,
     setCopyToast,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -168,6 +171,15 @@ function PracticeQuizActions({
           />
         )}
         <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
+
+        {practiceQuiz && (
+          <ActivityLogDialog
+            objectId={practiceQuiz.id}
+            objectType={ObjectType.PracticeQuiz}
+            open={activityLogOpen}
+            onOpenChange={setActivityLogOpen}
+          />
+        )}
       </div>
     </div>
   )

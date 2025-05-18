@@ -20,7 +20,6 @@ import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import useActivityLogAction from '../actions/useActivityLogAction'
 import useAvailableActions from '../actions/useAvailableActions'
 import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
@@ -133,13 +132,6 @@ function LiveQuizActions({
   })
   const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
-  // Create activity log action
-  const activityLogAction = useActivityLogAction({
-    objectId: liveQuiz.id,
-    objectType: ObjectType.LiveQuiz,
-    setActivityLogOpen,
-  })
-
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
     onStart,
@@ -152,10 +144,11 @@ function LiveQuizActions({
     setSharingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   })
 
   // Get all available actions based on permissions and status
-  const baseActions = useAvailableActions({
+  const availableActions = useAvailableActions({
     actions,
     statusActionMap,
     permissionActionMap,
@@ -167,11 +160,6 @@ function LiveQuizActions({
     isRemovable: liveQuiz.isRemovable,
     isShared: liveQuiz.isShared,
   })
-
-  // Add activity log action at the beginning of the dropdown, leaving the first 3 buttons unchanged
-  const visibleActions = baseActions.slice(0, 3)
-  const dropdownActions = [activityLogAction, ...baseActions.slice(3)]
-  const availableActions = [...visibleActions, ...dropdownActions]
 
   return (
     <div>
