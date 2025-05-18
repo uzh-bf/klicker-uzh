@@ -114,7 +114,6 @@ export type ActivityLogEntry = {
   id: Scalars['Int']['output'];
   isEdited?: Maybe<Scalars['Boolean']['output']>;
   message?: Maybe<Scalars['String']['output']>;
-  modificationDetails?: Maybe<Scalars['Json']['output']>;
   objectType: ObjectType;
   resolved: Scalars['Boolean']['output'];
   resolvedAt?: Maybe<Scalars['Date']['output']>;

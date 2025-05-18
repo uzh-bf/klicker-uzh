@@ -87,7 +87,6 @@ type ActivityLogEntry {
   id: Int!
   isEdited: Boolean
   message: String
-  modificationDetails: Json
   objectType: ObjectType!
   resolved: Boolean!
   resolvedAt: Date

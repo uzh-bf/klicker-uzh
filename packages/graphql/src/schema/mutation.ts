@@ -1727,7 +1727,7 @@ export const Mutation = builder.mutationType({
 
           // TODO: implement resolveActivityLogEntry
           // how to do permissions smartly here? permission on the source object ADMIN or higher?
-          return await SharingService.resolveActivityLogEntry(args, ctx)
+          // return await SharingService.resolveActivityLogEntry(args, ctx)
         },
       }),
 
