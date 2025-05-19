@@ -1763,7 +1763,7 @@ describe('Create and solve a group activity', function () {
       cy.get(`[data-cy="remove-group-activity-${data.sharing.ga3}"]`).should(
         'exist'
       )
-      cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).realClick() // close dropdown
+      cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).realClick() // close dropdown
     }
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
