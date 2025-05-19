@@ -145,7 +145,7 @@ function ActivityLog({
     {} as Record<string, ActivityLogEntry[]>
   )
 
-  // get the dates in chronological order (newest to oldest)
+  // get the dates in chronological order (olders to newest)
   const dates = Object.keys(groupedEntries).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   )
