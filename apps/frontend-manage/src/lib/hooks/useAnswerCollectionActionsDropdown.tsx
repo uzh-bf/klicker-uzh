@@ -48,7 +48,7 @@ function useAnswerCollectionActionsDropdown({
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
             <FontAwesomeIcon icon={faMessage} className="mr-2.5 h-4 w-4" />
-            {t('shared.activity.viewActivityLog')}
+            {t('shared.activity.viewComments')}
           </div>
         ),
         onClick: (e?: React.MouseEvent) => {

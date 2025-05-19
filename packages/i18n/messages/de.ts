@@ -97,8 +97,8 @@ export default {
       installButton: 'Jetzt installieren',
     },
     activity: {
-      title: 'Aktivitätsprotokoll',
-      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
+      title: 'Kommentare',
+      viewComments: 'Kommentare anzeigen',
       noActivity: 'Noch keine Aktivität',
       noUnresolvedActivity: 'Keine unerledigten Nachrichten',
       addMessage:
@@ -106,7 +106,7 @@ export default {
       messageInputPlaceholder: 'Nachricht schreiben...',
       sending: 'Senden...',
       send: 'Senden',
-      tooltip: 'Aktivitätsprotokoll anzeigen',
+      tooltip: 'Kommentare anzeigen',
       markResolved: 'Als erledigt markieren',
       markUnresolved: 'Als unerledigt markieren',
       resolved: 'Erledigt',
@@ -3131,16 +3131,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activity: {
       title: '{type} Aktivitäten',
-      tooltip: 'Aktivitätsprotokoll anzeigen',
-      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
+      tooltip: 'Kommentare anzeigen',
+      viewComments: 'Kommentare anzeigen',
       noActivity: 'Noch keine Aktivitäten.',
       addMessage:
         'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
       messageInputPlaceholder: 'Nachricht eingeben...',
       send: 'Senden',
       sending: 'Wird gesendet...',
-      missingId:
-        'Objekt-ID fehlt. Aktivitätsprotokoll kann nicht angezeigt werden.',
+      missingId: 'Objekt-ID fehlt. Kommentare kann nicht angezeigt werden.',
     },
   },
 }

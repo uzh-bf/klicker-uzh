@@ -285,7 +285,7 @@ function Element({
                           icon={faMessage}
                           className="mr-2.5 h-4 w-4"
                         />
-                        {t('shared.activity.viewActivityLog')}
+                        {t('shared.activity.viewComments')}
                       </div>
                     ),
                     onClick: (e?: React.MouseEvent) => {
