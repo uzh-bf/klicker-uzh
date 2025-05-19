@@ -38,7 +38,7 @@ model Permission {
     userGroup   UserGroup? @relation(fields: [userGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     userGroupId Int?
 
-    // define if only minimal permissions should be propagated or if the explicitly granted 
+    // define if only minimal permissions should be propagated or if the explicitly granted
     // permission level should be propagated according to the permission scheme
     // & link all permissions that are derived from this permission to it
     propagation        Boolean             @default(false)
@@ -397,6 +397,60 @@ model AuditLogEntry {
     message String
 
     // timestamp of the action
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+enum ActivityLogType {
+    MESSAGE // message sent by one of the users with access to the object
+    MODIFICATION // modification of the object (field modified, etc.)
+    CREATION // creation of the object
+    SHARING // sharing of the object
+}
+
+model ActivityLogEntry {
+    id         Int             @id @default(autoincrement())
+    type       ActivityLogType // type of the change log entry
+    objectType ObjectType // type of the object
+
+    // generic message containing more information on the action
+    message String?
+
+    // structured data about modifications (for type MODIFICATION)
+    /// [PrismaActivityLogModificationDetails]
+    modificationDetails Json?
+
+    // whether the entry has been resolved (for type MESSAGE)
+    resolved   Boolean   @default(false)
+    resolvedAt DateTime?
+
+    // user who performed the action
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    userId String? @db.Uuid
+
+    // object in affected by the change
+    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    answerCollectionId Int?
+
+    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    elementId Int?
+
+    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    courseId String? @db.Uuid
+
+    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    liveQuizId String?   @db.Uuid
+
+    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    practiceQuizId String?       @db.Uuid
+
+    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    microLearningId String?        @db.Uuid
+
+    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    groupActivityId String?        @db.Uuid
+
+    // timestamps for the creation and modification of the entry
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }

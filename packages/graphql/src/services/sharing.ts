@@ -5406,23 +5406,24 @@ const acceptedPermissionLevels: {
   ],
 }
 
+export type PermissionCheck =
+  | {
+      catalogCollectionId: string
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | {
+      answerCollectionId: number
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
+  | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+
 export async function checkAccess(
-  checks: (
-    | {
-        catalogCollectionId: string
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | {
-        answerCollectionId: number
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
-    | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
-  )[],
+  checks: PermissionCheck[],
   ctx: PrismaTransactionContextWithUser
 ) {
   for (const check of checks) {
@@ -6545,5 +6546,102 @@ export async function addUserToUserGroup(
     email: user.email,
     isSelf: false,
   }
+}
+// #endregion
+
+// ! Activity Entries
+// #region
+export async function addActivityMessage(
+  {
+    objectId,
+    objectType,
+    message,
+  }: { objectId: string; objectType: DB.ObjectType; message: string },
+  ctx: ContextWithUser
+) {
+  const newActivityEntry = await ctx.prisma.activityLogEntry.create({
+    data: {
+      type: DB.ActivityLogType.MESSAGE,
+      message,
+      objectType,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId)
+          : undefined,
+      elementId:
+        objectType === DB.ObjectType.ELEMENT ? parseInt(objectId) : undefined,
+      courseId: objectType === DB.ObjectType.COURSE ? objectId : undefined,
+      liveQuizId: objectType === DB.ObjectType.LIVE_QUIZ ? objectId : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ ? objectId : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING ? objectId : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY ? objectId : undefined,
+      userId: ctx.user.sub,
+    },
+    include: {
+      user: { select: { shortname: true } },
+    },
+  })
+
+  return {
+    ...newActivityEntry,
+    username: newActivityEntry.user?.shortname,
+    isEdited: false, // flag to signal if an object has been edited
+  }
+}
+
+export async function getObjectActivity(
+  { objectId, objectType }: { objectId: string; objectType: DB.ObjectType },
+  ctx: ContextWithUser
+) {
+  // query the ActivityLogEntry table with the appropriate filter
+  const activityLog = await ctx.prisma.activityLogEntry.findMany({
+    where: {
+      elementId:
+        objectType === DB.ObjectType.ELEMENT
+          ? parseInt(objectId, 10)
+          : undefined,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId, 10)
+          : undefined,
+      courseId:
+        objectType === DB.ObjectType.COURSE ? String(objectId) : undefined,
+      liveQuizId:
+        objectType === DB.ObjectType.LIVE_QUIZ ? String(objectId) : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ
+          ? String(objectId)
+          : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING
+          ? String(objectId)
+          : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY
+          ? String(objectId)
+          : undefined,
+    },
+    include: { user: { select: { shortname: true } } },
+    // TODO: change to asc when we want to change the ordering of the activity log
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return activityLog.map((entry) => ({
+    ...entry,
+    message:
+      // TODO: translation or do this in the UI dynamically
+      entry.message ||
+      (entry.type === DB.ActivityLogType.CREATION
+        ? `User ${entry.user?.shortname} created this object.`
+        : null) ||
+      (entry.type === DB.ActivityLogType.MODIFICATION
+        ? `User ${entry.user?.shortname} modified ${entry.modificationDetails?.field} (${entry.modificationDetails?.oldValue} -> ${entry.modificationDetails?.newValue}).`
+        : null),
+    username: entry.user?.shortname ?? 'Unknown User',
+    isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
+  }))
 }
 // #endregion

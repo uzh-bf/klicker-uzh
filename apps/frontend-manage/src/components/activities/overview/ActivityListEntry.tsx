@@ -14,15 +14,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SharingTypeBadge from '~/components/sharing/SharingTypeBadge'
 import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
+import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
@@ -42,6 +44,7 @@ function ActivityListEntry({
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
+  const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
 
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
@@ -166,6 +169,7 @@ function ActivityListEntry({
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
+
           {activity.type === ActivityType.LiveQuiz ? (
             <LiveQuizActions
               liveQuiz={activity}
@@ -212,6 +216,21 @@ function ActivityListEntry({
         displayName={activity.displayName}
         open={changeName}
         setOpen={setChangeName}
+      />
+
+      <ActivityLogDialog
+        objectId={String(activity.id)}
+        objectType={
+          activity.type === ActivityType.LiveQuiz
+            ? ObjectType.LiveQuiz
+            : activity.type === ActivityType.PracticeQuiz
+              ? ObjectType.PracticeQuiz
+              : activity.type === ActivityType.MicroLearning
+                ? ObjectType.MicroLearning
+                : ObjectType.GroupActivity
+        }
+        open={isActivityLogOpen}
+        onOpenChange={setActivityLogOpen}
       />
     </>
   )

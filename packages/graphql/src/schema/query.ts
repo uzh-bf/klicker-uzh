@@ -71,6 +71,7 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
+  ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
   CatalogSelectionObject,
@@ -1679,6 +1680,85 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.getDerivedPermissionOrigin(args, ctx)
+        },
+      }),
+
+      getObjectActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on the corresponding object
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === DB.ObjectType.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+
+          if (!validAccess) {
+            return null
+          }
+
+          return SharingService.getObjectActivity(args, ctx)
         },
       }),
 

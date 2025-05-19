@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faMessage,
   faPencil,
   faShare,
 } from '@fortawesome/free-solid-svg-icons'
@@ -22,6 +23,7 @@ import {
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import CourseManipulationModal, {
   CourseManipulationFormData,
@@ -55,6 +57,7 @@ function CourseOverviewHeader({
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
@@ -95,6 +98,16 @@ function CourseOverviewHeader({
           >
             <Button.Icon icon={faShare} />
             <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
+          </Button>
+        ) : null}
+        {user?.privatePreview ? (
+          <Button
+            onClick={() => setIsActivityLogOpen(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-activity-log-button' }}
+          >
+            <Button.Icon icon={faMessage} />
+            <Button.Label>{t('shared.activity.tooltip')}</Button.Label>
           </Button>
         ) : null}
         <QRCodePopover
@@ -268,6 +281,13 @@ function CourseOverviewHeader({
       >
         {t('manage.course.linkLTICopied')}
       </Toast>
+
+      <ActivityLogDialog
+        objectId={course.id}
+        objectType={ObjectType.Course}
+        open={isActivityLogOpen}
+        onOpenChange={setIsActivityLogOpen}
+      />
     </div>
   )
 }

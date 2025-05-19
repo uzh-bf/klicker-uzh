@@ -2,11 +2,19 @@ import {
   ElementData,
   ElementStatus,
   ElementType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@uzh-bf/design-system/dist/future'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
@@ -81,6 +89,8 @@ function ElementEditForm({
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+
+  const [activeTab, setActiveTab] = useState('preview')
   const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -272,11 +282,58 @@ function ElementEditForm({
                   <ElementFormErrors errors={errors} />
                 )}
               </div>
-              <StudentElementPreview
-                values={values}
-                elementDataTypename={elementDataTypename}
-                answerCollectionEntries={answerCollectionEntries}
-              />
+
+              {mode === ElementEditMode.EDIT ? (
+                <Tabs
+                  defaultValue="preview"
+                  className="w-full max-w-sm"
+                  onValueChange={(value) => {
+                    setActiveTab(value)
+                  }}
+                >
+                  <TabsList className="w-full">
+                    <TabsTrigger
+                      value="preview"
+                      className="w-1/2 font-bold"
+                      data-cy="element-preview-tab"
+                    >
+                      {t('shared.generic.preview')}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="activity"
+                      className="w-1/2 font-bold"
+                      data-cy="element-activity-tab"
+                    >
+                      {t('shared.generic.activity')}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="preview">
+                    <StudentElementPreview
+                      values={values}
+                      elementDataTypename={elementDataTypename}
+                      answerCollectionEntries={answerCollectionEntries}
+                    />
+                  </TabsContent>
+                  <TabsContent value="activity">
+                    <div className="w-sm w-full flex-1">
+                      <ActivityLog
+                        visible={activeTab === 'activity'}
+                        objectId={elementId || ''}
+                        objectType={ObjectType.Element}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="w-full max-w-sm">
+                  <H3>{t('shared.generic.preview')}</H3>
+                  <StudentElementPreview
+                    values={values}
+                    elementDataTypename={elementDataTypename}
+                    answerCollectionEntries={answerCollectionEntries}
+                  />
+                </div>
+              )}
             </div>
 
             {mode === ElementEditMode.EDIT && elementId && !inputsDisabled && (

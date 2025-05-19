@@ -10,11 +10,12 @@ import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SharingTypeBadge from '~/components/sharing/SharingTypeBadge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
+import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -42,8 +43,10 @@ function AnswerCollectionItem({
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
+    collectionName: collection.name,
     isOwner: collection.isOwner ?? false,
     isManager: collection.isManager ?? false,
     isEditor: collection.isEditor ?? false,
@@ -54,6 +57,7 @@ function AnswerCollectionItem({
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   })
 
   return (
@@ -198,6 +202,13 @@ function AnswerCollectionItem({
           setRemovalFailure={setRemovalFailure}
         />
       )}
+
+      <ActivityLogDialog
+        objectId={collection.id}
+        objectType={ObjectType.AnswerCollection}
+        open={activityLogOpen}
+        onOpenChange={setActivityLogOpen}
+      />
     </>
   )
 }

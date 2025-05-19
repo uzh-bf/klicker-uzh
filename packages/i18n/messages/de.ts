@@ -96,6 +96,23 @@ export default {
     login: {
       installButton: 'Jetzt installieren',
     },
+    activity: {
+      title: 'Aktivitätsprotokoll',
+      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
+      noActivity: 'Noch keine Aktivität',
+      noUnresolvedActivity: 'Keine unerledigten Nachrichten',
+      addMessage:
+        'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
+      messageInputPlaceholder: 'Nachricht schreiben...',
+      sending: 'Senden...',
+      send: 'Senden',
+      tooltip: 'Aktivitätsprotokoll anzeigen',
+      markResolved: 'Als erledigt markieren',
+      markUnresolved: 'Als unerledigt markieren',
+      resolved: 'Erledigt',
+      hideResolved: 'Erledigte Nachrichten ausblenden',
+      resolvedAt: 'Erledigt {time}',
+    },
     generic: {
       date: 'Datum',
       percentage: 'Prozent',
@@ -174,6 +191,7 @@ export default {
       activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
+      loading: 'Lädt...',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -334,6 +352,7 @@ export default {
       shared: 'Geteilt',
       imported: 'Importiert',
       dependency: 'Abhängigkeit',
+      tryAgain: 'Erneut versuchen',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -3109,6 +3128,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
+    },
+    activity: {
+      title: '{type} Aktivitäten',
+      tooltip: 'Aktivitätsprotokoll anzeigen',
+      viewActivityLog: 'Aktivitätsprotokoll anzeigen',
+      noActivity: 'Noch keine Aktivitäten.',
+      addMessage:
+        'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
+      messageInputPlaceholder: 'Nachricht eingeben...',
+      send: 'Senden',
+      sending: 'Wird gesendet...',
+      missingId:
+        'Objekt-ID fehlt. Aktivitätsprotokoll kann nicht angezeigt werden.',
     },
   },
 }

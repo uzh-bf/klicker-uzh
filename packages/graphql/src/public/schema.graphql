@@ -82,6 +82,26 @@ enum ActivityLevel {
   MEDIUM
 }
 
+type ActivityLogEntry {
+  createdAt: Date!
+  id: Int!
+  isEdited: Boolean
+  message: String
+  objectType: ObjectType!
+  resolved: Boolean!
+  resolvedAt: Date
+  type: ActivityLogType!
+  updatedAt: Date!
+  username: String
+}
+
+enum ActivityLogType {
+  CREATION
+  MESSAGE
+  MODIFICATION
+  SHARING
+}
+
 type ActivityPerformance {
   activityName: String!
   activityType: ActivityType!
@@ -1462,6 +1482,7 @@ type MicroLearning {
 type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
+  addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
@@ -1578,6 +1599,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
@@ -2034,6 +2056,7 @@ type Query {
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
+  getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
