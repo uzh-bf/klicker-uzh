@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.54...v3.3.0-alpha.55) (2025-05-19)
+
+
+### Features
+
+* implement activity log on element with messages and edit changes ([#4692](https://github.com/uzh-bf/klicker-uzh/issues/4692)) ([2358fa1](https://github.com/uzh-bf/klicker-uzh/commit/2358fa120fb8ad543e0916b8264d20b152fd501c))
+
+
+### Enhancements
+
+* separate element status from remaining element form logic to allow users with read access to change it ([#4694](https://github.com/uzh-bf/klicker-uzh/issues/4694)) ([94d3217](https://github.com/uzh-bf/klicker-uzh/commit/94d3217fd18f50802d9704def7d9a2e9b3032335))
+* update permission module with optional propagation of permissions to element level ([#4693](https://github.com/uzh-bf/klicker-uzh/issues/4693)) ([04e4075](https://github.com/uzh-bf/klicker-uzh/commit/04e407527406871de905af3ca600183ac7cbd068))
+
+
+### Refactors
+
+* eliminate sharing object type form types structure and replace it with prisma object type ([#4696](https://github.com/uzh-bf/klicker-uzh/issues/4696)) ([e74e30c](https://github.com/uzh-bf/klicker-uzh/commit/e74e30ca91822a192dee4207d23f7b8a02579a3d))
+
 ## [3.3.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.53...v3.3.0-alpha.54) (2025-05-15)
 
 
