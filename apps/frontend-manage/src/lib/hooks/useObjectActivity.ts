@@ -100,8 +100,8 @@ export function useObjectActivity({
             variables: { objectId: String(objectId), objectType },
             data: {
               getObjectActivity: [
-                data.addActivityMessage,
                 ...(existingData.getObjectActivity || []),
+                data.addActivityMessage,
               ],
             },
           })
