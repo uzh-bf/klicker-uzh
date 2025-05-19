@@ -1915,6 +1915,9 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro1}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro1}"]`).should(
       'exist'
     )
@@ -1938,6 +1941,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
     ).realClick()
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro2}"]`).should(
@@ -1977,6 +1983,9 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro3}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro3}"]`).should(
       'exist'
     )
@@ -2002,6 +2011,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
     ).realClick()
     cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro4}"]`).should(
@@ -2056,19 +2068,16 @@ describe('Different microlearning workflows', function () {
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
-    } else {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
-      ).should('not.exist')
-    }
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
@@ -2081,19 +2090,16 @@ describe('Different microlearning workflows', function () {
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
-    } else {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
-      ).should('not.exist')
-    }
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
@@ -2112,6 +2118,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
     ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -2128,19 +2137,16 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
-        groupPermission ? 'not.exist' : 'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
-    } else {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).should('not.exist')
-    }
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2192,6 +2198,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
     ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -2211,6 +2220,9 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
     ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
       'exist'
     )
@@ -2242,6 +2254,9 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -2258,19 +2273,16 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
-        groupPermission ? 'not.exist' : 'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
-    } else {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).should('not.exist')
-    }
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2330,6 +2342,9 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -2349,6 +2364,9 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
     ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
       'exist'
     )
@@ -2380,6 +2398,9 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -2396,19 +2417,16 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
-        groupPermission ? 'not.exist' : 'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
-    } else {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
-      ).should('not.exist')
-    }
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2471,6 +2489,9 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro1}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro1}"]`).should(
       'exist'
     )
@@ -2497,6 +2518,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
     ).realClick()
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro2}"]`).should(
@@ -2539,6 +2563,9 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro3}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro3}"]`).should(
       'exist'
     )
@@ -2567,6 +2594,9 @@ describe('Different microlearning workflows', function () {
       `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
     ).realClick()
     cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-microlearning-${data.sharing.micro4}"]`).should(

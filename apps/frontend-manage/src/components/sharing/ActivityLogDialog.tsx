@@ -29,6 +29,7 @@ function ActivityLogDialog({
       open={open}
       onClose={() => onOpenChange(false)}
       title={t('shared.activity.title')}
+      data={{ cy: 'activity-log-dialog' }}
       dataCloseButton={{ cy: 'close-activity-log' }}
       className={{
         content: 'max-w-3xl',

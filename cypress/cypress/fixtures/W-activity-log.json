@@ -1,10 +1,7 @@
 {
   "element": {
-    "title": "Activity Log Test Element",
-    "content": "This is a test element for activity log testing",
-    "updatedTitle": "Activity Log Test Element Updated"
-  },
-  "activityLog": {
-    "message": "This is a test message for the activity log"
+    "newTitle": "Activity Log Test Element Updated",
+    "message1": "This is a test message for the activity log.",
+    "message2": "This is another test message for the activity log."
   }
 }

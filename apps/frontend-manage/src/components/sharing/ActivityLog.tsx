@@ -208,6 +208,7 @@ function ActivityLog({
                     <div
                       key={entry.id}
                       className="flex flex-row items-center py-0.5 text-xs text-slate-500"
+                      data-cy={`activity-log-entry-${entry.message}`}
                     >
                       <div className="flex-grow break-words">
                         {entry.message}
@@ -221,7 +222,11 @@ function ActivityLog({
                 }
 
                 return (
-                  <div key={entry.id} className="mb-2">
+                  <div
+                    key={entry.id}
+                    className="mb-2"
+                    data-cy={`activity-log-entry-${entry.message}`}
+                  >
                     <div className="rounded-lg border bg-white p-3 shadow-sm">
                       <div className="mb-2 flex flex-row items-center justify-between text-xs">
                         {!isOwnMessage && (
@@ -262,11 +267,13 @@ function ActivityLog({
           value={message}
           onChange={(text) => setMessage(text)}
           disabled={isSubmitting || isAddingMessage}
+          data={{ cy: 'activity-log-input' }}
         />
 
         <Button
           type="submit"
           disabled={isSubmitting || isAddingMessage || !message.trim()}
+          data={{ cy: 'activity-log-submit' }}
         >
           {isSubmitting || isAddingMessage
             ? t('shared.activity.sending')

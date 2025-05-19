@@ -292,10 +292,18 @@ function ElementEditForm({
                   }}
                 >
                   <TabsList className="w-full">
-                    <TabsTrigger value="preview" className="w-1/2 font-bold">
+                    <TabsTrigger
+                      value="preview"
+                      className="w-1/2 font-bold"
+                      data-cy="element-preview-tab"
+                    >
                       {t('shared.generic.preview')}
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="w-1/2 font-bold">
+                    <TabsTrigger
+                      value="activity"
+                      className="w-1/2 font-bold"
+                      data-cy="element-activity-tab"
+                    >
                       {t('shared.generic.activity')}
                     </TabsTrigger>
                   </TabsList>
