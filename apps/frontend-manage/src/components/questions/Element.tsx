@@ -124,9 +124,15 @@ function Element({
   const availableActions = useAvailableElementActions({
     actions,
     permissionActionMap: {
-      isManager: ['shareElement', 'deleteElement'],
+      isManager: [
+        ...(dataUser?.userProfile?.privatePreview ? ['shareElement'] : []),
+        'deleteElement',
+      ],
       isEditor: ['editElement'],
-      isShared: ['duplicateElement', 'activityLog'],
+      isShared: [
+        'duplicateElement',
+        ...(dataUser?.userProfile?.privatePreview ? ['activityLog'] : []),
+      ],
       isRemovable: ['removeElement'],
     },
     isEditor: element.isEditor ?? false,
