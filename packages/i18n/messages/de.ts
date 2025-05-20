@@ -257,6 +257,7 @@ export default {
       settings: 'Einstellungen',
       activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
+      courses: 'Kurse',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
@@ -1015,6 +1016,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität wurde erfolgreich geändert.',
       activityNameChangeError:
         'Der Name der Aktivität konnte nicht geändert werden.',
+      noCourseAssigned: 'Kein Kurs zugewiesen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

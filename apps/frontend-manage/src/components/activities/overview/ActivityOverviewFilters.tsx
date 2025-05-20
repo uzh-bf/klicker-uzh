@@ -14,6 +14,7 @@ import {
   faQuestionCircle,
   faStamp,
   faUserGroup,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
@@ -46,19 +47,23 @@ export type ActivityOverviewFilterType = {
   status: PublicationStatus[]
   sharingType?: SharingType[]
   type?: ActivityType
+  course?: string | null // null means "unassigned", undefined means "all courses"
 }
 
 function ActivityOverviewFilters({
   filters,
   setFilters,
+  availableCourses = [],
 }: {
   filters: ActivityOverviewFilterType
   setFilters: Dispatch<SetStateAction<ActivityOverviewFilterType>>
+  availableCourses?: string[]
 }) {
   const t = useTranslations()
   const [statusVisible, setStatusVisible] = useState(true)
   const [sharingTypeVisible, setSharingTypeVisible] = useState(true)
   const [typesVisible, setTypesVisible] = useState(true)
+  const [coursesVisible, setCoursesVisible] = useState(true)
 
   const toggleStatusFilter = (status: PublicationStatus) => {
     setFilters((prev) => {
@@ -96,6 +101,15 @@ function ActivityOverviewFilters({
         return { ...prev, type: undefined }
       }
       return { ...prev, type }
+    })
+  }
+
+  const toggleCourseFilter = (course: string | null) => {
+    setFilters((prev) => {
+      if (prev.course === course) {
+        return { ...prev, course: undefined }
+      }
+      return { ...prev, course }
     })
   }
 
@@ -170,6 +184,36 @@ function ActivityOverviewFilters({
               active={filters.type === type}
               onClick={() => toggleTypeFilter(type)}
               data={{ cy: `type-filter-${type.toLowerCase()}` }}
+            />
+          ))}
+        </ul>
+      )}
+
+      <TagHeader
+        text={t('shared.generic.courses')}
+        state={coursesVisible}
+        setState={setCoursesVisible}
+      />
+      {coursesVisible && (
+        <ul className="list-none">
+          <TagItem
+            key="unassigned"
+            text={t('manage.activities.noCourseAssigned')}
+            icon={[faX, faX]}
+            active={filters.course === null}
+            onClick={() => toggleCourseFilter(null)}
+            data={{ cy: 'course-filter-unassigned' }}
+          />
+          {availableCourses.map((course) => (
+            <TagItem
+              key={course}
+              text={course}
+              icon={[faUserGroup, faUserGroup]}
+              active={filters.course === course}
+              onClick={() => toggleCourseFilter(course)}
+              data={{
+                cy: `course-filter-${course.toLowerCase().replace(/\s+/g, '-')}`,
+              }}
             />
           ))}
         </ul>
