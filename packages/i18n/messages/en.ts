@@ -110,6 +110,14 @@ export default {
       resolved: 'Resolved',
       hideResolved: 'Hide resolved messages',
       resolvedAt: 'Resolved {time}',
+      messageMESSAGE: '',
+      messageCREATION: '{username} created this object.',
+      messageMODIFICATION:
+        '{username} modified {field} ({oldValue} -> {newValue}).',
+      messageSHARING: '', // TODO: implement once available
+      fieldtitle: 'Titel',
+      fieldstatus: 'Status',
+      fieldcontent: 'Inhalt',
     },
     generic: {
       date: 'Date',

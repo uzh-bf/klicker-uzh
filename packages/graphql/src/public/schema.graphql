@@ -88,11 +88,24 @@ type ActivityLogEntry {
   isEdited: Boolean
   message: String
   objectType: ObjectType!
+  options: ActivityLogEntryOptions
   resolved: Boolean!
   resolvedAt: Date
   type: ActivityLogType!
   updatedAt: Date!
-  username: String
+  username: String!
+}
+
+type ActivityLogEntryOptions {
+  field: ActivityLogModificationFieldType
+  newValue: String
+  oldValue: String
+}
+
+enum ActivityLogModificationFieldType {
+  content
+  status
+  title
 }
 
 enum ActivityLogType {
