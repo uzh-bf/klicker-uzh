@@ -174,7 +174,7 @@ function Element({
                       setModificationModalOpen(true)
                     }
                   }}
-                  data-cy="question-title"
+                  data-cy={`element-title-${element.name}`}
                 >
                   {element.name}
                   {element.permissionLevel && (

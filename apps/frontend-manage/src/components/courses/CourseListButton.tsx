@@ -133,19 +133,21 @@ function CourseListButton({
               )}
             </div>
 
-            <Button
-              className={{
-                root: 'h-9 w-9',
-              }}
-              onClick={(e) => {
-                e?.stopPropagation()
-                e?.preventDefault()
-                setActivityLogOpen(true)
-              }}
-              data={{ cy: `activity-log-course-${course?.name}` }}
-            >
-              <Button.Icon withoutLabel icon={faMessage} />
-            </Button>
+            {dataUser?.userProfile?.privatePreview ? (
+              <Button
+                className={{
+                  root: 'h-9 w-9',
+                }}
+                onClick={(e) => {
+                  e?.stopPropagation()
+                  e?.preventDefault()
+                  setActivityLogOpen(true)
+                }}
+                data={{ cy: `activity-log-course-${course?.name}` }}
+              >
+                <Button.Icon withoutLabel icon={faMessage} />
+              </Button>
+            ) : null}
 
             {course.isManager ? (
               <>
