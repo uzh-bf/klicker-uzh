@@ -512,7 +512,7 @@ Your data will never be shared with other parties beside the above and will neve
         'Your data is being used to provide the functionalities made available to you by KlickerUZH. Further analysis of any of the collected data outside of the KlickerUZH platform may only be performed in anonymized form and only for the purpose of teaching and research. Lecturers are obligated to inform you appropriately about any research that is being performed on your collected data.',
       dataStorageTitle: 'How long do you store my data?',
       dataStorageNotice:
-        'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
+        'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
     },
@@ -562,7 +562,7 @@ Within a group, you can compare your points with those of your fellow students; 
 
 ![Gamification](/img/08_gamification.png)
 
-All activities in the KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
+All activities in KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
 The following activities are part of the challenge:
 
@@ -1011,13 +1011,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
       feedbackText:
-        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+        'Do you have any feedback for us? Are you experiencing issues when using KlickerUZH? Please provide us with your feedback so we can continue to improve KlickerUZH for you.',
       featureRequest: 'Feature Request',
       featureRequestDesc: 'I would like to request a new feature.',
       bugReport: 'Bug Report',
       bugReportDesc: 'I would like to report a bug or issue.',
       selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      selfHostingDesc: 'I have problems when self-hosting KlickerUZH.',
       furtherResources: 'Further Resources',
       documentationDesc: 'Tutorials, feature documentation, and release notes',
       faq: 'FAQ',
@@ -1025,7 +1025,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       connect: 'Connect with Us',
       community: 'Community',
       communityDesc:
-        'A place for discussions and questions regarding the KlickerUZH',
+        'A place for discussions and questions regarding KlickerUZH',
       email: 'E-Mail',
       emailDesc: 'Contact us at klicker@df.uzh.ch',
       aboutProject: 'About the Project',
@@ -1111,23 +1111,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       remainingValidity: 'Remaining validity:',
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
-    },
-    migration: {
-      pageName: 'Migrate Data from KlickerV2',
-      step1Title: 'Step 1: Request Migration Token',
-      step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      requestMigrationToken: 'Request Migration Token',
-      step2Title: 'Step 2: Insert Migration Link',
-      step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      step3Title: 'Step 3: Start Migration',
-      step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      startMigration: 'Start Migration',
-      step4Title: 'Step 4: Migration Status Notification',
-      step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',

@@ -121,11 +121,9 @@ const Development = () => {
           Center at the Dept. of Finance (UZH), the KlickerUZH team will be
           working on several interesting focus areas over the coming years. We
           will be developing best practices and materials, as well as extending
-          the KlickerUZH with capabilities that support each of these areas.{' '}
-          <br />
+          KlickerUZH with capabilities that support each of these areas. <br />
           This page and our official documentation will be continuously extended
-          with helpful resources. You can help shape the KlickerUZH by joining
-          our{' '}
+          with helpful resources. You can help shape KlickerUZH by joining our{' '}
           <a href="https://community.klicker.uzh.ch/" target="_blank">
             community
           </a>

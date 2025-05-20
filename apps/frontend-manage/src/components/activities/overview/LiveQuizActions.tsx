@@ -6,7 +6,6 @@ import {
   PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
@@ -91,8 +90,6 @@ function LiveQuizActions({
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
-  const t = useTranslations()
-
   const [activityLogOpen, setActivityLogOpen] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
