@@ -8,7 +8,7 @@ import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
@@ -44,9 +44,7 @@ function ActivityLog({
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filterResolved, setFilterResolved] = useState(!showResolved)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Use the generic hook for activity log handling
   const {
     entries: queryEntries,
     loading: queryLoading,
@@ -106,14 +104,6 @@ function ActivityLog({
       )
     : allEntries
 
-  // scroll to bottom when new messages are added
-  // TODO: works for newly added messages and when the modals are opened the first time, but not any of the following times (modal not unloaded completely?)
-  // useEffect(() => {
-  //   if (messagesEndRef.current && visible) {
-  //     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
-  //   }
-  // }, [entries.length, visible])
-
   if (loading) {
     return (
       <div className="flex w-full flex-col rounded-md border p-4">
@@ -155,9 +145,9 @@ function ActivityLog({
     {} as Record<string, ActivityLogEntry[]>
   )
 
-  // get the dates in chronological order (newest to oldest)
+  // get the dates in chronological order (olders to newest)
   const dates = Object.keys(groupedEntries).sort(
-    (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
   )
 
   return (
@@ -175,87 +165,97 @@ function ActivityLog({
         </label>
       </div> */}
 
-      <div className="max-h-80 flex-1 flex-col space-y-2 overflow-y-auto p-2">
-        {entries.length === 0 && (
-          <div className="flex flex-col items-center justify-center p-4 text-center">
-            <div className="mb-2 text-4xl text-gray-300">📝</div>
-            <p className="text-sm font-medium text-gray-500">
-              {filterResolved && allEntries.length > 0
-                ? t('shared.activity.noUnresolvedActivity')
-                : t('shared.activity.noActivity')}
-            </p>
-            <p className="mt-1 text-xs text-gray-400">
-              {t('shared.activity.addMessage')}
-            </p>
-          </div>
-        )}
+      <div
+        className="max-h-80 overflow-y-auto scroll-smooth p-2"
+        style={{ overscrollBehavior: 'contain' }}
+        ref={(el) => {
+          // scroll to bottom when component mounts or updates
+          if (el && entries.length > 0) {
+            el.scrollTop = el.scrollHeight
+          }
+        }}
+      >
+        <div className="flex flex-col space-y-2">
+          {entries.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-4 text-center">
+              <div className="mb-2 text-4xl text-gray-300">📝</div>
+              <p className="text-sm font-medium text-gray-500">
+                {filterResolved && allEntries.length > 0
+                  ? t('shared.activity.noUnresolvedActivity')
+                  : t('shared.activity.noActivity')}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                {t('shared.activity.addMessage')}
+              </p>
+            </div>
+          )}
 
-        {entries.length > 0 &&
-          dates.map((date) => (
-            <div key={date} className="flex flex-col space-y-3">
-              <div className="my-1 text-center text-xs font-medium text-gray-500">
-                {dayjs(date).format('DD.MM.YYYY')}
-              </div>
+          {entries.length > 0 &&
+            dates.map((date) => (
+              <div key={date} className="flex flex-col space-y-3">
+                <div className="my-1 text-center text-xs font-medium text-gray-500">
+                  {dayjs(date).format('DD.MM.YYYY')}
+                </div>
 
-              {groupedEntries[date].map((entry) => {
-                const isOwnMessage = entry.username === 'self' // TODO: replace with actual logic to check if message is from current user
+                {groupedEntries[date].map((entry) => {
+                  const isOwnMessage = entry.username === 'self' // TODO: replace with actual logic to check if message is from current user
 
-                if (
-                  entry.type === ActivityLogType.Creation ||
-                  entry.type === ActivityLogType.Modification
-                ) {
-                  return (
-                    <div
-                      key={entry.id}
-                      className="flex flex-row items-center py-0.5 text-xs text-slate-500"
-                      data-cy={`activity-log-entry-${entry.message}`}
-                    >
-                      <div className="flex-grow break-words">
-                        {entry.message}
-                      </div>
-                      <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
-                        {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
-                        {entry.isEdited && ' (edited)'}
-                      </div>
-                    </div>
-                  )
-                }
-
-                return (
-                  <div
-                    key={entry.id}
-                    className="mb-2"
-                    data-cy={`activity-log-entry-${entry.message}`}
-                  >
-                    <div className="rounded-lg border bg-white p-3 shadow-sm">
-                      <div className="mb-2 flex flex-row items-center justify-between text-xs">
-                        {!isOwnMessage && (
-                          <div className="flex items-center">
-                            <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                              {(entry.username || 'U')[0].toUpperCase()}
-                            </div>
-                            <span className="font-medium text-gray-700">
-                              {entry.username || 'Unknown user'}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="ml-auto text-slate-400">
+                  if (
+                    entry.type === ActivityLogType.Creation ||
+                    entry.type === ActivityLogType.Modification
+                  ) {
+                    return (
+                      <div
+                        key={entry.id}
+                        className="flex flex-row items-center py-0.5 text-xs text-slate-500"
+                        data-cy={`activity-log-entry-${entry.message}`}
+                      >
+                        <div className="flex-grow break-words">
+                          {entry.message}
+                        </div>
+                        <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
                           {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
                           {entry.isEdited && ' (edited)'}
                         </div>
                       </div>
+                    )
+                  }
 
-                      <div className="prose prose-sm w-full max-w-none break-words text-gray-700">
-                        {entry.message}
+                  return (
+                    <div
+                      key={entry.id}
+                      className="mb-2"
+                      data-cy={`activity-log-entry-${entry.message}`}
+                    >
+                      <div className="rounded-lg border bg-white p-3 shadow-sm">
+                        <div className="mb-2 flex flex-row items-center justify-between text-xs">
+                          {!isOwnMessage && (
+                            <div className="flex items-center">
+                              <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                {(entry.username || 'U')[0].toUpperCase()}
+                              </div>
+                              <span className="font-medium text-gray-700">
+                                {entry.username || 'Unknown user'}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="ml-auto text-slate-400">
+                            {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
+                            {entry.isEdited && ' (edited)'}
+                          </div>
+                        </div>
+
+                        <div className="prose prose-sm w-full max-w-none break-words text-gray-700">
+                          {entry.message}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-        <div ref={messagesEndRef} />
+                  )
+                })}
+              </div>
+            ))}
+        </div>
       </div>
 
       <form

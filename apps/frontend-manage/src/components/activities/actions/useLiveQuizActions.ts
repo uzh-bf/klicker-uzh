@@ -203,7 +203,7 @@ function useLiveQuizActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewActivityLog'),
+        label: t('shared.activity.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${quiz.name}` },

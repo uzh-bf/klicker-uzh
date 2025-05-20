@@ -155,7 +155,7 @@ function useGroupActivityActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewActivityLog'),
+        label: t('shared.activity.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${groupActivity.name}` },

@@ -6625,8 +6625,7 @@ export async function getObjectActivity(
           : undefined,
     },
     include: { user: { select: { shortname: true } } },
-    // TODO: change to asc when we want to change the ordering of the activity log
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
   })
 
   return activityLog.map((entry) => ({
