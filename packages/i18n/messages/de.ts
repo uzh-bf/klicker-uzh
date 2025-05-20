@@ -112,6 +112,14 @@ export default {
       resolved: 'Erledigt',
       hideResolved: 'Erledigte Nachrichten ausblenden',
       resolvedAt: 'Erledigt {time}',
+      messageMESSAGE: '',
+      messageCREATION: '{username} hat dieses Objekt erstellt.',
+      messageMODIFICATION:
+        '{username} hat {field} geändert ({oldValue} -> {newValue}).',
+      messageSHARING: '', // TODO: implement once available
+      fieldtitle: 'Titel',
+      fieldstatus: 'Status',
+      fieldcontent: 'Inhalt',
     },
     generic: {
       date: 'Datum',

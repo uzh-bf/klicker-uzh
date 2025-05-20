@@ -1,7 +1,7 @@
 {
    "ActivateParticipantAccount": "94be2b160d9ac7d21ef8d657fa0d7deeec9d0872ba31479df05e256c82e74789",
    "ActivateLiveQuizBlock": "f9afb1bf4afad2294ac2bc409acc96d253d47eb4d49d653a2fad07a27990135f",
-   "AddActivityMessage": "cd19c5aae73efaf87ef9485c5f84579e178537981152052c7a1c38d102c57b7b",
+   "AddActivityMessage": "685c65670cf839cbc3d307f7575fc4ac6fc3734debf8b073cff49e79c363abed",
    "AddAnswerCollectionOption": "8bb0934ae38862813ce92bda0f44c9a52c395d7ed3e6e08a9905da668bc6830f",
    "AddConfusionTimestep": "c9f687c080722a53019ba2fada15762f5d5586ad320c2c61557144419da92ad8",
    "AddMessageToGroup": "24da0b23b548d5fc67a024fdc2daad3fa955f7fe6fa91b0fb44330d1ae493b16",
@@ -209,7 +209,7 @@
    "GetMicroLearningEvaluation": "1987a538d863b7301acc1990839ba4a67c029347f3516565cdce5bda98711935",
    "GetMicroLearningSummary": "ebb0212bb2a8b3215ba17d1f70411c8c464765c3514604f1dff77fad7d3a5380",
    "GetMicroLearning": "18cb3a26b51dd46b143a3aed485d1bb9deb67eb8828918c975ce5306ae0253e7",
-   "GetObjectActivity": "910668a7c8a2e8c8f0e5ba3fc38e5f21456466f55c718445cccfbda660475c2c",
+   "GetObjectActivity": "d1878f02f120180d0a449d909443bf4e1af764284aca1e84b72bc592213ede11",
    "GetObjectPermissions": "3f17fb53b439e242f93b97341c84d2d860dd08ef5295b3341bbdab70c41aa397",
    "GetParticipantCourses": "bb82d68f51f9b46767e9f6a8c9c66ef2642b487c8f8a84473ce10f1b44eaf7fe",
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",

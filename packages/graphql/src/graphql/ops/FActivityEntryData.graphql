@@ -6,6 +6,13 @@ fragment ActivityEntryData on ActivityLogEntry {
   resolved
   resolvedAt
   username
+
+  options {
+    field
+    oldValue
+    newValue
+  }
+
   isEdited
   createdAt
   updatedAt

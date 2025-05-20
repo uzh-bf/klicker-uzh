@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationFieldType,
   ActivityType,
   CatalogObject,
   ObjectSharingRequest,
@@ -6587,8 +6588,9 @@ export async function addActivityMessage(
 
   return {
     ...newActivityEntry,
-    username: newActivityEntry.user?.shortname,
+    username: newActivityEntry.user!.shortname,
     isEdited: false, // flag to signal if an object has been edited
+    options: {},
   }
 }
 
@@ -6630,15 +6632,13 @@ export async function getObjectActivity(
 
   return activityLog.map((entry) => ({
     ...entry,
-    message:
-      // TODO: translation or do this in the UI dynamically
-      entry.message ||
-      (entry.type === DB.ActivityLogType.CREATION
-        ? `User ${entry.user?.shortname} created this object.`
-        : null) ||
-      (entry.type === DB.ActivityLogType.MODIFICATION
-        ? `User ${entry.user?.shortname} modified ${entry.modificationDetails?.field} (${entry.modificationDetails?.oldValue} -> ${entry.modificationDetails?.newValue}).`
-        : null),
+    message: entry.message,
+    options: {
+      field: entry.modificationDetails
+        ?.field as ActivityLogModificationFieldType,
+      oldValue: entry.modificationDetails?.oldValue,
+      newValue: entry.modificationDetails?.newValue,
+    },
     username: entry.user?.shortname ?? 'Unknown User',
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))

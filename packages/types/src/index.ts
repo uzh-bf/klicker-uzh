@@ -14,8 +14,6 @@ export enum ActivityLogModificationFieldType {
   TITLE = 'title',
   STATUS = 'status',
   CONTENT = 'content',
-  OPTIONS = 'options',
-  TAGS = 'tags',
 }
 
 export interface ActivityLogModificationDetails {

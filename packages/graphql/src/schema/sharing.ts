@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationFieldType as ActivityLogModificationFieldTypeEnum,
   CatalogObject as CatalogObjectInterface,
   ObjectSharingRequest as ObjectSharingRequestType,
   SharingType as SharingTypeEnum,
@@ -25,6 +26,11 @@ export const SharingType = builder.enumType('SharingType', {
 export const ActivityLogType = builder.enumType('ActivityLogType', {
   values: Object.values(DB.ActivityLogType),
 })
+
+export const ActivityLogModificationFieldType = builder.enumType(
+  'ActivityLogModificationFieldType',
+  { values: Object.values(ActivityLogModificationFieldTypeEnum) }
+)
 
 export const PermissionLevel = builder.enumType('PermissionLevel', {
   values: Object.values(DB.PermissionLevel),
@@ -255,9 +261,28 @@ export const UserGroup = UserGroupRef.implement({
 // ----- ACTIVITY LOG -----
 // #region
 interface IActivityLogEntry extends DB.ActivityLogEntry {
-  username?: string // username of the user who created the activity/changelog entry
+  username: string // username of the user who created the activity/changelog entry
+  options: {
+    field?: ActivityLogModificationFieldTypeEnum
+    oldValue?: string
+    newValue?: string
+  }
   isEdited?: boolean // boolean to signal if an entry has been edited after its creation
 }
+
+export const ActivityLogEntryOptionsRef = builder.objectRef<
+  IActivityLogEntry['options']
+>('ActivityLogEntryOptions')
+export const ActivityLogEntryOptions = ActivityLogEntryOptionsRef.implement({
+  fields: (t) => ({
+    field: t.expose('field', {
+      type: ActivityLogModificationFieldType,
+      nullable: true,
+    }),
+    oldValue: t.exposeString('oldValue', { nullable: true }),
+    newValue: t.exposeString('newValue', { nullable: true }),
+  }),
+})
 
 export const ActivityLogEntryRef =
   builder.objectRef<IActivityLogEntry>('ActivityLogEntry')
@@ -269,7 +294,11 @@ export const ActivityLogEntry = ActivityLogEntryRef.implement({
     message: t.exposeString('message', { nullable: true }),
     resolved: t.exposeBoolean('resolved'),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
-    username: t.exposeString('username', { nullable: true }),
+    username: t.exposeString('username'),
+    options: t.expose('options', {
+      type: ActivityLogEntryOptions,
+      nullable: true,
+    }),
     isEdited: t.exposeBoolean('isEdited', { nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

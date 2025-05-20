@@ -1,8 +1,4 @@
-import {
-  ActivityLogEntry,
-  ActivityLogType,
-  ObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityLogEntry, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -22,8 +18,6 @@ export interface ActivityLogProps {
   onResolveMessage?: (id: number, resolved: boolean) => Promise<any>
   // Optional flag for resolving message state (when not using internal data fetching)
   isResolvingMessage?: boolean
-  // Optional flag to show/hide resolved messages
-  showResolved?: boolean
   // Optional flag to indicate if the modal/component is currently visible
   visible?: boolean
 }
@@ -37,16 +31,14 @@ function ActivityLog({
   objectType,
   onResolveMessage: propOnResolveMessage,
   isResolvingMessage: propIsResolvingMessage,
-  showResolved = true,
   visible = true,
 }: ActivityLogProps) {
   const t = useTranslations()
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [filterResolved, setFilterResolved] = useState(!showResolved)
 
   const {
-    entries: queryEntries,
+    entries,
     loading: queryLoading,
     error: queryError,
     addActivityMessage,
@@ -91,18 +83,10 @@ function ActivityLog({
   // }
 
   // determine which entries, loading and error states to use
-  const allEntries = queryEntries
   const loading = queryLoading
   const error = !!queryError
   const isAddingMessage = hookIsAddingMessage
   const isResolvingMessage = hookIsResolvingMessage
-
-  // filter out resolved messages if needed
-  const entries = filterResolved
-    ? allEntries.filter(
-        (entry) => entry.type !== ActivityLogType.Message || !entry.resolved
-      )
-    : allEntries
 
   if (loading) {
     return (
@@ -180,7 +164,7 @@ function ActivityLog({
             <div className="flex flex-col items-center justify-center p-4 text-center">
               <div className="mb-2 text-4xl text-gray-300">📝</div>
               <p className="text-sm font-medium text-gray-500">
-                {filterResolved && allEntries.length > 0
+                {entries.length > 0
                   ? t('shared.activity.noUnresolvedActivity')
                   : t('shared.activity.noActivity')}
               </p>
@@ -200,55 +184,65 @@ function ActivityLog({
                 {groupedEntries[date].map((entry) => {
                   const isOwnMessage = entry.username === 'self' // TODO: replace with actual logic to check if message is from current user
 
-                  if (
-                    entry.type === ActivityLogType.Creation ||
-                    entry.type === ActivityLogType.Modification
-                  ) {
+                  if (entry.message !== null) {
                     return (
                       <div
                         key={entry.id}
-                        className="flex flex-row items-center py-0.5 text-xs text-slate-500"
+                        className="mb-2"
                         data-cy={`activity-log-entry-${entry.message}`}
                       >
-                        <div className="flex-grow break-words">
-                          {entry.message}
-                        </div>
-                        <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
-                          {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
-                          {entry.isEdited && ' (edited)'}
+                        <div className="rounded-lg border bg-white p-3 shadow-sm">
+                          <div className="mb-2 flex flex-row items-center justify-between text-xs">
+                            {!isOwnMessage && (
+                              <div className="flex items-center">
+                                <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                  {(entry.username || 'U')[0].toUpperCase()}
+                                </div>
+                                <span className="font-medium text-gray-700">
+                                  {entry.username || 'Unknown user'}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="ml-auto text-slate-400">
+                              {dayjs(entry.createdAt).format(
+                                'DD.MM.YYYY HH:mm'
+                              )}
+                              {entry.isEdited && ' (edited)'}
+                            </div>
+                          </div>
+
+                          <div className="prose prose-sm w-full max-w-none break-words text-gray-700">
+                            {entry.message}
+                          </div>
                         </div>
                       </div>
                     )
                   }
 
+                  // compose the message for creation / editing based on options
+                  const entryMeesage =
+                    entry.message ??
+                    t(`shared.activity.message${entry.type}`, {
+                      username: entry.username,
+                      ...entry.options,
+                      field: entry.options?.field
+                        ? t(`shared.activity.field${entry.options.field}`)
+                        : undefined,
+                    })
+
                   return (
                     <div
                       key={entry.id}
-                      className="mb-2"
-                      data-cy={`activity-log-entry-${entry.message}`}
+                      className="flex flex-row items-center py-0.5 text-xs text-slate-500"
+                      data-cy={`activity-log-entry-${entryMeesage}`}
                     >
-                      <div className="rounded-lg border bg-white p-3 shadow-sm">
-                        <div className="mb-2 flex flex-row items-center justify-between text-xs">
-                          {!isOwnMessage && (
-                            <div className="flex items-center">
-                              <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                {(entry.username || 'U')[0].toUpperCase()}
-                              </div>
-                              <span className="font-medium text-gray-700">
-                                {entry.username || 'Unknown user'}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="ml-auto text-slate-400">
-                            {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
-                            {entry.isEdited && ' (edited)'}
-                          </div>
-                        </div>
-
-                        <div className="prose prose-sm w-full max-w-none break-words text-gray-700">
-                          {entry.message}
-                        </div>
+                      <div className="flex-grow break-words">
+                        {entryMeesage}
+                      </div>
+                      <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
+                        {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
+                        {entry.isEdited && ' (edited)'}
                       </div>
                     </div>
                   )
