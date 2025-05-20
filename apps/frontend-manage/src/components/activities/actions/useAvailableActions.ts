@@ -6,7 +6,7 @@ export type ActivityAction = {
   id: string
   label: string
   icon: IconDefinition
-  onClick: () => void
+  onClick: (e?: React.MouseEvent) => void
   data?: {
     cy?: string
   }

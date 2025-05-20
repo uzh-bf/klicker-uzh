@@ -1642,6 +1642,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
@@ -1654,9 +1655,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
-      'not.exist'
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.logoutUser()
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
@@ -1667,6 +1670,9 @@ describe('Create different types of elements (with and without sample solution) 
       'exist'
     )
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="delete-element-${this.data.SCML.title}"]`).should('exist')
   })

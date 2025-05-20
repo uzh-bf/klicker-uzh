@@ -1,6 +1,6 @@
 import {
   faArrowRight,
-  faComments,
+  faComment,
   faFire,
   faLightbulb,
 } from '@fortawesome/free-solid-svg-icons'
@@ -60,7 +60,7 @@ function CategoryHeader({ title, description, icon }) {
 }
 
 const CATEGORY_ICONS = {
-  interaction: faComments,
+  interaction: faComment,
   engagement: faFire,
   ai_enhanced_learning: faLightbulb,
 }
