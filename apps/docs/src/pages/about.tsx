@@ -23,8 +23,8 @@ const PEOPLE: {
     name: 'Julius Schlapbach',
     role: 'Project Maintainer',
     imageUrl:
-      'https://www.df.uzh.ch/contacts/df/student-assistants/jschlapbach/photo/20220504_Schlapbach-Julius-019.jpg.jpg',
-    info: 'https://www.df.uzh.ch/en/people/student-assistants/julius-schlapbach.html',
+      'https://www.df.uzh.ch/contacts/df/admin/teaching-center/jschlapbach/photo/20220504_Schlapbach-Julius-019.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/julius-schlapbach.html',
     github: 'https://github.com/sjschlapbach',
   },
   {
@@ -64,16 +64,14 @@ const PEOPLE: {
     info: 'https://www.df.uzh.ch/en/people/student-assistants/julia-gut.html',
   },
   {
-    name: "Alessio D'Andrea",
-    role: 'Contributor (Content)',
-    imageUrl:
-      'https://www.df.uzh.ch/contacts/df/student-assistants/ad-andrea/photo/Alessio%20D&%23039;Andrea.jpg.jpg',
-    info: 'https://www.df.uzh.ch/en/people/student-assistants/alessio-dandrea.html',
-  },
-  {
     name: 'Selina De Pizzol',
     role: 'Contributor (Content)',
     info: 'https://www.df.uzh.ch/en/people/student-assistants/selina-de-pizzol.html',
+  },
+  {
+    name: "Alessio D'Andrea",
+    role: 'Contributor (Content)',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/alessio-dandrea.html',
   },
 ]
 
