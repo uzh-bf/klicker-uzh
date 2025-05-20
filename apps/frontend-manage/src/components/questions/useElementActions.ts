@@ -63,11 +63,7 @@ function useElementActions({
         id: 'activityLog',
         label: t('shared.activity.viewComments'),
         icon: faComment,
-        onClick: (e?: React.MouseEvent) => {
-          e?.stopPropagation()
-          e?.preventDefault()
-          setActivityLogOpen(true)
-        },
+        onClick: () => setActivityLogOpen(true),
         disabled,
         data: { cy: `view-activity-log-${element.name}` },
       },

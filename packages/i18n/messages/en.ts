@@ -115,9 +115,9 @@ export default {
       messageMODIFICATION:
         '{username} modified {field} ({oldValue} -> {newValue}).',
       messageSHARING: '', // TODO: implement once available
-      fieldtitle: 'Titel',
-      fieldstatus: 'Status',
-      fieldcontent: 'Inhalt',
+      fieldtitle: 'title',
+      fieldstatus: 'status',
+      fieldcontent: 'content',
     },
     generic: {
       date: 'Date',

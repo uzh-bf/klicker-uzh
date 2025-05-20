@@ -51,11 +51,7 @@ function useAnswerCollectionActionsDropdown({
             {t('shared.activity.viewComments')}
           </div>
         ),
-        onClick: (e?: React.MouseEvent) => {
-          e?.stopPropagation()
-          e?.preventDefault()
-          setActivityLogOpen(true)
-        },
+        onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${collectionName}` },
       },
     ]
@@ -176,6 +172,7 @@ function useAnswerCollectionActionsDropdown({
     return items
   }, [
     t,
+    collectionName,
     isOwner,
     isManager,
     isEditor,
@@ -186,6 +183,7 @@ function useAnswerCollectionActionsDropdown({
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   ])
 }
 

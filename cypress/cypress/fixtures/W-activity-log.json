@@ -2,6 +2,58 @@
   "element": {
     "newTitle": "Activity Log Test Element Updated",
     "message1": "This is a test message for the activity log.",
-    "message2": "This is another test message for the activity log."
+    "message2": "This is another test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here"
+  },
+  "liveQuiz": {
+    "name": "Activity Log Test Live Quiz",
+    "displayName": "Activity Log Test Live Quiz",
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here",
+    "messagePro4": "User pro4 was here"
+  },
+  "practiceQuiz": {
+    "name": "Activity Log Test Practice Quiz",
+    "displayName": "Activity Log Test Practice Quiz",
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here",
+    "messagePro4": "User pro4 was here"
+  },
+  "microLearning": {
+    "name": "Activity Log Test Micro Learning",
+    "displayName": "Activity Log Test Micro Learning",
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here",
+    "messagePro4": "User pro4 was here"
+  },
+  "groupActivity": {
+    "name": "Activity Log Test Group Activity",
+    "displayName": "Activity Log Test Group Activity",
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here",
+    "messagePro4": "User pro4 was here"
+  },
+  "course": {
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here",
+    "messagePro4": "User pro4 was here"
+  },
+  "answerCollection": {
+    "message": "This is a test message for the activity log.",
+    "messagePro1": "User pro1 was here",
+    "messagePro2": "User pro2 was here",
+    "messagePro3": "User pro3 was here"
   }
 }
