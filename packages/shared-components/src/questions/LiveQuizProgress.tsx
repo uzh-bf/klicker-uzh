@@ -56,7 +56,7 @@ export function LiveQuizProgress({
       />
 
       {!isSubmitHidden && (
-        <div className="my-auto">
+        <div className="my-auto sticky bottom-4 z-10 bg-white shadow-md p-2">
           <Button
             fluid
             primary

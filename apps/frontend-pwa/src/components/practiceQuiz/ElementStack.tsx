@@ -358,75 +358,77 @@ function ElementStack({
         </div>
       </div>
 
-      {/* display continue button if question was already answered */}
-      {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
-        <Button
-          onClick={() => {
-            setStudentResponse({})
+      {/* Action Buttons Wrapper */}
+      <div className="sticky bottom-4 z-10 bg-white shadow-md p-2 float-right w-auto">
+        {/* display continue button if question was already answered */}
+        {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
+          <Button
+            onClick={() => {
+              setStudentResponse({})
 
-            if (currentStep === totalSteps) {
-              onAllStacksCompletion()
-            } else {
-              handleNextElement()
-            }
-          }}
-          className={{ root: 'float-right mt-4' }}
-          data={{ cy: 'student-stack-continue' }}
-        >
-          <Button.Label>
-            {currentStep === totalSteps
-              ? t('shared.generic.finish')
-              : t('shared.generic.continue')}
-          </Button.Label>
-        </Button>
-      ) : null}
+              if (currentStep === totalSteps) {
+                onAllStacksCompletion()
+              } else {
+                handleNextElement()
+              }
+            }}
+            className={{ root: '' }}
+            data={{ cy: 'student-stack-continue' }}
+          >
+            <Button.Label>
+              {currentStep === totalSteps
+                ? t('shared.generic.finish')
+                : t('shared.generic.continue')}
+            </Button.Label>
+          </Button>
+        ) : null}
 
-      {/* display mark all as read button, if only content elements have not been answered yet */}
-      {typeof stackStorage === 'undefined' && showMarkAsRead && (
-        <Button
-          className={{ root: 'float-right mt-4' }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
-          onClick={() => {
-            // update the read status of all content elements in studentResponse to true
-            setStudentResponse((currentResponses) =>
-              Object.entries(currentResponses).reduce<StackStudentResponseType>(
-                (acc, [instanceId, value]) => {
-                  if (value.type === ElementType.Content) {
-                    return {
-                      ...acc,
-                      [instanceId]: {
-                        ...value,
-                        response: true,
-                      },
+        {/* display mark all as read button, if only content elements have not been answered yet */}
+        {typeof stackStorage === 'undefined' && showMarkAsRead && (
+          <Button
+            className={{ root: '' }}
+            disabled={Object.values(studentResponse).some(
+              (response) => !response.valid
+            )}
+            onClick={() => {
+              // update the read status of all content elements in studentResponse to true
+              setStudentResponse((currentResponses) =>
+                Object.entries(currentResponses).reduce<StackStudentResponseType>(
+                  (acc, [instanceId, value]) => {
+                    if (value.type === ElementType.Content) {
+                      return {
+                        ...acc,
+                        [instanceId]: {
+                          ...value,
+                          response: true,
+                        },
+                      }
+                    } else {
+                      return { ...acc, [instanceId]: value }
                     }
-                  } else {
-                    return { ...acc, [instanceId]: value }
-                  }
-                },
-                {}
+                  },
+                  {}
+                )
               )
-            )
-          }}
-          data={{ cy: 'practice-quiz-mark-all-as-read' }}
-        >
-          <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
-        </Button>
-      )}
+            }}
+            data={{ cy: 'practice-quiz-mark-all-as-read' }}
+          >
+            <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
+          </Button>
+        )}
 
-      {typeof stackStorage === 'undefined' && !showMarkAsRead && (
-        <Button
-          primary
-          loading={submittingResponse}
-          disabled={
-            (!previewOnly && activityExpired) ||
-            Object.values(studentResponse).some((response) => !response.valid)
-          }
-          className={{ root: 'float-right mt-4' }}
-          onClick={async () => {
-            const result = await respondToElementStack({
-              variables: {
+        {typeof stackStorage === 'undefined' && !showMarkAsRead && (
+          <Button
+            primary
+            loading={submittingResponse}
+            disabled={
+              (!previewOnly && activityExpired) ||
+              Object.values(studentResponse).some((response) => !response.valid)
+            }
+            className={{ root: '' }}
+            onClick={async () => {
+              const result = await respondToElementStack({
+                variables: {
                 isOwner: previewOnly,
                 stackId: stack.id,
                 courseId: courseId,
