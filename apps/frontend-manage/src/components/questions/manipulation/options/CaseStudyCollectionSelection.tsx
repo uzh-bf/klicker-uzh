@@ -15,22 +15,28 @@ import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 function CaseStudyCollectionSelection({
   loading,
   disabled,
+  creationMode,
   isTemplate,
   collections,
   setSelectedItems,
   hasSampleSolution,
+  itemSelectionMode,
   setAnswerCollectionEntries,
+  setItemSelectionMode,
   refetchAnswerCollections,
 }: {
   loading: boolean
   disabled: boolean
+  creationMode: boolean
   isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
+  itemSelectionMode: 'existing' | 'new'
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
+  setItemSelectionMode: (newValue: 'existing' | 'new') => void
   refetchAnswerCollections: () => Promise<any>
 }) {
   const t = useTranslations()
@@ -57,6 +63,7 @@ function CaseStudyCollectionSelection({
   const selectedAnswers = useSelectedAnswerEntry({
     field: itemsField,
     collectionAnswers,
+    itemSelectionMode,
     setSelectedItems,
   })
 
@@ -69,7 +76,7 @@ function CaseStudyCollectionSelection({
 
   return (
     <>
-      <div className="flex flex-row items-end gap-2">
+      <div className="-mb-3 flex flex-row items-end gap-2">
         <SelectField
           required
           disabled={disabled || loading}
@@ -98,9 +105,7 @@ function CaseStudyCollectionSelection({
             },
           }))}
           data={{ cy: 'select-answer-collection' }}
-          className={{
-            select: { trigger: 'h-9 w-80' },
-          }}
+          className={{ select: { trigger: 'h-9 w-80' } }}
         />
         <Button
           disabled={disabled || loading}
@@ -115,6 +120,24 @@ function CaseStudyCollectionSelection({
           />
         </Button>
       </div>
+      {creationMode && (
+        <Button
+          basic
+          onClick={() => {
+            // reset the selected items
+            setAnswerCollectionEntries([])
+            setSelectedItems([])
+
+            // switch to the creation mode for new answer collection options
+            setItemSelectionMode('new')
+          }}
+          className={{
+            root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
+          }}
+        >
+          {t('manage.elements.enterItemsManually')}
+        </Button>
+      )}
       <div>
         <FormLabel
           required

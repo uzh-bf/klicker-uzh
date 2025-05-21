@@ -76,11 +76,7 @@ export async function createAnswerCollection(
         },
       },
       include: {
-        _count: {
-          select: {
-            entries: true,
-          },
-        },
+        entries: true,
       },
     })
 
@@ -96,7 +92,7 @@ export async function createAnswerCollection(
   return {
     ...collection,
     numSharedUsers: 0,
-    numOfEntries: collection._count.entries,
+    numOfEntries: collection.entries.length,
     isOwner: true,
     isManager: true,
     isEditor: true,
@@ -105,6 +101,9 @@ export async function createAnswerCollection(
     isDeletable: true,
     isRemovable: false,
     sharingType: SharingType.OWNED,
+    entries: collection.entries.map((entry) => ({
+      ...entry,
+    })),
   }
 }
 

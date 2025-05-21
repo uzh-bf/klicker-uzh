@@ -4,14 +4,16 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
 function useSelectedAnswerEntry({
   field,
   collectionAnswers,
+  itemSelectionMode,
   setSelectedItems,
 }: {
   field: FieldInputProps<number[]>
   collectionAnswers: { label: string; value: number }[]
+  itemSelectionMode: 'existing' | 'new'
   setSelectedItems?: Dispatch<SetStateAction<{ id: number; name: string }[]>>
 }) {
   return useMemo(() => {
-    if (!field.value) {
+    if (!field.value || itemSelectionMode === 'new') {
       return []
     }
 
@@ -26,7 +28,7 @@ function useSelectedAnswerEntry({
     }
 
     return selectedAnswers
-  }, [collectionAnswers, field.value, setSelectedItems])
+  }, [collectionAnswers, field.value, itemSelectionMode, setSelectedItems])
 }
 
 export default useSelectedAnswerEntry

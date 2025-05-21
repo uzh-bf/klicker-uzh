@@ -262,9 +262,8 @@ export function prepareCaseStudyArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      answerCollection: parseInt(values.options.answerCollection),
+      answerCollection: parseInt(values.options.answerCollection!),
       collectionItemIds: values.options.selectedItems,
-
       criteria: values.options.criteria.map((criterion, index) => ({
         id: criterion.id,
         name: criterion.name,

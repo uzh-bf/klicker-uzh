@@ -449,14 +449,35 @@ function useOptionsSchemaCaseStudy() {
 
   return {
     hasSampleSolution: yup.boolean(),
-    answerCollection: yup
-      .string()
-      .required(t('manage.formErrors.CSAnswerCollectionRequired')),
+    itemSelectionMode: yup.string().oneOf(['existing', 'new']),
+    answerCollection: yup.string().when('itemSelectionMode', {
+      is: (value?: 'existing' | 'new') => !value || value === 'existing',
+      then: (schema) =>
+        schema.required(t('manage.formErrors.CSAnswerCollectionRequired')),
+      otherwise: (schema) => schema,
+    }),
     selectedItems: yup
       .array()
       .of(yup.number())
-      .required(t('manage.formErrors.CSItemsRequired'))
-      .min(1, t('manage.formErrors.CSItemsRequired')),
+      .when('itemSelectionMode', {
+        is: (value?: 'existing' | 'new') => !value || value === 'existing',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.CSItemsRequired'))
+            .min(1, t('manage.formErrors.CSItemsRequired')),
+        otherwise: (schema) => schema,
+      }),
+    manuallyCreatedItems: yup
+      .array()
+      .of(yup.string())
+      .when('itemSelectionMode', {
+        is: (value?: 'existing' | 'new') => value === 'new',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.CSNewItemsRequired'))
+            .min(1, t('manage.formErrors.CSNewItemsRequired')),
+        otherwise: (schema) => schema,
+      }),
     criteria: yup
       .array()
       .of(
@@ -588,13 +609,26 @@ function useOptionsSchemaCaseStudy() {
                 })
               }
 
+              const itemMode: ElementFormTypesCaseStudy['options']['itemSelectionMode'] =
+                grandparent.itemSelectionMode
               const selectedItems: ElementFormTypesCaseStudy['options']['selectedItems'] =
                 grandparent.selectedItems
+              const createdItems: ElementFormTypesCaseStudy['options']['manuallyCreatedItems'] =
+                grandparent.manuallyCreatedItems
               const criteria: ElementFormTypesCaseStudy['options']['criteria'] =
                 grandparent.criteria
 
+              // set the answer collection items according to the mode setting
+              const items =
+                typeof itemMode === 'undefined' || itemMode === 'existing'
+                  ? (selectedItems ?? [])
+                  : Array.from(
+                      { length: createdItems?.length ?? 0 },
+                      (_, i) => i
+                    )
+
               const solutionKeys = Object.keys(solutions)
-              if (solutionKeys.length !== selectedItems.length) {
+              if (solutionKeys.length !== items.length) {
                 return this.createError({
                   message: t(
                     'manage.formErrors.CSSolutionsMissingCertainItems'
@@ -602,8 +636,8 @@ function useOptionsSchemaCaseStudy() {
                 })
               }
 
-              for (let itemIx = 0; itemIx < selectedItems.length; itemIx++) {
-                const itemId = selectedItems[itemIx]
+              for (let itemIx = 0; itemIx < items.length; itemIx++) {
+                const itemId = items[itemIx]
                 const criterionSolutions = solutions[`itemId-${itemId}`]
 
                 if (

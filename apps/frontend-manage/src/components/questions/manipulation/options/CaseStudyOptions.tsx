@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
+import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -10,8 +11,10 @@ import CaseStudyCasesFields, {
 } from './CaseStudyCasesFields'
 import CaseStudyCollectionSelection from './CaseStudyCollectionSelection'
 import CaseStudyCriteriaFields from './CaseStudyCriteriaFields'
+import CaseStudyManualItemCreation from './CaseStudyManualItemCreation'
 
 interface CaseStudyOptionsProps extends CaseStudySetterProps {
+  creationMode: boolean
   templateId?: string
   isTemplate: boolean
   hasSampleSolution: boolean
@@ -21,6 +24,7 @@ interface CaseStudyOptionsProps extends CaseStudySetterProps {
 }
 
 function CaseStudyOptions({
+  creationMode,
   templateId,
   isTemplate,
   inputsDisabled = false,
@@ -30,6 +34,10 @@ function CaseStudyOptions({
   setAnswerCollectionEntries,
 }: CaseStudyOptionsProps) {
   const t = useTranslations()
+  const [selectionMode, _, selectionModeHelpers] = useField<'existing' | 'new'>(
+    'options.itemSelectionMode'
+  )
+
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
   >([])
@@ -66,18 +74,37 @@ function CaseStudyOptions({
 
   return (
     <div className="flex flex-col gap-4">
-      <CaseStudyCollectionSelection
-        loading={loading}
-        disabled={inputsDisabled}
-        isTemplate={isTemplate}
-        collections={collections}
-        setSelectedItems={setSelectedItems}
-        hasSampleSolution={hasSampleSolution}
-        setAnswerCollectionEntries={setAnswerCollectionEntries}
-        refetchAnswerCollections={async () =>
-          await refetchAnswerCollections({ templateId })
-        }
-      />
+      {(selectionMode.value === 'existing' ||
+        typeof selectionMode.value === 'undefined') && (
+        <CaseStudyCollectionSelection
+          loading={loading}
+          disabled={inputsDisabled}
+          creationMode={creationMode}
+          isTemplate={isTemplate}
+          collections={collections}
+          setSelectedItems={setSelectedItems}
+          hasSampleSolution={hasSampleSolution}
+          itemSelectionMode={selectionMode.value}
+          setAnswerCollectionEntries={setAnswerCollectionEntries}
+          setItemSelectionMode={(newValue) =>
+            selectionModeHelpers.setValue(newValue)
+          }
+          refetchAnswerCollections={async () =>
+            await refetchAnswerCollections({ templateId })
+          }
+        />
+      )}
+      {creationMode && selectionMode.value === 'new' && (
+        <CaseStudyManualItemCreation
+          disabled={inputsDisabled}
+          itemSelectionMode={selectionMode.value}
+          setItemSelectionMode={(newValue) =>
+            selectionModeHelpers.setValue(newValue)
+          }
+          setAnswerCollectionEntries={setAnswerCollectionEntries}
+          setSelectedItems={setSelectedItems}
+        />
+      )}
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields disabled={inputsDisabled} />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />

@@ -1,7 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  CreateAnswerCollectionDocument,
   ElementStatus,
   ElementType,
+  GetAnswerCollectionsInfoDocument,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
   GetUserTagsDocument,
@@ -27,7 +29,11 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import { ElementFormTypes } from './types'
+import {
+  ElementFormTypes,
+  ElementFormTypesCaseStudy,
+  ElementFormTypesCaseStudySolutions,
+} from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 
 export enum ElementEditMode {
@@ -58,7 +64,6 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
-  const [failureToast, setFailureToast] = useState(false)
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -98,6 +103,7 @@ function ElementEditModal({
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
+  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
   const initialValues = useElementFormInitialValues({
@@ -130,8 +136,6 @@ function ElementEditModal({
       initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
-      failureToast={failureToast}
-      setFailureToast={setFailureToast}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
@@ -155,8 +159,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateContentElement
             if (data?.__typename !== 'ContentElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -179,8 +182,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateFlashcardElement
             if (data?.__typename !== 'FlashcardElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -205,8 +207,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateChoicesQuestion
             if (data?.__typename !== 'ChoicesElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -229,8 +230,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateNumericalQuestion
             if (data?.__typename !== 'NumericalElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -253,8 +253,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateFreeTextQuestion
             if (data?.__typename !== 'FreeTextElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -277,18 +276,108 @@ function ElementEditModal({
 
             const data = result.data?.manipulateSelectionQuestion
             if (data?.__typename !== 'SelectionElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
           }
 
           case ElementType.CaseStudy: {
+            // make a copy of the form values (passed by reference) to optionally update them in case of an inline answer collection definition
+            const innerValues: ElementFormTypesCaseStudy & {
+              status: ElementStatus
+            } = JSON.parse(JSON.stringify(values))
+
+            // if the items for the case study question were defined inline, create a new answer collection from them
+            if (values.options.itemSelectionMode === 'new') {
+              if (!values.options.manuallyCreatedItems) {
+                return false
+              }
+
+              const { data } = await createAnswerCollection({
+                variables: {
+                  name: `AC Case Study ${values.name}`,
+                  description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
+                  answers: values.options.manuallyCreatedItems ?? [],
+                },
+                update: (cache, { data }) => {
+                  if (!data?.createAnswerCollection) return
+
+                  const queryData = cache.readQuery({
+                    query: GetAnswerCollectionsInfoDocument,
+                  })
+                  const previousCollections =
+                    queryData?.getAnswerCollectionsInfo
+                  if (!previousCollections) return
+
+                  cache.writeQuery({
+                    query: GetAnswerCollectionsInfoDocument,
+                    data: {
+                      getAnswerCollectionsInfo: [
+                        ...previousCollections,
+                        data.createAnswerCollection,
+                      ],
+                    },
+                  })
+                },
+              })
+
+              if (!data?.createAnswerCollection) {
+                return false
+              }
+
+              // set the answer collection id to the newly created answer collection
+              innerValues.options.answerCollection = String(
+                data.createAnswerCollection.id
+              )
+
+              // set the items to the newly created answer collection items (in the same order as the values were defined)
+              const entries = data.createAnswerCollection.entries ?? []
+              const entryIds = values.options.manuallyCreatedItems.flatMap(
+                (value) => {
+                  const entry = entries.find((entry) => entry.value === value)
+                  return entry ? entry.id : []
+                }
+              )
+              innerValues.options.selectedItems = entryIds
+
+              if (values.options.hasSampleSolution) {
+                // create a map between the old item index and the new correct answer collection entry ids
+                const itemIndexIdMap = new Map<number, number>()
+                values.options.manuallyCreatedItems.forEach((value, index) => {
+                  const entry = entries.find((entry) => entry.value === value)
+                  if (entry) {
+                    itemIndexIdMap.set(index, entry.id)
+                  }
+                })
+
+                // update the ids of the criterion solutions for all cases
+                innerValues.options.cases = values.options.cases.map((c) => {
+                  const mappedSolutions: ElementFormTypesCaseStudySolutions =
+                    Object.fromEntries(
+                      Object.entries(c.solutions ?? {}).flatMap(
+                        ([key, value]) => {
+                          const itemIndex = parseInt(key.split('-')[1])
+                          const newItemId = itemIndexIdMap.get(itemIndex)
+
+                          if (typeof newItemId === 'undefined') {
+                            return []
+                          }
+
+                          return [[`itemId-${newItemId}`, value]]
+                        }
+                      )
+                    )
+
+                  return { ...c, solutions: mappedSolutions }
+                })
+              }
+            }
+
             const args = prepareCaseStudyArgs({
               elementId,
               isDuplication,
-              values,
+              values: innerValues,
             })
 
             const result = await manipulateCaseStudyQuestion({
@@ -301,8 +390,7 @@ function ElementEditModal({
 
             const data = result.data?.manipulateCaseStudyQuestion
             if (data?.__typename !== 'CaseStudyElement' || !data.id) {
-              setFailureToast(true)
-              return
+              return false
             }
 
             break
@@ -322,6 +410,8 @@ function ElementEditModal({
             })
           }
         }
+
+        return true
       }}
       onSuccess={() => {
         // remove local storage entry

@@ -1250,8 +1250,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmCollectionChange:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
       selectedItems: 'Ausgewählte Elemente',
+      definedItems: 'Neue Fallstudien-Elemente',
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
+      newCaseStudyItemsTooltip:
+        'Bitte geben Sie hier die Fallstudien-Elemente an, die in Bezug auf die angegebenen Kriterien bewertet werden sollen. Diese werden beim Speichern der Frage automatisch in eine neue Antwort-Sammlung kombiniert.',
+      enterItemsManually:
+        'Möchten Sie die Fallstudien-Elemente manuell eingeben?',
+      enterItemsManuallyExplanation:
+        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell einzugeben. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl von Fallstudien-Elementen aus einer bestehenden Sammlung wechseln.</button>',
       selectCaseStudyItems: 'Elemente auswählen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
@@ -1847,6 +1854,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie eine Antwort-Sammlung aus welcher die zu bewertenden Element der Fallstudie selektiert werden.',
       CSItemsRequired:
         'Bitte wählen Sie mindestens ein Element aus der Antwort-Sammlung aus, welches von den Teilnehmenden auf die erstellten Kriterien bewertet werden soll.',
+      CSNewItemsRequired:
+        'Bitten definieren Sie mindestens ein Element, welches von den Teilnehmenden auf die erstellten Kriterien bewertet werden soll.',
       CSCriteriaNameRequired:
         'Bitte geben Sie einen Namen für das Kriterium ein.',
       CSCriteriaMinRequired:

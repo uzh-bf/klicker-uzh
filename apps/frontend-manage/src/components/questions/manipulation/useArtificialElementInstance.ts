@@ -103,12 +103,14 @@ function useArtificialElementInstance({
                     ? { entries: answerCollectionEntries }
                     : undefined,
                 items:
+                  (!('itemSelectionMode' in values.options) ||
+                    values.options.itemSelectionMode === 'existing') &&
                   typeof answerCollectionEntries !== 'undefined' &&
                   answerCollectionEntries.length > 0
                     ? answerCollectionEntries.flatMap((entry) => {
                         if (
                           'selectedItems' in values.options &&
-                          values.options.selectedItems.includes(entry.id)
+                          values.options.selectedItems?.includes(entry.id)
                         ) {
                           return {
                             id: entry.id,
@@ -118,7 +120,14 @@ function useArtificialElementInstance({
 
                         return []
                       })
-                    : [],
+                    : 'manuallyCreatedItems' in values.options
+                      ? (values.options.manuallyCreatedItems?.map(
+                          (item, index) => ({
+                            id: index,
+                            value: item,
+                          })
+                        ) ?? [])
+                      : [],
                 criteria:
                   'criteria' in values.options && values.options.criteria
                     ? values.options.criteria.map((criterion, criterionIx) => ({

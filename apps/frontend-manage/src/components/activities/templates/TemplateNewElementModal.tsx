@@ -1,5 +1,4 @@
 import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
-import { useState } from 'react'
 import ElementEditForm from '../../questions/manipulation/ElementEditForm'
 import { ElementEditMode } from '../../questions/manipulation/ElementEditModal'
 import { ElementFormTypes } from '../../questions/manipulation/types'
@@ -19,8 +18,6 @@ function TemplateNewElementModal({
   templateElement: ActivityTemplateElementFormValues
   onSaveNewElement: (formValues: ElementFormTypes) => void
 }) {
-  const [failureToast, setFailureToast] = useState(false)
-
   const instanceFormValues = useFormValuesFromElementInstance({
     instance: templateElement.instance,
   })
@@ -42,10 +39,9 @@ function TemplateNewElementModal({
       initialStatus={ElementStatus.Ready}
       onSubmitElement={async (values) => {
         onSaveNewElement(values)
+        return true
       }}
       setAutoSavedElement={() => {}} // auto-save is disabled for templates for the moment
-      failureToast={failureToast}
-      setFailureToast={setFailureToast}
       updateInstances={false}
       setUpdateInstances={() => {}} // instance updates are only available for existing elements
       includeTemplateUpdates={false}
