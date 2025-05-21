@@ -1,8 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import {
-  ActivityType as ActivityTypeEnum,
-  SharingObjectType as SharingObjectTypeEnum,
-} from '@klicker-uzh/types'
+import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
@@ -71,12 +68,13 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
+  ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
   ObjectAccess,
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
-  SharingObjectType,
   UserGroup,
   UserGroupMembersInput,
 } from './sharing.js'
@@ -981,6 +979,21 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      changeElementStatus: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          elementId: t.arg.int({ required: true }),
+          status: t.arg({ type: ElementStatus, required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await QuestionService.changeElementStatus(args, ctx)
+          }
+        ),
+      }),
+
       manipulateContentElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1365,7 +1378,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: [ArchivedElement],
         args: {
-          questionIds: t.arg.intList({ required: true }),
+          elementIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
@@ -1703,12 +1716,114 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      resolveActivityLogEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityLogEntry,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return null
+
+          // TODO: implement resolveActivityLogEntry
+          // how to do permissions smartly here? permission on the source object ADMIN or higher?
+          // return await SharingService.resolveActivityLogEntry(args, ctx)
+        },
+      }),
+
+      addActivityMessage: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityLogEntry,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+          message: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // activity entries are not supported for catalog collections and user groups
+          if (
+            args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
+            args.objectType === DB.ObjectType.USER_GROUP
+          ) {
+            return null
+          }
+
+          // >= READ permissions on the object required
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await SharingService.addActivityMessage(args, ctx)
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
@@ -1736,17 +1851,17 @@ export const Mutation = builder.mutationType({
               access: args.access,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined, // not supported in catalog at the moment
               liveQuizId:
                 // not supported in catalog at the moment (except templates)
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ_TEMPLATE
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId: undefined, // not supported in catalog at the moment (except templates)
@@ -1762,12 +1877,12 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           // access control implemented inside service functions (does not fit default schema)
-          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
+          if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             return await SharingService.importAnswerCollection(
               {
                 collectionId: parseInt(args.objectId),
@@ -1775,7 +1890,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             return await SharingService.importElement(
               {
                 elementId: parseInt(args.objectId),
@@ -1794,7 +1909,7 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
           requestedPermissionLevel: t.arg({
             type: PermissionLevel,
@@ -1808,11 +1923,11 @@ export const Mutation = builder.mutationType({
               requestedPermissionLevel: args.requestedPermissionLevel,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -1830,17 +1945,17 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.cancelObjectSharingRequest(
             {
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId: undefined,
@@ -2148,7 +2263,7 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
@@ -2158,7 +2273,7 @@ export const Mutation = builder.mutationType({
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2166,7 +2281,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2174,7 +2289,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+              ...(args.objectType === DB.ObjectType.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2182,7 +2297,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.COURSE
+              ...(args.objectType === DB.ObjectType.COURSE
                 ? [
                     {
                       courseId: args.objectId,
@@ -2190,7 +2305,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
                 ? [
                     {
                       liveQuizId: args.objectId,
@@ -2198,7 +2313,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
                 ? [
                     {
                       practiceQuizId: args.objectId,
@@ -2206,7 +2321,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
                 ? [
                     {
                       microLearningId: args.objectId,
@@ -2214,7 +2329,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
                 ? [
                     {
                       groupActivityId: args.objectId,
@@ -2236,35 +2351,35 @@ export const Mutation = builder.mutationType({
               userGroupId: args.userGroupId,
               propagation: args.propagation,
               catalogCollectionId:
-                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === DB.ObjectType.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId:
-                args.objectType === SharingObjectTypeEnum.COURSE
+                args.objectType === DB.ObjectType.COURSE
                   ? args.objectId
                   : undefined,
               liveQuizId:
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId:
-                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                args.objectType === DB.ObjectType.PRACTICE_QUIZ
                   ? args.objectId
                   : undefined,
               microLearningId:
-                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                args.objectType === DB.ObjectType.MICRO_LEARNING
                   ? args.objectId
                   : undefined,
               groupActivityId:
-                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
             },
@@ -2278,12 +2393,12 @@ export const Mutation = builder.mutationType({
         args: {
           permissionId: t.arg.int({ required: true }),
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2291,7 +2406,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2299,7 +2414,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+              ...(args.objectType === DB.ObjectType.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2307,7 +2422,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.COURSE
+              ...(args.objectType === DB.ObjectType.COURSE
                 ? [
                     {
                       courseId: args.objectId,
@@ -2315,7 +2430,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
                 ? [
                     {
                       liveQuizId: args.objectId,
@@ -2323,7 +2438,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
                 ? [
                     {
                       practiceQuizId: args.objectId,
@@ -2331,7 +2446,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
                 ? [
                     {
                       microLearningId: args.objectId,
@@ -2339,7 +2454,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
                 ? [
                     {
                       groupActivityId: args.objectId,
@@ -2358,35 +2473,35 @@ export const Mutation = builder.mutationType({
             {
               permissionId: args.permissionId,
               catalogCollectionId:
-                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === DB.ObjectType.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId:
-                args.objectType === SharingObjectTypeEnum.COURSE
+                args.objectType === DB.ObjectType.COURSE
                   ? args.objectId
                   : undefined,
               liveQuizId:
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId:
-                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                args.objectType === DB.ObjectType.PRACTICE_QUIZ
                   ? args.objectId
                   : undefined,
               microLearningId:
-                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                args.objectType === DB.ObjectType.MICRO_LEARNING
                   ? args.objectId
                   : undefined,
               groupActivityId:
-                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
             },
@@ -2401,14 +2516,14 @@ export const Mutation = builder.mutationType({
           permissionId: t.arg.int({ required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
@@ -2416,7 +2531,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
                 ? [
                     {
                       answerCollectionId: parseInt(args.objectId),
@@ -2424,7 +2539,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.ELEMENT
+              ...(args.objectType === DB.ObjectType.ELEMENT
                 ? [
                     {
                       elementId: parseInt(args.objectId),
@@ -2432,7 +2547,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.COURSE
+              ...(args.objectType === DB.ObjectType.COURSE
                 ? [
                     {
                       courseId: args.objectId,
@@ -2440,7 +2555,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
                 ? [
                     {
                       liveQuizId: args.objectId,
@@ -2448,7 +2563,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
                 ? [
                     {
                       practiceQuizId: args.objectId,
@@ -2456,7 +2571,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
                 ? [
                     {
                       microLearningId: args.objectId,
@@ -2464,7 +2579,7 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
                 ? [
                     {
                       groupActivityId: args.objectId,
@@ -2485,35 +2600,35 @@ export const Mutation = builder.mutationType({
               permissionLevel: args.permissionLevel,
               propagation: args.propagation,
               catalogCollectionId:
-                args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION
+                args.objectType === DB.ObjectType.CATALOG_COLLECTION
                   ? args.objectId
                   : undefined,
               answerCollectionId:
-                args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
+                args.objectType === DB.ObjectType.ANSWER_COLLECTION
                   ? parseInt(args.objectId)
                   : undefined,
               elementId:
-                args.objectType === SharingObjectTypeEnum.ELEMENT
+                args.objectType === DB.ObjectType.ELEMENT
                   ? parseInt(args.objectId)
                   : undefined,
               courseId:
-                args.objectType === SharingObjectTypeEnum.COURSE
+                args.objectType === DB.ObjectType.COURSE
                   ? args.objectId
                   : undefined,
               liveQuizId:
-                args.objectType === SharingObjectTypeEnum.LIVE_QUIZ
+                args.objectType === DB.ObjectType.LIVE_QUIZ
                   ? args.objectId
                   : undefined,
               practiceQuizId:
-                args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ
+                args.objectType === DB.ObjectType.PRACTICE_QUIZ
                   ? args.objectId
                   : undefined,
               microLearningId:
-                args.objectType === SharingObjectTypeEnum.MICRO_LEARNING
+                args.objectType === DB.ObjectType.MICRO_LEARNING
                   ? args.objectId
                   : undefined,
               groupActivityId:
-                args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY
+                args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
             },
@@ -2527,11 +2642,11 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
           shortnameOrEmail: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === DB.ObjectType.CATALOG_COLLECTION) {
             // == OWNER permissions on catalog collection required
             const validAccess = await checkAccess(
               [
@@ -2553,9 +2668,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (
-            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
-          ) {
+          } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // == OWNER permissions on answer collection required
             const validAccess = await checkAccess(
               [
@@ -2577,7 +2690,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             // == OWNER permissions on element required
             const validAccess = await checkAccess(
               [
@@ -2599,7 +2712,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+          } else if (args.objectType === DB.ObjectType.COURSE) {
             // == OWNER permissions on course required
             const validAccess = await checkAccess(
               [
@@ -2621,7 +2734,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
             // == OWNER permissions on live quiz required
             const validAccess = await checkAccess(
               [
@@ -2643,7 +2756,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
             // == OWNER permissions on practice quiz required
             const validAccess = await checkAccess(
               [
@@ -2665,7 +2778,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
             // == OWNER permissions on microlearning required
             const validAccess = await checkAccess(
               [
@@ -2687,7 +2800,7 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
             // == OWNER permissions on group activity required
             const validAccess = await checkAccess(
               [
@@ -2719,37 +2832,37 @@ export const Mutation = builder.mutationType({
         nullable: true,
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION) {
+          if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             return await ResourcesService.removeAnswerCollection(
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             return await QuestionService.removeElement(
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+          } else if (args.objectType === DB.ObjectType.COURSE) {
             return await CourseService.removeCourse({ id: args.objectId }, ctx)
-          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
             return await LiveQuizService.removeLiveQuiz(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
             return await PracticeQuizService.removePracticeQuiz(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
             return await MicroLearningService.removeMicroLearning(
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
             return await GroupService.removeGroupActivity(
               { id: args.objectId },
               ctx

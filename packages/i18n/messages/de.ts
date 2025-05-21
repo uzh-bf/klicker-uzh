@@ -96,6 +96,31 @@ export default {
     login: {
       installButton: 'Jetzt installieren',
     },
+    activity: {
+      title: 'Kommentare',
+      viewComments: 'Kommentare anzeigen',
+      noActivity: 'Noch keine Aktivität',
+      noUnresolvedActivity: 'Keine unerledigten Nachrichten',
+      addMessage:
+        'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
+      messageInputPlaceholder: 'Nachricht schreiben...',
+      sending: 'Senden...',
+      send: 'Senden',
+      tooltip: 'Kommentare anzeigen',
+      markResolved: 'Als erledigt markieren',
+      markUnresolved: 'Als unerledigt markieren',
+      resolved: 'Erledigt',
+      hideResolved: 'Erledigte Nachrichten ausblenden',
+      resolvedAt: 'Erledigt {time}',
+      messageMESSAGE: '',
+      messageCREATION: '{username} hat dieses Objekt erstellt.',
+      messageMODIFICATION:
+        '{username} hat {field} geändert ({oldValue} -> {newValue}).',
+      messageSHARING: '', // TODO: implement once available
+      fieldtitle: 'Titel',
+      fieldstatus: 'Status',
+      fieldcontent: 'Inhalt',
+    },
     generic: {
       date: 'Datum',
       percentage: 'Prozent',
@@ -174,6 +199,7 @@ export default {
       activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
+      loading: 'Lädt...',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -231,6 +257,7 @@ export default {
       settings: 'Einstellungen',
       activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
+      courses: 'Kurse',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
@@ -330,6 +357,11 @@ export default {
       noPoints: 'keine Punkte',
       criterionN: 'Kriterium {number}',
       propagation: 'Propagation',
+      sharing: 'Sharing',
+      shared: 'Geteilt',
+      imported: 'Importiert',
+      dependency: 'Abhängigkeit',
+      tryAgain: 'Erneut versuchen',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -497,7 +529,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
     },
     studentDocs: {
       pageList: `
-In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH in Ihrem Kurs:
+In dieser Dokumentation finden Sie die wichtigsten Informationen zu KlickerUZH in Ihrem Kurs:
 
 - [Features im Überblick](docs/features)
 - [Erster Login & Accounteinrichtung](docs/login)
@@ -541,7 +573,7 @@ Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen verg
 
 ![Gamification](/img/leaderboard/08_gamification.png)
 
-Alle Aktivitäten im KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
+Alle Aktivitäten in KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
 
 Die folgenden Aktivitäten sind Teil der Challenge:
 
@@ -578,7 +610,7 @@ Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den
 
 #### Anonyme Teilnahme
 
-Generell ist es möglich, an den Activitäten im KlickerUZH auch anonym teilzunehmen. Für Live Quizzes finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
+Generell ist es möglich, an den Aktivitäten in KlickerUZH auch anonym teilzunehmen. Für Live Quizzes finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
 Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von Ihren Dozierenden erhalten können. Wenn Sie über die OLAT-Integration auf KlickerUZH zugreifen, können Sie ein Konto erstellen und werden dann automatisch eingeloggt. Wenn Sie kein KlickerUZH-Konto haben, bleibt Ihre Teilnahme an den Practice Quizzes anonym.
       `,
       appSetupTitle: 'App Installation',
@@ -794,7 +826,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usernameRequired: 'Bitte geben Sie einen Benutzernamen ein.',
       passwordRequired: 'Bitte geben Sie ein Passwort ein.',
       welcomeMessage:
-        'Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.',
+        'Willkommen bei KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.',
       deleteProfile: 'Konto löschen',
       deleteProfileDescription:
         'Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen irreversibel löschen.',
@@ -984,6 +1016,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität wurde erfolgreich geändert.',
       activityNameChangeError:
         'Der Name der Aktivität konnte nicht geändert werden.',
+      noCourseAssigned: 'Kein Kurs zugewiesen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1027,7 +1060,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
     },
     firstLogin: {
-      welcome: 'Willkommen beim KlickerUZH!',
+      welcome: 'Willkommen bei KlickerUZH!',
       makeFirstSettings:
         'Da Sie KlickerUZH v3.0 zum ersten Mal nutzen, möchten wir Ihnen gerne helfen, einige wichtige Einstellungen gleich zu Beginn vorzunehmen, damit Sie so effizient wie möglich starten können. Dazu gehören Ihre bevorzugte Sprache sowie der Kurzname, der mit diesem Konto verknüpft ist. Beides kann jederzeit in den Benutzereinstellungen erneut geändert werden.',
       relevantLinks:
@@ -1089,23 +1122,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       remainingValidity: 'Verbleibende Gültigkeit:',
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
-    },
-    migration: {
-      pageName: 'Migration der Daten von KlickerV2',
-      step1Title: 'Schritt 1: Migrations-Token anfordern',
-      step1Description:
-        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      requestMigrationToken: 'Migrations-Token anfordern',
-      step2Title: 'Schritt 2: Migrations-Link einfügen',
-      step2Description:
-        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      step3Title: 'Schritt 3: Migration starten',
-      step3Description:
-        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      startMigration: 'Migration starten',
-      step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
-      step4Description:
-        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
@@ -2311,6 +2327,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
       shareMicroLearning: 'Microlearning teilen',
+      removeMicroLearning: 'Microlearning entfernen',
       deleteMicroLearning: 'Microlearning löschen',
       deleteMicroLearningMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
@@ -2329,6 +2346,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
       sharePracticeQuiz: 'Übungs-Quiz teilen',
+      removePracticeQuiz: 'Übungs-Quiz entfernen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2371,6 +2389,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityAvailableUntil:
         'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
       shareGroupActivity: 'Gruppenaktivität teilen',
+      removeGroupActivity: 'Gruppenaktivität entfernen',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2624,6 +2643,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeELEMENTtitle: 'Element aus Katalog entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
+      removePRACTICE_QUIZ_TEMPLATE: '',
+      removePRACTICE_QUIZ_TEMPLATEtitle: '',
+      removeMICRO_LEARNING_TEMPLATE: '',
+      removeMICRO_LEARNING_TEMPLATEtitle: '',
+      removeGROUP_ACTIVITY_TEMPLATE: '',
+      removeGROUP_ACTIVITY_TEMPLATEtitle: '',
       removeLIVE_QUIZ: 'Live-Quiz entfernen',
       removeLIVE_QUIZtitle: '',
       removePRACTICE_QUIZ: 'Übungs-Quiz entfernen',
@@ -2676,8 +2701,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
       requestSuccessInfoANSWER_COLLECTION:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
-      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
-        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestSuccessInfoLIVE_QUIZ: '',
       requestSuccessInfoPRACTICE_QUIZ: '',
       requestSuccessInfoMICRO_LEARNING: '',
@@ -2719,6 +2742,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       permissionsADMIN: 'Adminrechte',
       permissionsEXECUTE: 'Ausführungsrechte',
       permissionsOWNER: 'Eigentümerrechte',
+      labelOWNED: 'Eigentümer',
+      labelSHARED: 'Geteilt',
+      labelDEPENDENCY: 'Abhängigkeit',
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
       showDerivedPermissions: 'Abgeleitete Berechtigungen anzeigen',
@@ -2730,6 +2756,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',
       noDerivedPermissions:
         'Für dieses Objekt sind keine abgeleiteten Berechtigungen vorhanden.',
+      whereDoesThisPermissionOriginate: 'Woher stammt diese Berechtigung?',
+      derivedPermissionOrigin: 'Herkunft der abgeleiteten Berechtigung',
+      derivedAccessFor:
+        'Der abgeleitete Zugriff von Nutzer {user} auf diese Objekt stammt von folgendem Objekt ab:',
+      originalObjectOwner: 'Besitzer des übergeordneten Objekts',
+      originalObjectType: 'Typ des übergeordneten Objekts',
+      originalObjectName: 'Name des übergeordneten Objekts',
+      reasonDerivedAccess: 'Grund für den abgeleiteten Zugriff',
+      ownerOfOriginalObject: 'Besitzer des übergeordneten Objekts',
+      originalObjectSharedREAD: 'Leserechte auf übergeordnetes Objekt',
+      originalObjectSharedEXECUTE:
+        'Ausführungsrechte auf übergeordnetes Objekt',
+      originalObjectSharedWRITE: 'Schreibrechte auf übergeordnetes Objekt',
+      originalObjectSharedADMIN: 'Adminrechte auf übergeordnetes Objekt',
+      viaUserGroup: 'über Nutzergruppe {name}',
       importantInformation: 'Wichtige Information',
       shortnameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
@@ -2756,6 +2797,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'Sie sind dabei, die Eigentumsrechte für die Live-Quiz Vorlage <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Vorlage, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipPRACTICE_QUIZ_TEMPLATE: '',
+      infoTransferOwnershipMICRO_LEARNING_TEMPLATE: '',
+      infoTransferOwnershipGROUP_ACTIVITY_TEMPLATE: '',
       infoTransferOwnershipELEMENT:
         'Sie sind dabei, die Eigentumsrechte für das Element <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Element, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ:
@@ -2770,7 +2814,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für den Kurs <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diesen Kurs und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Aktivitäten und Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
-      shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
       shareLIVE_QUIZ: 'Live-Quiz teilen',
       sharePRACTICE_QUIZ: 'Übungs-Quiz teilen',
       shareMICRO_LEARNING: 'Microlearning teilen',
@@ -2781,8 +2824,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
-      infoSharingLIVE_QUIZ_TEMPLATE:
-        'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
       infoSharingLIVE_QUIZ:
         'Diese Ansicht erlaubt es Ihnen, das Live-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Live-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingPRACTICE_QUIZ:
@@ -2798,7 +2839,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       propagatedPermissions: 'Abgeleitete Berechtigungen',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
-      propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
       propagatedPermissionsELEMENT:
         'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
       propagatedPermissionsLIVE_QUIZ:
@@ -3081,6 +3121,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
+    },
+    activity: {
+      title: '{type} Aktivitäten',
+      tooltip: 'Kommentare anzeigen',
+      viewComments: 'Kommentare anzeigen',
+      noActivity: 'Noch keine Aktivitäten.',
+      addMessage:
+        'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
+      messageInputPlaceholder: 'Nachricht eingeben...',
+      send: 'Senden',
+      sending: 'Wird gesendet...',
+      missingId: 'Objekt-ID fehlt. Kommentare kann nicht angezeigt werden.',
     },
   },
 }

@@ -9,6 +9,7 @@ import {
   ActivityTemplate,
   CreateLiveQuizFromTemplateDocument,
   GetUserActivitiesDocument,
+  GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -514,6 +515,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     refetchQueries: [
                       { query: GetUserLiveQuizzesDocument },
                       { query: GetUserActivitiesDocument },
+                      { query: GetUserElementsDocument },
                     ],
                   })
 

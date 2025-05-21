@@ -40,6 +40,7 @@ import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
+  SORTING_FILTERING_INITIAL,
   SortyByType,
 } from '../lib/hooks/useSortingAndFiltering'
 
@@ -80,6 +81,22 @@ function Index() {
     data: dataQuestions,
   } = useQuery(GetUserElementsDocument)
 
+  // initialize the sorting and filtering state from local storage (if available)
+  const [storedFiltering, _] = useState(() => {
+    // only try to access localStorage if we're on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFilters = localStorage.getItem('library-sorting-filters')
+        if (savedFilters) {
+          return JSON.parse(savedFilters)
+        }
+      } catch (error) {
+        console.error('Error loading stored filters from localStorage', error)
+      }
+    }
+    return SORTING_FILTERING_INITIAL
+  })
+
   const {
     filters,
     sort,
@@ -91,8 +108,28 @@ function Index() {
     handleToggleArchive,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
-  } = useSortingAndFiltering()
+  } = useSortingAndFiltering(storedFiltering)
 
+  // if the filters or sorting state changes, save it to local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const newState = { filters, sort }
+        // only save if there are actual changes
+        const currentStored = localStorage.getItem('library-sorting-filters')
+        if (!currentStored || JSON.stringify(newState) !== currentStored) {
+          localStorage.setItem(
+            'library-sorting-filters',
+            JSON.stringify(newState)
+          )
+        }
+      } catch (error) {
+        console.error('Error saving filters to localStorage', error)
+      }
+    }
+  }, [filters, sort])
+
+  // on initial render, preload the pages that might be visited next
   useEffect((): void => {
     router.prefetch('/quizzes/running')
     router.prefetch('/quizzes')
@@ -203,6 +240,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -221,6 +259,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -356,16 +395,46 @@ function Index() {
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
                           disabled={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: true,
+                              },
+                              update: (cache, { data }) => {
+                                // check if request was successful
+                                const updatedElements = data?.toggleIsArchived
+                                if (!updatedElements) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds = updatedElements.map(
+                                  (element) => element.id
+                                )
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: true,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
                               },
                             })
                             setSelectedQuestions({})
@@ -379,17 +448,47 @@ function Index() {
                         tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
                         <Button
-                          loading={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          disabled={toggelingArchive}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
                             await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: false,
+                              },
+                              update: (cache, { data }) => {
+                                // check if request was successful
+                                const updatedElements = data?.toggleIsArchived
+                                if (!updatedElements) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds = updatedElements.map(
+                                  (element) => element.id
+                                )
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: false,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
                               },
                             })
                             setSelectedQuestions({})
@@ -439,6 +538,7 @@ function Index() {
                       tagName: tag,
                       isTypeTag: false,
                       isStatusTag: false,
+                      isSharingTypeTag: false,
                       isUntagged: false,
                     })
                   }

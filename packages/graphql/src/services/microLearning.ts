@@ -27,7 +27,9 @@ export async function getMicroLearningData(
       OR: [
         { AND: { status: PublicationStatus.PUBLISHED, isDeleted: false } },
         // if user has access to the microlearning, the query should be enabled for loading the preview
-        { permissions: { some: { userId: ctx.user?.sub } } },
+        ...(ctx.user?.sub
+          ? [{ permissions: { some: { userId: ctx.user.sub } } }]
+          : []),
       ],
     },
     include: {
@@ -273,12 +275,7 @@ export async function manipulateMicroLearning(
         }
       }),
     },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
-    course: {
-      connect: { id: courseId },
-    },
+    course: { connect: { id: courseId } },
   }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
@@ -320,7 +317,10 @@ export async function manipulateMicroLearning(
 
     const upsertedMicrolearning = await prisma.microLearning.upsert({
       where: { id: id ?? uuidv4() },
-      create: createOrUpdateJSON,
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
       update: createOrUpdateJSON,
       include: {
         course: true,

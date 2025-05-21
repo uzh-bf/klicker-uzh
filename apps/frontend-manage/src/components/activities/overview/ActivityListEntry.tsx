@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
@@ -21,7 +22,9 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
+import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
@@ -40,6 +43,8 @@ function ActivityListEntry({
   const t = useTranslations()
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
+  const [sharingModal, setSharingModal] = useState<boolean>(false)
+  const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
 
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
@@ -109,6 +114,7 @@ function ActivityListEntry({
 
             {activity.status !== PublicationStatus.Template &&
               activity.status !== PublicationStatus.Ended &&
+              activity.status !== PublicationStatus.Graded &&
               activity.isEditor && (
                 <FontAwesomeIcon
                   icon={faPencil}
@@ -136,31 +142,65 @@ function ActivityListEntry({
                   numOfElements: activity.numOfElements,
                 })}
           </div>
-          <div className="ml-[1.65rem] text-sm text-gray-500">
-            {t('manage.activities.lastModifiedAt', {
-              date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
-            })}
+          <div className="flex h-[1.4rem] flex-row items-center gap-4 text-gray-500">
+            <div className="ml-[1.65rem] text-sm">
+              {t('manage.activities.lastModifiedAt', {
+                date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
+            <SharingTypeBadge
+              sharingType={activity.sharingType}
+              className={{ root: 'text-sm' }}
+            />
           </div>
         </div>
 
         <div className="flex flex-row items-center gap-4">
           {activity.numSharedUsers && activity.isManager ? (
-            <div className="flex h-max flex-row items-center gap-1.5 py-1">
+            <div
+              className="hover:text-primary-100 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSharingModal(true)
+              }}
+            >
               <div>{activity.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
+
           {activity.type === ActivityType.LiveQuiz ? (
-            <LiveQuizActions liveQuiz={activity} />
+            <LiveQuizActions
+              liveQuiz={activity}
+              isTemplate={!!activity.templateId}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.PracticeQuiz ? (
-            <PracticeQuizActions practiceQuiz={activity} />
+            <PracticeQuizActions
+              practiceQuiz={activity}
+              isTemplate={!!activity.templateId}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.MicroLearning ? (
-            <MicrolearningActions microLearning={activity} />
+            <MicrolearningActions
+              microLearning={activity}
+              isTemplate={!!activity.templateId}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
           {activity.type === ActivityType.GroupActivity ? (
-            <GroupActivityActions groupActivity={activity} />
+            <GroupActivityActions
+              groupActivity={activity}
+              isTemplate={!!activity.templateId}
+              sharingModal={sharingModal}
+              setSharingModal={setSharingModal}
+            />
           ) : null}
         </div>
       </div>
@@ -176,6 +216,21 @@ function ActivityListEntry({
         displayName={activity.displayName}
         open={changeName}
         setOpen={setChangeName}
+      />
+
+      <ActivityLogDialog
+        objectId={String(activity.id)}
+        objectType={
+          activity.type === ActivityType.LiveQuiz
+            ? ObjectType.LiveQuiz
+            : activity.type === ActivityType.PracticeQuiz
+              ? ObjectType.PracticeQuiz
+              : activity.type === ActivityType.MicroLearning
+                ? ObjectType.MicroLearning
+                : ObjectType.GroupActivity
+        }
+        open={isActivityLogOpen}
+        onOpenChange={setActivityLogOpen}
       />
     </>
   )

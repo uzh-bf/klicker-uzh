@@ -36,5 +36,7 @@ fragment ActivityInfoData on ActivityInfo {
   isExecutor
   isShared
   isRemovable
+  sharingType
+
   updatedAt
 }

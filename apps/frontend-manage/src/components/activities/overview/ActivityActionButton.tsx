@@ -23,7 +23,9 @@ function ActivityActionButton({
         <Button
           disabled={disabled}
           onClick={onClick}
-          className={{ root: twMerge('h-8 w-8 p-0', className) }}
+          className={{
+            root: twMerge('hover:text-primary-100 h-8 w-8 p-0', className),
+          }}
           data={data}
         >
           <Button.Icon withoutLabel icon={icon} />

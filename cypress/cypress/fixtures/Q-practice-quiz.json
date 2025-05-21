@@ -21,5 +21,17 @@
     "newNRContent": "New NR Content",
     "duplicateName": "Duplication of Practice Quiz",
     "duplicateDisplayName": "Duplication of Practice Quiz (Display)"
+  },
+  "sharing": {
+    "quiz1": "Sharing Practice Quiz 1",
+    "quiz1Display": "Sharing Practice Quiz 1 (Display)",
+    "quiz2": "Sharing Practice Quiz 2",
+    "quiz2Display": "Sharing Practice Quiz 2 (Display)",
+    "quiz3": "Sharing Practice Quiz 3",
+    "quiz3Display": "Sharing Practice Quiz 3 (Display)",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4"
   }
 }

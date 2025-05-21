@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import {
   DerivedPermissionInfo,
   GetDerivedObjectPermissionsDocument,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useDerivedObjectPermissions({
@@ -11,7 +11,7 @@ function useDerivedObjectPermissions({
   skip,
 }: {
   objectId: string | number
-  objectType: SharingObjectType
+  objectType: ObjectType
   skip: boolean
 }): { derivedPermissions: DerivedPermissionInfo[]; loading: boolean } {
   const { data, loading } = useQuery(GetDerivedObjectPermissionsDocument, {

@@ -1,8 +1,8 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -19,7 +19,7 @@ function ExistingPermissionEntries({
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
-  type: SharingObjectType
+  type: ObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
   showPropagationSetting: boolean
@@ -168,6 +168,7 @@ function ExistingPermissionEntries({
                 }}
                 className={{
                   trigger: 'h-7 text-sm text-gray-900',
+                  item: 'text-sm',
                 }}
                 data={{
                   cy: permission.username

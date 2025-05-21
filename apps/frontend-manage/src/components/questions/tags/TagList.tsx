@@ -16,38 +16,50 @@ import {
   faCommentDots as faCommentDotsSolid,
   faComment as faCommentSolid,
   faEye as faEyeSolid,
+  faFolderTree,
+  faLink,
   faListCheck,
   faRectangleList as faListSolid,
   faPenToSquare as faPenSolid,
   faCircleQuestion as faQuestionSolid,
   faSquareCheck as faSquareCheckSolid,
+  faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   CheckPrivatePreviewAvailableDocument,
   ElementStatus,
   ElementType,
+  SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
 
-const elementStatusFilters: Record<ElementStatus, IconDefinition[]> = {
-  DRAFT: [faPenRegular, faPenSolid],
-  REVIEW: [faEyeRegular, faEyeSolid],
-  READY: [faCheckCircleRegular, faCheckCircleSolid],
+const ELEMENT_STATUS_FILTERS: Record<ElementStatus, IconDefinition[]> = {
+  [ElementStatus.Draft]: [faPenRegular, faPenSolid],
+  [ElementStatus.Review]: [faEyeRegular, faEyeSolid],
+  [ElementStatus.Ready]: [faCheckCircleRegular, faCheckCircleSolid],
 }
 
-interface Props {
+export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
+  [SharingType.Owned]: [faUserTie, faUserTie],
+  [SharingType.Shared]: [faLink, faLink],
+  [SharingType.Dependency]: [faFolderTree, faFolderTree],
+}
+
+interface TagListProps {
   compact: boolean
   isArchiveActive: boolean
   showUntagged: boolean
   activeTags: string[]
   activeStatus?: ElementStatus
   activeType?: ElementType
+  activeSharingTypes?: SharingType[]
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
@@ -55,11 +67,13 @@ interface Props {
     tagName,
     isTypeTag,
     isStatusTag,
+    isSharingTypeTag,
     isUntagged,
   }: {
     tagName: string
     isTypeTag: boolean
     isStatusTag: boolean
+    isSharingTypeTag: boolean
     isUntagged: boolean
   }) => void
   toggleSampleSolutionFilter: () => void
@@ -74,6 +88,7 @@ function TagList({
   activeTags,
   activeType,
   activeStatus,
+  activeSharingTypes,
   sampleSolution,
   answerFeedbacks,
   handleTagClick,
@@ -81,31 +96,34 @@ function TagList({
   toggleSampleSolutionFilter,
   toggleAnswerFeedbackFilter,
   handleToggleArchive,
-}: Props): React.ReactElement {
+}: TagListProps): React.ReactElement {
   const t = useTranslations()
 
   const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
     fetchPolicy: 'cache-first',
   })
-  const elementTypeFilters: Record<ElementType, IconDefinition[] | undefined> =
-    {
-      CONTENT: [faCommentRegular, faCommentSolid],
-      FLASHCARD: [faListRegular, faListSolid],
-      SC: [faQuestionRegular, faQuestionSolid],
-      MC: [faQuestionRegular, faQuestionSolid],
-      KPRIM: [faQuestionRegular, faQuestionSolid],
-      FREE_TEXT: [faQuestionRegular, faQuestionSolid],
-      NUMERICAL: [faQuestionRegular, faQuestionSolid],
-      SELECTION: data?.checkPrivatePreviewAvailable
-        ? [faSquareCheckRegular, faSquareCheckSolid]
-        : undefined,
-      CASE_STUDY: data?.checkPrivatePreviewAvailable
-        ? [faListCheck, faListCheck]
-        : undefined,
-    }
+  const ELEMENT_TYPE_FILTERS: Record<
+    ElementType,
+    IconDefinition[] | undefined
+  > = {
+    CONTENT: [faCommentRegular, faCommentSolid],
+    FLASHCARD: [faListRegular, faListSolid],
+    SC: [faQuestionRegular, faQuestionSolid],
+    MC: [faQuestionRegular, faQuestionSolid],
+    KPRIM: [faQuestionRegular, faQuestionSolid],
+    FREE_TEXT: [faQuestionRegular, faQuestionSolid],
+    NUMERICAL: [faQuestionRegular, faQuestionSolid],
+    SELECTION: data?.checkPrivatePreviewAvailable
+      ? [faSquareCheckRegular, faSquareCheckSolid]
+      : undefined,
+    CASE_STUDY: data?.checkPrivatePreviewAvailable
+      ? [faListCheck, faListCheck]
+      : undefined,
+  }
 
   const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
+  const [sharingTypesVisible, setSharingTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
   const [gamificationTagsVisible, setGamificationTagsVisible] =
     useState(!compact)
@@ -116,6 +134,7 @@ function TagList({
         activeTags.length > 0 ||
         activeType ||
         activeStatus ||
+        activeSharingTypes?.length !== 3 ||
         sampleSolution ||
         answerFeedbacks ||
         showUntagged
@@ -124,10 +143,19 @@ function TagList({
       activeTags,
       activeType,
       activeStatus,
+      activeSharingTypes,
       sampleSolution,
       answerFeedbacks,
       showUntagged,
     ]
+  )
+
+  // TODO: remove as soon as sharing functionalities are available for all users
+  const { data: previewCheck } = useQuery(
+    CheckPrivatePreviewAvailableDocument,
+    {
+      fetchPolicy: 'cache-first',
+    }
   )
 
   return (
@@ -140,7 +168,7 @@ function TagList({
 
       {questionStatusVisible && (
         <ul className="list-none">
-          {Object.entries(elementStatusFilters).map(([status, icons]) => (
+          {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
             <TagItem
               key={status}
               text={t(`shared.${status as ElementStatus}.statusLabel`)}
@@ -151,6 +179,7 @@ function TagList({
                   tagName: status,
                   isTypeTag: false,
                   isStatusTag: true,
+                  isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
@@ -164,10 +193,9 @@ function TagList({
         state={questionTypesVisible}
         setState={setQuestionTypesVisible}
       />
-
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.entries(elementTypeFilters).map(([type, icons]) => {
+          {Object.entries(ELEMENT_TYPE_FILTERS).map(([type, icons]) => {
             if (!icons) return null
 
             return (
@@ -181,6 +209,7 @@ function TagList({
                     tagName: type,
                     isTypeTag: true,
                     isStatusTag: false,
+                    isSharingTypeTag: false,
                     isUntagged: false,
                   })
                 }
@@ -190,6 +219,44 @@ function TagList({
           })}
         </ul>
       )}
+
+      {previewCheck?.checkPrivatePreviewAvailable ? (
+        <>
+          <TagHeader
+            text={t('shared.generic.sharing')}
+            state={sharingTypesVisible}
+            setState={setSharingTypesVisible}
+          />
+          {sharingTypesVisible && (
+            <ul className="list-none">
+              {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
+                if (!icons) return null
+
+                return (
+                  <TagItem
+                    key={type}
+                    text={t(`manage.sharing.label${type as SharingType}`)}
+                    icon={icons}
+                    active={
+                      activeSharingTypes?.includes(type as SharingType) ?? false
+                    }
+                    onClick={(): void =>
+                      handleTagClick({
+                        tagName: type,
+                        isTypeTag: false,
+                        isStatusTag: false,
+                        isSharingTypeTag: true,
+                        isUntagged: false,
+                      })
+                    }
+                    data={{ cy: `element-sharing-filter-${type}` }}
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </>
+      ) : null}
 
       <TagHeader
         text={t('manage.questionPool.tags')}
@@ -239,7 +306,9 @@ function TagList({
       </div>
 
       <Button
-        className={{ root: 'mt-2 h-8 text-sm' }}
+        className={{
+          root: twMerge('mt-2 h-8 text-sm', !resetDisabled && 'border-red-600'),
+        }}
         disabled={resetDisabled}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}

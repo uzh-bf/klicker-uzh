@@ -3,7 +3,7 @@ import {
   GetCatalogAnswerCollectionsDocument,
   GetCatalogElementsDocument,
   GetCatalogLiveQuizTemplatesDocument,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -12,12 +12,14 @@ import { useEffect, useState } from 'react'
 import Select from 'react-select'
 
 interface SelectObjectForCatalogProps {
-  objectType: SharingObjectType
+  objectType: ObjectType
+  isTemplate?: boolean
   setFieldValue: (field: string, value: any) => void
 }
 
 function SelectObjectForCatalog({
   objectType,
+  isTemplate,
   setFieldValue,
 }: SelectObjectForCatalogProps) {
   const t = useTranslations()
@@ -28,19 +30,19 @@ function SelectObjectForCatalog({
   const { data: collectionsData, loading: collectionsLoading } = useQuery(
     GetCatalogAnswerCollectionsDocument,
     {
-      skip: objectType !== SharingObjectType.AnswerCollection,
+      skip: objectType !== ObjectType.AnswerCollection,
       fetchPolicy: 'cache-and-network',
     }
   )
   const { data: liveQuizTemplateData, loading: liveQuizTemplateLoading } =
     useQuery(GetCatalogLiveQuizTemplatesDocument, {
-      skip: objectType !== SharingObjectType.LiveQuizTemplate,
+      skip: objectType !== ObjectType.LiveQuiz || !isTemplate,
       fetchPolicy: 'cache-and-network',
     })
   const { data: elementsData, loading: elementsLoading } = useQuery(
     GetCatalogElementsDocument,
     {
-      skip: objectType !== SharingObjectType.Element,
+      skip: objectType !== ObjectType.Element,
       fetchPolicy: 'cache-and-network',
     }
   )
@@ -53,21 +55,21 @@ function SelectObjectForCatalog({
 
       try {
         // load objects available to the user for sharing (owner or admin access)
-        if (objectType === SharingObjectType.AnswerCollection) {
+        if (objectType === ObjectType.AnswerCollection) {
           const collections =
             collectionsData?.getCatalogAnswerCollections?.map((c) => ({
               value: c.id,
               label: c.name,
             })) ?? []
           setOptions(collections)
-        } else if (objectType === SharingObjectType.LiveQuizTemplate) {
+        } else if (objectType === ObjectType.LiveQuiz && isTemplate) {
           const templates =
             liveQuizTemplateData?.getCatalogLiveQuizTemplates?.map((t) => ({
               value: t.id,
               label: t.name,
             })) ?? []
           setOptions(templates)
-        } else if (objectType === SharingObjectType.Element) {
+        } else if (objectType === ObjectType.Element) {
           const elements =
             elementsData?.getCatalogElements?.map((e) => ({
               value: e.id,
@@ -86,7 +88,13 @@ function SelectObjectForCatalog({
     }
 
     loadObjects()
-  }, [collectionsData, elementsData, liveQuizTemplateData, objectType])
+  }, [
+    collectionsData,
+    elementsData,
+    liveQuizTemplateData,
+    objectType,
+    isTemplate,
+  ])
 
   return (
     <div>

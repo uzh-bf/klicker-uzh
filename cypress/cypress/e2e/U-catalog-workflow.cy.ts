@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
@@ -411,9 +410,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -438,9 +435,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -601,9 +596,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -627,9 +620,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -659,9 +650,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -686,9 +675,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -716,7 +703,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add the two selection questions to the top level of the catalog collection
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -736,7 +723,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -759,7 +746,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -779,7 +766,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -803,7 +790,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -823,7 +810,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(

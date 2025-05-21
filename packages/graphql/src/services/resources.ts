@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { SharingType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type {
   ContextWithUser,
@@ -103,6 +104,7 @@ export async function createAnswerCollection(
     isShared: false,
     isDeletable: true,
     isRemovable: false,
+    sharingType: SharingType.OWNED,
   }
 }
 
@@ -304,7 +306,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const collections = user.objects.flatMap((object) => {
     const collection = object.answerCollection
 
-    if (!collection) {
+    if (!collection || (object.derived && collection.isDeleted)) {
       return []
     }
 
@@ -335,6 +337,12 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel !== DB.PermissionLevel.OWNER &&
         !object.derived &&
         object.directPermission?.userGroupId === null,
+      sharingType:
+        object.permissionLevel === DB.PermissionLevel.OWNER
+          ? SharingType.OWNED
+          : object.derived
+            ? SharingType.DEPENDENCY
+            : SharingType.SHARED,
     }
   })
 

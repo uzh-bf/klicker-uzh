@@ -5,7 +5,13 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
+import {
+  ActivityLogModificationDetails,
+  ActivityLogModificationFieldType,
+  ActivityType,
+  ElementManipulationInput,
+  SharingType,
+} from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   processElementData,
@@ -54,7 +60,8 @@ export async function getUserElements(ctx: ContextWithUser) {
 
   return (
     user?.objects.flatMap((object) =>
-      object.element !== null
+      // filter out objects where the user only has derived access to and they were deleted before
+      object.element !== null && !(object.derived && object.element.isDeleted)
         ? {
             ...object.element,
             permissionLevel: object.permissionLevel,
@@ -77,6 +84,12 @@ export async function getUserElements(ctx: ContextWithUser) {
               object.permissionLevel !== DB.PermissionLevel.OWNER &&
               !object.derived &&
               object.directPermission?.userGroupId === null,
+            sharingType:
+              object.permissionLevel === DB.PermissionLevel.OWNER
+                ? SharingType.OWNED
+                : object.derived
+                  ? SharingType.DEPENDENCY
+                  : SharingType.SHARED,
           }
         : []
     ) ?? []
@@ -256,16 +269,17 @@ export async function manipulateQuestion(
     return null
   }
 
-  const questionPrev =
-    typeof id !== 'undefined' && id !== null
-      ? await ctx.prisma.element.findUnique({
-          where: { id: id, isDeleted: false },
-          include: {
-            tags: { orderBy: { order: 'asc' } },
-            answerCollectionItems: true,
-          },
-        })
-      : undefined
+  // fetch the existing element to compare before/after state
+  const isNewElement = typeof id === 'undefined' || id === null
+  const questionPrev = !isNewElement
+    ? await ctx.prisma.element.findUnique({
+        where: { id: id, isDeleted: false },
+        include: {
+          tags: { orderBy: { order: 'asc' } },
+          answerCollectionItems: true,
+        },
+      })
+    : undefined
 
   // determine which tags have been deconnected
   if (questionPrev?.tags) {
@@ -448,6 +462,41 @@ export async function manipulateQuestion(
     )
   }
 
+  // track element creation or modification
+  // ? status changes are tracked through the corresponding separate mutation
+  if (isNewElement) {
+    // create an activity log entry for element creation
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.CREATION,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId: question.id,
+        userId: ctx.user.sub,
+        createdAt: question.createdAt,
+        updatedAt: question.updatedAt,
+      },
+    })
+  } else if (questionPrev) {
+    // track title changes
+    if (name && name !== questionPrev.name) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.TITLE,
+        oldValue: questionPrev.name,
+        newValue: name,
+      }
+
+      await ctx.prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      })
+    }
+  }
+
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
     id: question.id,
@@ -479,6 +528,49 @@ export async function manipulateQuestion(
       collectionItemIds: question.answerCollectionItems.map((item) => item.id),
     },
   }
+}
+
+export async function changeElementStatus(
+  { elementId, status }: { elementId: number; status: DB.ElementStatus },
+  ctx: ContextWithUser
+) {
+  const previousElement = await ctx.prisma.element.findUnique({
+    where: { id: elementId },
+  })
+
+  if (!previousElement) {
+    return false
+  }
+
+  const element = await ctx.prisma.element.update({
+    where: { id: elementId },
+    data: { status },
+  })
+
+  if (status && status !== previousElement.status) {
+    const modificationDetails: ActivityLogModificationDetails = {
+      field: ActivityLogModificationFieldType.STATUS,
+      oldValue: previousElement.status,
+      newValue: status,
+    }
+
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.MODIFICATION,
+        modificationDetails,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId,
+        userId: ctx.user.sub,
+      },
+    })
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: element.id,
+  })
+
+  return true
 }
 
 export async function deleteElement(
@@ -638,12 +730,12 @@ export async function updateTagOrdering(
 }
 
 export async function toggleIsArchived(
-  { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
+  { elementIds, isArchived }: { elementIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
 ) {
   await ctx.prisma.element.updateMany({
     where: {
-      id: { in: questionIds },
+      id: { in: elementIds },
       permissions: {
         some: {
           userId: ctx.user.sub,
@@ -656,7 +748,7 @@ export async function toggleIsArchived(
     data: { isArchived },
   })
 
-  return questionIds.map((id) => ({ id, isArchived }))
+  return elementIds.map((id) => ({ id, isArchived }))
 }
 
 // map mime types of images to file extensions

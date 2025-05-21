@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
-import { prop, sortBy } from 'remeda'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
+import { sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 
 export async function getUserActivities(ctx: ContextWithUser) {
@@ -25,7 +25,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              blocks: { include: { elements: true } },
+              blocks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } }, // ? shared user counts left out for efficiency on activity list
             },
           },
@@ -33,7 +36,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },
@@ -41,7 +47,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
             include: {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },
@@ -51,7 +60,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
                 include: { _count: { select: { participantGroups: true } } },
               },
               templateInfo: { select: { id: true } },
-              stacks: { include: { elements: true } },
+              stacks: {
+                include: { elements: { orderBy: { order: 'asc' } } },
+                orderBy: { order: 'asc' },
+              },
               // _count: { select: { permissions: true } },
             },
           },
@@ -84,8 +96,19 @@ export async function getUserActivities(ctx: ContextWithUser) {
       object.permissionLevel !== DB.PermissionLevel.OWNER &&
       !object.derived &&
       object.directPermission?.userGroupId === null
+    const sharingType =
+      object.permissionLevel === DB.PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : object.derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED
 
     if (object.liveQuiz) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.liveQuiz.isDeleted) {
+        return []
+      }
+
       const stacks = object.liveQuiz.blocks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -124,9 +147,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
     } else if (object.practiceQuiz) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.practiceQuiz.isDeleted) {
+        return []
+      }
+
       const stacks = object.practiceQuiz.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -166,9 +195,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
     } else if (object.microLearning) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.microLearning.isDeleted) {
+        return []
+      }
+
       const stacks = object.microLearning.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -209,9 +244,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
     } else if (object.groupActivity) {
+      // if the object access is derived and the object is soft-deleted, don't show it
+      if (object.derived && object.groupActivity.isDeleted) {
+        return []
+      }
+
       const stacks = object.groupActivity.stacks.map((block) => ({
         id: block.id,
         numOfParticipants: block.elements[0]
@@ -255,6 +296,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         isExecutor,
         isShared,
         isRemovable,
+        sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }
     }
@@ -262,11 +304,15 @@ export async function getUserActivities(ctx: ContextWithUser) {
     return []
   })
 
-  // sort the activities first by type and then by status and name
+  // the activities should be ordered as follows:
+  // 1) first by active vs inactive status (active: published, scheduled, draft, template; inactive: ended, graded)
+  // 2) then by type: live quiz, microlearning, practice quiz, group activity
+  // 3) then by status within the active/inactive groups
+  // 4) then by start date / updated date
   const activityTypeOrder = {
     [ActivityType.LIVE_QUIZ]: 1,
-    [ActivityType.PRACTICE_QUIZ]: 2,
-    [ActivityType.MICRO_LEARNING]: 3,
+    [ActivityType.MICRO_LEARNING]: 2,
+    [ActivityType.PRACTICE_QUIZ]: 3,
     [ActivityType.GROUP_ACTIVITY]: 4,
   }
 
@@ -274,19 +320,35 @@ export async function getUserActivities(ctx: ContextWithUser) {
     [DB.PublicationStatus.PUBLISHED]: 1,
     [DB.PublicationStatus.SCHEDULED]: 2,
     [DB.PublicationStatus.DRAFT]: 3,
-    [DB.PublicationStatus.TEMPLATE]: 6,
-    [DB.PublicationStatus.ENDED]: 4,
-    [DB.PublicationStatus.GRADED]: 5,
+    [DB.PublicationStatus.TEMPLATE]: 4,
+    [DB.PublicationStatus.ENDED]: 2,
+    [DB.PublicationStatus.GRADED]: 1,
+  }
+
+  // Helper function to determine if a status is active or inactive
+  const isActiveStatus = (status: DB.PublicationStatus): boolean => {
+    return (
+      status === DB.PublicationStatus.PUBLISHED ||
+      status === DB.PublicationStatus.SCHEDULED ||
+      status === DB.PublicationStatus.DRAFT ||
+      status === DB.PublicationStatus.TEMPLATE
+    )
   }
 
   return sortBy(
     activities,
-    (activity) =>
-      activityTypeOrder[activity.type as keyof typeof activityTypeOrder],
-    (activity) =>
-      activityStatusOrder[
-        activity.status as keyof typeof activityStatusOrder
-      ] || 999, // Use a high number for any unknown status
-    prop('name') // sort by name
+    // first order by active/inactive (active first)
+    (activity) => (isActiveStatus(activity.status) ? 0 : 1),
+    // then order by activity type
+    (activity) => activityTypeOrder[activity.type],
+    // then order by status within each group
+    (activity) => activityStatusOrder[activity.status] || 100,
+    // then by scheduled start date or updated date
+    (activity) => {
+      if (activity.scheduledStartAt) {
+        return -new Date(activity.scheduledStartAt).getTime()
+      }
+      return -new Date(activity.updatedAt).getTime()
+    }
   )
 }

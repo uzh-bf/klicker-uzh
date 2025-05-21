@@ -1,7 +1,4 @@
-import {
-  PermissionLevel,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -13,7 +10,7 @@ function PropagatedPermissionsTable({
   activePermissionLevel,
   showPropagationSetting = false,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   activePermissionLevel?: PermissionLevel
   showPropagationSetting?: boolean
 }) {
@@ -26,11 +23,11 @@ function PropagatedPermissionsTable({
 
   // execution rights are only available for activities and courses
   const showExecution =
-    objectType === SharingObjectType.Course ||
-    objectType === SharingObjectType.LiveQuiz ||
-    objectType === SharingObjectType.PracticeQuiz ||
-    objectType === SharingObjectType.MicroLearning ||
-    objectType === SharingObjectType.GroupActivity
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {

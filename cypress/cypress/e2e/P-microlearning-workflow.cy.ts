@@ -24,8 +24,8 @@ describe('Different microlearning workflows', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('P-microlearning.json').then((liveQuizData) => {
-      this.data = { ...this.data, ...liveQuizData }
+    cy.fixture('P-microlearning.json').then((microLearningData) => {
+      this.data = { ...this.data, ...microLearningData }
     })
   })
 
@@ -507,9 +507,9 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .should('have.value', runningStart)
@@ -1472,6 +1472,7 @@ describe('Different microlearning workflows', function () {
 
     // modify numerical question
     cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).click()
+    cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.manipulation.newSETitle)
@@ -1742,7 +1743,9 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.manipulation.course}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(this.data.manipulation.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-stack-0"]').contains(
       this.data.CSML2.title.substring(0, 20)
@@ -1853,6 +1856,1381 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
+  })
+  // #endregion
+
+  // ! Part 5: Sharing of Microlearnings
+  // #region
+  function verifyMicroLearningDetailsModalContent(
+    activityName: string,
+    data: any
+  ) {
+    cy.get(`[data-cy="activity-name-${activityName}"]`).click()
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.SCML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.MCML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.KPML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.NRML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.FTML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.SEML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.CSML.title.substring(0, 20)
+    )
+    cy.get('[data-cy="activity-details-modal"]').contains(
+      data.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  }
+
+  function verifyMicroLearningOwnerPermissions(data: any) {
+    // for a draft microlearning the following options should be available: publish, edit, open preview, access link, lti link, duplicate, share, delete
+    cy.get(`[data-cy="publish-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+
+    // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+
+    // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, delete
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro3}"]`
+    ).should('exist')
+    cy.get(`[data-cy="end-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
+    ).realClick()
+    cy.get(`[data-cy="extend-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+
+    // for a completed microlearning the following options should be available: evaluation, duplicate, convert, open preview, share, delete
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro4}"]`
+    ).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="convert-microlearning-${data.sharing.micro4}-to-practice-quiz"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
+  }
+
+  function verifyMicroLearningREADPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginIndividualCatalyst()
+
+    // elements should not be shared for users with READ permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('exist')
+      cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
+    })
+
+    // for a draft microlearning the following options should be available: open preview, access link, lti link, remove
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+
+    verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+
+    // for a scheduled microlearning the following options should be available: access link, open preview, lti link, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+
+    verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+
+    // for a running microlearning the following options should be available: access link, evaluation, open preview, lti link, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro3}"]`
+    ).should('exist')
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+
+    // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro4}"]`
+    ).should('exist')
+    cy.get(`[data-cy="open-analytics-async-activity"]`).should('exist')
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+
+    verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
+  }
+
+  function verifyMicroLearningEXECUTEPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst()
+
+    // elements should not be shared for users with EXECUTE permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('exist')
+      cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
+    })
+
+    // for a draft microlearning the following options should be available: publish, open preview, access link, lti link, remove
+    cy.get(`[data-cy="publish-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+
+    // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+
+    // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro3}"]`
+    ).should('exist')
+    cy.get(`[data-cy="end-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
+    ).realClick()
+    cy.get(`[data-cy="extend-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+
+    // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro4}"]`
+    ).should('exist')
+    cy.get(`[data-cy="open-analytics-async-activity"]`).should('exist')
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+
+    verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
+  }
+
+  function verifyMicroLearningWRITEPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst2()
+
+    // elements should not be shared for users with WRITE permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('exist')
+      cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
+    })
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="change-activity-name-${data.sharing.micro4}"]`).should(
+      'not.exist'
+    ) // name change action not available for ended activities
+
+    // for a draft microlearning the following options should be available: publish, edit, open preview, access link, lti link, remove
+    cy.get(`[data-cy="publish-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+
+    // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+
+    // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro3}"]`
+    ).should('exist')
+    cy.get(`[data-cy="end-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
+    ).realClick()
+    cy.get(`[data-cy="extend-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+
+    // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro4}"]`
+    ).should('exist')
+    cy.get(`[data-cy="open-analytics-async-activity"]`).should('exist')
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+
+    verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
+  }
+
+  function verifyMicroLearningADMINPermissions(
+    data: any,
+    groupPermission: boolean
+  ) {
+    cy.loginInstitutionalCatalyst3()
+
+    // elements should be shared for users with ADMIN permissions on activity
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    })
+
+    // open the activity overview and check the actions on all shared activities
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('exist')
+      cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
+    })
+    cy.get(`[data-cy="activity-MICRO_LEARNING-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="change-activity-name-${data.sharing.micro4}"]`).should(
+      'not.exist'
+    ) // name change action not available for ended activities
+
+    // for a draft microlearning the following options should be available: publish, edit, open preview, access link, lti link, duplicate, share, remove, delete
+    cy.get(`[data-cy="publish-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="edit-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro1}"]`
+    ).realClick()
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro1}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro1}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
+
+    // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro2}"]`).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro2}"]`
+    ).realClick()
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="unpublish-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro2}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
+
+    // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, remove, delete
+    cy.get(`[data-cy="copy-microlearning-link-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro3}"]`
+    ).should('exist')
+    cy.get(`[data-cy="end-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro3}"]`
+    ).realClick()
+    cy.get(`[data-cy="extend-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="copy-lti-link-${data.sharing.micro3}"]`).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro3}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro3}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
+
+    // for a completed microlearning the following options should be available: evaluation, duplicate, convert, analytics, open preview, share, remove, delete
+    cy.get(
+      `[data-cy="evaluation-microlearning-${data.sharing.micro4}"]`
+    ).should('exist')
+    cy.get(`[data-cy="duplicate-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="convert-microlearning-${data.sharing.micro4}-to-practice-quiz"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.sharing.micro4}"]`
+    ).realClick()
+    cy.get(`[data-cy="open-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="delete-microlearning-${data.sharing.micro4}"]`).should(
+      'exist'
+    )
+
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
+  }
+
+  function verifyREADPermissionsRevoked(data: any) {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared microlearnings should no longer be visible
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('not.exist')
+    })
+  }
+
+  function verifyEXECUTEPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared microlearnings should no longer be visible
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('not.exist')
+    })
+  }
+
+  function verifyWRITEPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="activities"]').click()
+
+    // previously shared microlearnings should no longer be visible
+    cy.wrap([
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('not.exist')
+    })
+  }
+
+  function verifyADMINPermissionsRevoked(data: any) {
+    cy.loginInstitutionalCatalyst3()
+
+    // previously indirectly shared elements should no longer be visible
+    cy.wrap([
+      data.SCML.title,
+      data.MCML.title,
+      data.KPML.title,
+      data.NRML.title,
+      data.FTML.title,
+      data.SEML.title,
+      data.CSML.title,
+      data.CT.title,
+    ]).each((element) => {
+      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    })
+
+    // previously shared microlearnings should no longer be visible
+    cy.get('[data-cy="activities"]').click()
+    const quizzes = [
+      data.sharing.micro1,
+      data.sharing.micro2,
+      data.sharing.micro3,
+      data.sharing.micro4,
+    ]
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="activity-MICRO_LEARNING-${quiz}"]`).should('not.exist')
+    })
+  }
+
+  it('Create four different microlearnings and make sure that all required actions are shown to the object owner', function () {
+    cy.loginLecturer()
+
+    // create four different microlearnings
+    for (let i = 1; i <= 4; i++) {
+      cy.createMicroLearning({
+        name: this.data.sharing[`micro${i}`],
+        displayName: this.data.sharing[`micro${i}Display`],
+        courseName: this.data.seededCourse,
+        startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 16),
+        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 16),
+        stacks: [
+          {
+            elements: [
+              this.data.SCML.title,
+              this.data.MCML.title,
+              this.data.KPML.title,
+              this.data.NRML.title,
+              this.data.FTML.title,
+              this.data.SEML.title,
+              this.data.CSML.title,
+              this.data.CT.title,
+            ],
+          },
+        ],
+      })
+      cy.get('[data-cy="create-new-activity"]').click()
+    }
+
+    // change the status of the second microlearning to scheduled
+    cy.task('changeActivityStatus', {
+      activityName: this.data.sharing.micro2,
+      activityType: 'MICRO_LEARNING',
+      status: 'SCHEDULED',
+    }).then((result: boolean) => {
+      // check if the modification was successful
+      if (result === false) {
+        throw new Error(
+          'Microlearning to change status was not found in the database'
+        )
+      }
+    })
+
+    // change the status of the third microlearning to published
+    cy.task('changeActivityStatus', {
+      activityName: this.data.sharing.micro3,
+      activityType: 'MICRO_LEARNING',
+      status: 'PUBLISHED',
+    }).then((result: boolean) => {
+      // check if the modification was successful
+      if (result === false) {
+        throw new Error(
+          'Microlearning to change status was not found in the database'
+        )
+      }
+    })
+
+    // change the status of the fourth microlearning to ended
+    cy.task('changeActivityStatus', {
+      activityName: this.data.sharing.micro4,
+      activityType: 'MICRO_LEARNING',
+      status: 'ENDED',
+    }).then((result: boolean) => {
+      // check if the modification was successful
+      if (result === false) {
+        throw new Error(
+          'Microlearning to change status was not found in the database'
+        )
+      }
+    })
+    cy.reload()
+
+    // verify that the owner sees all the correct actions
+    cy.get('[data-cy="activities"]').click()
+    verifyMicroLearningOwnerPermissions(this.data)
+  })
+
+  it('Share the microlearnings individual with different users and different permissions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    // grant READ, EXECUTE, WRITE and ADMIN permissions on all microlearnings to the users 2, 3, 4 and 5, respectively
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // grant READ permission to user 2
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsREAD
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsREAD)
+
+      // grant EXECUTE permission to user 3
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsEXECUTE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsEXECUTE)
+
+      // grand WRITE permissions to user 4
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST2_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+      )
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // grant ADMIN permissions to user 5
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_INST3_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsADMIN
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`
+      )
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsADMIN)
+
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Log in as the user with READ permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningREADPermissions(this.data, false)
+  })
+
+  it('Log in as the user with EXECUTE permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningEXECUTEPermissions(this.data, false)
+  })
+
+  it('Log in as the user with WRITE permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningWRITEPermissions(this.data, false)
+  })
+
+  it('Log in as the user with ADMIN permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningADMINPermissions(this.data, false)
+  })
+
+  it('Revoke the direct individual permissions for all users through the activity owner account', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    const quizzes = [
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]
+    const users = [
+      Cypress.env('LECTURER_IND_SHORTNAME'),
+      Cypress.env('LECTURER_INST_SHORTNAME'),
+      Cypress.env('LECTURER_INST2_SHORTNAME'),
+      Cypress.env('LECTURER_INST3_SHORTNAME'),
+    ]
+
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // revoke permissions for users 2, 3, 4 and 5
+      cy.wrap(users).each((user) => {
+        cy.get(`[data-cy="permission-${user}"]`).should('exist')
+        cy.get(`[data-cy="revoke-permission-${user}"]`).click()
+        cy.get('[data-cy="confirm-revocation"]').click()
+        cy.get(`[data-cy="permission-${user}"]`).should('not.exist')
+      })
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Verify that user with previous READ permissions can no longer see / access the activity', function () {
+    verifyREADPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous EXECUTE permissions can no longer see / access the activity', function () {
+    verifyEXECUTEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous WRITE permissions can no longer see / access the activity', function () {
+    verifyWRITEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous ADMIN permissions can no longer see / access the activity', function () {
+    verifyADMINPermissionsRevoked(this.data)
+  })
+
+  it('Create user groups with users 2, 3, 4, and 5 as members, admins or owners and share the microlearnings with them', function () {
+    // create user groups with users 1 & 2 / 3 as member / admin
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group1)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group2)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME')) // pro2 is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).should('exist')
+
+    // create user group with users 1 and 4 with user 4 as owner
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group3)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as member
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).should('exist')
+
+    // create user group with users 1 and 5 with user 5 as owner
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="user-groups"]').click()
+
+    cy.get('[data-cy="create-user-group"]').click()
+    cy.get('[data-cy="user-group-name"]').click().type(this.data.sharing.group4)
+    cy.get('[data-cy="member-shortname-email-0"]')
+      .click()
+      .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
+    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="submit-create-user-group"]').click()
+    cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
+    cy.logoutUser()
+
+    // share the microlearnings with the user groups with READ, EXECUTE, WRITE and ADMIN permissions
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // grant READ permission to user group 1
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsREAD
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsREAD)
+
+      // grant EXECUTE permission to user group 2
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsEXECUTE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsEXECUTE)
+
+      // grand WRITE permissions to user group 3
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // grant ADMIN permissions to user group 4
+      cy.get('[data-cy="new-permission-user-group"]').click()
+      cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).click()
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsADMIN
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Log in as the user with READ permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningREADPermissions(this.data, true)
+  })
+
+  it('Log in as the user with EXECUTE permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningEXECUTEPermissions(this.data, true)
+  })
+
+  it('Log in as the user with WRITE permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningWRITEPermissions(this.data, true)
+  })
+
+  it('Log in as the user with ADMIN permissions on all activities and check that the correct actions are available', function () {
+    verifyMicroLearningADMINPermissions(this.data, true)
+  })
+
+  it('Revoke the direct group permissions for all users through the activity owner account', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    const quizzes = [
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]
+    const groups = [
+      this.data.sharing.group1,
+      this.data.sharing.group2,
+      this.data.sharing.group3,
+      this.data.sharing.group4,
+    ]
+
+    cy.wrap(quizzes).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // revoke permissions for all user groups
+      cy.wrap(groups).each((group) => {
+        cy.get(`[data-cy="permission-${group}"]`).should('exist')
+        cy.get(`[data-cy="revoke-permission-${group}"]`).click()
+        cy.get('[data-cy="confirm-revocation"]').click()
+        cy.get(`[data-cy="permission-${group}"]`).should('not.exist')
+      })
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it('Verify that user with previous READ permissions can no longer see / access the activity', function () {
+    verifyREADPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous EXECUTE permissions can no longer see / access the activity', function () {
+    verifyEXECUTEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous WRITE permissions can no longer see / access the activity', function () {
+    verifyWRITEPermissionsRevoked(this.data)
+  })
+
+  it('Verify that user with previous ADMIN permissions can no longer see / access the activity', function () {
+    verifyADMINPermissionsRevoked(this.data)
+  })
+
+  it("Transfer ownership of all microlearnings to user 'pro1' using the username", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // share the course with WRITE permissions with user pro1
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // transfer ownership to user pro1
+      cy.get('[data-cy="transfer-ownership"]').click()
+      cy.get('[data-cy="new-owner-username-email-input"]').type(
+        Cypress.env('LECTURER_IND_SHORTNAME')
+      )
+      cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+      // verify that the correct permissions are displayed
+      cy.get('[data-cy="transfer-ownership"]').should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      ).contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it("Verify that user 'pro1' is the new owner and transfer the ownership back to the main user", function () {
+    cy.loginIndividualCatalyst()
+
+    // verify that the new owner sees all the correct actions
+    cy.get('[data-cy="activities"]').click()
+    verifyMicroLearningOwnerPermissions(this.data)
+
+    // transfer the ownership of all quizzes back to the main user
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+
+      // grant a WRITE permission to the main user (should change the existing permission in this case)
+      cy.get('[data-cy="new-permission-username-or-email"]').type(
+        Cypress.env('LECTURER_SHORTNAME')
+      )
+      cy.get('[data-cy="new-permission-access-level"]').click()
+      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.get('[data-cy="new-permission-access-level"]').contains(
+        messages.manage.sharing.permissionsWRITE
+      )
+      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+        .should('exist')
+        .contains(messages.manage.sharing.permissionsWRITE)
+
+      // transfer ownership back to the main user
+      cy.get('[data-cy="transfer-ownership"]').click()
+      cy.get('[data-cy="new-owner-username-email-input"]').type(
+        Cypress.env('LECTURER_SHORTNAME')
+      )
+      cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+      // verify that the correct permissions are displayed
+      cy.get('[data-cy="transfer-ownership"]').should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).contains(messages.manage.sharing.permissionsADMIN)
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
+  })
+
+  it("Remove the shared microlearnings from user 'pro1' using the removal functionality", function () {
+    cy.loginIndividualCatalyst()
+
+    // remove the shared microlearnings from user pro1
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="remove-microlearning-${quiz}"]`).click()
+      cy.get('[data-cy="confirm-deletion-final"]').click()
+      cy.get('[data-cy="confirm-derived-access"]').click()
+      cy.get('[data-cy="confirm-dependency-access"]').click()
+      cy.get('[data-cy="confirmation-modal-confirm"]').click()
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).should('not.exist')
+      cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
+    })
+    cy.logoutUser()
+
+    // verify in the main user account that the corresponding permissions were removed
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.wrap([
+      this.data.sharing.micro1,
+      this.data.sharing.micro2,
+      this.data.sharing.micro3,
+      this.data.sharing.micro4,
+    ]).each((quiz) => {
+      cy.get(`[data-cy="actions-MICRO_LEARNING-${quiz}"]`).realClick()
+      cy.get(`[data-cy="share-microlearning-${quiz}"]`).click()
+      cy.get(
+        `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      ).should('not.exist')
+      cy.get(`[data-cy="close-share-object"]`).click()
+    })
   })
   // #endregion
 })

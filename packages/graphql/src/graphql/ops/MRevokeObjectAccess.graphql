@@ -1,7 +1,7 @@
 mutation RevokeObjectAccess(
   $permissionId: Int!
   $objectId: String!
-  $objectType: SharingObjectType!
+  $objectType: ObjectType!
 ) {
   revokeObjectAccess(
     permissionId: $permissionId

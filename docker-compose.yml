@@ -1,6 +1,8 @@
 services:
   reverse_proxy_docker:
-    image: docker.io/library/traefik:v2.10
+    build:
+      context: ./util/traefik
+      dockerfile: Dockerfile
     command:
       - --api.insecure=true
       - --providers.file=true
@@ -10,15 +12,15 @@ services:
     ports:
       - 80:80
       - 8080:8080
-    volumes:
-      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
   reverse_proxy_macos:
-    image: docker.io/library/traefik:v2.10
+    build:
+      context: ./util/traefik
+      dockerfile: Dockerfile
     command:
       - --api.insecure=true
       - --providers.file=true
@@ -28,13 +30,13 @@ services:
     ports:
       - 80:80
       - 8080:8080
-    volumes:
-      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
 
   reverse_proxy_wsl:
-    image: docker.io/library/traefik:v2.10
+    build:
+      context: ./util/traefik
+      dockerfile: Dockerfile.wsl
     command:
       - --api.insecure=true
       - --providers.file=true
@@ -44,8 +46,6 @@ services:
     ports:
       - 80:80
       - 8080:8080
-    volumes:
-      - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
 

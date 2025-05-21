@@ -178,7 +178,6 @@ function extractFormValuesFromElementInstance({
 
   // default / fallback case (should not happen)
   return {
-    status: ElementStatus.Ready,
     type: ElementType.Sc,
     name: '',
     content: '',

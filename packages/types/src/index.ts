@@ -3,9 +3,25 @@ import type {
   ElementStatus,
   ElementType,
   ObjectAccess,
+  ObjectType,
   ParameterType,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
+
+// ----- ACTIVITY LOG TYPES -----
+// #region
+export enum ActivityLogModificationFieldType {
+  TITLE = 'title',
+  STATUS = 'status',
+  CONTENT = 'content',
+}
+
+export interface ActivityLogModificationDetails {
+  field: ActivityLogModificationFieldType | string
+  oldValue: string
+  newValue: string
+}
+// #endregion
 
 export type ElementKeys = keyof Element
 
@@ -15,29 +31,17 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum SharingObjectType {
-  ANSWER_COLLECTION = 'ANSWER_COLLECTION',
-  CATALOG_COLLECTION = 'CATALOG_COLLECTION',
-  LIVE_QUIZ_TEMPLATE = 'LIVE_QUIZ_TEMPLATE',
-
-  // TODO: add more activity template types once they are supported
-  // PRACTICE_QUIZ_TEMPLATE = 'PRACTICE_QUIZ_TEMPLATE',
-  // MICRO_LEARNING_TEMPLATE = 'MICRO_LEARNING_TEMPLATE',
-  // GROUP_ACTIVITY_TEMPLATE = 'GROUP_ACTIVITY_TEMPLATE',
-
-  ELEMENT = 'ELEMENT',
-  COURSE = 'COURSE',
+export enum ActivityType {
   LIVE_QUIZ = 'LIVE_QUIZ',
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',
   MICRO_LEARNING = 'MICRO_LEARNING',
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
-export enum ActivityType {
-  LIVE_QUIZ = 'LIVE_QUIZ',
-  PRACTICE_QUIZ = 'PRACTICE_QUIZ',
-  MICRO_LEARNING = 'MICRO_LEARNING',
-  GROUP_ACTIVITY = 'GROUP_ACTIVITY',
+export enum SharingType {
+  OWNED = 'OWNED', // owned objects
+  SHARED = 'SHARED', // objects shared directly with the user (potentially through user group)
+  DEPENDENCY = 'DEPENDENCY', // objects shared with the user indirectly (through the object being a dependency of another object)
 }
 
 export type ElementBlockInput = {
@@ -341,7 +345,7 @@ export type AvatarSettings = {
 export type ObjectSharingRequest = {
   requestId: number
   objectName: string
-  objectType: SharingObjectType
+  objectType: ObjectType
   userId: string
   userShortname: string
   userEmail: string
@@ -355,7 +359,7 @@ export type CatalogObject = {
   objectId?: number // object id
   objectUuid?: string // object uuid
   name: string
-  objectType: SharingObjectType
+  objectType: ObjectType
   templateId?: string
   access: ObjectAccess
   ownerShortname?: string

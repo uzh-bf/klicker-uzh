@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
@@ -401,7 +400,7 @@ describe('Create, edit and share answer collections', function () {
     // add collection to catalog as restricted object
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
 
@@ -943,7 +942,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })
@@ -987,9 +986,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1040,13 +1037,13 @@ describe('Create, edit and share answer collections', function () {
     )
   })
 
-  it('Verify that the used access to the collection for user pro2 is still intact, delete the question and remove the collection', function () {
+  it('Verify that the user pro2 can no longer the answer collection in the overview or add it to the catalog, but the depenedent element remained intact', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
-      'exist'
+      'not.exist'
     )
 
     // object can no longer be added to the catalog (since it was deleted by the owner)
@@ -1055,27 +1052,20 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.findByText(messages.manage.catalog.noObjectsAvailable)
     cy.get('[data-cy="close-add-object-modal"]').click()
 
     // delete the dependent question
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="edit-element-${this.data.question.title}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="close-element-modal"]').click()
     cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
       'exist'
     )
     cy.deleteElement({ elementName: this.data.question.title })
     cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
-
-    // since the user only retained a derived permission on the collection, the removal of
-    // the parent element should have resulted in the automatic removal of the access
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
@@ -1105,7 +1095,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.addObjectToCatalog({
       objectName: this.data.public.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'public',
     })
 
@@ -1685,7 +1675,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.private.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })
@@ -1922,7 +1912,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.direct.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })

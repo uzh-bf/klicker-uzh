@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   GetUserGroupsUserDocument,
+  ObjectType,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -26,7 +26,7 @@ function DirectSharingForm({
   onFailure,
   shareObjectCallback,
 }: {
-  type: SharingObjectType
+  type: ObjectType
   showPropagationSetting: boolean
   onSuccess: () => void
   onFailure: () => void
@@ -227,10 +227,11 @@ function DirectSharingForm({
               basic
               type="button"
               onClick={() => submitForm()}
-              disabled={!isValid || isSubmitting}
+              primary={isValid}
+              disabled={!isValid}
               className={{
                 root: twMerge(
-                  'px-2 py-2 text-green-700 hover:text-green-800',
+                  'px-2 py-2 hover:text-white',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}

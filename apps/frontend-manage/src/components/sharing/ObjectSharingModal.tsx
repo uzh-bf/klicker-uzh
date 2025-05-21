@@ -1,5 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -31,7 +31,7 @@ function ObjectSharingModal({
   open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectName: string
   onOwnershipTransfer: () => void
   catalogCollectionId?: string
@@ -44,6 +44,14 @@ function ObjectSharingModal({
   const [removalSuccess, setRemovalSuccess] = useState(false)
   const [removalFailure, setRemovalFailure] = useState(false)
   const [showDerivedPermissions, setShowDerivedPermissions] = useState(false)
+
+  // boolean to determine whether to show the propagation option on the permissions
+  const showPropagationSetting =
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // get all permissions that have already been granted for this object
   const { permissions, loading: permissionsLoading } = useObjectPermissions({
@@ -109,7 +117,7 @@ function ObjectSharingModal({
 
         <PropagatedPermissionsTable
           objectType={objectType}
-          showPropagationSetting={objectType === SharingObjectType.Course}
+          showPropagationSetting={showPropagationSetting}
         />
 
         <div className="mt-8">
@@ -119,7 +127,7 @@ function ObjectSharingModal({
             permissionsLoading={permissionsLoading}
             changeLoading={permissionChanging}
             isOwner={isOwner}
-            showPropagationSetting={objectType === SharingObjectType.Course}
+            showPropagationSetting={showPropagationSetting}
             onPermissionLevelChange={async ({
               permissionId,
               newPermissionLevel,

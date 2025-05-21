@@ -1,5 +1,5 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
-import { SharingObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -15,13 +15,15 @@ function TransferOwnershipModal({
   objectId,
   objectType,
   objectName,
+  isTemplate = false,
   catalogCollectionId,
 }: {
   open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectName: string
+  isTemplate?: boolean
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
@@ -33,6 +35,13 @@ function TransferOwnershipModal({
     catalogCollectionId,
     onError: () => setTransferFailure(true),
   })
+
+  const activityTemplate =
+    isTemplate &&
+    (objectType === ObjectType.LiveQuiz ||
+      objectType === ObjectType.PracticeQuiz ||
+      objectType === ObjectType.MicroLearning ||
+      objectType === ObjectType.GroupActivity)
 
   return (
     <>
@@ -50,10 +59,15 @@ function TransferOwnershipModal({
               {t('manage.sharing.importantInformation')}
             </div>
             <p className="text-gray-600">
-              {t.rich(`manage.sharing.infoTransferOwnership${objectType}`, {
-                objectName,
-                b: (text) => <strong>{text}</strong>,
-              })}
+              {t.rich(
+                activityTemplate
+                  ? `manage.sharing.infoTransferOwnership${objectType}_TEMPLATE`
+                  : `manage.sharing.infoTransferOwnership${objectType}`,
+                {
+                  objectName,
+                  b: (text) => <strong>{text}</strong>,
+                }
+              )}
             </p>
           </div>
 

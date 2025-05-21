@@ -1,6 +1,6 @@
 mutation ShareObject(
   $objectId: String!
-  $objectType: SharingObjectType!
+  $objectType: ObjectType!
   $permissionLevel: PermissionLevel!
   $shortnameOrEmail: String
   $userGroupId: Int

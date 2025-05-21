@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.54...v3.3.0-alpha.55) (2025-05-19)
+
+
+### Features
+
+* implement activity log on element with messages and edit changes ([#4692](https://github.com/uzh-bf/klicker-uzh/issues/4692)) ([2358fa1](https://github.com/uzh-bf/klicker-uzh/commit/2358fa120fb8ad543e0916b8264d20b152fd501c))
+
+
+### Enhancements
+
+* separate element status from remaining element form logic to allow users with read access to change it ([#4694](https://github.com/uzh-bf/klicker-uzh/issues/4694)) ([94d3217](https://github.com/uzh-bf/klicker-uzh/commit/94d3217fd18f50802d9704def7d9a2e9b3032335))
+* update permission module with optional propagation of permissions to element level ([#4693](https://github.com/uzh-bf/klicker-uzh/issues/4693)) ([04e4075](https://github.com/uzh-bf/klicker-uzh/commit/04e407527406871de905af3ca600183ac7cbd068))
+
+
+### Refactors
+
+* eliminate sharing object type form types structure and replace it with prisma object type ([#4696](https://github.com/uzh-bf/klicker-uzh/issues/4696)) ([e74e30c](https://github.com/uzh-bf/klicker-uzh/commit/e74e30ca91822a192dee4207d23f7b8a02579a3d))
+
+## [3.3.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.53...v3.3.0-alpha.54) (2025-05-15)
+
+
+### Enhancements
+
+* add possibility to show information on origin of derived permission ([#4688](https://github.com/uzh-bf/klicker-uzh/issues/4688)) ([7682efa](https://github.com/uzh-bf/klicker-uzh/commit/7682efa04d5b5158d53b20d5308476e3585a6144))
+* **apps/frontend-manage:** support activity removal functionality for practice quizzes, microlearning and group activities ([#4689](https://github.com/uzh-bf/klicker-uzh/issues/4689)) ([f095c03](https://github.com/uzh-bf/klicker-uzh/commit/f095c0307d73bc1f6e1a08582e3cc7c8efd1fdfb))
+
+## [3.3.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.52...v3.3.0-alpha.53) (2025-05-14)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add proper cache updates for element archiving and vice versa ([edfa11a](https://github.com/uzh-bf/klicker-uzh/commit/edfa11ac84585f2caf5b770495b832643aca3c1f))
+* **apps/frontend-manage:** make sure that redirect on live quiz start works correctly ([015e4a8](https://github.com/uzh-bf/klicker-uzh/commit/015e4a833cddb7545ee774a5353736ac049187b7))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** store filters and sorting states from library in local storage ([#4687](https://github.com/uzh-bf/klicker-uzh/issues/4687)) ([ee921fa](https://github.com/uzh-bf/klicker-uzh/commit/ee921fa1c48da61383c49f70beaf174c701f1cc4))
+* improve display of shared or dependent objects in user accounts ([#4686](https://github.com/uzh-bf/klicker-uzh/issues/4686)) ([73981b8](https://github.com/uzh-bf/klicker-uzh/commit/73981b82cbce3f00de272a721f831872d0759d71))
+
+## [3.3.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.51...v3.3.0-alpha.52) (2025-05-12)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure that practice quiz and microlearning previews are only visible to users with sufficient permissions ([98a2e10](https://github.com/uzh-bf/klicker-uzh/commit/98a2e103d19eae36d54be9d32e47cb65bca56dec))
+* **packages/graphql:** resolve permission validation issues on element instances when editing or duplicating activity ([#4684](https://github.com/uzh-bf/klicker-uzh/issues/4684)) ([8363b36](https://github.com/uzh-bf/klicker-uzh/commit/8363b369fcbb3ace45dc1923a3b5b3b41b9e1808))
+* **packages/grpahql:** make sure that stacks and elements are ordered correctly on activity overview ([d16ccba](https://github.com/uzh-bf/klicker-uzh/commit/d16ccbade3dfd59c86fc64023e30f1e94d0a438e))
+
+
+### Other
+
+* **apps/frontend-manage:** make direct sharing submission button clearly recognizable ([2d503a8](https://github.com/uzh-bf/klicker-uzh/commit/2d503a805be4db3ca59e9d24874c151cd6fb7da0))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** activate element instance update trigger by default ([#4685](https://github.com/uzh-bf/klicker-uzh/issues/4685)) ([76ea578](https://github.com/uzh-bf/klicker-uzh/commit/76ea578465ec942cf20568f17eb8fb3c10081c92))
+
 ## [3.3.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.50...v3.3.0-alpha.51) (2025-05-11)
 
 

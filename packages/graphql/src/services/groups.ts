@@ -1033,7 +1033,6 @@ export async function manipulateGroupActivity(
         },
       },
     },
-    owner: { connect: { id: ctx.user.sub } },
     course: { connect: { id: courseId } },
   }
 
@@ -1073,7 +1072,10 @@ export async function manipulateGroupActivity(
 
     const upsertedActivity = await prisma.groupActivity.upsert({
       where: { id: id ?? newId },
-      create: createOrUpdateJSON,
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
       update: createOrUpdateJSON,
     })
 

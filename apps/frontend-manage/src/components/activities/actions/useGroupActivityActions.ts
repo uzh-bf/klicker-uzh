@@ -4,10 +4,12 @@ import {
   faFlagCheckered,
   faGraduationCap,
   faLock,
+  faMessage,
   faPencil,
   faPlay,
   faShare,
   faUserGroup,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
@@ -23,20 +25,24 @@ import { ActivityAction } from './useAvailableActions'
 
 function useGroupActivityActions({
   groupActivity,
+  setRemovalModal,
   setDeletionModal,
   setEndingModal,
   setStartingModal,
   setPublishingModal,
   setExtensionModal,
   setSharingModal,
+  setActivityLogOpen,
 }: {
   groupActivity: ActivityInfo
+  setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setEndingModal: Dispatch<SetStateAction<boolean>>
   setStartingModal: Dispatch<SetStateAction<boolean>>
   setPublishingModal: Dispatch<SetStateAction<boolean>>
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -79,14 +85,6 @@ function useGroupActivityActions({
             },
           }),
         data: { cy: `edit-group-activity-${groupActivity.name}` },
-      },
-      {
-        id: 'deleteGroupActivity',
-        label: t('manage.course.deleteGroupActivity'),
-        icon: faTrashCan,
-        onClick: () => setDeletionModal(true),
-        data: { cy: `delete-group-activity-${groupActivity.name}` },
-        className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {
         id: 'unpublishGroupActivity',
@@ -137,19 +135,47 @@ function useGroupActivityActions({
         },
         data: { cy: `share-group-activity-${groupActivity.name}` },
       },
+      {
+        id: 'removeGroupActivity',
+        label: t('manage.course.removeGroupActivity'),
+        icon: faX,
+        onClick: () => {
+          setRemovalModal(true)
+        },
+        data: { cy: `remove-group-activity-${groupActivity.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'deleteGroupActivity',
+        label: t('manage.course.deleteGroupActivity'),
+        icon: faTrashCan,
+        onClick: () => setDeletionModal(true),
+        data: { cy: `delete-group-activity-${groupActivity.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'activityLog',
+        label: t('shared.activity.viewComments'),
+        icon: faMessage,
+        onClick: () => setActivityLogOpen(true),
+        data: { cy: `view-activity-log-${groupActivity.name}` },
+      },
     ],
     [
       t,
       router,
-      groupActivity,
-      unpublishing,
-      setPublishingModal,
-      setDeletionModal,
+      groupActivity.id,
+      groupActivity.name,
       unpublishGroupActivity,
-      setStartingModal,
-      setExtensionModal,
+      unpublishing,
+      setRemovalModal,
+      setDeletionModal,
       setEndingModal,
+      setStartingModal,
+      setPublishingModal,
+      setExtensionModal,
       setSharingModal,
+      setActivityLogOpen,
     ]
   )
 

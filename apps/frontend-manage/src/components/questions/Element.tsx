@@ -1,19 +1,15 @@
 import { useQuery } from '@apollo/client'
-import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
   faEllipsis,
-  faPencil,
-  faShare,
   faUserGroup,
-  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type Element as ElementObject,
   ElementStatus,
   type ElementType,
-  SharingObjectType,
+  ObjectType,
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -25,8 +21,10 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import SharingTypeBadge from '../sharing/SharingTypeBadge'
 import ElementTags from './ElementTags'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
@@ -34,6 +32,8 @@ import ElementEditModal, {
 } from './manipulation/ElementEditModal'
 import ElementRemovalModal from './manipulation/ElementRemovalModal'
 import RecoveryPrompt from './manipulation/RecoveryPrompt'
+import useAvailableElementActions from './useAvailableElementActions'
+import useElementActions from './useElementActions'
 
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400 hover:bg-slate-500',
@@ -84,6 +84,7 @@ function Element({
   const [isRemovalModalOpen, setRemovalModalOpen] = useState(false)
   const [isDeletionModalOpen, setDeletionModalOpen] = useState(false)
   const [isSharingModalOpen, setSharingModalOpen] = useState(false)
+  const [isActivityLogOpen, setActivityLogOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   // TODO: once the sharing feature is available for all users, remove this feature flag check
@@ -106,6 +107,39 @@ function Element({
     }),
     canDrag: () => !disabled,
     type: element.type,
+  })
+
+  const actions = useElementActions({
+    element,
+    disabled,
+    setShowRecoveryPrompt,
+    setModificationModalOpen,
+    setDuplicationModalOpen,
+    setDeletionModalOpen,
+    setRemovalModalOpen,
+    setActivityLogOpen,
+    setSharingModalOpen,
+  })
+
+  const availableActions = useAvailableElementActions({
+    actions,
+    permissionActionMap: {
+      isManager: [
+        ...(dataUser?.userProfile?.privatePreview ? ['shareElement'] : []),
+        'deleteElement',
+      ],
+      isEditor: ['editElement'],
+      isShared: [
+        'duplicateElement',
+        ...(dataUser?.userProfile?.privatePreview ? ['activityLog'] : []),
+      ],
+      isRemovable: ['removeElement'],
+    },
+    isEditor: element.isEditor ?? false,
+    isManager: element.isManager ?? false,
+    isOwner: element.isOwner ?? false,
+    isRemovable: element.isRemovable ?? false,
+    isShared: element.isShared ?? false,
   })
 
   return (
@@ -140,7 +174,7 @@ function Element({
                       setModificationModalOpen(true)
                     }
                   }}
-                  data-cy="question-title"
+                  data-cy={`element-title-${element.name}`}
                 >
                   {element.name}
                   {element.permissionLevel && (
@@ -151,8 +185,6 @@ function Element({
                     />
                   )}
                 </a>
-
-                {element.isArchived && <FontAwesomeIcon icon={faArchive} />}
               </div>
 
               <div className="flex-1 text-sm">
@@ -191,124 +223,63 @@ function Element({
             </div>
           </div>
 
+          {element.isArchived && (
+            <FontAwesomeIcon icon={faArchive} className="mr-3 mt-2" />
+          )}
+
+          <SharingTypeBadge sharingType={element.sharingType} />
+
           {element.numSharedUsers && element.isManager ? (
-            <div className="mr-2 flex h-max flex-row items-center gap-1.5 py-1">
+            <div
+              className="hover:text-primary-100 mr-3 flex h-max cursor-pointer flex-row items-center gap-2 py-1 text-gray-600"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSharingModalOpen(true)
+              }}
+            >
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
-            {element.isEditor ? (
-              <Button
-                disabled={disabled}
-                onClick={() => {
-                  const value = localStorage.getItem(
-                    `autosave-element-${element.id}`
-                  )
+            {availableActions
+              .slice(0, availableActions.length > 3 ? 2 : 3)
+              .map((action) => {
+                return (
+                  <Button
+                    key={`action-${element.id}-${action.label}`}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                    className={{
+                      root: twMerge('h-8 w-8 p-0', action.className),
+                    }}
+                    data={action.data}
+                  >
+                    <Button.Icon withoutLabel icon={action.icon} />
+                  </Button>
+                )
+              })}
 
-                  if (value) {
-                    setShowRecoveryPrompt(true)
-                  } else {
-                    setModificationModalOpen(true)
-                  }
-                }}
-                className={{ root: 'h-8 w-8 p-0' }}
-                data={{ cy: `edit-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faPencil} />
-              </Button>
-            ) : null}
-
-            <Button
-              disabled={disabled}
-              onClick={() => setDuplicationModalOpen(true)}
-              className={{ root: 'h-8 w-8 p-0' }}
-              data={{ cy: `duplicate-element-${element.name}` }}
-            >
-              <Button.Icon withoutLabel icon={faCopy} />
-            </Button>
-
-            {element.isManager && !dataUser?.userProfile?.privatePreview ? (
-              <Button
-                disabled={disabled}
-                onClick={() => setDeletionModalOpen(true)}
-                className={{
-                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
-                }}
-                data={{ cy: `delete-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faTrashCan} />
-              </Button>
-            ) : null}
-
-            {element.isShared &&
-            !element.isManager &&
-            !element.derivedAccess &&
-            element.isRemovable ? (
-              <Button
-                disabled={disabled}
-                onClick={() => setRemovalModalOpen(true)}
-                className={{
-                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
-                }}
-                data={{ cy: `remove-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faX} />
-              </Button>
-            ) : null}
-
-            {element.isManager && dataUser?.userProfile?.privatePreview ? (
+            {availableActions.length > 3 && (
               <Dropdown
-                disabled={disabled}
-                className={{ item: 'text-sm' }}
-                items={[
-                  {
-                    label: (
-                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                        <FontAwesomeIcon
-                          icon={faShare}
-                          className="mr-2.5 h-4 w-4"
-                        />
-                        {t('manage.elements.shareElement')}
-                      </div>
-                    ),
-                    onClick: () => setSharingModalOpen(true),
-                    data: { cy: `share-element-${element.name}` },
-                  },
-                  ...(element.isManager &&
-                  !element.isOwner &&
-                  !element.derivedAccess &&
-                  element.isRemovable
-                    ? [
-                        {
-                          label: (
-                            <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                              <FontAwesomeIcon
-                                icon={faX}
-                                className="mr-2.5 h-4 w-4"
-                              />
-                              {t('manage.questionPool.removeElement')}
-                            </div>
-                          ),
-                          onClick: () => setRemovalModalOpen(true),
-                          data: { cy: `remove-element-${element.name}` },
-                        },
-                      ]
-                    : []),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="mr-2.5 h-4 w-4"
-                        />
-                        {t('manage.elements.deleteElement')}
-                      </div>
-                    ),
-                    onClick: () => setDeletionModalOpen(true),
-                    data: { cy: `delete-element-${element.name}` },
-                  },
-                ]}
+                items={availableActions.slice(2).map((action) => ({
+                  label: (
+                    <div
+                      className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100 ${
+                        action.className ?? ''
+                      }`}
+                    >
+                      <FontAwesomeIcon
+                        icon={action.icon}
+                        className="mr-2.5 h-4 w-4"
+                      />
+                      {action.label}
+                    </div>
+                  ),
+                  onClick: action.onClick,
+                  data: action.data,
+                }))}
                 trigger={
                   <Button
                     className={{ root: 'h-8 w-8 p-0' }}
@@ -317,8 +288,12 @@ function Element({
                     <Button.Icon withoutLabel icon={faEllipsis} />
                   </Button>
                 }
+                className={{
+                  viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
+                  item: 'text-sm',
+                }}
               />
-            ) : null}
+            )}
           </div>
         </div>
       )}
@@ -379,12 +354,19 @@ function Element({
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
-          objectType={SharingObjectType.Element}
+          objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
           open={isSharingModalOpen}
           onClose={() => setSharingModalOpen(false)}
         />
       )}
+
+      <ActivityLogDialog
+        objectId={element.id}
+        objectType={ObjectType.Element}
+        open={isActivityLogOpen}
+        onOpenChange={setActivityLogOpen}
+      />
     </div>
   )
 }

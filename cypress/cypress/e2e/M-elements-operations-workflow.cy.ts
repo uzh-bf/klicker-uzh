@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 // global variable for ensured consistency with current dates
@@ -573,7 +572,11 @@ describe('Create different types of elements (with and without sample solution) 
     )
 
     // trigger instance updates and verify that list of shown activities that should be updates is correct
-    cy.get('[data-cy="instance-update-switch"]').click()
+    cy.get('[data-cy="instance-update-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
     cy.wrap([
       this.data.update.liveQuiz2,
       this.data.update.practiceQuiz2,
@@ -641,7 +644,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
     // trigger instance updates and verify that list of shown activities that should be updates is correct
-    cy.get('[data-cy="instance-update-switch"]').click()
+    cy.get('[data-cy="instance-update-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
     cy.wrap([this.data.update.liveQuiz3, this.data.update.groupActivity3]).each(
       (activityName: string) => {
         cy.get(
@@ -951,7 +958,7 @@ describe('Create different types of elements (with and without sample solution) 
     // add question to catalog as restricted object
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
 
@@ -1289,7 +1296,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
   })
@@ -1328,7 +1335,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1376,7 +1383,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'public',
     })
 
@@ -1635,6 +1642,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
@@ -1647,9 +1655,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
-      'not.exist'
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.logoutUser()
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
@@ -1660,6 +1670,9 @@ describe('Create different types of elements (with and without sample solution) 
       'exist'
     )
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="delete-element-${this.data.SCML.title}"]`).should('exist')
   })

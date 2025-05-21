@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
@@ -55,7 +56,7 @@ function ElementEditModal({
   const t = useTranslations()
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
-  const [updateInstances, setUpdateInstances] = useState(false)
+  const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
 
@@ -72,6 +73,7 @@ function ElementEditModal({
     {
       variables: { id: elementId! },
       skip: typeof elementId === 'undefined' || !isOpen,
+      fetchPolicy: 'cache-and-network',
     }
   )
 
@@ -125,6 +127,7 @@ function ElementEditModal({
       inputsDisabled={inputsDisabled}
       loading={loadingQuestion}
       initialValues={formikInitialValues}
+      initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
       open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       failureToast={failureToast}

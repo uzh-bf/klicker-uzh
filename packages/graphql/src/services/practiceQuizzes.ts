@@ -30,7 +30,9 @@ export async function getPracticeQuizData(
         { status: PublicationStatus.PUBLISHED, isDeleted: false },
         { status: PublicationStatus.SCHEDULED },
         // if user has access to the microlearning, the query should be enabled for loading the preview
-        { permissions: { some: { userId: ctx.user?.sub } } },
+        ...(ctx.user?.sub
+          ? [{ permissions: { some: { userId: ctx.user.sub } } }]
+          : []),
       ],
     },
     include: {
@@ -289,7 +291,6 @@ export async function manipulatePracticeQuiz(
         },
       })),
     },
-    owner: { connect: { id: ctx.user.sub } },
     course: { connect: { id: courseId } },
   }
 
@@ -327,7 +328,10 @@ export async function manipulatePracticeQuiz(
 
     const upsertedQuiz = await prisma.practiceQuiz.upsert({
       where: { id: id ?? uuidv4() },
-      create: createOrUpdateJSON,
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
       update: createOrUpdateJSON,
       include: {
         course: true,

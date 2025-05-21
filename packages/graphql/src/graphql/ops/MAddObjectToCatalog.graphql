@@ -1,6 +1,6 @@
 mutation AddObjectToCatalog(
   $objectId: String!
-  $objectType: SharingObjectType!
+  $objectType: ObjectType!
   $access: ObjectAccess!
   $catalogCollectionId: String
 ) {

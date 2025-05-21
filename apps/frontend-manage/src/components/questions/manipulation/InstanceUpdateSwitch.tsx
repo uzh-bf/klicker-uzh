@@ -10,7 +10,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H4, Prose, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface InstanceUpdateSwitchProps {
@@ -34,23 +34,26 @@ function InstanceUpdateSwitch({
 
   const { data: privatePreview } = useQuery(
     CheckPrivatePreviewAvailableDocument,
-    {
-      fetchPolicy: 'cache-first',
-    }
+    { fetchPolicy: 'cache-first' }
   )
 
-  const { data, loading, refetch } = useQuery(
-    GetInstanceUpdateActivitiesDocument,
-    {
-      variables: {
-        elementId,
-        hasSampleSolution,
-        includeTemplateInstances: includeTemplateUpdates,
-      },
-      fetchPolicy: 'cache-and-network',
-      skip: !updateInstances,
-    }
-  )
+  const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
+    variables: {
+      elementId,
+      hasSampleSolution,
+      includeTemplateInstances: true,
+    },
+    fetchPolicy: 'cache-and-network',
+    skip: !updateInstances,
+  })
+
+  const usedInTemplates = useMemo(() => {
+    return (
+      data?.getInstanceUpdateActivities?.some(
+        (activity) => activity.status === PublicationStatus.Template
+      ) ?? false
+    )
+  }, [data?.getInstanceUpdateActivities])
 
   return (
     <div
@@ -75,65 +78,74 @@ function InstanceUpdateSwitch({
         </div>
       </div>
 
-      {updateInstances && privatePreview?.checkPrivatePreviewAvailable && (
-        <div className="mt-2 flex flex-row items-center gap-5">
-          <Switch
-            checked={includeTemplateUpdates}
-            onCheckedChange={async () => {
-              setIncludeTemplateUpdates((prev) => !prev)
-              await refetch()
-            }}
-            data={{ cy: 'template-update-switch' }}
-          />
-          <div>
-            <H4 className={{ root: 'm-0' }}>
-              {t('manage.elements.includeTemplateInstanceUpdates')}
-            </H4>
+      {usedInTemplates &&
+        updateInstances &&
+        privatePreview?.checkPrivatePreviewAvailable && (
+          <div className="mt-2 flex flex-row items-center gap-5">
+            <Switch
+              checked={includeTemplateUpdates}
+              onCheckedChange={() => {
+                setIncludeTemplateUpdates((prev) => !prev)
+              }}
+              data={{ cy: 'template-update-switch' }}
+            />
+            <div>
+              <H4 className={{ root: 'm-0' }}>
+                {t('manage.elements.includeTemplateInstanceUpdates')}
+              </H4>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="ml-[4.25rem]">
-        {loading && <Loader />}
-        {data?.getInstanceUpdateActivities && (
+        {loading && (
+          <Loader data={{ cy: 'instance-update-activities-loading' }} />
+        )}
+        {!loading && data?.getInstanceUpdateActivities && (
           <div className="mt-2 border-t border-gray-200">
-            {data?.getInstanceUpdateActivities?.map((activity, ix) => (
-              <div
-                key={`instance-update-list-${activity.activityName}`}
-                className="border-b border-gray-200"
-                data-cy={`instance-update-list-activity-${activity.activityName}`}
-              >
-                <div className="flex items-center gap-2 py-0.5">
-                  <span
-                    className={twMerge(
-                      'flex w-24 flex-row items-center justify-center gap-1.5 rounded px-2 py-0.5 text-xs',
-                      activity.status === PublicationStatus.Draft
-                        ? 'bg-gray-200'
-                        : activity.status === PublicationStatus.Template
-                          ? 'bg-primary-40'
-                          : 'bg-orange-300'
-                    )}
-                  >
-                    <FontAwesomeIcon
-                      icon={
+            {data.getInstanceUpdateActivities
+              .filter(
+                (activity) =>
+                  includeTemplateUpdates ||
+                  activity.status !== PublicationStatus.Template
+              )
+              .map((activity, ix) => (
+                <div
+                  key={`instance-update-list-${activity.activityName}`}
+                  className="border-b border-gray-200"
+                  data-cy={`instance-update-list-activity-${activity.activityName}`}
+                >
+                  <div className="flex items-center gap-2 py-0.5">
+                    <span
+                      className={twMerge(
+                        'flex w-24 flex-row items-center justify-center gap-1.5 rounded px-2 py-0.5 text-xs',
                         activity.status === PublicationStatus.Draft
-                          ? faPencil
-                          : faClock
-                      }
-                    />
-                    <div>{t(`shared.${activity.status}.statusLabel`)}</div>
-                  </span>
-                  <span className="font-medium">{activity.activityName}</span>
-                  <span className="text-xs text-gray-500">
-                    ({t(`shared.types.${activity.activityType}`)}
-                    {activity.status === PublicationStatus.Template
-                      ? ` ${t('shared.generic.template')}`
-                      : null}
-                    )
-                  </span>
+                          ? 'bg-gray-200'
+                          : activity.status === PublicationStatus.Template
+                            ? 'bg-primary-40'
+                            : 'bg-orange-300'
+                      )}
+                    >
+                      <FontAwesomeIcon
+                        icon={
+                          activity.status === PublicationStatus.Draft
+                            ? faPencil
+                            : faClock
+                        }
+                      />
+                      <div>{t(`shared.${activity.status}.statusLabel`)}</div>
+                    </span>
+                    <span className="font-medium">{activity.activityName}</span>
+                    <span className="text-xs text-gray-500">
+                      ({t(`shared.types.${activity.activityType}`)}
+                      {activity.status === PublicationStatus.Template
+                        ? ` ${t('shared.generic.template')}`
+                        : null}
+                      )
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>

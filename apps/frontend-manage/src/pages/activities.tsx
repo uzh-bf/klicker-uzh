@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { GetUserActivitiesDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserActivitiesDocument,
+  SharingType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
@@ -18,7 +21,13 @@ function Activities() {
   const [searchInput, setSearchInput] = useState('')
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
+    sharingType: [
+      SharingType.Owned,
+      SharingType.Shared,
+      SharingType.Dependency,
+    ],
     type: undefined,
+    course: undefined,
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
@@ -40,6 +49,18 @@ function Activities() {
     return search
   }, [dataActivities?.userActivities])
 
+  // extract all available courses from activities
+  const availableCourses = useMemo(() => {
+    if (!dataActivities?.userActivities) return []
+
+    const courses = dataActivities.userActivities
+      .map((activity) => activity.courseName)
+      .filter((courseName): courseName is string => !!courseName) // filter out null/undefined and ensure type safety
+
+    // Remove duplicates and sort alphabetically
+    return Array.from(new Set(courses)).sort()
+  }, [dataActivities?.userActivities])
+
   const filteredActivities = useMemo(() => {
     if (!dataActivities?.userActivities) return []
 
@@ -58,13 +79,41 @@ function Activities() {
       )
     }
 
+    // apply sharing type filters (if defined)
+    if (filters.sharingType && filters.sharingType.length > 0) {
+      filtered = filtered.filter((activity) =>
+        filters.sharingType?.includes(activity.sharingType)
+      )
+    }
+
     // apply type filters (if defined)
     if (typeof filters.type !== 'undefined') {
       filtered = filtered.filter((activity) => activity.type === filters.type)
     }
 
+    // apply course filters (if defined)
+    if (typeof filters.course !== 'undefined') {
+      if (filters.course === null) {
+        // show activities with no course assigned
+        filtered = filtered.filter((activity) => !activity.courseName)
+      } else {
+        // show activities with the selected course
+        filtered = filtered.filter(
+          (activity) => activity.courseName === filters.course
+        )
+      }
+    }
+
     return filtered
-  }, [dataActivities, searchInput, search, filters.status, filters.type])
+  }, [
+    dataActivities,
+    searchInput,
+    search,
+    filters.status,
+    filters.sharingType,
+    filters.type,
+    filters.course,
+  ])
 
   return (
     <Layout
@@ -73,14 +122,13 @@ function Activities() {
       className={{ children: 'pb-2' }}
     >
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        {dataActivities && dataActivities.userActivities && (
-          <div>
-            <ActivityOverviewFilters
-              filters={filters}
-              setFilters={setFilters}
-            />
-          </div>
-        )}
+        <div>
+          <ActivityOverviewFilters
+            filters={filters}
+            setFilters={setFilters}
+            availableCourses={availableCourses}
+          />
+        </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
             <div>

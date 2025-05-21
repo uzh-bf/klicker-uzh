@@ -69,7 +69,7 @@ function AnswerCollectionEditModal({
     }
 
     return search.search(searchQuery) as typeof collection.entries
-  }, [collection?.entries, searchQuery])
+  }, [collection, search, searchQuery])
 
   if (loading || !collection) {
     return null

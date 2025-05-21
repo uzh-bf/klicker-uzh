@@ -1,0 +1,11 @@
+query GetDerivedPermissionOrigin($id: Int!) {
+  getDerivedPermissionOrigin(id: $id) {
+    permissionUser
+    parentObjectType
+    parentObjectName
+    parentObjectOwner
+    parentTargetUser
+    parentTargetUserGroup
+    parentPermissionLevel
+  }
+}

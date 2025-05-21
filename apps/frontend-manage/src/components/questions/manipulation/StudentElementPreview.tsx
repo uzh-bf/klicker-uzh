@@ -50,8 +50,7 @@ function StudentElementPreview({
   }
 
   return (
-    <div className="max-w-sm flex-1" data-cy="student-element-preview">
-      <H3>{t('shared.generic.preview')}</H3>
+    <div className="max-w-sm" data-cy="student-element-preview">
       <div className="rounded border p-4">
         <StudentElement
           preview

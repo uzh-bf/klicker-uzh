@@ -1,10 +1,12 @@
+import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../../courses/modals/TemplateCreationErrorToast'
@@ -17,6 +19,7 @@ import TemplateEditModal from '../../courses/modals/TemplateEditModal'
 import TemplateEditSuccessToast from '../../courses/modals/TemplateEditSuccessToast'
 import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
@@ -34,6 +37,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'duplicateLiveQuiz',
     'templateFromLiveQuiz',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -43,6 +47,7 @@ const statusActionMap = {
     'duplicateLiveQuiz',
     'qrCode',
     'embeddingEvaluation',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -53,6 +58,7 @@ const statusActionMap = {
     'qrCode',
     'embeddingEvaluation',
     'duplicateLiveQuiz',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
   ],
@@ -60,6 +66,7 @@ const statusActionMap = {
     'liveQuizEvaluation',
     'duplicateLiveQuiz',
     'embeddingEvaluation',
+    'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
@@ -72,34 +79,24 @@ const statusActionMap = {
   [PublicationStatus.Graded]: [],
 }
 
-// limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
-const permissionActionMap = {
-  isManager: [
-    'duplicateLiveQuiz',
-    'templateFromLiveQuiz',
-    'shareLiveQuiz',
-    'deleteLiveQuiz',
-    'deleteTemplate',
-  ],
-  isEditor: ['editLiveQuiz', 'editTemplate'],
-  isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
-  isShared: [
-    'qrCode',
-    'embeddingEvaluation',
-    'liveQuizEvaluation',
-    'useTemplate',
-  ],
-  isRemovable: ['removeLiveQuiz'],
-}
-
-function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
+function LiveQuizActions({
+  liveQuiz,
+  isTemplate,
+  sharingModal,
+  setSharingModal,
+}: {
+  liveQuiz: ActivityInfo
+  isTemplate: boolean
+  sharingModal: boolean
+  setSharingModal: Dispatch<SetStateAction<boolean>>
+}) {
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
-  const [sharingModal, setSharingModal] = useState(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
   const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
@@ -118,6 +115,34 @@ function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
   })
   const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
+  // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
+  const permissionActionMap = useMemo(() => {
+    return {
+      isManager: [
+        'duplicateLiveQuiz',
+        'templateFromLiveQuiz',
+        'shareLiveQuiz',
+        'deleteLiveQuiz',
+        'deleteTemplate',
+      ],
+      isEditor: ['editLiveQuiz', 'editTemplate'],
+      isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+      isShared: [
+        'qrCode',
+        'embeddingEvaluation',
+        'liveQuizEvaluation',
+        'useTemplate',
+        ...(user?.privatePreview ? ['activityLog'] : []),
+      ],
+      isRemovable: ['removeLiveQuiz'],
+    }
+  }, [user?.privatePreview])
+
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
     onStart,
@@ -130,8 +155,10 @@ function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
     setSharingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   })
 
+  // get all available actions based on permissions and status
   const availableActions = useAvailableActions({
     actions,
     statusActionMap,
@@ -212,7 +239,8 @@ function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
           <ObjectSharingModalWrapper
             objectUuid={liveQuiz.id}
             objectName={liveQuiz.name}
-            objectType={SharingObjectType.LiveQuiz}
+            objectType={ObjectType.LiveQuiz}
+            isTemplate={isTemplate}
             isOwner={liveQuiz.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
@@ -261,6 +289,15 @@ function LiveQuizActions({ liveQuiz }: { liveQuiz: ActivityInfo }) {
           open={templateDeletionError}
           onClose={() => setTemplateDeletionError(false)}
         />
+
+        {liveQuiz && (
+          <ActivityLogDialog
+            objectId={liveQuiz.id}
+            objectType={ObjectType.LiveQuiz}
+            open={activityLogOpen}
+            onOpenChange={setActivityLogOpen}
+          />
+        )}
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
 
-function LazyHMACLink({
+function HMACLink({
   quizId,
   hmac,
   params,
@@ -24,16 +24,12 @@ function LazyHMACLink({
 
   return (
     <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
-      <Link
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        legacyBehavior
-        passHref
-      >
+      <Link href={link} legacyBehavior passHref>
         <a
           data-cy={`open-embedding-link-${identifier}`}
           className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {link}
         </a>
@@ -109,7 +105,7 @@ function EmbeddingModal({
             <div className="w-30 font-bold">
               {t('shared.generic.evaluation')}
             </div>
-            <LazyHMACLink
+            <HMACLink
               quizId={quizId}
               hmac={data.liveQuizHMAC!}
               params={``}
@@ -122,7 +118,7 @@ function EmbeddingModal({
                 <div className="line-clamp-1 font-bold">
                   {ix + 1} {element.name}
                 </div>
-                <LazyHMACLink
+                <HMACLink
                   quizId={quizId}
                   hmac={data.liveQuizHMAC!}
                   params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
@@ -135,7 +131,7 @@ function EmbeddingModal({
             <div className="w-30 font-bold">
               {t('shared.generic.leaderboard')}:
             </div>
-            <LazyHMACLink
+            <HMACLink
               quizId={quizId}
               hmac={data.liveQuizHMAC!}
               params={`leaderboard=true&hideControls=true`}

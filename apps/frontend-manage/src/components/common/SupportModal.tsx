@@ -1,6 +1,6 @@
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import {
-  faComments,
+  faComment,
   faEnvelope,
   faLightbulb,
 } from '@fortawesome/free-regular-svg-icons'
@@ -111,7 +111,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
               href="https://www.klicker.uzh.ch/community"
               title={t('manage.support.community')}
               subtitle={t('manage.support.communityDesc')}
-              icon={faComments}
+              icon={faComment}
               data={{ cy: 'support-community' }}
             />
             {user?.catalyst ? (

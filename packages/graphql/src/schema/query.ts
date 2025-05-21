@@ -1,8 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import {
-  ActivityType as ActivityTypeEnum,
-  SharingObjectType as SharingObjectTypeEnum,
-} from '@klicker-uzh/types'
+import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
@@ -74,13 +71,15 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
+  ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
   CatalogSelectionObject,
   DerivedPermissionInfo,
+  DerivedPermissionOriginInformation,
   ObjectSharingRequest,
+  ObjectType,
   PermissionInfo,
-  SharingObjectType,
   UserGroup,
 } from './sharing.js'
 import {
@@ -1348,10 +1347,10 @@ export const Query = builder.queryType({
         type: [PermissionInfo],
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === DB.ObjectType.CATALOG_COLLECTION) {
             // >= ADMIN permissions on catalog collection
             const validAccess = await checkAccess(
               [
@@ -1370,9 +1369,7 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
-          } else if (
-            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
-          ) {
+          } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
               [
@@ -1391,7 +1388,7 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             // >= ADMIN permissions on element
             const validAccess = await checkAccess(
               [
@@ -1410,7 +1407,7 @@ export const Query = builder.queryType({
               { id: parseInt(args.objectId) },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+          } else if (args.objectType === DB.ObjectType.COURSE) {
             // >= ADMIN permissions on course
             const validAccess = await checkAccess(
               [
@@ -1429,7 +1426,7 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
             // >= ADMIN permissions on live quiz
             const validAccess = await checkAccess(
               [
@@ -1448,7 +1445,7 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
             // >= ADMIN permissions on practice quiz
             const validAccess = await checkAccess(
               [
@@ -1467,7 +1464,7 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
             // >= ADMIN permissions on microlearning
             const validAccess = await checkAccess(
               [
@@ -1486,7 +1483,7 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
-          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
             // >= ADMIN permissions on group activity
             const validAccess = await checkAccess(
               [
@@ -1516,15 +1513,13 @@ export const Query = builder.queryType({
         type: [DerivedPermissionInfo],
         args: {
           objectId: t.arg.string({ required: true }),
-          objectType: t.arg({ type: SharingObjectType, required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           // on certain top-level objects, no derived permissions can be created -> return an empty array
-          if (args.objectType === SharingObjectTypeEnum.CATALOG_COLLECTION) {
+          if (args.objectType === DB.ObjectType.CATALOG_COLLECTION) {
             return []
-          } else if (
-            args.objectType === SharingObjectTypeEnum.ANSWER_COLLECTION
-          ) {
+          } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
               [
@@ -1545,7 +1540,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.ELEMENT) {
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
               [
@@ -1566,7 +1561,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.COURSE) {
+          } else if (args.objectType === DB.ObjectType.COURSE) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
               [
@@ -1587,7 +1582,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.LIVE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
             // >= ADMIN permissions on live quiz
             const validAccess = await checkAccess(
               [
@@ -1608,7 +1603,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.PRACTICE_QUIZ) {
+          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
             // >= ADMIN permissions on practice quiz
             const validAccess = await checkAccess(
               [
@@ -1629,7 +1624,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.MICRO_LEARNING) {
+          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
             // >= ADMIN permissions on microlearning
             const validAccess = await checkAccess(
               [
@@ -1650,7 +1645,7 @@ export const Query = builder.queryType({
                 ctx
               )) ?? []
             )
-          } else if (args.objectType === SharingObjectTypeEnum.GROUP_ACTIVITY) {
+          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
             // >= ADMIN permissions on group activity
             const validAccess = await checkAccess(
               [
@@ -1674,6 +1669,96 @@ export const Query = builder.queryType({
           }
 
           return null
+        },
+      }),
+
+      getDerivedPermissionOrigin: t.withAuth(asUser).field({
+        nullable: true,
+        type: DerivedPermissionOriginInformation,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.getDerivedPermissionOrigin(args, ctx)
+        },
+      }),
+
+      getObjectActivity: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityLogEntry],
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on the corresponding object
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === DB.ObjectType.ELEMENT
+                ? [
+                    {
+                      elementId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.COURSE
+                ? [
+                    {
+                      courseId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+
+          if (!validAccess) {
+            return null
+          }
+
+          return SharingService.getObjectActivity(args, ctx)
         },
       }),
 

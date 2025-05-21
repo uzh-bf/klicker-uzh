@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationFieldType,
   ActivityType,
   CatalogObject,
   ObjectSharingRequest,
-  SharingObjectType,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -934,7 +934,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.catalogCollection.name,
-          objectType: SharingObjectType.CATALOG_COLLECTION,
+          objectType: DB.ObjectType.CATALOG_COLLECTION,
         })
       }
 
@@ -946,7 +946,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.answerCollection.name,
-          objectType: SharingObjectType.ANSWER_COLLECTION,
+          objectType: DB.ObjectType.ANSWER_COLLECTION,
         })
       }
 
@@ -958,7 +958,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
         acc.push({
           ...sharedRequestAttributes,
           objectName: request.element.name,
-          objectType: SharingObjectType.ELEMENT,
+          objectType: DB.ObjectType.ELEMENT,
         })
       }
 
@@ -3697,6 +3697,207 @@ export async function transferGroupActivityOwnership(
     : null
 }
 
+export async function getDerivedPermissionOrigin(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the requested derived permissions
+  const permission = await ctx.prisma.derivedPermission.findUnique({
+    where: { id, derived: true },
+    include: {
+      user: { select: { shortname: true, email: true } },
+      directPermission: {
+        include: {
+          user: { select: { shortname: true } },
+          userGroup: { select: { name: true } },
+          catalogCollection: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          answerCollection: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          element: { include: { owner: { select: { shortname: true } } } },
+          course: { include: { owner: { select: { shortname: true } } } },
+          liveQuiz: { include: { owner: { select: { shortname: true } } } },
+          practiceQuiz: { include: { owner: { select: { shortname: true } } } },
+          microLearning: {
+            include: { owner: { select: { shortname: true } } },
+          },
+          groupActivity: {
+            include: { owner: { select: { shortname: true } } },
+          },
+        },
+      },
+    },
+  })
+
+  if (!permission) {
+    return null
+  }
+
+  // verify that the requesting user is OWNER / ADMIN on the associated object
+  // = allowed to open the sharing dialog and requesting the corresponding origin of a derived permission
+  const validAccess = await checkAccess(
+    [
+      ...(permission.catalogCollectionId !== null
+        ? [
+            {
+              catalogCollectionId: permission.catalogCollectionId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.answerCollectionId !== null
+        ? [
+            {
+              answerCollectionId: permission.answerCollectionId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.elementId !== null
+        ? [
+            {
+              elementId: permission.elementId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.courseId !== null
+        ? [
+            {
+              courseId: permission.courseId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.liveQuizId !== null
+        ? [
+            {
+              liveQuizId: permission.liveQuizId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.practiceQuizId !== null
+        ? [
+            {
+              practiceQuizId: permission.practiceQuizId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.microLearningId !== null
+        ? [
+            {
+              microLearningId: permission.microLearningId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+      ...(permission.groupActivityId !== null
+        ? [
+            {
+              groupActivityId: permission.groupActivityId,
+              minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          ]
+        : []),
+    ],
+    ctx
+  )
+
+  if (!validAccess) {
+    return null
+  }
+
+  // case 1: direct permission id is null -> parent object owned by user with derived access
+  if (permission.directPermission === null) {
+    return {
+      permissionUser: `${permission.user.shortname} (${permission.user.email})`,
+      parentObjectType: undefined, // parent object unknown
+      parentObjectName: undefined, // parent object unknown
+      parentObjectOwner: undefined, // parent object unknown
+      parentTargetUser: undefined, // parent object unknown
+      parentTargetUserGroup: undefined, // parent object unknown
+      parentPermissionLevel: undefined, // parent object unknown
+    }
+  }
+
+  // case 2: direct permission id is not null -> parent object shared with user / user group
+  else {
+    const sharedDerivedPermissionInfo = {
+      permissionUser: `${permission.user.shortname} (${permission.user.email})`,
+      parentTargetUser: permission.directPermission.user?.shortname,
+      parentTargetUserGroup: permission.directPermission.userGroup?.name,
+      parentPermissionLevel: permission.directPermission.permissionLevel,
+    }
+
+    if (permission.directPermission.catalogCollection) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.CATALOG_COLLECTION,
+        parentObjectName: permission.directPermission.catalogCollection.name,
+        parentObjectOwner:
+          permission.directPermission.catalogCollection.owner?.shortname ?? '',
+      }
+    } else if (permission.directPermission.answerCollection) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.ANSWER_COLLECTION,
+        parentObjectName: permission.directPermission.answerCollection.name,
+        parentObjectOwner:
+          permission.directPermission.answerCollection.owner.shortname,
+      }
+    } else if (permission.directPermission.element) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.ELEMENT,
+        parentObjectName: permission.directPermission.element.name,
+        parentObjectOwner: permission.directPermission.element.owner.shortname,
+      }
+    } else if (permission.directPermission.course) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.COURSE,
+        parentObjectName: permission.directPermission.course.name,
+        parentObjectOwner: permission.directPermission.course.owner.shortname,
+      }
+    } else if (permission.directPermission.liveQuiz) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.LIVE_QUIZ,
+        parentObjectName: permission.directPermission.liveQuiz.name,
+        parentObjectOwner: permission.directPermission.liveQuiz.owner.shortname,
+      }
+    } else if (permission.directPermission.practiceQuiz) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.PRACTICE_QUIZ,
+        parentObjectName: permission.directPermission.practiceQuiz.name,
+        parentObjectOwner:
+          permission.directPermission.practiceQuiz.owner.shortname,
+      }
+    } else if (permission.directPermission.microLearning) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.MICRO_LEARNING,
+        parentObjectName: permission.directPermission.microLearning.name,
+        parentObjectOwner:
+          permission.directPermission.microLearning.owner.shortname,
+      }
+    } else if (permission.directPermission.groupActivity) {
+      return {
+        ...sharedDerivedPermissionInfo,
+        parentObjectType: DB.ObjectType.GROUP_ACTIVITY,
+        parentObjectName: permission.directPermission.groupActivity.name,
+        parentObjectOwner:
+          permission.directPermission.groupActivity.owner.shortname,
+      }
+    }
+  }
+}
+
 export async function shareObject(
   {
     permissionLevel,
@@ -3883,6 +4084,21 @@ export async function shareObject(
         update: {
           permissionLevel,
           propagation,
+        },
+      })
+
+      // remove any pending access requests for the user
+      await prisma.accessRequest.deleteMany({
+        where: {
+          userId,
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
         },
       })
 
@@ -4613,7 +4829,7 @@ export async function getCatalogObjects(
           id: assignment.id,
           objectId: answerCollection.id,
           name: answerCollection.name,
-          objectType: SharingObjectType.ANSWER_COLLECTION,
+          objectType: DB.ObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4633,7 +4849,7 @@ export async function getCatalogObjects(
           id: assignment.id,
           objectId: element.id,
           name: element.name,
-          objectType: SharingObjectType.ELEMENT,
+          objectType: DB.ObjectType.ELEMENT,
           access: assignment.access,
           ownerShortname: element.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4657,7 +4873,7 @@ export async function getCatalogObjects(
           objectUuid: liveQuiz.id,
           name: liveQuiz.name,
           templateId: liveQuiz.templateInfo?.id,
-          objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
+          objectType: DB.ObjectType.LIVE_QUIZ,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
           isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -4834,7 +5050,7 @@ export async function addObjectToCatalog(
   let objectInfo: {
     objectId?: number
     objectUuid?: string
-    objectType: SharingObjectType
+    objectType: DB.ObjectType
     objectName: string
     ownerShortname?: string
     ownerId?: string | null
@@ -4876,7 +5092,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: answerCollection.id,
       objectUuid: undefined,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: DB.ObjectType.ANSWER_COLLECTION,
       objectName: answerCollection.name,
       ownerShortname: answerCollection.owner?.shortname,
       ownerId: answerCollection.ownerId,
@@ -4915,7 +5131,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: element.id,
       objectUuid: undefined,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: DB.ObjectType.ELEMENT,
       objectName: element.name,
       ownerShortname: element.owner?.shortname,
       ownerId: element.ownerId,
@@ -4956,7 +5172,7 @@ export async function addObjectToCatalog(
     objectInfo = {
       objectId: undefined,
       objectUuid: liveQuiz.id,
-      objectType: SharingObjectType.LIVE_QUIZ_TEMPLATE,
+      objectType: DB.ObjectType.LIVE_QUIZ,
       objectName: liveQuiz.name,
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
@@ -5191,23 +5407,24 @@ const acceptedPermissionLevels: {
   ],
 }
 
+export type PermissionCheck =
+  | {
+      catalogCollectionId: string
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | {
+      answerCollectionId: number
+      minimumPermissionLevel: DB.PermissionLevel
+    }
+  | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
+  | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+
 export async function checkAccess(
-  checks: (
-    | {
-        catalogCollectionId: string
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | {
-        answerCollectionId: number
-        minimumPermissionLevel: DB.PermissionLevel
-      }
-    | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
-    | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
-    | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
-  )[],
+  checks: PermissionCheck[],
   ctx: PrismaTransactionContextWithUser
 ) {
   for (const check of checks) {
@@ -6330,5 +6547,100 @@ export async function addUserToUserGroup(
     email: user.email,
     isSelf: false,
   }
+}
+// #endregion
+
+// ! Activity Entries
+// #region
+export async function addActivityMessage(
+  {
+    objectId,
+    objectType,
+    message,
+  }: { objectId: string; objectType: DB.ObjectType; message: string },
+  ctx: ContextWithUser
+) {
+  const newActivityEntry = await ctx.prisma.activityLogEntry.create({
+    data: {
+      type: DB.ActivityLogType.MESSAGE,
+      message,
+      objectType,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId)
+          : undefined,
+      elementId:
+        objectType === DB.ObjectType.ELEMENT ? parseInt(objectId) : undefined,
+      courseId: objectType === DB.ObjectType.COURSE ? objectId : undefined,
+      liveQuizId: objectType === DB.ObjectType.LIVE_QUIZ ? objectId : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ ? objectId : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING ? objectId : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY ? objectId : undefined,
+      userId: ctx.user.sub,
+    },
+    include: {
+      user: { select: { shortname: true } },
+    },
+  })
+
+  return {
+    ...newActivityEntry,
+    username: newActivityEntry.user!.shortname,
+    isEdited: false, // flag to signal if an object has been edited
+    options: {},
+  }
+}
+
+export async function getObjectActivity(
+  { objectId, objectType }: { objectId: string; objectType: DB.ObjectType },
+  ctx: ContextWithUser
+) {
+  // query the ActivityLogEntry table with the appropriate filter
+  const activityLog = await ctx.prisma.activityLogEntry.findMany({
+    where: {
+      elementId:
+        objectType === DB.ObjectType.ELEMENT
+          ? parseInt(objectId, 10)
+          : undefined,
+      answerCollectionId:
+        objectType === DB.ObjectType.ANSWER_COLLECTION
+          ? parseInt(objectId, 10)
+          : undefined,
+      courseId:
+        objectType === DB.ObjectType.COURSE ? String(objectId) : undefined,
+      liveQuizId:
+        objectType === DB.ObjectType.LIVE_QUIZ ? String(objectId) : undefined,
+      practiceQuizId:
+        objectType === DB.ObjectType.PRACTICE_QUIZ
+          ? String(objectId)
+          : undefined,
+      microLearningId:
+        objectType === DB.ObjectType.MICRO_LEARNING
+          ? String(objectId)
+          : undefined,
+      groupActivityId:
+        objectType === DB.ObjectType.GROUP_ACTIVITY
+          ? String(objectId)
+          : undefined,
+    },
+    include: { user: { select: { shortname: true } } },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  return activityLog.map((entry) => ({
+    ...entry,
+    message: entry.message,
+    options: {
+      field: entry.modificationDetails
+        ?.field as ActivityLogModificationFieldType,
+      oldValue: entry.modificationDetails?.oldValue,
+      newValue: entry.modificationDetails?.newValue,
+    },
+    username: entry.user?.shortname ?? 'Unknown User',
+    isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
+  }))
 }
 // #endregion

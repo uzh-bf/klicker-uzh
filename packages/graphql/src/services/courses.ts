@@ -11,7 +11,7 @@ import {
   type Participant,
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
@@ -1185,6 +1185,12 @@ function getPermissionBooleans({
       permission.permissionLevel !== PermissionLevel.OWNER &&
       !permission.derived &&
       permission.directPermission?.userGroupId === null,
+    sharingType:
+      permission.permissionLevel === PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : permission.derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED,
   }
 }
 
@@ -1203,7 +1209,10 @@ export async function getCourseData(
       liveQuizzes: {
         where: { isDeleted: false },
         include: {
-          blocks: { include: { elements: true } },
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1216,7 +1225,10 @@ export async function getCourseData(
       practiceQuizzes: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1229,7 +1241,10 @@ export async function getCourseData(
       groupActivities: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1242,7 +1257,10 @@ export async function getCourseData(
       microLearnings: {
         where: { isDeleted: false },
         include: {
-          stacks: { include: { elements: true } },
+          stacks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
           permissions: {
             where: { userId: ctx.user.sub },
             include: { directPermission: true },
@@ -1313,6 +1331,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1355,6 +1374,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: liveQuiz.updatedAt,
         }
       })
@@ -1382,6 +1402,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1425,6 +1446,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: practiceQuiz.updatedAt,
         }
       })
@@ -1452,6 +1474,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1496,6 +1519,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: microLearning.updatedAt,
         }
       })
@@ -1523,6 +1547,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
         } = getPermissionBooleans({
           permission,
         })
@@ -1569,6 +1594,7 @@ export async function getCourseData(
           isExecutor,
           isShared,
           isRemovable,
+          sharingType,
           updatedAt: groupActivity.updatedAt,
         }
       })
