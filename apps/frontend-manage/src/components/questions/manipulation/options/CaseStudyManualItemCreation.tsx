@@ -138,7 +138,8 @@ function CaseStudyManualItemCreation({
           if (
             !manualItemsField.value?.some(
               (existingItem) => existingItem.value === newValue.trim()
-            )
+            ) &&
+            newValue.trim() !== ''
           ) {
             manualItemsHelpers.setValue([
               ...(manualItemsField.value ?? []),
