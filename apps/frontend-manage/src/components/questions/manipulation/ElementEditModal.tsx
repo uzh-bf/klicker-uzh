@@ -298,7 +298,10 @@ function ElementEditModal({
                 variables: {
                   name: `AC Case Study ${values.name}`,
                   description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
-                  answers: values.options.manuallyCreatedItems ?? [],
+                  answers:
+                    values.options.manuallyCreatedItems.map(
+                      (item) => item.value
+                    ) ?? [],
                 },
                 update: (cache, { data }) => {
                   if (!data?.createAnswerCollection) return
@@ -334,8 +337,10 @@ function ElementEditModal({
               // set the items to the newly created answer collection items (in the same order as the values were defined)
               const entries = data.createAnswerCollection.entries ?? []
               const entryIds = values.options.manuallyCreatedItems.flatMap(
-                (value) => {
-                  const entry = entries.find((entry) => entry.value === value)
+                (createdItem) => {
+                  const entry = entries.find(
+                    (entry) => entry.value === createdItem.value
+                  )
                   return entry ? entry.id : []
                 }
               )
@@ -343,11 +348,13 @@ function ElementEditModal({
 
               if (values.options.hasSampleSolution) {
                 // create a map between the old item index and the new correct answer collection entry ids
-                const itemIndexIdMap = new Map<number, number>()
-                values.options.manuallyCreatedItems.forEach((value, index) => {
-                  const entry = entries.find((entry) => entry.value === value)
+                const itemOldIdNewIdMap = new Map<number, number>()
+                values.options.manuallyCreatedItems.forEach((createdItem) => {
+                  const entry = entries.find(
+                    (entry) => entry.value === createdItem.value
+                  )
                   if (entry) {
-                    itemIndexIdMap.set(index, entry.id)
+                    itemOldIdNewIdMap.set(createdItem.id, entry.id)
                   }
                 })
 
@@ -357,8 +364,8 @@ function ElementEditModal({
                     Object.fromEntries(
                       Object.entries(c.solutions ?? {}).flatMap(
                         ([key, value]) => {
-                          const itemIndex = parseInt(key.split('-')[1])
-                          const newItemId = itemIndexIdMap.get(itemIndex)
+                          const oldId = parseInt(key.split('-')[1])
+                          const newItemId = itemOldIdNewIdMap.get(oldId)
 
                           if (typeof newItemId === 'undefined') {
                             return []

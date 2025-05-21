@@ -121,12 +121,7 @@ function useArtificialElementInstance({
                         return []
                       })
                     : 'manuallyCreatedItems' in values.options
-                      ? (values.options.manuallyCreatedItems?.map(
-                          (item, index) => ({
-                            id: index,
-                            value: item,
-                          })
-                        ) ?? [])
+                      ? (values.options.manuallyCreatedItems ?? [])
                       : [],
                 criteria:
                   'criteria' in values.options && values.options.criteria

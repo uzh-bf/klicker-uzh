@@ -104,7 +104,7 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
     hasSampleSolution: boolean
     answerCollection?: string
     selectedItems?: number[] // from AC: items that should be evaluated with respect to the defined criteria
-    manuallyCreatedItems?: string[] // new implicit AC: items that should be evaluated with respect to the defined criteria
+    manuallyCreatedItems?: { id: number; value: string }[] // new implicit AC: items that should be evaluated with respect to the defined criteria
     cases: {
       id: string // short id
       title: string

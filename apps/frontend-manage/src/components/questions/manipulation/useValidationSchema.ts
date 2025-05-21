@@ -469,7 +469,12 @@ function useOptionsSchemaCaseStudy() {
       }),
     manuallyCreatedItems: yup
       .array()
-      .of(yup.string())
+      .of(
+        yup.object().shape({
+          id: yup.number().required(),
+          value: yup.string().required(),
+        })
+      )
       .when('itemSelectionMode', {
         is: (value?: 'existing' | 'new') => value === 'new',
         then: (schema) =>
@@ -622,10 +627,7 @@ function useOptionsSchemaCaseStudy() {
               const items =
                 typeof itemMode === 'undefined' || itemMode === 'existing'
                   ? (selectedItems ?? [])
-                  : Array.from(
-                      { length: createdItems?.length ?? 0 },
-                      (_, i) => i
-                    )
+                  : (createdItems?.map((item) => item.id) ?? [])
 
               const solutionKeys = Object.keys(solutions)
               if (solutionKeys.length !== items.length) {

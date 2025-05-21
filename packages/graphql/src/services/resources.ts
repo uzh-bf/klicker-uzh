@@ -101,9 +101,6 @@ export async function createAnswerCollection(
     isDeletable: true,
     isRemovable: false,
     sharingType: SharingType.OWNED,
-    entries: collection.entries.map((entry) => ({
-      ...entry,
-    })),
   }
 }
 
