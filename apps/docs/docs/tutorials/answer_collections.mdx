@@ -1,0 +1,157 @@
+---
+title: Answer Collections
+---
+
+import PrivatePreviewTag from '../../src/components/PrivatePreviewTag'
+
+# Answer Collections <PrivatePreviewTag />
+
+Answer Collections are reusable lists of predefined text items (e.g., diagnoses, symptoms, keywords, options). They serve as the source pool for answers in [Selection (SE) questions](/tutorials/supported_element_types#selection-se) and the evaluable items for [Case Study (CS) questions](/tutorials/supported_element_types#case-study-cs), ensuring consistency and saving time when creating questions that draw from the same set of potential answers.
+
+Using Answer Collections offers several key **benefits**:
+
+- **Consistency:** Ensures uniform terminology and options across multiple questions.
+- **Efficiency:** Eliminates the need to repetitively type the same answer choices, saving lecturer time.
+- **Maintainability:** Simplifies the process of finding where specific items are used. Updates to an item are made in one central location (note: the immediate effect of such updates on already existing questions depends on system behavior regarding resource update propagation).
+- **Enhanced Student Experience:** Items within a collection are automatically sorted alphabetically, and students can search through them when answering linked Selection or Case Study questions, which is particularly helpful for large collections.
+
+## What is an Answer Collection?
+
+An Answer Collection in KlickerUZH is a named, managed list of text-based items. These items can represent anything you want students to choose from, such as medical diagnoses, anatomical structures, historical figures, or technical terms.
+
+The primary **purpose** of creating and using Answer Collections is to:
+
+- Provide a standardized pool of options for Selection and Case Study questions.
+- Avoid retyping the same set of answers repeatedly across different questions.
+- Ensure consistency in terminology and options presented to students.
+- Simplify the maintenance of answer choices; updating an item is done in one central place.
+- Facilitate student interaction: Items within a collection are automatically sorted alphabetically, and students can search through them when answering linked Selection or Case Study questions.
+
+Below is an example of how an Answer Collection looks in the edit dialog:
+
+![Overview of available Answer Collections](/img/answer_collections/answer_collection_edit3.jpeg)
+
+## Creating and Managing Answer Collections
+
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+
+You can manage your Answer Collections within the "Resources" section of the KlickerUZH lecturer interface.
+
+### Accessing Answer Collections
+
+Navigate to the "Resources" tab in the main navigation bar. Here you will find the dedicated area for "Answer Collections". This page displays all collections you own or have access to.
+
+![Accessing the Answer Collections management area](/img/answer_collections/answer_collection_overview.jpeg)
+
+### Creating a New Collection
+
+To create a new collection:
+
+1.  Click the "+ New Answer Collection" button.
+2.  A form will appear where you need to provide:
+    - **Name:** A unique and descriptive name for your collection (e.g., "Medical Diagnoses - Set 1", "Anatomical Structures - Limbs").
+    - **Description:** Explain the purpose or content of the collection for future reference or for others if you share it.
+    - **Initial Answer Entries:** You must add at least two initial text items to the collection. Use the "+ Add Value" button to add more fields.
+3.  Click "Create" to save the new collection.
+
+<Tabs>
+  <TabItem value="overview" label="Overview Screen" default>
+    The initial view showing your existing collections and the button to create
+    a new one. ![Overview with New Collection
+    Button](/img/answer_collections/answer_collection_overview.jpeg)
+  </TabItem>
+  <TabItem value="create" label="Creation Form">
+    The form displayed after clicking "+ New Answer Collection". ![Create Answer
+    Collection Form](/img/answer_collections/answer_collection_create.jpeg)
+  </TabItem>
+</Tabs>
+
+### Editing and Populating Collections
+
+To modify an existing collection:
+
+1.  **Locate the Collection:** Find the collection you want to edit on the main Answer Collections overview page (shown in the "Accessing Answer Collections" section above).
+2.  **Open the Edit Options:** Click the three-dot menu associated with the collection card to reveal options like "Edit", "Share", "Delete".
+3.  **Select "Edit":** Choosing "Edit" opens the **Edit Answer Collection dialog**.
+
+Within the dialog, perform the following actions:
+
+- **Editing Collection Details:** Modify the overall **Name** and **Description** of the collection.
+- **Managing Items:**
+  - **Edit Existing Items:** Click on the text of an item to change it.
+  - **Add New Items:** Use the "+ Add Value" button to append new entries to the list.
+  - **Remove Items:** Click the delete icon (trash bin) next to an item to remove it.
+  - Items in the list are automatically sorted alphabetically for display to students.
+
+4.  **Save Changes:** Click the "Save" or "Update" button within the dialog to apply your modifications.
+
+<Tabs>
+  <TabItem value="edit-details" label="Open Edit Dialog" default>
+    Select "Edit" from the collection's menu to open the edit dialog. ![Opening
+    the Edit Dialog from the collection
+    menu](/img/answer_collections/answer_collection_edit.jpeg)
+  </TabItem>
+  <TabItem value="edit-items" label="Edit Dialog: Details">
+    The top part of the edit dialog where you can edit name and description of
+    the answer collection. ![Editing Name and Description in the
+    Dialog](/img/answer_collections/answer_collection_edit2.jpeg)
+  </TabItem>
+  <TabItem value="populated-example" label="Edit Dialog: Collection Items">
+    The bottom part of the edit dialog where you can edit the individual
+    collection items. ![Editing Items in the
+    Dialog](/img/answer_collections/answer_collection_edit3.jpeg)
+  </TabItem>
+</Tabs>
+
+### Deleting an Entire Collection
+
+To delete an Answer Collection:
+
+1.  **Navigate to the Overview:** Go to the main "Answer Collections" page within the "Resources" section, where all your collections are listed.
+2.  **Locate the Collection:** Find the specific Answer Collection you wish to delete.
+3.  **Open the Options Menu:** Click on the three-dot menu icon associated with that collection card.
+4.  **Select "Delete":** Choose the "Delete" option from the dropdown menu.
+5.  **Confirm Deletion:** A confirmation prompt will appear. Confirm that you want to permanently delete the collection.
+
+**Important Considerations:**
+
+- **Impact on Linked Questions:** Be cautious when deleting a collection. If it is currently linked to any Selection or Case Study questions, deleting it may break those questions or leave them without a valid set of answers. The system may prevent deletion if the collection is in active use or display a warning about affected questions.
+- **Permanence:** Deleting a collection is a permanent action and cannot be undone.
+
+## Using Answer Collections in Questions
+
+The primary use of Answer Collections is to provide the pool of selectable items for **[Selection (SE) questions](/tutorials/supported_element_types#selection-se)** and the evaluable items for **[Case Study (CS) questions](/tutorials/supported_element_types#case-study-cs)**.
+
+When students encounter such a question, they can search through the items in the linked collection to find and select their answers. This search functionality is especially useful for large collections.
+
+### For Selection (SE) Questions
+
+When creating or editing a Selection question:
+
+1.  **Link an Answer Collection:** In the question editor, there will be a field labeled "Answer collection" (or similar). Click this field to open a dropdown or search dialog where you can choose from your existing Answer Collections. The number of entries in the selected collection is often displayed (e.g., "MED Diagnosen (936 entries)").
+2.  **Specify Number of Inputs:** In the "Number of inputs" field, define the **maximum** number of items a student can select as their answer. Students must select at least one item and can select up to the number you specify here. For example, if you set this to "2", students can select one or two items.
+3.  **Define Correct Answer Options:** After linking a collection and specifying the number of inputs, fields will appear for you to designate the correct answers. Click each field to select the correct items from the linked Answer Collection. The student's response is considered correct if they select _all_ the defined correct answer options and _no incorrect ones_, within the allowed number of selections.
+
+![Linking an Answer Collection and defining correct options in a Selection question](/img/answer_collections/answer_collection_usage.png)
+
+### For Case Study (CS) Questions
+
+When creating or editing a Case Study question:
+
+1.  **Link an Answer Collection for Items:** In the section where you define the "Case Study Items" (i.e., the entities students will evaluate against criteria), you link an Answer Collection. The items from this collection (e.g., Myocardial Infarction, Pneumonia, Pulmonary Embolism from our demo question) become the rows that students will assess using the sliders/inputs for each defined criterion (like Probability or Treatment Cost).
+
+![Linking an Answer Collection for Case Study Items](/img/answer_collections/answer_collection_usage_cs.png)
+
+This ensures that the items being evaluated in the case study are standardized and drawn from a predefined list, maintaining consistency if you use the same set of items across multiple cases or questions.
+
+## Sharing Answer Collections
+
+Answer Collections can be shared directly with other users or published to the KlickerUZH Catalog for wider use. To initiate sharing for a specific Answer Collection, locate it in the overview list and access the sharing options via its three-dot menu.
+
+For detailed instructions on how to share resources, please refer to the following documentation pages:
+
+- **[Direct Sharing & Access Requests](/tutorials/direct_sharing)**
+- **[Sharing via Catalog](/tutorials/catalog_sharing)**
+
+![Sharing an Answer Collection](/img/answer_collections/answer_collection_share.jpeg)
