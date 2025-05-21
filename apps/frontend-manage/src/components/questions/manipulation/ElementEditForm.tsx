@@ -51,8 +51,6 @@ function ElementEditForm({
   initialStatus,
   onSubmitElement,
   setAutoSavedElement,
-  failureToast,
-  setFailureToast,
   updateInstances,
   setUpdateInstances,
   includeTemplateUpdates,
@@ -77,11 +75,8 @@ function ElementEditForm({
   initialStatus: ElementStatus
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
-  ) => Promise<void>
+  ) => Promise<boolean>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
-  // failure handling
-  failureToast: boolean
-  setFailureToast: Dispatch<SetStateAction<boolean>>
   // instance update controls
   updateInstances: boolean
   setUpdateInstances: Dispatch<SetStateAction<boolean>>
@@ -91,6 +86,7 @@ function ElementEditForm({
   const t = useTranslations()
 
   const [activeTab, setActiveTab] = useState('preview')
+  const [failureToast, setFailureToast] = useState(false)
   const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -111,11 +107,19 @@ function ElementEditForm({
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
-        await onSubmitElement({ ...values, status: elementStatus })
+        const success = await onSubmitElement({
+          ...values,
+          status: elementStatus,
+        })
 
         // close modal, set success toast
         setSubmitting(false)
-        onSuccess()
+        if (!success) {
+          setFailureToast(true)
+          setFailureToast(true)
+        } else {
+          onSuccess()
+        }
       }}
     >
       {({
@@ -267,6 +271,10 @@ function ElementEditForm({
 
                   {values.type === ElementType.CaseStudy && (
                     <CaseStudyOptions
+                      creationMode={
+                        mode === ElementEditMode.CREATE ||
+                        mode === ElementEditMode.DUPLICATE
+                      }
                       templateId={templateId}
                       isTemplate={isTemplate}
                       inputsDisabled={inputsDisabled}

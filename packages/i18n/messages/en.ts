@@ -1249,8 +1249,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmCollectionChange:
         'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
       selectedItems: 'Selected items',
+      definedItems: 'New case study items',
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
+      newCaseStudyItemsTooltip:
+        'Please enter the case study items that should be evaluated with respect to the specified criteria. They will automatically be combined into an answer collection when saving the question.',
+      enterItemsManually:
+        'Want to enter the case study items manually instead?',
+      enterItemsManuallyExplanation:
+        'This interface allows you to enter your case study items manually. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of case study items from an existing collection.</button>',
       selectCaseStudyItems: 'Select items...',
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',
@@ -1822,6 +1829,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select an answer collection from which the elements to be evaluated in the case study are selected.',
       CSItemsRequired:
         'Please select at least one item from the answer collection that participants should evaluate against the created criteria.',
+      CSNewItemsRequired:
+        'Please define at least one item that should be evaluated by the participants against the created criteria.',
       CSCriteriaNameRequired: 'Please enter a name for the criterion.',
       CSCriteriaMinRequired: 'Please enter a minimum value for the criterion.',
       CSCriteriaMinLessThanMax:

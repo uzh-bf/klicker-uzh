@@ -214,6 +214,13 @@ function ElementFormErrors({
 
         {'options' in errors &&
           errors.options &&
+          'manuallyCreatedItems' in errors.options &&
+          errors.options.manuallyCreatedItems && (
+            <li>{`${t('manage.elements.definedItems')}: ${errors.options.manuallyCreatedItems}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
           'criteria' in errors.options &&
           errors.options.criteria &&
           typeof errors.options.criteria === 'object' &&

@@ -24,5 +24,10 @@ mutation CreateAnswerCollection(
     isDeletable
     isRemovable
     sharingType
+
+    entries {
+      id
+      value
+    }
   }
 }

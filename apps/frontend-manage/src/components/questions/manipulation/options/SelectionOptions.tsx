@@ -57,6 +57,7 @@ function SelectionOptions({
 
   // filter the available answer options for the ones included in the current form state
   const selectedAnswers = useSelectedAnswerEntry({
+    itemSelectionMode: 'existing',
     field,
     collectionAnswers,
   })

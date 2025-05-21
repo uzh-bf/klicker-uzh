@@ -150,10 +150,12 @@ function useElementFormInitialValues({
         type: ElementType.CaseStudy,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
+          itemSelectionMode: 'existing', // manual definition of elements not supported for element editing
           answerCollection: options.answerCollectionId
             ? String(options.answerCollectionId)
             : '',
           selectedItems: options.collectionItemIds ?? [],
+          manuallyCreatedItems: [],
           criteria:
             options.criteria?.map((criterion) => ({
               ...criterion,

@@ -64,11 +64,11 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       nullable: true,
     }),
     numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
-
     permissionLevel: t.expose('permissionLevel', {
       type: PermissionLevel,
       nullable: true,
     }),
+
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
