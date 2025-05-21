@@ -1,5 +1,4 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -63,7 +62,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
-      scope: UserLoginScope.SESSION_EXEC,
+      scope: DB.UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -96,7 +95,7 @@ export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {
       sub: participantId,
-      role: UserRole.PARTICIPANT,
+      role: DB.UserRole.PARTICIPANT,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -220,8 +219,8 @@ export async function sendMagicLink(
   const magicLinkJWT = JWT.sign(
     {
       sub: participantData.id,
-      role: UserRole.PARTICIPANT,
-      scope: UserLoginScope.OTP,
+      role: DB.UserRole.PARTICIPANT,
+      scope: DB.UserLoginScope.OTP,
     },
     process.env.APP_SECRET as string,
     {
@@ -266,10 +265,10 @@ export async function loginParticipantMagicLink(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
-    scope: UserLoginScope
+    scope: DB.UserLoginScope
   }
 
-  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+  if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.OTP) {
     return null
   }
 
@@ -301,10 +300,10 @@ export async function activateParticipantAccount(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
-    scope: UserLoginScope
+    scope: DB.UserLoginScope
   }
 
-  if (!tokenData.sub || tokenData.scope !== UserLoginScope.ACTIVATION) {
+  if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.ACTIVATION) {
     return null
   }
 
@@ -373,7 +372,7 @@ export async function getLoginToken(ctx: ContextWithUser) {
 }
 
 export async function changeUserLocale(
-  { locale }: { locale: Locale },
+  { locale }: { locale: DB.Locale },
   ctx: ContextWithUser
 ) {
   const user = await ctx.prisma.user.update({
@@ -394,7 +393,7 @@ export async function getUsersPrivatePreview(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
   })
 
-  if (!user || user.role !== UserRole.ADMIN) {
+  if (!user || user.role !== DB.UserRole.ADMIN) {
     return []
   }
 
@@ -422,7 +421,7 @@ export async function grantPrivatePreviewAccess(
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
-  if (!user || user.role !== UserRole.ADMIN) {
+  if (!user || user.role !== DB.UserRole.ADMIN) {
     return null
   }
 
@@ -453,7 +452,7 @@ export async function grantPrivatePreviewAccess(
 }
 
 export async function changeParticipantLocale(
-  { locale }: { locale: Locale },
+  { locale }: { locale: DB.Locale },
   ctx: Context
 ) {
   ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
@@ -669,8 +668,8 @@ export async function createParticipantAccount(
     const activationJWT = JWT.sign(
       {
         sub: participant.id,
-        role: UserRole.PARTICIPANT,
-        scope: UserLoginScope.ACTIVATION,
+        role: DB.UserRole.PARTICIPANT,
+        scope: DB.UserLoginScope.ACTIVATION,
       },
       process.env.APP_SECRET as string,
       {
@@ -868,7 +867,7 @@ export async function checkShortnameAvailable(
 interface UserLoginProps {
   password: string
   name: string
-  scope: UserLoginScope
+  scope: DB.UserLoginScope
 }
 
 export async function createUserLogin(
@@ -882,7 +881,7 @@ export async function createUserLogin(
       name: name.trim(),
       // scope,
       // TODO: allow creation of other access levels once auth is handled granularly
-      scope: UserLoginScope.FULL_ACCESS,
+      scope: DB.UserLoginScope.FULL_ACCESS,
       user: {
         connect: {
           id: ctx.user.sub,
@@ -957,7 +956,7 @@ export async function changeInitialSettings(
     shortname,
     locale,
     sendUpdates,
-  }: { shortname: string; locale: Locale; sendUpdates: boolean },
+  }: { shortname: string; locale: DB.Locale; sendUpdates: boolean },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
@@ -991,7 +990,7 @@ export async function changeInitialSettings(
 
 export async function checkPublicPreviewAvailable(ctx: Context) {
   // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
+  if (!ctx.user?.sub || ctx.user?.role === DB.UserRole.PARTICIPANT) {
     return false
   }
 
@@ -1004,7 +1003,7 @@ export async function checkPublicPreviewAvailable(ctx: Context) {
 
 export async function checkPrivatePreviewAvailable(ctx: Context) {
   // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
+  if (!ctx.user?.sub || ctx.user?.role === DB.UserRole.PARTICIPANT) {
     return false
   }
 

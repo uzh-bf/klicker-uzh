@@ -3848,5 +3848,19 @@ describe('Unit tests for sharing functionalities of courses', () => {
       },
     })
     expect(removedDerivedPermission).toBeNull()
+
+    // verify that a proper audit log entry has been created
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_REMOVED,
+        objectId: course.id,
+        objectType: ObjectType.COURSE,
+        sourceUserId: userTwo.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `User ${userTwo.id} removed own permission on ${ObjectType.COURSE} (ID: ${course.id})`
+    )
   })
 })

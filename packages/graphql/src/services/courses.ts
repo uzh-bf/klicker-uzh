@@ -1,16 +1,4 @@
-import {
-  Course,
-  DerivedPermission,
-  ElementOrderType,
-  LeaderboardType,
-  Permission,
-  PermissionLevel,
-  PublicationStatus,
-  TimelineEntryType,
-  UserRole,
-  type Participant,
-  type ParticipantGroup,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -120,13 +108,13 @@ export async function joinCourseLeaderboard(
   const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
     where: {
       type_participantId_courseId: {
-        type: LeaderboardType.COURSE,
+        type: DB.LeaderboardType.COURSE,
         participantId: ctx.user.sub,
         courseId,
       },
     },
     create: {
-      type: LeaderboardType.COURSE,
+      type: DB.LeaderboardType.COURSE,
       participant: {
         connect: {
           id: ctx.user.sub,
@@ -191,7 +179,7 @@ export async function leaveCourseLeaderboard(
   await ctx.prisma.leaderboardEntry.delete({
     where: {
       type_participantId_courseId: {
-        type: LeaderboardType.COURSE,
+        type: DB.LeaderboardType.COURSE,
         participantId: ctx.user.sub,
         courseId,
       },
@@ -264,7 +252,7 @@ export async function getCourseOverviewData(
 
     if (participation) {
       const allGroupEntries = participation.course.participantGroups.reduce<{
-        mapped: (ParticipantGroup & { score: number; isMember: boolean })[]
+        mapped: (DB.ParticipantGroup & { score: number; isMember: boolean })[]
         sum: number
         count: number
       }>(
@@ -344,7 +332,7 @@ export async function getCourseOverviewData(
 
   if (!course) return null
 
-  let participant: Participant | null = null
+  let participant: DB.Participant | null = null
   if (ctx.user?.sub) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
@@ -418,7 +406,7 @@ async function computeRollingLeaderboardEntries(
       },
       timelineEntries: {
         where: {
-          type: TimelineEntryType.DAILY,
+          type: DB.TimelineEntryType.DAILY,
           timestamp: {
             gt: dayjs().subtract(days, 'days').toDate(),
           },
@@ -857,18 +845,18 @@ export async function getUserCourses(ctx: ContextWithUser) {
               permissionLevel: object.permissionLevel,
               derivedAccess: object.derived,
               numSharedUsers: object.course._count.permissions - 1,
-              isOwner: object.permissionLevel === PermissionLevel.OWNER,
+              isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
               isManager:
-                object.permissionLevel === PermissionLevel.OWNER ||
-                object.permissionLevel === PermissionLevel.ADMIN,
+                object.permissionLevel === DB.PermissionLevel.OWNER ||
+                object.permissionLevel === DB.PermissionLevel.ADMIN,
               isEditor:
-                object.permissionLevel === PermissionLevel.OWNER ||
-                object.permissionLevel === PermissionLevel.ADMIN ||
-                object.permissionLevel === PermissionLevel.WRITE,
-              isShared: object.permissionLevel !== PermissionLevel.OWNER,
+                object.permissionLevel === DB.PermissionLevel.OWNER ||
+                object.permissionLevel === DB.PermissionLevel.ADMIN ||
+                object.permissionLevel === DB.PermissionLevel.WRITE,
+              isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
               // object can be removed, if the object is shared and the permission is not derived / granted through a user group
               isRemovable:
-                object.permissionLevel !== PermissionLevel.OWNER &&
+                object.permissionLevel !== DB.PermissionLevel.OWNER &&
                 !object.derived &&
                 object.directPermission?.userGroupId === null,
             }
@@ -918,7 +906,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 liveQuizId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -926,7 +914,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 practiceQuizId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -934,7 +922,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 microLearningId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -942,7 +930,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 groupActivityId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -955,7 +943,7 @@ export async function getActiveUserCourses(
     }
 
     // fetch the course link to the corresponding acitivity
-    let activityCourse: Course | null = null
+    let activityCourse: DB.Course | null = null
     if (activityType === ActivityType.LIVE_QUIZ) {
       const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
         where: { id: activityId },
@@ -1116,11 +1104,24 @@ export async function removeCourse(
 
   // remove direct permission and recompute derived permissions for this course and user
   await ctx.prisma.$transaction(async (prisma) => {
+    // remove the direct permission of the user on the course
     await prisma.course.update({
       where: { id },
       data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
     })
 
+    // create an audit log entry for the removal
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.PERMISSION_REMOVED,
+        objectId: String(id),
+        objectType: DB.ObjectType.COURSE,
+        sourceUserId: ctx.user.sub,
+        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.COURSE} (ID: ${id})`,
+      },
+    })
+
+    // recompute derived permissions for the user on the course
     await recomputeDerivedPermissions(
       { courseId: id, userId: ctx.user.sub },
       prisma
@@ -1164,29 +1165,29 @@ export async function getControlCourses(ctx: ContextWithUser) {
 function getPermissionBooleans({
   permission,
 }: {
-  permission: DerivedPermission & { directPermission: Permission | null }
+  permission: DB.DerivedPermission & { directPermission: DB.Permission | null }
 }) {
   return {
-    isOwner: permission.permissionLevel === PermissionLevel.OWNER,
+    isOwner: permission.permissionLevel === DB.PermissionLevel.OWNER,
     isManager:
-      permission.permissionLevel === PermissionLevel.OWNER ||
-      permission.permissionLevel === PermissionLevel.ADMIN,
+      permission.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN,
     isEditor:
-      permission.permissionLevel === PermissionLevel.OWNER ||
-      permission.permissionLevel === PermissionLevel.ADMIN ||
-      permission.permissionLevel === PermissionLevel.WRITE,
+      permission.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.WRITE,
     isExecutor:
-      permission.permissionLevel === PermissionLevel.EXECUTE ||
-      permission.permissionLevel === PermissionLevel.WRITE ||
-      permission.permissionLevel === PermissionLevel.ADMIN ||
-      permission.permissionLevel === PermissionLevel.OWNER,
-    isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+      permission.permissionLevel === DB.PermissionLevel.EXECUTE ||
+      permission.permissionLevel === DB.PermissionLevel.WRITE ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.OWNER,
+    isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     isRemovable:
-      permission.permissionLevel !== PermissionLevel.OWNER &&
+      permission.permissionLevel !== DB.PermissionLevel.OWNER &&
       !permission.derived &&
       permission.directPermission?.userGroupId === null,
     sharingType:
-      permission.permissionLevel === PermissionLevel.OWNER
+      permission.permissionLevel === DB.PermissionLevel.OWNER
         ? SharingType.OWNED
         : permission.derived
           ? SharingType.DEPENDENCY
@@ -1679,7 +1680,7 @@ export async function getCourseLeaderboard(
             username: entry.participation!.participant.username,
             avatar: entry.participation!.participant.avatar,
             participation: entry.participation!,
-            type: LeaderboardType.COURSE,
+            type: DB.LeaderboardType.COURSE,
             participantId: entry.participantId,
             participant: entry.participation!.participant,
             sessionParticipationId: null,
@@ -1729,7 +1730,7 @@ export async function getCourseLeaderboard(
       include: {
         timelineEntries: {
           where: {
-            type: TimelineEntryType.WEEKLY,
+            type: DB.TimelineEntryType.WEEKLY,
             timestamp: weeklySelection
               ? startDateUTC
               : {
@@ -1938,7 +1939,7 @@ export async function getCoursePracticeQuiz(
         include: {
           elements: {
             include:
-              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
                 ? {
                     responses: {
                       where: {
@@ -1971,8 +1972,8 @@ export async function getCoursePracticeQuiz(
     templateName: null,
     pointsMultiplier: 1,
     resetTimeDays: 6,
-    orderType: ElementOrderType.SPACED_REPETITION,
-    status: PublicationStatus.PUBLISHED,
+    orderType: DB.ElementOrderType.SPACED_REPETITION,
+    status: DB.PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,
     availableFrom: null,
@@ -2001,7 +2002,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled practice quizzes
   const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       availableFrom: {
         lte: new Date(),
       },
@@ -2015,7 +2016,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: quiz.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
         include: {
           stacks: true,
@@ -2056,7 +2057,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled microlearnings
   const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       scheduledStartAt: {
         lte: new Date(),
       },
@@ -2070,7 +2071,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: micro.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
       })
     )
@@ -2093,7 +2094,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled group activities
   const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       scheduledStartAt: {
         lte: new Date(),
       },
@@ -2107,7 +2108,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
       })
     )
@@ -2134,7 +2135,7 @@ export async function endExpiredActivities(ctx: Context) {
   // ! Set microlearning status to ended for all published microlearnings that have ended
   const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
     where: {
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -2148,7 +2149,7 @@ export async function endExpiredActivities(ctx: Context) {
           id: micro.id,
         },
         data: {
-          status: PublicationStatus.ENDED,
+          status: DB.PublicationStatus.ENDED,
         },
       })
     )
@@ -2172,7 +2173,7 @@ export async function endExpiredActivities(ctx: Context) {
   // ! Set group activity status to ended for all published group activities that have ended
   const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -2186,7 +2187,7 @@ export async function endExpiredActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: PublicationStatus.ENDED,
+          status: DB.PublicationStatus.ENDED,
         },
       })
     )
@@ -2219,12 +2220,12 @@ export async function getCourseActivities(
     where: { id: courseId },
     include: {
       practiceQuizzes: {
-        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
         include: { _count: { select: { stacks: true } } },
         orderBy: { createdAt: 'desc' },
       },
       microLearnings: {
-        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
         include: { _count: { select: { stacks: true } } },
         orderBy: { scheduledStartAt: 'desc' },
       },

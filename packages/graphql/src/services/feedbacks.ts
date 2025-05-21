@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks(
@@ -60,7 +60,7 @@ export async function createFeedback(
   ctx: Context
 ) {
   const isLoggedInParticipant =
-    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {

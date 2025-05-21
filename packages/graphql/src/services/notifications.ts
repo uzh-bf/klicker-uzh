@@ -1,8 +1,4 @@
-import type {
-  Course,
-  MicroLearning,
-  PushSubscription,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 // import webpush, { WebPushError } from 'web-push'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -159,8 +155,8 @@ export async function sendPushNotifications(ctx: Context) {
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
 async function sendPushNotificationsToSubscribers(
-  microLearning: MicroLearning & {
-    course: null | (Course & { subscriptions: PushSubscription[] })
+  microLearning: DB.MicroLearning & {
+    course: null | (DB.Course & { subscriptions: PushSubscription[] })
   },
   ctx: Context
 ) {
