@@ -86,7 +86,7 @@ function CaseStudyManualItemCreation({
           const prevItems = manualItemsField.value ?? []
           const newItems = newValue.map((item) => ({
             id: item.value,
-            value: item.label,
+            value: item.label.trim(),
           }))
           manualItemsHelpers.setValue(newItems)
 
@@ -137,18 +137,21 @@ function CaseStudyManualItemCreation({
           // add the new tag to the list of new collection items, if it does not exist already
           if (
             !manualItemsField.value?.some(
-              (existingItem) => existingItem.value === newValue
+              (existingItem) => existingItem.value === newValue.trim()
             )
           ) {
             manualItemsHelpers.setValue([
               ...(manualItemsField.value ?? []),
-              { id: Math.floor(Math.random() * 1000000 + 1), value: newValue },
+              {
+                id: Math.floor(Math.random() * 1000000 + 1),
+                value: newValue.trim(),
+              },
             ])
 
             // update the answer collection state for correct validation
             setAnswerCollectionEntries((prev) => [
               ...prev,
-              { id: prev.length, value: newValue },
+              { id: prev.length, value: newValue.trim() },
             ])
           }
         }}
