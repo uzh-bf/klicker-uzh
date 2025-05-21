@@ -71,7 +71,6 @@ const PEOPLE: {
   {
     name: "Alessio D'Andrea",
     role: 'Contributor (Content)',
-    info: 'https://www.df.uzh.ch/en/people/student-assistants/alessio-dandrea.html',
   },
 ]
 
