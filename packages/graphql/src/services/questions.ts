@@ -645,6 +645,7 @@ export async function removeElement(
 
   // remove direct permission and recompute derived permissions for this element and user
   await ctx.prisma.$transaction(async (prisma) => {
+    // remove the direct permission for the user on the element
     await prisma.element.update({
       where: { id },
       data: {
@@ -654,6 +655,18 @@ export async function removeElement(
       },
     })
 
+    // create an audit log entry for the removal
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.PERMISSION_REMOVED,
+        objectId: String(id),
+        objectType: DB.ObjectType.ELEMENT,
+        sourceUserId: ctx.user.sub,
+        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ELEMENT} (ID: ${id})`,
+      },
+    })
+
+    // recompute derived permissions for the element
     await recomputeDerivedPermissions(
       { elementId: id, userId: ctx.user.sub },
       prisma
