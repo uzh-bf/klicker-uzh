@@ -25,6 +25,8 @@ function CaseStudyManualItemCreation({
   const [manualItemsField, ____, manualItemsHelpers] = useField<
     ElementFormTypesCaseStudy['options']['manuallyCreatedItems']
   >('options.manuallyCreatedItems')
+  const [casesField, ___, casesHelpers] =
+    useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
   // update the selected items state whenever the manually created items change
   useSelectedNewItems({
@@ -81,13 +83,49 @@ function CaseStudyManualItemCreation({
         classNames={{ container: () => 'w-full h-9' }}
         onChange={(newValue) => {
           // set the new collection items
+          const prevItems = manualItemsField.value ?? []
           const newItems = newValue.map((item) => ({
             id: item.value,
             value: item.label,
           }))
           manualItemsHelpers.setValue(newItems)
 
-          // update the answer collection state for UI parsing
+          // check if an item has been removed and conditionally remove the solutions for this item
+          if (newItems.length < prevItems.length) {
+            // identify the removed item
+            const removedItem = prevItems.find(
+              (prevItem) =>
+                !newItems.map((item) => item.id).includes(prevItem.id)
+            )
+
+            // if an item has been removed, remove the corresponding key from the case solutions
+            if (removedItem) {
+              const newCases = casesField.value?.map((caseItem) => {
+                // if no solutions are set, skip this case
+                if (!('solutions' in caseItem) || !caseItem.solutions) {
+                  return caseItem
+                }
+
+                // filter out all solution entries for the removed item
+                const newSolutions = Object.fromEntries(
+                  Object.entries(caseItem.solutions).filter(
+                    ([itemIdString]) =>
+                      itemIdString !== `itemId-${removedItem.id}`
+                  )
+                )
+
+                return {
+                  ...caseItem,
+                  solutions: newSolutions,
+                }
+              })
+
+              // update the cases field
+              casesHelpers.setValue(newCases)
+            }
+          }
+
+          // update the answer collection state for correct validation
           setAnswerCollectionEntries(
             newItems.map((item) => ({
               id: item.id,
@@ -107,7 +145,7 @@ function CaseStudyManualItemCreation({
               { id: Math.floor(Math.random() * 1000000 + 1), value: newValue },
             ])
 
-            // update the answer collection state for UI parsing
+            // update the answer collection state for correct validation
             setAnswerCollectionEntries((prev) => [
               ...prev,
               { id: prev.length, value: newValue },
