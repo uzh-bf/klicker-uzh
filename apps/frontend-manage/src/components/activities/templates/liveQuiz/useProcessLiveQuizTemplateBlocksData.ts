@@ -143,7 +143,9 @@ function useProcessLiveQuizTemplateBlocksData() {
                   values.options.itemSelectionMode === 'new' &&
                   (innerValues === null || typeof innerValues === 'undefined')
                 ) {
-                  break
+                  throw new Error(
+                    'Inline answer collection creation failed for selection element'
+                  )
                 }
 
                 const args = prepareSelectionArgs({
@@ -179,7 +181,9 @@ function useProcessLiveQuizTemplateBlocksData() {
                   values.options.itemSelectionMode === 'new' &&
                   (innerValues === null || typeof innerValues === 'undefined')
                 ) {
-                  break
+                  throw new Error(
+                    'Inline answer collection creation failed for case study element'
+                  )
                 }
 
                 const args = prepareCaseStudyArgs({
