@@ -55,6 +55,13 @@ function InstanceUpdateSwitch({
     )
   }, [data?.getInstanceUpdateActivities])
 
+  if (
+    !data?.getInstanceUpdateActivities ||
+    data.getInstanceUpdateActivities.length === 0
+  ) {
+    return null
+  }
+
   return (
     <div
       className={twMerge(
