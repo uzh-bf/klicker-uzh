@@ -1244,7 +1244,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
   // #endregion
 
-  // ! Inline Answer Collection Creation
+  // ! Case Study question with inline answer collection creation
   // #region
   it('Create a case study question with inline answer collection', function () {
     cy.get('[data-cy="create-question"]').click()

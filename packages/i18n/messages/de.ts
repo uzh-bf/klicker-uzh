@@ -1232,10 +1232,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
-      SEAnswerCollectionRequired:
-        'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter <link>"Ressourcen"</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.',
       CSAnswerCollectionRequired:
         'Zur Erstellung von Fallstudien-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Fallstudien-Elemente manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
+      SEAnswerCollectionRequired:
+        'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Auswahl-Möglichkeiten manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
       caseStudyAnswerCollectionTooltip:
@@ -1250,15 +1250,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmCollectionChange:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
       selectedItems: 'Ausgewählte Elemente',
+      selectionItems: 'Elemente zur Auswahl',
+      newSelectionItemsTooltip:
+        'Bitte geben Sie hier die Elemente ein, aus welchen die Studierenden die korrekten Optionen auswählen sollen. Diese werden beim Speichern der Frage automatisch in eine neue Antwort-Sammlung kombiniert.',
       definedItems: 'Neue Fallstudien-Elemente',
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       newCaseStudyItemsTooltip:
         'Bitte geben Sie hier die Fallstudien-Elemente an, die in Bezug auf die angegebenen Kriterien bewertet werden sollen. Diese werden beim Speichern der Frage automatisch in eine neue Antwort-Sammlung kombiniert.',
       enterItemsManually:
-        'Möchten Sie die Fallstudien-Elemente manuell eingeben?',
+        'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell einzugeben. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl von Fallstudien-Elementen aus einer bestehenden Sammlung wechseln.</button>',
+        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl von Fallstudien-Elementen aus einer bestehenden Sammlung wechseln.</button>',
+      enterSelectionItemsManually:
+        'Möchten Sie die zur Auswahl stehenden Elemente manuell erfassen?',
+      enterSelectionItemsManuallyExplanation:
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Auswahl-Frage direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl einer bestehenden Sammlung wechseln.</button>',
       selectCaseStudyItems: 'Elemente auswählen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',

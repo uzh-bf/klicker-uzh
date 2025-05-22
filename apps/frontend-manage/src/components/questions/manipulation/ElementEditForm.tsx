@@ -261,6 +261,10 @@ function ElementEditForm({
 
                   {values.type === ElementType.Selection && (
                     <SelectionOptions
+                      creationMode={
+                        mode === ElementEditMode.CREATE ||
+                        mode === ElementEditMode.DUPLICATE
+                      }
                       templateId={templateId}
                       isTemplate={isTemplate}
                       inputsDisabled={inputsDisabled}

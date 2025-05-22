@@ -49,9 +49,9 @@ function CaseStudyCollectionSelection({
   const [changeModalOpen, setChangeModalOpen] = useState(false)
   const [newValue, setNewValue] = useState<string>('')
 
-  const [itemsField, _, itemsHelpers] = useField<number[]>(
-    'options.selectedItems'
-  )
+  const [itemsField, _, itemsHelpers] = useField<
+    ElementFormTypesCaseStudy['options']['selectedItems']
+  >('options.selectedItems')
   const [collectionField, __, collectionHelpers] = useField<string>(
     'options.answerCollection'
   )
@@ -116,7 +116,12 @@ function CaseStudyCollectionSelection({
 
   return (
     <>
-      <div className="-mb-3 flex flex-row items-end gap-2">
+      <div
+        className={twMerge(
+          'flex flex-row items-end gap-2',
+          creationMode && '-mb-3'
+        )}
+      >
         <SelectField
           required
           disabled={disabled || loading}
@@ -202,9 +207,9 @@ function CaseStudyCollectionSelection({
               const newItemIds = newValue.map((item) => item.value)
 
               // check if an item has been removed and conditionally remove the solutions for this item
-              if (newItemIds.length < prevItemIds.length) {
+              if (newItemIds.length < (prevItemIds ?? []).length) {
                 // identify the removed item
-                const removedItem = prevItemIds.find(
+                const removedItem = (prevItemIds ?? []).find(
                   (itemId) => !newItemIds.includes(itemId)
                 )
 

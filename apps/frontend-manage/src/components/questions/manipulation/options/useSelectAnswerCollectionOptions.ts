@@ -6,13 +6,17 @@ function useSelectAnswerCollectionOptions({
   collections,
   setAnswerCollectionEntries,
 }: {
-  collectionId: string
+  collectionId?: string
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
 }) {
   return useMemo(() => {
+    if (typeof collectionId === 'undefined') {
+      return []
+    }
+
     const selectedCollection = collections.find(
       (collection) => collection.id === parseInt(collectionId)
     )
