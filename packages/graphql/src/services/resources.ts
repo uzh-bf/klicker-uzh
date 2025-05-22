@@ -45,6 +45,7 @@ export async function createAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
+  let counter: number | null = null
   const oldCollection = await ctx.prisma.answerCollection.findUnique({
     where: {
       ownerId_name: {
@@ -54,15 +55,39 @@ export async function createAnswerCollection(
     },
   })
 
-  // if collection already exists for the user, notify him that a new name needs to be chosen
+  // if collection already exists try to increment the version number
   if (oldCollection) {
-    return null
+    // check if a suitable name has been identified
+    let success = false
+
+    // iterate until no collection with the selected name exists
+    for (let i = 0; i < 10; i++) {
+      counter = (counter ?? 0) + 1
+      const newName = `${name} (${counter})`
+      const existingCollection = await ctx.prisma.answerCollection.findUnique({
+        where: {
+          ownerId_name: {
+            ownerId: ctx.user.sub,
+            name: newName,
+          },
+        },
+      })
+
+      if (!existingCollection) {
+        success = true
+        break
+      }
+    }
+
+    if (!success) {
+      return null
+    }
   }
 
   const collection = await ctx.prisma.$transaction(async (prisma) => {
     const newCollection = await prisma.answerCollection.create({
       data: {
-        name,
+        name: counter ? `${name} (${counter})` : name,
         description,
         entries: {
           create: answers.map((answer) => ({
