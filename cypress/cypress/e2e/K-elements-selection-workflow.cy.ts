@@ -547,6 +547,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   })
 
   it('Verify that a new answer collection was created when creating the selection question', function () {
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
