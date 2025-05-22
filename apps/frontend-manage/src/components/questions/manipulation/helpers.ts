@@ -236,7 +236,7 @@ type CreateAnswerCollectionType = (
 ) => Promise<FetchResult<CreateAnswerCollectionMutation>>
 
 interface CreateInlineSelectionCollectionProps {
-  values: ElementFormTypesSelection & { status: ElementStatus }
+  values: ElementFormTypesSelection
   createAnswerCollection: CreateAnswerCollectionType
 }
 
@@ -255,7 +255,7 @@ export async function createInlineSelectionCollection({
 
   const { data } = await createAnswerCollection({
     variables: {
-      name: `AC Selection Question ${values.name}`,
+      name: `AC: ${values.name}`,
       description: `Answer collection containing all the items used in the context of the selection question ${values.name}`,
       answers:
         values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
@@ -347,7 +347,7 @@ export function prepareSelectionArgs({
 }
 
 interface CreateInlineCaseStudyCollectionProps {
-  values: ElementFormTypesCaseStudy & { status: ElementStatus }
+  values: ElementFormTypesCaseStudy
   createAnswerCollection: CreateAnswerCollectionType
 }
 
@@ -366,7 +366,7 @@ export async function createInlineCaseStudyCollection({
 
   const { data } = await createAnswerCollection({
     variables: {
-      name: `AC Case Study ${values.name}`,
+      name: `AC: ${values.name}`,
       description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
       answers:
         values.options.manuallyCreatedItems.map((item) => item.value) ?? [],

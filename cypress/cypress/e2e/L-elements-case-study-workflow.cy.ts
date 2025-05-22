@@ -1438,7 +1438,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   })
 
   it('Verify that a new answer collection was created when creating the case study', function () {
-    const collectionName = `AC Case Study ${this.data.CS_INLINE.title}`
+    const collectionName = `AC: ${this.data.CS_INLINE.title}`
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-actions-${collectionName}"]`).click()

@@ -640,7 +640,7 @@
   },
   "SE_INLINE": {
     "title": "Inline Selection Question Title",
-    "collection": "AC Selection Question Inline Selection Question Title",
+    "collection": "AC: Inline Selection Question Title",
     "content": "Inline Selection Question Text",
     "explanation": "Inline Selection Question Explanation",
     "inputs": 3,
