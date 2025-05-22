@@ -637,5 +637,18 @@
     "titleEdited": "Inline Case Study Question Title Edited",
     "contentEdited": "Inline Case Study Question Text Edited",
     "explanationEdited": "Inline Case Study Question Explanation Edited"
+  },
+  "SE_INLINE": {
+    "title": "Inline Selection Question Title",
+    "collection": "AC Selection Question Inline Selection Question Title",
+    "content": "Inline Selection Question Text",
+    "explanation": "Inline Selection Question Explanation",
+    "inputs": 3,
+    "items": ["Apple", "Banana", "Cherry", "Date", "Elderberry"],
+    "solutions": ["Apple", "Cherry", "Elderberry"],
+    "titleEdited": "Inline Selection Question Title Edited",
+    "contentEdited": "Inline Selection Question Text Edited",
+    "explanationEdited": "Inline Selection Question Explanation Edited",
+    "inputsEdited": 2
   }
 }

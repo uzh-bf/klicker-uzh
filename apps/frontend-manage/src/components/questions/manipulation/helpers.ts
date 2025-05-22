@@ -229,7 +229,7 @@ export function prepareSelectionArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      answerCollection: parseInt(values.options.answerCollection),
+      answerCollection: parseInt(values.options.answerCollection!),
       numberOfInputs: parseInt(values.options.numberOfInputs),
       correctAnswers: values.options.correctAnswers,
     },
