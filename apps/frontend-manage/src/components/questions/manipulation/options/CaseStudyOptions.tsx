@@ -1,10 +1,8 @@
 import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { Dispatch, SetStateAction, useState } from 'react'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,
@@ -53,23 +51,6 @@ function CaseStudyOptions({
 
   if (loading) {
     return <Loader />
-  }
-
-  if (collections.length === 0) {
-    return (
-      <UserNotification type="warning" className={{ root: 'text-base' }}>
-        {t.rich('manage.elements.CSAnswerCollectionRequired', {
-          link: (text) => (
-            <Link
-              href="/resources"
-              className="text-primary-100 hover:underline"
-            >
-              {text}
-            </Link>
-          ),
-        })}
-      </UserNotification>
-    )
   }
 
   return (
