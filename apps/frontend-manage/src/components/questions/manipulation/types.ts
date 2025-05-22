@@ -64,10 +64,12 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
   type: ElementType.Selection
   explanation?: string | null
   options: {
+    itemSelectionMode?: 'existing' | 'new'
     hasSampleSolution: boolean
     numberOfInputs: string
-    answerCollection: string
-    correctAnswers?: number[] | null
+    answerCollection?: string
+    manuallyCreatedItems?: { id: number; value: string }[] // new implicit AC: items that should be evaluated with respect to the defined criteria
+    correctAnswers?: number[]
   }
 }
 

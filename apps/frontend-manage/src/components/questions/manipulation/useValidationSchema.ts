@@ -412,6 +412,29 @@ function useOptionsSchemaSelection({
 
   return {
     hasSampleSolution: yup.boolean(),
+    itemSelectionMode: yup.string().oneOf(['existing', 'new']),
+    answerCollection: yup.string().when('itemSelectionMode', {
+      is: (value?: 'existing' | 'new') => !value || value === 'existing',
+      then: (schema) =>
+        schema.required(t('manage.formErrors.SEanswerCollectionRequired')),
+      otherwise: (schema) => schema,
+    }),
+    manuallyCreatedItems: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.number().required(),
+          value: yup.string().required(),
+        })
+      )
+      .when('itemSelectionMode', {
+        is: (value?: 'existing' | 'new') => value === 'new',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.CSNewItemsRequired'))
+            .min(1, t('manage.formErrors.CSNewItemsRequired')),
+        otherwise: (schema) => schema,
+      }),
     numberOfInputs: yup
       .number()
       .required(t('manage.formErrors.SEnumberOfInputsRequired'))
@@ -420,9 +443,6 @@ function useOptionsSchemaSelection({
         numberOfAnswerOptions ? numberOfAnswerOptions - 1 : 100,
         t('manage.formErrors.SEnumberOfInputsMax')
       ),
-    answerCollection: yup
-      .string()
-      .required(t('manage.formErrors.SEanswerCollectionRequired')),
     correctAnswers: yup
       .array()
       .of(yup.number())

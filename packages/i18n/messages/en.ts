@@ -1231,10 +1231,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
-      SEAnswerCollectionRequired:
-        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
       CSAnswerCollectionRequired:
         'To create a case study question, you need access to an answer collection or can choose to <link>enter the case study items manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
+      SEAnswerCollectionRequired:
+        'To create a case selection question, you need access to an answer collection or can choose to <link>enter the available options manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
       answerCollection: 'Answer collection',
       caseStudyAnswerCollectionTooltip:
         'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',
@@ -1249,6 +1249,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmCollectionChange:
         'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
       selectedItems: 'Selected items',
+      selectionItems: 'Items for Selection',
+      newSelectionItemsTooltip:
+        'Please enter the items from which the students should select the correct options. They will automatically be combined into a new answer collection when saving the question.',
       definedItems: 'New case study items',
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
@@ -1258,6 +1261,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Want to enter the case study items manually instead?',
       enterItemsManuallyExplanation:
         'This interface allows you to enter your case study items manually. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of case study items from an existing collection.</button>',
+      enterSelectionItemsManually:
+        'Do you want to enter the items to be selected manually?',
+      enterSelectionItemsManuallyExplanation:
+        'This interface allows you to enter the items for your selection question directly in the context of the question. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of items from an existing collection.</button>',
       selectCaseStudyItems: 'Select items...',
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',

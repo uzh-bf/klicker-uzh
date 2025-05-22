@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
-import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,
@@ -31,7 +30,6 @@ function CaseStudyOptions({
   hasSampleSolution,
   setAnswerCollectionEntries,
 }: CaseStudyOptionsProps) {
-  const t = useTranslations()
   const [selectionMode, _, selectionModeHelpers] = useField<'existing' | 'new'>(
     'options.itemSelectionMode'
   )

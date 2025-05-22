@@ -6,8 +6,8 @@ function useAnswerCollectionChangeEffect({
   helpers,
   collectionAnswers,
 }: {
-  field: FieldInputProps<number[]>
-  helpers: FieldHelperProps<number[]>
+  field: FieldInputProps<number[] | undefined>
+  helpers: FieldHelperProps<number[] | undefined>
   collectionAnswers: { label: string; value: number }[]
 }) {
   useEffect(() => {
