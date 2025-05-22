@@ -1235,7 +1235,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SEAnswerCollectionRequired:
         'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter <link>"Ressourcen"</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.',
       CSAnswerCollectionRequired:
-        'Zur Erstellung von Fallstudien benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter <link>"Ressourcen"</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.',
+        'Zur Erstellung von Fallstudien-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Fallstudien-Elemente manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
       caseStudyAnswerCollectionTooltip:

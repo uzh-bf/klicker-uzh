@@ -1234,7 +1234,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       SEAnswerCollectionRequired:
         'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
       CSAnswerCollectionRequired:
-        'To create case studies, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users through the catalog.',
+        'To create a case study question, you need access to an answer collection or can choose to <link>enter the case study items manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
       answerCollection: 'Answer collection',
       caseStudyAnswerCollectionTooltip:
         'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',

@@ -50,6 +50,7 @@ function CaseStudyManualItemCreation({
                 setItemSelectionMode('existing')
               }}
               className="cursor-pointer hover:underline"
+              data-cy="switch-to-existing-collection-selection"
             >
               {text}
             </span>
@@ -67,6 +68,7 @@ function CaseStudyManualItemCreation({
       <Creatable
         isClearable
         isMulti
+        id="inline-answer-collection-options"
         isDisabled={disabled}
         value={
           manualItemsField.value?.map((item) => ({

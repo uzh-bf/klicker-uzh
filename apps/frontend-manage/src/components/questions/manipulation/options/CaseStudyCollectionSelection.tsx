@@ -1,8 +1,14 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormLabel, SelectField } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormLabel,
+  SelectField,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { Dispatch, SetStateAction, useState } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
@@ -74,6 +80,40 @@ function CaseStudyCollectionSelection({
     collectionAnswers,
   })
 
+  if (collections.length === 0) {
+    return (
+      <UserNotification type="warning" className={{ root: 'text-sm' }}>
+        {t.rich('manage.elements.CSAnswerCollectionRequired', {
+          link: (text) => (
+            <span
+              className="cursor-pointer font-bold underline"
+              onClick={() =>
+                // switch to the creation mode for new answer collection options
+                setItemSelectionMode('new')
+              }
+              data-cy="create-inline-answer-collection"
+            >
+              {text}
+            </span>
+          ),
+          link2: (text) => (
+            <Link
+              href="/resources/answerCollections"
+              className="font-bold underline"
+            >
+              {text}
+            </Link>
+          ),
+          link3: (text) => (
+            <Link href="/resources/catalog" className="font-bold underline">
+              {text}
+            </Link>
+          ),
+        })}
+      </UserNotification>
+    )
+  }
+
   return (
     <>
       <div className="-mb-3 flex flex-row items-end gap-2">
@@ -134,6 +174,7 @@ function CaseStudyCollectionSelection({
           className={{
             root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
           }}
+          data={{ cy: `create-inline-answer-collection` }}
         >
           {t('manage.elements.enterItemsManually')}
         </Button>
