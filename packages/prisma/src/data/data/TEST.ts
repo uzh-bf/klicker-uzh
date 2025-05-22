@@ -842,6 +842,36 @@ export const LIVE_QUIZZES = [
     ],
   },
   {
+    id: 'ef1b2304-6b61-4eb0-98e0-b3fb8105ba2a',
+    name: 'Live Quiz Template',
+    displayName: 'Live Quiz Template',
+    isModerationEnabled: false,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
+    isGamificationEnabled: true,
+    status: PublicationStatus.TEMPLATE,
+    defaultPoints: 50,
+    defaultCorrectPoints: 100,
+    maxBonusPoints: 100,
+    timeToZeroBonus: 200,
+    blocks: [
+      {
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        timeLimit: undefined,
+      },
+      {
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        timeLimit: 200,
+      },
+    ],
+    template: {
+      description:
+        'General description of the template, that can be shown as an information to the user.',
+      instructions:
+        'General instructions of the template, how to use it and what reasoning is behind the composition.',
+    },
+  },
+  {
     id: '20325ec6-0ce7-4e24-bd79-5c1a46f64c47',
     name: 'Test Live Quiz 2',
     displayName: 'Test Live Quiz 2',

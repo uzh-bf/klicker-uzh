@@ -2,6 +2,7 @@ import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -461,6 +462,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             },
           })),
         },
+        templateInfo: data.template
+          ? { create: { ...data.template } }
+          : undefined,
         owner: {
           connect: {
             id: USER_ID_TEST,
@@ -482,6 +486,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
     })
 
+    // recompute derived permissions for the live quiz
     await recomputeDerivedPermissions(
       {
         liveQuizId: liveQuiz.id,
@@ -489,6 +494,24 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       prisma
     )
+
+    // create a catalog collection assignment if the live quiz is in template status
+    if (data.status === Prisma.PublicationStatus.TEMPLATE) {
+      await prisma.catalogCollectionAssignment.upsert({
+        where: {
+          liveQuizId_catalogCollectionId: {
+            liveQuizId: liveQuiz.id,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+        create: {
+          access: Prisma.ObjectAccess.PUBLIC,
+          liveQuiz: { connect: { id: liveQuiz.id } },
+          catalogCollection: { connect: { id: MISSING_CATALOG_COLLECTION_ID } },
+        },
+        update: {},
+      })
+    }
   }
 
   // create participants
