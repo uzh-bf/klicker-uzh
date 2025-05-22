@@ -23,8 +23,8 @@ import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
 import LiveQuizTemplateTimeLimitModal from './liveQuiz/LiveQuizTemplateTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
-import processLiveQuizTemplateBlocksData from './liveQuiz/processLiveQuizTemplateBlocksData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
+import useProcessLiveQuizTemplateBlocksData from './liveQuiz/useProcessLiveQuizTemplateBlocksData'
 import markTemplateElementAsProcessed from './markTemplateElementAsProcessed'
 import SectionCollapsible, {
   TemplateCollapsibleState,
@@ -45,6 +45,11 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+
+  // get processing function that creates the required answer collections
+  // and prepares the element data for submission
+  const { processLiveQuizTemplateBlocksData } =
+    useProcessLiveQuizTemplateBlocksData()
 
   // mutation for submission
   const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
@@ -498,9 +503,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                 }
 
                 try {
-                  const processedBlocks = processLiveQuizTemplateBlocksData({
-                    data: quizData,
-                  })
+                  const processedBlocks =
+                    await processLiveQuizTemplateBlocksData({
+                      data: quizData,
+                    })
 
                   const { data: res } = await createLiveQuizFromTemplate({
                     variables: {

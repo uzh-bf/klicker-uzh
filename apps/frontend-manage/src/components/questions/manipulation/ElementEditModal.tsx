@@ -3,7 +3,6 @@ import {
   CreateAnswerCollectionDocument,
   ElementStatus,
   ElementType,
-  GetAnswerCollectionsInfoDocument,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
   GetUserTagsDocument,
@@ -21,6 +20,8 @@ import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
+  createInlineCaseStudyCollection,
+  createInlineSelectionCollection,
   prepareCaseStudyArgs,
   prepareChoicesArgs,
   prepareContentArgs,
@@ -29,12 +30,7 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import {
-  ElementFormTypes,
-  ElementFormTypesCaseStudy,
-  ElementFormTypesCaseStudySolutions,
-  ElementFormTypesSelection,
-} from './types'
+import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 
 export enum ElementEditMode {
@@ -261,86 +257,30 @@ function ElementEditModal({
           }
 
           case ElementType.Selection: {
-            // make a copy of the form values (passed by reference) to optionally update them in case of an inline answer collection definition
-            const innerValues: ElementFormTypesSelection & {
-              status: ElementStatus
-            } = JSON.parse(JSON.stringify(values))
-
-            // if the items for the case study question were defined inline, create a new answer collection from them
-            if (values.options.itemSelectionMode === 'new') {
-              if (!values.options.manuallyCreatedItems) {
-                return false
-              }
-
-              const { data } = await createAnswerCollection({
-                variables: {
-                  name: `AC Selection Question ${values.name}`,
-                  description: `Answer collection containing all the items used in the context of the selection question ${values.name}`,
-                  answers:
-                    values.options.manuallyCreatedItems.map(
-                      (item) => item.value
-                    ) ?? [],
-                },
-                update: (cache, { data }) => {
-                  if (!data?.createAnswerCollection) return
-
-                  const queryData = cache.readQuery({
-                    query: GetAnswerCollectionsInfoDocument,
+            // if the items for the selection question were defined inline, create a new answer collection from them
+            const innerValues =
+              values.options.itemSelectionMode === 'new'
+                ? await createInlineSelectionCollection({
+                    values,
+                    createAnswerCollection,
                   })
-                  const previousCollections =
-                    queryData?.getAnswerCollectionsInfo
-                  if (!previousCollections) return
+                : undefined
 
-                  cache.writeQuery({
-                    query: GetAnswerCollectionsInfoDocument,
-                    data: {
-                      getAnswerCollectionsInfo: [
-                        ...previousCollections,
-                        data.createAnswerCollection,
-                      ],
-                    },
-                  })
-                },
-              })
-
-              if (!data?.createAnswerCollection) {
-                return false
-              }
-
-              // set the answer collection id to the newly created answer collection
-              innerValues.options.answerCollection = String(
-                data.createAnswerCollection.id
-              )
-
-              if (values.options.hasSampleSolution) {
-                // create a map between the old item index and the new correct answer collection entry ids
-                const entries = data.createAnswerCollection.entries ?? []
-                const itemOldIdNewIdMap = new Map<number, number>()
-                values.options.manuallyCreatedItems.forEach((createdItem) => {
-                  const entry = entries.find(
-                    (entry) => entry.value === createdItem.value
-                  )
-                  if (entry) {
-                    itemOldIdNewIdMap.set(createdItem.id, entry.id)
-                  }
-                })
-
-                // update the ids of the correct answer options
-                innerValues.options.correctAnswers =
-                  values.options.correctAnswers?.flatMap((oldId) => {
-                    const newItemId = itemOldIdNewIdMap.get(oldId)
-                    if (typeof newItemId === 'undefined') {
-                      return []
-                    }
-                    return [newItemId]
-                  }) ?? []
-              }
+            // if the creation was not successful, return early
+            if (
+              values.options.itemSelectionMode === 'new' &&
+              (innerValues === null || typeof innerValues === 'undefined')
+            ) {
+              return false
             }
 
             const args = prepareSelectionArgs({
               elementId,
               isDuplication,
-              values: innerValues,
+              values:
+                values.options.itemSelectionMode === 'new'
+                  ? innerValues!
+                  : values,
             })
 
             const result = await manipulateSelectionQuestion({
@@ -360,108 +300,30 @@ function ElementEditModal({
           }
 
           case ElementType.CaseStudy: {
-            // make a copy of the form values (passed by reference) to optionally update them in case of an inline answer collection definition
-            const innerValues: ElementFormTypesCaseStudy & {
-              status: ElementStatus
-            } = JSON.parse(JSON.stringify(values))
-
             // if the items for the case study question were defined inline, create a new answer collection from them
-            if (values.options.itemSelectionMode === 'new') {
-              if (!values.options.manuallyCreatedItems) {
-                return false
-              }
-
-              const { data } = await createAnswerCollection({
-                variables: {
-                  name: `AC Case Study ${values.name}`,
-                  description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
-                  answers:
-                    values.options.manuallyCreatedItems.map(
-                      (item) => item.value
-                    ) ?? [],
-                },
-                update: (cache, { data }) => {
-                  if (!data?.createAnswerCollection) return
-
-                  const queryData = cache.readQuery({
-                    query: GetAnswerCollectionsInfoDocument,
+            const innerValues =
+              values.options.itemSelectionMode === 'new'
+                ? await createInlineCaseStudyCollection({
+                    values,
+                    createAnswerCollection,
                   })
-                  const previousCollections =
-                    queryData?.getAnswerCollectionsInfo
-                  if (!previousCollections) return
+                : undefined
 
-                  cache.writeQuery({
-                    query: GetAnswerCollectionsInfoDocument,
-                    data: {
-                      getAnswerCollectionsInfo: [
-                        ...previousCollections,
-                        data.createAnswerCollection,
-                      ],
-                    },
-                  })
-                },
-              })
-
-              if (!data?.createAnswerCollection) {
-                return false
-              }
-
-              // set the answer collection id to the newly created answer collection
-              innerValues.options.answerCollection = String(
-                data.createAnswerCollection.id
-              )
-
-              // set the items to the newly created answer collection items (in the same order as the values were defined)
-              const entries = data.createAnswerCollection.entries ?? []
-              const entryIds = values.options.manuallyCreatedItems.flatMap(
-                (createdItem) => {
-                  const entry = entries.find(
-                    (entry) => entry.value === createdItem.value
-                  )
-                  return entry ? entry.id : []
-                }
-              )
-              innerValues.options.selectedItems = entryIds
-
-              if (values.options.hasSampleSolution) {
-                // create a map between the old item id and the new correct answer collection entry ids
-                const itemOldIdNewIdMap = new Map<number, number>()
-                values.options.manuallyCreatedItems.forEach((createdItem) => {
-                  const entry = entries.find(
-                    (entry) => entry.value === createdItem.value
-                  )
-                  if (entry) {
-                    itemOldIdNewIdMap.set(createdItem.id, entry.id)
-                  }
-                })
-
-                // update the ids of the criterion solutions for all cases
-                innerValues.options.cases = values.options.cases.map((c) => {
-                  const mappedSolutions: ElementFormTypesCaseStudySolutions =
-                    Object.fromEntries(
-                      Object.entries(c.solutions ?? {}).flatMap(
-                        ([key, value]) => {
-                          const oldId = parseInt(key.split('-')[1])
-                          const newItemId = itemOldIdNewIdMap.get(oldId)
-
-                          if (typeof newItemId === 'undefined') {
-                            return []
-                          }
-
-                          return [[`itemId-${newItemId}`, value]]
-                        }
-                      )
-                    )
-
-                  return { ...c, solutions: mappedSolutions }
-                })
-              }
+            // if the creation was not successful, return early
+            if (
+              values.options.itemSelectionMode === 'new' &&
+              (innerValues === null || typeof innerValues === 'undefined')
+            ) {
+              return false
             }
 
             const args = prepareCaseStudyArgs({
               elementId,
               isDuplication,
-              values: innerValues,
+              values:
+                values.options.itemSelectionMode === 'new'
+                  ? innerValues!
+                  : values,
             })
 
             const result = await manipulateCaseStudyQuestion({

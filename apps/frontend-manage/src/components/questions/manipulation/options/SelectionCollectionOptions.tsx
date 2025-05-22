@@ -102,7 +102,7 @@ function SelectionCollectionOptions({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <div
         className={twMerge(
           'flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-4',

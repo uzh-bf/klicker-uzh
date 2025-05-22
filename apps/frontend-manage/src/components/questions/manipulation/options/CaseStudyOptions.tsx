@@ -52,7 +52,7 @@ function CaseStudyOptions({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-1.5">
       {(selectionMode.value === 'existing' ||
         typeof selectionMode.value === 'undefined') && (
         <CaseStudyCollectionSelection

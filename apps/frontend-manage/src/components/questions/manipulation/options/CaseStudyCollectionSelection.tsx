@@ -119,7 +119,7 @@ function CaseStudyCollectionSelection({
       <div
         className={twMerge(
           'flex flex-row items-end gap-2',
-          creationMode && '-mb-3'
+          creationMode && '-mb-1.5'
         )}
       >
         <SelectField
