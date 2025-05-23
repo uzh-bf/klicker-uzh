@@ -110,6 +110,7 @@ function ElementBarChart({
                 position: 'insideLeft',
                 value: t('shared.generic.responses'),
                 className: textSize.textXl,
+                style: { textAnchor: 'middle' },
               }}
             />
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
