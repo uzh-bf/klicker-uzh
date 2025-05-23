@@ -34,10 +34,7 @@ function SelectionOptions({
 
   const { data, loading, refetch } = useQuery(
     GetAnswerCollectionsElementsDocument,
-    {
-      variables: { templateId },
-      fetchPolicy: 'network-only',
-    }
+    { variables: { templateId }, fetchPolicy: 'network-only' }
   )
   const collections = data?.getAnswerCollectionsElements ?? []
 

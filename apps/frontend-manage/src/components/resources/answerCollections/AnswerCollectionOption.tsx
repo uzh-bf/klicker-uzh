@@ -26,6 +26,8 @@ function AnswerCollectionOption({
   setEditDisabled,
   onTouched,
   onSuccess,
+  inlineEditing,
+  refetchAnswerCollections,
 }: {
   entry: AnswerCollectionEntry
   otherEntries: string[]
@@ -36,6 +38,8 @@ function AnswerCollectionOption({
   setEditDisabled: Dispatch<SetStateAction<boolean>>
   onTouched: () => void
   onSuccess: () => void
+  inlineEditing: boolean
+  refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
@@ -91,6 +95,11 @@ function AnswerCollectionOption({
             },
             refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
           })
+
+          // if the answer collection is edited inline (in a question context), refetch the selection
+          if (inlineEditing) {
+            await refetchAnswerCollections?.()
+          }
 
           onSuccess()
         }}

@@ -9,10 +9,11 @@ import {
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesCaseStudy } from '../types'
+import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
@@ -34,7 +35,7 @@ function CaseStudyCollectionSelection({
   disabled: boolean
   creationMode: boolean
   isTemplate: boolean
-  collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
+  collections: Pick<AnswerCollection, 'id' | 'name' | 'isEditor' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
   setAnswerCollectionEntries: Dispatch<
@@ -77,6 +78,17 @@ function CaseStudyCollectionSelection({
     helpers: itemsHelpers,
     collectionAnswers,
   })
+
+  // locally store the selected answer collection
+  const selectedCollection = useMemo(() => {
+    if (typeof collectionField.value === 'undefined') {
+      return undefined
+    }
+
+    return collections.find(
+      (collection) => collection.id === parseInt(collectionField.value!)
+    )
+  }, [collectionField.value, collections])
 
   if (collections.length === 0) {
     return (
@@ -165,6 +177,13 @@ function CaseStudyCollectionSelection({
             className={{ root: twMerge(loading ? 'animate-spin' : '') }}
           />
         </Button>
+        <AnswerCollectionInlineEditButton
+          disabled={!selectedCollection?.isEditor}
+          selectedCollectionId={
+            collectionField.value ? parseInt(collectionField.value) : undefined
+          }
+          refetchAnswerCollections={refetchAnswerCollections}
+        />
       </div>
       {creationMode && (
         <Button

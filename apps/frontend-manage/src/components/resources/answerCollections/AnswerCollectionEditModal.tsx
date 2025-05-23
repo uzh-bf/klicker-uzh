@@ -24,16 +24,20 @@ function AnswerCollectionEditModal({
   collectionId,
   open,
   onClose,
+  inlineEditing = false,
+  refetchAnswerCollections,
 }: {
   collectionId: number
   open: boolean
   onClose: () => void
+  inlineEditing?: boolean
+  refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
   const [successToast, setSuccessToast] = useState(false)
   const [optionsEditingDisabled, setOptionsEditingDisabled] = useState(false)
   const [accordionState, setAccordionState] = useState<'metadata' | 'options'>(
-    'metadata'
+    inlineEditing ? 'options' : 'metadata'
   )
   const [metadataTouched, setMetadataTouched] = useState(false)
   const [optionsTouched, setOptionsTouched] = useState(false)
@@ -91,7 +95,7 @@ function AnswerCollectionEditModal({
       <Accordion
         collapsible
         type="single"
-        defaultValue="metadata"
+        defaultValue={'metadata'}
         value={accordionState}
         onValueChange={(newValue) => {
           if (metadataTouched || optionsTouched) {
@@ -119,6 +123,8 @@ function AnswerCollectionEditModal({
               }}
               metadataTouched={metadataTouched}
               setMetadataTouched={setMetadataTouched}
+              inlineEditing={inlineEditing}
+              refetchAnswerCollections={refetchAnswerCollections}
             />
           </AccordionContent>
         </AccordionItem>
@@ -176,6 +182,8 @@ function AnswerCollectionEditModal({
                       setOptionsTouched(false)
                       setSuccessToast(true)
                     }}
+                    inlineEditing={inlineEditing}
+                    refetchAnswerCollections={refetchAnswerCollections}
                   />
                 ))
               )}
@@ -194,6 +202,8 @@ function AnswerCollectionEditModal({
                 setOptionsTouched(false)
                 setSuccessToast(true)
               }}
+              inlineEditing={inlineEditing}
+              refetchAnswerCollections={refetchAnswerCollections}
             />
           </AccordionContent>
         </AccordionItem>

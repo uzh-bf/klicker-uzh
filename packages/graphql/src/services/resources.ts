@@ -190,19 +190,33 @@ export async function getAnswerCollectionsElements(
     }
   }
 
+  // get the ids of all answer collections that are shared with the user
+  const sharedAnswerCollectionIds = user.objects
+    .filter((object) => object.answerCollection)
+    .map((object) => object.answerCollection!.id)
+
   const combinedAnswerCollections = [
     ...user.objects.flatMap((object) =>
       object.answerCollection
         ? {
             ...object.answerCollection,
             isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+            isEditor:
+              object.permissionLevel === DB.PermissionLevel.WRITE ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN ||
+              object.permissionLevel === DB.PermissionLevel.OWNER,
           }
         : []
     ),
-    ...templateAnswerCollections.map((collection) => ({
-      ...collection,
-      isShared: false,
-    })),
+    ...templateAnswerCollections
+      .filter(
+        (collection) => !sharedAnswerCollectionIds.includes(collection.id)
+      )
+      .map((collection) => ({
+        ...collection,
+        isShared: false,
+        isEditor: false,
+      })),
   ]
 
   // return deduplicated list of answer collections (based on id)

@@ -1238,6 +1238,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Auswahl-Möglichkeiten manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
+      notSufficientPermissionsEditCollection:
+        'Ihre Berechtigungen für diese Antwort-Sammlung sind nicht ausreichend, um diese zu bearbeiten.',
       caseStudyAnswerCollectionTooltip:
         'Bitte wählen Sie eine Antwort-Sammlung, aus welcher Sie die in der Fallstudie zu bewertenden Elemente auswählen möchten.',
       numberOfInputs: 'Anzahl Eingabefelder',

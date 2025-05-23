@@ -10,10 +10,11 @@ import {
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesSelection } from '../types'
+import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
@@ -45,7 +46,7 @@ function SelectionCollectionOptions({
   const [solutions, _, solutionHelpers] = useField<
     ElementFormTypesSelection['options']['correctAnswers']
   >('options.correctAnswers')
-  const [__, ____, collectionHelpers] = useField<
+  const [collectionField, ___, collectionHelpers] = useField<
     ElementFormTypesSelection['options']['answerCollection']
   >('options.answerCollection')
 
@@ -69,6 +70,17 @@ function SelectionCollectionOptions({
     helpers: solutionHelpers,
     collectionAnswers,
   })
+
+  // locally store the selected answer collection
+  const selectedCollection = useMemo(() => {
+    if (typeof collectionField.value === 'undefined') {
+      return undefined
+    }
+
+    return collections.find(
+      (collection) => collection.id === parseInt(collectionField.value!)
+    )
+  }, [collectionField.value, collections])
 
   if (collections.length === 0) {
     return (
@@ -148,6 +160,15 @@ function SelectionCollectionOptions({
               className={{ root: twMerge(loading ? 'animate-spin' : '') }}
             />
           </Button>
+          <AnswerCollectionInlineEditButton
+            disabled={!selectedCollection?.isEditor}
+            selectedCollectionId={
+              collectionField.value
+                ? parseInt(collectionField.value)
+                : undefined
+            }
+            refetchAnswerCollections={refetchCollections}
+          />
         </div>
 
         <FormikNumberField
