@@ -73,7 +73,7 @@ function CSOneDimScatterPlot({
           left: 30,
         }}
       >
-        <CartesianGrid />
+        <CartesianGrid vertical={true} horizontal={false} />
         <XAxis
           allowDataOverflow
           type="number"
