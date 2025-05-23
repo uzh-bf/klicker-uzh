@@ -1,4 +1,4 @@
-import { FormLabel, UserNotification } from '@uzh-bf/design-system'
+import { Button, FormLabel, UserNotification } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -40,21 +40,6 @@ function CaseStudyManualItemCreation({
       <UserNotification type="info">
         {t.rich('manage.elements.enterItemsManuallyExplanation', {
           b: (text) => <b>{text}</b>,
-          button: (text) => (
-            <span
-              onClick={() => {
-                // reset the selected items
-                setAnswerCollectionEntries([])
-
-                // switch to the selection mode for existing answer collections
-                setItemSelectionMode('existing')
-              }}
-              className="cursor-pointer hover:underline"
-              data-cy="switch-to-existing-collection-selection"
-            >
-              {text}
-            </span>
-          ),
         })}
       </UserNotification>
 
@@ -161,6 +146,22 @@ function CaseStudyManualItemCreation({
         placeholder={t('manage.elements.selectCaseStudyItems')}
         noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
       />
+      <Button
+        basic
+        onClick={() => {
+          // reset the selected items
+          setAnswerCollectionEntries([])
+
+          // switch to the selection mode for existing answer collections
+          setItemSelectionMode('existing')
+        }}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 pt-1.5 text-sm hover:bg-transparent hover:underline',
+        }}
+        data={{ cy: `switch-to-existing-collection-selection` }}
+      >
+        {t('manage.elements.returnSelectionItemsCollection')}
+      </Button>
     </div>
   )
 }

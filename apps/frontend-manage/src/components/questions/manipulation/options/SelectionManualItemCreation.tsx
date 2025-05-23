@@ -1,4 +1,5 @@
 import {
+  Button,
   FormikNumberField,
   FormLabel,
   UserNotification,
@@ -144,6 +145,22 @@ function SelectionManualItemCreation({
         placeholder={t('manage.elements.selectCaseStudyItems')}
         noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
       />
+      <Button
+        basic
+        onClick={() => {
+          // reset the selected items
+          setAnswerCollectionEntries([])
+
+          // switch to the selection mode for existing answer collections
+          switchToCollectionSelection()
+        }}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
+        }}
+        data={{ cy: `switch-to-existing-collection-selection` }}
+      >
+        {t('manage.elements.returnSelectionItemsCollection')}
+      </Button>
 
       <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-end">
         <FormikNumberField
@@ -154,7 +171,7 @@ function SelectionManualItemCreation({
           label={t('manage.elements.numberOfInputs')}
           labelType="small"
           data={{ cy: 'configure-number-of-inputs' }}
-          className={{ field: 'mt-3 w-40' }}
+          className={{ field: 'mt-1 w-40' }}
         />
 
         {values.options.hasSampleSolution ? (
