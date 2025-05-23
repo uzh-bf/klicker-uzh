@@ -263,13 +263,8 @@ function CSTwoDimScatterPlot({
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
                 <p className="font-bold">{data.itemLabel}</p>
-                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)}`}</p>
-                <p>{`${data.yCriterionName}: ${getLabelForValue(data.y, yCriterionObj, yLower, yUpper)}`}</p>
-                {data.sigmaX &&
-                  data.sigmaY &&
-                  data.aggregationType === 'mean' && (
-                    <p className="text-xs italic">{`Standard Deviation: X: ±${data.sigmaX.toFixed(2)}, Y: ±${data.sigmaY.toFixed(2)}`}</p>
-                  )}
+                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)} ${typeof data.sigmaX !== 'undefined' ? `(± ${data.sigmaX.toFixed(2)})` : ''}`}</p>
+                <p>{`${data.yCriterionName}: ${getLabelForValue(data.y, yCriterionObj, yLower, yUpper)} ${typeof data.sigmaY !== 'undefined' ? `(± ${data.sigmaY.toFixed(2)})` : ''}`}</p>
               </div>
             )
           }}
