@@ -88,6 +88,7 @@ function CSTwoDimScatterPlot({
             position: 'bottom',
             offset: 15,
             className: textSize.textXl,
+            style: { textAnchor: 'middle' },
           }}
           tick={(props) => {
             const { x, y, payload } = props
@@ -169,6 +170,7 @@ function CSTwoDimScatterPlot({
             position: 'left',
             offset: -10,
             className: textSize.textXl,
+            style: { textAnchor: 'middle' },
           }}
           tick={(props) => {
             const { x, y, payload } = props
