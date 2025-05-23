@@ -35,6 +35,8 @@ export type CaseStudyScatterPlotData = {
     yCriterionName: string
     x: number
     y: number | undefined
+    sigmaX?: number
+    sigmaY?: number
   }[]
 }
 
