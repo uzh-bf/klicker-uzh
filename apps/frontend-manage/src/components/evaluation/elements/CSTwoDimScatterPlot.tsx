@@ -3,8 +3,10 @@ import {
   CaseStudyElementResultCriterionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+import { useState } from 'react'
 import {
   CartesianGrid,
+  ErrorBar,
   LabelList,
   Legend,
   ResponsiveContainer,
@@ -47,6 +49,14 @@ function CSTwoDimScatterPlot({
   const xCriterionObj = criteria.find((c) => c.id === xCriterion)
   const yCriterionObj = criteria.find((c) => c.id === yCriterion)
 
+  // state for hover to show error bars
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    caseId: string
+    itemLabel: string
+    x: number
+    y: number
+  } | null>(null)
+
   // check if labels exist for the criteria
   const xHasLabels = !!(
     xCriterionObj?.labels?.min && xCriterionObj?.labels?.max
@@ -80,6 +90,7 @@ function CSTwoDimScatterPlot({
       >
         <CartesianGrid />
         <XAxis
+          allowDataOverflow
           type="number"
           dataKey="x"
           domain={[xLower, xUpper]}
@@ -160,6 +171,7 @@ function CSTwoDimScatterPlot({
           tickLine={true}
         />
         <YAxis
+          allowDataOverflow
           type="number"
           dataKey="y"
           domain={[yLower, yUpper]}
@@ -167,7 +179,7 @@ function CSTwoDimScatterPlot({
             value: yCriterionObj?.name,
             angle: -90,
             position: 'left',
-            offset: -10,
+            offset: -7,
             className: textSize.textXl,
           }}
           tick={(props) => {
@@ -251,33 +263,119 @@ function CSTwoDimScatterPlot({
                 <p className="font-bold">{data.itemLabel}</p>
                 <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)}`}</p>
                 <p>{`${data.yCriterionName}: ${getLabelForValue(data.y, yCriterionObj, yLower, yUpper)}`}</p>
+                {data.sigmaX &&
+                  data.sigmaY &&
+                  data.aggregationType === 'mean' && (
+                    <p className="text-xs italic">{`Standard Deviation: X: ±${data.sigmaX.toFixed(2)}, Y: ±${data.sigmaY.toFixed(2)}`}</p>
+                  )}
               </div>
             )
           }}
         />
+
+        {/* render the base scatter points for all cases & values */}
         {selectedCases.map((caseId) => {
           const caseIx = cases.findIndex((c) => c.id === caseId)
+
+          // do not show the currently hovered point in the scatter plot
+          const filteredData = hoveredPoint
+            ? scatterData[caseId].filter(
+                (point) =>
+                  !(
+                    hoveredPoint.caseId === caseId &&
+                    hoveredPoint.itemLabel === point.itemLabel
+                  )
+              )
+            : scatterData[caseId]
 
           return (
             <Scatter
               key={caseId}
               name={cases[caseIx]?.name}
-              data={scatterData[caseId]}
+              data={filteredData}
               fill={CHART_COLORS[caseIx % 12]}
               shape={(props: any) => (
-                <circle cx={props.cx} cy={props.cy} r={6} fill={props.fill} />
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={6}
+                  fill={props.fill}
+                  opacity={0.8}
+                  onMouseEnter={() =>
+                    setHoveredPoint({
+                      caseId,
+                      itemLabel: props.payload.itemLabel,
+                      x: props.payload.x,
+                      y: props.payload.y,
+                    })
+                  }
+                  onMouseLeave={() => setHoveredPoint(null)}
+                  style={{ cursor: 'pointer' }}
+                />
               )}
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="itemLabel"
-                position="top"
+                position="bottom"
                 offset={8}
                 className={textSize.textLg}
               />
             </Scatter>
           )
         })}
+
+        {/* render the hovered point with error bars */}
+        {hoveredPoint &&
+          selectedCases.map((caseId) => {
+            if (caseId !== hoveredPoint.caseId) return null
+
+            const caseIx = cases.findIndex((c) => c.id === caseId)
+            const hoveredPointData = scatterData[caseId].filter(
+              (point) => point.itemLabel === hoveredPoint.itemLabel
+            )
+            if (hoveredPointData.length === 0) return null
+
+            return (
+              <Scatter
+                legendType="none"
+                key={`${caseId}-hovered`}
+                data={hoveredPointData}
+                fill={CHART_COLORS[caseIx % 12]}
+                shape={(props: any) => (
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={8}
+                    fill={props.fill}
+                    opacity={1}
+                    stroke="#000"
+                    strokeWidth={1}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                )}
+                isAnimationActive={false}
+              >
+                <ErrorBar
+                  dataKey="sigmaX"
+                  width={4}
+                  strokeWidth={2}
+                  opacity={0.8}
+                  stroke={CHART_COLORS[caseIx % 12]}
+                  direction="x"
+                />
+                <ErrorBar
+                  dataKey="sigmaY"
+                  width={4}
+                  strokeWidth={2}
+                  opacity={0.8}
+                  stroke={CHART_COLORS[caseIx % 12]}
+                  direction="y"
+                />
+              </Scatter>
+            )
+          })}
         <Legend
           align="right"
           verticalAlign="top"

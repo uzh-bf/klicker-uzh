@@ -74,6 +74,14 @@ function useCaseStudyScatterData({
             yCriterionName: yCriterionObject?.name ?? '',
             x: xValue,
             y: yValue,
+            sigmaX:
+              aggregationType === 'mean'
+                ? xCriterionObject?.statistics?.sd
+                : undefined, // standard deviation in x direction (only set around mean)
+            sigmaY:
+              aggregationType === 'mean'
+                ? yCriterionObject?.statistics?.sd
+                : undefined, // standard deviation in y direction (only set around mean)
           }
         })
 
@@ -103,6 +111,7 @@ function useCaseStudyScatterData({
     xCriterion,
     yCriterion,
     aggregationType,
+    setInitialLoading,
   ])
 }
 
