@@ -116,7 +116,6 @@ function ElementEditForm({
         setSubmitting(false)
         if (!success) {
           setFailureToast(true)
-          setFailureToast(true)
         } else {
           onSuccess()
         }

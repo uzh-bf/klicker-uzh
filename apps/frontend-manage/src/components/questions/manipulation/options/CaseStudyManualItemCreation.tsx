@@ -67,7 +67,7 @@ function CaseStudyManualItemCreation({
             value: item.id,
           })) ?? []
         }
-        classNames={{ container: () => 'w-full h-9' }}
+        classNames={{ container: () => 'w-full h-9', menu: () => 'hidden' }}
         onChange={(newValue) => {
           // set the new collection items
           const prevItems = manualItemsField.value ?? []
@@ -143,7 +143,7 @@ function CaseStudyManualItemCreation({
             ])
           }
         }}
-        placeholder={t('manage.elements.selectCaseStudyItems')}
+        placeholder={t('manage.elements.insertNewItems')}
         noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
       />
       <Button
@@ -160,7 +160,7 @@ function CaseStudyManualItemCreation({
         }}
         data={{ cy: `switch-to-existing-collection-selection` }}
       >
-        {t('manage.elements.returnSelectionItemsCollection')}
+        {t('manage.elements.returnItemsCollectionSelection')}
       </Button>
     </div>
   )

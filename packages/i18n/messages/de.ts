@@ -1244,7 +1244,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       correctAnswerOptions: 'Korrekte Antwortoptionen',
       correctAnswerOptionsTooltip:
         'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
-      selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
+      selectCorrectAnswerOptions: 'Korrekte Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
       changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
       confirmCollectionChange:
@@ -1271,6 +1271,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       returnSelectionItemsCollection:
         'Möchsten Sie zur Auswahl einer bestehenden Sammlung zurückkehren?',
       selectCaseStudyItems: 'Elemente auswählen...',
+      insertNewItems: 'Elemente erfassen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:

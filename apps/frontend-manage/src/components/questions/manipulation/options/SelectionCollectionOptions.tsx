@@ -200,7 +200,7 @@ function SelectionCollectionOptions({
               onChange={(newValue) =>
                 solutionHelpers.setValue(newValue.map((tag) => tag.value))
               }
-              placeholder={t('manage.elements.selectAnswerOptions')}
+              placeholder={t('manage.elements.selectCorrectAnswerOptions')}
               noOptionsMessage={() =>
                 t('manage.elements.noMatchingOptionFound')
               }

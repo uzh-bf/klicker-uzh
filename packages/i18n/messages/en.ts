@@ -1243,7 +1243,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       correctAnswerOptions: 'Correct answer options',
       correctAnswerOptionsTooltip:
         'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
-      selectAnswerOptions: 'Select answer options...',
+      selectCorrectAnswerOptions: 'Select correct answer options...',
       noMatchingOptionFound: 'No matching option found',
       changeOfAnswerCollection: 'Change of answer collection',
       confirmCollectionChange:
@@ -1270,6 +1270,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       returnSelectionItemsCollection:
         'Do you want to switch back to the selection of an existing collection?',
       selectCaseStudyItems: 'Select items...',
+      insertNewItems: 'Enter case study items...',
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',
       caseStudyCriteriaDescription:
