@@ -1269,7 +1269,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterSelectionItemsManuallyExplanation:
         'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Auswahl-Frage direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
       returnSelectionItemsCollection:
-        'Möchsten Sie zur Auswahl einer bestehenden Sammlung zurückkehren?',
+        'Möchten Sie zur Auswahl einer bestehenden Sammlung zurückkehren?',
       selectCaseStudyItems: 'Elemente auswählen...',
       insertNewItems: 'Elemente erfassen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',

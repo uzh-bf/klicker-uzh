@@ -19,14 +19,14 @@ interface SelectionManualItemCreationProps {
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
-  switchToCollectionSelection: () => void
+  setItemSelectionMode: (newValue: 'existing' | 'new') => void
 }
 
 function SelectionManualItemCreation({
   inputsDisabled,
   values,
   setAnswerCollectionEntries,
-  switchToCollectionSelection,
+  setItemSelectionMode,
 }: SelectionManualItemCreationProps) {
   const t = useTranslations()
   const [items, _, itemHelpers] = useField<
@@ -66,7 +66,7 @@ function SelectionManualItemCreation({
                 setAnswerCollectionEntries([])
 
                 // switch to the selection mode for existing answer collections
-                switchToCollectionSelection()
+                setItemSelectionMode('existing')
               }}
               className="cursor-pointer hover:underline"
               data-cy="switch-to-existing-collection-selection"
@@ -151,7 +151,7 @@ function SelectionManualItemCreation({
           setAnswerCollectionEntries([])
 
           // switch to the selection mode for existing answer collections
-          switchToCollectionSelection()
+          setItemSelectionMode('existing')
         }}
         className={{
           root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',

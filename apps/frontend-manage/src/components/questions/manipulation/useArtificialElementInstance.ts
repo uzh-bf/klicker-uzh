@@ -98,13 +98,14 @@ function useArtificialElementInstance({
                     ? values.options.numberOfInputs
                     : 1,
                 answerCollection:
-                  typeof answerCollectionEntries !== 'undefined' &&
-                  answerCollectionEntries.length > 0
-                    ? { entries: answerCollectionEntries }
-                    : undefined,
+                  'itemSelectionMode' in values.options &&
+                  values.options.itemSelectionMode === 'new'
+                    ? { entries: values.options.manuallyCreatedItems }
+                    : { entries: answerCollectionEntries },
                 items:
                   (!('itemSelectionMode' in values.options) ||
-                    values.options.itemSelectionMode === 'existing') &&
+                    values.options.itemSelectionMode === 'existing' ||
+                    typeof values.options.itemSelectionMode === 'undefined') &&
                   typeof answerCollectionEntries !== 'undefined' &&
                   answerCollectionEntries.length > 0
                     ? answerCollectionEntries.flatMap((entry) => {
