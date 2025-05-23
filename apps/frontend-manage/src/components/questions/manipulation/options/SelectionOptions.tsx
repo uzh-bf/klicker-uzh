@@ -28,9 +28,9 @@ function SelectionOptions({
   setAnswerCollectionEntries,
 }: SelectionOptionsProps) {
   const t = useTranslations()
-  const [selectionMode, _, selectionModeHelpers] = useField<'existing' | 'new'>(
-    'options.itemSelectionMode'
-  )
+  const [selectionMode, _, selectionModeHelpers] = useField<
+    ElementFormTypesSelection['options']['itemSelectionMode']
+  >('options.itemSelectionMode')
 
   const { data, loading, refetch } = useQuery(
     GetAnswerCollectionsElementsDocument,

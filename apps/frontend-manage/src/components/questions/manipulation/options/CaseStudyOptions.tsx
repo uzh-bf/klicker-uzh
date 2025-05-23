@@ -3,6 +3,7 @@ import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,
 } from './CaseStudyCasesFields'
@@ -30,9 +31,9 @@ function CaseStudyOptions({
   hasSampleSolution,
   setAnswerCollectionEntries,
 }: CaseStudyOptionsProps) {
-  const [selectionMode, _, selectionModeHelpers] = useField<'existing' | 'new'>(
-    'options.itemSelectionMode'
-  )
+  const [selectionMode, _, selectionModeHelpers] = useField<
+    ElementFormTypesCaseStudy['options']['itemSelectionMode']
+  >('options.itemSelectionMode')
 
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
@@ -63,7 +64,6 @@ function CaseStudyOptions({
           collections={collections}
           setSelectedItems={setSelectedItems}
           hasSampleSolution={hasSampleSolution}
-          itemSelectionMode={selectionMode.value}
           setAnswerCollectionEntries={setAnswerCollectionEntries}
           setItemSelectionMode={(newValue) =>
             selectionModeHelpers.setValue(newValue)

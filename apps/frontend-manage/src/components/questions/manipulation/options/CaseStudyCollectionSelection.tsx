@@ -26,7 +26,6 @@ function CaseStudyCollectionSelection({
   collections,
   setSelectedItems,
   hasSampleSolution,
-  itemSelectionMode,
   setAnswerCollectionEntries,
   setItemSelectionMode,
   refetchAnswerCollections,
@@ -38,7 +37,6 @@ function CaseStudyCollectionSelection({
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
-  itemSelectionMode: 'existing' | 'new'
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
@@ -52,9 +50,9 @@ function CaseStudyCollectionSelection({
   const [itemsField, _, itemsHelpers] = useField<
     ElementFormTypesCaseStudy['options']['selectedItems']
   >('options.selectedItems')
-  const [collectionField, __, collectionHelpers] = useField<string>(
-    'options.answerCollection'
-  )
+  const [collectionField, __, collectionHelpers] = useField<
+    ElementFormTypesCaseStudy['options']['answerCollection']
+  >('options.answerCollection')
   const [casesField, ___, casesHelpers] =
     useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
@@ -69,7 +67,7 @@ function CaseStudyCollectionSelection({
   const selectedAnswers = useSelectedAnswerEntry({
     field: itemsField,
     collectionAnswers,
-    itemSelectionMode,
+    itemSelectionMode: 'existing',
     setSelectedItems,
   })
 
