@@ -149,8 +149,19 @@ function CaseStudyManualItemCreation({
       <Button
         basic
         onClick={() => {
-          // reset the selected items
+          // reset the selected items tracked outside of the form state
           setAnswerCollectionEntries([])
+          setSelectedItems([])
+
+          // reset the manually created items
+          manualItemsHelpers.setValue([])
+
+          // manually reset the sample solutions defined for the created cases
+          const newCases = casesField.value?.map((caseItem) => ({
+            ...caseItem,
+            solutions: undefined,
+          }))
+          casesHelpers.setValue(newCases)
 
           // switch to the selection mode for existing answer collections
           setItemSelectionMode('existing')
