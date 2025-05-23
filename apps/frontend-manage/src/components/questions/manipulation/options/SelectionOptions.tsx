@@ -28,9 +28,9 @@ function SelectionOptions({
   setAnswerCollectionEntries,
 }: SelectionOptionsProps) {
   const t = useTranslations()
-  const [selectionMode, _, selectionModeHelpers] = useField<'existing' | 'new'>(
-    'options.itemSelectionMode'
-  )
+  const [selectionMode, _, selectionModeHelpers] = useField<
+    ElementFormTypesSelection['options']['itemSelectionMode']
+  >('options.itemSelectionMode')
 
   const { data, loading, refetch } = useQuery(
     GetAnswerCollectionsElementsDocument,
@@ -55,8 +55,8 @@ function SelectionOptions({
         inputsDisabled={inputsDisabled}
         values={values}
         setAnswerCollectionEntries={setAnswerCollectionEntries}
-        switchToCollectionSelection={() =>
-          selectionModeHelpers.setValue('existing')
+        setItemSelectionMode={(newValue) =>
+          selectionModeHelpers.setValue(newValue)
         }
       />
     )
@@ -72,7 +72,9 @@ function SelectionOptions({
       loading={loading}
       values={values}
       setAnswerCollectionEntries={setAnswerCollectionEntries}
-      switchToInlineACCreation={() => selectionModeHelpers.setValue('new')}
+      setItemSelectionMode={(newValue) =>
+        selectionModeHelpers.setValue(newValue)
+      }
     />
   )
 }

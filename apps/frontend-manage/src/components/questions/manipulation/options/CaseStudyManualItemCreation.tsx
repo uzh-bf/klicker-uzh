@@ -1,4 +1,4 @@
-import { FormLabel, UserNotification } from '@uzh-bf/design-system'
+import { Button, FormLabel, UserNotification } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -40,21 +40,6 @@ function CaseStudyManualItemCreation({
       <UserNotification type="info">
         {t.rich('manage.elements.enterItemsManuallyExplanation', {
           b: (text) => <b>{text}</b>,
-          button: (text) => (
-            <span
-              onClick={() => {
-                // reset the selected items
-                setAnswerCollectionEntries([])
-
-                // switch to the selection mode for existing answer collections
-                setItemSelectionMode('existing')
-              }}
-              className="cursor-pointer hover:underline"
-              data-cy="switch-to-existing-collection-selection"
-            >
-              {text}
-            </span>
-          ),
         })}
       </UserNotification>
 
@@ -82,7 +67,7 @@ function CaseStudyManualItemCreation({
             value: item.id,
           })) ?? []
         }
-        classNames={{ container: () => 'w-full h-9' }}
+        classNames={{ container: () => 'w-full h-9', menu: () => 'hidden' }}
         onChange={(newValue) => {
           // set the new collection items
           const prevItems = manualItemsField.value ?? []
@@ -158,9 +143,36 @@ function CaseStudyManualItemCreation({
             ])
           }
         }}
-        placeholder={t('manage.elements.selectCaseStudyItems')}
+        placeholder={t('manage.elements.insertNewItems')}
         noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
       />
+      <Button
+        basic
+        onClick={() => {
+          // reset the selected items tracked outside of the form state
+          setAnswerCollectionEntries([])
+          setSelectedItems([])
+
+          // reset the manually created items
+          manualItemsHelpers.setValue([])
+
+          // manually reset the sample solutions defined for the created cases
+          const newCases = casesField.value?.map((caseItem) => ({
+            ...caseItem,
+            solutions: undefined,
+          }))
+          casesHelpers.setValue(newCases)
+
+          // switch to the selection mode for existing answer collections
+          setItemSelectionMode('existing')
+        }}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 pt-1.5 text-sm hover:bg-transparent hover:underline',
+        }}
+        data={{ cy: `switch-to-existing-collection-selection` }}
+      >
+        {t('manage.elements.returnItemsCollectionSelection')}
+      </Button>
     </div>
   )
 }

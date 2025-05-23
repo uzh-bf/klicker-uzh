@@ -1243,7 +1243,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       correctAnswerOptions: 'Correct answer options',
       correctAnswerOptionsTooltip:
         'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
-      selectAnswerOptions: 'Select answer options...',
+      selectCorrectAnswerOptions: 'Select correct answer options...',
       noMatchingOptionFound: 'No matching option found',
       changeOfAnswerCollection: 'Change of answer collection',
       confirmCollectionChange:
@@ -1261,11 +1261,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Want to enter the case study items manually instead?',
       enterItemsManuallyExplanation:
         'This interface allows you to enter your case study items manually. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of case study items from an existing collection.</button>',
+      returnItemsCollectionSelection:
+        'Do you want to switch back to the selection of items from an existing collection?',
       enterSelectionItemsManually:
         'Do you want to enter the items to be selected manually?',
       enterSelectionItemsManuallyExplanation:
-        'This interface allows you to enter the items for your selection question directly in the context of the question. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of items from an existing collection.</button>',
+        'This interface allows you to enter the items for your selection question directly in the context of the question. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later.',
+      returnSelectionItemsCollection:
+        'Do you want to switch back to the selection of an existing collection?',
       selectCaseStudyItems: 'Select items...',
+      insertNewItems: 'Enter case study items...',
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',
       caseStudyCriteriaDescription:

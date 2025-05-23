@@ -26,7 +26,6 @@ function CaseStudyCollectionSelection({
   collections,
   setSelectedItems,
   hasSampleSolution,
-  itemSelectionMode,
   setAnswerCollectionEntries,
   setItemSelectionMode,
   refetchAnswerCollections,
@@ -38,7 +37,6 @@ function CaseStudyCollectionSelection({
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
-  itemSelectionMode: 'existing' | 'new'
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
@@ -52,9 +50,9 @@ function CaseStudyCollectionSelection({
   const [itemsField, _, itemsHelpers] = useField<
     ElementFormTypesCaseStudy['options']['selectedItems']
   >('options.selectedItems')
-  const [collectionField, __, collectionHelpers] = useField<string>(
-    'options.answerCollection'
-  )
+  const [collectionField, __, collectionHelpers] = useField<
+    ElementFormTypesCaseStudy['options']['answerCollection']
+  >('options.answerCollection')
   const [casesField, ___, casesHelpers] =
     useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
@@ -69,7 +67,7 @@ function CaseStudyCollectionSelection({
   const selectedAnswers = useSelectedAnswerEntry({
     field: itemsField,
     collectionAnswers,
-    itemSelectionMode,
+    itemSelectionMode: 'existing',
     setSelectedItems,
   })
 
@@ -87,10 +85,13 @@ function CaseStudyCollectionSelection({
           link: (text) => (
             <span
               className="cursor-pointer font-bold underline"
-              onClick={() =>
+              onClick={() => {
                 // switch to the creation mode for new answer collection options
                 setItemSelectionMode('new')
-              }
+
+                // reset the selected items
+                itemsHelpers.setValue([])
+              }}
               data-cy="create-inline-answer-collection"
             >
               {text}
@@ -169,9 +170,22 @@ function CaseStudyCollectionSelection({
         <Button
           basic
           onClick={() => {
-            // reset the selected items
+            // reset the selected items tracked outside the form state
             setAnswerCollectionEntries([])
             setSelectedItems([])
+
+            // reset the selected items
+            itemsHelpers.setValue([])
+
+            // manually reset the sample solutions defined for the created cases
+            const newCases = casesField.value?.map((caseItem) => ({
+              ...caseItem,
+              solutions: undefined,
+            }))
+            casesHelpers.setValue(newCases)
+
+            // reset the selected answer collection
+            collectionHelpers.setValue(undefined)
 
             // switch to the creation mode for new answer collection options
             setItemSelectionMode('new')

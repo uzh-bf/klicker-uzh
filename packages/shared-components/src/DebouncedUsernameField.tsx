@@ -40,7 +40,7 @@ function DebouncedUsernameField({
   className,
   t,
 }: DebouncedUsernameFieldProps) {
-  const [field, meta, helpers] = useField(name)
+  const [field, meta, helpers] = useField<string>(name)
 
   // validate field when valid value changes
   useEffect(() => {

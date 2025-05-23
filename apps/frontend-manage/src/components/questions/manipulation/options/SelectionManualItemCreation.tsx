@@ -1,4 +1,5 @@
 import {
+  Button,
   FormikNumberField,
   FormLabel,
   UserNotification,
@@ -18,14 +19,14 @@ interface SelectionManualItemCreationProps {
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
-  switchToCollectionSelection: () => void
+  setItemSelectionMode: (newValue: 'existing' | 'new') => void
 }
 
 function SelectionManualItemCreation({
   inputsDisabled,
   values,
   setAnswerCollectionEntries,
-  switchToCollectionSelection,
+  setItemSelectionMode,
 }: SelectionManualItemCreationProps) {
   const t = useTranslations()
   const [items, _, itemHelpers] = useField<
@@ -65,7 +66,7 @@ function SelectionManualItemCreation({
                 setAnswerCollectionEntries([])
 
                 // switch to the selection mode for existing answer collections
-                switchToCollectionSelection()
+                setItemSelectionMode('existing')
               }}
               className="cursor-pointer hover:underline"
               data-cy="switch-to-existing-collection-selection"
@@ -100,10 +101,9 @@ function SelectionManualItemCreation({
             value: item.id,
           })) ?? []
         }
-        classNames={{ container: () => 'w-full' }}
+        classNames={{ container: () => 'w-full', menu: () => 'hidden' }}
         onChange={(newValue) => {
           // set the new collection items
-          const prevItems = items.value ?? []
           const newItems = newValue.map((item) => ({
             id: item.value,
             value: item.label.trim(),
@@ -141,9 +141,25 @@ function SelectionManualItemCreation({
             ])
           }
         }}
-        placeholder={t('manage.elements.selectCaseStudyItems')}
+        placeholder={t('manage.elements.insertNewItems')}
         noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
       />
+      <Button
+        basic
+        onClick={() => {
+          // reset the selected items
+          setAnswerCollectionEntries([])
+
+          // switch to the selection mode for existing answer collections
+          setItemSelectionMode('existing')
+        }}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
+        }}
+        data={{ cy: `switch-to-existing-collection-selection` }}
+      >
+        {t('manage.elements.returnSelectionItemsCollection')}
+      </Button>
 
       <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-end">
         <FormikNumberField
@@ -154,7 +170,7 @@ function SelectionManualItemCreation({
           label={t('manage.elements.numberOfInputs')}
           labelType="small"
           data={{ cy: 'configure-number-of-inputs' }}
-          className={{ field: 'mt-3 w-40' }}
+          className={{ field: 'mt-1 w-40' }}
         />
 
         {values.options.hasSampleSolution ? (
@@ -183,7 +199,7 @@ function SelectionManualItemCreation({
                 onChange={(newValue) =>
                   solutionHelpers.setValue(newValue.map((tag) => tag.value))
                 }
-                placeholder={t('manage.elements.selectAnswerOptions')}
+                placeholder={t('manage.elements.selectCorrectAnswerOptions')}
                 noOptionsMessage={() =>
                   t('manage.elements.noMatchingOptionFound')
                 }

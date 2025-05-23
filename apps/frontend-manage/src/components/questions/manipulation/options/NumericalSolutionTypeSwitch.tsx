@@ -12,7 +12,9 @@ function NumericalSolutionTypeSwitch({
   solutionType: ElementFormTypesNumerical['options']['solutionType']
 }) {
   const t = useTranslations()
-  const [_, __, helpers] = useField('options.solutionType')
+  const [_, __, helpers] = useField<
+    ElementFormTypesNumerical['options']['solutionType']
+  >('options.solutionType')
 
   return (
     <div className="mt-3">

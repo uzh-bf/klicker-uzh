@@ -28,7 +28,7 @@ interface SelectionCollectionOptionsProps {
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
-  switchToInlineACCreation: () => void
+  setItemSelectionMode: (newValue: 'existing' | 'new') => void
 }
 
 function SelectionCollectionOptions({
@@ -39,12 +39,15 @@ function SelectionCollectionOptions({
   collections,
   refetchCollections,
   setAnswerCollectionEntries,
-  switchToInlineACCreation,
+  setItemSelectionMode,
 }: SelectionCollectionOptionsProps) {
   const t = useTranslations()
   const [solutions, _, solutionHelpers] = useField<
     ElementFormTypesSelection['options']['correctAnswers']
   >('options.correctAnswers')
+  const [__, ____, collectionHelpers] = useField<
+    ElementFormTypesSelection['options']['answerCollection']
+  >('options.answerCollection')
 
   // get all answer options from the selected collections
   const collectionAnswers = useSelectAnswerCollectionOptions({
@@ -74,10 +77,13 @@ function SelectionCollectionOptions({
           link: (text) => (
             <span
               className="cursor-pointer font-bold underline"
-              onClick={() =>
+              onClick={() => {
                 // switch to the creation mode for new answer collection options
-                switchToInlineACCreation()
-              }
+                setItemSelectionMode('new')
+
+                // reset the answer collection field to ensure that all fields update
+                collectionHelpers.setValue(undefined)
+              }}
               data-cy="create-inline-answer-collection"
             >
               {text}
@@ -168,7 +174,10 @@ function SelectionCollectionOptions({
             solutionHelpers.setValue([])
 
             // switch to the creation mode for new answer collection options
-            switchToInlineACCreation()
+            setItemSelectionMode('new')
+
+            // reset the answer collection field to ensure that all fields update
+            collectionHelpers.setValue(undefined)
           }}
           className={{
             root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
@@ -194,13 +203,11 @@ function SelectionCollectionOptions({
               value={selectedAnswers}
               options={collectionAnswers}
               menuPlacement="auto"
-              classNames={{
-                container: () => 'w-full',
-              }}
+              classNames={{ container: () => 'w-full' }}
               onChange={(newValue) =>
                 solutionHelpers.setValue(newValue.map((tag) => tag.value))
               }
-              placeholder={t('manage.elements.selectAnswerOptions')}
+              placeholder={t('manage.elements.selectCorrectAnswerOptions')}
               noOptionsMessage={() =>
                 t('manage.elements.noMatchingOptionFound')
               }

@@ -1244,7 +1244,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       correctAnswerOptions: 'Korrekte Antwortoptionen',
       correctAnswerOptionsTooltip:
         'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
-      selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
+      selectCorrectAnswerOptions: 'Korrekte Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
       changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
       confirmCollectionChange:
@@ -1261,12 +1261,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterItemsManually:
         'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl von Fallstudien-Elementen aus einer bestehenden Sammlung wechseln.</button>',
+        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+      returnItemsCollectionSelection:
+        'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
       enterSelectionItemsManually:
         'Möchten Sie die zur Auswahl stehenden Elemente manuell erfassen?',
       enterSelectionItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Auswahl-Frage direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch wieder zur Auswahl einer bestehenden Sammlung wechseln.</button>',
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Auswahl-Frage direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+      returnSelectionItemsCollection:
+        'Möchten Sie zur Auswahl einer bestehenden Sammlung zurückkehren?',
       selectCaseStudyItems: 'Elemente auswählen...',
+      insertNewItems: 'Elemente erfassen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
