@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.55...v3.3.0-alpha.56) (2025-05-24)
+
+
+### Features
+
+* add possibility to define case study items inline in element edit form ([#4704](https://github.com/uzh-bf/klicker-uzh/issues/4704)) ([07fb616](https://github.com/uzh-bf/klicker-uzh/commit/07fb61643cfb43e7b3bfddc064b02edfd92e5421))
+* support inline answer collection creation for selection questions ([#4707](https://github.com/uzh-bf/klicker-uzh/issues/4707)) ([a14e036](https://github.com/uzh-bf/klicker-uzh/commit/a14e03689ae63d2aad794aeca38801d0a4badae4))
+
+
+### Bug Fixes
+
+* **apps/docs:** fix broken links on docs about page ([d477fbe](https://github.com/uzh-bf/klicker-uzh/commit/d477fbe2595368bd399017a56f97bed31350cc79))
+* **apps/frontend-manage:** add element list refetch after live quiz creation from template to ensure visibility of created questions ([8271c0e](https://github.com/uzh-bf/klicker-uzh/commit/8271c0ed9921a47f7ae4488aed5fbe52c2791eba))
+* **apps/frontend-manage:** ensure that y label is properly centered on recharts plots ([a63f6e5](https://github.com/uzh-bf/klicker-uzh/commit/a63f6e5ad2986c84729e3b0869cbb9c4e45aab68))
+* **apps/frontend-manage:** make sure that links on embedding modal are opened in new tabs ([b4e78fa](https://github.com/uzh-bf/klicker-uzh/commit/b4e78fae51a95d926e8609c11b1c1bec7a25a40a))
+* resolve minor issues with inline answer collection definition on case study and selection questions ([#4711](https://github.com/uzh-bf/klicker-uzh/issues/4711)) ([310c20d](https://github.com/uzh-bf/klicker-uzh/commit/310c20dd8ae39f310c4f2c7b4428c0cd8e171b5b))
+
+
+### Other
+
+* **apps/frontend-manage:** fix minor spacing issue in selection element options section ([36d1c11](https://github.com/uzh-bf/klicker-uzh/commit/36d1c11a68f46c211805bbd69479a2ba31239fe3))
+
+
+### Enhancements
+
+* add proper next-intl based translations for activity log change messages ([#4699](https://github.com/uzh-bf/klicker-uzh/issues/4699)) ([bdae675](https://github.com/uzh-bf/klicker-uzh/commit/bdae67549a72b5a399fddfba4716c77f94fc5c07))
+* **apps/docs:** extend docs with new element types, answer collections and new structure for sharing, etc. ([#4701](https://github.com/uzh-bf/klicker-uzh/issues/4701)) ([ae3691c](https://github.com/uzh-bf/klicker-uzh/commit/ae3691ce98ba2f7ffae7f77cd33b8883edf8d52b))
+* **apps/frontend-manage:** add confidence intervals when hovering over case study scatter plot items ([#4712](https://github.com/uzh-bf/klicker-uzh/issues/4712)) ([d66fccd](https://github.com/uzh-bf/klicker-uzh/commit/d66fccd9cec358c7704d5e00d4dc7141a43c1084))
+* **apps/frontend-manage:** add possibility to filter by course on activity overview ([02f67ae](https://github.com/uzh-bf/klicker-uzh/commit/02f67aeeb82c1af8d774aa9e7a25785863affe6b))
+* **apps/frontend-manage:** ensure that newest activity logs are shown at the bottom with automated scrolling ([#4697](https://github.com/uzh-bf/klicker-uzh/issues/4697)) ([313c6c2](https://github.com/uzh-bf/klicker-uzh/commit/313c6c2d06a6a176db93ce8e727a94fa1973e18e))
+* **apps/frontend-manage:** improve structure of element actions and show comment functionality to all users with at least read permissions ([#4698](https://github.com/uzh-bf/klicker-uzh/issues/4698)) ([2239cb8](https://github.com/uzh-bf/klicker-uzh/commit/2239cb8075f2938175265525059a5a3f78a1c1b9))
+* **packages/graphql:** add proper audit logging to all object removal service functions ([#4703](https://github.com/uzh-bf/klicker-uzh/issues/4703)) ([b138562](https://github.com/uzh-bf/klicker-uzh/commit/b1385627ef3001c6dab95e7490278adb7a0ffd6a))
+* support inline answer collection creation for selection and case study questions in templates ([#4709](https://github.com/uzh-bf/klicker-uzh/issues/4709)) ([c01f605](https://github.com/uzh-bf/klicker-uzh/commit/c01f6050739d4bc966ec3b99097a223fc45a8aed))
+
 ## [3.3.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.54...v3.3.0-alpha.55) (2025-05-19)
 
 
