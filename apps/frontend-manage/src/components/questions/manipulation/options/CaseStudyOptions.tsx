@@ -1,5 +1,4 @@
-import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -13,23 +12,27 @@ import CaseStudyManualItemCreation from './CaseStudyManualItemCreation'
 
 interface CaseStudyOptionsProps extends CaseStudySetterProps {
   creationMode: boolean
-  templateId?: string
-  isTemplate: boolean
   hasSampleSolution: boolean
+  collections: Omit<AnswerCollection, 'description'>[]
+  collectionsLoading: boolean
+  refetchCollections: () => Promise<any>
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
+  openAnswerCollectionEditModal: (collectionId: number) => void
 }
 
 function CaseStudyOptions({
   creationMode,
-  templateId,
-  isTemplate,
   inputsDisabled = false,
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
+  collections,
+  collectionsLoading,
+  refetchCollections,
   setAnswerCollectionEntries,
+  openAnswerCollectionEditModal,
 }: CaseStudyOptionsProps) {
   const [selectionMode, _, selectionModeHelpers] = useField<
     ElementFormTypesCaseStudy['options']['itemSelectionMode']
@@ -38,17 +41,8 @@ function CaseStudyOptions({
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
   >([])
-  const {
-    data,
-    loading,
-    refetch: refetchAnswerCollections,
-  } = useQuery(GetAnswerCollectionsElementsDocument, {
-    variables: { templateId },
-    fetchPolicy: 'network-only',
-  })
-  const collections = data?.getAnswerCollectionsElements ?? []
 
-  if (loading) {
+  if (collectionsLoading) {
     return <Loader />
   }
 
@@ -57,10 +51,9 @@ function CaseStudyOptions({
       {(selectionMode.value === 'existing' ||
         typeof selectionMode.value === 'undefined') && (
         <CaseStudyCollectionSelection
-          loading={loading}
+          loading={collectionsLoading}
           disabled={inputsDisabled}
           creationMode={creationMode}
-          isTemplate={isTemplate}
           collections={collections}
           setSelectedItems={setSelectedItems}
           hasSampleSolution={hasSampleSolution}
@@ -68,9 +61,8 @@ function CaseStudyOptions({
           setItemSelectionMode={(newValue) =>
             selectionModeHelpers.setValue(newValue)
           }
-          refetchAnswerCollections={async () =>
-            await refetchAnswerCollections({ templateId })
-          }
+          refetchCollections={async () => await refetchCollections()}
+          openAnswerCollectionEditModal={openAnswerCollectionEditModal}
         />
       )}
       {creationMode && selectionMode.value === 'new' && (

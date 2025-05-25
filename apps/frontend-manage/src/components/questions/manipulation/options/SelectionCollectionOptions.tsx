@@ -30,6 +30,7 @@ interface SelectionCollectionOptionsProps {
     SetStateAction<{ id: number; value: string }[]>
   >
   setItemSelectionMode: (newValue: 'existing' | 'new') => void
+  openAnswerCollectionEditModal: (collectionId: number) => void
 }
 
 function SelectionCollectionOptions({
@@ -41,6 +42,7 @@ function SelectionCollectionOptions({
   refetchCollections,
   setAnswerCollectionEntries,
   setItemSelectionMode,
+  openAnswerCollectionEditModal,
 }: SelectionCollectionOptionsProps) {
   const t = useTranslations()
   const [solutions, _, solutionHelpers] = useField<
@@ -167,7 +169,7 @@ function SelectionCollectionOptions({
                 ? parseInt(collectionField.value)
                 : undefined
             }
-            refetchAnswerCollections={refetchCollections}
+            openAnswerCollectionEditModal={openAnswerCollectionEditModal}
           />
         </div>
 

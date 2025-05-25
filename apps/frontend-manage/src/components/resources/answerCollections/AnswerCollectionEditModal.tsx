@@ -16,6 +16,7 @@ import {
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AddAnswerCollectionEntry from './AddAnswerCollectionEntry'
 import AnswerCollectionMetaForm from './AnswerCollectionMetaForm'
 import AnswerCollectionOption from './AnswerCollectionOption'
@@ -26,12 +27,14 @@ function AnswerCollectionEditModal({
   onClose,
   inlineEditing = false,
   refetchAnswerCollections,
+  className,
 }: {
   collectionId: number
   open: boolean
   onClose: () => void
   inlineEditing?: boolean
   refetchAnswerCollections?: () => Promise<any>
+  className?: { overlay?: string; content?: string }
 }) {
   const t = useTranslations()
   const [successToast, setSuccessToast] = useState(false)
@@ -90,7 +93,13 @@ function AnswerCollectionEditModal({
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
-      className={{ content: 'max-h-[calc(100vh-1.5rem)] overflow-y-auto' }}
+      className={{
+        content: twMerge(
+          'max-h-[calc(100vh-1.5rem)] overflow-y-auto',
+          className?.content
+        ),
+        overlay: className?.overlay,
+      }}
     >
       <Accordion
         collapsible

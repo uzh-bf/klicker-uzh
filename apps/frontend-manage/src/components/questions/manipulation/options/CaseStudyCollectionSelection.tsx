@@ -23,26 +23,26 @@ function CaseStudyCollectionSelection({
   loading,
   disabled,
   creationMode,
-  isTemplate,
   collections,
+  refetchCollections,
   setSelectedItems,
   hasSampleSolution,
   setAnswerCollectionEntries,
   setItemSelectionMode,
-  refetchAnswerCollections,
+  openAnswerCollectionEditModal,
 }: {
   loading: boolean
   disabled: boolean
   creationMode: boolean
-  isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'isEditor' | 'entries'>[]
+  refetchCollections: () => Promise<any>
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
   setItemSelectionMode: (newValue: 'existing' | 'new') => void
-  refetchAnswerCollections: () => Promise<any>
+  openAnswerCollectionEditModal: (collectionId: number) => void
 }) {
   const t = useTranslations()
   const [changeModalOpen, setChangeModalOpen] = useState(false)
@@ -167,7 +167,7 @@ function CaseStudyCollectionSelection({
         />
         <Button
           disabled={disabled || loading}
-          onClick={async () => await refetchAnswerCollections()}
+          onClick={async () => await refetchCollections()}
           className={{ root: 'h-9 w-9' }}
           data={{ cy: 'refresh-answer-collections' }}
         >
@@ -182,7 +182,7 @@ function CaseStudyCollectionSelection({
           selectedCollectionId={
             collectionField.value ? parseInt(collectionField.value) : undefined
           }
-          refetchAnswerCollections={refetchAnswerCollections}
+          openAnswerCollectionEditModal={openAnswerCollectionEditModal}
         />
       </div>
       {creationMode && (
