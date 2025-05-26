@@ -114,7 +114,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedEmailTemplates(prisma)
 
   // seed catalog collection for objects that are not assigned to any custom catalog
-  const missingCatalogCollection = await prisma.catalogCollection.upsert({
+  await prisma.catalogCollection.upsert({
     where: {
       id: MISSING_CATALOG_COLLECTION_ID,
     },
@@ -131,14 +131,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     entries: Prisma.AnswerCollectionEntry[]
   })[] = []
   for (const data of DATA_TEST.ANSWER_COLLECTIONS) {
-    const answerCollection = await prisma.answerCollection.upsert({
-      where: {
-        ownerId_name: {
-          ownerId: USER_ID_TEST,
-          name: data.name,
-        },
-      },
-      create: {
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
         name: data.name,
         description: data.description,
         owner: {
@@ -150,7 +144,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           create: data.entries,
         },
       },
-      update: {},
       include: {
         entries: true,
       },
