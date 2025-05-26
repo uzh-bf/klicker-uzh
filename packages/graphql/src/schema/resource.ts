@@ -79,6 +79,9 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
     isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
     sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
+
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
 

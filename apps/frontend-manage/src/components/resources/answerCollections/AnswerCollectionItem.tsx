@@ -6,6 +6,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -107,6 +108,18 @@ function AnswerCollectionItem({
                 className={{ root: 'h-5' }}
               />
             )}
+          </div>
+          <div className="flex flex-row gap-4 text-sm text-gray-500">
+            <div>
+              {t('shared.generic.createdAt', {
+                date: dayjs(collection.createdAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
+            <div>
+              {t('shared.generic.updatedAt', {
+                date: dayjs(collection.updatedAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
           </div>
         </div>
 

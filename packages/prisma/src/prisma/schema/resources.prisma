@@ -29,8 +29,6 @@ model AnswerCollection {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-
-    @@unique([ownerId, name])
 }
 
 model AnswerCollectionEntry {
