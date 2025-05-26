@@ -406,6 +406,7 @@ function ElementEditForm({
           )
         }}
       </Formik>
+
       {collectionModal.open && typeof collectionModal.id !== 'undefined' ? (
         <AnswerCollectionEditModal
           inlineEditing
