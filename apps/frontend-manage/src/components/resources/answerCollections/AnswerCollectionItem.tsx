@@ -17,6 +17,7 @@ import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import AnswerCollectionDuplicationModal from './AnswerCollectionDuplicationModal'
+import AnswerCollectionDuplicationSuccessToast from './AnswerCollectionDuplicationSuccessToast'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -46,6 +47,7 @@ function AnswerCollectionItem({
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const [duplicationSuccessToast, setDuplicationSuccessToast] = useState(false)
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
     collectionName: collection.name,
@@ -175,8 +177,14 @@ function AnswerCollectionItem({
           collectionId={collection.id}
           open={duplicationModal}
           onClose={() => setDuplicationModal(false)}
+          onSuccess={() => setDuplicationSuccessToast(true)}
         />
       )}
+      <AnswerCollectionDuplicationSuccessToast
+        open={duplicationSuccessToast}
+        onClose={() => setDuplicationSuccessToast(false)}
+      />
+
       {!collection.isEditor && (
         <AnswerCollectionViewingModal
           collectionId={collection.id}

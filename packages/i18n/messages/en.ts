@@ -2518,6 +2518,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '... the new collection is not shared with any other users.',
       duplicationNote3:
         '... the new collection should be renamed to avoid confusion with the original when integrating into questions.',
+      duplicationFailure: 'Collection duplication failed. Please try again.',
+      duplicationSuccess: 'Collection has been duplicated successfully.',
     },
     userGroups: {
       description:

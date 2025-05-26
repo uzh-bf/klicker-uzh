@@ -2551,6 +2551,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '... die neue Sammlung mit keinen anderen Nutzern geteilt ist.',
       duplicationNote3:
         '... die neue Sammlung umbenannt werden sollte, um eine Verwechslung mit dem Original bei der Integration in Fragen zu vermeiden.',
+      duplicationFailure:
+        'Duplizierung der Sammlung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      duplicationSuccess: 'Sammlung wurde erfolgreich dupliziert.',
     },
     userGroups: {
       description:
