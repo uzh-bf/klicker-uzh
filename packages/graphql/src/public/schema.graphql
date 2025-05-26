@@ -1518,6 +1518,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection

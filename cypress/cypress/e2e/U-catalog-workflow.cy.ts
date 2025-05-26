@@ -108,7 +108,7 @@ describe('Test all functionalities of catalog collections and objects contained 
         messages.manage.catalog.accessRESTRICTED
       ) // user not admin on object -> object permissions relevant in top-level catalog collection
     cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+    cy.get(`[data-cy="copy-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -128,7 +128,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
     } else {
-      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="copy-object-${data.SEML2.title}"]`).should('exist')
       cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="cancel-request-access"]').click()
     }
@@ -144,7 +144,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
     } else {
-      cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+      cy.get(`[data-cy="copy-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
       cy.get(`[data-cy="request-access-${data.SEML.title}"]`).click()
       cy.get('[data-cy="cancel-request-access"]').click()
     }
@@ -157,7 +157,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
     } else {
-      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="copy-object-${data.SEML2.title}"]`).should('exist')
       cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="cancel-request-access"]').click()
     }
@@ -172,7 +172,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
     } else {
-      cy.get(`[data-cy="import-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
+      cy.get(`[data-cy="copy-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
       cy.get(`[data-cy="request-access-${data.SEML.title}"]`).click()
       cy.get('[data-cy="cancel-request-access"]').click()
     }
@@ -185,7 +185,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
     } else {
-      cy.get(`[data-cy="import-object-${data.SEML2.title}"]`).should('exist')
+      cy.get(`[data-cy="copy-object-${data.SEML2.title}"]`).should('exist')
       cy.get(`[data-cy="request-access-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="cancel-request-access"]').click()
     }

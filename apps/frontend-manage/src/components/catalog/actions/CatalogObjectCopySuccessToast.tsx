@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectImportSuccessToast({
+function CatalogObjectCopySuccessToast({
   open,
   onClose,
 }: {
@@ -18,9 +18,9 @@ function CatalogObjectImportSuccessToast({
       onCloseExternal={onClose}
       duration={3500}
     >
-      {t('manage.catalog.importCatalogObjectSuccess')}
+      {t('manage.catalog.copyCatalogObjectSuccess')}
     </Toast>
   )
 }
 
-export default CatalogObjectImportSuccessToast
+export default CatalogObjectCopySuccessToast

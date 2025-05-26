@@ -964,7 +964,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     // check that import and request functionalities are not available for owner (but deletion is)
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
@@ -1257,7 +1257,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
 
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should('exist')
 
     // no owner / admin actions are available
@@ -1390,7 +1390,7 @@ describe('Create different types of elements (with and without sample solution) 
     // question should be visible to owner, but cannot be requested / imported
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
@@ -1513,15 +1513,15 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="close-object-import-modal"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="close-object-copy-modal"]').click()
 
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="cancel-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="cancel-object-copy"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="confirm-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-object-copy"]').click()
 
     // check that the collection is visible in resources
     cy.get('[data-cy="library"]').click()

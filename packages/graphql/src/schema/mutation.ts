@@ -1873,6 +1873,38 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      copyCatalogObjectToAccount: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          // access control implemented inside service functions (does not fit default schema)
+          if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
+            return await SharingService.copyAnswerCollectionToAccount(
+              {
+                collectionId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          } else if (args.objectType === DB.ObjectType.ELEMENT) {
+            return await SharingService.copyElementToAccount(
+              {
+                elementId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
+
+          // elements and activities are not supported for the import feature (for now)
+          return false
+        },
+      }),
+
       importCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1886,14 +1918,6 @@ export const Mutation = builder.mutationType({
             return await SharingService.importAnswerCollection(
               {
                 collectionId: parseInt(args.objectId),
-                catalogCollectionId: args.catalogCollectionId,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.ELEMENT) {
-            return await SharingService.importElement(
-              {
-                elementId: parseInt(args.objectId),
                 catalogCollectionId: args.catalogCollectionId,
               },
               ctx

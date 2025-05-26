@@ -1,12 +1,13 @@
 import { useMutation } from '@apollo/client'
 import {
+  CopyCatalogObjectToAccountDocument,
   GetAnswerCollectionsInfoDocument,
-  ImportCatalogObjectDocument,
+  GetUserElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object import, returns success boolean
-function useImportCatalogObject({
+function useCopyCatalogObject({
   objectType,
   objectId,
   catalogCollectionId,
@@ -17,23 +18,22 @@ function useImportCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [importCatalogObject, { loading: importing }] = useMutation(
-    ImportCatalogObjectDocument
-  )
+  const [copyCatalogObjectToAccount, { loading: copyingCatalogObject }] =
+    useMutation(CopyCatalogObjectToAccountDocument)
 
-  if (objectType !== ObjectType.AnswerCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     return {
-      onImport: async () => {
+      onCopy: async () => {
         console.error('Unsupported object type', objectType)
         onError()
       },
-      importing: false,
+      copying: false,
     }
   }
 
-  const onImportCatalogObject = async () => {
+  const onCopyCatalogObject = async () => {
     try {
-      const res = await importCatalogObject({
+      const res = await copyCatalogObjectToAccount({
         variables: {
           objectId: String(objectId),
           objectType,
@@ -43,10 +43,13 @@ function useImportCatalogObject({
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
+          ...(objectType === ObjectType.Element
+            ? [{ query: GetUserElementsDocument }]
+            : []),
         ],
       })
 
-      if (res.data?.importCatalogObject) {
+      if (res.data?.copyCatalogObjectToAccount) {
         return true
       } else {
         return false
@@ -58,9 +61,9 @@ function useImportCatalogObject({
   }
 
   return {
-    onImport: onImportCatalogObject,
-    importing,
+    onCopy: onCopyCatalogObject,
+    copying: copyingCatalogObject,
   }
 }
 
-export default useImportCatalogObject
+export default useCopyCatalogObject

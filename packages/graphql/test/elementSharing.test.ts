@@ -18,11 +18,11 @@ import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
   changeObjectPermissionLevel,
+  copyElementToAccount,
   getCatalogElements,
   getCatalogSharingRequests,
   getDerivedElementPermissions,
   getElementPermissions,
-  importElement,
   requestCatalogObject,
   revokeObjectAccess,
   shareObject,
@@ -2135,7 +2135,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(failure1).toBeFalsy()
 
-    const failure2 = await importElement(
+    const failure2 = await copyElementToAccount(
       {
         catalogCollectionId: restrictedCatalog.id,
         elementId: SE.id,
@@ -2240,7 +2240,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
 
     // import the selection element and verify that importing case study element does not work
-    const failure3 = await importElement(
+    const failure3 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: CS.id, // restricted access
@@ -2249,7 +2249,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(failure3).toBeFalsy()
 
-    const success3 = await importElement(
+    const success3 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: SE.id, // public access
@@ -2294,7 +2294,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     })
     expect(accessRequests3.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
 
-    const success4 = await importElement(
+    const success4 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: SE.id,

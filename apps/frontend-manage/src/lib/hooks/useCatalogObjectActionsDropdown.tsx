@@ -1,6 +1,7 @@
 import { faCopy, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpFromBracket,
+  faDownload,
   faFilePen,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
@@ -18,6 +19,7 @@ function useCatalogObjectActionsDropdown({
   object,
   actionsDisabled,
   managedAccess,
+  setCopyModal,
   setImportModal,
   setRequestModal,
   setRequestCancellationModal,
@@ -27,6 +29,7 @@ function useCatalogObjectActionsDropdown({
   object: CatalogObject
   actionsDisabled: boolean
   managedAccess: boolean
+  setCopyModal: Dispatch<SetStateAction<boolean>>
   setImportModal: Dispatch<SetStateAction<boolean>>
   setRequestModal: Dispatch<SetStateAction<boolean>>
   setRequestCancellationModal: Dispatch<SetStateAction<boolean>>
@@ -39,20 +42,17 @@ function useCatalogObjectActionsDropdown({
   return useMemo(() => {
     const items = []
 
-    // import functionality is only available for answer collections and elements (for now) - not for activities / courses
-    // when importing elements, the content of the element is imported, potentially linked answer collections are shared
+    // import functionality for public answer collections (self-service with read permissions)
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
-      object.objectType !== ObjectType.CatalogCollection &&
-      (object.objectType === ObjectType.AnswerCollection ||
-        object.objectType === ObjectType.Element)
+      object.objectType === ObjectType.AnswerCollection
     ) {
       items.push({
         id: 'import',
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-            <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
+            <FontAwesomeIcon icon={faDownload} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.importObjectType', {
               object: t(`shared.types.${object.objectType}`),
             })}
@@ -66,8 +66,34 @@ function useCatalogObjectActionsDropdown({
       })
     }
 
+    // copy to account functionality is only available for answer collections and elements (for now) - not for activities / courses
+    // when copying elements, the content of the element is copied, potentially linked answer collections are shared
+    if (
+      !actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      object.objectType !== ObjectType.CatalogCollection &&
+      (object.objectType === ObjectType.AnswerCollection ||
+        object.objectType === ObjectType.Element)
+    ) {
+      items.push({
+        id: 'copyToAccount',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
+            {t('manage.catalog.copyObjectType', {
+              object: t(`shared.types.${object.objectType}`),
+            })}
+          </div>
+        ),
+        onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+          e?.stopPropagation()
+          setCopyModal(true)
+        },
+        data: { cy: `copy-object-${object.name}` },
+      })
+    }
+
     // request access functionality for objects that aren't requested, owned or shared
-    // TODO: enable requesting access to live quiz templates once the corresponding functionality is available
     if (
       !actionsDisabled &&
       !object.isRequested &&
@@ -126,7 +152,6 @@ function useCatalogObjectActionsDropdown({
     }
 
     // sufficient permissions on the object (ADMIN / OWNER) are always deciding for whether or not to show the sharing dialog
-    // TODO: remove the case for live quiz templates once the corresponding sharing functionality is available
     if (object.isManager && object.objectType !== ObjectType.LiveQuiz) {
       items.push({
         id: 'share',
@@ -172,6 +197,7 @@ function useCatalogObjectActionsDropdown({
     object,
     actionsDisabled,
     managedAccess,
+    setCopyModal,
     setImportModal,
     setRequestModal,
     setRequestCancellationModal,

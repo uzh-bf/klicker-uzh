@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectRequestErrorToast({
+function CatalogObjectImportErrorToast({
   open,
   onClose,
 }: {
@@ -22,4 +22,4 @@ function CatalogObjectRequestErrorToast({
   )
 }
 
-export default CatalogObjectRequestErrorToast
+export default CatalogObjectImportErrorToast
