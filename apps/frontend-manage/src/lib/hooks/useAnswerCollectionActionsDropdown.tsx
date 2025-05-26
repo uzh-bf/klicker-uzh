@@ -1,4 +1,4 @@
-import { faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faCopy, faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faInfoCircle,
   faMessage,
@@ -21,6 +21,7 @@ function useAnswerCollectionActionsDropdown({
   isDeletable,
   setSharingModal,
   setEditModal,
+  setDuplicationModal,
   setViewingModal,
   setRemovalModal,
   setDeletionModal,
@@ -34,6 +35,7 @@ function useAnswerCollectionActionsDropdown({
   isDeletable: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setEditModal: Dispatch<SetStateAction<boolean>>
+  setDuplicationModal: Dispatch<SetStateAction<boolean>>
   setViewingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
@@ -98,6 +100,19 @@ function useAnswerCollectionActionsDropdown({
         data: { cy: 'share-answer-collection' },
       })
     }
+
+    // duplication functionalities
+    items.push({
+      id: 'duplicate',
+      label: (
+        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
+          {t('manage.resources.duplicateCollection')}
+        </div>
+      ),
+      onClick: () => setDuplicationModal(true),
+      data: { cy: 'duplicate-answer-collection' },
+    })
 
     if (!isOwner) {
       // removal functionalities
@@ -180,6 +195,7 @@ function useAnswerCollectionActionsDropdown({
     isDeletable,
     setSharingModal,
     setEditModal,
+    setDuplicationModal,
     setViewingModal,
     setRemovalModal,
     setDeletionModal,

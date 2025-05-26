@@ -2521,6 +2521,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
       shareCollection: 'Sammlung teilen',
+      duplicateCollection: 'Sammlung duplizieren',
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
       modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
@@ -2542,6 +2543,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Löschen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
+      duplicationNote:
+        'Die Sammlung wird in ihrem aktuellen Zustand dupliziert und kann im Anschluss verändert werden. Bitte beachten Sie, dass ...',
+      duplicationNote1:
+        '... die neue Sammlung mit keiner der bisher abhängigen Fragen / Vorlagen verlinkt ist.',
+      duplicationNote2:
+        '... die neue Sammlung mit keinen anderen Nutzern geteilt ist.',
+      duplicationNote3:
+        '... die neue Sammlung umbenannt werden sollte, um eine Verwechslung mit dem Original bei der Integration in Fragen zu vermeiden.',
     },
     userGroups: {
       description:

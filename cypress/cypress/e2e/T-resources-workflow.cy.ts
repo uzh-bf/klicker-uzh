@@ -1315,6 +1315,58 @@ describe('Create, edit and share answer collections', function () {
       .should('exist')
   })
 
+  it('Duplicate the imported answer collection and verify that the user has owner permissions on the duplicate (for user pro4)', function () {
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'exist'
+    )
+
+    // open actions dropdown and duplicate
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="duplicate-answer-collection"]').click()
+    cy.get('[data-cy="cancel-duplication"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="duplicate-answer-collection"]').click()
+    cy.get('[data-cy="confirm-duplication"]').click()
+
+    // verify that the collection is visible in resources
+    const duplicateName = `${this.data.public.name} (Copy)`
+    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).should('exist')
+
+    // verify that all owner actions are available (activity log, edit, share, duplicate, delete)
+    cy.get(`[data-cy="answer-collection-actions-${duplicateName}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${duplicateName}"]`).should('exist')
+    cy.get('[data-cy="edit-answer-collection"]').should('exist')
+    cy.get('[data-cy="share-answer-collection"]').should('exist')
+    cy.get('[data-cy="duplicate-answer-collection"]').should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('exist')
+    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).realClick() // close the dropdown
+
+    // verify that the metadata of the collection and all answer option values can be edited
+    cy.get(`[data-cy="answer-collection-actions-${duplicateName}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="answer-collection-name"]').should(
+      'have.value',
+      duplicateName
+    )
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.public.items).each((value: string) => {
+      cy.get(`[data-cy="edit-answer-option-${value}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="delete-answer-option-${value}"]`).should(
+        'not.be.disabled'
+      )
+    })
+  })
+
   it('Verify that imported answer collection is visible to user pro2 (copied and with edit permissions)', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')

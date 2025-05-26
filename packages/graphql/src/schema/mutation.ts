@@ -1557,6 +1557,21 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      duplicateAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await ResourcesService.duplicateAnswerCollection(args, ctx)
+          }
+        ),
+      }),
+
       modifyAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

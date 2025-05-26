@@ -16,6 +16,7 @@ import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalM
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
+import AnswerCollectionDuplicationModal from './AnswerCollectionDuplicationModal'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -39,6 +40,7 @@ function AnswerCollectionItem({
 
   // modal states
   const [editModal, setEditModal] = useState(false)
+  const [duplicationModal, setDuplicationModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
@@ -54,6 +56,7 @@ function AnswerCollectionItem({
     isDeletable: collection.isDeletable ?? false,
     setSharingModal,
     setEditModal,
+    setDuplicationModal,
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
@@ -165,6 +168,13 @@ function AnswerCollectionItem({
           collectionId={collection.id}
           open={editModal}
           onClose={() => setEditModal(false)}
+        />
+      )}
+      {duplicationModal && (
+        <AnswerCollectionDuplicationModal
+          collectionId={collection.id}
+          open={duplicationModal}
+          onClose={() => setDuplicationModal(false)}
         />
       )}
       {!collection.isEditor && (
