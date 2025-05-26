@@ -411,7 +411,7 @@ function ElementEditForm({
         <AnswerCollectionEditModal
           inlineEditing
           collectionId={collectionModal.id}
-          open={open}
+          open={collectionModal.open}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
           refetchAnswerCollections={async () => {
             await refetch()
