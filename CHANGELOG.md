@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.56...v3.3.0-alpha.57) (2025-05-26)
+
+
+### Features
+
+* add direct import functionality (read permissions) for public answer collections in catalog ([#4715](https://github.com/uzh-bf/klicker-uzh/issues/4715)) ([964a1ed](https://github.com/uzh-bf/klicker-uzh/commit/964a1ed888e9eba33675b478d95d254f9b5cd149))
+* **apps/frontend-manage:** add possibility to open answer collection edit modal directly from element edit modal ([#4713](https://github.com/uzh-bf/klicker-uzh/issues/4713)) ([96b9377](https://github.com/uzh-bf/klicker-uzh/commit/96b9377121940d1fe587ec1f0d96bb0fb0fb8389))
+
+
+### Enhancements
+
+* add option to duplicate answer collections with at least read permissions ([#4718](https://github.com/uzh-bf/klicker-uzh/issues/4718)) ([3f27b36](https://github.com/uzh-bf/klicker-uzh/commit/3f27b368e69fed7409f14d74815ff5a755228519))
+
 ## [3.3.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.55...v3.3.0-alpha.56) (2025-05-24)
 
 
