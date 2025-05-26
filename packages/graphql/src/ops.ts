@@ -220,7 +220,7 @@ export enum ActivityType {
 
 export type AnswerCollection = {
   __typename?: 'AnswerCollection';
-  createdAt: Scalars['Date']['output'];
+  createdAt?: Maybe<Scalars['Date']['output']>;
   description: Scalars['String']['output'];
   entries?: Maybe<Array<AnswerCollectionEntry>>;
   id: Scalars['Int']['output'];
@@ -237,7 +237,7 @@ export type AnswerCollection = {
   ownerShortname?: Maybe<Scalars['String']['output']>;
   permissionLevel?: Maybe<PermissionLevel>;
   sharingType?: Maybe<SharingType>;
-  updatedAt: Scalars['Date']['output'];
+  updatedAt?: Maybe<Scalars['Date']['output']>;
 };
 
 export type AnswerCollectionEntry = {
@@ -5598,7 +5598,7 @@ export type GetAnswerCollectionsElementsQuery = { __typename?: 'Query', getAnswe
 export type GetAnswerCollectionsInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAnswerCollectionsInfoQuery = { __typename?: 'Query', getAnswerCollectionsInfo?: Array<{ __typename?: 'AnswerCollection', id: number, name: string, description: string, ownerShortname?: string | null, numSharedUsers?: number | null, numOfEntries?: number | null, permissionLevel?: PermissionLevel | null, isOwner?: boolean | null, isManager?: boolean | null, isEditor?: boolean | null, isImported?: boolean | null, isShared?: boolean | null, isDeletable?: boolean | null, isRemovable?: boolean | null, sharingType?: SharingType | null, createdAt: any, updatedAt: any }> | null };
+export type GetAnswerCollectionsInfoQuery = { __typename?: 'Query', getAnswerCollectionsInfo?: Array<{ __typename?: 'AnswerCollection', id: number, name: string, description: string, ownerShortname?: string | null, numSharedUsers?: number | null, numOfEntries?: number | null, permissionLevel?: PermissionLevel | null, isOwner?: boolean | null, isManager?: boolean | null, isEditor?: boolean | null, isImported?: boolean | null, isShared?: boolean | null, isDeletable?: boolean | null, isRemovable?: boolean | null, sharingType?: SharingType | null, createdAt?: any | null, updatedAt?: any | null }> | null };
 
 export type GetArtificialInstanceQueryVariables = Exact<{
   elementId: Scalars['Int']['input'];
