@@ -1,8 +1,6 @@
-import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useField } from 'formik'
-import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { ElementFormTypesSelection } from '../types'
 import SelectionCollectionOptions from './SelectionCollectionOptions'
@@ -10,38 +8,32 @@ import SelectionManualItemCreation from './SelectionManualItemCreation'
 
 interface SelectionOptionsProps {
   creationMode: boolean
-  templateId?: string
-  isTemplate: boolean
   inputsDisabled?: boolean
   values: ElementFormTypesSelection
+  collections: Omit<AnswerCollection, 'description'>[]
+  collectionsLoading: boolean
+  refetchCollections: () => Promise<any>
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
+  openAnswerCollectionEditModal: (collectionId: number) => void
 }
 
 function SelectionOptions({
   creationMode,
-  templateId,
-  isTemplate,
   inputsDisabled,
   values,
+  collections,
+  collectionsLoading,
+  refetchCollections,
   setAnswerCollectionEntries,
+  openAnswerCollectionEditModal,
 }: SelectionOptionsProps) {
-  const t = useTranslations()
   const [selectionMode, _, selectionModeHelpers] = useField<
     ElementFormTypesSelection['options']['itemSelectionMode']
   >('options.itemSelectionMode')
 
-  const { data, loading, refetch } = useQuery(
-    GetAnswerCollectionsElementsDocument,
-    {
-      variables: { templateId },
-      fetchPolicy: 'network-only',
-    }
-  )
-  const collections = data?.getAnswerCollectionsElements ?? []
-
-  if (loading) {
+  if (collectionsLoading) {
     return <Loader />
   }
 
@@ -68,13 +60,14 @@ function SelectionOptions({
       creationMode={creationMode}
       inputsDisabled={inputsDisabled}
       collections={collections}
-      refetchCollections={refetch}
-      loading={loading}
+      refetchCollections={refetchCollections}
+      loading={collectionsLoading}
       values={values}
       setAnswerCollectionEntries={setAnswerCollectionEntries}
       setItemSelectionMode={(newValue) =>
         selectionModeHelpers.setValue(newValue)
       }
+      openAnswerCollectionEditModal={openAnswerCollectionEditModal}
     />
   )
 }

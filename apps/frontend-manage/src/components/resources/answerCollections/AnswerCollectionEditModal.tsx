@@ -16,6 +16,7 @@ import {
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AddAnswerCollectionEntry from './AddAnswerCollectionEntry'
 import AnswerCollectionMetaForm from './AnswerCollectionMetaForm'
 import AnswerCollectionOption from './AnswerCollectionOption'
@@ -24,16 +25,22 @@ function AnswerCollectionEditModal({
   collectionId,
   open,
   onClose,
+  inlineEditing = false,
+  refetchAnswerCollections,
+  className,
 }: {
   collectionId: number
   open: boolean
   onClose: () => void
+  inlineEditing?: boolean
+  refetchAnswerCollections?: () => Promise<any>
+  className?: { overlay?: string; content?: string }
 }) {
   const t = useTranslations()
   const [successToast, setSuccessToast] = useState(false)
   const [optionsEditingDisabled, setOptionsEditingDisabled] = useState(false)
   const [accordionState, setAccordionState] = useState<'metadata' | 'options'>(
-    'metadata'
+    inlineEditing ? 'options' : 'metadata'
   )
   const [metadataTouched, setMetadataTouched] = useState(false)
   const [optionsTouched, setOptionsTouched] = useState(false)
@@ -86,12 +93,18 @@ function AnswerCollectionEditModal({
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
-      className={{ content: 'max-h-[calc(100vh-1.5rem)] overflow-y-auto' }}
+      className={{
+        content: twMerge(
+          'max-h-[calc(100vh-1.5rem)] overflow-y-auto',
+          className?.content
+        ),
+        overlay: className?.overlay,
+      }}
     >
       <Accordion
         collapsible
         type="single"
-        defaultValue="metadata"
+        defaultValue={'metadata'}
         value={accordionState}
         onValueChange={(newValue) => {
           if (metadataTouched || optionsTouched) {
@@ -119,6 +132,8 @@ function AnswerCollectionEditModal({
               }}
               metadataTouched={metadataTouched}
               setMetadataTouched={setMetadataTouched}
+              inlineEditing={inlineEditing}
+              refetchAnswerCollections={refetchAnswerCollections}
             />
           </AccordionContent>
         </AccordionItem>
@@ -176,6 +191,8 @@ function AnswerCollectionEditModal({
                       setOptionsTouched(false)
                       setSuccessToast(true)
                     }}
+                    inlineEditing={inlineEditing}
+                    refetchAnswerCollections={refetchAnswerCollections}
                   />
                 ))
               )}
@@ -194,6 +211,8 @@ function AnswerCollectionEditModal({
                 setOptionsTouched(false)
                 setSuccessToast(true)
               }}
+              inlineEditing={inlineEditing}
+              refetchAnswerCollections={refetchAnswerCollections}
             />
           </AccordionContent>
         </AccordionItem>

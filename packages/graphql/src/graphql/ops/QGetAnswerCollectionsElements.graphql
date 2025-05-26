@@ -3,6 +3,7 @@ query GetAnswerCollectionsElements($templateId: String) {
     id
     name
     isShared
+    isEditor
 
     entries {
       id

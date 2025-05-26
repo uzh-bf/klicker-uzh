@@ -10,10 +10,11 @@ import {
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesSelection } from '../types'
+import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
@@ -29,6 +30,7 @@ interface SelectionCollectionOptionsProps {
     SetStateAction<{ id: number; value: string }[]>
   >
   setItemSelectionMode: (newValue: 'existing' | 'new') => void
+  openAnswerCollectionEditModal: (collectionId: number) => void
 }
 
 function SelectionCollectionOptions({
@@ -40,12 +42,13 @@ function SelectionCollectionOptions({
   refetchCollections,
   setAnswerCollectionEntries,
   setItemSelectionMode,
+  openAnswerCollectionEditModal,
 }: SelectionCollectionOptionsProps) {
   const t = useTranslations()
   const [solutions, _, solutionHelpers] = useField<
     ElementFormTypesSelection['options']['correctAnswers']
   >('options.correctAnswers')
-  const [__, ____, collectionHelpers] = useField<
+  const [collectionField, ___, collectionHelpers] = useField<
     ElementFormTypesSelection['options']['answerCollection']
   >('options.answerCollection')
 
@@ -70,6 +73,17 @@ function SelectionCollectionOptions({
     collectionAnswers,
   })
 
+  // locally store the selected answer collection
+  const selectedCollection = useMemo(() => {
+    if (typeof collectionField.value === 'undefined') {
+      return undefined
+    }
+
+    return collections.find(
+      (collection) => collection.id === parseInt(collectionField.value!)
+    )
+  }, [collectionField.value, collections])
+
   if (collections.length === 0) {
     return (
       <UserNotification type="warning" className={{ root: 'text-sm' }}>
@@ -78,11 +92,14 @@ function SelectionCollectionOptions({
             <span
               className="cursor-pointer font-bold underline"
               onClick={() => {
-                // switch to the creation mode for new answer collection options
-                setItemSelectionMode('new')
+                // unsert any answer collection entries
+                setAnswerCollectionEntries([])
 
                 // reset the answer collection field to ensure that all fields update
                 collectionHelpers.setValue(undefined)
+
+                // switch to the creation mode for new answer collection options
+                setItemSelectionMode('new')
               }}
               data-cy="create-inline-answer-collection"
             >
@@ -148,6 +165,15 @@ function SelectionCollectionOptions({
               className={{ root: twMerge(loading ? 'animate-spin' : '') }}
             />
           </Button>
+          <AnswerCollectionInlineEditButton
+            disabled={!selectedCollection?.isEditor}
+            selectedCollectionId={
+              collectionField.value
+                ? parseInt(collectionField.value)
+                : undefined
+            }
+            openAnswerCollectionEditModal={openAnswerCollectionEditModal}
+          />
         </div>
 
         <FormikNumberField
@@ -173,11 +199,11 @@ function SelectionCollectionOptions({
             // reset the items selected as sample solutions
             solutionHelpers.setValue([])
 
-            // switch to the creation mode for new answer collection options
-            setItemSelectionMode('new')
-
             // reset the answer collection field to ensure that all fields update
             collectionHelpers.setValue(undefined)
+
+            // switch to the creation mode for new answer collection options
+            setItemSelectionMode('new')
           }}
           className={{
             root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
