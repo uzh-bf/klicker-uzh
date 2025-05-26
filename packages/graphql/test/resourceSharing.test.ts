@@ -22,6 +22,7 @@ import {
   getCatalogAnswerCollections,
   getCatalogSharingRequests,
   getDerivedAnswerCollectionPermissions,
+  importAnswerCollection,
   requestCatalogObject,
   revokeObjectAccess,
   shareObject,
@@ -322,7 +323,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour2?.userShortname).toBe(userFour.shortname)
   })
 
-  it('Verify that user 5 can request access and import public answer collections in public catalog', async () => {
+  it('Verify that user 5 can request access and copy the public answer collections in public catalog', async () => {
     // create answer collections and catalog collections for testing
     const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
@@ -513,6 +514,94 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(importedACs3[0]!.name).toContain(answerCollection1.name)
     expect(importedACs3[1]!.originalId).toBe(AC1!.id)
     expect(importedACs3[1]!.name).toContain(answerCollection1.name)
+  })
+
+  it('Verify that user 5 can request access and copy the public answer collections in public catalog', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
+    const { publicCatalog, restrictedCatalog } =
+      await seedCatalogCollections(userOneCtx)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+    await seedAnswerCollectionCatalogAssignments(
+      prisma,
+      AC1!.id,
+      AC2!.id,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
+    // import public AC and verify that importing restricted AC does not work
+    const failure3 = await importAnswerCollection(
+      {
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC2!.id, // restricted answer collection
+      },
+      userFiveCtx
+    )
+    expect(failure3).toBeFalsy()
+
+    const success3 = await importAnswerCollection(
+      {
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC1!.id, // public answer collection
+      },
+      userFiveCtx
+    )
+    expect(success3).toBeTruthy()
+
+    // verify that a correct direct permission has been created
+    const permission = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          userId: userFive.id,
+          answerCollectionId: AC1!.id,
+        },
+      },
+    })
+    expect(permission).not.toBeNull()
+    expect(permission!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // verify that a corresponding derived permission has been created
+    const derivedPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          userId: userFive.id,
+          answerCollectionId: AC1!.id,
+        },
+      },
+    })
+    expect(derivedPermission).not.toBeNull()
+    expect(derivedPermission!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // find assignment for answer collection to public catalog collection
+    const assignment = await prisma.catalogCollectionAssignment.findUnique({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: AC1!.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+      },
+    })
+
+    // verify that a correct audit log entry has been created
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userFive.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Read permission granted on answer collection (ID ${AC1!.id}) through public catalog collection (ID ${publicCatalog.id}) and assignment (ID ${assignment!.id}) for user ${userFive.id}.`
+    )
   })
 
   it('Verify that answer collection sharing requests can be cancelled by the initiator', async () => {

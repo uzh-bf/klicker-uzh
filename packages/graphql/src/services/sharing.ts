@@ -4783,6 +4783,18 @@ export async function importAnswerCollection(
       { answerCollectionId: collection.id, userId: ctx.user.sub },
       prisma
     )
+
+    // set audit log entry (granted read permissions)
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.PERMISSION_GRANTED,
+        objectType: DB.ObjectType.ANSWER_COLLECTION,
+        objectId: String(collection.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: ctx.user.sub,
+        message: `Read permission granted on answer collection (ID ${collection.id}) through public catalog collection (ID ${catalogCollectionId}) and assignment (ID ${assignment.id}) for user ${ctx.user.sub}.`,
+      },
+    })
   })
 
   // invalidate cache for the existing collection
