@@ -1259,7 +1259,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
-  it('Import (and copy) the public answer collection (for user pro2)', function () {
+  it('Copy the public answer collection into a users own account (for user pro2)', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
@@ -1284,6 +1284,35 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
       'exist'
     )
+  })
+
+  it('Import the public answer collection into a users own account (read permissions; for user pro4)', function () {
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
+      'exist'
+    )
+
+    // primary action should be import
+    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).realClick()
+    cy.get('[data-cy="cancel-object-import"]').click()
+
+    // open import functionality through dropdown
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="confirm-object-import"]').click()
+
+    // verify that the collection is visible in resources
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
+      .get(`[data-cy="permission-level-${this.data.public.name}-READ"]`)
+      .should('exist')
   })
 
   it('Verify that imported answer collection is visible to user pro2 (copied and with edit permissions)', function () {

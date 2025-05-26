@@ -32,6 +32,7 @@ import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogCopyModal from './CatalogCopyModal'
 import CatalogImportModal from './CatalogImportModal'
 import CatalogObjectCopySuccessToast from './CatalogObjectCopySuccessToast'
+import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
 import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
 import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
@@ -135,8 +136,8 @@ function CatalogObjectItem({
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
             } else {
-              // primary action for public objects: copy the object to the user's account
-              setCopyModal(true)
+              // primary action for public objects: import the object to the user's account
+              setImportModal(true)
             }
           } else {
             // primary action for restricted objects: request access
@@ -261,7 +262,7 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectCopySuccessToast
+      <CatalogObjectImportSuccessToast
         open={showCopySuccessToast}
         onClose={() => setShowCopySuccessToast(false)}
       />

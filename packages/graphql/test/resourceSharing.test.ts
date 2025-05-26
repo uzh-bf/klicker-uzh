@@ -516,7 +516,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(importedACs3[1]!.name).toContain(answerCollection1.name)
   })
 
-  it('Verify that user 5 can request access and copy the public answer collections in public catalog', async () => {
+  it('Verify that user 5 can import the public answer collections in public catalog', async () => {
     // create answer collections and catalog collections for testing
     const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)

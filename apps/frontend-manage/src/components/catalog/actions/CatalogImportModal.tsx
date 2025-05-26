@@ -1,5 +1,4 @@
-import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faBan } from '@fortawesome/free-solid-svg-icons'
+import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -88,7 +87,7 @@ function CatalogImportModal({
             }}
             data={{ cy: 'confirm-object-import' }}
           >
-            <Button.Icon icon={faCopy} loading={importing} />
+            <Button.Icon icon={faDownload} loading={importing} />
             <Button.Label>
               {t('manage.catalog.importObjectType', {
                 object: t(`shared.types.${objectType}`),
