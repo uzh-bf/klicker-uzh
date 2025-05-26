@@ -18,6 +18,7 @@ import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
+import useSolutionsUpdateItemsChange from './useSolutionsUpdateItemsChange'
 
 function CaseStudyCollectionSelection({
   loading,
@@ -77,6 +78,13 @@ function CaseStudyCollectionSelection({
     field: itemsField,
     helpers: itemsHelpers,
     collectionAnswers,
+  })
+
+  // update the solutions stored on the cases to be consistent with the selected items
+  useSolutionsUpdateItemsChange({
+    itemIds: itemsField.value ?? [],
+    cases: casesField.value,
+    casesHelpers,
   })
 
   // locally store the selected answer collection
@@ -236,44 +244,8 @@ function CaseStudyCollectionSelection({
               container: () => 'w-full',
             }}
             onChange={(newValue) => {
-              const prevItemIds = itemsField.value
-              const newItemIds = newValue.map((item) => item.value)
-
-              // check if an item has been removed and conditionally remove the solutions for this item
-              if (newItemIds.length < (prevItemIds ?? []).length) {
-                // identify the removed item
-                const removedItem = (prevItemIds ?? []).find(
-                  (itemId) => !newItemIds.includes(itemId)
-                )
-
-                // if an item has been removed, remove the corresponding key from the case solutions
-                if (removedItem) {
-                  const newCases = casesField.value?.map((caseItem) => {
-                    // if no solutions are set, skip this case
-                    if (!('solutions' in caseItem) || !caseItem.solutions) {
-                      return caseItem
-                    }
-
-                    // filter out all solution entries for the removed item
-                    const newSolutions = Object.fromEntries(
-                      Object.entries(caseItem.solutions).filter(
-                        ([itemIdString]) =>
-                          itemIdString !== `itemId-${removedItem}`
-                      )
-                    )
-
-                    return {
-                      ...caseItem,
-                      solutions: newSolutions,
-                    }
-                  })
-
-                  // update the cases field
-                  casesHelpers.setValue(newCases)
-                }
-              }
-
               // update the selected items
+              const newItemIds = newValue.map((item) => item.value)
               itemsHelpers.setValue(newItemIds)
             }}
             placeholder={t('manage.elements.selectCaseStudyItems')}
@@ -292,20 +264,6 @@ function CaseStudyCollectionSelection({
 
             // reset the selected items
             itemsHelpers.setValue([])
-
-            // reset all solutions inside the cases
-            casesHelpers.setValue(
-              casesField.value?.map((caseItem) => {
-                if ('solutions' in caseItem) {
-                  return {
-                    ...caseItem,
-                    solutions: undefined,
-                  }
-                }
-
-                return caseItem
-              })
-            )
           }}
         />
       </div>

@@ -92,11 +92,14 @@ function SelectionCollectionOptions({
             <span
               className="cursor-pointer font-bold underline"
               onClick={() => {
-                // switch to the creation mode for new answer collection options
-                setItemSelectionMode('new')
+                // unsert any answer collection entries
+                setAnswerCollectionEntries([])
 
                 // reset the answer collection field to ensure that all fields update
                 collectionHelpers.setValue(undefined)
+
+                // switch to the creation mode for new answer collection options
+                setItemSelectionMode('new')
               }}
               data-cy="create-inline-answer-collection"
             >
@@ -196,11 +199,11 @@ function SelectionCollectionOptions({
             // reset the items selected as sample solutions
             solutionHelpers.setValue([])
 
-            // switch to the creation mode for new answer collection options
-            setItemSelectionMode('new')
-
             // reset the answer collection field to ensure that all fields update
             collectionHelpers.setValue(undefined)
+
+            // switch to the creation mode for new answer collection options
+            setItemSelectionMode('new')
           }}
           className={{
             root: 'text-primary-100 hover:text-primary-100 w-max px-0.5 py-1 text-sm hover:bg-transparent hover:underline',
