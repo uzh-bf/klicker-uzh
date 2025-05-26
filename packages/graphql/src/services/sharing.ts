@@ -4476,7 +4476,7 @@ export async function shareObject(
 
 // ! Import Functionalities (Public Resources)
 // #region
-export async function importAnswerCollection(
+export async function copyAnswerCollectionToAccount(
   {
     collectionId,
     catalogCollectionId,
@@ -4579,7 +4579,7 @@ export async function importAnswerCollection(
   return true
 }
 
-export async function importElement(
+export async function copyElementToAccount(
   {
     elementId,
     catalogCollectionId,

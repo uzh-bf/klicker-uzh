@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectRequestErrorToast({
+function CatalogObjectCopySuccessToast({
   open,
   onClose,
 }: {
@@ -13,13 +13,14 @@ function CatalogObjectRequestErrorToast({
   return (
     <Toast
       dismissible
-      type="error"
+      type="success"
       openExternal={open}
       onCloseExternal={onClose}
+      duration={3500}
     >
-      {t('manage.catalog.importCatalogObjectFailed')}
+      {t('manage.catalog.copyCatalogObjectSuccess')}
     </Toast>
   )
 }
 
-export default CatalogObjectRequestErrorToast
+export default CatalogObjectCopySuccessToast

@@ -29,8 +29,8 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
-import CatalogImportModal from './CatalogImportModal'
-import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
+import CatalogCopyModal from './CatalogCopyModal'
+import CatalogObjectCopySuccessToast from './CatalogObjectCopySuccessToast'
 import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
 import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
@@ -69,7 +69,7 @@ function CatalogObjectItem({
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
-  const [importModal, setImportModal] = useState(false)
+  const [copyModal, setCopyModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
@@ -77,7 +77,7 @@ function CatalogObjectItem({
 
   // toast states
   const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
-  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
+  const [showCopySuccessToast, setShowCopySuccessToast] = useState(false)
   const [
     showRequestCancellationSuccessToast,
     setShowRequestCancellationSuccessToast,
@@ -87,7 +87,7 @@ function CatalogObjectItem({
     object,
     actionsDisabled,
     managedAccess,
-    setImportModal,
+    setCopyModal,
     setRequestModal,
     setRequestCancellationModal,
     setSharingModal,
@@ -131,8 +131,8 @@ function CatalogObjectItem({
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
             } else {
-              // primary action for public objects: import a copy
-              setImportModal(true)
+              // primary action for public objects: copy the object to the user's account
+              setCopyModal(true)
             }
           } else {
             // primary action for restricted objects: request access
@@ -241,15 +241,15 @@ function CatalogObjectItem({
         onClose={() => setShowRequestSuccessToast(false)}
       />
 
-      {/* functionality for users to import a copy of a publicly available object */}
+      {/* functionality for users to copy a publicly available object */}
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
-        <CatalogImportModal
-          open={importModal}
+        <CatalogCopyModal
+          open={copyModal}
           onSuccess={() => {
-            setShowImportSuccessToast(true)
-            setImportModal(false)
+            setShowCopySuccessToast(true)
+            setCopyModal(false)
           }}
-          onClose={() => setImportModal(false)}
+          onClose={() => setCopyModal(false)}
           objectType={object.objectType}
           objectId={object.objectId ?? object.objectUuid!}
           objectName={object.name}
@@ -257,9 +257,9 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectImportSuccessToast
-        open={showImportSuccessToast}
-        onClose={() => setShowImportSuccessToast(false)}
+      <CatalogObjectCopySuccessToast
+        open={showCopySuccessToast}
+        onClose={() => setShowCopySuccessToast(false)}
       />
 
       {/* functionality to cancel request for requested catalog object */}

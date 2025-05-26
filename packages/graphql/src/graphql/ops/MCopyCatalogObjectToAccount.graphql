@@ -1,9 +1,9 @@
-mutation ImportCatalogObject(
+mutation CopyCatalogObjectToAccount(
   $objectId: String!
   $objectType: ObjectType!
   $catalogCollectionId: String
 ) {
-  importCatalogObject(
+  copyCatalogObjectToAccount(
     objectId: $objectId
     objectType: $objectType
     catalogCollectionId: $catalogCollectionId

@@ -1873,7 +1873,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      importCatalogObject: t.withAuth(asUserFullAccess).boolean({
+      copyCatalogObjectToAccount: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
@@ -1883,7 +1883,7 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           // access control implemented inside service functions (does not fit default schema)
           if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
-            return await SharingService.importAnswerCollection(
+            return await SharingService.copyAnswerCollectionToAccount(
               {
                 collectionId: parseInt(args.objectId),
                 catalogCollectionId: args.catalogCollectionId,
@@ -1891,7 +1891,7 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else if (args.objectType === DB.ObjectType.ELEMENT) {
-            return await SharingService.importElement(
+            return await SharingService.copyElementToAccount(
               {
                 elementId: parseInt(args.objectId),
                 catalogCollectionId: args.catalogCollectionId,

@@ -1,7 +1,6 @@
 import {
   faDownload,
   faEllipsisVertical,
-  faLink,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -71,13 +70,6 @@ function AnswerCollectionItem({
       >
         <div className="flex flex-col items-start">
           <div className="flex items-center gap-2">
-            {collection.isImported && (
-              <FontAwesomeIcon
-                icon={collection.isImported ? faDownload : faLink}
-                className="text-gray-500"
-                fixedWidth
-              />
-            )}
             <span className="font-medium">{collection.name}</span>
             {collection.permissionLevel && (
               <ObjectPermissionLevel

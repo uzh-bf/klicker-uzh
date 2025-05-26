@@ -16,12 +16,12 @@ import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
   changeObjectPermissionLevel,
+  copyAnswerCollectionToAccount,
   getAnswerCollectionCatalogInfo,
   getAnswerCollectionPermissions,
   getCatalogAnswerCollections,
   getCatalogSharingRequests,
   getDerivedAnswerCollectionPermissions,
-  importAnswerCollection,
   requestCatalogObject,
   revokeObjectAccess,
   shareObject,
@@ -351,7 +351,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(failure1).toBeFalsy()
 
-    const failure2 = await importAnswerCollection(
+    const failure2 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: restrictedCatalog.id,
         collectionId: AC1!.id,
@@ -456,7 +456,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
 
     // import public AC and verify that importing restricted AC does not work
-    const failure3 = await importAnswerCollection(
+    const failure3 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC2!.id, // restricted answer collection
@@ -465,7 +465,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(failure3).toBeFalsy()
 
-    const success3 = await importAnswerCollection(
+    const success3 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC1!.id, // public answer collection
@@ -496,7 +496,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
     expect(accessRequests3.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
 
-    const success4 = await importAnswerCollection(
+    const success4 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC1!.id,

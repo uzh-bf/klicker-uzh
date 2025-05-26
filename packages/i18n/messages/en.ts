@@ -2444,7 +2444,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
       access: 'Access',
       accessTooltip:
-        'Choose whether this object can be imported by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
+        'Choose whether this object can be imported / used by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
       catalogCollection: 'Catalog Collection',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
@@ -2577,7 +2577,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
       infoAccessPUBLIC:
-        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
+        'Public objects can be viewed and copied by all users with access to the corresponding catalog collection. Answer collections can additionally be used directly in questions by the corresponding users (with read access).',
       infoAccessRESTRICTED:
         'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       objectType: 'Object Type',
@@ -2588,11 +2588,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       useTemplate: 'Use template',
-      importObject: 'Import Object',
-      importObjectType: 'Import {object}',
+      copyObjectToAccount: 'Copy Object to own Account',
+      copyObjectType: 'Copy {object} to own account',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
-      importPublicResource: 'Import Public Resource',
+      copyPublicResource: 'Copy Public Resource',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
       sharingRequestsExplanation:
@@ -2696,7 +2696,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestCatalogObjectAccessDescription:
         'Here you can request access to "{name}" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request.',
       requestSuccessInfoCATALOG_COLLECTION:
-        'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
+        'Once the owner accepts your request, you will have access to the catalog collection and can request/import/copy objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
       requestSuccessInfoLIVE_QUIZ: '',
@@ -2710,12 +2710,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
         'An error occurred while requesting the access. Please try again or contact the support.',
-      importCatalogObjectDescription:
-        'Here you can import a copy of "{name}" (by {owner}) into your own account. After the import is completed, you can directly use the imported object or modify it as needed. Changes to the original object will not affect your imported copy.',
-      importCatalogObjectSuccess:
-        'The object was successfully imported into your account.',
-      importCatalogObjectFailed:
-        'An error occurred while importing the object. Please try again or contact the support.',
+      copyCatalogObjectDescription:
+        'Here you can copy "{name}" (by {owner}) into your own account. After the copying is completed, you can directly use the copied object or modify it as needed. Changes to the original object will not affect your copy.',
+      copyCatalogObjectSuccess:
+        'The object was successfully copied into your account.',
+      copyCatalogObjectFailed:
+        'An error occurred while copying the object. Please try again or contact the support.',
       cancelCatalogObjectRequest: 'Cancel Object Sharing Request',
       cancelCatalogObjectRequestDescription: `Please confirm that you want to cancel the sharing request for "{name}" (by {owner})? You can request access to the object again later.`,
       cancelRequest: 'Cancel Request',

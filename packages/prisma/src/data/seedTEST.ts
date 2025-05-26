@@ -116,10 +116,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // seed catalog collection for objects that are not assigned to any custom catalog
   const missingCatalogCollection = await prisma.catalogCollection.upsert({
     where: {
-      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      id: MISSING_CATALOG_COLLECTION_ID,
     },
     create: {
-      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      id: MISSING_CATALOG_COLLECTION_ID,
       name: '',
       access: Prisma.ObjectAccess.PUBLIC,
     },
@@ -167,20 +167,49 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     answerCollections.push(answerCollection)
   }
 
+  // seed two different catalog colllections, one public, one restricted
+  const publicCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: DATA_TEST.PUBLIC_CATALOG_COLLECTION_ID,
+    },
+    create: {
+      id: DATA_TEST.PUBLIC_CATALOG_COLLECTION_ID,
+      name: 'Public Catalog Collection',
+      access: Prisma.ObjectAccess.PUBLIC,
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      name: 'Public Catalog Collection',
+      access: Prisma.ObjectAccess.PUBLIC,
+    },
+  })
+  const restrictedCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: DATA_TEST.RESTRICTED_CATALOG_COLLECTION_ID,
+    },
+    create: {
+      id: DATA_TEST.RESTRICTED_CATALOG_COLLECTION_ID,
+      name: 'Restricted Catalog Collection',
+      access: Prisma.ObjectAccess.RESTRICTED,
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      name: 'Restricted Catalog Collection',
+      access: Prisma.ObjectAccess.RESTRICTED,
+    },
+  })
+
   // assign answer collections to catalog collections, if defined in relation
   const catalogAnswerCollectionAssignments = await Promise.all(
     DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {
       const collection = answerCollections.find(
         (ac) => ac.name === data.answerCollectionName
       )
-      // TODO: once available, fetch catalog collections here and assign same answer collection to multiple for testing
-      const catalogCollectionId = missingCatalogCollection.id
-
       return prisma.catalogCollectionAssignment.upsert({
         where: {
           answerCollectionId_catalogCollectionId: {
             answerCollectionId: collection!.id,
-            catalogCollectionId,
+            catalogCollectionId: data.catalogCollectionId,
           },
         },
         create: {
@@ -192,7 +221,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
           catalogCollection: {
             connect: {
-              id: catalogCollectionId,
+              id: data.catalogCollectionId,
             },
           },
         },

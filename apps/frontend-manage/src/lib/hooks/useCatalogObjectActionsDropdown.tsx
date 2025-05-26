@@ -18,7 +18,7 @@ function useCatalogObjectActionsDropdown({
   object,
   actionsDisabled,
   managedAccess,
-  setImportModal,
+  setCopyModal,
   setRequestModal,
   setRequestCancellationModal,
   setSharingModal,
@@ -27,7 +27,7 @@ function useCatalogObjectActionsDropdown({
   object: CatalogObject
   actionsDisabled: boolean
   managedAccess: boolean
-  setImportModal: Dispatch<SetStateAction<boolean>>
+  setCopyModal: Dispatch<SetStateAction<boolean>>
   setRequestModal: Dispatch<SetStateAction<boolean>>
   setRequestCancellationModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
@@ -39,8 +39,8 @@ function useCatalogObjectActionsDropdown({
   return useMemo(() => {
     const items = []
 
-    // import functionality is only available for answer collections and elements (for now) - not for activities / courses
-    // when importing elements, the content of the element is imported, potentially linked answer collections are shared
+    // copy to account functionality is only available for answer collections and elements (for now) - not for activities / courses
+    // when copying elements, the content of the element is copied, potentially linked answer collections are shared
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
@@ -49,25 +49,24 @@ function useCatalogObjectActionsDropdown({
         object.objectType === ObjectType.Element)
     ) {
       items.push({
-        id: 'import',
+        id: 'copyToAccount',
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
             <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
-            {t('manage.catalog.importObjectType', {
+            {t('manage.catalog.copyObjectType', {
               object: t(`shared.types.${object.objectType}`),
             })}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {
           e?.stopPropagation()
-          setImportModal(true)
+          setCopyModal(true)
         },
-        data: { cy: `import-object-${object.name}` },
+        data: { cy: `copy-object-${object.name}` },
       })
     }
 
     // request access functionality for objects that aren't requested, owned or shared
-    // TODO: enable requesting access to live quiz templates once the corresponding functionality is available
     if (
       !actionsDisabled &&
       !object.isRequested &&
@@ -126,7 +125,6 @@ function useCatalogObjectActionsDropdown({
     }
 
     // sufficient permissions on the object (ADMIN / OWNER) are always deciding for whether or not to show the sharing dialog
-    // TODO: remove the case for live quiz templates once the corresponding sharing functionality is available
     if (object.isManager && object.objectType !== ObjectType.LiveQuiz) {
       items.push({
         id: 'share',
@@ -172,7 +170,7 @@ function useCatalogObjectActionsDropdown({
     object,
     actionsDisabled,
     managedAccess,
-    setImportModal,
+    setCopyModal,
     setRequestModal,
     setRequestCancellationModal,
     setSharingModal,

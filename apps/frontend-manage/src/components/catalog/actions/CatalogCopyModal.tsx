@@ -5,11 +5,11 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
-import CatalogObjectImportErrorToast from './CatalogObjectImportErrorToast'
+import CatalogObjectCopyErrorToast from './CatalogObjectCopyErrorToast'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
-import useImportCatalogObject from './useImportCatalogObject'
+import useCopyCatalogObject from './useCopyCatalogObject'
 
-function CatalogImportModal({
+function CatalogCopyModal({
   open,
   onSuccess,
   onClose,
@@ -30,7 +30,7 @@ function CatalogImportModal({
 }) {
   const t = useTranslations()
   const [errorToast, setErrorToast] = useState(false)
-  const { onImport, importing } = useImportCatalogObject({
+  const { onCopy, copying } = useCopyCatalogObject({
     objectType,
     objectId,
     catalogCollectionId,
@@ -46,11 +46,11 @@ function CatalogImportModal({
           setErrorToast(false)
           onClose()
         }}
-        title={t('manage.catalog.importPublicResource')}
-        dataCloseButton={{ cy: 'close-object-import-modal' }}
+        title={t('manage.catalog.copyPublicResource')}
+        dataCloseButton={{ cy: 'close-object-copy-modal' }}
       >
         <div>
-          {t.rich('manage.catalog.importCatalogObjectDescription', {
+          {t.rich('manage.catalog.copyCatalogObjectDescription', {
             name: objectName,
             owner: objectOwner ?? t('shared.generic.unknown'),
             b: (children) => <b>{children}</b>,
@@ -68,17 +68,17 @@ function CatalogImportModal({
               e?.stopPropagation()
               onClose()
             }}
-            data={{ cy: 'cancel-object-import' }}
+            data={{ cy: 'cancel-object-copy' }}
           >
             <Button.Icon icon={faBan} />
             <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
             primary
-            loading={importing}
+            loading={copying}
             onClick={async (e) => {
               e?.stopPropagation()
-              const success = await onImport()
+              const success = await onCopy()
 
               if (success) {
                 onSuccess()
@@ -86,11 +86,11 @@ function CatalogImportModal({
                 setErrorToast(true)
               }
             }}
-            data={{ cy: 'confirm-object-import' }}
+            data={{ cy: 'confirm-object-copy' }}
           >
-            <Button.Icon icon={faCopy} loading={importing} />
+            <Button.Icon icon={faCopy} loading={copying} />
             <Button.Label>
-              {t('manage.catalog.importObjectType', {
+              {t('manage.catalog.copyObjectType', {
                 object: t(`shared.types.${objectType}`),
               })}
             </Button.Label>
@@ -98,7 +98,7 @@ function CatalogImportModal({
         </div>
       </Modal>
 
-      <CatalogObjectImportErrorToast
+      <CatalogObjectCopyErrorToast
         open={errorToast}
         onClose={() => setErrorToast(false)}
       />
@@ -106,4 +106,4 @@ function CatalogImportModal({
   )
 }
 
-export default CatalogImportModal
+export default CatalogCopyModal
