@@ -184,6 +184,7 @@ enum ActivityType {
 }
 
 type AnswerCollection {
+  createdAt: Date
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
@@ -200,6 +201,7 @@ type AnswerCollection {
   ownerShortname: String
   permissionLevel: PermissionLevel
   sharingType: SharingType
+  updatedAt: Date
 }
 
 type AnswerCollectionEntry {

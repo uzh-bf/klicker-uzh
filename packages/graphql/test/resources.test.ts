@@ -144,7 +144,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
       userOneCtx
     )
     expect(res).toBeTruthy()
-    expect(res!.name).toBe(`${answerCollection1.name} (1)`)
+    expect(res!.name).toBe(answerCollection1.name)
   })
 
   it('Verify that all users with access to the answer collection can use the query to include it in elements', async () => {
