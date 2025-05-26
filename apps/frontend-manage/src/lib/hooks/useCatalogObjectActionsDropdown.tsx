@@ -1,6 +1,7 @@
 import { faCopy, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpFromBracket,
+  faDownload,
   faFilePen,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
@@ -19,6 +20,7 @@ function useCatalogObjectActionsDropdown({
   actionsDisabled,
   managedAccess,
   setCopyModal,
+  setImportModal,
   setRequestModal,
   setRequestCancellationModal,
   setSharingModal,
@@ -28,6 +30,7 @@ function useCatalogObjectActionsDropdown({
   actionsDisabled: boolean
   managedAccess: boolean
   setCopyModal: Dispatch<SetStateAction<boolean>>
+  setImportModal: Dispatch<SetStateAction<boolean>>
   setRequestModal: Dispatch<SetStateAction<boolean>>
   setRequestCancellationModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
@@ -38,6 +41,30 @@ function useCatalogObjectActionsDropdown({
 
   return useMemo(() => {
     const items = []
+
+    // import functionality for public answer collections (self-service with read permissions)
+    if (
+      !actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      object.objectType === ObjectType.AnswerCollection
+    ) {
+      items.push({
+        id: 'import',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faDownload} className="mr-2.5 h-4 w-4" />
+            {t('manage.catalog.importObjectType', {
+              object: t(`shared.types.${object.objectType}`),
+            })}
+          </div>
+        ),
+        onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+          e?.stopPropagation()
+          setImportModal(true)
+        },
+        data: { cy: `import-object-${object.name}` },
+      })
+    }
 
     // copy to account functionality is only available for answer collections and elements (for now) - not for activities / courses
     // when copying elements, the content of the element is copied, potentially linked answer collections are shared
@@ -171,6 +198,7 @@ function useCatalogObjectActionsDropdown({
     actionsDisabled,
     managedAccess,
     setCopyModal,
+    setImportModal,
     setRequestModal,
     setRequestCancellationModal,
     setSharingModal,

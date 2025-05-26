@@ -30,6 +30,7 @@ import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogCopyModal from './CatalogCopyModal'
+import CatalogImportModal from './CatalogImportModal'
 import CatalogObjectCopySuccessToast from './CatalogObjectCopySuccessToast'
 import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
@@ -70,6 +71,7 @@ function CatalogObjectItem({
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
   const [copyModal, setCopyModal] = useState(false)
+  const [importModal, setImportModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
@@ -78,6 +80,7 @@ function CatalogObjectItem({
   // toast states
   const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
   const [showCopySuccessToast, setShowCopySuccessToast] = useState(false)
+  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
   const [
     showRequestCancellationSuccessToast,
     setShowRequestCancellationSuccessToast,
@@ -87,6 +90,7 @@ function CatalogObjectItem({
     object,
     actionsDisabled,
     managedAccess,
+    setImportModal,
     setCopyModal,
     setRequestModal,
     setRequestCancellationModal,
@@ -260,6 +264,27 @@ function CatalogObjectItem({
       <CatalogObjectCopySuccessToast
         open={showCopySuccessToast}
         onClose={() => setShowCopySuccessToast(false)}
+      />
+
+      {/* functionality for users to import a publicly available object */}
+      {!actionsDisabled && object.access === ObjectAccess.Public ? (
+        <CatalogImportModal
+          open={importModal}
+          onSuccess={() => {
+            setShowImportSuccessToast(true)
+            setImportModal(false)
+          }}
+          onClose={() => setImportModal(false)}
+          objectType={object.objectType}
+          objectId={object.objectId ?? object.objectUuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          catalogCollectionId={catalogCollectionId}
+        />
+      ) : null}
+      <CatalogObjectCopySuccessToast
+        open={showImportSuccessToast}
+        onClose={() => setShowImportSuccessToast(false)}
       />
 
       {/* functionality to cancel request for requested catalog object */}

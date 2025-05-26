@@ -2613,9 +2613,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       useTemplate: 'Vorlage verwenden',
       copyObjectToAccount: 'Objekt in eigenen Account kopieren',
       copyObjectType: '{object} in eigenen Account kopieren',
+      importObjectType: '{object} importieren (Leseberechtigungen)',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
       copyPublicResource: 'Öffentliche Ressource kopieren',
+      importPublicResource: 'Öffentliche Ressource importieren',
       requestPublicResource:
         'Durch das Beantragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den gewährten Berechtigungen. Gewährte Berechtigungen können vom Besitzer entzogen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die Option "Importieren".',
       sharingRequestsExplanation:
@@ -2737,10 +2739,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei der Anforderung des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       copyCatalogObjectDescription:
         'Hier können Sie eine Kopie von "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto kopieren. Nach dem Kopieren können Sie das Objekt direkt verwenden oder bei Bedarf anpassen. Änderungen am ursprünglichen Objekt haben keinen Einfluss auf Ihre Kopie.',
+      importCatalogObjectDescription:
+        'Hier können Sie das Object "<b>{name}</b>" (von {owner}) mit Leseberechtigungen in Ihr eigenes Konto importieren. Änderungen am ursprünglichen Objekt werden automatisch auch für Sie sichtbar sein.',
       copyCatalogObjectSuccess:
         'Das Objekt wurde erfolgreich in Ihr Konto kopiert.',
       copyCatalogObjectFailed:
         'Beim kopieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      importCatalogObjectSuccess:
+        'Das Objekt wurde erfolgreich in Ihr Konto importiert.',
+      importCatalogObjectFailed:
+        'Beim importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       cancelCatalogObjectRequest: 'Zugriffsanfrage zurückziehen',
       cancelCatalogObjectRequestDescription: `Bitte bestätigen Sie, dass Sie die Zugriffsanfrage für "{name}" (von {owner}) zurückziehen möchten. Sie können später erneut Zugriff auf das Objekt beantragen.`,
       cancelRequest: 'Anfrage zurückziehen',

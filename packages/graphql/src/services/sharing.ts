@@ -4700,6 +4700,99 @@ export async function copyElementToAccount(
 
   return true
 }
+
+export async function importAnswerCollection(
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  // verify that the user has access to the catalog collection the answer collection is contained in
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable(
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return false
+  }
+
+  // get catalog assignment of this answer collection, verify public access
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+    },
+  })
+
+  // make sure that the answer collection is assigned to the specified catalog collection and that it is public (import allowed)
+  if (!assignment || assignment.access !== DB.ObjectAccess.PUBLIC) {
+    return false
+  }
+
+  // make sure that the answer collection exists and that the requesting user is not the owner
+  const collection = assignment.answerCollection
+  if (!collection || collection.ownerId === ctx.user.sub) {
+    return false
+  }
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    // create a read permission for the importing user on the answer collection
+    await prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: collection.id,
+          userId: ctx.user.sub,
+        },
+      },
+      create: {
+        permissionLevel: DB.PermissionLevel.READ,
+        propagation: false,
+        user: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+        answerCollection: {
+          connect: {
+            id: collection.id,
+          },
+        },
+      },
+      update: {},
+    })
+
+    // trigger recomputation of derived permissions for the object within the transaction
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collection.id, userId: ctx.user.sub },
+      prisma
+    )
+  })
+
+  // invalidate cache for the existing collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collection.id,
+  })
+
+  return true
+}
 // #endregion
 
 // ! Catalog Operations

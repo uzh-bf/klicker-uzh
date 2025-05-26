@@ -2590,9 +2590,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       useTemplate: 'Use template',
       copyObjectToAccount: 'Copy Object to own Account',
       copyObjectType: 'Copy {object} to own account',
+      importObjectType: 'Import {object} (reading rights)',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
       copyPublicResource: 'Copy Public Resource',
+      importPublicResource: 'Import Public Resource',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
       sharingRequestsExplanation:
@@ -2712,10 +2714,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while requesting the access. Please try again or contact the support.',
       copyCatalogObjectDescription:
         'Here you can copy "{name}" (by {owner}) into your own account. After the copying is completed, you can directly use the copied object or modify it as needed. Changes to the original object will not affect your copy.',
+      importCatalogObjectDescription:
+        'Here you can import the object "<b>{name}</b>" (by {owner}) with read permissions into your own account. Changes to the original object will automatically be visible to you as well.',
       copyCatalogObjectSuccess:
         'The object was successfully copied into your account.',
       copyCatalogObjectFailed:
         'An error occurred while copying the object. Please try again or contact the support.',
+      importCatalogObjectSuccess:
+        'The object was successfully imported into your account.',
+      importCatalogObjectFailed:
+        'An error occurred while importing the object. Please try again or contact the support.',
       cancelCatalogObjectRequest: 'Cancel Object Sharing Request',
       cancelCatalogObjectRequestDescription: `Please confirm that you want to cancel the sharing request for "{name}" (by {owner})? You can request access to the object again later.`,
       cancelRequest: 'Cancel Request',

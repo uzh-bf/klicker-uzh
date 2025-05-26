@@ -1,0 +1,11 @@
+mutation ImportCatalogObject(
+  $objectId: String!
+  $objectType: ObjectType!
+  $catalogCollectionId: String
+) {
+  importCatalogObject(
+    objectId: $objectId
+    objectType: $objectType
+    catalogCollectionId: $catalogCollectionId
+  )
+}
