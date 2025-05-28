@@ -1,0 +1,23 @@
+fragment AnswerCollectionData on AnswerCollection {
+  id
+  name
+  description
+  ownerShortname
+  numSharedUsers
+  numOfEntries
+  permissionLevel
+
+  isOwner
+  isManager
+  isEditor
+  isImported
+  isShared
+  isDeletable
+  isRemovable
+  sharingType
+
+  entries {
+    id
+    value
+  }
+}

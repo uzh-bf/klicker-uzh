@@ -90,6 +90,64 @@ export async function createAnswerCollection(
   }
 }
 
+export async function duplicateAnswerCollection(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the existing answer collection, including its entries
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+    include: { entries: true },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // create a new collection with the same entries
+  const duplicatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const newCollection = await prisma.answerCollection.create({
+      data: {
+        name: `${collection.name} (Copy)`,
+        description: collection.description,
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+      include: { entries: true },
+    })
+
+    // trigger recomputation of derived permissions (-> owner should get new one)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
+  })
+
+  return {
+    ...duplicatedCollection,
+    numSharedUsers: 0,
+    numOfEntries: duplicatedCollection.entries.length,
+    isOwner: true,
+    isManager: true,
+    isEditor: true,
+    isImported: false,
+    isShared: false,
+    isDeletable: true,
+    isRemovable: false,
+    sharingType: SharingType.OWNED,
+  }
+}
+
 export async function getAnswerCollectionsElements(
   { templateId }: { templateId?: string | null },
   ctx: PrismaTransactionContextWithUser

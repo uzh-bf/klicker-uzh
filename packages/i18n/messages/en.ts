@@ -2488,6 +2488,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
+      duplicateCollection: 'Duplicate Collection',
       viewUseCollectionContent: 'View Content / Use Collection',
       modifyContent: 'Modify Content',
       modifyCatalogAssignments: 'Modify Catalog Assignments',
@@ -2509,6 +2510,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while deleting the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
       transferOwnershipTitle: 'Transfer Collection Ownership',
+      duplicationNote:
+        'The collection will be duplicated in its current state and can be modified afterwards. Please note that ...',
+      duplicationNote1:
+        '... the new collection is not linked to any of the previously dependent questions / templates.',
+      duplicationNote2:
+        '... the new collection is not shared with any other users.',
+      duplicationNote3:
+        '... the new collection should be renamed to avoid confusion with the original when integrating into questions.',
+      duplicationFailure: 'Collection duplication failed. Please try again.',
+      duplicationSuccess: 'Collection has been duplicated successfully.',
     },
     userGroups: {
       description:

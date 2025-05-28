@@ -16,6 +16,8 @@ import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalM
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
+import AnswerCollectionDuplicationModal from './AnswerCollectionDuplicationModal'
+import AnswerCollectionDuplicationSuccessToast from './AnswerCollectionDuplicationSuccessToast'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -39,11 +41,13 @@ function AnswerCollectionItem({
 
   // modal states
   const [editModal, setEditModal] = useState(false)
+  const [duplicationModal, setDuplicationModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const [duplicationSuccessToast, setDuplicationSuccessToast] = useState(false)
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
     collectionName: collection.name,
@@ -54,6 +58,7 @@ function AnswerCollectionItem({
     isDeletable: collection.isDeletable ?? false,
     setSharingModal,
     setEditModal,
+    setDuplicationModal,
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
@@ -167,6 +172,19 @@ function AnswerCollectionItem({
           onClose={() => setEditModal(false)}
         />
       )}
+      {duplicationModal && (
+        <AnswerCollectionDuplicationModal
+          collectionId={collection.id}
+          open={duplicationModal}
+          onClose={() => setDuplicationModal(false)}
+          onSuccess={() => setDuplicationSuccessToast(true)}
+        />
+      )}
+      <AnswerCollectionDuplicationSuccessToast
+        open={duplicationSuccessToast}
+        onClose={() => setDuplicationSuccessToast(false)}
+      />
+
       {!collection.isEditor && (
         <AnswerCollectionViewingModal
           collectionId={collection.id}
