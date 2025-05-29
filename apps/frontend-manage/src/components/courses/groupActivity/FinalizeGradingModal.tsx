@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FinalizeGroupActivityGradingDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, Toast } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -26,7 +26,7 @@ function FinalizeGradingModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         title={t('manage.groupActivity.finalizeGrading')}
         onPrimaryAction={
           <Button
@@ -76,8 +76,8 @@ function FinalizeGradingModal({
             {t('manage.groupActivity.confirmFinalizeGrading')}
           </div>
         </div>
-      </Modal>
-      <Toast
+      </ModalLegacy>
+      <ToastLegacy
         dismissible
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
@@ -85,8 +85,8 @@ function FinalizeGradingModal({
         duration={4000}
       >
         {t('manage.groupActivity.finalizeGradingSuccess')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -94,7 +94,7 @@ function FinalizeGradingModal({
         duration={6000}
       >
         {t('manage.groupActivity.finalizeGradingError')}
-      </Toast>
+      </ToastLegacy>
     </>
   )
 }

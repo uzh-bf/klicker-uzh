@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function DeleteUserGroupErrorToast({
@@ -11,7 +11,7 @@ function DeleteUserGroupErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -20,7 +20,7 @@ function DeleteUserGroupErrorToast({
       duration={10000}
     >
       {t('manage.userGroups.deleteGroupError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

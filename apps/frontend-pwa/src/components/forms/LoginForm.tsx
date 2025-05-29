@@ -7,7 +7,7 @@ import usePWAInstall, {
 import {
   Button,
   FormikTextField,
-  Tabs,
+  TabsLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -77,9 +77,12 @@ function LoginForm({
           />
         </div>
 
-        <Tabs defaultValue="login" className={{ root: 'w-full border-t' }}>
-          <Tabs.TabList>
-            <Tabs.Tab
+        <TabsLegacy
+          defaultValue="login"
+          className={{ root: 'w-full border-t' }}
+        >
+          <TabsLegacy.TabList>
+            <TabsLegacy.Tab
               key="login-tab"
               value="login"
               label={t('shared.generic.login')}
@@ -88,7 +91,7 @@ function LoginForm({
                 label: 'text-md font-bold',
               }}
             />
-            <Tabs.Tab
+            <TabsLegacy.Tab
               key="joinCourse-tab"
               value="joinCourse"
               label={t('pwa.login.createAccountJoin')}
@@ -97,15 +100,15 @@ function LoginForm({
                 label: 'text-md font-bold',
               }}
             />
-          </Tabs.TabList>
-          <Tabs.TabContent
+          </TabsLegacy.TabList>
+          <TabsLegacy.TabContent
             key="joinCourse"
             value="joinCourse"
             className={{ root: 'md:px-4' }}
           >
             <CreateAccountJoinForm />
-          </Tabs.TabContent>
-          <Tabs.TabContent
+          </TabsLegacy.TabContent>
+          <TabsLegacy.TabContent
             key="login"
             value="login"
             className={{
@@ -230,8 +233,8 @@ function LoginForm({
                 />
               )}
             </Form>
-          </Tabs.TabContent>
-        </Tabs>
+          </TabsLegacy.TabContent>
+        </TabsLegacy>
       </div>
       <div className="w-full flex-none">
         <Footer />

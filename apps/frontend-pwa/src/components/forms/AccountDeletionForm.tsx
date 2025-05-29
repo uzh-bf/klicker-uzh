@@ -3,7 +3,7 @@ import {
   DeleteParticipantAccountDocument,
   LogoutParticipantDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
+import { Button, H3, ModalLegacy, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -44,7 +44,7 @@ function AccountDeletionForm() {
           <Button.Label>{t('shared.generic.delete')}</Button.Label>
         </Button>
 
-        <Modal
+        <ModalLegacy
           title={t('pwa.profile.deleteProfile')}
           open={deleteModalOpen}
           onClose={(): void => setDeleteModalOpen(false)}
@@ -76,7 +76,7 @@ function AccountDeletionForm() {
           }
         >
           {t('pwa.profile.deleteProfileConfirmation')}
-        </Modal>
+        </ModalLegacy>
       </div>
     </div>
   )

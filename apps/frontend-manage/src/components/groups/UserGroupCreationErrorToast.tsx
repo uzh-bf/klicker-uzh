@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function UserGroupCreationErrorToast({
@@ -11,7 +11,7 @@ function UserGroupCreationErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -21,7 +21,7 @@ function UserGroupCreationErrorToast({
       data={{ cy: 'user-group-creation-error-toast' }}
     >
       {t('manage.userGroups.creationErrorMessage')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

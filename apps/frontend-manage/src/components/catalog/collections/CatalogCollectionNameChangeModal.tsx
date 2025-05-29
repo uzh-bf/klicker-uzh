@@ -3,7 +3,12 @@ import {
   ChangeCatalogCollectionNameDocument,
   GetCatalogCollectionsListDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextField,
+  ModalLegacy,
+  ToastLegacy,
+} from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -35,7 +40,7 @@ function CatalogCollectionNameChangeModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         hideCloseButton
         escapeDisabled
         open={open}
@@ -140,8 +145,8 @@ function CatalogCollectionNameChangeModal({
             </>
           )}
         </Formik>
-      </Modal>
-      <Toast
+      </ModalLegacy>
+      <ToastLegacy
         dismissible
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
@@ -149,8 +154,8 @@ function CatalogCollectionNameChangeModal({
         duration={4000}
       >
         {t('manage.catalog.catalogCollectionNameChangeSuccess')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -158,7 +163,7 @@ function CatalogCollectionNameChangeModal({
         duration={6000}
       >
         {t('manage.catalog.catalogCollectionNameChangeError')}
-      </Toast>
+      </ToastLegacy>
     </>
   )
 }

@@ -12,7 +12,7 @@ import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   H4,
-  Modal,
+  ModalLegacy,
   TextField,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -52,7 +52,7 @@ function UserGroupEditModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={onClose}
         title={
@@ -320,7 +320,7 @@ function UserGroupEditModal({
             ) : null}
           </>
         )}
-      </Modal>
+      </ModalLegacy>
     </>
   )
 }

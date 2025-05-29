@@ -4,7 +4,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { H4, Modal } from '@uzh-bf/design-system'
+import { H4, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -20,7 +20,7 @@ function ActivityDetailsModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.activities.activityDetails')}
       open={open}
       onClose={onClose}
@@ -35,7 +35,7 @@ function ActivityDetailsModal({
         {activity.stacks.map((stack, index) => (
           <div
             key={stack.id}
-            className="w-[22rem] min-w-[22rem] border-b border-black pb-4 last:border-r-0 last:pr-0"
+            className="w-full border-b border-black pb-4 last:border-r-0 last:pr-0"
           >
             <div className="mb-1 flex flex-row justify-between">
               <H4>
@@ -89,7 +89,7 @@ function ActivityDetailsModal({
           </div>
         ))}
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

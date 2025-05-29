@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function DeleteUserGroupSuccessToast({
@@ -11,7 +11,7 @@ function DeleteUserGroupSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -20,7 +20,7 @@ function DeleteUserGroupSuccessToast({
       duration={3000}
     >
       {t('manage.userGroups.deleteGroupSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

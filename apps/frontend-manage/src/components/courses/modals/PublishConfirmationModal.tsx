@@ -6,7 +6,7 @@ import {
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
@@ -56,7 +56,7 @@ function PublishConfirmationModal({
   )
 
   return (
-    <Modal
+    <ModalLegacy
       title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
@@ -98,7 +98,7 @@ function PublishConfirmationModal({
         </div>
         <div className="mb-2 mt-3 text-sm italic">{publicationHint}</div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

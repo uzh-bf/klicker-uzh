@@ -1,5 +1,5 @@
 import { faExpand } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -26,7 +26,7 @@ function ImgWithModal({
 }: ImgWithModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   return (
-    <Modal
+    <ModalLegacy
       fullScreen
       open={isOpen}
       trigger={
@@ -68,7 +68,7 @@ function ImgWithModal({
       <div className="relative h-full w-full">
         <img src={src} alt="Image" className="object-contain" />
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

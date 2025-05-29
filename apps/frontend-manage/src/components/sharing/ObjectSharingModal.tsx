@@ -1,6 +1,6 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import DerivedPermissionsTable from './DerivedPermissionsTable'
@@ -95,7 +95,7 @@ function ObjectSharingModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         fullScreen
         title={t(`manage.sharing.share${objectType}`)}
         open={open}
@@ -186,7 +186,7 @@ function ObjectSharingModal({
             )}
           </div>
         ) : null}
-      </Modal>
+      </ModalLegacy>
 
       <ObjectSharingSuccessToast
         open={sharingSuccess}

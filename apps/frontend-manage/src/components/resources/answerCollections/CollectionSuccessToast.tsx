@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CollectionSuccessToast({
@@ -11,7 +11,7 @@ function CollectionSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -20,7 +20,7 @@ function CollectionSuccessToast({
       duration={3000}
     >
       {t('manage.resources.collectionCreationSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

@@ -14,7 +14,12 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  ToastLegacy,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -576,7 +581,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           }
         }}
       />
-      <Toast
+      <ToastLegacy
         dismissible
         type="success"
         duration={10000}
@@ -585,8 +590,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.template.recoveredTemplateData')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         type="error"
         duration={6000}
@@ -595,7 +600,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.template.errorCreatingLiveQuizFromTemplate')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

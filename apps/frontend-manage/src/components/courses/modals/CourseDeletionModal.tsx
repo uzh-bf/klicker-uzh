@@ -4,7 +4,7 @@ import {
   GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
@@ -98,7 +98,7 @@ function CourseDeletionModal({
   const summary = data.getCourseSummary
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={() => {
         setOpen(false)
@@ -151,7 +151,7 @@ function CourseDeletionModal({
         confirmations={confirmations}
         setConfirmations={setConfirmations}
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

@@ -7,7 +7,7 @@ import {
   GetUserGroupsUserDocument,
   LeaveUserGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import LeaveUserGroupErrorToast from './LeaveUserGroupErrorToast'
@@ -30,7 +30,7 @@ function LeaveUserGroupModal({
   const [leaveUserGroup] = useMutation(LeaveUserGroupDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.userGroups.leaveGroup')}
@@ -96,7 +96,7 @@ function LeaveUserGroupModal({
         open={errorToast}
         setOpen={() => setErrorToast(false)}
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

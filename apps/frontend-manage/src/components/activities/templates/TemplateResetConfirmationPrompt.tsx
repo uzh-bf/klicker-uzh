@@ -1,5 +1,5 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TemplateResetConfirmationPrompt({
@@ -14,7 +14,7 @@ function TemplateResetConfirmationPrompt({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       hideCloseButton
       escapeDisabled
       open={open}
@@ -40,7 +40,7 @@ function TemplateResetConfirmationPrompt({
           <Button.Label>{t('manage.template.confirmReset')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

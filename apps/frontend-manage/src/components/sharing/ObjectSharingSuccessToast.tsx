@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ObjectSharingSuccessToast({
@@ -11,7 +11,7 @@ function ObjectSharingSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -21,7 +21,7 @@ function ObjectSharingSuccessToast({
       dataDismissible={{ cy: 'close-sharing-success-toast' }}
     >
       {t('manage.sharing.sharingSuccessful')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

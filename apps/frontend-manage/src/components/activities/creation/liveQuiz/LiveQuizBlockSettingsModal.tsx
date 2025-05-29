@@ -1,4 +1,4 @@
-import { Button, Modal, NumberField } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementBlockFormValues } from '../WizardLayout'
 
@@ -18,7 +18,7 @@ function LiveQuizBlockSettingsModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={openSettings}
       onClose={() => setOpenSettings(false)}
       title={t('manage.activityWizard.blockSettingsTitle', {
@@ -52,7 +52,7 @@ function LiveQuizBlockSettingsModal({
       >
         <Button.Label>{t('shared.generic.ok')}</Button.Label>
       </Button>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

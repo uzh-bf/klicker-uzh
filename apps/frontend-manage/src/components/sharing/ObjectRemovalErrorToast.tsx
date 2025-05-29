@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ObjectRemovalErrorToast({
@@ -11,7 +11,7 @@ function ObjectRemovalErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -19,7 +19,7 @@ function ObjectRemovalErrorToast({
       duration={3000}
     >
       {t('manage.sharing.removalFailed')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

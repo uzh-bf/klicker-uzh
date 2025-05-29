@@ -1,4 +1,4 @@
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
@@ -33,7 +33,7 @@ function ActivityConfirmationModal({
     Object.values(confirmations).some((confirmation) => !confirmation)
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={() => {
         setOpen(false)
@@ -71,7 +71,7 @@ function ActivityConfirmationModal({
         {message}
       </UserNotification>
       {children}
-    </Modal>
+    </ModalLegacy>
   )
 }
 

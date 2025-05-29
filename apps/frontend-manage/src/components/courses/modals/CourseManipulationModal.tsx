@@ -7,7 +7,7 @@ import {
   FormikSwitchField,
   FormikTextField,
   H3,
-  Modal,
+  ModalLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -174,7 +174,7 @@ function CourseManipulationModal({
     : endDateInit
 
   return (
-    <Modal
+    <ModalLegacy
       escapeDisabled
       title={
         initialValues
@@ -418,7 +418,7 @@ function CourseManipulationModal({
         setOpen={setShowErrorToast}
         error={t('manage.courseList.courseCreationFailed')}
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

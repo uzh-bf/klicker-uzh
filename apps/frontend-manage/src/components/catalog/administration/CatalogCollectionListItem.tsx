@@ -151,7 +151,7 @@ function CatalogCollectionListItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </ForwardRefButton>
               }
-              className={{ viewport: 'z-20' }}
+              className={{ viewport: 'z-20', item: 'py-0.5 text-sm' }}
               data={{ cy: `catalog-collection-${collection.name}-actions` }}
             />
           ) : null}

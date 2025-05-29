@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Modal } from '@uzh-bf/design-system'
+import { ModalLegacy } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProfileData from './ProfileData'
@@ -45,7 +45,7 @@ function ParticipantProfileModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
@@ -89,7 +89,7 @@ function ParticipantProfileModal({
           </div>
         </div>
       )}
-    </Modal>
+    </ModalLegacy>
   )
 }
 

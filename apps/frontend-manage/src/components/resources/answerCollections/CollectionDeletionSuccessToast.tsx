@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CollectionDeletionSuccessToast({
@@ -11,7 +11,7 @@ function CollectionDeletionSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -19,7 +19,7 @@ function CollectionDeletionSuccessToast({
       duration={3000}
     >
       {t('manage.resources.deletionSuccessful')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

@@ -25,8 +25,8 @@ import {
   Button,
   FormikTextareaField,
   H3,
-  Tabs,
-  Toast,
+  TabsLegacy,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -115,7 +115,7 @@ function SuspendedGroupView({
     }, {}) ?? {}
 
   return (
-    <Tabs.TabContent key={group.id} value={group.id}>
+    <TabsLegacy.TabContent key={group.id} value={group.id}>
       <GroupActivityListSubscriber
         courseId={courseId}
         subscribeToMore={subscribeActivityList}
@@ -364,7 +364,7 @@ function SuspendedGroupView({
           </div>
         </div>
       </div>
-      <Toast
+      <ToastLegacy
         type="warning"
         openExternal={typeof endedGroupActivity !== 'undefined'}
         onCloseExternal={() => setEndedGroupActivity(undefined)}
@@ -375,8 +375,8 @@ function SuspendedGroupView({
         {t('pwa.courses.groupActivityEndedToast', {
           activityName: endedGroupActivity,
         })}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         type="success"
         openExternal={typeof startedGroupActivity !== 'undefined'}
         onCloseExternal={() => setStartedGroupActivity(undefined)}
@@ -387,8 +387,8 @@ function SuspendedGroupView({
         {t('pwa.courses.groupActivityStartedToast', {
           activityName: startedGroupActivity,
         })}
-      </Toast>
-    </Tabs.TabContent>
+      </ToastLegacy>
+    </TabsLegacy.TabContent>
   )
 }
 

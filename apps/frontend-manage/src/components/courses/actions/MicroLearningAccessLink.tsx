@@ -1,6 +1,6 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import { MicroLearning } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Toast } from '@uzh-bf/design-system'
+import { Button, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -34,7 +34,7 @@ function MicroLearningAccessLink({
         <Button.Icon icon={faLink} />
         <Button.Label>{t('manage.course.copyAccessLink')}</Button.Label>
       </Button>
-      <Toast
+      <ToastLegacy
         dismissible
         openExternal={copyToast}
         onCloseExternal={() => setCopyToast(false)}
@@ -43,7 +43,7 @@ function MicroLearningAccessLink({
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkAccessCopied')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

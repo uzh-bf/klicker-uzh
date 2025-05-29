@@ -1,7 +1,7 @@
 import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
 import CatalogObjectImportErrorToast from './CatalogObjectImportErrorToast'
@@ -38,7 +38,7 @@ function CatalogImportModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={(e) => {
           e?.stopPropagation()
@@ -95,7 +95,7 @@ function CatalogImportModal({
             </Button.Label>
           </Button>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <CatalogObjectImportErrorToast
         open={errorToast}

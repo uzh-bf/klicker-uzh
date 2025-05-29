@@ -3,7 +3,12 @@ import {
   GetCourseGroupsDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, Toast, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  ModalLegacy,
+  ToastLegacy,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -53,7 +58,7 @@ function AssignmentConfirmationModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         title={t('manage.course.finalizeRandomGroupAssignment')}
         onPrimaryAction={
           <Button
@@ -100,9 +105,9 @@ function AssignmentConfirmationModal({
             li: (children) => <li>{children}</li>,
           })}
         </UserNotification>
-      </Modal>
+      </ModalLegacy>
       {showError && (
-        <Toast
+        <ToastLegacy
           dismissible
           type="error"
           openExternal={showError}
@@ -111,10 +116,10 @@ function AssignmentConfirmationModal({
           className={{ root: 'max-w-[30rem]' }}
         >
           {t('manage.course.groupAssignmentFailed')}
-        </Toast>
+        </ToastLegacy>
       )}
       {showSuccess && (
-        <Toast
+        <ToastLegacy
           dismissible
           type="success"
           openExternal={showSuccess}
@@ -123,7 +128,7 @@ function AssignmentConfirmationModal({
           className={{ root: 'max-w-[30rem]' }}
         >
           {t('manage.course.groupAssignmentSuccessful')}
-        </Toast>
+        </ToastLegacy>
       )}
     </>
   )

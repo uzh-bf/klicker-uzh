@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ObjectAddedSuccessToastProps {
@@ -13,7 +13,7 @@ function ObjectAddedSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -21,7 +21,7 @@ function ObjectAddedSuccessToast({
       duration={3500}
     >
       {t('manage.catalog.objectAddedSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

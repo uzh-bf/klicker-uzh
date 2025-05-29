@@ -7,7 +7,7 @@ import {
   GetUserActivitiesDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDateField, H3, Modal } from '@uzh-bf/design-system'
+import { Button, FormikDateField, H3, ModalLegacy } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -35,7 +35,7 @@ function PracticeQuizPublishingModal({
     useMutation(PublishPracticeQuizDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
       onClose={(): void => setOpen(false)}
       open={open}
@@ -151,7 +151,7 @@ function PracticeQuizPublishingModal({
           </Formik>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

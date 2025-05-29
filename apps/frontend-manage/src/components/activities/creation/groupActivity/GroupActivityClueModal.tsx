@@ -5,7 +5,7 @@ import {
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  Modal,
+  ModalLegacy,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -59,7 +59,7 @@ function GroupActivityClueModal({
         </Button.Label>
       </Button>
 
-      <Modal
+      <ModalLegacy
         escapeDisabled
         open={open}
         onClose={() => setOpen(false)}
@@ -190,7 +190,7 @@ function GroupActivityClueModal({
             </Form>
           )}
         </Formik>
-      </Modal>
+      </ModalLegacy>
     </div>
   )
 }

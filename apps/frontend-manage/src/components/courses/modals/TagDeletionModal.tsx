@@ -4,7 +4,7 @@ import {
   GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TagDeletionModalProps {
@@ -48,7 +48,7 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
   })
 
   return (
-    <Modal
+    <ModalLegacy
       onPrimaryAction={
         <Button
           destructive
@@ -83,7 +83,7 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
         name,
         b: (content) => <b>{content}</b>,
       })}
-    </Modal>
+    </ModalLegacy>
   )
 }
 

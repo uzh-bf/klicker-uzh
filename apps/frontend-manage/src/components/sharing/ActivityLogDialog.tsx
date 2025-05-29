@@ -1,5 +1,5 @@
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import ActivityLog from './ActivityLog'
@@ -24,7 +24,7 @@ function ActivityLogDialog({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       asPortal={false}
       open={open}
       onClose={() => onOpenChange(false)}
@@ -36,7 +36,7 @@ function ActivityLogDialog({
       }}
     >
       <ActivityLog visible={open} objectId={objectId} objectType={objectType} />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

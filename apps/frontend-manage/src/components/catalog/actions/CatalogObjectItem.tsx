@@ -217,7 +217,7 @@ function CatalogObjectItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </ForwardRefButton>
               }
-              className={{ viewport: 'z-20' }}
+              className={{ viewport: 'z-20', item: 'py-0.5 text-sm' }}
               data={{ cy: `actions-dropdown-${object.name}` }}
             />
           ) : null}

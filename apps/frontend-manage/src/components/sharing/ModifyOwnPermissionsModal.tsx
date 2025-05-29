@@ -1,5 +1,5 @@
 import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ModifyOwnPermissionsModalProps {
@@ -20,7 +20,7 @@ function ModifyOwnPermissionsModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.sharing.modifyOwnPermissionsTitle')}
@@ -59,7 +59,7 @@ function ModifyOwnPermissionsModal({
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

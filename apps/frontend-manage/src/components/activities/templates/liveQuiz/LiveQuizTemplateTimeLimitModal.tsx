@@ -1,5 +1,5 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal, NumberField } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LiveQuizTemplateTimeLimitModal({
@@ -18,7 +18,7 @@ function LiveQuizTemplateTimeLimitModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.activityWizard.blockSettingsTitle', {
@@ -49,7 +49,7 @@ function LiveQuizTemplateTimeLimitModal({
         <Button.Icon icon={faCheck} />
         <Button.Label>{t('manage.template.confirmTimeLimit')}</Button.Label>
       </Button>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

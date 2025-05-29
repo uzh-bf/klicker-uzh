@@ -5,7 +5,12 @@ import {
   GetSingleCourseDocument,
   GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextField,
+  ModalLegacy,
+  ToastLegacy,
+} from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -44,7 +49,7 @@ function ActivityNameChangeModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         hideCloseButton
         escapeDisabled
         open={open}
@@ -145,8 +150,8 @@ function ActivityNameChangeModal({
             </>
           )}
         </Formik>
-      </Modal>
-      <Toast
+      </ModalLegacy>
+      <ToastLegacy
         dismissible
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
@@ -154,8 +159,8 @@ function ActivityNameChangeModal({
         duration={4000}
       >
         {t('manage.activities.activityNameChangeSuccess')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -163,7 +168,7 @@ function ActivityNameChangeModal({
         duration={6000}
       >
         {t('manage.activities.activityNameChangeError')}
-      </Toast>
+      </ToastLegacy>
     </>
   )
 }

@@ -4,7 +4,7 @@ import {
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
@@ -60,7 +60,7 @@ function StartModal({
   )
 
   return (
-    <Modal
+    <ModalLegacy
       open={startModalOpen}
       onClose={() => setStartModalOpen(false)}
       onPrimaryAction={
@@ -104,7 +104,7 @@ function StartModal({
       <div className="mt-4 text-sm italic">
         {t('control.course.explanationStartLiveQuiz')}
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

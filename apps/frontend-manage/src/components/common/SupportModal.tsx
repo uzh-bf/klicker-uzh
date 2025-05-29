@@ -14,7 +14,7 @@ import {
   faServer,
 } from '@fortawesome/free-solid-svg-icons'
 import { User } from '@klicker-uzh/graphql/dist/ops'
-import { H2, Modal } from '@uzh-bf/design-system'
+import { H2, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import SupportEntry from './SupportEntry'
@@ -29,7 +29,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.support.modalTitle')}
       open={open}
       onClose={() => setOpen(false)}
@@ -160,7 +160,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
           </div>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

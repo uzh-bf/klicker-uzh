@@ -3,7 +3,7 @@ import {
   DeleteCatalogCollectionDocument,
   GetCatalogCollectionsListDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import CatalogCollectionDeletionErrorToast from './CatalogCollectionDeletionErrorToast'
@@ -31,7 +31,7 @@ function CatalogCollectionDeletionModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={onClose}
         title={t('manage.catalog.deleteCatalogCollectionTitle')}
@@ -90,7 +90,7 @@ function CatalogCollectionDeletionModal({
             <Button.Label>{t('manage.catalog.deleteConfirm')}</Button.Label>
           </Button>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <CatalogCollectionDeletionErrorToast
         open={errorToast}

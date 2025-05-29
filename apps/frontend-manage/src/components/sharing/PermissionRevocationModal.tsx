@@ -1,4 +1,4 @@
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -31,7 +31,7 @@ function PermissionRevocationModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.sharing.revokeDirectPermission')}
@@ -73,7 +73,7 @@ function PermissionRevocationModal({
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

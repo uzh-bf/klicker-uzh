@@ -13,8 +13,8 @@ import {
   Button,
   FormikTextareaField,
   H4,
-  Modal,
-  Toast,
+  ModalLegacy,
+  ToastLegacy,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -32,7 +32,7 @@ function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={5000}
       type="error"
@@ -41,7 +41,7 @@ function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
     >
       <H4>{t('shared.generic.error')}</H4>
       <div>{content}</div>
-    </Toast>
+    </ToastLegacy>
   )
 }
 
@@ -54,7 +54,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={5000}
       type="success"
@@ -63,7 +63,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
     >
       <H4>{t('shared.generic.thanks')}</H4>
       <div>{t('pwa.practiceQuiz.feedbackTransmitted')}</div>
-    </Toast>
+    </ToastLegacy>
   )
 }
 
@@ -174,7 +174,7 @@ function FlagElementModal({
 
   return (
     <div>
-      <Modal
+      <ModalLegacy
         title={t('pwa.practiceQuiz.flagElement')}
         className={{
           content: 'z-20 max-w-lg',
@@ -251,7 +251,7 @@ function FlagElementModal({
             </div>
           )}
         </Formik>
-      </Modal>
+      </ModalLegacy>
 
       <FlagSuccessToast open={successToastOpen} setOpen={setSuccessToastOpen} />
       <FlagErrorToast

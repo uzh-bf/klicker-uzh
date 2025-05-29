@@ -1,6 +1,6 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
+import { Button, FormikTextField, ModalLegacy } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -45,7 +45,7 @@ function TransferOwnershipModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         escapeDisabled
         title={t('manage.sharing.transferOwnership')}
         open={open}
@@ -139,7 +139,7 @@ function TransferOwnershipModal({
             )}
           </Formik>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <TransferOwnershipSuccessToast
         open={transferSuccess}

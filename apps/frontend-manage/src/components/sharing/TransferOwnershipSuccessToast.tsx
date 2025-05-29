@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TransferOwnershipSuccessToastProps {
@@ -13,7 +13,7 @@ function TransferOwnershipSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       type="success"
       openExternal={open}
       onCloseExternal={onClose}
@@ -21,7 +21,7 @@ function TransferOwnershipSuccessToast({
       duration={3000}
     >
       {t('manage.sharing.ownershipTransferSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

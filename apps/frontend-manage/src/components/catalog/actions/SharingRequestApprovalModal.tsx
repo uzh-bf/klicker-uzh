@@ -8,7 +8,12 @@ import {
   ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  ModalLegacy,
+  SelectField,
+  ToastLegacy,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
@@ -38,7 +43,7 @@ function SharingRequestApprovalModal({
     useMutation(ApproveObjectSharingRequestDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={(e) => {
         e?.stopPropagation()
@@ -161,7 +166,7 @@ function SharingRequestApprovalModal({
         showPropagationSetting={request.objectType === ObjectType.Course}
       />
 
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         duration={5000}
@@ -170,8 +175,8 @@ function SharingRequestApprovalModal({
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.catalog.approvalFailed')}
-      </Toast>
-    </Modal>
+      </ToastLegacy>
+    </ModalLegacy>
   )
 }
 

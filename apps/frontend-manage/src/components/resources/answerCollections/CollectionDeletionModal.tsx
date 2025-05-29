@@ -5,7 +5,7 @@ import {
   DeleteAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
@@ -32,7 +32,7 @@ function CollectionDeletionModal({
   })
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.resources.deleteAnswerCollection')}
       open={deletionModal}
       onClose={() => setDeletionModal(false)}
@@ -69,7 +69,7 @@ function CollectionDeletionModal({
           {t('manage.resources.confirmDeletion', { name: collection.name })}
         </Button.Label>
       </Button>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

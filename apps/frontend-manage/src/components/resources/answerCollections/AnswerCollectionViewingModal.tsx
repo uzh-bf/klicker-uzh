@@ -2,13 +2,15 @@ import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Modal, TextField, UserNotification } from '@uzh-bf/design-system'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@uzh-bf/design-system/dist/future'
+  ModalLegacy,
+  TextField,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -58,7 +60,7 @@ function AnswerCollectionViewingModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={
@@ -142,7 +144,7 @@ function AnswerCollectionViewingModal({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

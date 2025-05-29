@@ -15,7 +15,7 @@ import {
   FormikSelectField,
   FormikSwitchField,
   H1,
-  Modal,
+  ModalLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -48,7 +48,7 @@ function SuspendedFirstLoginModal() {
   }
 
   return (
-    <Modal
+    <ModalLegacy
       fullScreen
       open={firstLogin}
       onClose={() => null}
@@ -227,7 +227,7 @@ function SuspendedFirstLoginModal() {
       ) : (
         <Loader />
       )}
-    </Modal>
+    </ModalLegacy>
   )
 }
 

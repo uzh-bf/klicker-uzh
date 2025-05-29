@@ -2,7 +2,7 @@ import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
 import CatalogRequestErrorToast from './CatalogRequestErrorToast'
@@ -41,7 +41,7 @@ function CatalogRequestModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={(e) => {
           e?.stopPropagation()
@@ -103,7 +103,7 @@ function CatalogRequestModal({
             <Button.Label>{t('manage.catalog.requestAccess')}</Button.Label>
           </Button>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <CatalogRequestErrorToast
         open={errorToast}

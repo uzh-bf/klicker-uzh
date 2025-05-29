@@ -1,4 +1,4 @@
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CaseStudyCollectionChangeModal({
@@ -13,7 +13,7 @@ function CaseStudyCollectionChangeModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.elements.changeOfAnswerCollection')}
@@ -36,7 +36,7 @@ function CaseStudyCollectionChangeModal({
           </Button>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

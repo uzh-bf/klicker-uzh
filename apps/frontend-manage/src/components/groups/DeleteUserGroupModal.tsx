@@ -5,7 +5,7 @@ import {
   DeleteUserGroupDocument,
   GetUserGroupsUserDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../common/ConfirmationItem'
@@ -46,7 +46,7 @@ function DeleteUserGroupModal({
   }, [open])
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.userGroups.deleteGroup')}
@@ -152,7 +152,7 @@ function DeleteUserGroupModal({
         open={errorToast}
         setOpen={() => setErrorToast(false)}
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

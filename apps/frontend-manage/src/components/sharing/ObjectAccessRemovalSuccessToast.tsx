@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ObjectAccessRemovalSuccessToast({
@@ -11,7 +11,7 @@ function ObjectAccessRemovalSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -21,7 +21,7 @@ function ObjectAccessRemovalSuccessToast({
       dataDismissible={{ cy: 'close-removal-success-toast' }}
     >
       {t('manage.sharing.accessRemovalSuccessful')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

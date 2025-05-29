@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CopyConfirmationToast({
@@ -11,7 +11,7 @@ function CopyConfirmationToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       openExternal={open}
       onCloseExternal={() => setOpen(false)}
@@ -20,7 +20,7 @@ function CopyConfirmationToast({
       className={{ root: 'w-[24rem]' }}
     >
       {t('manage.course.linkAccessCopied')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

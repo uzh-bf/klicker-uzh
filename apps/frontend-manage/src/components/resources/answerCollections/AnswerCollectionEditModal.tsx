@@ -2,17 +2,15 @@ import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
-  Modal,
-  TextField,
-  Toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@uzh-bf/design-system/dist/future'
+  ModalLegacy,
+  TextField,
+  toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -37,14 +35,31 @@ function AnswerCollectionEditModal({
   className?: { overlay?: string; content?: string }
 }) {
   const t = useTranslations()
-  const [successToast, setSuccessToast] = useState(false)
+
   const [optionsEditingDisabled, setOptionsEditingDisabled] = useState(false)
   const [accordionState, setAccordionState] = useState<'metadata' | 'options'>(
     inlineEditing ? 'options' : 'metadata'
   )
   const [metadataTouched, setMetadataTouched] = useState(false)
   const [optionsTouched, setOptionsTouched] = useState(false)
-  const [saveErrorToast, setSaveErrorToast] = useState(false)
+
+  // success toast trigger function
+  const onSuccessToast = () => {
+    toast({
+      type: 'success',
+      message: t('manage.resources.successfulCollectionEdit'),
+      options: { duration: 3000 },
+    })
+  }
+
+  // error toast trigger function
+  const onErrorToast = () => {
+    toast({
+      type: 'error',
+      message: t('manage.resources.saveBeforeClosing'),
+      options: { duration: 3000 },
+    })
+  }
 
   const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
     variables: { id: collectionId },
@@ -83,12 +98,12 @@ function AnswerCollectionEditModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       escapeDisabled
       open={open}
       onClose={() => {
         setOptionsEditingDisabled(false)
-        setSuccessToast(false)
+        onSuccessToast()
         onClose()
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
@@ -108,7 +123,7 @@ function AnswerCollectionEditModal({
         value={accordionState}
         onValueChange={(newValue) => {
           if (metadataTouched || optionsTouched) {
-            setSaveErrorToast(true)
+            onErrorToast()
           } else {
             setAccordionState(newValue as 'metadata' | 'options')
           }
@@ -127,8 +142,7 @@ function AnswerCollectionEditModal({
               collection={collection}
               onSuccess={() => {
                 setMetadataTouched(false)
-                setSaveErrorToast(false)
-                setSuccessToast(true)
+                onSuccessToast()
               }}
               metadataTouched={metadataTouched}
               setMetadataTouched={setMetadataTouched}
@@ -187,9 +201,8 @@ function AnswerCollectionEditModal({
                     setEditDisabled={setOptionsEditingDisabled}
                     onTouched={() => setOptionsTouched(true)}
                     onSuccess={() => {
-                      setSaveErrorToast(false)
                       setOptionsTouched(false)
-                      setSuccessToast(true)
+                      onSuccessToast()
                     }}
                     inlineEditing={inlineEditing}
                     refetchAnswerCollections={refetchAnswerCollections}
@@ -203,13 +216,11 @@ function AnswerCollectionEditModal({
               setOptionsEditingDisabled={setOptionsEditingDisabled}
               onTouched={() => setOptionsTouched(true)}
               onUntouched={() => {
-                setSaveErrorToast(false)
                 setOptionsTouched(false)
               }}
               onSuccess={() => {
-                setSaveErrorToast(false)
                 setOptionsTouched(false)
-                setSuccessToast(true)
+                onSuccessToast()
               }}
               inlineEditing={inlineEditing}
               refetchAnswerCollections={refetchAnswerCollections}
@@ -217,26 +228,7 @@ function AnswerCollectionEditModal({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-
-      <Toast
-        dismissible
-        type="success"
-        duration={3000}
-        openExternal={successToast}
-        onCloseExternal={() => setSuccessToast(false)}
-      >
-        {t('manage.resources.successfulCollectionEdit')}
-      </Toast>
-      <Toast
-        dismissible
-        type="error"
-        duration={3000}
-        openExternal={saveErrorToast}
-        onCloseExternal={() => setSaveErrorToast(false)}
-      >
-        {t('manage.resources.saveBeforeClosing')}
-      </Toast>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

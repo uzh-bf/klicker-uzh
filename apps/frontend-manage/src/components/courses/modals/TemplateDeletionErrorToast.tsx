@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TemplateDeletionErrorToast({
@@ -10,7 +10,7 @@ function TemplateDeletionErrorToast({
 }) {
   const t = useTranslations()
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={4500}
       type="error"
@@ -19,7 +19,7 @@ function TemplateDeletionErrorToast({
       className={{ root: 'max-w-[30rem]' }}
     >
       {t('manage.template.templateDeletionError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

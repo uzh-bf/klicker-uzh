@@ -17,7 +17,7 @@ import {
   Button,
   Dropdown,
   H1,
-  Toast,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -139,11 +139,15 @@ function CourseOverviewHeader({
           <Dropdown
             data={{ cy: `course-actions-${name}` }}
             className={{
-              trigger: 'px-2 py-4',
               item: 'p-1 hover:bg-gray-200',
               viewport: 'z-10 bg-white',
             }}
-            trigger={t('manage.course.otherActions')}
+            trigger={
+              <Button className={{ root: 'h-8' }}>
+                <Button.Icon icon={faHandPointer} />
+                <Button.Label>{t('manage.course.otherActions')}</Button.Label>
+              </Button>
+            }
             items={[
               user?.catalyst
                 ? [
@@ -192,7 +196,6 @@ function CourseOverviewHeader({
                   ]
                 : [],
             ].flat()}
-            triggerIcon={faHandPointer}
           />
         )}
       </div>
@@ -273,14 +276,14 @@ function CourseOverviewHeader({
         />
       )}
 
-      <Toast
+      <ToastLegacy
         type="success"
         openExternal={copyToast}
         onCloseExternal={() => setCopyToast(false)}
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkLTICopied')}
-      </Toast>
+      </ToastLegacy>
 
       <ActivityLogDialog
         objectId={course.id}

@@ -14,9 +14,9 @@ import {
   FormikTextField,
   H4,
   Label,
-  Modal,
+  ModalLegacy,
   Prose,
-  Toast,
+  ToastLegacy,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -265,7 +265,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       {t('manage.settings.createLogin')}
                     </Button.Label>
                   </Button>
-                  <Modal
+                  <ModalLegacy
                     title={t('manage.settings.confirmDelegatedAcces')}
                     open={confirmationModal}
                     onClose={() => setConfirmationModal(false)}
@@ -322,13 +322,13 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     >
                       <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                     </Button>
-                  </Modal>
+                  </ModalLegacy>
                 </Form>
               )
             }}
           </Formik>
         </div>
-        <Toast
+        <ToastLegacy
           dismissible
           openExternal={copiedPassword}
           onCloseExternal={() => setCopiedPassword(false)}
@@ -336,7 +336,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
           duration={4000}
         >
           {t('manage.settings.copiedPassword')}
-        </Toast>
+        </ToastLegacy>
       </div>
     </Setting>
   )

@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -18,7 +18,7 @@ function CaseStudyCaseDeletionButton({
     useState(false)
 
   return (
-    <Modal
+    <ModalLegacy
       open={deletionConfirmationOpen}
       onClose={() => setDeletionConfirmationOpen(false)}
       trigger={
@@ -60,7 +60,7 @@ function CaseStudyCaseDeletionButton({
           </Button>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

@@ -2,7 +2,7 @@ import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
 import CatalogObjectCopyErrorToast from './CatalogObjectCopyErrorToast'
@@ -39,7 +39,7 @@ function CatalogCopyModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={(e) => {
           e?.stopPropagation()
@@ -96,7 +96,7 @@ function CatalogCopyModal({
             </Button.Label>
           </Button>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <CatalogObjectCopyErrorToast
         open={errorToast}

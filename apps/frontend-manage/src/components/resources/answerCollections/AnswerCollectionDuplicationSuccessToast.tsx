@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function AnswerCollectionDuplicationSuccessToast({
@@ -11,7 +11,7 @@ function AnswerCollectionDuplicationSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -21,7 +21,7 @@ function AnswerCollectionDuplicationSuccessToast({
       data={{ cy: 'collection-duplication-success' }}
     >
       {t('manage.resources.duplicationSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

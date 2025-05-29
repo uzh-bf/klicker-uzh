@@ -3,7 +3,7 @@ import {
   GetUserCoursesDocument,
   ToggleArchiveCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CourseArchiveModalProps {
@@ -30,7 +30,7 @@ function CourseArchiveModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={() => {
         setOpen(false)
@@ -83,7 +83,7 @@ function CourseArchiveModal({
             : t('manage.courseList.confirmCourseUnarchive')
         }
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

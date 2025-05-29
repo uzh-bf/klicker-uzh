@@ -3,7 +3,7 @@ import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikPinField,
-  Toast,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -79,7 +79,7 @@ function CreateAccountJoinForm() {
           </Form>
         )}
       </Formik>
-      <Toast
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -87,7 +87,7 @@ function CreateAccountJoinForm() {
         duration={6000}
       >
         {t('pwa.login.coursePinInvalid')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

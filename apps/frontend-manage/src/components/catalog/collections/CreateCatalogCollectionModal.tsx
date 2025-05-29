@@ -7,7 +7,7 @@ import {
 import {
   Button,
   FormikTextField,
-  Modal,
+  ModalLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -33,7 +33,7 @@ function CreateCatalogCollectionModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={onClose}
         title={t('manage.catalog.createCatalogCollectionTitle')}
@@ -139,7 +139,7 @@ function CreateCatalogCollectionModal({
             </Form>
           )}
         </Formik>
-      </Modal>
+      </ModalLegacy>
     </>
   )
 }

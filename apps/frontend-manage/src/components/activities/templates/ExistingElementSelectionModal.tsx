@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -59,7 +59,7 @@ function ExistingElementSelectionModal({
     (elementDescriptors.length > 0 ? ` (${elementDescriptors.join(', ')})` : '')
 
   return (
-    <Modal
+    <ModalLegacy
       escapeDisabled
       hideCloseButton
       title={t('manage.template.selectExistingElement')}
@@ -138,7 +138,7 @@ function ExistingElementSelectionModal({
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

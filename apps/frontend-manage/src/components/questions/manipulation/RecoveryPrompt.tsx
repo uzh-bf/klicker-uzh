@@ -1,5 +1,5 @@
 import { faArrowsRotate, faBan } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function RecoveryPrompt({
@@ -16,7 +16,7 @@ function RecoveryPrompt({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       hideCloseButton
       escapeDisabled
       open={open}
@@ -51,7 +51,7 @@ function RecoveryPrompt({
           <Button.Label>{t('manage.elements.loadData')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

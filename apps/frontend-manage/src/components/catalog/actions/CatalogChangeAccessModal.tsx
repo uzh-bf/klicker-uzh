@@ -7,7 +7,7 @@ import {
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, Toast } from '@uzh-bf/design-system'
+import { Button, ModalLegacy, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -39,7 +39,7 @@ function CatalogChangeAccessModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         title={t('manage.catalog.changeAccessTitle')}
         onClose={onClose}
@@ -172,9 +172,9 @@ function CatalogChangeAccessModal({
             </Button>
           </div>
         </div>
-      </Modal>
+      </ModalLegacy>
 
-      <Toast
+      <ToastLegacy
         dismissible
         openExternal={errorToastOpen}
         onCloseExternal={() => setErrorToastOpen(false)}
@@ -182,7 +182,7 @@ function CatalogChangeAccessModal({
         duration={4500}
       >
         {t('manage.catalog.changeAccessError')}
-      </Toast>
+      </ToastLegacy>
     </>
   )
 }

@@ -5,7 +5,7 @@ import {
   GetSingleCourseDocument,
   GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDateField, Modal } from '@uzh-bf/design-system'
+import { Button, FormikDateField, ModalLegacy } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -37,7 +37,7 @@ function ExtensionModal({
   const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       onClose={(): void => setOpen(false)}
       open={open}
       hideCloseButton={true}
@@ -144,7 +144,7 @@ function ExtensionModal({
           )}
         </Formik>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

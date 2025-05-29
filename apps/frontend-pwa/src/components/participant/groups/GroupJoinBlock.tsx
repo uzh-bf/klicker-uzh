@@ -4,7 +4,7 @@ import {
   GetCourseOverviewDataDocument,
   JoinParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
@@ -67,7 +67,7 @@ function GroupJoinBlock({
         textSubmit={t('shared.generic.join')}
         data={undefined}
       />
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         duration={6000}
@@ -76,8 +76,8 @@ function GroupJoinBlock({
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('pwa.courses.joinGroupError')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         type="warning"
         duration={6000}
@@ -86,7 +86,7 @@ function GroupJoinBlock({
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('pwa.courses.joinGroupFull')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

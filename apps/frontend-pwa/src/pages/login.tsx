@@ -4,7 +4,7 @@ import {
   SelfDocument,
   SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -139,7 +139,7 @@ function Login() {
           />
         )}
       </Formik>
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         duration={6000}
@@ -147,8 +147,8 @@ function Login() {
         onCloseExternal={() => setShowError(false)}
       >
         {error}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         type="success"
         duration={8000}
@@ -156,7 +156,7 @@ function Login() {
         onCloseExternal={() => setShowSuccess(false)}
       >
         {success}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

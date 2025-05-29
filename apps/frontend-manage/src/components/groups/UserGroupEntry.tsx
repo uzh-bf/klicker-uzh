@@ -60,7 +60,6 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 ),
                 onClick: () => setEditModal(true),
                 data: { cy: `view-edit-group-${group.name}` },
-                className: { item: 'text-red-500' },
               },
               ...(!group.isOwner
                 ? [
@@ -107,7 +106,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 <Button.Icon withoutLabel icon={faEllipsisVertical} />
               </Button>
             }
-            className={{ item: 'text-sm' }}
+            className={{ item: 'py-0.5 text-sm' }}
             data={{ cy: `user-group-actions-${group.name}` }}
           />
         </div>

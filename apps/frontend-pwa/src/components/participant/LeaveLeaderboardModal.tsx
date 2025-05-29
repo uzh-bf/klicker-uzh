@@ -1,4 +1,4 @@
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { Button, H2, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface LeaveLeaderboardModalProps {
@@ -15,7 +15,7 @@ function LeaveLeaderboardModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       hideCloseButton
       onPrimaryAction={
         <Button
@@ -45,7 +45,7 @@ function LeaveLeaderboardModal({
           {t('pwa.courses.leaveLeaderboardInformation')}
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

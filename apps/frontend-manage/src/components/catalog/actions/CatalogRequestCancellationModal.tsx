@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import CatalogRequestCancellationErrorToast from './CatalogRequestCancellationErrorToast'
@@ -36,7 +36,7 @@ function CatalogRequestCancellationModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={(e) => {
           e?.stopPropagation()
@@ -74,7 +74,7 @@ function CatalogRequestCancellationModal({
             <Button.Label>{t('manage.catalog.cancelRequest')}</Button.Label>
           </Button>
         </div>
-      </Modal>
+      </ModalLegacy>
 
       <CatalogRequestCancellationErrorToast
         open={errorToast}

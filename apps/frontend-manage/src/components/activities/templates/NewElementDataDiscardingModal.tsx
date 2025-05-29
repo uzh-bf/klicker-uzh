@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function NewElementDataDiscardingModal({
@@ -15,7 +15,7 @@ function NewElementDataDiscardingModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={onClose}
       title={t('manage.template.discardEnteredElementContent')}
@@ -38,7 +38,7 @@ function NewElementDataDiscardingModal({
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

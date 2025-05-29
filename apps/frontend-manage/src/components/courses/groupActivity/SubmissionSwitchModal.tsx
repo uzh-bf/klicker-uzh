@@ -1,4 +1,4 @@
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface SubmissionSwitchModalProps {
@@ -19,7 +19,7 @@ function SubmissionSwitchModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.groupActivity.switchSubmission')}
       onPrimaryAction={
         <Button
@@ -53,7 +53,7 @@ function SubmissionSwitchModal({
       <div className="text-base">
         {t('manage.groupActivity.confirmSubmissionSwitch')}
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

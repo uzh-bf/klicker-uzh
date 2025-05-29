@@ -17,7 +17,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormLabel,
-  Modal,
+  ModalLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -91,7 +91,7 @@ function TemplateConversionModal({
   }
 
   return (
-    <Modal
+    <ModalLegacy
       escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
@@ -349,7 +349,7 @@ function TemplateConversionModal({
           )
         }}
       </Formik>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

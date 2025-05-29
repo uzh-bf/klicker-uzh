@@ -6,7 +6,7 @@ import {
   GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TemplateDeletionModalProps {
@@ -43,7 +43,7 @@ function TemplateDeletionModal({
   )
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.template.deleteTemplate')}
       open={open}
       onClose={() => setOpen(false)}
@@ -79,7 +79,7 @@ function TemplateDeletionModal({
           <Button.Label>{t('manage.template.deleteTemplate')}</Button.Label>
         </Button>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

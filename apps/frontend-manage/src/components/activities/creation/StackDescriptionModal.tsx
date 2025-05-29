@@ -1,4 +1,4 @@
-import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
+import { Button, FormikTextField, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import EditorField from './EditorField'
 
@@ -16,7 +16,7 @@ function StackDescriptionModal({
   const t = useTranslations()
 
   return (
-    <Modal
+    <ModalLegacy
       open={modalOpen}
       onClose={() => setModalOpen(false)}
       title={t('manage.activityWizard.stackDescriptionTitle', {
@@ -50,7 +50,7 @@ function StackDescriptionModal({
       >
         {t('shared.generic.ok')}
       </Button>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

@@ -5,7 +5,7 @@ import {
   ObjectType,
   RemoveObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
@@ -29,7 +29,7 @@ function AnswerCollectionRemovalModal({
     useMutation(RemoveObjectDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       title={t(`manage.sharing.remove${ObjectType.AnswerCollection}`)}
       open={removalModal}
       onClose={() => setRemovalModal(false)}
@@ -78,7 +78,7 @@ function AnswerCollectionRemovalModal({
         <Button.Icon icon={faTrashCan} loading={removing} />
         <Button.Label>{t('manage.sharing.confirmRemoval')}</Button.Label>
       </Button>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

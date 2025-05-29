@@ -5,7 +5,7 @@ import {
   ObjectType,
   RemoveCatalogObjectAssignmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CatalogObjectRemovalModal({
@@ -25,7 +25,7 @@ function CatalogObjectRemovalModal({
   )
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       title={
         (object.objectType === ObjectType.LiveQuiz ||
@@ -111,7 +111,7 @@ function CatalogObjectRemovalModal({
           </Button>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

@@ -1,8 +1,4 @@
-import {
-  faFileLines,
-  faHandPointer,
-  faTrashCan,
-} from '@fortawesome/free-regular-svg-icons'
+import { faFileLines, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
@@ -25,6 +21,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import GroupActivityExtensionButton from './groupActivity/GroupActivityExtensionButton'
@@ -139,19 +136,6 @@ function GroupActivityElement({
     },
   }
 
-  const DeletionDropdown = (
-    <Dropdown
-      data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
-      className={{
-        item: 'p-1 hover:bg-gray-200',
-        viewport: 'bg-white',
-      }}
-      trigger={t('manage.course.otherActions')}
-      items={[DeletionItem]}
-      triggerIcon={faHandPointer}
-    />
-  )
-
   return (
     <div
       className="border-uzh-grey-80 flex w-full flex-row justify-between rounded border border-solid p-2"
@@ -201,11 +185,8 @@ function GroupActivityElement({
               />
               <Dropdown
                 data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   {
                     label: (
@@ -229,7 +210,6 @@ function GroupActivityElement({
                   },
                   DeletionItem,
                 ]}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -243,11 +223,8 @@ function GroupActivityElement({
               />
               <Dropdown
                 data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   ...(dayjs(courseStartDate).isBefore(dayjs()) &&
                   dayjs(groupDeadlineDate).isBefore(dayjs())
@@ -273,7 +250,6 @@ function GroupActivityElement({
                     : []),
                   DeletionItem,
                 ]}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -288,11 +264,8 @@ function GroupActivityElement({
               />
               <Dropdown
                 data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   {
                     label: (
@@ -309,7 +282,6 @@ function GroupActivityElement({
                   },
                   DeletionItem,
                 ]}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -320,7 +292,12 @@ function GroupActivityElement({
                 activityId={groupActivity.id}
                 activityName={groupActivity.name}
               />
-              {DeletionDropdown}
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
+                items={[DeletionItem]}
+              />
             </>
           )}
 
@@ -330,7 +307,12 @@ function GroupActivityElement({
                 activityId={groupActivity.id}
                 activityName={groupActivity.name}
               />
-              {DeletionDropdown}
+              <Dropdown
+                data={{ cy: `groupActivity-actions-${groupActivity.name}` }}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
+                items={[DeletionItem]}
+              />
             </>
           )}
         </div>

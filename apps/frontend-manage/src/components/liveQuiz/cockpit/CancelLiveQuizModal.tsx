@@ -7,7 +7,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -104,7 +104,7 @@ function CancelLiveQuizModal({
   const summary = data.getLiveQuizSummary
 
   return (
-    <Modal
+    <ModalLegacy
       open={open}
       onClose={() => {
         setOpen(false)
@@ -150,7 +150,7 @@ function CancelLiveQuizModal({
         confirmations={confirmations}
         setConfirmations={setConfirmations}
       />
-    </Modal>
+    </ModalLegacy>
   )
 }
 

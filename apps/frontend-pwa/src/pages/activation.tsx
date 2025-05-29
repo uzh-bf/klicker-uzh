@@ -4,7 +4,7 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, Toast } from '@uzh-bf/design-system'
+import { H2, ToastLegacy } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -70,7 +70,7 @@ function Activation() {
         {t('pwa.general.processingActivation')}
       </H2>
       <Loader />
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         duration={8000}
@@ -78,7 +78,7 @@ function Activation() {
         onCloseExternal={() => setShowError(false)}
       >
         {t('pwa.general.accountActivationFailed')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

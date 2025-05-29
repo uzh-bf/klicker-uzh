@@ -5,7 +5,7 @@ import {
   GetLiveQuizHmacDocument,
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { Button, H2, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo } from 'react'
@@ -69,7 +69,7 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
   )
 
   return (
-    <Modal
+    <ModalLegacy
       asPortal
       open={open}
       onOpenChange={() => setOpen(!open)}
@@ -117,7 +117,7 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
           identifier="leaderboard"
         />
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

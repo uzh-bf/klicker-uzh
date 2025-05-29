@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ElementCreationErrorToastProps {
@@ -15,7 +15,7 @@ function ElementCreationErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={6000}
       openExternal={open}
@@ -26,7 +26,7 @@ function ElementCreationErrorToast({
         <div>{error}</div>
         <div>{t('manage.activityWizard.considerFormErrors')}</div>
       </div>
-    </Toast>
+    </ToastLegacy>
   )
 }
 

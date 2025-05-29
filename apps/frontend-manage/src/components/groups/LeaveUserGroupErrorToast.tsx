@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LeaveUserGroupErrorToast({
@@ -11,7 +11,7 @@ function LeaveUserGroupErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -20,7 +20,7 @@ function LeaveUserGroupErrorToast({
       duration={10000}
     >
       {t('manage.userGroups.leaveGroupError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

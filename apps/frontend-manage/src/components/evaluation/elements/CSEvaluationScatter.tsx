@@ -5,12 +5,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

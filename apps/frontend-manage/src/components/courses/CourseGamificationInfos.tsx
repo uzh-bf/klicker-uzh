@@ -1,5 +1,5 @@
 import { Course } from '@klicker-uzh/graphql/dist/ops'
-import { Tabs } from '@uzh-bf/design-system'
+import { TabsLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import GroupsLeaderboard from './GroupsLeaderboard'
@@ -20,14 +20,14 @@ function CourseGamificationInfos({
   const t = useTranslations()
 
   return (
-    <Tabs
+    <TabsLegacy
       defaultValue="ind-leaderboard"
       value={tabValue}
       onValueChange={(newValue: string) => setTabValue(newValue)}
       className={{ root: 'flex-1 basis-1/3' }}
     >
-      <Tabs.TabList>
-        <Tabs.Tab
+      <TabsLegacy.TabList>
+        <TabsLegacy.Tab
           key="tab-individual-leaderboard"
           value="ind-leaderboard"
           label={t('manage.course.courseLeaderboard')}
@@ -40,7 +40,7 @@ function CourseGamificationInfos({
           }}
           data={{ cy: 'tab-ind-leaderboard' }}
         />
-        <Tabs.Tab
+        <TabsLegacy.Tab
           key="tab-group-leaderboard"
           value="group-leaderboard"
           label={t('manage.course.groupLeaderboard')}
@@ -53,7 +53,7 @@ function CourseGamificationInfos({
           }}
           data={{ cy: 'tab-group-leaderboard' }}
         />
-        <Tabs.Tab
+        <TabsLegacy.Tab
           key="groups"
           value="groups"
           label={t('manage.course.groups')}
@@ -66,7 +66,7 @@ function CourseGamificationInfos({
           }}
           data={{ cy: 'tab-groups' }}
         />
-      </Tabs.TabList>
+      </TabsLegacy.TabList>
       <IndividualLeaderboard
         courseName={course.name}
         courseId={course.id}
@@ -80,7 +80,7 @@ function CourseGamificationInfos({
         groupCreationFinalized={course.randomAssignmentFinalized}
         actionsDisabled={!course.isEditor}
       />
-    </Tabs>
+    </TabsLegacy>
   )
 }
 

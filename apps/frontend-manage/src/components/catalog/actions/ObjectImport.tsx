@@ -87,12 +87,10 @@ function ObjectImport({
         <TextField
           placeholder={t('manage.general.searchPlaceholder')}
           value={search}
-          onChange={(newValue: string) => {
-            setSearch(newValue)
-          }}
+          onChange={(newValue: string) => setSearch(newValue)}
           icon={faMagnifyingGlass}
           className={{
-            input: 'w-60',
+            input: 'w-60 !pl-8',
           }}
           data={{ cy: 'search-catalog-collection' }}
         />

@@ -5,7 +5,7 @@ import {
   DuplicateAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, ModalLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionDuplicationErrorToast from './AnswerCollectionDuplicationErrorToast'
@@ -29,7 +29,7 @@ function AnswerCollectionDuplicationModal({
 
   return (
     <>
-      <Modal
+      <ModalLegacy
         open={open}
         onClose={onClose}
         title={t('manage.resources.duplicateCollection')}
@@ -97,7 +97,7 @@ function AnswerCollectionDuplicationModal({
           <li>{t('manage.resources.duplicationNote2')}</li>
           <li>{t('manage.resources.duplicationNote3')}</li>
         </ul>
-      </Modal>
+      </ModalLegacy>
       <AnswerCollectionDuplicationErrorToast
         open={errorToastOpen}
         onClose={() => setErrorToastOpen(false)}

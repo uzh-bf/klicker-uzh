@@ -14,12 +14,15 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import {
-  Label,
+  Button,
+  H3,
   RadioGroup,
   RadioGroupItem,
-} from '@uzh-bf/design-system/dist/future'
+  ShadcnLabel,
+  TabsLegacy,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -168,14 +171,14 @@ function CourseOverview({
       {course.isGamificationEnabled || course.description ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
-            <Tabs
+            <TabsLegacy
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
               onValueChange={(tab) => setSelectedTab(tab)}
             >
-              <Tabs.TabList>
+              <TabsLegacy.TabList>
                 {course.isGamificationEnabled && (
-                  <Tabs.Tab
+                  <TabsLegacy.Tab
                     key="leaderboard"
                     value="global"
                     label={t('shared.generic.leaderboard')}
@@ -184,7 +187,7 @@ function CourseOverview({
                 )}
 
                 {course.description && (
-                  <Tabs.Tab
+                  <TabsLegacy.Tab
                     key="info"
                     value="info"
                     label={t('pwa.courses.courseInformation')}
@@ -194,7 +197,7 @@ function CourseOverview({
 
                 {course.isGamificationEnabled &&
                   data.participantGroups?.map((group, ix) => (
-                    <Tabs.Tab
+                    <TabsLegacy.Tab
                       key={group.id}
                       value={group.id}
                       label={`${t('shared.generic.group')} ${group.name}`}
@@ -206,17 +209,21 @@ function CourseOverview({
                   course.isGroupCreationEnabled &&
                   !course.isGroupDeadlinePassed &&
                   (data.participantGroups?.length ?? 0) < 1 && (
-                    <Tabs.Tab
+                    <TabsLegacy.Tab
                       key="create"
                       value="create"
                       label={t('pwa.courses.createJoinGroup')}
                       data={{ cy: 'student-course-create-group' }}
                     />
                   )}
-              </Tabs.TabList>
+              </TabsLegacy.TabList>
 
               {course.description && (
-                <Tabs.TabContent key="info" value="info" className="md:px-4">
+                <TabsLegacy.TabContent
+                  key="info"
+                  value="info"
+                  className="md:px-4"
+                >
                   <H3 className={{ root: 'mb-4' }}>
                     {t('pwa.courses.courseInformation')}
                   </H3>
@@ -225,11 +232,11 @@ function CourseOverview({
                     className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
                     content={course.description}
                   />
-                </Tabs.TabContent>
+                </TabsLegacy.TabContent>
               )}
 
               {course.isGamificationEnabled && (
-                <Tabs.TabContent
+                <TabsLegacy.TabContent
                   key="course"
                   value="global"
                   className="md:px-4"
@@ -267,9 +274,9 @@ function CourseOverview({
                                   id="course"
                                   data-cy="select-course-leaderboard"
                                 />
-                                <Label htmlFor="course">
+                                <ShadcnLabel htmlFor="course">
                                   {t('shared.generic.course')}
-                                </Label>
+                                </ShadcnLabel>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem
@@ -277,7 +284,7 @@ function CourseOverview({
                                   id="biweekly"
                                   data-cy="select-biweekly-leaderboard"
                                 />
-                                <Label htmlFor="biweekly">
+                                <ShadcnLabel htmlFor="biweekly">
                                   {`${t('pwa.courses.biWeekly')} (${(() => {
                                     const startDate = dayjs().subtract(
                                       14,
@@ -287,7 +294,7 @@ function CourseOverview({
                                       date.format('DD.MM')
                                     return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
                                   })()})`}
-                                </Label>
+                                </ShadcnLabel>
                               </div>
                             </RadioGroup>
                           )}
@@ -498,7 +505,7 @@ function CourseOverview({
                       </div>
                     </div>
                   )}
-                </Tabs.TabContent>
+                </TabsLegacy.TabContent>
               )}
 
               {participant &&
@@ -524,15 +531,15 @@ function CourseOverview({
                 ))}
 
               {course.isGamificationEnabled && (
-                <Tabs.TabContent key="create" value="create">
+                <TabsLegacy.TabContent key="create" value="create">
                   <GroupCreationActions
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
                     inRandomGroupPool={inRandomGroupPool ?? false}
                   />
-                </Tabs.TabContent>
+                </TabsLegacy.TabContent>
               )}
-            </Tabs>
+            </TabsLegacy>
             {isProfileModalOpen && participantId && (
               <ParticipantProfileModal
                 isProfileModalOpen={isProfileModalOpen}

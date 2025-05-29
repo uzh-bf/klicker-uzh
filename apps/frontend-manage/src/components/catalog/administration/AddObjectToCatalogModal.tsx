@@ -5,7 +5,7 @@ import {
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, Modal } from '@uzh-bf/design-system'
+import { Button, H4, ModalLegacy } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
@@ -38,7 +38,7 @@ function AddObjectToCatalogModal({
   const [addObjectToCatalog] = useMutation(AddObjectToCatalogDocument)
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.catalog.addObjectToCatalogTitle')}
       open={open}
       onClose={onClose}
@@ -190,7 +190,7 @@ function AddObjectToCatalogModal({
           </Form>
         )}
       </Formik>
-    </Modal>
+    </ModalLegacy>
   )
 }
 

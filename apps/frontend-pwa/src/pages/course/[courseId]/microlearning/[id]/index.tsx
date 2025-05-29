@@ -18,7 +18,7 @@ import {
   Button,
   H3,
   Prose,
-  Toast,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -206,7 +206,7 @@ function MicrolearningIntroduction({
           </Button>
         </Link>
       </div>
-      <Toast
+      <ToastLegacy
         type="warning"
         openExternal={endedMicroLearning}
         onCloseExternal={() => setEndedMicroLearning(false)}
@@ -217,7 +217,7 @@ function MicrolearningIntroduction({
         {t('pwa.courses.microLearningEndedToast', {
           activityName: microLearning.displayName,
         })}
-      </Toast>
+      </ToastLegacy>
     </Layout>
   )
 }

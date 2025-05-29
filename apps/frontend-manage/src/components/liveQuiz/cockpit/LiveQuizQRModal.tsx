@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import QR from '@pages/qr/[...args]'
-import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
+import { Button, H3, ModalLegacy, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { Dispatch, SetStateAction } from 'react'
@@ -26,7 +26,7 @@ function LiveQuizQRModal({
   const quizRelativeLink = `/session/${quizId}`
 
   return (
-    <Modal
+    <ModalLegacy
       title={t('manage.cockpit.liveQuizQRCodes')}
       open={open}
       onClose={() => setOpen(false)}
@@ -88,7 +88,7 @@ function LiveQuizQRModal({
           </div>
         </div>
       </div>
-    </Modal>
+    </ModalLegacy>
   )
 }
 
