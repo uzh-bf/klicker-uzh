@@ -48,7 +48,7 @@ function CatalogCopyModal({
           onClose()
         }}
         secondaryLabel={
-          <div className="flex flex-row items-center gap-1">
+          <div className="flex flex-row items-center gap-2.5">
             <FontAwesomeIcon icon={faBan} />
             <span>{t('shared.generic.cancel')}</span>
           </div>
@@ -57,9 +57,9 @@ function CatalogCopyModal({
           e?.stopPropagation()
           onClose()
         }}
-        dataSecondaryAction={{ cy: 'cancel-object-copy gap-1.5' }}
+        dataSecondaryAction={{ cy: 'cancel-object-copy' }}
         primaryLabel={
-          <div className="flex flex-row items-center">
+          <div className="flex flex-row items-center gap-2.5">
             <FontAwesomeIcon icon={faCopy} />
             <span>
               {t('manage.catalog.copyObjectType', {

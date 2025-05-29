@@ -1329,6 +1329,29 @@ export default defineConfig({
         },
         // #endregion
 
+        // ! Course Management / PINs
+        // #region
+        async getCoursePin({ courseName }: { courseName: string }) {
+          const prisma = await connect()
+
+          try {
+            const course = await prisma.course.findFirst({
+              where: {
+                name: courseName,
+              },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            return course.pinCode
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
         // ! Cleanup / Seeding
         // #region
         async seedDatabase() {
