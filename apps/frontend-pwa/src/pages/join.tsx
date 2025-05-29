@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  FormikPinField,
+  FormikPinFieldLegacy,
   H2,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -61,7 +61,7 @@ function JoinPage() {
           {({ isSubmitting, isValid }) => {
             return (
               <Form>
-                <FormikPinField
+                <FormikPinFieldLegacy
                   name="pin"
                   label={t('pwa.joinCourse.coursePinFormat')}
                   data={{ cy: 'join-course-pin-field' }}
