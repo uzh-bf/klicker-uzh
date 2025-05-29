@@ -222,7 +222,7 @@ function CourseOverview({
                 <TabsLegacy.TabContent
                   key="info"
                   value="info"
-                  className="md:px-4"
+                  className={{ root: 'md:px-4' }}
                 >
                   <H3 className={{ root: 'mb-4' }}>
                     {t('pwa.courses.courseInformation')}
@@ -239,7 +239,7 @@ function CourseOverview({
                 <TabsLegacy.TabContent
                   key="course"
                   value="global"
-                  className="md:px-4"
+                  className={{ root: 'md:px-4' }}
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
                     <div className="flex flex-1 flex-col justify-between gap-6">

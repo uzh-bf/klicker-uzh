@@ -196,7 +196,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <MarkButton format="bold" icon={faBold} />
             </Tooltip>
@@ -206,7 +205,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <MarkButton format="italic" icon={faItalic} />
             </Tooltip>
@@ -216,7 +214,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
               }}
-              withIndicator={false}
             >
               <MarkButton format="code" icon={faCode} />
             </Tooltip>
@@ -226,7 +223,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton format="block-quote" icon={faQuoteRight} />
             </Tooltip>
@@ -236,7 +232,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton format="numbered-list" icon={faListOl} />
             </Tooltip>
@@ -246,7 +241,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton format="bulleted-list" icon={faListUl} />
             </Tooltip>
@@ -258,7 +252,6 @@ function ContentInput({
                 tooltip:
                   'max-w-[40%] whitespace-nowrap text-sm md:max-w-[50%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton
                 format="heading_one"
@@ -272,7 +265,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton
                 format="heading_two"
@@ -286,7 +278,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
               }}
-              withIndicator={false}
             >
               <BlockButton
                 format="heading_three"
@@ -301,7 +292,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <SlateButton
                 active={isImageDropzoneOpen}
@@ -322,7 +312,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <SlateButton
                 active={false}
@@ -344,7 +333,6 @@ function ContentInput({
               className={{
                 tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
               }}
-              withIndicator={false}
             >
               <SlateButton
                 active={false}
