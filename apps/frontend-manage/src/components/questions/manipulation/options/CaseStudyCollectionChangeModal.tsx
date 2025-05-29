@@ -1,4 +1,4 @@
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CaseStudyCollectionChangeModal({
@@ -13,30 +13,24 @@ function CaseStudyCollectionChangeModal({
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={onClose}
       title={t('manage.elements.changeOfAnswerCollection')}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={() => {
+        onConfirm()
+        onClose()
+      }}
+      dataPrimaryAction={{ cy: 'confirm-change-collection' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-change-collection' }}
+      className={{ content: 'max-w-lg' }}
     >
-      <div className="flex flex-col gap-4">
-        <div>{t('manage.elements.confirmCollectionChange')}</div>
-        <div className="flex justify-between gap-2">
-          <Button onClick={onClose} data={{ cy: 'cancel-change-collection' }}>
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-          <Button
-            destructive
-            onClick={() => {
-              onConfirm()
-              onClose()
-            }}
-            data={{ cy: 'confirm-change-collection' }}
-          >
-            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-          </Button>
-        </div>
-      </div>
-    </ModalLegacy>
+      <div>{t('manage.elements.confirmCollectionChange')}</div>
+    </Modal>
   )
 }
 

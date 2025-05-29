@@ -6,7 +6,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  ModalLegacy,
+  Modal,
   TextField,
   toast,
   UserNotification,
@@ -98,21 +98,17 @@ function AnswerCollectionEditModal({
   }
 
   return (
-    <ModalLegacy
+    <Modal
       escapeDisabled
       open={open}
       onClose={() => {
         setOptionsEditingDisabled(false)
-        onSuccessToast()
         onClose()
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
       className={{
-        content: twMerge(
-          'max-h-[calc(100vh-1.5rem)] overflow-y-auto',
-          className?.content
-        ),
+        content: twMerge('max-h-[calc(100vh-1.5rem)] pb-2', className?.content),
         overlay: className?.overlay,
       }}
     >
@@ -179,9 +175,9 @@ function AnswerCollectionEditModal({
               icon={faSearch}
               placeholder={t('manage.resources.searchAnswerOptions')}
               data={{ cy: 'search-answer-options' }}
-              className={{ field: 'mb-2 w-full', input: 'h-8 text-sm' }}
+              className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
             />
-            <div className="my-2 flex max-h-[calc(100vh-34rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-32rem)] lg:max-h-[calc(100vh-28rem)]">
+            <div className="my-2 flex max-h-[calc(100vh-35rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-29rem)] lg:max-h-[calc(100vh-26rem)]">
               {filteredEntries.length === 0 ? (
                 <UserNotification type="info">
                   {t('manage.resources.noMatchingOptions')}
@@ -228,7 +224,7 @@ function AnswerCollectionEditModal({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

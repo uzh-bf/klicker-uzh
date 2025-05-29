@@ -1,4 +1,4 @@
-import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
@@ -33,45 +33,40 @@ function ActivityConfirmationModal({
     Object.values(confirmations).some((confirmation) => !confirmation)
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={() => {
         setOpen(false)
       }}
       className={{ content: '!w-full max-w-[50rem]' }}
       title={title}
-      onPrimaryAction={
-        <Button
-          primary={confirmationType === 'confirm'}
-          destructive={confirmationType === 'delete'}
-          loading={submitting}
-          disabled={disabled}
-          onClick={async () => {
-            await onSubmit()
-            setOpen(false)
-          }}
-          data={{ cy: 'confirmation-modal-confirm' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={submitting}
+      primaryDisabled={disabled}
+      primaryButtonStyle={
+        confirmationType === 'delete'
+          ? 'destructive'
+          : confirmationType === 'confirm'
+            ? 'primary'
+            : undefined
       }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-          }}
-          data={{ cy: 'confirmation-modal-cancel' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
+      onPrimaryAction={async () => {
+        await onSubmit()
+        setOpen(false)
+      }}
+      dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        setOpen(false)
+      }}
+      dataSecondaryAction={{ cy: 'confirmation-modal-cancel' }}
       dataCloseButton={{ cy: 'confirmation-modal-close' }}
     >
       <UserNotification type="warning" className={{ root: 'mb-3 text-base' }}>
         {message}
       </UserNotification>
       {children}
-    </ModalLegacy>
+    </Modal>
   )
 }
 

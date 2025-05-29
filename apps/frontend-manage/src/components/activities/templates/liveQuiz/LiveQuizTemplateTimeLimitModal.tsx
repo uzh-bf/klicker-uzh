@@ -1,5 +1,6 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
-import { Button, ModalLegacy, NumberField } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LiveQuizTemplateTimeLimitModal({
@@ -18,15 +19,21 @@ function LiveQuizTemplateTimeLimitModal({
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={onClose}
       title={t('manage.activityWizard.blockSettingsTitle', {
         blockIx: blockIx + 1,
       })}
-      className={{
-        content: 'sm:w-3/4 md:w-1/2',
-      }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <FontAwesomeIcon icon={faCheck} />
+          <span>{t('manage.template.confirmTimeLimit')}</span>
+        </div>
+      }
+      onPrimaryAction={onClose}
+      dataPrimaryAction={{ cy: 'close-block-settings' }}
+      className={{ content: 'max-w-lg', footer: 'justify-end' }}
     >
       <NumberField
         label={t('manage.activityWizard.timeLimit')}
@@ -40,16 +47,7 @@ function LiveQuizTemplateTimeLimitModal({
         placeholder={t('manage.activityWizard.optionalTimeLimit')}
         data={{ cy: 'block-time-limit' }}
       />
-      <Button
-        primary
-        className={{ root: 'float-right mt-3' }}
-        onClick={onClose}
-        data={{ cy: 'close-block-settings' }}
-      >
-        <Button.Icon icon={faCheck} />
-        <Button.Label>{t('manage.template.confirmTimeLimit')}</Button.Label>
-      </Button>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

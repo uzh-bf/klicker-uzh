@@ -1,5 +1,5 @@
 import { faExpand } from '@fortawesome/free-solid-svg-icons'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -26,7 +26,7 @@ function ImgWithModal({
 }: ImgWithModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   return (
-    <ModalLegacy
+    <Modal
       fullScreen
       open={isOpen}
       trigger={
@@ -60,15 +60,14 @@ function ImgWithModal({
         </div>
       }
       onClose={() => setIsOpen(false)}
-      title={alt}
       className={{
-        content: className?.modal,
+        content: twMerge(className?.modal, 'h-max w-max'),
       }}
     >
       <div className="relative h-full w-full">
         <img src={src} alt="Image" className="object-contain" />
       </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

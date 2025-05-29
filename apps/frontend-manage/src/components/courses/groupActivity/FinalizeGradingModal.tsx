@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FinalizeGroupActivityGradingDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ModalLegacy, ToastLegacy } from '@uzh-bf/design-system'
+import { Modal, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -26,45 +26,30 @@ function FinalizeGradingModal({
 
   return (
     <>
-      <ModalLegacy
+      <Modal
         title={t('manage.groupActivity.finalizeGrading')}
-        onPrimaryAction={
-          <Button
-            primary
-            loading={finalizingGrading}
-            onClick={async () => {
-              const { data } = await finalizeGroupActivityGrading({
-                variables: { id: activityId },
-              })
+        primaryLabel={t('shared.generic.confirm')}
+        primaryLoading={finalizingGrading}
+        onPrimaryAction={async () => {
+          const { data } = await finalizeGroupActivityGrading({
+            variables: { id: activityId },
+          })
 
-              if (data?.finalizeGroupActivityGrading?.id) {
-                setSuccessToast(true)
-              } else {
-                setErrorToast(true)
-              }
-              setOpen(false)
-            }}
-            data={{ cy: 'confirm-finalize-grading' }}
-          >
-            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-          </Button>
-        }
-        onSecondaryAction={
-          <Button
-            onClick={(): void => setOpen(false)}
-            data={{ cy: 'cancel-finalize-grading' }}
-            className={{ root: 'text-base' }}
-          >
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-        }
-        onClose={(): void => setOpen(false)}
+          if (data?.finalizeGroupActivityGrading?.id) {
+            setSuccessToast(true)
+          } else {
+            setErrorToast(true)
+          }
+          setOpen(false)
+        }}
+        dataPrimaryAction={{ cy: 'confirm-finalize-grading' }}
+        secondaryLabel={t('shared.generic.cancel')}
+        onSecondaryAction={() => setOpen(false)}
+        dataSecondaryAction={{ cy: 'cancel-finalize-grading' }}
+        onClose={() => setOpen(false)}
         open={open}
         hideCloseButton={true}
-        className={{
-          content: 'h-max min-h-max w-[40rem] self-center pt-0',
-          title: 'text-xl',
-        }}
+        className={{ content: 'max-w-xl' }}
       >
         <div className="flex flex-row items-center gap-4">
           <FontAwesomeIcon
@@ -76,7 +61,7 @@ function FinalizeGradingModal({
             {t('manage.groupActivity.confirmFinalizeGrading')}
           </div>
         </div>
-      </ModalLegacy>
+      </Modal>
       <ToastLegacy
         dismissible
         openExternal={successToast}

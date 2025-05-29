@@ -1,5 +1,5 @@
 import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
-import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TemplateResetConfirmationPrompt({
@@ -14,33 +14,32 @@ function TemplateResetConfirmationPrompt({
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
       hideCloseButton
       escapeDisabled
       open={open}
       onClose={() => null}
       title={t('manage.template.resetConfirmation')}
-      className={{ content: 'max-w-2xl gap-1' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-template-reset' }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <Button.Icon icon={faArrowsRotate} />
+          <span>{t('manage.template.confirmReset')}</span>
+        </div>
+      }
+      primaryButtonStyle="destructive"
+      onPrimaryAction={onConfirm}
+      dataPrimaryAction={{ cy: 'confirm-template-reset' }}
+      // className={{ content: 'max-w-2xl gap-1' }}
     >
       <UserNotification
         type="warning"
         message={t('manage.template.resetWarning')}
-        className={{ root: 'text-base' }}
+        className={{ root: 'mt-2 text-base' }}
       />
-      <div className="mt-4 flex flex-row justify-between">
-        <Button onClick={onClose} data={{ cy: 'cancel-template-reset' }}>
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          onClick={onConfirm}
-          data={{ cy: 'confirm-template-reset' }}
-        >
-          <Button.Icon icon={faArrowsRotate} />
-          <Button.Label>{t('manage.template.confirmReset')}</Button.Label>
-        </Button>
-      </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

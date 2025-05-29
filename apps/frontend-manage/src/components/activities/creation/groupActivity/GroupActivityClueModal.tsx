@@ -5,7 +5,7 @@ import {
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  ModalLegacy,
+  Modal,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -59,12 +59,12 @@ function GroupActivityClueModal({
         </Button.Label>
       </Button>
 
-      <ModalLegacy
+      <Modal
         escapeDisabled
         open={open}
         onClose={() => setOpen(false)}
         title={t('manage.activityWizard.groupActivityAddClue')}
-        className={{ content: 'w-[40rem]' }}
+        className={{ content: 'pb-2' }}
       >
         <Formik
           enableReinitialize
@@ -190,7 +190,7 @@ function GroupActivityClueModal({
             </Form>
           )}
         </Formik>
-      </ModalLegacy>
+      </Modal>
     </div>
   )
 }

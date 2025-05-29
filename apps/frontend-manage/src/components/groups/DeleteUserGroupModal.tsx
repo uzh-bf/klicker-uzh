@@ -5,7 +5,7 @@ import {
   DeleteUserGroupDocument,
   GetUserGroupsUserDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../common/ConfirmationItem'
@@ -25,7 +25,7 @@ function DeleteUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [deleteUserGroup] = useMutation(DeleteUserGroupDocument)
+  const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
 
   const [errorToast, setErrorToast] = useState(false)
   const [confirmations, setConfirmations] = useState({
@@ -46,11 +46,65 @@ function DeleteUserGroupModal({
   }, [open])
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={onClose}
       title={t('manage.userGroups.deleteGroup')}
-      className={{ content: '!max-w-2xl' }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!loading && <Button.Icon icon={faTrashCan} />}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
+        </div>
+      }
+      primaryButtonStyle="destructive"
+      primaryLoading={loading}
+      primaryDisabled={Object.values(confirmations).some((value) => !value)}
+      onPrimaryAction={async () => {
+        try {
+          const { data: success } = await deleteUserGroup({
+            variables: {
+              groupId,
+            },
+            update: (cache, { data }) => {
+              // check if request was successful
+              const success = data?.deleteUserGroup
+              if (!success) return
+              // update list of user groups
+              const userGroups = cache.readQuery({
+                query: GetUserGroupsUserDocument,
+              })
+              if (userGroups?.getUserGroupsUser) {
+                cache.writeQuery({
+                  query: GetUserGroupsUserDocument,
+                  data: {
+                    getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+                      (group) => group.id !== groupId
+                    ),
+                  },
+                })
+              }
+            },
+          })
+          if (success?.deleteUserGroup) {
+            onSuccess()
+          } else {
+            setErrorToast(true)
+          }
+        } catch (error) {
+          console.error('Error deleting user group:', error)
+          setErrorToast(true)
+        }
+      }}
+      dataPrimaryAction={{ cy: 'confirm-delete-group' }}
+      secondaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <Button.Icon icon={faBan} />
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
+        </div>
+      }
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-delete-group' }}
+      className={{ content: 'max-w-2xl' }}
     >
       <div className="mb-3">
         {t('manage.userGroups.confirmDeleteGroup', { groupName })}
@@ -98,61 +152,11 @@ function DeleteUserGroupModal({
         />
       </div>
 
-      <div className="flex flex-row justify-between">
-        <Button onClick={onClose} data={{ cy: 'cancel-delete-group' }}>
-          <Button.Icon icon={faBan} />
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          disabled={Object.values(confirmations).some((value) => !value)}
-          onClick={async () => {
-            try {
-              const { data: success } = await deleteUserGroup({
-                variables: {
-                  groupId,
-                },
-                update: (cache, { data }) => {
-                  // check if request was successful
-                  const success = data?.deleteUserGroup
-                  if (!success) return
-                  // update list of user groups
-                  const userGroups = cache.readQuery({
-                    query: GetUserGroupsUserDocument,
-                  })
-                  if (userGroups?.getUserGroupsUser) {
-                    cache.writeQuery({
-                      query: GetUserGroupsUserDocument,
-                      data: {
-                        getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
-                          (group) => group.id !== groupId
-                        ),
-                      },
-                    })
-                  }
-                },
-              })
-              if (success?.deleteUserGroup) {
-                onSuccess()
-              } else {
-                setErrorToast(true)
-              }
-            } catch (error) {
-              console.error('Error deleting user group:', error)
-              setErrorToast(true)
-            }
-          }}
-          data={{ cy: 'confirm-delete-group' }}
-        >
-          <Button.Icon icon={faTrashCan} />
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      </div>
       <DeleteUserGroupErrorToast
         open={errorToast}
         setOpen={() => setErrorToast(false)}
       />
-    </ModalLegacy>
+    </Modal>
   )
 }
 

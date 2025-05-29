@@ -51,11 +51,7 @@ function App({ Component, pageProps }: AppProps) {
           getMessageFallback={getMessageFallback}
         >
           <DndProvider backend={HTML5Backend}>
-            <Toaster
-              closeButton
-              position="top-right"
-              // className="right-3 top-3" // TODO: re-introduce once the correct class combination is available
-            />
+            <Toaster closeButton position="top-right" />
             <Component {...pageProps} />
           </DndProvider>
         </NextIntlClientProvider>

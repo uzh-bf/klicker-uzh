@@ -15,7 +15,7 @@ import {
   FormikSelectField,
   FormikSwitchField,
   H1,
-  ModalLegacy,
+  Modal,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -48,12 +48,12 @@ function SuspendedFirstLoginModal() {
   }
 
   return (
-    <ModalLegacy
+    <Modal
       fullScreen
       open={firstLogin}
       onClose={() => null}
       hideCloseButton
-      className={{ content: 'h-max max-h-full' }}
+      className={{ content: 'h-max pb-1' }}
     >
       <H1 className={{ root: 'mb-4 text-4xl' }}>
         {t('manage.firstLogin.welcome')}
@@ -109,13 +109,13 @@ function SuspendedFirstLoginModal() {
           }}
         >
           {({ isValid, isSubmitting, validateField }) => (
-            <Form>
+            <Form className="flex flex-col">
               <div className="mb-1 flex flex-col space-y-4 md:mb-5 md:flex-row md:justify-between md:space-y-0">
                 <DebouncedUsernameField
                   t={t}
                   className={{
                     root: 'w-[250px] md:w-max',
-                    input: 'bg-white',
+                    input: 'bg-white !pl-8',
                     icon: 'bg-transparent',
                   }}
                   name="shortname"
@@ -216,7 +216,7 @@ function SuspendedFirstLoginModal() {
                 type="submit"
                 loading={isSubmitting}
                 disabled={!isValid}
-                className={{ root: 'float-right mt-4 w-32' }}
+                className={{ root: 'mt-4 w-32 self-end' }}
                 data={{ cy: 'first-login-save-settings' }}
               >
                 <Button.Label>{t('shared.generic.save')}</Button.Label>
@@ -227,7 +227,7 @@ function SuspendedFirstLoginModal() {
       ) : (
         <Loader />
       )}
-    </ModalLegacy>
+    </Modal>
   )
 }
 

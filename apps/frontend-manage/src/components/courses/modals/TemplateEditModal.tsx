@@ -8,7 +8,7 @@ import {
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
@@ -45,11 +45,11 @@ function TemplateEditModal({
   const info = data?.getTemplateInformation
 
   return (
-    <ModalLegacy
+    <Modal
       title={t('manage.template.editTemplate')}
       open={open}
       onClose={() => setOpen(false)}
-      className={{ content: 'gap-2' }}
+      className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
@@ -136,7 +136,7 @@ function TemplateEditModal({
           )}
         </Formik>
       )}
-    </ModalLegacy>
+    </Modal>
   )
 }
 

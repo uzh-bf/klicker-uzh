@@ -7,7 +7,7 @@ import {
 import {
   Button,
   FormikTextField,
-  ModalLegacy,
+  Modal,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -33,11 +33,12 @@ function CreateCatalogCollectionModal({
 
   return (
     <>
-      <ModalLegacy
+      <Modal
         open={open}
         onClose={onClose}
         title={t('manage.catalog.createCatalogCollectionTitle')}
         data={{ cy: 'create-catalog-collection-modal' }}
+        className={{ content: 'pb-1' }}
       >
         <div className="mb-4 text-sm">
           {t('manage.catalog.createCatalogCollectionDescription')}
@@ -119,7 +120,7 @@ function CreateCatalogCollectionModal({
                 )}
               />
 
-              <div className="mt-2 flex justify-between gap-2">
+              <div className="flex justify-between gap-2">
                 <Button
                   onClick={onClose}
                   data={{ cy: 'cancel-catalog-collection-creation' }}
@@ -139,7 +140,7 @@ function CreateCatalogCollectionModal({
             </Form>
           )}
         </Formik>
-      </ModalLegacy>
+      </Modal>
     </>
   )
 }

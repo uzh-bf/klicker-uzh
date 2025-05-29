@@ -6,7 +6,7 @@ import {
 import {
   Button,
   FormikTextField,
-  ModalLegacy,
+  Modal,
   ToastLegacy,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -40,16 +40,13 @@ function CatalogCollectionNameChangeModal({
 
   return (
     <>
-      <ModalLegacy
+      <Modal
         hideCloseButton
         escapeDisabled
         open={open}
         onClose={onClose}
         title={t('manage.catalog.changeCatalogCollectionName')}
-        className={{
-          content: 'w-[30rem]',
-          title: 'text-xl',
-        }}
+        className={{ content: 'max-w-xl pb-1' }}
       >
         <Formik
           initialValues={{
@@ -145,7 +142,7 @@ function CatalogCollectionNameChangeModal({
             </>
           )}
         </Formik>
-      </ModalLegacy>
+      </Modal>
       <ToastLegacy
         dismissible
         openExternal={successToast}

@@ -8,7 +8,7 @@ import {
 import {
   Button,
   FormikTextField,
-  ModalLegacy,
+  Modal,
   ToastLegacy,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -49,14 +49,14 @@ function ActivityNameChangeModal({
 
   return (
     <>
-      <ModalLegacy
+      <Modal
         hideCloseButton
         escapeDisabled
         open={open}
         onClose={(): void => setOpen(false)}
         title={t('manage.activities.changeActivityName')}
         className={{
-          content: 'max-w-[35rem]',
+          content: 'max-w-lg pb-1',
           title: 'text-xl',
         }}
       >
@@ -150,7 +150,7 @@ function ActivityNameChangeModal({
             </>
           )}
         </Formik>
-      </ModalLegacy>
+      </Modal>
       <ToastLegacy
         dismissible
         openExternal={successToast}

@@ -4,7 +4,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { H4, ModalLegacy } from '@uzh-bf/design-system'
+import { H4, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -20,7 +20,7 @@ function ActivityDetailsModal({
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
       title={t('manage.activities.activityDetails')}
       open={open}
       onClose={onClose}
@@ -89,7 +89,7 @@ function ActivityDetailsModal({
           </div>
         ))}
       </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

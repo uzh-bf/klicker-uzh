@@ -7,7 +7,7 @@ import {
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, FormikNumberField, ModalLegacy } from '@uzh-bf/design-system'
+import { Button, FormikNumberField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -32,7 +32,7 @@ function AdvancedLiveQuizSettings({
   const [open, setOpen] = useState(false)
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={() => setOpen(false)}
       trigger={
@@ -55,7 +55,7 @@ function AdvancedLiveQuizSettings({
         </ForwardRefButton>
       }
       title={t('manage.activityWizard.liveQuizAdvancedSettings')}
-      className={{ content: '!w-full max-w-[60rem] !pb-5' }}
+      className={{ content: 'pb-0' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
       hideCloseButton={showError}
       escapeDisabled={showError}
@@ -143,7 +143,7 @@ function AdvancedLiveQuizSettings({
           />
         </div>
       </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

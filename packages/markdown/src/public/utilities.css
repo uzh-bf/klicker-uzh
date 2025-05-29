@@ -77,6 +77,11 @@
   height: 100%
 }
 
+.h-max {
+  height: -moz-max-content;
+  height: max-content
+}
+
 .max-h-16 {
   max-height: 4rem
 }
@@ -103,6 +108,11 @@
 
 .w-full {
   width: 100%
+}
+
+.w-max {
+  width: -moz-max-content;
+  width: max-content
 }
 
 .max-w-\[50\%\] {
@@ -152,6 +162,11 @@
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1))
+}
+
+.bg-red-300 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(252 165 165 / var(--tw-bg-opacity, 1))
 }
 
 .object-contain {

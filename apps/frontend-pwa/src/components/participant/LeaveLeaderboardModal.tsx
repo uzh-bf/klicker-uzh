@@ -1,4 +1,4 @@
-import { Button, H2, ModalLegacy } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface LeaveLeaderboardModalProps {
@@ -15,37 +15,25 @@ function LeaveLeaderboardModal({
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
       hideCloseButton
-      onPrimaryAction={
-        <Button
-          destructive
-          onClick={() => onConfirm()}
-          data={{ cy: 'confirm-leave-course-leaderboard' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setIsModalOpen(false)}
-          data={{ cy: 'cancel-leave-course-leaderboard' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
-      onClose={(): void => setIsModalOpen(false)}
+      title={t('pwa.courses.leaveLeaderboardTitle')}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={() => onConfirm()}
+      dataPrimaryAction={{ cy: 'confirm-leave-course-leaderboard' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setIsModalOpen(false)}
+      dataSecondaryAction={{ cy: 'cancel-leave-course-leaderboard' }}
+      onClose={() => setIsModalOpen(false)}
       open={isModalOpen}
-      className={{ content: 'w-[40rem] !pt-0' }}
+      className={{ content: 'max-w-xl', title: 'self-start' }}
     >
-      <div>
-        <H2>{t('pwa.courses.leaveLeaderboardTitle')}</H2>
-        <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
-        <div className="mb-2 mt-6 text-sm italic">
-          {t('pwa.courses.leaveLeaderboardInformation')}
-        </div>
+      <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
+      <div className="my-2 text-sm italic">
+        {t('pwa.courses.leaveLeaderboardInformation')}
       </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

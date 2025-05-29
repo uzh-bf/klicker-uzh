@@ -49,6 +49,7 @@ function LiveQuizLists({
                   setQuizId(quiz.id)
                 }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
+                className={{ root: 'w-24' }}
               >
                 <Button.Icon
                   className={{ root: 'mr-2' }}
@@ -88,6 +89,7 @@ function LiveQuizLists({
                   setQuizId(quiz.id)
                 }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
+                className={{ root: 'w-24' }}
               >
                 <Button.Icon icon={faPersonChalkboard} />
                 <Button.Label>PPT</Button.Label>

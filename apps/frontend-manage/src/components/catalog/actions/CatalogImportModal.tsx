@@ -1,7 +1,8 @@
 import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
 import CatalogObjectImportErrorToast from './CatalogObjectImportErrorToast'
@@ -38,13 +39,45 @@ function CatalogImportModal({
 
   return (
     <>
-      <ModalLegacy
+      <Modal
         open={open}
         onClose={(e) => {
           e?.stopPropagation()
           setErrorToast(false)
           onClose()
         }}
+        secondaryLabel={
+          <div className="flex flex-row items-center gap-2.5">
+            <FontAwesomeIcon icon={faBan} />
+            <span>{t('shared.generic.cancel')}</span>
+          </div>
+        }
+        onSecondaryAction={(e) => {
+          e?.stopPropagation()
+          onClose()
+        }}
+        dataSecondaryAction={{ cy: 'cancel-object-import' }}
+        primaryLabel={
+          <div className="flex flex-row items-center gap-2.5">
+            <FontAwesomeIcon icon={faDownload} />
+            <span>
+              {t('manage.catalog.importObjectType', {
+                object: t(`shared.types.${objectType}`),
+              })}
+            </span>
+          </div>
+        }
+        onPrimaryAction={async (e) => {
+          e?.stopPropagation()
+          const success = await onImport()
+          if (success) {
+            onSuccess()
+          } else {
+            setErrorToast(true)
+          }
+        }}
+        primaryLoading={importing}
+        dataPrimaryAction={{ cy: 'confirm-object-import' }}
         title={t('manage.catalog.importPublicResource')}
         dataCloseButton={{ cy: 'close-object-import-modal' }}
       >
@@ -61,41 +94,7 @@ function CatalogImportModal({
             objectId={objectId}
           />
         </Suspense>
-        <div className="mt-4 flex justify-between space-x-2">
-          <Button
-            onClick={(e) => {
-              e?.stopPropagation()
-              onClose()
-            }}
-            data={{ cy: 'cancel-object-import' }}
-          >
-            <Button.Icon icon={faBan} />
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-          <Button
-            primary
-            loading={importing}
-            onClick={async (e) => {
-              e?.stopPropagation()
-              const success = await onImport()
-
-              if (success) {
-                onSuccess()
-              } else {
-                setErrorToast(true)
-              }
-            }}
-            data={{ cy: 'confirm-object-import' }}
-          >
-            <Button.Icon icon={faDownload} loading={importing} />
-            <Button.Label>
-              {t('manage.catalog.importObjectType', {
-                object: t(`shared.types.${objectType}`),
-              })}
-            </Button.Label>
-          </Button>
-        </div>
-      </ModalLegacy>
+      </Modal>
 
       <CatalogObjectImportErrorToast
         open={errorToast}

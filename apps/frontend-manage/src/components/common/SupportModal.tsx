@@ -14,7 +14,7 @@ import {
   faServer,
 } from '@fortawesome/free-solid-svg-icons'
 import { User } from '@klicker-uzh/graphql/dist/ops'
-import { H2, ModalLegacy } from '@uzh-bf/design-system'
+import { H2, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import SupportEntry from './SupportEntry'
@@ -29,16 +29,16 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
   const t = useTranslations()
 
   return (
-    <ModalLegacy
+    <Modal
+      fullScreen
       title={t('manage.support.modalTitle')}
       open={open}
       onClose={() => setOpen(false)}
       className={{
         overlay: 'my-auto text-black',
-        title: 'text-xl md:text-2xl',
-        content: 'h-max max-h-full',
+        title: 'text-left text-xl md:text-2xl',
+        content: 'h-max pb-1',
       }}
-      fullScreen
     >
       <div className="flex flex-col flex-wrap gap-8 md:flex-row md:gap-16">
         <div className="flex flex-1 flex-col justify-between">
@@ -160,7 +160,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
           </div>
         </div>
       </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, ModalLegacy, UserNotification } from '@uzh-bf/design-system'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -59,7 +59,7 @@ function ExistingElementSelectionModal({
     (elementDescriptors.length > 0 ? ` (${elementDescriptors.join(', ')})` : '')
 
   return (
-    <ModalLegacy
+    <Modal
       escapeDisabled
       hideCloseButton
       title={t('manage.template.selectExistingElement')}
@@ -68,10 +68,25 @@ function ExistingElementSelectionModal({
         setSelectedElement(null)
         onClose()
       }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        setSelectedElement(null)
+        onClose()
+      }}
+      dataSecondaryAction={{ cy: 'cancel-select-existing-element' }}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryDisabled={selectedElement === null}
+      onPrimaryAction={() => {
+        if (selectedElement === null) return
+        replaceWithExistingElement(selectedElement!.id, selectedElement!.name)
+        setSelectedElement(null)
+        onClose()
+      }}
+      dataPrimaryAction={{ cy: 'confirm-select-existing-element' }}
       data-cy="select-existing-question-modal"
       className={{ content: 'overflow-visible' }}
     >
-      <div className="text-gray-700">
+      <div className="mt-2 text-gray-700">
         {t('manage.template.selectElementInstructions', {
           element: elementDescription,
         })}
@@ -109,36 +124,7 @@ function ExistingElementSelectionModal({
             ))}
         </div>
       </div>
-
-      <div className="mt-4 flex flex-row justify-between">
-        <Button
-          onClick={() => {
-            setSelectedElement(null)
-            onClose()
-          }}
-          data={{ cy: 'cancel-select-existing-element' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          primary
-          disabled={selectedElement === null}
-          onClick={() => {
-            if (selectedElement === null) return
-
-            replaceWithExistingElement(
-              selectedElement!.id,
-              selectedElement!.name
-            )
-            setSelectedElement(null)
-            onClose()
-          }}
-          data={{ cy: 'confirm-select-existing-element' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      </div>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

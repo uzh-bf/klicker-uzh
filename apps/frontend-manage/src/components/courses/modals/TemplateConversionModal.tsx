@@ -17,7 +17,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormLabel,
-  ModalLegacy,
+  Modal,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -91,14 +91,14 @@ function TemplateConversionModal({
   }
 
   return (
-    <ModalLegacy
+    <Modal
       escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
       open={open}
       onClose={handleModalClose}
-      className={{ content: 'gap-2 lg:w-[55rem]' }}
+      className={{ content: 'gap-2 pb-2 lg:w-[55rem]' }}
       dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik
@@ -349,7 +349,7 @@ function TemplateConversionModal({
           )
         }}
       </Formik>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

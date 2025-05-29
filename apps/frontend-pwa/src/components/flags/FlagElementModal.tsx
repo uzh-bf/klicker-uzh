@@ -13,7 +13,7 @@ import {
   Button,
   FormikTextareaField,
   H4,
-  ModalLegacy,
+  Modal,
   ToastLegacy,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -173,13 +173,10 @@ function FlagElementModal({
   }
 
   return (
-    <div>
-      <ModalLegacy
+    <>
+      <Modal
         title={t('pwa.practiceQuiz.flagElement')}
-        className={{
-          content: 'z-20 max-w-lg',
-          overlay: 'z-10',
-        }}
+        className={{ content: 'max-w-lg pb-2' }}
         open={open}
         trigger={
           <ForwardRefButton
@@ -201,7 +198,7 @@ function FlagElementModal({
         hideCloseButton
         escapeDisabled
       >
-        <div className="prose mb-4 max-w-none">
+        <div className="mb-4 mt-2 max-w-none text-sm">
           {t('pwa.practiceQuiz.flagElementText')}
         </div>
         <Formik
@@ -251,7 +248,7 @@ function FlagElementModal({
             </div>
           )}
         </Formik>
-      </ModalLegacy>
+      </Modal>
 
       <FlagSuccessToast open={successToastOpen} setOpen={setSuccessToastOpen} />
       <FlagErrorToast
@@ -259,7 +256,7 @@ function FlagElementModal({
         setOpen={setErrorToastOpen}
         content={error?.message ?? t('shared.generic.systemError')}
       />
-    </div>
+    </>
   )
 }
 

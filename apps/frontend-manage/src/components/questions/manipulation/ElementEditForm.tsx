@@ -10,6 +10,7 @@ import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
@@ -153,26 +154,24 @@ function ElementEditForm({
             <Modal
               fullScreen
               title={t(`manage.elements.${mode}Title`)}
-              className={{
-                content: 'max-w-[1400px] text-sm md:text-base',
-                title: 'text-xl',
-              }}
               open={open}
               onClose={() => onClose()}
               escapeDisabled={true}
-              onPrimaryAction={
-                !inputsDisabled ? async () => await submitForm() : undefined // TODO: remove / change to null once submit type can be set
-              }
+              onPrimaryAction={() => submitForm()}
               primaryLabel={
                 !inputsDisabled ? t('shared.generic.save') : undefined
               }
-              // primaryType="submit" // TODO: introduce once available
-              // primaryDisabled={!isValid} // TODO: introduce once available
-              // primaryLoading={isSubmitting} // TODO: introduce once available
+              primaryDisabled={!isValid}
+              primaryLoading={isSubmitting}
               onSecondaryAction={
                 !isTemplate && !inputsDisabled ? () => onClose() : undefined
               }
               secondaryLabel={t('shared.generic.close')}
+              className={{
+                title: 'text-xl',
+                content: 'max-w-[1400px] text-sm md:text-base',
+                footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
+              }}
             >
               {!inputsDisabled && (
                 <AutoSaveMonitor

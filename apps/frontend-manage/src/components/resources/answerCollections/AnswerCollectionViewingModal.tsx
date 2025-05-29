@@ -7,7 +7,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  ModalLegacy,
+  Modal,
   TextField,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -60,7 +60,7 @@ function AnswerCollectionViewingModal({
   }
 
   return (
-    <ModalLegacy
+    <Modal
       open={open}
       onClose={onClose}
       title={
@@ -77,9 +77,7 @@ function AnswerCollectionViewingModal({
         </div>
       }
       dataCloseButton={{ cy: 'close-viewing-collection-modal' }}
-      className={{
-        content: 'max-h-[calc(100vh-1.5rem)] max-w-2xl overflow-y-auto',
-      }}
+      className={{ content: 'max-w-2xl pb-2' }}
     >
       <Accordion
         collapsible
@@ -119,10 +117,10 @@ function AnswerCollectionViewingModal({
               icon={faSearch}
               placeholder={t('manage.resources.searchAnswerOptions')}
               data={{ cy: 'search-viewing-answer-options' }}
-              className={{ field: 'mb-2 w-full', input: 'h-8 text-sm' }}
+              className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
             />
 
-            <div className="max-h-[calc(100vh-18rem)] overflow-y-auto rounded-md border border-gray-200">
+            <div className="max-h-[calc(100vh-16rem)] overflow-y-auto rounded-md border border-gray-200">
               {filteredEntries.length === 0 ? (
                 <div className="p-4 text-center">
                   <UserNotification type="info">
@@ -144,7 +142,7 @@ function AnswerCollectionViewingModal({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-    </ModalLegacy>
+    </Modal>
   )
 }
 

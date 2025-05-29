@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -18,7 +18,7 @@ function CaseStudyCaseDeletionButton({
     useState(false)
 
   return (
-    <ModalLegacy
+    <Modal
       open={deletionConfirmationOpen}
       onClose={() => setDeletionConfirmationOpen(false)}
       trigger={
@@ -32,35 +32,24 @@ function CaseStudyCaseDeletionButton({
         </ForwardRefButton>
       }
       title={t('manage.elements.confirmCaseDeletion')}
+      primaryLabel={t('shared.generic.delete')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={() => {
+        onConfirm()
+        setDeletionConfirmationOpen(false)
+      }}
+      dataPrimaryAction={{ cy: 'confirm-delete-case' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setDeletionConfirmationOpen(false)}
+      dataSecondaryAction={{ cy: 'cancel-delete-case' }}
+      className={{ content: 'max-w-lg' }}
     >
-      <div className="flex flex-col gap-4">
-        <div>
-          {t(
-            hasSampleSolution
-              ? 'manage.elements.confirmCaseDeleteSolutions'
-              : 'manage.elements.confirmCaseDelete'
-          )}
-        </div>
-        <div className="flex justify-between gap-2">
-          <Button
-            onClick={() => setDeletionConfirmationOpen(false)}
-            data={{ cy: 'cancel-delete-case' }}
-          >
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-          <Button
-            destructive
-            onClick={() => {
-              onConfirm()
-              setDeletionConfirmationOpen(false)
-            }}
-            data={{ cy: 'confirm-delete-case' }}
-          >
-            <Button.Label>{t('shared.generic.delete')}</Button.Label>
-          </Button>
-        </div>
-      </div>
-    </ModalLegacy>
+      {t(
+        hasSampleSolution
+          ? 'manage.elements.confirmCaseDeleteSolutions'
+          : 'manage.elements.confirmCaseDelete'
+      )}
+    </Modal>
   )
 }
 

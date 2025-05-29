@@ -3,12 +3,7 @@ import {
   GetCourseGroupsDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  ModalLegacy,
-  ToastLegacy,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Modal, ToastLegacy, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -58,45 +53,28 @@ function AssignmentConfirmationModal({
 
   return (
     <>
-      <ModalLegacy
-        title={t('manage.course.finalizeRandomGroupAssignment')}
-        onPrimaryAction={
-          <Button
-            primary
-            onClick={async () => {
-              const res = await manualRandomGroupAssignments({
-                variables: { courseId: courseId },
-              })
-              if (res.data?.manualRandomGroupAssignments) {
-                setShowSuccess(true)
-                setOpen(false)
-              } else {
-                console.error('Error while creating random groups')
-                setShowError(true)
-              }
-            }}
-            data={{ cy: 'confirm-random-group-assignment' }}
-            loading={randomGroupCreationLoading}
-          >
-            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-          </Button>
-        }
-        onSecondaryAction={
-          <Button
-            onClick={(): void => setOpen(false)}
-            data={{ cy: 'cancel-random-group-assignment' }}
-            className={{ root: 'text-base' }}
-          >
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-        }
-        onClose={(): void => setOpen(false)}
+      <Modal
         open={open}
-        hideCloseButton={true}
-        className={{
-          content: 'h-max min-h-max w-[40rem] self-center pt-0',
-          title: 'text-xl',
+        onClose={(): void => setOpen(false)}
+        title={t('manage.course.finalizeRandomGroupAssignment')}
+        primaryLabel={t('shared.generic.confirm')}
+        primaryLoading={randomGroupCreationLoading}
+        onPrimaryAction={async () => {
+          const res = await manualRandomGroupAssignments({
+            variables: { courseId: courseId },
+          })
+          if (res.data?.manualRandomGroupAssignments) {
+            setShowSuccess(true)
+            setOpen(false)
+          } else {
+            console.error('Error while creating random groups')
+            setShowError(true)
+          }
         }}
+        dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
+        secondaryLabel={t('shared.generic.cancel')}
+        onSecondaryAction={() => setOpen(false)}
+        dataSecondaryAction={{ cy: 'cancel-random-group-assignment' }}
       >
         <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>
         <UserNotification type="warning">
@@ -105,7 +83,7 @@ function AssignmentConfirmationModal({
             li: (children) => <li>{children}</li>,
           })}
         </UserNotification>
-      </ModalLegacy>
+      </Modal>
       {showError && (
         <ToastLegacy
           dismissible

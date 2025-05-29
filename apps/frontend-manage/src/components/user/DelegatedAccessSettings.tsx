@@ -14,7 +14,7 @@ import {
   FormikTextField,
   H4,
   Label,
-  ModalLegacy,
+  Modal,
   Prose,
   ToastLegacy,
 } from '@uzh-bf/design-system'
@@ -133,7 +133,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             validationSchema={loginSchema}
             onSubmit={async (
               values,
-              { resetForm, setFieldValue, setSubmitting }
+              { resetForm, setFieldValue, setSubmitting, validateForm }
             ) => {
               setSubmitting(true)
               const result = await createUserLogin({
@@ -148,14 +148,15 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
 
               if (result.data?.createUserLogin) {
                 resetForm()
-                setFieldValue(
+                await setFieldValue(
                   'password',
                   generatePassword.generate(PW_SETTINGS)
                 )
+                await validateForm()
               }
             }}
           >
-            {({ values, setFieldValue, isValid, isSubmitting }) => {
+            {({ values, setFieldValue, isValid, isSubmitting, submitForm }) => {
               return (
                 <Form>
                   <div className="flex flex-col gap-1.5 md:flex-row md:gap-0">
@@ -265,18 +266,16 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       {t('manage.settings.createLogin')}
                     </Button.Label>
                   </Button>
-                  <ModalLegacy
+                  <Modal
                     title={t('manage.settings.confirmDelegatedAcces')}
                     open={confirmationModal}
                     onClose={() => setConfirmationModal(false)}
-                    className={{
-                      content: 'h-max !min-h-[10rem] w-1/2 !pb-1',
-                    }}
+                    className={{ content: 'h-max !min-h-[10rem] w-1/2 !pb-1' }}
                   >
                     <div>
                       {t('manage.settings.confirmDelegatedAccesTooltip')}
                     </div>
-                    <div className="mt-2 rounded-lg bg-gray-300 p-3">
+                    <div className="my-2 rounded-lg bg-gray-300 px-3 py-2">
                       <div>
                         <span className="font-bold">
                           {t('shared.generic.shortname')}:{' '}
@@ -312,17 +311,15 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     </div>
                     <Button
                       primary
-                      type="submit"
                       loading={isSubmitting}
                       disabled={!isValid}
-                      className={{
-                        root: 'float-right my-2',
-                      }}
+                      onClick={() => submitForm()}
+                      className={{ root: 'float-right my-2' }}
                       data={{ cy: 'confirm-delegated-login-creation' }}
                     >
                       <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                     </Button>
-                  </ModalLegacy>
+                  </Modal>
                 </Form>
               )
             }}

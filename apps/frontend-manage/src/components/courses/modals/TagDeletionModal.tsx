@@ -4,7 +4,7 @@ import {
   GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ModalLegacy } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TagDeletionModalProps {
@@ -48,42 +48,28 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
   })
 
   return (
-    <ModalLegacy
-      onPrimaryAction={
-        <Button
-          destructive
-          loading={deleting}
-          onClick={async () => {
-            await deleteTag()
-            setOpen(false)
-          }}
-          data={{ cy: 'confirm-delete-tag' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-delete-tag' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
+    <Modal
       onClose={(): void => setOpen(false)}
       open={open}
-      hideCloseButton={true}
       title={t('manage.tags.deleteTag')}
-      className={{
-        content: 'h-max min-h-max w-[40rem] self-center pt-0 text-base',
-        title: 'text-xl',
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={deleting}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={async () => {
+        await deleteTag()
+        setOpen(false)
       }}
+      dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setOpen(false)}
+      dataSecondaryAction={{ cy: 'cancel-delete-tag' }}
+      className={{ content: 'max-w-xl' }}
     >
       {t.rich('manage.tags.confirmTagDeletion', {
         name,
         b: (content) => <b>{content}</b>,
       })}
-    </ModalLegacy>
+    </Modal>
   )
 }
 

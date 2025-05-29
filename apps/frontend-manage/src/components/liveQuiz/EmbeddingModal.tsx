@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, ModalLegacy, Switch } from '@uzh-bf/design-system'
+import { Button, Modal, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -61,26 +61,24 @@ function EmbeddingModal({
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
   const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
-    variables: {
-      id: quizId,
-    },
+    variables: { id: quizId },
     skip: !open,
   })
 
   return (
-    <ModalLegacy
+    <Modal
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       open={open}
       onClose={onClose}
-      className={{ content: 'max-h-[calc(100%-3rem)]' }}
-      onPrimaryAction={
-        <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.close')}
+      primaryButtonStyle="default"
+      onPrimaryAction={onClose}
+      dataPrimaryAction={{ cy: 'close-embedding-modal' }}
+      className={{ content: 'max-h-[calc(100%-3rem)]', footer: 'justify-end' }}
     >
-      <div className="mb-4 rounded-md border py-2 pl-1 pr-2">
+      <div className="mb-4 rounded-md border p-2.5">
         <Switch
+          size="sm"
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
@@ -89,6 +87,7 @@ function EmbeddingModal({
           {t('manage.evaluation.showSolutionInfo')}
         </div>
         <Switch
+          size="sm"
           label={t('manage.evaluation.showExplanation')}
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
@@ -140,7 +139,7 @@ function EmbeddingModal({
           </div>
         </div>
       )}
-    </ModalLegacy>
+    </Modal>
   )
 }
 
