@@ -9,7 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { initializeApollo } from '@lib/apollo'
 import {
   Button,
-  FormikPinFieldLegacy,
+  FormikPinField,
   H2,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -92,7 +92,7 @@ function JoinCourse({
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
-            <div className="mb-5">
+            <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -120,9 +120,12 @@ function JoinCourse({
               {({ isSubmitting, isValid }) => {
                 return (
                   <Form>
-                    <FormikPinFieldLegacy
+                    <FormikPinField
+                      required
                       name="pin"
+                      length={9}
                       label={t('pwa.joinCourse.coursePinFormat')}
+                      className={{ inputItem: 'w-8', field: 'mb-2' }}
                     />
                     <Button
                       primary

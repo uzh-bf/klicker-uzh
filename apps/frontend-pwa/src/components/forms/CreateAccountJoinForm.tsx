@@ -2,7 +2,7 @@ import { useLazyQuery } from '@apollo/client'
 import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  FormikPinFieldLegacy,
+  FormikPinField,
   ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -55,15 +55,13 @@ function CreateAccountJoinForm() {
       >
         {({ isSubmitting }) => (
           <Form>
-            <FormikPinFieldLegacy
+            <FormikPinField
               required
+              length={9}
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}
               name="pin"
-              className={{
-                root: 'my-2',
-                tooltip: 'max-w-[20rem] md:max-w-[30rem]',
-              }}
+              className={{ field: 'mb-3 mt-2', inputItem: 'w-8' }}
               data={{ cy: 'pin-field' }}
             />
             <Button

@@ -177,7 +177,11 @@ function LoginForm({
                     data={dataSecret}
                     icon={passwordHidden ? faEye : faEyeSlash}
                     onIconClick={() => setPasswordHidden(!passwordHidden)}
-                    className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                    className={{
+                      root: 'mt-1',
+                      icon: 'bg-transparent',
+                      input: '!pr-10',
+                    }}
                     type={passwordHidden ? 'password' : 'text'}
                   />
 

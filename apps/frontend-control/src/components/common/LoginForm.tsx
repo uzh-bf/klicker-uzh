@@ -4,7 +4,7 @@ import usePWAInstall, {
 } from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
-  FormikPinFieldLegacy,
+  FormikPinField,
   FormikTextField,
   H1,
   UserNotification,
@@ -80,12 +80,13 @@ function LoginForm({
               data={dataIdentifier}
               className={{ label: 'text-sm' }}
             />
-            <FormikPinFieldLegacy
+            <FormikPinField
               required
+              length={9}
               label={labelSecret}
               labelType="small"
               name={fieldSecret}
-              className={{ root: 'mt-1', label: 'text-sm' }}
+              className={{ field: 'mt-1', inputItem: 'w-8', label: 'text-sm' }}
               data={dataSecret}
             />
 

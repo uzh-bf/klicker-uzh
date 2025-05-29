@@ -89,9 +89,7 @@ function ObjectImport({
           value={search}
           onChange={(newValue: string) => setSearch(newValue)}
           icon={faMagnifyingGlass}
-          className={{
-            input: 'w-60 !pl-8',
-          }}
+          className={{ input: 'w-60 !pl-8' }}
           data={{ cy: 'search-catalog-collection' }}
         />
         <ObjectFilters

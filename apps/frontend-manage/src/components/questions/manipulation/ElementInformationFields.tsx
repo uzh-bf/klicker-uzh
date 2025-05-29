@@ -120,9 +120,7 @@ function ElementInformationFields({
           disabled={inputsDisabled || isSubmitting}
           label={t('manage.elements.elementTitle')}
           tooltip={t('manage.elements.titleTooltip')}
-          className={{
-            root: 'w-full',
-          }}
+          className={{ root: 'w-full' }}
           data={{ cy: 'insert-question-title' }}
         />
       </div>
