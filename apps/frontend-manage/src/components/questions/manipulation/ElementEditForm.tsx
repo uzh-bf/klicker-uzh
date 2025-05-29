@@ -172,6 +172,7 @@ function ElementEditForm({
                 content: 'max-w-[1400px] text-sm md:text-base',
                 footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
               }}
+              dataCloseButton={{ cy: 'close-element-modal' }}
             >
               {!inputsDisabled && (
                 <AutoSaveMonitor
