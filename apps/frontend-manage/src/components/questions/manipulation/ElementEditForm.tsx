@@ -163,10 +163,12 @@ function ElementEditForm({
               }
               primaryDisabled={!isValid}
               primaryLoading={isSubmitting}
+              dataPrimaryAction={{ cy: 'save-new-question' }}
               onSecondaryAction={
                 !isTemplate && !inputsDisabled ? () => onClose() : undefined
               }
               secondaryLabel={t('shared.generic.close')}
+              dataSecondaryAction={{ cy: 'close-element-modal-button' }}
               className={{
                 title: 'text-xl',
                 content: 'max-w-[1400px] text-sm md:text-base',
