@@ -3,7 +3,7 @@ import {
   CaseStudyElementResults,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import { TabsLegacy } from '@uzh-bf/design-system'
+import { TabContent, Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
@@ -75,35 +75,24 @@ function CSEvaluation({
       className="flex min-h-0 w-full flex-1 flex-col"
       key={instanceEvaluation.id}
     >
-      <TabsLegacy defaultValue="instructions">
-        <TabsLegacy.TabList
-          className={{
-            root: 'h-8 px-0 py-0',
-          }}
-        >
-          <TabsLegacy.Tab
-            value="instructions"
-            className={{
-              label: textSize.text,
-              root: 'px-0 py-0',
-            }}
-          >
-            {t('shared.generic.instructions')}
-          </TabsLegacy.Tab>
-          {instanceEvaluation.cases.map((caseItem, caseIx) => (
-            <TabsLegacy.Tab
-              key={`case-description-${caseItem.id}`}
-              value={caseItem.id}
-              className={{ label: textSize.text, root: 'px-0 py-0' }}
-            >
-              {`${caseIx + 1}. ${caseItem.name}`}
-            </TabsLegacy.Tab>
-          ))}
-        </TabsLegacy.TabList>
-        <TabsLegacy.TabContent
-          value="instructions"
-          className={{ root: 'px-0 py-0' }}
-        >
+      <Tabs
+        defaultValue="instructions"
+        tabs={[
+          {
+            id: 'instructions',
+            value: 'instructions',
+            label: t('shared.generic.instructions'),
+            data: { cy: 'instructions-tab' },
+          },
+          ...instanceEvaluation.cases.map((caseItem, caseIx) => ({
+            id: caseItem.id,
+            value: caseItem.id,
+            label: `${caseIx + 1}. ${caseItem.name}`,
+            data: { cy: `case-description-${caseItem.id}` },
+          })),
+        ]}
+      >
+        <TabContent value="instructions" className={{ root: 'px-0 py-0' }}>
           <QuestionCollapsible
             content={instanceEvaluation.content}
             proseSize={textSize.prose}
@@ -113,9 +102,9 @@ function CSEvaluation({
                 : 'max-h-[calc(100vh-10rem)]'
             }
           />
-        </TabsLegacy.TabContent>
+        </TabContent>
         {instanceEvaluation.cases.map((caseItem) => (
-          <TabsLegacy.TabContent
+          <TabContent
             key={`case-content-${caseItem.id}`}
             value={caseItem.id}
             className={{ root: 'px-0 py-0' }}
@@ -129,9 +118,9 @@ function CSEvaluation({
                   : 'max-h-[calc(100vh-10rem)]'
               }
             />
-          </TabsLegacy.TabContent>
+          </TabContent>
         ))}
-      </TabsLegacy>
+      </Tabs>
       {chartType === ChartType.HISTOGRAM && (
         <CSEvaluationHistogram
           evaluationId={instanceEvaluation.id}

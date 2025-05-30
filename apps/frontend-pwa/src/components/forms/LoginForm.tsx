@@ -7,7 +7,8 @@ import usePWAInstall, {
 import {
   Button,
   FormikTextField,
-  TabsLegacy,
+  TabContent,
+  Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -77,45 +78,35 @@ function LoginForm({
           />
         </div>
 
-        <TabsLegacy
+        <Tabs
           defaultValue="login"
-          className={{ root: 'w-full border-t' }}
+          tabs={[
+            {
+              id: 'login-tab',
+              value: 'login',
+              label: t('shared.generic.login'),
+              data: { cy: 'login-tab' },
+            },
+            {
+              id: 'joinCourse-tab',
+              value: 'joinCourse',
+              label: t('pwa.login.createAccountJoin'),
+              data: { cy: 'joinCourse-tab' },
+            },
+          ]}
+          className={{ root: 'px-3 md:px-6' }}
         >
-          <TabsLegacy.TabList>
-            <TabsLegacy.Tab
-              key="login-tab"
-              value="login"
-              label={t('shared.generic.login')}
-              className={{
-                root: '!rounded-none',
-                label: 'text-md font-bold',
-              }}
-            />
-            <TabsLegacy.Tab
-              key="joinCourse-tab"
-              value="joinCourse"
-              label={t('pwa.login.createAccountJoin')}
-              className={{
-                root: '!rounded-none',
-                label: 'text-md font-bold',
-              }}
-            />
-          </TabsLegacy.TabList>
-          <TabsLegacy.TabContent
-            key="joinCourse"
-            value="joinCourse"
-            className={{ root: 'md:px-4' }}
-          >
+          <TabContent key="joinCourse" value="joinCourse">
             <CreateAccountJoinForm />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="login"
             value="login"
             className={{
-              root: 'flex h-max items-center rounded-none md:-my-2 md:mt-3 md:px-4 md:pb-14',
+              root: 'flex h-max items-center rounded-none md:-my-2 md:mt-3 md:pb-14',
             }}
           >
-            <Form className="mx-auto w-full px-4">
+            <Form className="mx-auto w-full">
               {router.query.newAccount ? (
                 <UserNotification type="success">
                   {t('pwa.general.waitingForActivation')}
@@ -237,8 +228,8 @@ function LoginForm({
                 />
               )}
             </Form>
-          </TabsLegacy.TabContent>
-        </TabsLegacy>
+          </TabContent>
+        </Tabs>
       </div>
       <div className="w-full flex-none">
         <Footer />

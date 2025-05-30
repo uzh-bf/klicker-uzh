@@ -12,7 +12,7 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
-import { Prose, TabsLegacy } from '@uzh-bf/design-system'
+import { Prose, TabContent, Tabs } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -151,80 +151,55 @@ function CourseOverviewPage() {
         )}
       </div>
 
-      <div className="mt-4 flex flex-col flex-wrap gap-4 md:flex-row">
-        <TabsLegacy
+      <div className="mt-4 flex flex-col flex-wrap gap-4 lg:flex-row">
+        <Tabs
           defaultValue="liveQuizzes"
           value={tabValue}
           onValueChange={(newValue: string) => setTabValue(newValue)}
+          tabs={[
+            {
+              id: 'tab-liveQuizzes',
+              value: 'liveQuizzes',
+              label: t('manage.general.liveQuizzes'),
+              data: { cy: 'tab-liveQuizzes' },
+            },
+            {
+              id: 'tab-practiceQuizzes',
+              value: 'practiceQuizzes',
+              label: (
+                <div className="flex flex-row items-center gap-2.5">
+                  <span>{t('shared.generic.practiceQuizzes')}</span>
+                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
+                </div>
+              ),
+              data: { cy: 'tab-practiceQuizzes' },
+            },
+            {
+              id: 'tab-microLearnings',
+              value: 'microLearnings',
+              label: (
+                <div className="flex flex-row items-center gap-2.5">
+                  <span>{t('shared.generic.microlearnings')}</span>
+                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
+                </div>
+              ),
+              data: { cy: 'tab-microLearnings' },
+            },
+            {
+              id: 'tab-groupActivities',
+              value: 'groupActivities',
+              label: (
+                <div className="flex flex-row items-center gap-2.5">
+                  <span>{t('shared.generic.groupActivities')}</span>
+                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
+                </div>
+              ),
+              data: { cy: 'tab-groupActivities' },
+            },
+          ]}
           className={{ root: 'flex-1 basis-2/3' }}
         >
-          <TabsLegacy.TabList>
-            <TabsLegacy.Tab
-              key="tab-liveQuizzes"
-              value="liveQuizzes"
-              label={t('manage.general.liveQuizzes')}
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'liveQuizzes' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-liveQuizzes' }}
-            />
-            <TabsLegacy.Tab
-              key="tab-practiceQuizzes"
-              value="practiceQuizzes"
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'practiceQuizzes' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-practiceQuizzes' }}
-            >
-              <div className="flex flex-row items-center justify-center gap-2">
-                <div>{t('shared.generic.practiceQuizzes')}</div>
-                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-              </div>
-            </TabsLegacy.Tab>
-            <TabsLegacy.Tab
-              key="tab-microLearnings"
-              value="microLearnings"
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'microLearnings' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-microLearnings' }}
-            >
-              <div className="flex flex-row items-center justify-center gap-2">
-                <div>{t('shared.generic.microlearnings')}</div>
-                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-              </div>
-            </TabsLegacy.Tab>
-            <TabsLegacy.Tab
-              key="tab-groupActivities"
-              value="groupActivities"
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'groupActivities' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-groupActivities' }}
-            >
-              <div className="flex flex-row items-center justify-center gap-2">
-                <div>{t('shared.generic.groupActivities')}</div>
-                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-              </div>
-            </TabsLegacy.Tab>
-          </TabsLegacy.TabList>
-          <TabsLegacy.TabContent
+          <TabContent
             key="content-liveQuizzes"
             value="liveQuizzes"
             className={{ root: 'overflow-y-auto px-0 py-1' }}
@@ -235,8 +210,8 @@ function CourseOverviewPage() {
               liveQuizzes={course.liveQuizzes ?? []}
               liveQuizActivities={course.liveQuizActivities ?? []}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-practiceQuizzes"
             value="practiceQuizzes"
             className={{ root: 'px-0 py-1' }}
@@ -249,8 +224,8 @@ function CourseOverviewPage() {
               courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-microlearnings"
             value="microLearnings"
             className={{ root: 'px-0 py-1' }}
@@ -262,8 +237,8 @@ function CourseOverviewPage() {
               courseId={course.id}
               userCatalyst={user?.userProfile?.catalyst}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-groupActivities"
             value="groupActivities"
             className={{ root: 'px-0 py-2' }}
@@ -278,8 +253,8 @@ function CourseOverviewPage() {
               courseStartDate={course.startDate}
               userCatalyst={user?.userProfile?.catalyst}
             />
-          </TabsLegacy.TabContent>
-        </TabsLegacy>
+          </TabContent>
+        </Tabs>
 
         {data?.course?.isGamificationEnabled && (
           <CourseGamificationInfos

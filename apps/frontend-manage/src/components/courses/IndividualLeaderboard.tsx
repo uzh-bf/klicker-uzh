@@ -3,7 +3,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   SelectField,
-  TabsLegacy,
+  TabContent,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -54,10 +54,7 @@ function IndividualLeaderboard({
   const weeklyDates = useCourseWeeklyDates({ courseStart, courseEnd })
 
   return (
-    <TabsLegacy.TabContent
-      value="ind-leaderboard"
-      className={{ root: 'h-full p-2' }}
-    >
+    <TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
       <div className="mb-3 flex flex-col">
         <div className="mb-0.5 flex flex-row items-end gap-3">
           <SelectField
@@ -208,7 +205,7 @@ function IndividualLeaderboard({
           customEndDate={customEndDate}
         />
       </Suspense>
-    </TabsLegacy.TabContent>
+    </TabContent>
   )
 }
 

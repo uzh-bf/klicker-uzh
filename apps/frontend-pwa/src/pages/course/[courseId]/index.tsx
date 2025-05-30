@@ -20,7 +20,8 @@ import {
   RadioGroup,
   RadioGroupItem,
   ShadcnLabel,
-  TabsLegacy,
+  TabContent,
+  Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -171,55 +172,56 @@ function CourseOverview({
       {course.isGamificationEnabled || course.description ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
-            <TabsLegacy
+            <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
+              tabs={[
+                ...(course.isGamificationEnabled
+                  ? [
+                      {
+                        id: 'leaderboard',
+                        value: 'global',
+                        label: t('shared.generic.leaderboard'),
+                        data: { cy: 'student-course-leaderboard-tab' },
+                      },
+                    ]
+                  : []),
+                ...(course.description
+                  ? [
+                      {
+                        id: 'info',
+                        value: 'info',
+                        label: t('pwa.courses.courseInformation'),
+                        data: { cy: 'student-course-information' },
+                      },
+                    ]
+                  : []),
+                ...(course.isGamificationEnabled
+                  ? (data.participantGroups?.map((group, ix) => ({
+                      id: group.id,
+                      value: group.id,
+                      label: `${t('shared.generic.group')} ${group.name}`,
+                      data: { cy: `student-course-existing-group-${ix}` },
+                    })) ?? [])
+                  : []),
+                ...(course.isGamificationEnabled &&
+                course.isGroupCreationEnabled &&
+                !course.isGroupDeadlinePassed &&
+                (data.participantGroups?.length ?? 0) < 1
+                  ? [
+                      {
+                        id: 'create',
+                        value: 'create',
+                        label: t('pwa.courses.createJoinGroup'),
+                        data: { cy: 'student-course-create-group' },
+                      },
+                    ]
+                  : []),
+              ]}
               onValueChange={(tab) => setSelectedTab(tab)}
             >
-              <TabsLegacy.TabList>
-                {course.isGamificationEnabled && (
-                  <TabsLegacy.Tab
-                    key="leaderboard"
-                    value="global"
-                    label={t('shared.generic.leaderboard')}
-                    data={{ cy: 'student-course-leaderboard-tab' }}
-                  />
-                )}
-
-                {course.description && (
-                  <TabsLegacy.Tab
-                    key="info"
-                    value="info"
-                    label={t('pwa.courses.courseInformation')}
-                    data={{ cy: 'student-course-information' }}
-                  />
-                )}
-
-                {course.isGamificationEnabled &&
-                  data.participantGroups?.map((group, ix) => (
-                    <TabsLegacy.Tab
-                      key={group.id}
-                      value={group.id}
-                      label={`${t('shared.generic.group')} ${group.name}`}
-                      data={{ cy: `student-course-existing-group-${ix}` }}
-                    />
-                  ))}
-
-                {course.isGamificationEnabled &&
-                  course.isGroupCreationEnabled &&
-                  !course.isGroupDeadlinePassed &&
-                  (data.participantGroups?.length ?? 0) < 1 && (
-                    <TabsLegacy.Tab
-                      key="create"
-                      value="create"
-                      label={t('pwa.courses.createJoinGroup')}
-                      data={{ cy: 'student-course-create-group' }}
-                    />
-                  )}
-              </TabsLegacy.TabList>
-
               {course.description && (
-                <TabsLegacy.TabContent
+                <TabContent
                   key="info"
                   value="info"
                   className={{ root: 'md:px-4' }}
@@ -232,11 +234,11 @@ function CourseOverview({
                     className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
                     content={course.description}
                   />
-                </TabsLegacy.TabContent>
+                </TabContent>
               )}
 
               {course.isGamificationEnabled && (
-                <TabsLegacy.TabContent
+                <TabContent
                   key="course"
                   value="global"
                   className={{ root: 'md:px-4' }}
@@ -505,7 +507,7 @@ function CourseOverview({
                       </div>
                     </div>
                   )}
-                </TabsLegacy.TabContent>
+                </TabContent>
               )}
 
               {participant &&
@@ -531,15 +533,15 @@ function CourseOverview({
                 ))}
 
               {course.isGamificationEnabled && (
-                <TabsLegacy.TabContent key="create" value="create">
+                <TabContent key="create" value="create">
                   <GroupCreationActions
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
                     inRandomGroupPool={inRandomGroupPool ?? false}
                   />
-                </TabsLegacy.TabContent>
+                </TabContent>
               )}
-            </TabsLegacy>
+            </Tabs>
             {isProfileModalOpen && participantId && (
               <ParticipantProfileModal
                 isProfileModalOpen={isProfileModalOpen}

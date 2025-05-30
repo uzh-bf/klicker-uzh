@@ -20,7 +20,7 @@ function CreateAccountJoinForm() {
   const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
 
   return (
-    <div className="mx-auto w-full p-4">
+    <div className="mx-auto w-full py-4">
       <UserNotification type="info">
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>

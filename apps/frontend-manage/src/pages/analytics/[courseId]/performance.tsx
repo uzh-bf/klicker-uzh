@@ -1,11 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { GetCoursePerformanceAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1, TabsLegacy } from '@uzh-bf/design-system'
+import { H1, TabContent, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
@@ -74,7 +73,7 @@ function PerformanceDashboard() {
             })}
           </div>
         </div>
-        <TabsLegacy
+        <Tabs
           defaultValue="performanceRates"
           value={tabValue}
           onValueChange={(newValue: string) =>
@@ -86,63 +85,34 @@ function PerformanceDashboard() {
                 | 'feedbackOverview'
             )
           }
-          className={{ root: 'flex-1 basis-2/3' }}
+          tabs={[
+            {
+              id: 'tab-performanceRates',
+              value: 'performanceRates',
+              label: t('manage.analytics.performanceRates'),
+              data: { cy: 'tab-performanceRates' },
+            },
+            {
+              id: 'tab-activityProgress',
+              value: 'activityProgress',
+              label: t('manage.analytics.activityProgress'),
+              data: { cy: 'tab-activityProgress' },
+            },
+            {
+              id: 'tab-studentPerformance',
+              value: 'studentPerformance',
+              label: t('manage.analytics.studentPerformance'),
+              data: { cy: 'tab-studentPerformance' },
+            },
+            {
+              id: 'tab-feedbackOverview',
+              value: 'feedbackOverview',
+              label: t('manage.analytics.feedbackOverview'),
+              data: { cy: 'tab-feedbackOverview' },
+            },
+          ]}
         >
-          <TabsLegacy.TabList>
-            <TabsLegacy.Tab
-              key="tab-performanceRates"
-              value="performanceRates"
-              label={t('manage.analytics.performanceRates')}
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'performanceRates' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-performanceRates' }}
-            />
-            <TabsLegacy.Tab
-              key="tab-activityProgress"
-              value="activityProgress"
-              label={t('manage.analytics.activityProgress')}
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'activityProgress' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-activityProgress' }}
-            />
-            <TabsLegacy.Tab
-              key="tab-studentPerformance"
-              value="studentPerformance"
-              label={t('manage.analytics.studentPerformance')}
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'studentPerformance' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-studentPerformance' }}
-            />
-            <TabsLegacy.Tab
-              key="tab-feedbackOverview"
-              value="feedbackOverview"
-              label={t('manage.analytics.feedbackOverview')}
-              className={{
-                root: 'border border-solid',
-                label: twMerge(
-                  'whitespace-nowrap text-base',
-                  tabValue === 'feedbackOverview' && 'font-bold'
-                ),
-              }}
-              data={{ cy: 'tab-feedbackOverview' }}
-            />
-          </TabsLegacy.TabList>
-          <TabsLegacy.TabContent
+          <TabContent
             key="content-performanceRates"
             value="performanceRates"
             className={{ root: 'overflow-y-auto px-0 py-2' }}
@@ -151,8 +121,8 @@ function PerformanceDashboard() {
               activityPerformances={course.activityPerformances}
               instancePerformances={course.instancePerformances}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-activityProgress"
             value="activityProgress"
             className={{ root: 'overflow-y-auto px-0 py-2' }}
@@ -161,8 +131,8 @@ function PerformanceDashboard() {
               activityProgresses={course.activityProgresses}
               participants={course.totalParticipants}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-studentPerformance"
             value="studentPerformance"
             className={{
@@ -177,8 +147,8 @@ function PerformanceDashboard() {
               courseId={courseId}
               performances={course.participantActivityPerformances}
             />
-          </TabsLegacy.TabContent>
-          <TabsLegacy.TabContent
+          </TabContent>
+          <TabContent
             key="content-feedbackOverview"
             value="feedbackOverview"
             className={{ root: 'overflow-y-auto px-0 py-2' }}
@@ -187,8 +157,8 @@ function PerformanceDashboard() {
               instanceFeedbacks={course.instanceFeedbacks}
               activityFeedbacks={course.activityFeedbacks}
             />
-          </TabsLegacy.TabContent>
-        </TabsLegacy>
+          </TabContent>
+        </Tabs>
       </div>
     </Layout>
   )

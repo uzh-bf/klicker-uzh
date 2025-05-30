@@ -25,7 +25,7 @@ import {
   Button,
   FormikTextareaField,
   H3,
-  TabsLegacy,
+  TabContent,
   ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -115,7 +115,7 @@ function SuspendedGroupView({
     }, {}) ?? {}
 
   return (
-    <TabsLegacy.TabContent key={group.id} value={group.id}>
+    <TabContent key={group.id} value={group.id}>
       <GroupActivityListSubscriber
         courseId={courseId}
         subscribeToMore={subscribeActivityList}
@@ -388,7 +388,7 @@ function SuspendedGroupView({
           activityName: startedGroupActivity,
         })}
       </ToastLegacy>
-    </TabsLegacy.TabContent>
+    </TabContent>
   )
 }
 
