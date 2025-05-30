@@ -160,7 +160,7 @@ function CourseSelectionPage() {
             onSubmit={async (
               values: CourseManipulationFormData,
               setSubmitting,
-              setShowErrorToast
+              onError
             ) => {
               try {
                 // convert dates to UTC
@@ -199,11 +199,11 @@ function CourseSelectionPage() {
                   showCreateCourseModal(false)
                   router.push(`/courses/${result.data.createCourse.id}`)
                 } else {
-                  setShowErrorToast(true)
+                  onError()
                   setSubmitting(false)
                 }
               } catch (error) {
-                setShowErrorToast(true)
+                onError()
                 setSubmitting(false)
                 console.log(error)
               }

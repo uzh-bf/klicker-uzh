@@ -3,20 +3,18 @@ import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikPinField,
-  ToastLegacy,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import * as yup from 'yup'
 
 function CreateAccountJoinForm() {
   const t = useTranslations()
   const router = useRouter()
 
-  const [errorToast, setErrorToast] = useState(false)
   const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
 
   return (
@@ -46,7 +44,11 @@ function CreateAccountJoinForm() {
               }/join?pin=${values.pin.replace(/\s/g, '')}`
             )
           } else {
-            setErrorToast(true)
+            toast({
+              type: 'error',
+              message: t('pwa.login.coursePinInvalid'),
+              options: { duration: 6000 },
+            })
             resetForm()
           }
 
@@ -67,7 +69,7 @@ function CreateAccountJoinForm() {
             <Button
               primary
               type="submit"
-              // TODO: improve state that field is disabled for invalid pins
+              // TODO: add validation and disable button for invalid / incomplete pints
               disabled={isSubmitting}
               className={{ root: 'float-right' }}
               data={{ cy: 'signup-course' }}
@@ -77,15 +79,6 @@ function CreateAccountJoinForm() {
           </Form>
         )}
       </Formik>
-      <ToastLegacy
-        dismissible
-        openExternal={errorToast}
-        onCloseExternal={() => setErrorToast(false)}
-        type="error"
-        duration={6000}
-      >
-        {t('pwa.login.coursePinInvalid')}
-      </ToastLegacy>
     </div>
   )
 }

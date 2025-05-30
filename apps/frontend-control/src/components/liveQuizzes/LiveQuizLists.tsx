@@ -7,7 +7,6 @@ import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ListButton from '../common/ListButton'
-import ErrorStartToast from '../toasts/ErrorStartToast'
 import EmbeddingModal from './EmbeddingModal'
 import StartModal from './StartModal'
 
@@ -22,7 +21,6 @@ function LiveQuizLists({
 }: LiveQuizListsProps) {
   const t = useTranslations()
   const [startModalOpen, setStartModalOpen] = useState(false)
-  const [errorToast, setErrorToast] = useState(false)
   const [startId, setStartId] = useState('')
   const [startName, setStartName] = useState('')
   const [embedOpen, setEmbedOpen] = useState(false)
@@ -111,9 +109,7 @@ function LiveQuizLists({
         quizName={startName}
         startModalOpen={startModalOpen}
         setStartModalOpen={setStartModalOpen}
-        setErrorToast={setErrorToast}
       />
-      <ErrorStartToast open={errorToast} setOpen={setErrorToast} />
     </>
   )
 }

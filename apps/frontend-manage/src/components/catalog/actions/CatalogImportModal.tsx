@@ -2,10 +2,9 @@ import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense, useState } from 'react'
-import CatalogObjectImportErrorToast from './CatalogObjectImportErrorToast'
+import { Suspense } from 'react'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useImportCatalogObject from './useImportCatalogObject'
 
@@ -29,78 +28,76 @@ function CatalogImportModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
-  const [errorToast, setErrorToast] = useState(false)
+
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.catalog.importCatalogObjectFailed'),
+    })
+
   const { onImport, importing } = useImportCatalogObject({
     objectType,
     objectId,
     catalogCollectionId,
-    onError: () => setErrorToast(true),
+    onError: () => onErrorToast(),
   })
 
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={(e) => {
-          e?.stopPropagation()
-          setErrorToast(false)
-          onClose()
-        }}
-        secondaryLabel={
-          <div className="flex flex-row items-center gap-2.5">
-            <FontAwesomeIcon icon={faBan} />
-            <span>{t('shared.generic.cancel')}</span>
-          </div>
-        }
-        onSecondaryAction={(e) => {
-          e?.stopPropagation()
-          onClose()
-        }}
-        dataSecondaryAction={{ cy: 'cancel-object-import' }}
-        primaryLabel={
-          <div className="flex flex-row items-center gap-2.5">
-            <FontAwesomeIcon icon={faDownload} />
-            <span>
-              {t('manage.catalog.importObjectType', {
-                object: t(`shared.types.${objectType}`),
-              })}
-            </span>
-          </div>
-        }
-        onPrimaryAction={async (e) => {
-          e?.stopPropagation()
-          const success = await onImport()
-          if (success) {
-            onSuccess()
-          } else {
-            setErrorToast(true)
-          }
-        }}
-        primaryLoading={importing}
-        dataPrimaryAction={{ cy: 'confirm-object-import' }}
-        title={t('manage.catalog.importPublicResource')}
-        dataCloseButton={{ cy: 'close-object-import-modal' }}
-      >
-        <div>
-          {t.rich('manage.catalog.importCatalogObjectDescription', {
-            name: objectName,
-            owner: objectOwner ?? t('shared.generic.unknown'),
-            b: (children) => <b>{children}</b>,
-          })}
+    <Modal
+      open={open}
+      onClose={(e) => {
+        e?.stopPropagation()
+        onClose()
+      }}
+      secondaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <FontAwesomeIcon icon={faBan} />
+          <span>{t('shared.generic.cancel')}</span>
         </div>
-        <Suspense fallback={<Loader />}>
-          <CatalogAdditionalObjectInfo
-            objectType={objectType}
-            objectId={objectId}
-          />
-        </Suspense>
-      </Modal>
-
-      <CatalogObjectImportErrorToast
-        open={errorToast}
-        onClose={() => setErrorToast(false)}
-      />
-    </>
+      }
+      onSecondaryAction={(e) => {
+        e?.stopPropagation()
+        onClose()
+      }}
+      dataSecondaryAction={{ cy: 'cancel-object-import' }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <FontAwesomeIcon icon={faDownload} />
+          <span>
+            {t('manage.catalog.importObjectType', {
+              object: t(`shared.types.${objectType}`),
+            })}
+          </span>
+        </div>
+      }
+      onPrimaryAction={async (e) => {
+        e?.stopPropagation()
+        const success = await onImport()
+        if (success) {
+          onSuccess()
+        } else {
+          onErrorToast()
+        }
+      }}
+      primaryLoading={importing}
+      dataPrimaryAction={{ cy: 'confirm-object-import' }}
+      title={t('manage.catalog.importPublicResource')}
+      dataCloseButton={{ cy: 'close-object-import-modal' }}
+    >
+      <div>
+        {t.rich('manage.catalog.importCatalogObjectDescription', {
+          name: objectName,
+          owner: objectOwner ?? t('shared.generic.unknown'),
+          b: (children) => <b>{children}</b>,
+        })}
+      </div>
+      <Suspense fallback={<Loader />}>
+        <CatalogAdditionalObjectInfo
+          objectType={objectType}
+          objectId={objectId}
+        />
+      </Suspense>
+    </Modal>
   )
 }
 

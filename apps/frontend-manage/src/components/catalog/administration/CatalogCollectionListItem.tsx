@@ -11,7 +11,7 @@ import {
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -20,9 +20,7 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
-import CatalogObjectRequestSuccessToast from '../actions/CatalogRequestSuccessToast'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
-import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
@@ -41,11 +39,6 @@ function CatalogCollectionListItem({
   const [changeAccessModal, setChangeAccessModal] = useState(false)
   const [nameChangeModal, setNameChangeModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(collection.access)
-
-  // toast states
-  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
-  const [showDeletionSuccessToast, setShowDeletionSuccessToast] =
-    useState(false)
 
   // access can be requested if not done already, not shared, and not owned
   const isRequestable =
@@ -173,11 +166,13 @@ function CatalogCollectionListItem({
             catalogCollectionName={collection.name}
             open={deletionModal}
             onClose={() => setDeletionModal(false)}
-            onSuccess={() => setShowDeletionSuccessToast(true)}
-          />
-          <CatalogCollectionDeletionSuccessToast
-            open={showDeletionSuccessToast}
-            onClose={() => setShowDeletionSuccessToast(false)}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.catalog.deletionSuccessful'),
+                options: { duration: 3500 },
+              })
+            }
           />
           <CatalogChangeAccessModal
             open={changeAccessModal}
@@ -204,7 +199,11 @@ function CatalogCollectionListItem({
         <CatalogRequestModal
           open={requestModal}
           onSuccess={() => {
-            setShowRequestSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
@@ -215,10 +214,6 @@ function CatalogCollectionListItem({
           objectAccess={collection.access}
         />
       ) : null}
-      <CatalogObjectRequestSuccessToast
-        open={showRequestSuccessToast}
-        onClose={() => setShowRequestSuccessToast(false)}
-      />
     </>
   )
 }

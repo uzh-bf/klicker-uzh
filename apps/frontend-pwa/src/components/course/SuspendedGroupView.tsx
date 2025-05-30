@@ -26,7 +26,6 @@ import {
   FormikTextareaField,
   H3,
   TabContent,
-  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -36,7 +35,6 @@ import Image from 'next/image'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { useState } from 'react'
 import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -85,13 +83,6 @@ function SuspendedGroupView({
   subscribeActivityList,
 }: SuspendedGroupViewProps) {
   const t = useTranslations()
-  const [endedGroupActivity, setEndedGroupActivity] = useState<
-    string | undefined
-  >(undefined)
-  const [startedGroupActivity, setStartedGroupActivity] = useState<
-    string | undefined
-  >(undefined)
-
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
   const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
 
@@ -115,12 +106,10 @@ function SuspendedGroupView({
     }, {}) ?? {}
 
   return (
-    <TabContent key={group.id} value={group.id}>
+    <TabContent key={group.id} value={group.id} className={{ root: 'md:px-4' }}>
       <GroupActivityListSubscriber
         courseId={courseId}
         subscribeToMore={subscribeActivityList}
-        setEndedGroupActivity={setEndedGroupActivity}
-        setStartedGroupActivity={setStartedGroupActivity}
       />
       <div className="flex flex-col gap-2">
         <div className="flex flex-row flex-wrap gap-4">
@@ -364,30 +353,6 @@ function SuspendedGroupView({
           </div>
         </div>
       </div>
-      <ToastLegacy
-        type="warning"
-        openExternal={typeof endedGroupActivity !== 'undefined'}
-        onCloseExternal={() => setEndedGroupActivity(undefined)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.groupActivityEndedToast', {
-          activityName: endedGroupActivity,
-        })}
-      </ToastLegacy>
-      <ToastLegacy
-        type="success"
-        openExternal={typeof startedGroupActivity !== 'undefined'}
-        onCloseExternal={() => setStartedGroupActivity(undefined)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.groupActivityStartedToast', {
-          activityName: startedGroupActivity,
-        })}
-      </ToastLegacy>
     </TabContent>
   )
 }

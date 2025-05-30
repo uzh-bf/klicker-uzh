@@ -6,6 +6,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
 import '@/styles/globals.css'
+import { Toaster } from '@uzh-bf/design-system'
 import '@uzh-bf/design-system/dist/style.css'
 
 export default function App({
@@ -27,6 +28,7 @@ export default function App({
         getMessageFallback={getMessageFallback}
       >
         <SessionProvider session={session}>
+          <Toaster closeButton position="top-right" />
           <Component {...pageProps} />
         </SessionProvider>
       </NextIntlClientProvider>

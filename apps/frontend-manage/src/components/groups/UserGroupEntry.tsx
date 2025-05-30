@@ -6,13 +6,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import DeleteUserGroupModal from './DeleteUserGroupModal'
-import DeleteUserGroupSuccessToast from './DeleteUserGroupSuccessToast'
 import LeaveUserGroupModal from './LeaveUserGroupModal'
-import LeaveUserGroupSuccessToast from './LeaveUserGroupSuccessToast'
 import UserGroupBadge from './UserGroupBadge'
 import UserGroupEditModal from './UserGroupEditModal'
 
@@ -22,9 +20,6 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
   const [leaveGroupModal, setLeaveGroupModal] = useState(false)
   const [deleteGroupModal, setDeleteGroupModal] = useState(false)
   const [editModal, setEditModal] = useState(false)
-
-  const [leaveSuccess, setLeaveSuccess] = useState(false)
-  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   return (
     <>
@@ -116,15 +111,15 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
         open={leaveGroupModal}
         onClose={() => setLeaveGroupModal(false)}
         onSuccess={() => {
+          toast({
+            type: 'success',
+            message: t('manage.userGroups.leaveGroupSuccess'),
+            options: { duration: 3000 },
+          })
           setLeaveGroupModal(false)
-          setLeaveSuccess(true)
         }}
         groupId={group.id}
         groupName={group.name}
-      />
-      <LeaveUserGroupSuccessToast
-        open={leaveSuccess}
-        setOpen={() => setLeaveSuccess(false)}
       />
 
       <DeleteUserGroupModal
@@ -133,13 +128,13 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
         groupId={group.id}
         groupName={group.name}
         onSuccess={() => {
+          toast({
+            type: 'success',
+            message: t('manage.userGroups.deleteGroupSuccess'),
+            options: { duration: 3000 },
+          })
           setDeleteGroupModal(false)
-          setDeleteSuccess(true)
         }}
-      />
-      <DeleteUserGroupSuccessToast
-        open={deleteSuccess}
-        setOpen={() => setDeleteSuccess(false)}
       />
 
       <UserGroupEditModal

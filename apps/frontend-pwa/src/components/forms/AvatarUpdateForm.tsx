@@ -26,15 +26,11 @@ import { pick } from 'remeda'
 
 interface AvatarUpdateFormProps {
   user: Partial<Participant>
-  setShowError: (showError: boolean) => void
-  setShowSuccess: (showSuccess: boolean) => void
+  onError: () => void
+  onSuccess: () => void
 }
 
-function AvatarUpdateForm({
-  user,
-  setShowError,
-  setShowSuccess,
-}: AvatarUpdateFormProps) {
+function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
   const [updateParticipantAvatar] = useMutation(UpdateParticipantAvatarDocument)
 
@@ -95,9 +91,9 @@ function AvatarUpdateForm({
         })
 
         if (result.data?.updateParticipantAvatar && !result.errors) {
-          setShowSuccess(true)
+          onSuccess()
         } else {
-          setShowError(true)
+          onError()
         }
       }}
     >

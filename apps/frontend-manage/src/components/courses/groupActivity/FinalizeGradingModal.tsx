@@ -2,9 +2,8 @@ import { useMutation } from '@apollo/client'
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FinalizeGroupActivityGradingDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Modal, ToastLegacy } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 
 interface FinalizeGradingModalProps {
   open: boolean
@@ -21,9 +20,6 @@ function FinalizeGradingModal({
   const [finalizeGroupActivityGrading, { loading: finalizingGrading }] =
     useMutation(FinalizeGroupActivityGradingDocument)
 
-  const [successToast, setSuccessToast] = useState(false)
-  const [errorToast, setErrorToast] = useState(false)
-
   return (
     <>
       <Modal
@@ -36,9 +32,17 @@ function FinalizeGradingModal({
           })
 
           if (data?.finalizeGroupActivityGrading?.id) {
-            setSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.groupActivity.finalizeGradingSuccess'),
+              options: { duration: 4000 },
+            })
           } else {
-            setErrorToast(true)
+            toast({
+              type: 'error',
+              message: t('manage.groupActivity.finalizeGradingError'),
+              options: { duration: 6000 },
+            })
           }
           setOpen(false)
         }}
@@ -62,24 +66,6 @@ function FinalizeGradingModal({
           </div>
         </div>
       </Modal>
-      <ToastLegacy
-        dismissible
-        openExternal={successToast}
-        onCloseExternal={() => setSuccessToast(false)}
-        type="success"
-        duration={4000}
-      >
-        {t('manage.groupActivity.finalizeGradingSuccess')}
-      </ToastLegacy>
-      <ToastLegacy
-        dismissible
-        openExternal={errorToast}
-        onCloseExternal={() => setErrorToast(false)}
-        type="error"
-        duration={6000}
-      >
-        {t('manage.groupActivity.finalizeGradingError')}
-      </ToastLegacy>
     </>
   )
 }

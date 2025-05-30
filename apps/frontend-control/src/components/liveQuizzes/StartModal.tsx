@@ -4,7 +4,7 @@ import {
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3, Modal } from '@uzh-bf/design-system'
+import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
@@ -13,7 +13,6 @@ interface StartModalProps {
   quizName: string
   startModalOpen: boolean
   setStartModalOpen: (open: boolean) => void
-  setErrorToast: (open: boolean) => void
 }
 
 function StartModal({
@@ -21,7 +20,6 @@ function StartModal({
   quizName,
   startModalOpen,
   setStartModalOpen,
-  setErrorToast,
 }: StartModalProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -72,7 +70,11 @@ function StartModal({
           router.push(`/session/${quizId}`)
         } catch (error) {
           setStartModalOpen(false)
-          setErrorToast(true)
+          toast({
+            type: 'error',
+            message: t('control.course.liveQuizStartFailed'),
+            options: { duration: 5000 },
+          })
         }
       }}
       primaryLoading={startingLiveQuiz}

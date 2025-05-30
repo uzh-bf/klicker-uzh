@@ -8,8 +8,8 @@ interface GroupActivityFormSubmissionProps {
   createGroupActivity: any
   editGroupActivity: any
   setIsWizardCompleted: (isCompleted: boolean) => void
-  setErrorToastOpen: (isOpen: boolean) => void
   setSelectedCourseId: (courseId: string | undefined) => void
+  onError: () => void
 }
 
 async function submitGroupActivityForm({
@@ -18,8 +18,8 @@ async function submitGroupActivityForm({
   createGroupActivity,
   editGroupActivity,
   setIsWizardCompleted,
-  setErrorToastOpen,
   setSelectedCourseId,
+  onError,
 }: GroupActivityFormSubmissionProps) {
   try {
     let success = false
@@ -95,7 +95,7 @@ async function submitGroupActivityForm({
     }
   } catch (error) {
     console.log(error)
-    setErrorToastOpen(true)
+    onError()
   }
 }
 

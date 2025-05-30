@@ -862,6 +862,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.displayName
     )
     cy.get('[data-cy="submit-template-settings"]').click()
+    cy.wait(4000) // wait for the success toast to disappear to make the button below accessible
     cy.get(`[data-cy="live-quiz-template-element-0-0"]`).click() // close the automatically opened first element
 
     // test the content and functionalities for all elements
@@ -1197,6 +1198,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
+    cy.wait(5000) // wait for the auto-save notification toast to disappear (blocks submission button)
     cy.get('[data-cy="submit-template-settings"]').click()
     cy.wrap([
       { content: this.data.SC.content, identifier: '0-0' },

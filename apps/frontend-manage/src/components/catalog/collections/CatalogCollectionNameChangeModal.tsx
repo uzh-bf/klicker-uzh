@@ -3,15 +3,9 @@ import {
   ChangeCatalogCollectionNameDocument,
   GetCatalogCollectionsListDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  FormikTextField,
-  Modal,
-  ToastLegacy,
-} from '@uzh-bf/design-system'
+import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import * as Yup from 'yup'
 
 interface CatalogCollectionNameChangeModalProps {
@@ -31,137 +25,126 @@ function CatalogCollectionNameChangeModal({
   const [changeCatalogCollectionName] = useMutation(
     ChangeCatalogCollectionNameDocument
   )
-  const [successToast, setSuccessToast] = useState(false)
-  const [errorToast, setErrorToast] = useState(false)
+
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.catalog.catalogCollectionNameChangeError'),
+      options: { duration: 6000 },
+    })
 
   const schema = Yup.object().shape({
     name: Yup.string().required(t('manage.catalog.collectionNameRequired')),
   })
 
   return (
-    <>
-      <Modal
-        hideCloseButton
-        escapeDisabled
-        open={open}
-        onClose={onClose}
-        title={t('manage.catalog.changeCatalogCollectionName')}
-        className={{ content: 'max-w-xl pb-1' }}
-      >
-        <Formik
-          initialValues={{
-            name: name,
-          }}
-          onSubmit={async (values, { setSubmitting }) => {
-            setSubmitting(true)
+    <Modal
+      hideCloseButton
+      escapeDisabled
+      open={open}
+      onClose={onClose}
+      title={t('manage.catalog.changeCatalogCollectionName')}
+      className={{ content: 'max-w-xl pb-1' }}
+    >
+      <Formik
+        initialValues={{
+          name: name,
+        }}
+        onSubmit={async (values, { setSubmitting }) => {
+          setSubmitting(true)
 
-            try {
-              const res = await changeCatalogCollectionName({
-                variables: {
-                  catalogCollectionId,
-                  name: values.name,
-                },
-                update: (cache, { data }) => {
-                  // check if request was successful
-                  const success = data?.changeCatalogCollectionName
-                  if (!success) return
+          try {
+            const res = await changeCatalogCollectionName({
+              variables: {
+                catalogCollectionId,
+                name: values.name,
+              },
+              update: (cache, { data }) => {
+                // check if request was successful
+                const success = data?.changeCatalogCollectionName
+                if (!success) return
 
-                  // update list of catalog collections
-                  const queryData = cache.readQuery({
+                // update list of catalog collections
+                const queryData = cache.readQuery({
+                  query: GetCatalogCollectionsListDocument,
+                })
+
+                if (queryData?.getCatalogCollectionsList) {
+                  cache.writeQuery({
                     query: GetCatalogCollectionsListDocument,
+                    data: {
+                      getCatalogCollectionsList:
+                        queryData?.getCatalogCollectionsList.map((obj) =>
+                          obj.id === catalogCollectionId
+                            ? { ...obj, name: values.name }
+                            : obj
+                        ),
+                    },
                   })
+                }
+              },
+            })
 
-                  if (queryData?.getCatalogCollectionsList) {
-                    cache.writeQuery({
-                      query: GetCatalogCollectionsListDocument,
-                      data: {
-                        getCatalogCollectionsList:
-                          queryData?.getCatalogCollectionsList.map((obj) =>
-                            obj.id === catalogCollectionId
-                              ? { ...obj, name: values.name }
-                              : obj
-                          ),
-                      },
-                    })
-                  }
-                },
+            // Check if mutation was successful
+            if (res.data?.changeCatalogCollectionName) {
+              toast({
+                type: 'success',
+                message: t('manage.catalog.catalogCollectionNameChangeSuccess'),
+                options: { duration: 4000 },
               })
-
-              // Check if mutation was successful
-              if (res.data?.changeCatalogCollectionName) {
-                setSuccessToast(true)
-                onClose()
-              } else {
-                setErrorToast(true)
-              }
-            } catch (error) {
-              console.error('Error changing catalog collection name:', error)
-              setErrorToast(true)
-            } finally {
-              setSubmitting(false)
+              onClose()
+            } else {
+              onErrorToast()
             }
-          }}
-          validationSchema={schema}
-          isInitialValid={true}
-        >
-          {({ isValid, isSubmitting, submitForm }) => (
-            <>
-              <FormikTextField
-                required
-                autoComplete="off"
-                name="name"
-                label={t('manage.catalog.collectionName')}
-                tooltip={t('manage.catalog.collectionNameTooltip')}
-                className={{
-                  root: 'mb-2 w-full',
-                  tooltip: 'z-20 w-80',
-                  label: 'w-36',
-                }}
-                data-cy="insert-catalog-collection-name"
-                shouldValidate={() => true}
-              />
-              <div className="mt-3 flex flex-row justify-between">
-                <Button
-                  type="button"
-                  onClick={onClose}
-                  data={{ cy: 'catalog-collection-name-change-cancel' }}
-                >
-                  <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-                </Button>
-                <Button
-                  primary
-                  type="submit"
-                  disabled={!isValid}
-                  loading={isSubmitting}
-                  onClick={submitForm}
-                  data={{ cy: 'catalog-collection-name-change-confirm' }}
-                >
-                  <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-                </Button>
-              </div>
-            </>
-          )}
-        </Formik>
-      </Modal>
-      <ToastLegacy
-        dismissible
-        openExternal={successToast}
-        onCloseExternal={() => setSuccessToast(false)}
-        type="success"
-        duration={4000}
+          } catch (error) {
+            console.error('Error changing catalog collection name:', error)
+            onErrorToast()
+          } finally {
+            setSubmitting(false)
+          }
+        }}
+        validationSchema={schema}
+        isInitialValid={true}
       >
-        {t('manage.catalog.catalogCollectionNameChangeSuccess')}
-      </ToastLegacy>
-      <ToastLegacy
-        dismissible
-        openExternal={errorToast}
-        onCloseExternal={() => setErrorToast(false)}
-        type="error"
-        duration={6000}
-      >
-        {t('manage.catalog.catalogCollectionNameChangeError')}
-      </ToastLegacy>
-    </>
+        {({ isValid, isSubmitting, submitForm }) => (
+          <>
+            <FormikTextField
+              required
+              autoComplete="off"
+              name="name"
+              label={t('manage.catalog.collectionName')}
+              tooltip={t('manage.catalog.collectionNameTooltip')}
+              className={{
+                root: 'mb-2 w-full',
+                tooltip: 'z-20 w-80',
+                label: 'w-36',
+              }}
+              data-cy="insert-catalog-collection-name"
+              shouldValidate={() => true}
+            />
+            <div className="mt-3 flex flex-row justify-between">
+              <Button
+                type="button"
+                onClick={onClose}
+                data={{ cy: 'catalog-collection-name-change-cancel' }}
+              >
+                <Button.Label>{t('shared.generic.cancel')}</Button.Label>
+              </Button>
+              <Button
+                primary
+                type="submit"
+                disabled={!isValid}
+                loading={isSubmitting}
+                onClick={submitForm}
+                data={{ cy: 'catalog-collection-name-change-confirm' }}
+              >
+                <Button.Label>{t('shared.generic.confirm')}</Button.Label>
+              </Button>
+            </div>
+          </>
+        )}
+      </Formik>
+    </Modal>
   )
 }
 

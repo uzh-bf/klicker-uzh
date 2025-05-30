@@ -5,11 +5,10 @@ import {
   DeleteUserGroupDocument,
   GetUserGroupsUserDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../common/ConfirmationItem'
-import DeleteUserGroupErrorToast from './DeleteUserGroupErrorToast'
 
 function DeleteUserGroupModal({
   open,
@@ -27,12 +26,18 @@ function DeleteUserGroupModal({
   const t = useTranslations()
   const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
 
-  const [errorToast, setErrorToast] = useState(false)
   const [confirmations, setConfirmations] = useState({
     resolveGroup: false,
     revokeDirectPermissions: false,
     irreversibleAction: false,
   })
+
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.userGroups.deleteGroupError'),
+      options: { duration: 10000 },
+    })
 
   // on open, reset confirmations
   useEffect(() => {
@@ -88,11 +93,11 @@ function DeleteUserGroupModal({
           if (success?.deleteUserGroup) {
             onSuccess()
           } else {
-            setErrorToast(true)
+            onErrorToast()
           }
         } catch (error) {
           console.error('Error deleting user group:', error)
-          setErrorToast(true)
+          onErrorToast()
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-group' }}
@@ -151,11 +156,6 @@ function DeleteUserGroupModal({
           data={{ cy: 'delete-group-irrevocable-action-confirm' }}
         />
       </div>
-
-      <DeleteUserGroupErrorToast
-        open={errorToast}
-        setOpen={() => setErrorToast(false)}
-      />
     </Modal>
   )
 }

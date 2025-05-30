@@ -16,7 +16,7 @@ import {
   Label,
   Modal,
   Prose,
-  ToastLegacy,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -50,8 +50,6 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const [deleteUserLogin] = useMutation(DeleteUserLoginDocument, {
     refetchQueries: [{ query: GetUserLoginsDocument }],
   })
-
-  const [copiedPassword, setCopiedPassword] = useState(false)
 
   if (
     typeof userLogins?.userScope === 'undefined' ||
@@ -192,14 +190,13 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                           onClick={() => {
                             navigator?.clipboard
                               ?.writeText(values.password)
-                              .then(
-                                () => {
-                                  setCopiedPassword(true)
-                                },
-                                () => {
-                                  setCopiedPassword(false)
-                                }
-                              )
+                              .then(() => {
+                                toast({
+                                  type: 'success',
+                                  message: t('manage.settings.copiedPassword'),
+                                  options: { duration: 4000 },
+                                })
+                              })
                           }}
                           className={{ root: 'h-8 w-8' }}
                           data={{ cy: 'copy-new-delegated-login-password' }}
@@ -293,14 +290,13 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                           onClick={() => {
                             navigator?.clipboard
                               ?.writeText(values.password)
-                              .then(
-                                () => {
-                                  setCopiedPassword(true)
-                                },
-                                () => {
-                                  setCopiedPassword(false)
-                                }
-                              )
+                              .then(() => {
+                                toast({
+                                  type: 'success',
+                                  message: t('manage.settings.copiedPassword'),
+                                  options: { duration: 4000 },
+                                })
+                              })
                           }}
                           className={{ root: 'h-8 w-8' }}
                           data={{ cy: 'copy-new-delegated-login-password' }}
@@ -325,15 +321,6 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             }}
           </Formik>
         </div>
-        <ToastLegacy
-          dismissible
-          openExternal={copiedPassword}
-          onCloseExternal={() => setCopiedPassword(false)}
-          type="success"
-          duration={4000}
-        >
-          {t('manage.settings.copiedPassword')}
-        </ToastLegacy>
       </div>
     </Setting>
   )
