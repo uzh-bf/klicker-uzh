@@ -20,11 +20,10 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import ActivityActionsTrigger from './ActivityActionsTrigger'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -49,12 +48,17 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
-
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkAccessCopied'),
+      options: { duration: 4000 },
+    })
 
   const statusTagMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
@@ -169,14 +173,14 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                   items={[
                     getAccessLink({
                       href,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name: quiz.name,
                     }),
                     dataUser?.userProfile?.catalyst
                       ? getLTIAccessLink({
                           href,
-                          setCopyToast,
+                          onSuccess: onSuccessToast,
                           t,
                           name: quiz.name,
                         })
@@ -229,14 +233,14 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                   items={[
                     getAccessLink({
                       href,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name: quiz.name,
                     }),
                     dataUser?.userProfile?.catalyst
                       ? getLTIAccessLink({
                           href,
-                          setCopyToast,
+                          onSuccess: onSuccessToast,
                           t,
                           name: quiz.name,
                         })
@@ -284,7 +288,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
           </div>
         </div>
 
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
         <LiveQuizDeletionModal
           quizId={quiz.id}
           open={deletionModal}

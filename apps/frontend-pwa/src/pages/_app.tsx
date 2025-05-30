@@ -17,6 +17,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
+import { Toaster } from '@uzh-bf/design-system'
 import '@uzh-bf/design-system/dist/style.css'
 import '../globals.css'
 
@@ -91,6 +92,7 @@ function App({ Component, pageProps }: AppProps) {
         getMessageFallback={getMessageFallback}
       >
         <ApolloProvider client={apolloClient}>
+          <Toaster closeButton position="top-right" />
           <Component {...pageProps} />
         </ApolloProvider>
       </NextIntlClientProvider>

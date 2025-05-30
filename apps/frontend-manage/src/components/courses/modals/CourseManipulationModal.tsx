@@ -8,15 +8,15 @@ import {
   FormikTextField,
   H3,
   Modal,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { useRef } from 'react'
 import * as yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
 
@@ -30,7 +30,7 @@ interface CourseManipulationModalProps {
   onSubmit: (
     values: CourseManipulationFormData,
     setSubmitting: (isSubmitting: boolean) => void,
-    setShowErrorToast: Dispatch<SetStateAction<boolean>>
+    onError: () => void
   ) => Promise<void>
 }
 
@@ -58,7 +58,6 @@ function CourseManipulationModal({
   onSubmit,
 }: CourseManipulationModalProps) {
   const t = useTranslations()
-  const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
 
   // check if initialValues.startDate is in the past
@@ -202,7 +201,18 @@ function CourseManipulationModal({
           preferredGroupSize: initialValues?.preferredGroupSize ?? undefined,
         }}
         onSubmit={async (values, { setSubmitting }) =>
-          onSubmit(values, setSubmitting, setShowErrorToast)
+          onSubmit(values, setSubmitting, () =>
+            toast({
+              type: 'error',
+              message: (
+                <div>
+                  <div>{t('manage.courseList.courseCreationFailed')}</div>
+                  <div>{t('manage.activityWizard.considerFormErrors')}</div>
+                </div>
+              ),
+              options: { duration: 6000 },
+            })
+          )
         }
         validationSchema={schema}
       >
@@ -413,11 +423,6 @@ function CourseManipulationModal({
           </Form>
         )}
       </Formik>
-      <ElementCreationErrorToast
-        open={showErrorToast}
-        setOpen={setShowErrorToast}
-        error={t('manage.courseList.courseCreationFailed')}
-      />
     </Modal>
   )
 }

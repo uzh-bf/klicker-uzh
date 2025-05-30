@@ -1,16 +1,14 @@
 import { useQuery } from '@apollo/client'
 import { GetCatalogCollectionInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import ObjectImport from './actions/ObjectImport'
 import PendingSharingRequests from './actions/PendingSharingRequests'
 import AddObjectToCatalogButton from './administration/AddObjectToCatalogButton'
 import AddObjectToCatalogModal from './administration/AddObjectToCatalogModal'
-import ObjectAddedErrorToast from './administration/ObjectAddedErrorToast'
-import ObjectAddedSuccessToast from './administration/ObjectAddedSuccessToast'
-import CatalogCollectionCreationErrorToast from './collections/CatalogCollectionCreationErrorToast'
-import CatalogCollectionCreationSuccessToast from './collections/CatalogCollectionCreationSuccessToast'
 import CreateCatalogCollectionButton from './collections/CreateCatalogCollectionButton'
 import CreateCatalogCollectionModal from './collections/CreateCatalogCollectionModal'
 
@@ -20,6 +18,7 @@ function CatalogBrowser({
   catalogCollectionId?: string
 }) {
   const router = useRouter()
+  const t = useTranslations()
 
   // get current collection metadata (only if inside a collection)
   const { data: metaData, loading: metaDataLoading } = useQuery(
@@ -39,13 +38,9 @@ function CatalogBrowser({
 
   // object modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [addObjectSuccess, setAddObjectSuccess] = useState(false)
-  const [addObjectError, setAddObjectError] = useState(false)
 
   // catalog collection modal states
   const [collectionModalOpen, setCollectionModalOpen] = useState(false)
-  const [collectionSuccess, setCollectionSuccess] = useState(false)
-  const [collectionError, setCollectionError] = useState(false)
 
   if (metaDataLoading) {
     return <Loader />
@@ -81,48 +76,48 @@ function CatalogBrowser({
       </div>
 
       {userIsCollectionEditor ? (
-        <>
-          <AddObjectToCatalogModal
-            open={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            catalogCollectionId={catalogCollectionId as string | undefined}
-            onSuccess={() => {
-              setAddObjectSuccess(true)
-              setIsModalOpen(false)
-            }}
-            onError={() => setAddObjectError(true)}
-          />
-          <ObjectAddedSuccessToast
-            open={addObjectSuccess}
-            onClose={() => setAddObjectSuccess(false)}
-          />
-          <ObjectAddedErrorToast
-            open={addObjectError}
-            onClose={() => setAddObjectError(false)}
-          />
-        </>
+        <AddObjectToCatalogModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          catalogCollectionId={catalogCollectionId as string | undefined}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.catalog.objectAddedSuccess'),
+              options: { duration: 3500 },
+            })
+            setIsModalOpen(false)
+          }}
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.catalog.objectAddedError'),
+              options: { duration: 5000 },
+            })
+          }
+        />
       ) : null}
 
       {typeof catalogCollectionId === 'undefined' ? (
-        <>
-          <CreateCatalogCollectionModal
-            open={collectionModalOpen}
-            onClose={() => setCollectionModalOpen(false)}
-            onSuccess={() => {
-              setCollectionSuccess(true)
-              setCollectionModalOpen(false)
-            }}
-            onError={() => setCollectionError(true)}
-          />
-          <CatalogCollectionCreationSuccessToast
-            open={collectionSuccess}
-            onClose={() => setCollectionSuccess(false)}
-          />
-          <CatalogCollectionCreationErrorToast
-            open={collectionError}
-            onClose={() => setCollectionError(false)}
-          />
-        </>
+        <CreateCatalogCollectionModal
+          open={collectionModalOpen}
+          onClose={() => setCollectionModalOpen(false)}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.catalog.collectionCreationSuccess'),
+              options: { duration: 3500 },
+            })
+            setCollectionModalOpen(false)
+          }}
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.catalog.collectionCreationError'),
+              options: { duration: 5000 },
+            })
+          }
+        />
       ) : null}
     </div>
   )

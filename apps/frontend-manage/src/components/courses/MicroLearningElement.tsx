@@ -24,12 +24,11 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import ActivityActionsTrigger from './ActivityActionsTrigger'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
@@ -63,7 +62,6 @@ function MicroLearningElement({
 }: MicroLearningElementProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
@@ -78,6 +76,13 @@ function MicroLearningElement({
   const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
     variables: { id: microLearning.id },
   })
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkAccessCopied'),
+      options: { duration: 4000 },
+    })
 
   const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
@@ -184,14 +189,14 @@ function MicroLearningElement({
                 items={[
                   getAccessLink({
                     href,
-                    setCopyToast,
+                    onSuccess: onSuccessToast,
                     t,
                     name: microLearning.name,
                   }),
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: microLearning.name,
                       })
@@ -251,7 +256,7 @@ function MicroLearningElement({
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: microLearning.name,
                       })
@@ -306,7 +311,7 @@ function MicroLearningElement({
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: microLearning.name,
                       })
@@ -456,7 +461,6 @@ function MicroLearningElement({
         </div>
       </div>
 
-      <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
       <MicroLearningDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}

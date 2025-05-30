@@ -1,16 +1,11 @@
 import { useQuery } from '@apollo/client'
 import { GetCatalogSharingRequestsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Badge, H2, ToastLegacy } from '@uzh-bf/design-system'
+import { Badge, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import CatalogSharingRequest from './CatalogSharingRequest'
 
 function PendingSharingRequests() {
   const t = useTranslations()
-  const [declineSuccessful, setDeclineSuccessful] = useState(false)
-  const [declineFailure, setDeclineFailure] = useState(false)
-  const [approvalSuccessful, setApprovalSuccessful] = useState(false)
-
   const { data, loading } = useQuery(GetCatalogSharingRequestsDocument)
   const requests = data?.getCatalogSharingRequests
 
@@ -34,42 +29,9 @@ function PendingSharingRequests() {
           <CatalogSharingRequest
             key={`sharing-request-${request.requestId}`}
             request={request}
-            setDeclineSuccessful={setDeclineSuccessful}
-            setDeclineFailure={setDeclineFailure}
-            setApprovalSuccessful={setApprovalSuccessful}
           />
         ))}
       </div>
-      <ToastLegacy
-        dismissible
-        type="success"
-        duration={3000}
-        openExternal={declineSuccessful}
-        onCloseExternal={() => setDeclineSuccessful(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.catalog.declineSuccessful')}
-      </ToastLegacy>
-      <ToastLegacy
-        dismissible
-        type="error"
-        duration={5000}
-        openExternal={declineFailure}
-        onCloseExternal={() => setDeclineFailure(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.catalog.declineFailed')}
-      </ToastLegacy>
-      <ToastLegacy
-        dismissible
-        type="success"
-        duration={3000}
-        openExternal={approvalSuccessful}
-        onCloseExternal={() => setApprovalSuccessful(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.catalog.approvalSuccessful')}
-      </ToastLegacy>
     </div>
   )
 }

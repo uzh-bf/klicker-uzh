@@ -6,7 +6,7 @@ import {
   ObjectType,
   RemoveObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
@@ -15,19 +15,22 @@ function AnswerCollectionRemovalModal({
   name,
   removalModal,
   setRemovalModal,
-  setRemovalSuccess,
-  setRemovalFailure,
 }: {
   id: number
   name: string
   removalModal: boolean
   setRemovalModal: Dispatch<SetStateAction<boolean>>
-  setRemovalSuccess: Dispatch<SetStateAction<boolean>>
-  setRemovalFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
+
+  const onRemovalError = () =>
+    toast({
+      type: 'error',
+      message: t('manage.sharing.removalFailed'),
+      options: { duration: 3000 },
+    })
 
   return (
     <Modal
@@ -59,13 +62,17 @@ function AnswerCollectionRemovalModal({
             typeof res.data?.removeObject !== 'undefined' &&
             res.data?.removeObject !== null
           ) {
-            setRemovalSuccess(true)
+            toast({
+              type: 'success',
+              message: t('manage.sharing.removalSuccessful'),
+              options: { duration: 3000 },
+            })
             setRemovalModal(false)
           } else {
-            setRemovalFailure(true)
+            onRemovalError()
           }
         } catch (error) {
-          setRemovalFailure(true)
+          onRemovalError()
           console.error(error)
         }
       }}

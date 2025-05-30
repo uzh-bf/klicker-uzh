@@ -1571,7 +1571,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME')) // pro3 is added as member
     cy.get('[data-cy="submit-create-user-group"]').click()
-    cy.get('[data-cy="user-group-creation-error-toast"]').should('exist') // error toast should be shown
+    cy.get('[data-cy="submit-create-user-group"]').should('exist') // creation dialog should still be open (-> due to failure)
+    cy.get(`[data-cy="user-group-${this.data.userGroup.name}"]`).should(
+      'not.exist'
+    ) // user group should not have been created
   })
 
   it('Verify that a group can be left by admins and users', function () {

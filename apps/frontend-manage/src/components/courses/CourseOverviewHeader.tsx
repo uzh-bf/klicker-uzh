@@ -17,7 +17,7 @@ import {
   Button,
   Dropdown,
   H1,
-  ToastLegacy,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -58,13 +58,18 @@ function CourseOverviewHeader({
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
   const user = dataUser?.userProfile
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkLTICopied'),
+    })
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -153,42 +158,42 @@ function CourseOverviewHeader({
                 ? [
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIPracticeQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIMicroLearningsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIAccountManagement'),
@@ -211,7 +216,7 @@ function CourseOverviewHeader({
           onSubmit={async (
             values: CourseManipulationFormData,
             setSubmitting,
-            setShowErrorToast
+            onError
           ) => {
             try {
               // convert dates to UTC
@@ -253,11 +258,11 @@ function CourseOverviewHeader({
               if (result.data?.updateCourseSettings) {
                 setCourseSettingsModal(false)
               } else {
-                setShowErrorToast(true)
+                onError()
                 setSubmitting(false)
               }
             } catch (error) {
-              setShowErrorToast(true)
+              onError()
               setSubmitting(false)
               console.log(error)
             }
@@ -275,15 +280,6 @@ function CourseOverviewHeader({
           onClose={() => setSharingModal(false)}
         />
       )}
-
-      <ToastLegacy
-        type="success"
-        openExternal={copyToast}
-        onCloseExternal={() => setCopyToast(false)}
-        className={{ root: 'w-[24rem]' }}
-      >
-        {t('manage.course.linkLTICopied')}
-      </ToastLegacy>
 
       <ActivityLogDialog
         objectId={course.id}

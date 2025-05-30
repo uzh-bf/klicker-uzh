@@ -171,7 +171,7 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
-          <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
+          <div className="md:mx-auto md:w-full md:max-w-6xl">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
@@ -219,6 +219,7 @@ function CourseOverview({
                   : []),
               ]}
               onValueChange={(tab) => setSelectedTab(tab)}
+              className={{ list: 'mb-4' }}
             >
               {course.description && (
                 <TabContent
@@ -533,7 +534,11 @@ function CourseOverview({
                 ))}
 
               {course.isGamificationEnabled && (
-                <TabContent key="create" value="create">
+                <TabContent
+                  key="create"
+                  value="create"
+                  className={{ root: 'md:px-4' }}
+                >
                   <GroupCreationActions
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}

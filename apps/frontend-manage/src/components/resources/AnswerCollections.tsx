@@ -3,25 +3,14 @@ import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useState } from 'react'
-import ObjectRemovalErrorToast from '../sharing/ObjectRemovalErrorToast'
-import ObjectRemovalSuccessToast from '../sharing/ObjectRemovalSuccessToast'
 import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
 import AnswerCollectionList from './answerCollections/AnswerCollectionList'
-import CollectionDeletionErrorToast from './answerCollections/CollectionDeletionErrorToast'
-import CollectionDeletionSuccessToast from './answerCollections/CollectionDeletionSuccessToast'
 
 function AnswerCollections() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetAnswerCollectionsInfoDocument, {
     fetchPolicy: 'network-only',
   })
-
-  // action toast states
-  const [deletionSuccess, setDeletionSuccess] = useState(false)
-  const [deletionFailure, setDeletionFailure] = useState(false)
-  const [removalSuccess, setRemovalSuccess] = useState(false)
-  const [removalFailure, setRemovalFailure] = useState(false)
 
   return (
     <div className="h-full w-full">
@@ -46,29 +35,9 @@ function AnswerCollections() {
           <AnswerCollectionList
             collections={data?.getAnswerCollectionsInfo ?? []}
             loading={loading}
-            setDeletionSuccess={setDeletionSuccess}
-            setDeletionFailure={setDeletionFailure}
-            setRemovalSuccess={setRemovalSuccess}
-            setRemovalFailure={setRemovalFailure}
           />
         </div>
       </div>
-      <CollectionDeletionSuccessToast
-        open={deletionSuccess}
-        onClose={() => setDeletionSuccess(false)}
-      />
-      <CollectionDeletionErrorToast
-        open={deletionFailure}
-        onClose={() => setDeletionFailure(false)}
-      />
-      <ObjectRemovalSuccessToast
-        open={removalSuccess}
-        onClose={() => setRemovalSuccess(false)}
-      />
-      <ObjectRemovalErrorToast
-        open={removalFailure}
-        onClose={() => setRemovalFailure(false)}
-      />
     </div>
   )
 }

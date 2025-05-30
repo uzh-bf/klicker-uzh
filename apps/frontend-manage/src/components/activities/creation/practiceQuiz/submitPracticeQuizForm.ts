@@ -4,23 +4,23 @@ import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 interface PracticeQuizFormProps {
   id?: string
   values: PracticeQuizFormValues
+  editMode: boolean
   createPracticeQuiz: any
   editPracticeQuiz: any
   setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
-  setErrorToastOpen: (isOpen: boolean) => void
-  editMode: boolean
+  onError: () => void
 }
 
 async function submitPracticeQuizForm({
   id,
   values,
+  editMode,
   createPracticeQuiz,
   editPracticeQuiz,
   setSelectedCourseId,
   setIsWizardCompleted,
-  setErrorToastOpen,
-  editMode,
+  onError,
 }: PracticeQuizFormProps) {
   try {
     let success = false
@@ -92,10 +92,12 @@ async function submitPracticeQuizForm({
     if (success) {
       setIsWizardCompleted(true)
       setSelectedCourseId(values.courseId)
+    } else {
+      onError()
     }
   } catch (error) {
     console.log(error)
-    setErrorToastOpen(true)
+    onError()
   }
 }
 

@@ -6,7 +6,7 @@ import {
   DeleteAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
@@ -14,14 +14,10 @@ function CollectionDeletionModal({
   collection,
   deletionModal,
   setDeletionModal,
-  setDeletionSuccess,
-  setDeletionFailure,
 }: {
   collection: AnswerCollection
   deletionModal: boolean
   setDeletionModal: Dispatch<SetStateAction<boolean>>
-  setDeletionSuccess: Dispatch<SetStateAction<boolean>>
-  setDeletionFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [deleteAnswerCollection, { loading }] = useMutation(
@@ -58,10 +54,18 @@ function CollectionDeletionModal({
           data?.deleteAnswerCollection !== null &&
           !errors
         ) {
-          setDeletionSuccess(true)
+          toast({
+            type: 'success',
+            message: t('manage.resources.deletionSuccessful'),
+            options: { duration: 3000 },
+          })
           setDeletionModal(false)
         } else {
-          setDeletionFailure(true)
+          toast({
+            type: 'error',
+            message: t('manage.resources.deletionFailed'),
+            options: { duration: 3000 },
+          })
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-answer-collection' }}

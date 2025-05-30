@@ -14,33 +14,11 @@ import {
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, ToastLegacy } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FlagElementModal from '../flags/FlagElementModal'
-
-interface RatingErrorToastProps {
-  open: boolean
-  setOpen: (newValue: boolean) => void
-}
-
-function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
-  const t = useTranslations()
-
-  return (
-    <ToastLegacy
-      dismissible
-      duration={5000}
-      type="error"
-      openExternal={open}
-      onCloseExternal={() => setOpen(false)}
-    >
-      <H4>{t('shared.generic.error')}</H4>
-      <div>{t('pwa.practiceQuiz.errorRatingElement')}</div>
-    </ToastLegacy>
-  )
-}
 
 interface InstanceHeaderProps {
   index: number
@@ -67,10 +45,10 @@ function InstanceHeader({
   showSeparator = false,
   className,
 }: InstanceHeaderProps) {
+  const t = useTranslations()
   const [rateElement, { loading: ratingLoading }] =
     useMutation(RateElementDocument)
   const [modalOpen, setModalOpen] = useState(false)
-  const [ratingErrorToast, setRatingErrorToast] = useState(false)
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
       ? 1
@@ -153,7 +131,11 @@ function InstanceHeader({
     } else if (res.data?.rateElement?.downvote) {
       setVote(-1)
     } else {
-      setRatingErrorToast(true)
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.errorRatingElement'),
+        options: { duration: 5000 },
+      })
       setVote(0)
     }
   }
@@ -223,10 +205,6 @@ function InstanceHeader({
               feedbackValue={feedbackValue}
               setFeedbackValue={setFeedbackValue}
               stackInstanceIds={stackInstanceIds}
-            />
-            <RatingErrorToast
-              open={ratingErrorToast}
-              setOpen={setRatingErrorToast}
             />
           </div>
         )}

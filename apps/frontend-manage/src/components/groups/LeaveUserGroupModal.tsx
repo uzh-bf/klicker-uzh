@@ -8,10 +8,8 @@ import {
   GetUserGroupsUserDocument,
   LeaveUserGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
-import LeaveUserGroupErrorToast from './LeaveUserGroupErrorToast'
 
 function LeaveUserGroupModal({
   open,
@@ -27,8 +25,14 @@ function LeaveUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  const [errorToast, setErrorToast] = useState(false)
   const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
+
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.userGroups.leaveGroupError'),
+      options: { duration: 10000 },
+    })
 
   return (
     <Modal
@@ -75,11 +79,11 @@ function LeaveUserGroupModal({
           if (success?.leaveUserGroup) {
             onSuccess()
           } else {
-            setErrorToast(true)
+            onErrorToast()
           }
         } catch (error) {
           console.error('Error leaving user group:', error)
-          setErrorToast(true)
+          onErrorToast()
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-leave-group' }}
@@ -94,11 +98,6 @@ function LeaveUserGroupModal({
       className={{ content: 'max-w-xl' }}
     >
       {t('manage.userGroups.confirmLeaveGroup', { groupName })}
-
-      <LeaveUserGroupErrorToast
-        open={errorToast}
-        setOpen={() => setErrorToast(false)}
-      />
     </Modal>
   )
 }
