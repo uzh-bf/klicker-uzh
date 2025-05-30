@@ -164,15 +164,9 @@ function CourseSelectionPage() {
             ) => {
               try {
                 // convert dates to UTC
-                const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-                  .utc()
-                  .toISOString()
-                const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-                  .utc()
-                  .toISOString()
-                const groupDeadlineDateUTC = dayjs(
-                  values.groupCreationDeadline + 'T23:59:59.999'
-                )
+                const startDateUTC = dayjs(values.startDate).utc().toISOString()
+                const endDateUTC = dayjs(values.endDate).utc().toISOString()
+                const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
                   .utc()
                   .toISOString()
 

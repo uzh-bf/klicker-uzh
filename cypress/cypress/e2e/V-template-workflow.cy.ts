@@ -123,6 +123,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -265,6 +266,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC2.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE2.title,
       content: this.data.SE2.content,
@@ -407,6 +409,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC3.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE3.title,
       content: this.data.SE3.content,

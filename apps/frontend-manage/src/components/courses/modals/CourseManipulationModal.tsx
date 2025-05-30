@@ -2,7 +2,7 @@ import { Course } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
-  FormikDateChanger,
+  FormikDatePicker,
   FormikNumberField,
   FormikSwitchField,
   FormikTextField,
@@ -39,11 +39,11 @@ export interface CourseManipulationFormData {
   displayName: string
   description: string
   color: string
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
-  groupCreationDeadline: string
+  groupCreationDeadline: Date
   maxGroupSize?: number
   preferredGroupSize?: number
 }
@@ -163,13 +163,13 @@ function CourseManipulationModal({
   // convert all dates back to local time
   const today = new Date()
   const startDateInit = initialValues?.startDate
-    ? dayjs(initialValues?.startDate).local().format().slice(0, 10)
-    : new Date().toISOString().slice(0, 10)
+    ? dayjs(initialValues?.startDate).local().toDate()
+    : new Date()
   const endDateInit = initialValues?.endDate
-    ? dayjs(initialValues?.endDate).local().format().slice(0, 10)
-    : new Date(today.setMonth(today.getMonth() + 6)).toISOString().slice(0, 10)
+    ? dayjs(initialValues?.endDate).local().toDate()
+    : new Date(today.setMonth(today.getMonth() + 6))
   const groupDeadlineDateInit = initialValues?.groupDeadlineDate
-    ? dayjs(initialValues?.groupDeadlineDate).local().format().slice(0, 10)
+    ? dayjs(initialValues?.groupDeadlineDate).local().toDate()
     : endDateInit
 
   return (
@@ -267,22 +267,28 @@ function CourseManipulationModal({
               />
               <div className="mt-2 flex flex-col gap-6">
                 <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
-                  <FormikDateChanger
+                  <FormikDatePicker
+                    required
                     name="startDate"
+                    disabled={startDatePast}
                     label={t('manage.courseList.startDate')}
                     tooltip={t('manage.courseList.startDateTooltip')}
-                    data={{ cy: 'course-start-date' }}
-                    dataButton={{ cy: 'course-start-date-button' }}
-                    disabled={startDatePast}
-                    required
+                    dataTrigger={{ cy: 'course-start-date' }}
+                    dataCalendar={{ cy: 'course-start-date-calendar' }}
+                    dataPreviousMonth={{
+                      cy: 'course-start-date-previous-month',
+                    }}
+                    dataNextMonth={{ cy: 'course-start-date-next-month' }}
                   />
-                  <FormikDateChanger
+                  <FormikDatePicker
+                    required
                     name="endDate"
                     label={t('manage.courseList.endDate')}
                     tooltip={t('manage.courseList.endDateTooltip')}
-                    data={{ cy: 'course-end-date' }}
-                    dataButton={{ cy: 'course-end-date-button' }}
-                    required
+                    dataTrigger={{ cy: 'course-end-date' }}
+                    dataCalendar={{ cy: 'course-end-date-calendar' }}
+                    dataPreviousMonth={{ cy: 'course-end-date-previous-month' }}
+                    dataNextMonth={{ cy: 'course-end-date-next-month' }}
                   />
                   <FormikColorPicker
                     required
@@ -338,15 +344,23 @@ function CourseManipulationModal({
                   {values.isGamificationEnabled &&
                     values.isGroupCreationEnabled && (
                       <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
-                        <FormikDateChanger
+                        <FormikDatePicker
+                          required
                           name="groupCreationDeadline"
                           label={t('manage.courseList.groupCreationDeadline')}
                           tooltip={t(
                             'manage.courseList.groupCreationDeadlineTooltip'
                           )}
-                          data={{ cy: 'group-creation-deadline' }}
-                          dataButton={{ cy: 'group-creation-deadline-button' }}
-                          required
+                          dataTrigger={{ cy: 'group-creation-deadline' }}
+                          dataCalendar={{
+                            cy: 'group-creation-deadline-calendar',
+                          }}
+                          dataPreviousMonth={{
+                            cy: 'group-creation-deadline-previous-month',
+                          }}
+                          dataNextMonth={{
+                            cy: 'group-creation-deadline-next-month',
+                          }}
                         />
                         {initialValues &&
                         initialValues.isGroupCreationEnabled ? (
