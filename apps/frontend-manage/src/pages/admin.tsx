@@ -7,13 +7,15 @@ import {
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
-import { Button, FormikTextField, Toast } from '@uzh-bf/design-system'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@uzh-bf/design-system/dist/future'
+  Button,
+  FormikTextField,
+  ToastLegacy,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -167,27 +169,27 @@ function AdminPanel() {
       </div>
 
       {/* Success toast - access granted successfully */}
-      <Toast
+      <ToastLegacy
         dismissible
         type="success"
         openExternal={toastType === 'success'}
         onCloseExternal={() => setToastType(null)}
       >
         {t('manage.admin.accessGranted')}
-      </Toast>
+      </ToastLegacy>
 
       {/* Success toast - user already has access */}
-      <Toast
+      <ToastLegacy
         dismissible
         type="success"
         openExternal={toastType === 'alreadyAccess'}
         onCloseExternal={() => setToastType(null)}
       >
         {t('manage.admin.alreadyAccess')}
-      </Toast>
+      </ToastLegacy>
 
       {/* Error toast - user does not exist */}
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         openExternal={toastType === 'userNotExist'}
@@ -195,10 +197,10 @@ function AdminPanel() {
         duration={6000}
       >
         {t('manage.admin.userNotExist')}
-      </Toast>
+      </ToastLegacy>
 
       {/* Error toast - mutation failed */}
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         openExternal={toastType === 'error'}
@@ -206,7 +208,7 @@ function AdminPanel() {
         duration={6000}
       >
         {t('manage.admin.grantAccessError')}
-      </Toast>
+      </ToastLegacy>
     </Layout>
   )
 }

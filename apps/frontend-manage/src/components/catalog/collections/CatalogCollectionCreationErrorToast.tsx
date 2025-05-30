@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CatalogCollectionCreationErrorToastProps {
@@ -13,14 +13,14 @@ function CatalogCollectionCreationErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
     >
       {t('manage.catalog.collectionCreationError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

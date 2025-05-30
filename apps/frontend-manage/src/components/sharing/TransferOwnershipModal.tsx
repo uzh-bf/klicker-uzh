@@ -50,7 +50,7 @@ function TransferOwnershipModal({
         title={t('manage.sharing.transferOwnership')}
         open={open}
         onClose={onClose}
-        className={{ content: 'max-w-lg' }}
+        className={{ content: 'max-w-lg pb-2' }}
         dataCloseButton={{ cy: 'close-transfer-ownership-modal' }}
       >
         <div className="space-y-3">
@@ -72,6 +72,7 @@ function TransferOwnershipModal({
           </div>
 
           <Formik
+            isInitialValid={false}
             initialValues={{ shortnameOrEmail: '' }}
             validationSchema={Yup.object().shape({
               shortnameOrEmail: Yup.string().required(

@@ -1,11 +1,12 @@
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DuplicateAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionDuplicationErrorToast from './AnswerCollectionDuplicationErrorToast'
@@ -33,61 +34,58 @@ function AnswerCollectionDuplicationModal({
         open={open}
         onClose={onClose}
         title={t('manage.resources.duplicateCollection')}
-        onSecondaryAction={
-          <Button onClick={onClose} data={{ cy: 'cancel-duplication' }}>
-            <Button.Icon icon={faBan} />
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
+        secondaryLabel={
+          <div className="flex flex-row items-center gap-2.5">
+            <FontAwesomeIcon icon={faBan} />
+            <span>{t('shared.generic.cancel')}</span>
+          </div>
         }
-        onPrimaryAction={
-          <Button
-            primary
-            loading={loading}
-            onClick={async () => {
-              try {
-                const result = await duplicateAnswerCollection({
-                  variables: { id: collectionId },
-                  update: (cache, { data }) => {
-                    if (!data?.duplicateAnswerCollection) return
+        onSecondaryAction={onClose}
+        dataSecondaryAction={{ cy: 'cancel-duplication' }}
+        primaryLabel={
+          <div className="flex flex-row items-center gap-2.5">
+            {!loading && <FontAwesomeIcon icon={faCopy} />}
+            <span>{t('manage.resources.duplicateCollection')}</span>
+          </div>
+        }
+        primaryLoading={loading}
+        onPrimaryAction={async () => {
+          try {
+            const result = await duplicateAnswerCollection({
+              variables: { id: collectionId },
+              update: (cache, { data }) => {
+                if (!data?.duplicateAnswerCollection) return
 
-                    const queryData = cache.readQuery({
-                      query: GetAnswerCollectionsInfoDocument,
-                    })
-                    const previousCollections =
-                      queryData?.getAnswerCollectionsInfo
-                    if (!previousCollections) return
+                const queryData = cache.readQuery({
+                  query: GetAnswerCollectionsInfoDocument,
+                })
+                const previousCollections = queryData?.getAnswerCollectionsInfo
+                if (!previousCollections) return
 
-                    cache.writeQuery({
-                      query: GetAnswerCollectionsInfoDocument,
-                      data: {
-                        getAnswerCollectionsInfo: [
-                          ...previousCollections,
-                          data.duplicateAnswerCollection,
-                        ],
-                      },
-                    })
+                cache.writeQuery({
+                  query: GetAnswerCollectionsInfoDocument,
+                  data: {
+                    getAnswerCollectionsInfo: [
+                      ...previousCollections,
+                      data.duplicateAnswerCollection,
+                    ],
                   },
                 })
+              },
+            })
 
-                if (result.data?.duplicateAnswerCollection) {
-                  onClose()
-                  onSuccess()
-                } else {
-                  setErrorToastOpen(true)
-                }
-              } catch (error) {
-                console.error('Error duplicating collection:', error)
-                setErrorToastOpen(true)
-              }
-            }}
-            data={{ cy: 'confirm-duplication' }}
-          >
-            <Button.Icon icon={faCopy} loading={loading} />
-            <Button.Label>
-              {t('manage.resources.duplicateCollection')}
-            </Button.Label>
-          </Button>
-        }
+            if (result.data?.duplicateAnswerCollection) {
+              onClose()
+              onSuccess()
+            } else {
+              setErrorToastOpen(true)
+            }
+          } catch (error) {
+            console.error('Error duplicating collection:', error)
+            setErrorToastOpen(true)
+          }
+        }}
+        dataPrimaryAction={{ cy: 'confirm-duplication' }}
         className={{ content: 'max-w-2xl' }}
         dataCloseButton={{ cy: 'close-duplication-modal' }}
       >

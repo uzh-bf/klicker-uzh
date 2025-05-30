@@ -55,7 +55,7 @@ function AdvancedLiveQuizSettings({
         </ForwardRefButton>
       }
       title={t('manage.activityWizard.liveQuizAdvancedSettings')}
-      className={{ content: '!w-full max-w-[60rem] !pb-5' }}
+      className={{ content: 'pb-0' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
       hideCloseButton={showError}
       escapeDisabled={showError}

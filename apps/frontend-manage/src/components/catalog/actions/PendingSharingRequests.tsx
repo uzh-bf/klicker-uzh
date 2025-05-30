@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetCatalogSharingRequestsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2, Toast } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge, H2, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import CatalogSharingRequest from './CatalogSharingRequest'
@@ -41,7 +40,7 @@ function PendingSharingRequests() {
           />
         ))}
       </div>
-      <Toast
+      <ToastLegacy
         dismissible
         type="success"
         duration={3000}
@@ -50,8 +49,8 @@ function PendingSharingRequests() {
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.catalog.declineSuccessful')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         type="error"
         duration={5000}
@@ -60,8 +59,8 @@ function PendingSharingRequests() {
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.catalog.declineFailed')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         type="success"
         duration={3000}
@@ -70,7 +69,7 @@ function PendingSharingRequests() {
         className={{ root: 'max-w-[30rem]' }}
       >
         {t('manage.catalog.approvalSuccessful')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

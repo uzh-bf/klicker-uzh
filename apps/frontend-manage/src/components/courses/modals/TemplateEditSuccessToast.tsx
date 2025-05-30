@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TemplateEditSuccessToast({
@@ -10,7 +10,7 @@ function TemplateEditSuccessToast({
 }) {
   const t = useTranslations()
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={3000}
       type="success"
@@ -19,7 +19,7 @@ function TemplateEditSuccessToast({
       className={{ root: 'max-w-[30rem]' }}
     >
       {t('manage.template.templateEditSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

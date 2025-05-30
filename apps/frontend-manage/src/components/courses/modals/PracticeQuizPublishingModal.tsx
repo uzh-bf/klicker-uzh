@@ -39,7 +39,7 @@ function PracticeQuizPublishingModal({
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
       onClose={(): void => setOpen(false)}
       open={open}
-      className={{ content: '!w-full max-w-4xl text-base' }}
+      className={{ content: 'pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
       <div className="flex w-full flex-col gap-4 md:flex-row">

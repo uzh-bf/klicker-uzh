@@ -3,7 +3,6 @@ import {
   faCalendar,
   faClock,
   faFileLines,
-  faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -31,6 +30,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
@@ -179,11 +179,8 @@ function MicroLearningElement({
               />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   getAccessLink({
                     href,
@@ -236,7 +233,6 @@ function MicroLearningElement({
                   }),
                   deletionElement,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -249,11 +245,8 @@ function MicroLearningElement({
               />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
@@ -295,7 +288,6 @@ function MicroLearningElement({
                   },
                   deletionElement,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -308,11 +300,8 @@ function MicroLearningElement({
               />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
@@ -389,7 +378,6 @@ function MicroLearningElement({
                     : [],
                   deletionElement,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -402,11 +390,8 @@ function MicroLearningElement({
               />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   {
                     label: (
@@ -462,7 +447,6 @@ function MicroLearningElement({
                     : [],
                   deletionElement,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}

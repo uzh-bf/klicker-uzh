@@ -157,7 +157,7 @@ function AnswerCollectionItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </Button>
               }
-              className={{ item: 'text-sm' }}
+              className={{ item: 'py-0.5 text-sm' }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />
           )}

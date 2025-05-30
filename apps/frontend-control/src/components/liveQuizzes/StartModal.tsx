@@ -4,7 +4,7 @@ import {
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
@@ -63,36 +63,23 @@ function StartModal({
     <Modal
       open={startModalOpen}
       onClose={() => setStartModalOpen(false)}
-      onPrimaryAction={
-        <Button
-          primary
-          loading={startingLiveQuiz}
-          onClick={async () => {
-            try {
-              await startLiveQuiz({
-                variables: { id: quizId },
-              })
-              router.push(`/session/${quizId}`)
-            } catch (error) {
-              setStartModalOpen(false)
-              setErrorToast(true)
-            }
-          }}
-          data={{
-            cy: 'confirm-start-live-quiz',
-          }}
-        >
-          <Button.Label>{t('shared.generic.start')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={() => setStartModalOpen(false)}
-          data={{ cy: 'cancel-start-live-quiz-modal' }}
-        >
-          {t('shared.generic.cancel')}
-        </Button>
-      }
+      primaryLabel={t('shared.generic.start')}
+      onPrimaryAction={async () => {
+        try {
+          await startLiveQuiz({
+            variables: { id: quizId },
+          })
+          router.push(`/session/${quizId}`)
+        } catch (error) {
+          setStartModalOpen(false)
+          setErrorToast(true)
+        }
+      }}
+      primaryLoading={startingLiveQuiz}
+      dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setStartModalOpen(false)}
+      dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
       className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton
     >

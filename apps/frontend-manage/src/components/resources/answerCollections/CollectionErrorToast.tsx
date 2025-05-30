@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CollectionErrorToast({
@@ -11,7 +11,7 @@ function CollectionErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -20,7 +20,7 @@ function CollectionErrorToast({
       duration={10000}
     >
       {t('manage.resources.collectionCreationError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

@@ -1,9 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faClock,
-  faFileLines,
-  faHandPointer,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, faFileLines } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faLock,
@@ -29,6 +25,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
@@ -167,11 +164,8 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <StartLiveQuizButton liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     getAccessLink({
                       href,
@@ -222,7 +216,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `delete-live-quiz-${quiz.name}` },
                     },
                   ].flat()}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}
@@ -231,11 +224,8 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <RunningLiveQuizLink liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     getAccessLink({
                       href,
@@ -259,7 +249,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
                   ].flat()}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}
@@ -268,11 +257,8 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <EvaluationLinkLiveQuiz liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     {
                       label: (
@@ -292,7 +278,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
                   ]}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}

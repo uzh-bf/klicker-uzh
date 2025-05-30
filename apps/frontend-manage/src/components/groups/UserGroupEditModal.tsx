@@ -57,7 +57,7 @@ function UserGroupEditModal({
         onClose={onClose}
         title={
           titleEditMode ? (
-            <div className="flex flex-row items-center">
+            <div className="flex max-w-[90%] flex-row items-center md:max-w-[80%]">
               <div className="mr-2.5 whitespace-nowrap">{`${t('shared.generic.userGroup')}: `}</div>
               <TextField
                 value={titleState}
@@ -99,7 +99,7 @@ function UserGroupEditModal({
         }
         className={{
           content: twMerge(
-            'flex !max-w-xl flex-col',
+            'flex !max-w-xl flex-col pb-0',
             isGroupEditor && '!max-w-3xl'
           ),
         }}

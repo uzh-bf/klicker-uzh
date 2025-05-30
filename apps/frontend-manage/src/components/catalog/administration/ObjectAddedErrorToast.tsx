@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ObjectAddedErrorToastProps {
@@ -10,14 +10,14 @@ function ObjectAddedErrorToast({ open, onClose }: ObjectAddedErrorToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
     >
       {t('manage.catalog.objectAddedError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

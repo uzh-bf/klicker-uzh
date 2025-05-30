@@ -891,6 +891,10 @@
   padding-left: 0px !important
 }
 
+.\!pl-8 {
+  padding-left: 2rem !important
+}
+
 .pb-0 {
   padding-bottom: 0px
 }

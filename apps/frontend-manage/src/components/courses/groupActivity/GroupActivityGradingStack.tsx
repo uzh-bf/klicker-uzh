@@ -21,7 +21,7 @@ import {
   FormikNumberField,
   H2,
   H3,
-  Toast,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
@@ -428,7 +428,7 @@ function GroupActivityGradingStack({
               </Button>
               <EditingDetector />
             </div>
-            <Toast
+            <ToastLegacy
               dismissible
               openExternal={successToast}
               onCloseExternal={() => setSuccessToast(false)}
@@ -436,8 +436,8 @@ function GroupActivityGradingStack({
               duration={4000}
             >
               {t('manage.groupActivity.stackGradingSuccess')}
-            </Toast>
-            <Toast
+            </ToastLegacy>
+            <ToastLegacy
               dismissible
               openExternal={errorToast}
               onCloseExternal={() => setErrorToast(false)}
@@ -445,7 +445,7 @@ function GroupActivityGradingStack({
               duration={6000}
             >
               {t('manage.groupActivity.stackGradingError')}
-            </Toast>
+            </ToastLegacy>
           </>
         )
       }}

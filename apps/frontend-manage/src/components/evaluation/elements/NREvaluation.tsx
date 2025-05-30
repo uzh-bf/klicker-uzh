@@ -10,7 +10,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+} from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 interface NREvaluationProps {

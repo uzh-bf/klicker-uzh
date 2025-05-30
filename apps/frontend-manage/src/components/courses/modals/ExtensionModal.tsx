@@ -43,7 +43,7 @@ function ExtensionModal({
       hideCloseButton={true}
       title={title}
       className={{
-        content: 'max-w-[40rem]',
+        content: 'max-w-xl pb-2',
         title: 'text-xl',
       }}
     >

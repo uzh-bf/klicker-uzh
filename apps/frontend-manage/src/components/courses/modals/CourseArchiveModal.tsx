@@ -3,7 +3,7 @@ import {
   GetUserCoursesDocument,
   ToggleArchiveCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CourseArchiveModalProps {
@@ -35,45 +35,34 @@ function CourseArchiveModal({
       onClose={() => {
         setOpen(false)
       }}
-      className={{ content: 'max-w-[30rem]' }}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
           : t('manage.courseList.archiveCourse')
       }
-      onPrimaryAction={
-        <Button
-          primary
-          loading={loading}
-          onClick={async () => {
-            await toggleArchiveCourse({
-              variables: { id: courseId, isArchived: !isArchived },
-              optimisticResponse: {
-                __typename: 'Mutation',
-                toggleArchiveCourse: {
-                  __typename: 'Course',
-                  id: courseId,
-                  isArchived: !isArchived,
-                },
-              },
-            })
-            setOpen(false)
-          }}
-          data={{ cy: 'course-archive-modal-confirm' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-          }}
-          data={{ cy: 'course-archive-modal-cancel' }}
-        >
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={loading}
+      onPrimaryAction={async () => {
+        await toggleArchiveCourse({
+          variables: { id: courseId, isArchived: !isArchived },
+          optimisticResponse: {
+            __typename: 'Mutation',
+            toggleArchiveCourse: {
+              __typename: 'Course',
+              id: courseId,
+              isArchived: !isArchived,
+            },
+          },
+        })
+        setOpen(false)
+      }}
+      dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        setOpen(false)
+      }}
+      dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
+      className={{ content: 'max-w-[30rem]' }}
     >
       <UserNotification
         type="warning"

@@ -139,7 +139,6 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
             className={{
               tooltip: 'z-10 max-w-[20%] text-sm md:max-w-[30%]',
             }}
-            withIndicator={false}
           >
             <FontAwesomeIcon
               icon={faQuestion}

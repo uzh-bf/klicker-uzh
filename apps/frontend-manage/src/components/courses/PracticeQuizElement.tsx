@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   faClock,
   faFileLines,
-  faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -29,6 +28,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import StatusTag from './StatusTag'
 import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
@@ -231,11 +231,8 @@ function PracticeQuizElement({
               />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   getAccessLink({
                     href,
@@ -288,7 +285,6 @@ function PracticeQuizElement({
                   }),
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -298,11 +294,8 @@ function PracticeQuizElement({
               <PracticeQuizAccessLink practiceQuiz={practiceQuiz} href={href} />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
@@ -345,7 +338,6 @@ function PracticeQuizElement({
                   },
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -355,11 +347,8 @@ function PracticeQuizElement({
               <PracticeQuizAccessLink practiceQuiz={practiceQuiz} href={href} />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
@@ -409,7 +398,6 @@ function PracticeQuizElement({
                     : [],
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}

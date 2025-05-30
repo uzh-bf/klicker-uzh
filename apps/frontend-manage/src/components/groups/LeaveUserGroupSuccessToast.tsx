@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LeaveUserGroupSuccessToast({
@@ -11,7 +11,7 @@ function LeaveUserGroupSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -20,7 +20,7 @@ function LeaveUserGroupSuccessToast({
       duration={3000}
     >
       {t('manage.userGroups.leaveGroupSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

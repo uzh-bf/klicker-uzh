@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TemplateCreationErrorToastProps {
@@ -13,14 +13,14 @@ function TemplateCreationErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
     >
       {t('manage.template.templateCreationError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

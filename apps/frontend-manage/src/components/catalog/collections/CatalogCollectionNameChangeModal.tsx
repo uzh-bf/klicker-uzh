@@ -3,7 +3,12 @@ import {
   ChangeCatalogCollectionNameDocument,
   GetCatalogCollectionsListDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextField,
+  Modal,
+  ToastLegacy,
+} from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -41,10 +46,7 @@ function CatalogCollectionNameChangeModal({
         open={open}
         onClose={onClose}
         title={t('manage.catalog.changeCatalogCollectionName')}
-        className={{
-          content: 'w-[30rem]',
-          title: 'text-xl',
-        }}
+        className={{ content: 'max-w-xl pb-1' }}
       >
         <Formik
           initialValues={{
@@ -141,7 +143,7 @@ function CatalogCollectionNameChangeModal({
           )}
         </Formik>
       </Modal>
-      <Toast
+      <ToastLegacy
         dismissible
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
@@ -149,8 +151,8 @@ function CatalogCollectionNameChangeModal({
         duration={4000}
       >
         {t('manage.catalog.catalogCollectionNameChangeSuccess')}
-      </Toast>
-      <Toast
+      </ToastLegacy>
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -158,7 +160,7 @@ function CatalogCollectionNameChangeModal({
         duration={6000}
       >
         {t('manage.catalog.catalogCollectionNameChangeError')}
-      </Toast>
+      </ToastLegacy>
     </>
   )
 }

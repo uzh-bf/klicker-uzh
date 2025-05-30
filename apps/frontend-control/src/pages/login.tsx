@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -58,7 +58,7 @@ function Login() {
           )
         }}
       </Formik>
-      <Toast
+      <ToastLegacy
         dismissible
         type="error"
         duration={6000}
@@ -67,7 +67,7 @@ function Login() {
         className={{ root: 'max-w-[30rem]' }}
       >
         {error}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

@@ -42,7 +42,7 @@ function AddObjectToCatalogModal({
       title={t('manage.catalog.addObjectToCatalogTitle')}
       open={open}
       onClose={onClose}
-      className={{ content: 'max-w-2xl' }}
+      className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}
     >
       <Formik
@@ -176,7 +176,7 @@ function AddObjectToCatalogModal({
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-4 flex justify-end">
               <Button
                 primary
                 type="submit"

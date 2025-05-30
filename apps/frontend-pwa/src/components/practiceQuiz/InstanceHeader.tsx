@@ -14,7 +14,7 @@ import {
   RateElementDocument,
   ResponseCorrectnessType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, Toast } from '@uzh-bf/design-system'
+import { Button, H4, ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -29,7 +29,7 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       duration={5000}
       type="error"
@@ -38,7 +38,7 @@ function RatingErrorToast({ open, setOpen }: RatingErrorToastProps) {
     >
       <H4>{t('shared.generic.error')}</H4>
       <div>{t('pwa.practiceQuiz.errorRatingElement')}</div>
-    </Toast>
+    </ToastLegacy>
   )
 }
 

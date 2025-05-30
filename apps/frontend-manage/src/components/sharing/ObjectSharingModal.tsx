@@ -101,9 +101,7 @@ function ObjectSharingModal({
         open={open}
         onClose={onClose}
         dataCloseButton={{ cy: 'close-share-object' }}
-        className={{
-          content: 'h-max max-h-full max-w-5xl',
-        }}
+        className={{ content: 'h-max max-w-5xl pb-0' }}
       >
         <div>
           {t.rich(`manage.sharing.infoSharing${objectType}`, {
@@ -158,7 +156,7 @@ function ObjectSharingModal({
           />
         </div>
         {derivedPermissionsAvailable ? (
-          <div className="mt-2">
+          <div className="mt-2 flex flex-col">
             {showDerivedPermissions ? (
               <div className="mt-8">
                 <DerivedPermissionsTable
@@ -172,7 +170,7 @@ function ObjectSharingModal({
                 basic
                 onClick={() => setShowDerivedPermissions(true)}
                 className={{
-                  root: 'text-primary-100 hover:text-primary-100 float-right px-3 py-0.5 text-sm',
+                  root: 'text-primary-100 hover:text-primary-100 self-end px-3 py-0.5 text-sm',
                 }}
                 data={{
                   cy: 'show-derived-permissions',

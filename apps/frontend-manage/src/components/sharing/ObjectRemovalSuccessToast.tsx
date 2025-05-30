@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ObjectRemovalSuccessToast({
@@ -11,7 +11,7 @@ function ObjectRemovalSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -19,7 +19,7 @@ function ObjectRemovalSuccessToast({
       duration={3000}
     >
       {t('manage.sharing.removalSuccessful')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

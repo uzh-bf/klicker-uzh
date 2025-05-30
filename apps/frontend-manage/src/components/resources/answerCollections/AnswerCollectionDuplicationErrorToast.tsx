@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function AnswerCollectionDuplicationErrorToast({
@@ -11,7 +11,7 @@ function AnswerCollectionDuplicationErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -21,7 +21,7 @@ function AnswerCollectionDuplicationErrorToast({
       data={{ cy: 'collection-duplication-error' }}
     >
       {t('manage.resources.duplicationFailure')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

@@ -3,7 +3,7 @@ import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikPinField,
-  Toast,
+  ToastLegacy,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -20,7 +20,7 @@ function CreateAccountJoinForm() {
   const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
 
   return (
-    <div className="mx-auto w-full p-4">
+    <div className="mx-auto w-full py-4">
       <UserNotification type="info">
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>
@@ -57,13 +57,11 @@ function CreateAccountJoinForm() {
           <Form>
             <FormikPinField
               required
+              length={9}
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}
               name="pin"
-              className={{
-                root: 'my-2',
-                tooltip: 'max-w-[20rem] md:max-w-[30rem]',
-              }}
+              className={{ field: 'mb-3 mt-2', inputItem: 'w-8' }}
               data={{ cy: 'pin-field' }}
             />
             <Button
@@ -79,7 +77,7 @@ function CreateAccountJoinForm() {
           </Form>
         )}
       </Formik>
-      <Toast
+      <ToastLegacy
         dismissible
         openExternal={errorToast}
         onCloseExternal={() => setErrorToast(false)}
@@ -87,7 +85,7 @@ function CreateAccountJoinForm() {
         duration={6000}
       >
         {t('pwa.login.coursePinInvalid')}
-      </Toast>
+      </ToastLegacy>
     </div>
   )
 }

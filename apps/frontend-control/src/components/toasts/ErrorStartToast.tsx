@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ErrorStartToastProps {
@@ -10,7 +10,7 @@ function ErrorStartToast({ open, setOpen }: ErrorStartToastProps) {
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       openExternal={open}
       onCloseExternal={() => setOpen(false)}
@@ -18,7 +18,7 @@ function ErrorStartToast({ open, setOpen }: ErrorStartToastProps) {
       duration={5000}
     >
       {t('control.course.liveQuizStartFailed')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

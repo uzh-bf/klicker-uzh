@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CatalogObjectImportErrorToast({
@@ -11,14 +11,14 @@ function CatalogObjectImportErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
     >
       {t('manage.catalog.importCatalogObjectFailed')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

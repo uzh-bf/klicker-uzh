@@ -192,6 +192,19 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
   })
 
+  // recompute derived permissions for the catalog collections
+  await recomputeDerivedPermissions(
+    { catalogCollectionId: publicCatalogCollection.id, userId: USER_ID_TEST },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      catalogCollectionId: restrictedCatalogCollection.id,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+
   // assign answer collections to catalog collections, if defined in relation
   const catalogAnswerCollectionAssignments = await Promise.all(
     DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {

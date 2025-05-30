@@ -92,7 +92,7 @@ function JoinCourse({
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
-            <div className="mb-5">
+            <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -121,8 +121,11 @@ function JoinCourse({
                 return (
                   <Form>
                     <FormikPinField
+                      required
                       name="pin"
+                      length={9}
                       label={t('pwa.joinCourse.coursePinFormat')}
+                      className={{ inputItem: 'w-8', field: 'mb-2' }}
                     />
                     <Button
                       primary

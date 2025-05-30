@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TransferOwnershipErrorToastProps {
@@ -13,7 +13,7 @@ function TransferOwnershipErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -21,7 +21,7 @@ function TransferOwnershipErrorToast({
       className={{ root: 'max-w-[32rem]' }}
     >
       {t('manage.sharing.ownershipTransferError')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

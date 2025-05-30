@@ -16,7 +16,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
-import { H1, Toast, UserNotification } from '@uzh-bf/design-system'
+import { H1, ToastLegacy, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -286,7 +286,7 @@ const Index = function () {
         {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
-      <Toast
+      <ToastLegacy
         type="warning"
         openExternal={typeof endedMicroLearning !== 'undefined'}
         onCloseExternal={() => setEndedMicroLearning(undefined)}
@@ -297,7 +297,7 @@ const Index = function () {
         {t('pwa.courses.microLearningEndedToast', {
           activityName: endedMicroLearning,
         })}
-      </Toast>
+      </ToastLegacy>
     </Layout>
   )
 }

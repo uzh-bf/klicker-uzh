@@ -10,7 +10,12 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H1, Toast, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H1,
+  ToastLegacy,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -259,7 +264,7 @@ function GroupActivityDetails() {
           )}
         </div>
       </div>
-      <Toast
+      <ToastLegacy
         type="warning"
         openExternal={activityEnded}
         onCloseExternal={() => setActivityEnded(false)}
@@ -270,7 +275,7 @@ function GroupActivityDetails() {
         {t('pwa.groupActivity.groupActivityEnded', {
           activityName: groupActivity.displayName,
         })}
-      </Toast>
+      </ToastLegacy>
     </Layout>
   )
 }

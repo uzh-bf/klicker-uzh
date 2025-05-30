@@ -74,7 +74,6 @@ function Ellipsis({
             className?.tooltip
           ),
         }}
-        withIndicator={false}
       >
         {withMarkdown ? (
           <Prose
@@ -82,7 +81,7 @@ function Ellipsis({
               root: twMerge(
                 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 text-black hover:text-black',
                 // HACK: dynamic classnames do not work with tailwind - ensure that the following classes are present:
-                // line-clamp-1 line-clamp-2 line-clamp-3
+                // line-clamp-1 line-clamp-2 line-clamp-3 line-clamp-4 line-clamp-5 line-clamp-6
                 `line-clamp-${maxLines}`,
                 className?.root,
                 className?.content
@@ -256,7 +255,6 @@ function Ellipsis({
               className?.tooltip
             ),
           }}
-          withIndicator={false}
         >
           {shortenedParsedContent}
         </Tooltip>

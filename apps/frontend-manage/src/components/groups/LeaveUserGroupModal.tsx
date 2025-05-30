@@ -3,11 +3,12 @@ import {
   faBan,
   faPersonWalkingArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetUserGroupsUserDocument,
   LeaveUserGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import LeaveUserGroupErrorToast from './LeaveUserGroupErrorToast'
@@ -27,71 +28,73 @@ function LeaveUserGroupModal({
 }) {
   const t = useTranslations()
   const [errorToast, setErrorToast] = useState(false)
-  const [leaveUserGroup] = useMutation(LeaveUserGroupDocument)
+  const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={t('manage.userGroups.leaveGroup')}
-      className={{ content: '!max-w-xl' }}
-    >
-      <div className="mb-3">
-        {t('manage.userGroups.confirmLeaveGroup', { groupName })}
-      </div>
-      <div className="flex flex-row justify-between">
-        <Button onClick={onClose} data={{ cy: 'cancel-leave-group' }}>
-          <Button.Icon icon={faBan} />
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          onClick={async () => {
-            try {
-              const { data: success } = await leaveUserGroup({
-                variables: {
-                  groupId,
-                },
-                update: (cache, { data }) => {
-                  // check if request was successful
-                  const success = data?.leaveUserGroup
-                  if (!success) return
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!loading && <FontAwesomeIcon icon={faPersonWalkingArrowRight} />}
+          <span>{t('shared.generic.confirm')}</span>
+        </div>
+      }
+      primaryLoading={loading}
+      onPrimaryAction={async () => {
+        try {
+          const { data: success } = await leaveUserGroup({
+            variables: {
+              groupId,
+            },
+            update: (cache, { data }) => {
+              // check if request was successful
+              const success = data?.leaveUserGroup
+              if (!success) return
 
-                  // update list of user groups
-                  const userGroups = cache.readQuery({
-                    query: GetUserGroupsUserDocument,
-                  })
-
-                  if (userGroups?.getUserGroupsUser) {
-                    cache.writeQuery({
-                      query: GetUserGroupsUserDocument,
-
-                      data: {
-                        getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
-                          (group) => group.id !== groupId
-                        ),
-                      },
-                    })
-                  }
-                },
+              // update list of user groups
+              const userGroups = cache.readQuery({
+                query: GetUserGroupsUserDocument,
               })
 
-              if (success?.leaveUserGroup) {
-                onSuccess()
-              } else {
-                setErrorToast(true)
+              if (userGroups?.getUserGroupsUser) {
+                cache.writeQuery({
+                  query: GetUserGroupsUserDocument,
+
+                  data: {
+                    getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+                      (group) => group.id !== groupId
+                    ),
+                  },
+                })
               }
-            } catch (error) {
-              console.error('Error leaving user group:', error)
-              setErrorToast(true)
-            }
-          }}
-          data={{ cy: 'confirm-leave-group' }}
-        >
-          <Button.Icon icon={faPersonWalkingArrowRight} />
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      </div>
+            },
+          })
+
+          if (success?.leaveUserGroup) {
+            onSuccess()
+          } else {
+            setErrorToast(true)
+          }
+        } catch (error) {
+          console.error('Error leaving user group:', error)
+          setErrorToast(true)
+        }
+      }}
+      dataPrimaryAction={{ cy: 'confirm-leave-group' }}
+      secondaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <FontAwesomeIcon icon={faBan} />
+          <span>{t('shared.generic.cancel')}</span>
+        </div>
+      }
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-leave-group' }}
+      className={{ content: 'max-w-xl' }}
+    >
+      {t('manage.userGroups.confirmLeaveGroup', { groupName })}
+
       <LeaveUserGroupErrorToast
         open={errorToast}
         setOpen={() => setErrorToast(false)}

@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CatalogRequestSuccessToast({
@@ -11,7 +11,7 @@ function CatalogRequestSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -19,7 +19,7 @@ function CatalogRequestSuccessToast({
       duration={3500}
     >
       {t('manage.catalog.requestCatalogObjectSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

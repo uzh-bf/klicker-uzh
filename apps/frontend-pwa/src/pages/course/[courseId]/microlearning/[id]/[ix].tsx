@@ -5,7 +5,7 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Progress, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Progress, ToastLegacy, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -121,7 +121,7 @@ function MicrolearningInstance() {
           />
         </div>
       </div>
-      <Toast
+      <ToastLegacy
         type="warning"
         openExternal={endedMicroLearning}
         onCloseExternal={() => setEndedMicroLearning(false)}
@@ -132,7 +132,7 @@ function MicrolearningInstance() {
         {t('pwa.courses.microLearningEndedToast', {
           activityName: microLearning.displayName,
         })}
-      </Toast>
+      </ToastLegacy>
     </Layout>
   )
 }

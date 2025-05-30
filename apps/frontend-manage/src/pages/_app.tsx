@@ -4,6 +4,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
+import { Toaster } from '@uzh-bf/design-system'
 import '@uzh-bf/design-system/dist/style.css'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -50,6 +51,7 @@ function App({ Component, pageProps }: AppProps) {
           getMessageFallback={getMessageFallback}
         >
           <DndProvider backend={HTML5Backend}>
+            <Toaster closeButton position="top-right" />
             <Component {...pageProps} />
           </DndProvider>
         </NextIntlClientProvider>

@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TemplateCreationSuccessToastProps {
@@ -13,7 +13,7 @@ function TemplateCreationSuccessToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="success"
       openExternal={open}
@@ -21,7 +21,7 @@ function TemplateCreationSuccessToast({
       duration={3500}
     >
       {t('manage.template.templateCreationSuccess')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 

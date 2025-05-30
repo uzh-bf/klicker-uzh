@@ -1,4 +1,4 @@
-import { Toast } from '@uzh-bf/design-system'
+import { ToastLegacy } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ObjectAccessRemovalErrorToast({
@@ -11,7 +11,7 @@ function ObjectAccessRemovalErrorToast({
   const t = useTranslations()
 
   return (
-    <Toast
+    <ToastLegacy
       dismissible
       type="error"
       openExternal={open}
@@ -20,7 +20,7 @@ function ObjectAccessRemovalErrorToast({
       className={{ root: 'max-w-[30rem]' }}
     >
       {t('manage.sharing.accessRemovalFailed')}
-    </Toast>
+    </ToastLegacy>
   )
 }
 
