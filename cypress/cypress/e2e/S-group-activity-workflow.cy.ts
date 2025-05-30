@@ -825,6 +825,7 @@ describe('Create and solve a group activity', function () {
       this.data.running.flagging.text
     )
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
+    cy.wait(4000) // wait for success toast to disappear (blocks button)
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="flag-element-textarea"]').should(
@@ -835,7 +836,7 @@ describe('Create and solve a group activity', function () {
       .clear()
       .type(this.data.running.flagging.textNew)
     cy.get('[data-cy="submit-flag-element"]').click()
-    cy.wait(500)
+    cy.wait(4000) // wait for success toast to disappear (blocks button)
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="flag-element-textarea"]').should(
