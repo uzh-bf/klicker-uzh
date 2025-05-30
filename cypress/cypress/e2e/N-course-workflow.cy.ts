@@ -3,6 +3,21 @@ import messages from '../../../packages/i18n/messages/en'
 // global variable for ensured consistency with current dates
 const currentYear = new Date().getFullYear()
 
+// function to compute the 15th of a specific month in the future
+function get15thOfFutureMonth(monthsInFuture: number): string {
+  // initialize function with the first day of the current month
+  let date = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+
+  for (let i = 0; i < monthsInFuture; i++) {
+    date.setMonth(date.getMonth() + 1)
+  }
+
+  return date
+    .toLocaleString('ro-RO')
+    .split(',')[0]
+    .replace(/^\d{1,2}\./, '15.')
+}
+
 describe('Test course creation and editing functionalities', function () {
   before(() => {
     cy.seed()
@@ -49,15 +64,43 @@ describe('Test course creation and editing functionalities', function () {
       .realClick()
       .type(this.data.course1.description)
 
-    // change the start date
-    cy.get('[data-cy="course-start-date-button"]').click()
-    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-01-01`)
+    // change the start date (2 months in the future on the 15th)
+    cy.get('[data-cy="course-start-date"]').realClick()
+    cy.get('[data-cy="course-start-date-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-start-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
-    // change the end date
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-01-01`)
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-start-date"]').should(
+      'contain',
+      get15thOfFutureMonth(2)
+    )
+
+    // change the end date (8 months in the future on the 15th - default is at 6 months from now)
+    cy.get('[data-cy="course-end-date"]').realClick()
+    cy.get('[data-cy="course-end-date-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-end-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(8)
+    )
 
     // change course color to red
     cy.get('[data-cy="course-color-trigger"]').click()
@@ -114,17 +157,47 @@ describe('Test course creation and editing functionalities', function () {
       this.data.course2.displayName
     )
 
-    // change the start date
-    cy.get('[data-cy="course-start-date-button"]').click()
-    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-01-01`)
-    // click outside to save the value
-    cy.get('[data-cy="course-name"]').click()
+    // change the start date (3 months in the future on the 15th)
+    cy.get('[data-cy="course-start-date"]').realClick()
+    cy.get('[data-cy="course-start-date-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-start-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
-    // change the end date
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-01-01`)
-    // click outside to save the value
-    cy.get('[data-cy="course-name"]').click()
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-start-date"]').should(
+      'contain',
+      get15thOfFutureMonth(3)
+    )
+
+    // change the end date (9 months in the future on the 15th - default is at 6 months from now)
+    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
+    cy.get('[data-cy="course-end-date-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-end-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(9)
+    )
 
     // test gamification toggle
     cy.get('[data-cy="course-gamification"]').should(
@@ -145,9 +218,6 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
     cy.get('[data-cy="toggle-group-creation-enabled"]').click()
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').clear()
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
@@ -159,17 +229,51 @@ describe('Test course creation and editing functionalities', function () {
       'not.be.disabled'
     )
     cy.get('[data-cy="toggle-group-creation-enabled"]').click()
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').type(
-      `${currentYear + 3}-01-01`
-    )
+
+    // enter an invalid group creation deadline date (after end date - 10 months in the future)
+    // when field becomes visible, it is initialized with the current course date
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
+    cy.get('[data-cy="group-creation-deadline-next-month"]')
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="group-creation-deadline-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // verify that the correct date is selected
+    const invalidGroupDeadline = get15thOfFutureMonth(10)
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'contain',
+      invalidGroupDeadline
+    )
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').type(
-      `${currentYear + 1}-06-01`
-    )
+
+    // change this back to a valid date (5 months in the future)
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
+    cy.get('[data-cy="group-creation-deadline-previous-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="group-creation-deadline-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'contain',
+      get15thOfFutureMonth(5)
+    )
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="max-group-size"]').click().clear().type('6')
     cy.get('[data-cy="preferred-group-size"]').click().clear().type('4')
@@ -366,14 +470,31 @@ describe('Test course creation and editing functionalities', function () {
 
     // modify the course end date and group creation deadline
     cy.get('[data-cy="course-settings-button"]').click()
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 3}-01-01`)
+
+    // change the group deadline date (4 months in the future on the 15th - random group generation changed it to today)
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
+    cy.get('[data-cy="group-creation-deadline-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="group-creation-deadline-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').type(
-      `${currentYear + 2}-01-01`
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'contain',
+      get15thOfFutureMonth(4)
     )
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // save the changes
     cy.get('[data-cy="manipulate-course-submit"]').click()
 
     // check that random assignment of groups would be possible again once students join the pool
@@ -434,23 +555,49 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-color-hex-input"]').type('00FF00')
     cy.get('[data-cy="course-color-submit"]').click()
 
-    // check course start date and change it
-    cy.get('[data-cy="course-start-date-button"]').click()
+    // check course start date and change it (from 2 to 3 months in the future on the 15th)
     cy.get('[data-cy="course-start-date"]').should(
-      'have.value',
-      `${currentYear + 1}-01-01`
+      'contain',
+      get15thOfFutureMonth(2)
     )
-    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-02-01`)
+
+    cy.get('[data-cy="course-start-date"]').realClick()
+    cy.get('[data-cy="course-start-date-next-month"]').realClick().wait(100)
+    cy.get('[data-cy="course-start-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
-    // check course end date and change it
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').should(
-      'have.value',
-      `${currentYear + 2}-01-01`
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-start-date"]').should(
+      'contain',
+      get15thOfFutureMonth(3)
     )
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-02-01`)
+
+    // check course end date and change it (from 8 to 10 months in the future on the 15th)
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(8)
+    )
+
+    cy.get('[data-cy="course-end-date"]').realClick()
+    cy.get('[data-cy="course-end-date-next-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-end-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(10)
+    )
 
     // enable gamification for the created course and check that it worked (switch active and disabled)
     cy.get('[data-cy="course-gamification"]').should(
@@ -476,12 +623,14 @@ describe('Test course creation and editing functionalities', function () {
       'have.value',
       this.data.course1.displayNameNew
     )
-    cy.get('[data-cy="course-start-date-button"]').click()
-    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-02-01`)
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 2}-02-01`)
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="course-start-date"]').should(
+      'contain',
+      get15thOfFutureMonth(3)
+    )
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(10)
+    )
     cy.get('[data-cy="course-gamification"]').should(
       'have.attr',
       'data-state',
@@ -504,17 +653,29 @@ describe('Test course creation and editing functionalities', function () {
       'checked'
     )
 
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').type(
-      `${currentYear + 3}-01-01`
+    // set group creation deadline to 8 months in the future (is initialized with the course end date)
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'contain',
+      get15thOfFutureMonth(10)
     )
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
+    cy.get('[data-cy="group-creation-deadline-previous-month"]')
+      .realClick()
+      .wait(100)
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="group-creation-deadline-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
-    cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
-    cy.get('[data-cy="group-creation-deadline"]').type(
-      `${currentYear + 1}-06-01`
+
+    // verify that the correct date is selected
+    cy.get('[data-cy="group-creation-deadline"]').should(
+      'contain',
+      get15thOfFutureMonth(8)
     )
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="max-group-size"]').should('have.value', '5')
     cy.get('[data-cy="max-group-size"]').clear().type('10')
@@ -526,10 +687,9 @@ describe('Test course creation and editing functionalities', function () {
 
     // check if the group creation deadline has been set correctly
     cy.get('[data-cy="course-settings-button"]').click()
-    cy.get('[data-cy="group-creation-deadline-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').should(
-      'have.value',
-      `${currentYear + 1}-06-01`
+      'contain',
+      get15thOfFutureMonth(8)
     )
   })
 
@@ -659,7 +819,6 @@ describe('Test course creation and editing functionalities', function () {
     cy.createMicroLearning({
       name: this.data.deletion.mlName,
       displayName: this.data.deletion.mlName,
-      description: this.data.course1.description,
       startDate: `${currentYear - 1}-01-01T02:00`,
       endDate: `${currentYear + 1}-01-01T02:00`,
       courseName: this.data.deletion.courseName,
@@ -1213,12 +1372,24 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').type(
       this.data.sharing.courseDisplayName
     )
-    cy.get('[data-cy="course-start-date-button"]').click()
-    cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-01-01`)
+
+    // move the course date 4 years into the future
+    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
+
+    // skip to 48 months in the future (default is already 6 months)
+    cy.wrap(Array(48 - 6).fill(null)).each(() => {
+      cy.get('[data-cy="course-end-date-next-month"]').realClick().wait(100)
+    })
+    cy.get('[data-cy="course-end-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
-    cy.get('[data-cy="course-end-date-button"]').click()
-    cy.get('[data-cy="course-end-date"]').type(`${currentYear + 4}-01-01`)
-    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="course-end-date"]').should(
+      'contain',
+      get15thOfFutureMonth(48)
+    ) // verify that the correct date is selected
+
     cy.get('[data-cy="max-group-size"]').click().type('6')
     cy.get('[data-cy="preferred-group-size"]').click().type('4')
     cy.get('[data-cy="manipulate-course-submit"]').click()
