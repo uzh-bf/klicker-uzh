@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. This file together with @PLANNING.md and @TODO.md should provide a complete snapshot of the project and the tasks to be performed with Claude.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. This file together with @project/PLANNING.md and specific TODO files should provide a complete snapshot of the project and the tasks to be performed with Claude.
 
 ## Repository Overview
 
@@ -10,11 +10,11 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 
 - **Frontend PWA**: Student frontend for live quizzes, microlearnings, practice quizzes, and leaderboards
 - **Frontend Manage**: Lecturer frontend for question management, activity management, course management, and analytics (@apps/frontend-manage/CLAUDE.md)
-- **Frontend Control**: Controller frontend for managing live quizzes from mobile devices
-- **Frontend Authentication**: Authentication frontend for Edu-ID accounts and delegated logins
-- **Backend Docker**: Main backend service
-- **Backend Responses**: Service that handles incoming student responses during live quizzes
-- **Backend Response Processor**: Processes queued elements with scoring and experience points calculations
+- **Frontend Control**: Controller frontend for managing live quizzes from mobile devices (@apps/frontend-control/CLAUDE.md)
+- **Frontend Authentication**: Authentication frontend for Edu-ID accounts and delegated logins (@apps/auth/CLAUDE.md)
+- **Backend Docker**: Main backend service (@apps/backend-docker/CLAUDE.md)
+- **Backend Responses**: Service that handles incoming student responses during live quizzes (@apps/func-incoming-responses/CLAUDE.md)
+- **Backend Response Processor**: Processes queued elements with scoring and experience points calculations (@apps/func-response-processor/CLAUDE.md)
 
 ### Shared Packages
 
@@ -28,9 +28,25 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 - **shared-components**: Common React components shared between frontends (@packages/shared-components/CLAUDE.md)
 - **markdown**: React component for rendering markdown strings (@packages/markdown/CLAUDE.md)
 
+### Additional Components
+
+- **Analytics Service**: Python-based analytics computation service (@apps/analytics)
+- **Office Add-in**: PowerPoint integration for catalyst users (@apps/office-addin)
+- **LTI Service**: Standalone LTI service for course system integration (@apps/lti)
+- **Documentation**: Project documentation and landing page (@apps/docs)
+
 ### Testing
 
 - **Cypress**: End-to-end tests for all applications (@cypress/CLAUDE.md)
+
+## Monorepo Structure
+
+This project uses a monorepo structure managed with:
+- **pnpm**: Package manager with workspace support
+- **Turbo**: Build orchestration and caching
+- **Syncpack**: Dependency version synchronization
+- **Husky**: Git hooks for code quality
+- **Standard Version**: Automated versioning and changelog
 
 ## Development Workflow
 
@@ -124,10 +140,29 @@ KlickerUZH follows a distributed architecture with separate frontend and backend
 
 ### Key Technology Stack
 
-- **Frontend**: Next.js, React, TailwindCSS
-- **Backend**: Node.js, GraphQL, Redis
-- **Database**: PostgreSQL with Prisma ORM
-- **Infrastructure**: Docker, Kubernetes for deployment
+- **Frontend**: 
+  - Next.js 15 with Pages Router
+  - React 18 with functional components
+  - TailwindCSS with @uzh-bf/design-system
+  - Apollo Client for GraphQL
+  - Formik & Yup for forms
+  - next-intl for i18n (en/de)
+  - PWA capabilities with @ducanh2912/next-pwa
+- **Backend**: 
+  - Node.js with TypeScript
+  - GraphQL with Pothos schema builder
+  - Redis for caching and pub/sub
+  - Azure Functions for response handling
+  - Bull for job queuing
+- **Database**: 
+  - PostgreSQL 15+ with Prisma ORM
+  - Shadow database for migrations
+  - JSON fields for flexible data
+- **Infrastructure**: 
+  - Docker containers
+  - Kubernetes (Helm charts)
+  - Doppler for secrets management
+  - Traefik for reverse proxy
 
 ### Database Structure
 
@@ -184,16 +219,40 @@ The database is organized around these main entities:
   - Connected to different object types
   - Records user who made the change
 
-### Object Activity (Current Branch)
+### Current Branch Development
 
-The current branch (`object-changelog`) is implementing a change tracking system for elements and other objects in the application. This allows tracking changes made to objects and providing comments/messages about these changes.
+The current branch (`v3`) is the main development branch for KlickerUZH v3.0. Recent development includes:
 
-Key features:
+- Answer collection enhancements (duplication, direct import from catalog)
+- Object activity logging system via `ActivityLogEntry` model
+- Improved permission management for shared resources
+- Enhanced catalog functionality for public answer collections
 
-- `ActivityLogEntry` model with types MESSAGE and MODIFICATION
-- Support for elements, courses, quizzes, and other object types through polymorphic relations
-- Recording of message content, user, and timestamps
-- GraphQL operations for retrieving and adding activity log entries
+### Development Environment Ports
+
+- **3000**: Backend GraphQL API
+- **3001**: Frontend PWA (Student)
+- **3002**: Frontend Manage (Lecturer)
+- **3003**: Frontend Control (Mobile Controller)
+- **3010**: Authentication Service
+- **5432**: PostgreSQL Database
+- **6379**: Redis Cache
+- **7245**: Backend Response Processor
+- **7246**: Backend Incoming Responses
+
+### GraphQL Architecture
+
+The GraphQL API uses:
+- **Pothos**: Code-first schema builder with TypeScript
+- **Plugins**: ScopeAuth, Prisma, Zod validation, Directives
+- **Authentication**: JWT tokens with role-based access (USER, PARTICIPANT, ADMIN)
+- **Permissions**: Multi-level system (READ, WRITE, EXECUTE, ADMIN, OWNER)
+- **Subscriptions**: Real-time updates via WebSockets
+- **Operations**: Organized in `packages/graphql/src/graphql/ops/` with naming conventions:
+  - `Q` prefix for queries
+  - `M` prefix for mutations
+  - `F` prefix for fragments
+  - `S` prefix for subscriptions
 
 ## Common Development Tasks
 
@@ -277,19 +336,59 @@ When creating a new React component, follow the existing patterns in the corresp
    - Document JSON fields with comments (e.g., `/// [PrismaElementOptions]`)
    - Follow the migration workflow when making changes
 
+### CODING PROTOCOL
+
+- If anything is unclear, ask for clarification
+- Write the absolute minimum code required (no unnecessary or extra props)
+- No sweeping changes
+- No unrelated edits - focus on just the task you're on
+- Make code precise, modular, testable
+- Don’t break existing functionality
+- If I need to do anything (e.g. config or manual testing), tell me clearly
+
+### AI-Based Development Workflow
+
+This project uses a structured epic-based development approach:
+
+**Planning Files**:
+
+- `@project/PLANNING.md`: Contains a high-level overview and details on future epics with descriptions, goals, and dependencies
+- `@project/TODO-EPIC-x.md`: Detailed tasks for specific epics and features (created as needed). Each task should:
+  - Be small + testable
+  - Have a clear start + end
+  - Focus on one concern
+
+**Workflow**:
+
+1. Work epic by epic, potentially overlapping when dependencies allow
+2. Track progress through TODO files, updated regularly by both humans and AI agents
+3. `@project/PLANNING.md` updated periodically when high-level changes occur or epics complete
+4. Tasks marked complete in TODO files as work progresses
+
+**Epic Structure**:
+
+- Each epic has clear description, goals, and dependencies to other epics
+- Detailed implementation tasks broken down in separate TODO files
+- Continuous progress tracking ensures nothing is lost between sessions
+
 ### 🔄 Project Awareness & Context
 
-- Always read PLANNING.md at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
-- Check TASK.md before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
-- Use consistent naming conventions, file structure, and architecture patterns as described in PLANNING.md.
-- After you finish working on a task, always review and, if necessary, update TASK.md regarding the task you have worked on and, if applicable, regarding new tasks that might have come up during your work on the current task.
-- Regularly update the "Implementation Status" in PLANNING.md to reflect the current overall summarized state of the project.
-- When asked to prepare a prompt for the next conversation, always focus on the next task and provide a draft of the instructions that should be given to this agent (including the goal, instructions to review PLANNING.md and TASK.md, and the task description of the subsequent specific task).
-- When you complete a task, always provide a summary of your work as well as an outlook on the next task according to PLANNING.md and TASK.md. Assume that the next task will be worked on in a new conversation.
+- Always read @project/PLANNING.md at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
+- Check the specific @project/TODO-EPIC-x.md file before starting a new epic/task. If the task isn’t listed, add it with a brief description and today's date.
+- Use consistent naming conventions, file structure, and architecture patterns as described in @project/PLANNING.md.
+- After you finish working on a task, always review and, if necessary, update the specific @project/TODO-EPIC-x.md file regarding the task you have worked on and, if applicable, regarding new tasks that might have come up during your work on the current task.
+- Regularly update the "Implementation Status" in @project/PLANNING.md to reflect the current overall summarized state of the project.
+- When asked to prepare a prompt for the next conversation, always focus on the next task and provide a draft of the instructions that should be given to this agent (including the goal, instructions to review @project/PLANNING.md and the specific @project/TODO-EPIC-x.md file, and the task description of the subsequent specific task).
+- When you complete a task, always provide a summary of your work as well as an outlook on the next task according to @project/PLANNING.md and the specific @project/TODO-EPIC-x.md file. Assume that the next task will be worked on in a new conversation.
 - ALWAYS continue working until you finish your task. Do not stop prematurely and wait for the user to tell you to continue.
 - Ask me questions to further clarify the task if necessary.
 - URGENT: When using the view_file tool to analyze a file, ALWAYS read the maximum lines per call whenever possible to minimize the number of tool calls and reduce costs. Only make additional calls when necessary to understand the complete context and if the file is longer than the maximum number of lines. NEVER do incremental look ups of the same file if not necessary.
 - When you want to view a complete file, always use a `cat` command in the terminal. If you want to find specific code in a file, use `cat` combined with `grep`.
+
+### ✅ Task Completion
+
+- URGENT: Mark completed tasks in the specific @project/TODO-EPIC-x.md file immediately after finishing them. Do not wait until the end of the conversation or until the user tells you to, otherwise it might be forgotten.
+- URGENT: Add new sub-tasks or TODOs discovered during development to the specific @project/TODO-EPIC-x.md file under a “Discovered During Work” section. If not absolutely necessary, do not deviate from your task to quickly do another task, just add it to the specific @project/TODO-EPIC-x.md file for later implementation and let the user know.
 
 ### 🧱 Code Structure & Modularity
 
@@ -326,11 +425,6 @@ When using Python:
 - 1 test for expected use
 - 1 edge case
 - 1 failure case
-
-### ✅ Task Completion
-
-- URGENT: Mark completed tasks in TASK.md immediately after finishing them. Do not wait until the end of the conversation or until the user tells you to, otherwise it might be forgotten.
-- URGENT: Add new sub-tasks or TODOs discovered during development to TASK.md under a “Discovered During Work” section. If not absolutely necessary, do not deviate from your task to quickly do another task, just add it to the TASK.md for later implementation and let the user know.
 
 ### 📎 Style & Conventions
 

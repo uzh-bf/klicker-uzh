@@ -12,22 +12,27 @@ KlickerUZH v3.0 uses multiple different web applications and services, which com
 
 - [Frontend PWA](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-pwa) is the student frontend of KlickerUZH, which contains the student views for live quizzes, microlearnings, practice quizzes, leaderboards and more.
 - [Frontend Manage](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-manage) is the lecturer frontend of KlickerUZH, which provides all the functionalities that lecturers need, including but not limited to question management, activity management, course management and analytics.
-- [Frontend Control](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-control) is a minimal controller frontend, which allows to control live quizzes from mobile devices in an optimized layout. Soon, this app will also be available as a [PowerPoint integration](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/office-addin) (work in progress) for catalyst users.
-- [Fontend Authentication](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/auth) is the authentication frontend of KlickerUZH, providing login functionalities through Edu-ID accounts and delegated logins to the manage frontend.
+- [Frontend Control](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-control) is a minimal controller frontend, which allows to control live quizzes from mobile devices in an optimized layout.
+- [Frontend Authentication](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/auth) is the authentication frontend of KlickerUZH, providing login functionalities through Edu-ID accounts and delegated logins to the manage frontend.
 - [Backend Docker](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/backend-docker) is the main backend service of KlickerUZH.
 - [Backend Responses](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-incoming-responses) is a service that handles incoming student responses during a live quizzes and puts them into an Azure queue for improved load handling.
 - [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores and experience points, updating the cache, etc.
 
-In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts for Helm/Kubernetes. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added until the end of the year.
+In addition to the key application components, this repository also includes:
 
-- [Documentation and Website](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/docs) (subfolder)
-- [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v3/deploy) (subfolder)
+- [Analytics Service](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/analytics): Python-based service for computing analytics and performance metrics.
+- [Office Add-in](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/office-addin): PowerPoint add-in that allows embedding evaluations on slides.
+- [LTI Service](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/lti): Standalone service for Learning Tools Interoperability.
+- [Documentation and Website](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/docs): Landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/).
+- [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v3/deploy): Helm charts and Kubernetes deployment scripts.
 
 To share code more easily between different services, we added new packages to the [Package Directory](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages) with the following components:
 
 - [Prisma](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/prisma): The prisma package contains the SQL database schema as well as migration scripts between different minor versions of KlickerUZH.
 - [GraphQL](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/graphql): The GraphQL package contains the complete GraphQL schema and all resolvers for the KlickerUZH backend, as well as all business logic for provided services. For consistent typing, Pothos GraphQL and an auto-generated schema are used.
 - [Grading](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/grading): The grading package provides the grading logic that is used to assign scores and experience points to participants and groups in gamified live quizzes, practice quizzes, microlearnings and other KlickerUZH elements.
+- [Types](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/types): Type definitions shared across packages for consistency.
+- [Utilities](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/util): Common utility functions used throughout the application.
 - [LTI](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/lti): The LTI package contains logic to offer automatic sign ins for students through the Learning Tools Interoperability "LTI" standard (for OpenOLAT and Moodle integration).
 - [Internationalization](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/i18n): The i18n package provides internationalized messages for all KlickerUZH services.
 - [Shared Components](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages/shared-components): The `shared-components` package is configured as an internal turborepo package, mainly providing the possibility to share React components between the frontends and reduce code duplication.
@@ -47,6 +52,15 @@ The following resources might be of special interest to you:
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
 - [Roadmap](https://klicker-uzh.feedbear.com)
+
+## Technology Stack
+
+KlickerUZH is built using modern web technologies:
+
+- **Frontend**: Next.js 15 (Pages Router), React 18, TailwindCSS, Apollo Client, PWA capabilities
+- **Backend**: Node.js, GraphQL (Pothos), Redis, Azure Functions
+- **Database**: PostgreSQL 15+ with Prisma ORM
+- **Infrastructure**: Docker, Kubernetes, pnpm workspaces, Turbo
 
 ## Deployment
 
