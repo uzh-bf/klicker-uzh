@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 describe('Feature test for activity logs', function () {
   before(() => {
@@ -446,8 +447,20 @@ describe('Feature test for activity logs', function () {
     cy.createMicroLearning({
       name: this.data.microLearning.name,
       displayName: this.data.microLearning.displayName,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-01-01T02:00`,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       courseName: this.data.seededCourse,
       stacks: [{ elements: [this.data.SCML.title] }],
     })
@@ -457,12 +470,20 @@ describe('Feature test for activity logs', function () {
       name: this.data.groupActivity.name,
       displayName: this.data.groupActivity.displayName,
       courseName: this.data.seededCourse,
-      scheduledStartDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 16),
-      scheduledEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 16),
+      scheduledStartDate: {
+        monthDelta: -2,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: getDatetimeValidationString(-1, '10') + ', 12:30',
+      }, // 1 month in the past at 12:30
+      scheduledEndDate: {
+        monthDelta: 1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: getDatetimeValidationString(2, '20') + ', 14:00',
+      }, // 2 months in the future at 14:00
       task: 'TASK',
       clues: [
         {

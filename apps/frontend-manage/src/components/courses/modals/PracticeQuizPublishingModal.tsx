@@ -7,7 +7,7 @@ import {
   GetUserActivitiesDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDateField, H3, Modal } from '@uzh-bf/design-system'
+import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -46,7 +46,10 @@ function PracticeQuizPublishingModal({
         <div className="border-uzh-grey-80 w-full border-b border-solid pb-3 md:w-1/2 md:border-b-0 md:border-r md:pr-5">
           <div className="mb-2 flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faUserGroup} />
-            <H3 className={{ root: 'mb-0' }}>
+            <H3
+              className={{ root: 'mb-0' }}
+              data={{ cy: 'publish-immediately-header' }}
+            >
               {t('manage.course.practiceQuizPublishImmediately')}
             </H3>
           </div>
@@ -122,16 +125,25 @@ function PracticeQuizPublishingModal({
             {({ isValid }) => {
               return (
                 <Form>
-                  <FormikDateField
+                  <FormikDatetimePicker
                     required
-                    label={t('shared.generic.availableFrom')}
                     name="availableFrom"
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      error: 'z-20',
+                    label={t('shared.generic.availableFrom')}
+                    placeholder={t('shared.generic.startDate')}
+                    granularity="minute"
+                    className={{ tooltip: 'z-20' }}
+                    dataTrigger={{ cy: 'practice-quiz-available-from' }}
+                    dataCalendar={{
+                      cy: 'practice-quiz-available-from-calendar',
                     }}
-                    data={{ cy: 'practice-quiz-available-from' }}
+                    dataPreviousMonth={{
+                      cy: 'practice-quiz-available-from-previous-month',
+                    }}
+                    dataNextMonth={{
+                      cy: 'practice-quiz-available-from-next-month',
+                    }}
+                    dataHours={{ cy: 'practice-quiz-available-from-hours' }}
+                    dataMinutes={{ cy: 'practice-quiz-available-from-minutes' }}
                   />
                   <Button
                     primary

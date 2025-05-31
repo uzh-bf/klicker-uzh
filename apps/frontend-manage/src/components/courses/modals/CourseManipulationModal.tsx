@@ -161,13 +161,22 @@ function CourseManipulationModal({
   })
 
   // convert all dates back to local time
+  // default start date is the first day of the next month (end date + 6 months)
   const today = new Date()
   const startDateInit = initialValues?.startDate
     ? dayjs(initialValues?.startDate).local().toDate()
-    : new Date()
+    : new Date(
+        new Date(today.getFullYear(), today.getMonth(), 1).setMonth(
+          today.getMonth() + 1
+        )
+      )
   const endDateInit = initialValues?.endDate
     ? dayjs(initialValues?.endDate).local().toDate()
-    : new Date(today.setMonth(today.getMonth() + 6))
+    : new Date(
+        new Date(today.getFullYear(), today.getMonth(), 1).setMonth(
+          today.getMonth() + 7
+        )
+      )
   const groupDeadlineDateInit = initialValues?.groupDeadlineDate
     ? dayjs(initialValues?.groupDeadlineDate).local().toDate()
     : endDateInit

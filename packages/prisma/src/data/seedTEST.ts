@@ -236,6 +236,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  const currentYear = new Date().getFullYear()
   const courseTest = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST,
@@ -246,8 +247,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
-      startDate: new Date('2020-01-01T00:00'),
-      endDate: new Date('2050-01-01T23:59'),
+      startDate: new Date(`${currentYear - 1}-01-01T00:00`),
+      endDate: new Date(`${currentYear + 10}-01-01T23:59`),
       isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2021-01-01T00:01'),
       maxGroupSize: 5,

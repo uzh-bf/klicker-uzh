@@ -1,13 +1,20 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
-// dates - hard-coded in test due to dependency on current year
-const currentYear = new Date().getFullYear()
-const runningStartOLD = `${currentYear - 1}-01-01T02:00`
-const runningEndOLD = `${currentYear}-12-31T18:00`
-const runningStart = `${currentYear - 2}-01-01T02:00`
-const runningEnd = `${currentYear + 1}-12-31T18:00`
-const runningEndExtended = `${currentYear + 5}-12-31T18:00`
-const runningExtendedText = `End: 31.12.${currentYear + 5}, 18:00`
+// first start date: 2 months in the past at 12:30
+const startDate1 = getDatetimeValidationString(-2, '10') + ', 12:30'
+
+// first end date: 2 months in the future at 14:00
+const endDate1 = getDatetimeValidationString(2, '20') + ', 14:00'
+
+// second start date: 3 month in the past at 10:45
+const startDate2 = getDatetimeValidationString(-3, '15') + ', 10:45'
+
+// second end date: 5 month in the future at 16:00
+const endDate2 = getDatetimeValidationString(5, '15') + ', 16:00'
+
+// exention date: 8 months in the future at 18:50
+const extensionDate = getDatetimeValidationString(8, '15') + ', 18:50'
 
 // ? All microlearning creation steps are bundled in the beginning of the test, since reloading the page
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
@@ -179,8 +186,26 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
-    cy.get('[data-cy="select-start-date"]').click().type(runningStartOLD)
-    cy.get('[data-cy="select-end-date"]').click().type(runningEndOLD)
+
+    // set the start date to 2 months in the past at 12:30 (default is start of next month)
+    cy.setDatetime('select-start-date', 'availability-section-header', {
+      monthDelta: -3,
+      day: 10,
+      hour: 12,
+      minute: 30,
+      validation: startDate1,
+    })
+
+    // set the end date to 2 months in the future at 14:00 (default is start of next month)
+    cy.setDatetime('select-end-date', 'availability-section-header', {
+      monthDelta: 1,
+      day: 20,
+      hour: 14,
+      minute: 0,
+      validation: endDate1,
+    })
+
+    // select multiplier
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
@@ -200,12 +225,8 @@ describe('Different microlearning workflows', function () {
     cy.createStacks({
       stacks: [
         // FT questions should also be accepted without sample solution
-        {
-          elements: [this.data.SCML.title, this.data.FTML.title],
-        },
-        {
-          elements: [this.data.FC.title, this.data.CT.title],
-        },
+        { elements: [this.data.SCML.title, this.data.FTML.title] },
+        { elements: [this.data.FC.title, this.data.CT.title] },
       ],
     })
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
@@ -214,9 +235,7 @@ describe('Different microlearning workflows', function () {
     const dataTransfer = new DataTransfer()
     cy.get(`[data-cy="element-item-${this.data.SC.title}"]`)
       .contains(this.data.SC.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
+      .trigger('dragstart', { dataTransfer })
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer,
     })
@@ -341,14 +360,28 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
-    cy.get('[data-cy="select-start-date"]')
-      .click()
-      .should('have.value', runningStartOLD)
-      .type(runningStart)
-    cy.get('[data-cy="select-end-date"]')
-      .click()
-      .should('have.value', runningEndOLD)
-      .type(runningEnd)
+
+    // check, change and verify the start date
+    // (before: 2 months in the past at 12:30, new: 3 months in the past at 10:45)
+    cy.setDatetime('select-start-date', 'availability-section-header', {
+      monthDelta: -1,
+      day: 15,
+      hour: 10,
+      minute: 45,
+      validation: startDate2,
+    })
+
+    // check, change and verify the end date
+    // (before: 2 months in the future at 14:00, new: 5 months in the future at 16:00)
+    cy.setDatetime('select-end-date', 'availability-section-header', {
+      monthDelta: 3,
+      day: 15,
+      hour: 16,
+      minute: 0,
+      validation: endDate2,
+    })
+
+    // update the activity multiplier
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
@@ -436,12 +469,8 @@ describe('Different microlearning workflows', function () {
       this.data.running.descriptionNew
     )
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-start-date"]')
-      .click()
-      .should('have.value', runningStart)
-    cy.get('[data-cy="select-end-date"]')
-      .click()
-      .should('have.value', runningEnd)
+    cy.get('[data-cy="select-start-date"]').should('contain', startDate2)
+    cy.get('[data-cy="select-end-date"]').should('contain', endDate2)
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="element-0-stack-0"]').contains(this.data.SCML.title)
@@ -510,12 +539,8 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
     cy.get('[data-cy="select-course"]').contains(this.data.course)
-    cy.get('[data-cy="select-start-date"]')
-      .click()
-      .should('have.value', runningStart)
-    cy.get('[data-cy="select-end-date"]')
-      .click()
-      .should('have.value', runningEnd)
+    cy.get('[data-cy="select-start-date"]').should('contain', startDate2)
+    cy.get('[data-cy="select-end-date"]').should('contain', endDate2)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier4)
@@ -561,8 +586,20 @@ describe('Different microlearning workflows', function () {
       description: this.data.future.description,
       courseName: this.data.course,
       multiplier: messages.manage.activityWizard.multiplier2,
-      startDate: `${currentYear + 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-12-31T18:00`,
+      startDate: {
+        monthDelta: 2,
+        day: 11,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(3, '11') + ', 02:00',
+      }, // 3 months in the future at 2:00
+      endDate: {
+        monthDelta: 6,
+        day: 20,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(7, '20') + ', 18:00',
+      }, // 7 months in the future at 18:00
       stacks: [{ elements: [this.data.SCML.title] }],
     })
 
@@ -581,8 +618,20 @@ describe('Different microlearning workflows', function () {
       name: this.data.completed.name,
       displayName: this.data.completed.displayName,
       courseName: this.data.course,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-12-31T18:00`,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       stacks: [
         {
           elements: [
@@ -710,7 +759,14 @@ describe('Different microlearning workflows', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.get('[data-cy="extend-activity-date"]').click().type(runningEndExtended)
+    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
+      monthDelta: 3,
+      day: 15,
+      hour: 18,
+      minute: 50,
+      validation: extensionDate,
+    })
+
     cy.get('[data-cy="extend-activity-confirm"]').click()
 
     // check that changing the date to the past does not work
@@ -721,9 +777,13 @@ describe('Different microlearning workflows', function () {
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.get('[data-cy="extend-activity-date"]')
-      .click()
-      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
+      monthDelta: -12,
+      day: 15,
+      hour: 12,
+      minute: 0,
+      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
   })
@@ -1330,8 +1390,21 @@ describe('Different microlearning workflows', function () {
       name: MLName,
       displayName: MLDisplayName,
       courseName: this.data.course,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-12-31T18:00`,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
+
       stacks: [
         {
           elements: [this.data.SCML.title, this.data.MCML.title],
@@ -1452,8 +1525,20 @@ describe('Different microlearning workflows', function () {
     cy.createMicroLearning({
       name: this.data.manipulation.name,
       displayName: this.data.manipulation.displayName,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-01-01T02:00`,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       courseName: this.data.manipulation.course,
       stacks: [{ elements: [this.data.SEML2.title] }],
     })
@@ -2697,12 +2782,20 @@ describe('Different microlearning workflows', function () {
         name: this.data.sharing[`micro${i}`],
         displayName: this.data.sharing[`micro${i}Display`],
         courseName: this.data.seededCourse,
-        startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 16),
-        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 16),
+        startDate: {
+          monthDelta: -3,
+          day: 16,
+          hour: 2,
+          minute: 0,
+          validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+        }, // 2 months in the past at 2:00
+        endDate: {
+          monthDelta: 3,
+          day: 14,
+          hour: 18,
+          minute: 0,
+          validation: getDatetimeValidationString(4, '14') + ', 18:00',
+        }, // 4 months in the future at 18:00
         stacks: [
           {
             elements: [

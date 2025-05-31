@@ -207,8 +207,17 @@ function GroupActivityWizard({
       description: '',
       elements: [],
     },
-    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
+    startDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(12, 'hours')
+      .toDate(),
+    endDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(7, 'day')
+      .add(12, 'hours')
+      .toDate(),
     multiplier: '1',
     courseId: undefined,
     courseStartDate: undefined,
@@ -273,12 +282,10 @@ function GroupActivityWizard({
       : formDefaultValues.stack,
 
     startDate: initialValues?.scheduledStartAt
-      ? dayjs(initialValues?.scheduledStartAt)
-          .local()
-          .format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledStartAt).local().toDate()
       : formDefaultValues.startDate,
     endDate: initialValues?.scheduledEndAt
-      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledEndAt).local().toDate()
       : formDefaultValues.endDate,
     courseStartDate: formDefaultValues.courseStartDate,
     courseEndDate: formDefaultValues.courseEndDate,

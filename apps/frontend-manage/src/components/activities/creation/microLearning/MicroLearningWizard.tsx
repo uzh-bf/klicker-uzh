@@ -185,8 +185,17 @@ function MicroLearningWizard({
         elements: [],
       },
     ],
-    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    startDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(12, 'hours')
+      .toDate(),
+    endDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(1, 'day')
+      .add(12, 'hours')
+      .toDate(),
     courseStartDate: undefined,
     courseEndDate: undefined,
     multiplier: '1',
@@ -245,12 +254,10 @@ function MicroLearningWizard({
         })
       : formDefaultValues.stacks,
     startDate: initialValues?.scheduledStartAt
-      ? dayjs(initialValues?.scheduledStartAt)
-          .local()
-          .format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledStartAt).local().toDate()
       : formDefaultValues.startDate,
     endDate: initialValues?.scheduledEndAt
-      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledEndAt).local().toDate()
       : formDefaultValues.endDate,
     courseStartDate: formDefaultValues.courseStartDate,
     courseEndDate: formDefaultValues.courseEndDate,

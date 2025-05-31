@@ -5,7 +5,7 @@ import {
   GetSingleCourseDocument,
   GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDateField, Modal } from '@uzh-bf/design-system'
+import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -48,11 +48,9 @@ function ExtensionModal({
       }}
     >
       <div className="space-y-3" data-cy="activity-extension-modal">
-        <div>{description}</div>
+        <div data-cy="extension-modal-description">{description}</div>
         <Formik
-          initialValues={{
-            endDate: dayjs(currentEndDate).local().format('YYYY-MM-DDTHH:mm'),
-          }}
+          initialValues={{ endDate: dayjs(currentEndDate).local().toDate() }}
           validationSchema={Yup.object().shape({
             endDate: Yup.date()
               .required()
@@ -116,12 +114,21 @@ function ExtensionModal({
         >
           {({ isValid, isSubmitting }) => (
             <Form>
-              <FormikDateField
+              <FormikDatetimePicker
                 required
                 name="endDate"
                 label={t('manage.course.newEndDate')}
                 labelType="large"
-                data={{ cy: 'extend-activity-date' }}
+                granularity="minute"
+                className={{ tooltip: 'z-20' }}
+                dataTrigger={{ cy: 'extend-activity-date' }}
+                dataCalendar={{ cy: 'extend-activity-date-calendar' }}
+                dataPreviousMonth={{
+                  cy: 'extend-activity-date-previous-month',
+                }}
+                dataNextMonth={{ cy: 'extend-activity-date-next-month' }}
+                dataHours={{ cy: 'extend-activity-date-hours' }}
+                dataMinutes={{ cy: 'extend-activity-date-minutes' }}
               />
               <div className="mt-3 flex flex-row justify-between">
                 <Button

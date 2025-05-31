@@ -1,22 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
-
-// global variable for ensured consistency with current dates
-const currentYear = new Date().getFullYear()
-
-// function to compute the 15th of a specific month in the future
-function get15thOfFutureMonth(monthsInFuture: number): string {
-  // initialize function with the first day of the current month
-  let date = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-
-  for (let i = 0; i < monthsInFuture; i++) {
-    date.setMonth(date.getMonth() + 1)
-  }
-
-  return date
-    .toLocaleString('ro-RO')
-    .split(',')[0]
-    .replace(/^\d{1,2}\./, '15.')
-}
+import { getDatetimeValidationString } from './helpers'
 
 describe('Test course creation and editing functionalities', function () {
   before(() => {
@@ -64,13 +47,9 @@ describe('Test course creation and editing functionalities', function () {
       .realClick()
       .type(this.data.course1.description)
 
-    // change the start date (2 months in the future on the 15th)
+    // change the start date (2 months in the future on the 15th - default is start of next month)
     cy.get('[data-cy="course-start-date"]').realClick()
-    cy.get('[data-cy="course-start-date-next-month"]')
-      .realClick()
-      .wait(100)
-      .realClick()
-      .wait(100)
+    cy.get('[data-cy="course-start-date-next-month"]').realClick().wait(100)
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
       .realClick()
@@ -80,16 +59,12 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
-      get15thOfFutureMonth(2)
+      getDatetimeValidationString(2, '15')
     )
 
-    // change the end date (8 months in the future on the 15th - default is at 6 months from now)
+    // change the end date (8 months in the future on the 15th - default is start + 6 months)
     cy.get('[data-cy="course-end-date"]').realClick()
-    cy.get('[data-cy="course-end-date-next-month"]')
-      .realClick()
-      .wait(100)
-      .realClick()
-      .wait(100)
+    cy.get('[data-cy="course-end-date-next-month"]').realClick().wait(100)
     cy.get('[data-cy="course-end-date-calendar"]')
       .findByText('15')
       .realClick()
@@ -99,7 +74,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(8)
+      getDatetimeValidationString(8, '15')
     )
 
     // change course color to red
@@ -164,8 +139,6 @@ describe('Test course creation and editing functionalities', function () {
       .wait(100)
       .realClick()
       .wait(100)
-      .realClick()
-      .wait(100)
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
       .realClick()
@@ -175,14 +148,12 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
-      get15thOfFutureMonth(3)
+      getDatetimeValidationString(3, '15')
     )
 
-    // change the end date (9 months in the future on the 15th - default is at 6 months from now)
+    // change the end date (9 months in the future on the 15th - default is start + 6 months)
     cy.get('[data-cy="course-end-date"]').realClick().wait(100)
     cy.get('[data-cy="course-end-date-next-month"]')
-      .realClick()
-      .wait(100)
       .realClick()
       .wait(100)
       .realClick()
@@ -196,7 +167,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(9)
+      getDatetimeValidationString(9, '15')
     )
 
     // test gamification toggle
@@ -243,7 +214,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
     // verify that the correct date is selected
-    const invalidGroupDeadline = get15thOfFutureMonth(10)
+    const invalidGroupDeadline = getDatetimeValidationString(10, '15')
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
       invalidGroupDeadline
@@ -272,7 +243,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
-      get15thOfFutureMonth(5)
+      getDatetimeValidationString(5, '15')
     )
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="max-group-size"]').click().clear().type('6')
@@ -491,7 +462,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
-      get15thOfFutureMonth(4)
+      getDatetimeValidationString(4, '15')
     )
 
     // save the changes
@@ -558,7 +529,7 @@ describe('Test course creation and editing functionalities', function () {
     // check course start date and change it (from 2 to 3 months in the future on the 15th)
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
-      get15thOfFutureMonth(2)
+      getDatetimeValidationString(2, '15')
     )
 
     cy.get('[data-cy="course-start-date"]').realClick()
@@ -572,13 +543,13 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
-      get15thOfFutureMonth(3)
+      getDatetimeValidationString(3, '15')
     )
 
     // check course end date and change it (from 8 to 10 months in the future on the 15th)
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(8)
+      getDatetimeValidationString(8, '15')
     )
 
     cy.get('[data-cy="course-end-date"]').realClick()
@@ -596,7 +567,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(10)
+      getDatetimeValidationString(10, '15')
     )
 
     // enable gamification for the created course and check that it worked (switch active and disabled)
@@ -625,11 +596,11 @@ describe('Test course creation and editing functionalities', function () {
     )
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
-      get15thOfFutureMonth(3)
+      getDatetimeValidationString(3, '15')
     )
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(10)
+      getDatetimeValidationString(10, '15')
     )
     cy.get('[data-cy="course-gamification"]').should(
       'have.attr',
@@ -656,7 +627,7 @@ describe('Test course creation and editing functionalities', function () {
     // set group creation deadline to 8 months in the future (is initialized with the course end date)
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
-      get15thOfFutureMonth(10)
+      getDatetimeValidationString(10, '15')
     )
     cy.get('[data-cy="group-creation-deadline"]').realClick()
     cy.get('[data-cy="group-creation-deadline-previous-month"]')
@@ -673,7 +644,7 @@ describe('Test course creation and editing functionalities', function () {
     // verify that the correct date is selected
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
-      get15thOfFutureMonth(8)
+      getDatetimeValidationString(8, '15')
     )
 
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
@@ -689,7 +660,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-settings-button"]').click()
     cy.get('[data-cy="group-creation-deadline"]').should(
       'contain',
-      get15thOfFutureMonth(8)
+      getDatetimeValidationString(8, '15')
     )
   })
 
@@ -819,8 +790,20 @@ describe('Test course creation and editing functionalities', function () {
     cy.createMicroLearning({
       name: this.data.deletion.mlName,
       displayName: this.data.deletion.mlName,
-      startDate: `${currentYear - 1}-01-01T02:00`,
-      endDate: `${currentYear + 1}-01-01T02:00`,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       courseName: this.data.deletion.courseName,
       stacks: [{ elements: [this.data.deletion.qTitle] }],
     })
@@ -1373,11 +1356,27 @@ describe('Test course creation and editing functionalities', function () {
       this.data.sharing.courseDisplayName
     )
 
-    // move the course date 4 years into the future
-    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
+    // set course start date one year into the past
+    cy.get('[data-cy="course-start-date"]').realClick().wait(100)
+    cy.wrap(Array(13).fill(null)).each(() => {
+      cy.get('[data-cy="course-start-date-previous-month"]')
+        .realClick()
+        .wait(100)
+    })
+    cy.get('[data-cy="course-start-date-calendar"]')
+      .findByText('15')
+      .realClick()
+      .wait(100)
+    cy.get('[data-cy="course-name"]').click() // click outside to save the value
+    cy.get('[data-cy="course-start-date"]').should(
+      'contain',
+      getDatetimeValidationString(-12, '15')
+    ) // verify that the correct date is selected
 
-    // skip to 48 months in the future (default is already 6 months)
-    cy.wrap(Array(48 - 6).fill(null)).each(() => {
+    // move the course date 4 years into the future
+    // skip to 48 months in the future (default is already first day of next month + 6 months)
+    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
+    cy.wrap(Array(48 - 7).fill(null)).each(() => {
       cy.get('[data-cy="course-end-date-next-month"]').realClick().wait(100)
     })
     cy.get('[data-cy="course-end-date-calendar"]')
@@ -1387,7 +1386,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
     cy.get('[data-cy="course-end-date"]').should(
       'contain',
-      get15thOfFutureMonth(48)
+      getDatetimeValidationString(48, '15')
     ) // verify that the correct date is selected
 
     cy.get('[data-cy="max-group-size"]').click().type('6')
@@ -1469,8 +1468,20 @@ describe('Test course creation and editing functionalities', function () {
     cy.createMicroLearning({
       name: this.data.sharing.microLearning,
       displayName: this.data.sharing.microLearning,
-      startDate: `${currentYear + 2}-01-01T02:00`,
-      endDate: `${currentYear + 3}-01-01T02:00`,
+      startDate: {
+        monthDelta: 11,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(12, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 23,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(24, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       courseName: this.data.sharing.course,
       stacks: [{ elements: [this.data.SEML.title] }],
     })
@@ -1482,8 +1493,20 @@ describe('Test course creation and editing functionalities', function () {
       displayName: this.data.sharing.groupActivity,
       task: 'Task Description',
       courseName: this.data.sharing.course,
-      scheduledStartDate: `${currentYear + 2}-01-01T02:00`,
-      scheduledEndDate: `${currentYear + 3}-01-01T02:00`,
+      scheduledStartDate: {
+        monthDelta: 11,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(12, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      scheduledEndDate: {
+        monthDelta: 23,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(24, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       clues: [
         {
           type: 'text',
