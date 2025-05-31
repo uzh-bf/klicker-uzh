@@ -1,9 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
-
-// compute current year dynamically to ensure continued functionality
-const currentYear = new Date().getFullYear()
-const mlStartDate = `${currentYear}-01-01T02:00`
-const mlEndDate = `${currentYear}-12-31T18:00`
+import { getDatetimeValidationString } from './helpers'
 
 describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', function () {
   before(() => {
@@ -68,8 +64,20 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       name: this.data.ML.name,
       displayName: this.data.ML.displayName,
       courseName: this.data.course,
-      startDate: mlStartDate,
-      endDate: mlEndDate,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
       stacks: [
         { elements: [this.data.question1.title, this.data.question2.title] },
       ],

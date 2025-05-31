@@ -1,15 +1,26 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
-// set dates dynamically to ensure continued functionality
-const currentYear = new Date().getFullYear()
-const activityStart = `${currentYear + 1}-01-01T02:00`
-const activityEnd = `${currentYear + 1}-12-31T18:00`
-const runningActivityStart = `${currentYear - 1}-01-01T02:00`
-const runningActivityEnd = `${currentYear + 1}-12-31T18:00`
-const extendedActivityEnd = `${currentYear + 2}-12-31T18:00`
-const extendedActivityEndText = `31.12.${currentYear + 2}, 18:00`
-const synchronousActivityStart = `${currentYear + 1}-01-01T02:00`
-const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
+// first start date: 2 months in the future at 12:30
+const startDate1 = getDatetimeValidationString(2, '10') + ', 12:30'
+
+// first end date: 3 months in the future at 14:00
+const endDate1 = getDatetimeValidationString(3, '20') + ', 14:00'
+
+// start date of running activity: 1 month in the past at 12:30
+const runningStartDate = getDatetimeValidationString(-1, '10') + ', 12:30'
+
+// end date of running activity: 2 months in the future at 14:00
+const runningEndDate = getDatetimeValidationString(2, '20') + ', 14:00'
+
+// exention date: 8 months in the future at 18:50
+const extensionDate = getDatetimeValidationString(8, '15') + ', 18:50'
+
+// synchronous activity start date: 2 months in the future at 12:30
+const synchronousStartDate = getDatetimeValidationString(2, '10') + ', 12:30'
+
+// synchronous activity end date: 3 months in the future at 14:00
+const synchronousEndDate = getDatetimeValidationString(3, '20') + ', 14:00'
 
 describe('Create and solve a group activity', function () {
   before(() => {
@@ -169,8 +180,24 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
-    cy.get('[data-cy="select-start-date"]').click().type(activityStart)
-    cy.get('[data-cy="select-end-date"]').click().type(activityEnd)
+
+    // set the start date of the group activity to 2 months in the future at 12:30
+    cy.setDatetime('select-start-date', 'availability-section-header', {
+      monthDelta: 1,
+      day: 10,
+      hour: 12,
+      minute: 30,
+      validation: startDate1,
+    })
+
+    // set the end date of the group activity to 3 months in the future at 14:00
+    cy.setDatetime('select-end-date', 'availability-section-header', {
+      monthDelta: 2,
+      day: 20,
+      hour: 14,
+      minute: 0,
+      validation: endDate1,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -281,8 +308,20 @@ describe('Create and solve a group activity', function () {
       displayName: this.data.synchronous.displayName,
       task: this.data.synchronous.task,
       courseName: this.data.course,
-      scheduledStartDate: synchronousActivityStart,
-      scheduledEndDate: synchronousActivityEnd,
+      scheduledStartDate: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: synchronousStartDate,
+      }, // 2 months in the future at 12:30
+      scheduledEndDate: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: synchronousEndDate,
+      }, // 3 months in the future at 14:00
       clues: this.data.synchronous.clues,
       stack: {
         elements: [
@@ -374,8 +413,24 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
-    cy.get('[data-cy="select-start-date"]').click().type(runningActivityStart)
-    cy.get('[data-cy="select-end-date"]').click().type(runningActivityEnd)
+
+    // set the start date of the group activity to 1 month in the past at 12:30 (from previous 2 months in the future)
+    cy.setDatetime('select-start-date', 'availability-section-header', {
+      monthDelta: -3,
+      day: 10,
+      hour: 12,
+      minute: 30,
+      validation: runningStartDate,
+    })
+
+    // set the end date of the group activity to 2 months in the future at 14:00 (from previous 3 months in the future)
+    cy.setDatetime('select-end-date', 'availability-section-header', {
+      monthDelta: -1,
+      day: 20,
+      hour: 14,
+      minute: 0,
+      validation: runningEndDate,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check that clues exist and add a new one
@@ -780,7 +835,13 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.get('[data-cy="extend-activity-date"]').click().type(extendedActivityEnd)
+    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
+      monthDelta: 6,
+      day: 15,
+      hour: 18,
+      minute: 50,
+      validation: extensionDate,
+    })
     cy.get('[data-cy="extend-activity-confirm"]').click()
 
     // check that changing the date to the past does not work
@@ -788,9 +849,13 @@ describe('Create and solve a group activity', function () {
       `[data-cy="extend-group-activity-${this.data.running.name}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.get('[data-cy="extend-activity-date"]')
-      .click()
-      .type(`${currentYear - 1}-01-01T12:00`)
+    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
+      monthDelta: -12,
+      day: 15,
+      hour: 12,
+      minute: 0,
+      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
   })
@@ -2165,12 +2230,20 @@ describe('Create and solve a group activity', function () {
         name: this.data.sharing[`ga${i}`],
         displayName: this.data.sharing[`ga${i}Display`],
         courseName: this.data.seededCourse,
-        scheduledStartDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 16),
-        scheduledEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 16),
+        scheduledStartDate: {
+          monthDelta: -2,
+          day: 10,
+          hour: 12,
+          minute: 30,
+          validation: getDatetimeValidationString(-1, '10') + ', 12:30',
+        }, // 1 month in the past at 12:30
+        scheduledEndDate: {
+          monthDelta: 1,
+          day: 20,
+          hour: 14,
+          minute: 0,
+          validation: getDatetimeValidationString(2, '20') + ', 14:00',
+        }, // 2 months in the future at 14:00
         task: 'TASK',
         clues: [
           {

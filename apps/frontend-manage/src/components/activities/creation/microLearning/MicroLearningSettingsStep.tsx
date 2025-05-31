@@ -3,7 +3,7 @@ import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  FormikDateField,
+  FormikDatetimePicker,
   FormikSelectField,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -112,34 +112,45 @@ function MicroLearningSettingsStep({
               <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
                 <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faClock} />
-                  <div className="text-lg font-bold">
+                  <div
+                    className="text-lg font-bold"
+                    data-cy="availability-section-header"
+                  >
                     {t('shared.generic.availability')}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <FormikDateField
-                    label={t('shared.generic.startDate')}
+                  <FormikDatetimePicker
+                    required
                     name="startDate"
+                    label={t('shared.generic.startDate')}
                     tooltip={t('manage.activityWizard.microlearningStartDate')}
-                    required
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      tooltip: 'z-20',
+                    granularity="minute"
+                    className={{ tooltip: 'z-20' }}
+                    dataTrigger={{ cy: 'select-start-date' }}
+                    dataCalendar={{ cy: 'select-start-date-calendar' }}
+                    dataPreviousMonth={{
+                      cy: 'select-start-date-previous-month',
                     }}
-                    data={{ cy: 'select-start-date' }}
+                    dataNextMonth={{ cy: 'select-start-date-next-month' }}
+                    dataHours={{ cy: 'select-start-date-hours' }}
+                    dataMinutes={{ cy: 'select-start-date-minutes' }}
                   />
-                  <FormikDateField
-                    label={t('shared.generic.endDate')}
-                    name="endDate"
-                    tooltip={t('manage.activityWizard.microlearningEndDate')}
+                  <FormikDatetimePicker
                     required
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      tooltip: 'z-20',
+                    name="endDate"
+                    label={t('shared.generic.endDate')}
+                    tooltip={t('manage.activityWizard.microlearningEndDate')}
+                    granularity="minute"
+                    className={{ tooltip: 'z-20' }}
+                    dataTrigger={{ cy: 'select-end-date' }}
+                    dataCalendar={{ cy: 'select-end-date-calendar' }}
+                    dataPreviousMonth={{
+                      cy: 'select-end-date-previous-month',
                     }}
-                    data={{ cy: 'select-end-date' }}
+                    dataNextMonth={{ cy: 'select-end-date-next-month' }}
+                    dataHours={{ cy: 'select-end-date-hours' }}
+                    dataMinutes={{ cy: 'select-end-date-minutes' }}
                   />
                 </div>
               </div>
