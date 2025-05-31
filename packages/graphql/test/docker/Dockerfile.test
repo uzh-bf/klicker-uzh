@@ -45,7 +45,15 @@ pnpm run prisma:reset:raw -f\n\
 # Run tests\n\
 echo "Running tests..."\n\
 cd /usr/src/app/packages/graphql\n\
-DATABASE_URL=$DATABASE_URL pnpm jest --verbose --runInBand\n\
+\n\
+# Check if TEST_ARGS environment variable is set\n\
+if [ -z "$TEST_ARGS" ]; then\n\
+  echo "Running all tests..."\n\
+  DATABASE_URL=$DATABASE_URL pnpm jest --verbose --runInBand\n\
+else\n\
+  echo "Running tests with arguments: $TEST_ARGS"\n\
+  DATABASE_URL=$DATABASE_URL pnpm jest --verbose --runInBand $TEST_ARGS\n\
+fi\n\
 \n\
 TEST_EXIT=$?\n\
 echo "Tests completed with exit code: $TEST_EXIT"\n\

@@ -239,6 +239,39 @@ The package uses Jest for testing with a focus on service modules:
 - Integration tests for resolver combinations
 - Mock strategies for external dependencies
 
+### Running Tests
+
+**IMPORTANT**: Tests must always be run using the `run-tests.sh` script, as they require a PostgreSQL database and proper environment setup.
+
+```bash
+# Run all tests
+pnpm test
+
+# Run a specific test file
+pnpm test operationGeneration
+
+# Run tests matching a pattern
+pnpm test "operation|permission"
+
+# Run with Jest options
+pnpm test --coverage
+pnpm test operationGeneration --verbose
+```
+
+The test script:
+1. Spins up a PostgreSQL container using Docker Compose
+2. Builds the Prisma package and runs migrations
+3. Executes Jest tests inside a Docker container with any provided arguments
+4. Cleans up containers after completion
+
+### Test Infrastructure
+
+- Tests run in Docker containers defined in `test/docker/docker-compose.test.yml`
+- PostgreSQL 15 is used as the test database
+- Migrations are applied fresh for each test run
+- Tests run with `--runInBand` to avoid concurrency issues
+
+
 ## Schema Evolution Best Practices
 
 When evolving the GraphQL schema:
@@ -315,6 +348,70 @@ For TypeScript errors:
 2. Check nullable vs. non-nullable field definitions
 3. Verify scalar type mappings
 4. Check resolver return types match schema definitions
+
+## Permission System v3.0 - Dual-Mode Implementation
+
+The sharing service has been extended to support dual-mode operation creation alongside existing permission logic:
+
+### Operation Creation Helpers
+
+Three helper functions were added to the sharing service for non-intrusive operation creation:
+
+- `createPendingOperationsForPermission`: Creates operations for new permissions
+- `createPendingOperationsForRevoke`: Creates operations for permission revocation
+- `createPendingOperationsForUpdate`: Creates operations for permission level changes
+
+### Extended Functions
+
+The following functions create pending operations AFTER transaction completion to avoid worsening timeout issues:
+
+1. **shareObject**: Creates operations when granting permissions to users or user groups
+   - Operations created OUTSIDE the transaction after successful permission grant
+   - Separate try-catch ensures operation failures don't affect permission changes
+   
+2. **revokeObjectAccess**: Creates revoke operations when removing permissions
+   - Operations created OUTSIDE the transaction after successful revocation
+   - Maintains transaction atomicity for critical permission operations
+   
+3. **changeObjectPermissionLevel**: Creates update operations when changing permission levels
+   - Operations created OUTSIDE the transaction after successful update
+   - Preserves existing transaction boundaries
+
+### Feature Flag Control
+
+Operation creation is controlled by the `ENABLE_PENDING_OPERATIONS` environment variable:
+- When enabled, operations are created alongside existing permission logic
+- When disabled, the system operates exactly as before
+- Operations are created in try-catch blocks to prevent any impact on existing functionality
+
+### Implementation Pattern
+
+```typescript
+// CORRECT pattern - operations created OUTSIDE transaction
+const permission = await ctx.prisma.$transaction(async (prisma) => {
+  // Existing permission logic remains unchanged
+  const result = await existingLogic(args, prisma)
+  return result
+})
+
+// Operations created AFTER transaction completes
+if (shouldCreateOperations()) {
+  try {
+    await createPendingOperationsForPermission(permission, ctx.prisma)
+  } catch (error) {
+    // Log but don't fail the main operation
+    logOperation('error', 'Failed to create operations', { error })
+  }
+}
+```
+
+### Critical Design Decision
+
+**Operations MUST be created outside transactions** to avoid worsening the timeout problem:
+- Transaction handles only essential permission changes
+- Operations are queued asynchronously after transaction success
+- Failures in operation creation don't affect permission integrity
+- This separation is crucial for the v3.0 architecture to solve timeout issues
 
 ## Learning Resources
 

@@ -2,19 +2,27 @@
 
 set -e
 
+# Capture all arguments passed to the script
+TEST_ARGS="$@"
+
 echo "Stopping any existing containers..."
 docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null || true
 
 echo "Building test containers..."
 docker compose -f test/docker/docker-compose.test.yml build 
 
-# run the test container and capture its exit code directly
+# Run test container with arguments
 echo "Running test containers..."
-docker compose -f test/docker/docker-compose.test.yml up --abort-on-container-exit
+if [ -z "$TEST_ARGS" ]; then
+    echo "Running all tests..."
+    docker compose -f test/docker/docker-compose.test.yml run --rm -e TEST_ARGS="" test
+else
+    echo "Running tests with arguments: $TEST_ARGS"
+    docker compose -f test/docker/docker-compose.test.yml run --rm -e TEST_ARGS="$TEST_ARGS" test
+fi
 
-# after container runs, find the exit code from docker-compose ps output
-TEST_EXIT_CODE=$(docker compose -f test/docker/docker-compose.test.yml ps -a --format json | grep -o '"ExitCode":[0-9]*' | grep -o '[0-9]*' | head -1)
-echo "Test exit code: ${TEST_EXIT_CODE}"
+# Capture the exit code
+TEST_EXIT_CODE=$?
 
 echo "Cleaning up containers..."
 docker compose -f test/docker/docker-compose.test.yml down --volumes --remove-orphans

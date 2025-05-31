@@ -42,6 +42,7 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 ## Monorepo Structure
 
 This project uses a monorepo structure managed with:
+
 - **pnpm**: Package manager with workspace support
 - **Turbo**: Build orchestration and caching
 - **Syncpack**: Dependency version synchronization
@@ -140,7 +141,7 @@ KlickerUZH follows a distributed architecture with separate frontend and backend
 
 ### Key Technology Stack
 
-- **Frontend**: 
+- **Frontend**:
   - Next.js 15 with Pages Router
   - React 18 with functional components
   - TailwindCSS with @uzh-bf/design-system
@@ -148,17 +149,17 @@ KlickerUZH follows a distributed architecture with separate frontend and backend
   - Formik & Yup for forms
   - next-intl for i18n (en/de)
   - PWA capabilities with @ducanh2912/next-pwa
-- **Backend**: 
+- **Backend**:
   - Node.js with TypeScript
   - GraphQL with Pothos schema builder
   - Redis for caching and pub/sub
   - Azure Functions for response handling
   - Bull for job queuing
-- **Database**: 
+- **Database**:
   - PostgreSQL 15+ with Prisma ORM
   - Shadow database for migrations
   - JSON fields for flexible data
-- **Infrastructure**: 
+- **Infrastructure**:
   - Docker containers
   - Kubernetes (Helm charts)
   - Doppler for secrets management
@@ -227,6 +228,7 @@ The current branch (`v3`) is the main development branch for KlickerUZH v3.0. Re
 - Object activity logging system via `ActivityLogEntry` model
 - Improved permission management for shared resources
 - Enhanced catalog functionality for public answer collections
+- Permission System v3.0: Asynchronous operation-based permission processing via `PendingPermissionOperation` model to eliminate transaction timeouts
 
 ### Development Environment Ports
 
@@ -243,6 +245,7 @@ The current branch (`v3`) is the main development branch for KlickerUZH v3.0. Re
 ### GraphQL Architecture
 
 The GraphQL API uses:
+
 - **Pothos**: Code-first schema builder with TypeScript
 - **Plugins**: ScopeAuth, Prisma, Zod validation, Directives
 - **Authentication**: JWT tokens with role-based access (USER, PARTICIPANT, ADMIN)
@@ -357,6 +360,7 @@ This project uses a structured epic-based development approach:
   - Be small + testable
   - Have a clear start + end
   - Focus on one concern
+- Any further planning, TODO, and concept files should be placed in the `@project` directory
 
 **Workflow**:
 

@@ -171,7 +171,7 @@ export function getDatabaseUrl() {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-export async function initializePrisma() {
+export async function initializePrisma(cleanupFirst: boolean = false) {
   // configure database
   const databaseUrl = getDatabaseUrl()
 
@@ -186,6 +186,19 @@ export async function initializePrisma() {
 
     // test database connection
     await prisma.$connect()
+
+    // cleanup existing data if requested
+    if (cleanupFirst) {
+      console.log('Cleaning up existing test data...')
+      
+      // delete pending permission operations first
+      await prisma.pendingPermissionOperation.deleteMany()
+      
+      // run standard cleanup
+      await testCleanup(prisma)
+      
+      console.log('Cleanup completed')
+    }
 
     // create EventEmitter for test context
     const emitter = new EventEmitter()

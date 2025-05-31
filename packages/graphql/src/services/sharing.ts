@@ -10,6 +10,11 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
+  buildOperationsForDirectPermission,
+  buildOperationsForPermissionRevoke,
+  buildOperationsForPermissionUpdate,
+  shouldCreateOperations,
+  logOperation,
 } from '@klicker-uzh/util'
 import type {
   ContextWithUser,
@@ -2099,6 +2104,38 @@ export async function changeObjectPermissionLevel(
     return false
   }
 
+  // Create pending permission operations OUTSIDE the transaction (dual-mode)
+  // This ensures we don't make the transaction timeout problem worse
+  if (shouldCreateOperations()) {
+    try {
+      console.log('[ChangeObjectPermissionLevel] Creating pending operations for update (outside transaction)')
+      // Load the permission with user relationship for operation creation
+      const permissionWithUser = permission.userId
+        ? await ctx.prisma.permission.findUnique({
+            where: { id: permission.id },
+            include: { user: true },
+          })
+        : permission
+      
+      if (permissionWithUser) {
+        await createPendingOperationsForUpdate(
+          permissionWithUser,
+          previousPermission.permissionLevel,
+          permissionLevel,
+          userGroup,
+          ctx.prisma
+        )
+      }
+    } catch (error) {
+      // Log error but don't fail the permission update
+      console.error('[ChangeObjectPermissionLevel] Failed to create pending operations:', error)
+      logOperation('error', 'Failed to create pending operations after permission update', {
+        permissionId: permission.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   // invalidate permission
   ctx.emitter.emit('invalidate', {
     typename: 'Permission',
@@ -2336,6 +2373,22 @@ export async function revokeObjectAccess(
 
     return deleted
   })
+
+  // Create pending permission operations OUTSIDE the transaction (dual-mode)
+  // This ensures we don't make the transaction timeout problem worse
+  if (shouldCreateOperations()) {
+    try {
+      console.log('[RevokeObjectAccess] Creating pending operations for revocation (outside transaction)')
+      await createPendingOperationsForRevoke(permission, userGroup, ctx.prisma)
+    } catch (error) {
+      // Log error but don't fail the revocation
+      console.error('[RevokeObjectAccess] Failed to create pending operations:', error)
+      logOperation('error', 'Failed to create pending operations after revocation', {
+        permissionId: permission.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -3868,6 +3921,265 @@ export async function getDerivedPermissionOrigin(
   }
 }
 
+/**
+ * Creates pending permission operations in parallel with existing permission logic.
+ * This is part of the dual-mode implementation for Permission System v3.0.
+ * 
+ * @param permission - The permission record with all necessary relationships loaded
+ * @param ctx - The transaction context
+ */
+async function createPendingOperationsForPermission(
+  permission: DB.Permission & {
+    user?: { id: string } | null
+    userGroup?: { 
+      id: number
+      owner: { id: string }
+      admins: { id: string }[]
+      members: { id: string }[]
+    } | null
+  },
+  ctx: PrismaTransactionClient | DB.PrismaClient,
+  propagation: boolean = false
+) {
+  console.log('[CreatePendingOps] Called with permission:', {
+    permissionId: permission.id,
+    userId: permission.userId,
+    userGroupId: permission.userGroupId,
+    hasUser: !!permission.user,
+    hasUserGroup: !!permission.userGroup,
+    elementId: permission.elementId,
+    courseId: permission.courseId,
+    permissionLevel: permission.permissionLevel,
+  })
+  
+  console.log('[CreatePendingOps] Feature flag check:', {
+    shouldCreate: shouldCreateOperations(),
+    envVar: process.env.ENABLE_PENDING_OPERATIONS,
+  })
+  
+  // Check if operation creation is enabled
+  if (!shouldCreateOperations()) {
+    console.log('[CreatePendingOps] Feature disabled, skipping operation creation')
+    return
+  }
+  
+  console.log('[CreatePendingOps] Feature enabled, proceeding with operation creation')
+
+  const startTime = Date.now()
+
+  try {
+    // Build operations for the direct permission
+    console.log('[CreatePendingOps] Building operations...')
+    const operations = buildOperationsForDirectPermission(permission, propagation)
+    
+    console.log('[CreatePendingOps] Built operations:', {
+      count: operations.length,
+      operations: operations.map(op => ({
+        type: op.operationType,
+        targetUserId: op.targetUserId,
+        targetGroupId: op.targetGroupId,
+        objectId: op.objectId,
+        objectType: op.objectType,
+        priority: op.priority,
+        fingerprint: op.operationFingerprint,
+      }))
+    })
+    
+    if (operations.length > 0) {
+      // Create all operations in the database
+      console.log('[CreatePendingOps] Creating operations in database...')
+      try {
+        const createdOperations = await ctx.pendingPermissionOperation.createMany({
+          data: operations,
+          skipDuplicates: true, // Skip duplicates to ensure idempotency
+        })
+
+        console.log('[CreatePendingOps] Database result:', {
+          count: createdOperations.count,
+          success: true,
+        })
+
+        logOperation('info', 'Created pending permission operations', {
+          permissionId: permission.id,
+          operationCount: createdOperations.count,
+          userId: permission.userId,
+          userGroupId: permission.userGroupId,
+        })
+      } catch (dbError) {
+        console.error('[CreatePendingOps] Database error:', dbError)
+        throw dbError
+      }
+    } else {
+      console.log('[CreatePendingOps] No operations to create')
+    }
+
+    const duration = Date.now() - startTime
+    logOperation('info', 'Operations created successfully', {
+      operationCount: operations.length,
+      duration,
+      permissionId: permission.id,
+    })
+  } catch (error) {
+    // Log error but don't fail the main operation
+    const duration = Date.now() - startTime
+    logOperation('error', 'Failed to create pending permission operations', {
+      permissionId: permission.id,
+      error: error instanceof Error ? error.message : String(error),
+      userId: permission.userId,
+      userGroupId: permission.userGroupId,
+      duration,
+    })
+  }
+}
+
+/**
+ * Creates pending permission operations for permission revocation.
+ * This is part of the dual-mode implementation for Permission System v3.0.
+ * 
+ * @param permission - The permission record being revoked
+ * @param userGroup - The user group if this is a group permission
+ * @param ctx - The transaction context
+ */
+async function createPendingOperationsForRevoke(
+  permission: DB.Permission & {
+    user?: { id: string } | null
+  },
+  userGroup: {
+    id: number
+    ownerId: string
+    admins: { id: string }[]
+    members: { id: string }[]
+  } | null,
+  ctx: PrismaTransactionClient | DB.PrismaClient
+) {
+  // Check if operation creation is enabled
+  if (!shouldCreateOperations()) {
+    return
+  }
+
+  const startTime = Date.now()
+
+  try {
+    // Build operations for the permission revocation
+    const permissionWithGroup = {
+      ...permission,
+      userGroup: userGroup || undefined,
+    }
+    
+    const operations = buildOperationsForPermissionRevoke(permissionWithGroup)
+    
+    if (operations.length > 0) {
+      // Create all operations in the database
+      const createdOperations = await ctx.pendingPermissionOperation.createMany({
+        data: operations,
+        skipDuplicates: true,
+      })
+
+      logOperation('info', 'Created pending revoke operations', {
+        permissionId: permission.id,
+        operationCount: createdOperations.count,
+        userId: permission.userId,
+        userGroupId: permission.userGroupId,
+      })
+    }
+
+    const duration = Date.now() - startTime
+    logOperation('info', 'Revoke operations completed', {
+      operationCount: operations.length,
+      duration,
+      permissionId: permission.id,
+    })
+  } catch (error) {
+    // Log error but don't fail the main operation
+    const duration = Date.now() - startTime
+    logOperation('error', 'Failed to create pending revoke operations', {
+      permissionId: permission.id,
+      error: error instanceof Error ? error.message : String(error),
+      userId: permission.userId,
+      userGroupId: permission.userGroupId,
+      duration,
+    })
+  }
+}
+
+/**
+ * Creates pending permission operations for permission level updates.
+ * This is part of the dual-mode implementation for Permission System v3.0.
+ * 
+ * @param permission - The permission record being updated
+ * @param oldLevel - The previous permission level
+ * @param newLevel - The new permission level
+ * @param userGroup - The user group if this is a group permission
+ * @param ctx - The transaction context
+ */
+async function createPendingOperationsForUpdate(
+  permission: DB.Permission & {
+    user?: { id: string } | null
+  },
+  oldLevel: DB.PermissionLevel,
+  newLevel: DB.PermissionLevel,
+  userGroup: {
+    id: number
+    ownerId: string
+    admins: { id: string }[]
+    members: { id: string }[]
+  } | null,
+  ctx: PrismaTransactionClient | DB.PrismaClient
+) {
+  // Check if operation creation is enabled
+  if (!shouldCreateOperations()) {
+    return
+  }
+
+  const startTime = Date.now()
+
+  try {
+    // Build operations for the permission update
+    const permissionWithGroup = {
+      ...permission,
+      userGroup: userGroup || undefined,
+    }
+    
+    const operations = buildOperationsForPermissionUpdate(permissionWithGroup, oldLevel, newLevel)
+    
+    if (operations.length > 0) {
+      // Create all operations in the database
+      const createdOperations = await ctx.pendingPermissionOperation.createMany({
+        data: operations,
+        skipDuplicates: true,
+      })
+
+      logOperation('info', 'Created pending update operations', {
+        permissionId: permission.id,
+        operationCount: createdOperations.count,
+        userId: permission.userId,
+        userGroupId: permission.userGroupId,
+        oldLevel,
+        newLevel,
+      })
+    }
+
+    const duration = Date.now() - startTime
+    logOperation('info', 'Update operations completed', {
+      operationCount: operations.length,
+      duration,
+      permissionId: permission.id,
+    })
+  } catch (error) {
+    // Log error but don't fail the main operation
+    const duration = Date.now() - startTime
+    logOperation('error', 'Failed to create pending update operations', {
+      permissionId: permission.id,
+      error: error instanceof Error ? error.message : String(error),
+      userId: permission.userId,
+      userGroupId: permission.userGroupId,
+      oldLevel,
+      newLevel,
+      duration,
+    })
+  }
+}
+
 export async function shareObject(
   {
     permissionLevel,
@@ -3898,6 +4210,20 @@ export async function shareObject(
   },
   ctx: ContextWithUser
 ) {
+  console.log('[ShareObject] Called with:', {
+    permissionLevel,
+    shortnameOrEmail: shortnameOrEmail ? `${shortnameOrEmail.substring(0, 3)}***` : null,
+    userGroupId,
+    propagation,
+    hasElementId: !!elementId,
+    hasCourseId: !!courseId,
+    hasLiveQuizId: !!liveQuizId,
+    hasPracticeQuizId: !!practiceQuizId,
+    hasMicroLearningId: !!microLearningId,
+    hasGroupActivityId: !!groupActivityId,
+    hasAnswerCollectionId: !!answerCollectionId,
+    hasCatalogCollectionId: !!catalogCollectionId,
+  })
   // create new permission with the defined access level
   if (shortnameOrEmail && shortnameOrEmail.length > 0) {
     // check if a user with the provided username or email exists and is not the owner of the collection
@@ -4157,6 +4483,30 @@ export async function shareObject(
 
       return newPermission
     })
+
+    // Create pending permission operations OUTSIDE the transaction (dual-mode)
+    // This ensures we don't make the transaction timeout problem worse
+    if (shouldCreateOperations()) {
+      try {
+        console.log('[ShareObject] Creating pending operations for user permission (outside transaction)')
+        // Load the permission with user relationship for operation creation
+        const permissionWithUser = await ctx.prisma.permission.findUnique({
+          where: { id: permission.id },
+          include: { user: true },
+        })
+        
+        if (permissionWithUser) {
+          await createPendingOperationsForPermission(permissionWithUser, ctx.prisma, propagation)
+        }
+      } catch (error) {
+        // Log error but don't fail the sharing operation
+        console.error('[ShareObject] Failed to create pending operations:', error)
+        logOperation('error', 'Failed to create pending operations after user sharing', {
+          permissionId: permission.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {
@@ -4420,6 +4770,38 @@ export async function shareObject(
 
       return newPermission
     })
+
+    // Create pending permission operations OUTSIDE the transaction (dual-mode)
+    // This ensures we don't make the transaction timeout problem worse
+    if (shouldCreateOperations()) {
+      try {
+        console.log('[ShareObject] Creating pending operations for group permission (outside transaction)')
+        // Load the permission with user group relationship for operation creation
+        const permissionWithGroup = await ctx.prisma.permission.findUnique({
+          where: { id: permission.id },
+          include: { 
+            userGroup: {
+              include: {
+                owner: true,
+                admins: true,
+                members: true,
+              }
+            }
+          },
+        })
+        
+        if (permissionWithGroup) {
+          await createPendingOperationsForPermission(permissionWithGroup, ctx.prisma, propagation)
+        }
+      } catch (error) {
+        // Log error but don't fail the sharing operation
+        console.error('[ShareObject] Failed to create pending operations:', error)
+        logOperation('error', 'Failed to create pending operations after group sharing', {
+          permissionId: permission.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {

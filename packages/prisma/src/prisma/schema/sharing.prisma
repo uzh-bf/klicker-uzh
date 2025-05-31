@@ -8,6 +8,34 @@ enum PermissionLevel {
     OWNER // (derived permissions only)
 }
 
+enum PermissionOperationType {
+    // Group expansion operations
+    EXPAND_GROUP_TO_USER_GRANT_OPERATIONS // Expands group grant to individual users
+    EXPAND_GROUP_TO_USER_UPDATE_OPERATIONS // Expands group update to individual users
+    EXPAND_GROUP_TO_USER_REVOKE_OPERATIONS // Expands group revocation to individual users
+
+    // User access operations (for specific object types)
+    PROCESS_USER_ELEMENT_ACCESS
+    PROCESS_USER_ANSWER_COLLECTION_ACCESS
+    PROCESS_USER_COURSE_ACCESS
+    PROCESS_USER_LIVE_QUIZ_ACCESS
+    PROCESS_USER_PRACTICE_QUIZ_ACCESS
+    PROCESS_USER_MICROLEARNING_ACCESS
+    PROCESS_USER_GROUP_ACTIVITY_ACCESS
+    PROCESS_USER_CATALOG_COLLECTION_ACCESS
+
+    // Permission modification operations
+    UPDATE_PERMISSION_LEVEL
+    REVOKE_USER_PERMISSION
+}
+
+enum PermissionOperationStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+}
+
 model UserGroup {
     id   Int    @id @default(autoincrement())
     name String
@@ -43,6 +71,9 @@ model Permission {
     // & link all permissions that are derived from this permission to it
     propagation        Boolean             @default(false)
     derivedPermissions DerivedPermission[]
+
+    // link to pending operations created from this permission
+    pendingOperations PendingPermissionOperation[]
 
     // shared objects
     catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -232,6 +263,55 @@ model DerivedPermission {
     @@index([practiceQuizId, permissionLevel])
     @@index([microLearningId, permissionLevel])
     @@index([groupActivityId, permissionLevel])
+}
+
+// PendingPermissionOperation: Intermediate table for asynchronous permission processing
+// This table stores granular operations that can be processed independently to avoid transaction timeouts
+model PendingPermissionOperation {
+    id            Int                       @id @default(autoincrement())
+    operationType PermissionOperationType // Type of operation to perform
+    status        PermissionOperationStatus @default(PENDING) // Current status
+    priority      Int                       @default(0) // Higher priority operations processed first
+
+    // Target identification - using generic approach for flexibility
+    targetUserId  String?    @db.Uuid // User to process permissions for
+    targetGroupId Int? // User group to process permissions for
+    objectId      String // Generic ID for any object (element, course, etc.)
+    objectType    ObjectType // Type of object being processed
+
+    // Permission levels
+    permissionLevel    PermissionLevel? // New permission level to set
+    oldPermissionLevel PermissionLevel? // Previous permission level (for updates)
+
+    // Link to direct permission that triggered this operation (with cascade delete)
+    directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    directPermissionId Int?
+
+    // Support for recursive operations (e.g., group expansion creates user operations)
+    parentOperation   PendingPermissionOperation?  @relation("OperationHierarchy", fields: [parentOperationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    parentOperationId Int?
+    childOperations   PendingPermissionOperation[] @relation("OperationHierarchy")
+
+    // Retry and error handling
+    retryCount Int     @default(0) // Number of retry attempts
+    lastError  String? // Last error message if failed
+
+    // Idempotency - ensure same operation isn't processed twice
+    operationFingerprint String? @unique // Unique identifier for this operation
+
+    // Timestamps
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    processedAt DateTime? // When the operation was completed
+
+    // Indexes for efficient queue processing
+    @@index([status, priority]) // Main queue processing index
+    @@index([directPermissionId]) // For cascade lookups
+    @@index([parentOperationId]) // For recursive queries
+    @@index([targetUserId, objectId, objectType]) // For user-specific queries
+    @@index([targetGroupId, objectId, objectType]) // For group-specific queries
+    @@index([operationFingerprint]) // For idempotency checks (already unique)
+    @@index([status, createdAt]) // For timeout detection
 }
 
 // #endregion

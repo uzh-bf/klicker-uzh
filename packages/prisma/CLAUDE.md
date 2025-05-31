@@ -28,7 +28,7 @@ The Prisma schema is organized into domain-specific files to keep the codebase m
 - `quiz.prisma`: Activity models (LiveQuiz, PracticeQuiz, MicroLearning, GroupActivity)
 - `resources.prisma`: Answer collections and related resources
 - `response.prisma`: Response tracking models
-- `sharing.prisma`: Permissions, sharing, and activity logging
+- `sharing.prisma`: Permissions, sharing, activity logging, and pending permission operations
 - `user.prisma`: User, authentication, and access models
 
 ## JSON Field Typing System
@@ -200,6 +200,32 @@ The Prisma models are exposed through GraphQL via the `@klicker-uzh/graphql` pac
 2. Update resolvers in `packages/graphql/src/services/`
 3. Generate GraphQL types with the appropriate command
 4. Add new operations in `packages/graphql/src/graphql/ops/`
+
+## Pending Permission Operations
+
+The `PendingPermissionOperation` table (added in v3.0) provides an asynchronous processing queue for permission operations:
+
+### Purpose
+
+- Breaks down large permission operations into smaller, independently processable tasks
+- Eliminates transaction timeout issues when sharing with large user groups
+- Enables parallel processing of permission calculations
+- Provides fault tolerance and retry mechanisms
+
+### Key Features
+
+- **Generic object model**: Uses `objectId` and `objectType` fields instead of specific foreign keys
+- **Operation hierarchy**: Supports parent-child relationships for recursive operations
+- **Idempotency**: Operation fingerprints prevent duplicate processing
+- **Priority-based processing**: Higher priority operations are processed first
+- **Comprehensive indexing**: Optimized for queue processing and queries
+
+### Operation Types
+
+- `EXPAND_GROUP_TO_USER_OPERATIONS`: Expands user group permissions to individual users
+- `PROCESS_USER_*_ACCESS`: Processes individual user permissions for various object types
+- `UPDATE_PERMISSION_LEVEL`: Updates existing permission levels
+- `REVOKE_USER_PERMISSION`: Removes user permissions
 
 ## Troubleshooting Common Issues
 

@@ -23,6 +23,7 @@ export * from './permissions/liveQuiz.js'
 export * from './permissions/microlearning.js'
 export * from './permissions/practiceQuiz.js'
 export * from './permissions/util.js'
+export * from './permissions/pendingOperations.js'
 
 /**
  * This function serves as the main entry point for recomputing derived permissions

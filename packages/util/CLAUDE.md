@@ -33,6 +33,7 @@ The utilities package is organized into logical modules:
   - `microlearning.ts`: Microlearning permissions
   - `practiceQuiz.ts`: Practice quiz permissions
   - `util.ts`: Common permission utilities
+  - `pendingOperations.ts`: Pending permission operations for v3.0 async processing
 
 ## Permission System
 
@@ -192,6 +193,43 @@ The utilities package is used by several other components:
 - Verify answer collections are properly connected for selection/case study elements
 - Check for missing fields in element data
 - Validate that element instances are properly initialized with results structures
+
+## Pending Permission Operations (v3.0)
+
+The utilities package includes support for the new asynchronous permission operation system via the `pendingOperations.ts` module:
+
+### Operation Building
+
+```typescript
+// Build operations for different permission scenarios
+const operations = buildOperationsForDirectPermission(permission)
+const updateOps = buildOperationsForPermissionUpdate(permission, oldLevel, newLevel)
+const revokeOps = buildOperationsForPermissionRevoke(permission)
+```
+
+### Type Guards
+
+```typescript
+// Check operation types
+isGroupExpansionOperation(operation)
+isUserAccessOperation(operation)
+isPermissionUpdateOperation(operation)
+isRevokeOperation(operation)
+isOperationComplete(operation)
+canRetryOperation(operation, maxRetries)
+```
+
+### Feature Control
+
+```typescript
+// Simple feature flag control
+if (shouldCreateOperations()) {
+  // Create operations alongside existing permissions
+}
+
+// Logging for operations
+logOperation('info', 'Operations created', { count: operations.length })
+```
 
 ## Future Enhancements
 
