@@ -53,11 +53,7 @@ function JoinCourse({
   })
 
   useEffect(() => {
-    const pin = router.query.pin
-      ? String(router.query.pin)
-          .match(/.{1,3}/g)
-          ?.join(' ')
-      : undefined
+    const pin = router.query.pin ? String(router.query.pin) : undefined
     setInitialPin(pin || '')
   }, [router.query.pin])
 
