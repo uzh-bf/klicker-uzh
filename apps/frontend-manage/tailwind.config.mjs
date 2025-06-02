@@ -5,7 +5,12 @@ import {
 } from '@uzh-bf/design-system/dist/constants'
 
 const tailwindConfig = {
-  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    './src/**/*.{js,ts,jsx,tsx}',
+    // import is required for corresponding styles to be included correctly
+    // otherwise, shadcn variable-based styles might be missing (unless used in application and matched by regex above)
+    './node_modules/@uzh-bf/design-system/dist/**/*.{js,ts,jsx,tsx}',
+  ],
   theme: {
     extend: {
       ...TailwindAnimations,
