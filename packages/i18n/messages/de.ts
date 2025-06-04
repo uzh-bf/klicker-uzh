@@ -1240,6 +1240,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerCollection: 'Antwort-Sammlung',
       notSufficientPermissionsEditCollection:
         'Ihre Berechtigungen für diese Antwort-Sammlung sind nicht ausreichend, um diese zu bearbeiten.',
+      noAnswerCollectionSelected:
+        'Bitte wählen Sie zuerst eine Antwort-Sammlung mit ausreichenden Berechtigungen aus, bevor Sie diese ergänzen können.',
       caseStudyAnswerCollectionTooltip:
         'Bitte wählen Sie eine Antwort-Sammlung, aus welcher Sie die in der Fallstudie zu bewertenden Elemente auswählen möchten.',
       numberOfInputs: 'Anzahl Eingabefelder',

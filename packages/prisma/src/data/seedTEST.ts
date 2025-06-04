@@ -423,9 +423,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       prisma
     )
 
-    // Add the processed question to our array
+    // add the processed question to our array
     questionsTest.push(newElement)
   }
+
+  const answerCollectionItems = answerCollections.reduce<
+    { id: number; name: string }[]
+  >((acc, collection) => {
+    acc.push(
+      ...collection.entries.map((entry) => ({
+        id: entry.id,
+        name: entry.value,
+      }))
+    )
+
+    return acc
+  }, [])
 
   for (const data of DATA_TEST.LIVE_QUIZZES) {
     const liveQuiz = await prismaClient.liveQuiz.upsert({
@@ -499,7 +512,27 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
         },
         templateInfo: data.template
-          ? { create: { ...data.template } }
+          ? {
+              create: {
+                ...data.template,
+                answerCollections: {
+                  connect: data.template.answerCollections.map(
+                    (collection) => ({
+                      id: answerCollections.find(
+                        (ac) => ac.name === collection
+                      )!.id,
+                    })
+                  ),
+                },
+                answerCollectionItems: {
+                  connect: data.template.answerCollectionItems.map((item) => ({
+                    id: answerCollectionItems.find(
+                      (acItem) => acItem.name === item
+                    )!.id,
+                  })),
+                },
+              },
+            }
           : undefined,
         owner: {
           connect: {
