@@ -23,24 +23,24 @@ function RecoveryPrompt({
       open={open}
       onClose={() => null}
       title={t('manage.elements.recoverData')}
-      primaryLabel={
+      secondaryLabel={
         <div className="flex flex-row items-center gap-2.5">
           <FontAwesomeIcon icon={faBan} />
           <span>{t('manage.elements.discard')}</span>
         </div>
       }
-      primaryButtonStyle="destructive"
-      onPrimaryAction={onDiscard}
-      dataPrimaryAction={{ cy: 'discard-recovered-element-data' }}
-      secondaryLabel={
+      secondaryButtonStyle="destructive"
+      onSecondaryAction={onDiscard}
+      dataSecondaryAction={{ cy: 'discard-recovered-element-data' }}
+      primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
           <FontAwesomeIcon icon={faArrowsRotate} />
           <span>{t('manage.elements.loadData')}</span>
         </div>
       }
-      secondaryButtonStyle="primary"
-      onSecondaryAction={onRecovery}
-      dataSecondaryAction={{ cy: 'load-recovered-element-data' }}
+      primaryButtonStyle="primary"
+      onPrimaryAction={onRecovery}
+      dataPrimaryAction={{ cy: 'load-recovered-element-data' }}
     >
       <UserNotification
         type="warning"

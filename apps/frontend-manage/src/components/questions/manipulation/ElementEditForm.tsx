@@ -171,7 +171,7 @@ function ElementEditForm({
               dataSecondaryAction={{ cy: 'close-element-modal-button' }}
               className={{
                 title: 'text-xl',
-                content: 'max-w-[1400px] text-sm md:text-base',
+                content: 'text-sm md:text-base 2xl:max-w-[1400px]',
                 footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
               }}
               dataCloseButton={{ cy: 'close-element-modal' }}
@@ -189,7 +189,7 @@ function ElementEditForm({
                 validateForm={validateForm}
               />
               <div className="flex flex-row gap-12">
-                <div className="max-w-5xl flex-1">
+                <div className="flex-1">
                   <Form className="w-full" id="question-manipulation-form">
                     <ElementInformationFields
                       isTemplate={isTemplate}
