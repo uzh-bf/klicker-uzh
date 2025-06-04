@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.57...v3.3.0-alpha.58) (2025-06-04)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve padding issues on element edit form and button placement on recovery modal ([6db02e6](https://github.com/uzh-bf/klicker-uzh/commit/6db02e6235b362199286ead771093d7a35178c02))
+* **apps/frontend-pwa:** update course pin prefill to be compatible with new pin field ([55121b1](https://github.com/uzh-bf/klicker-uzh/commit/55121b181ea768754eab08d7cb5d6d64a890c045))
+* update tailwind structure to ensure that design-system styles are properly applied ([#4724](https://github.com/uzh-bf/klicker-uzh/issues/4724)) ([28e624b](https://github.com/uzh-bf/klicker-uzh/commit/28e624b22182f2ba14a750e8901e3fd4c53c8fa6))
+
+
+### Refactors
+
+* migrate toasts to new sonner-based components ([#4721](https://github.com/uzh-bf/klicker-uzh/issues/4721)) ([9ce6d57](https://github.com/uzh-bf/klicker-uzh/commit/9ce6d577afc25b4186c79fcf2c2d4741d211d76e))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** replace date picker with improved component and update cypress test suite accordingly ([#4722](https://github.com/uzh-bf/klicker-uzh/issues/4722)) ([ecc9aa8](https://github.com/uzh-bf/klicker-uzh/commit/ecc9aa8b8df70dc2b94908b65501e026f844d6af))
+* **apps/frontend-manage:** replace datetime picker component through new version ([#4723](https://github.com/uzh-bf/klicker-uzh/issues/4723)) ([cebd649](https://github.com/uzh-bf/klicker-uzh/commit/cebd64996605737a50e713ae9cfd6ae311655f8b))
+* update design through restyled and improved components from design-system and migrate dropdown & modals ([#4719](https://github.com/uzh-bf/klicker-uzh/issues/4719)) ([bc2fe42](https://github.com/uzh-bf/klicker-uzh/commit/bc2fe423d0f9803c6d34f6b3bbc3fb3fd78108b3))
+
 ## [3.3.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.56...v3.3.0-alpha.57) (2025-05-26)
 
 
