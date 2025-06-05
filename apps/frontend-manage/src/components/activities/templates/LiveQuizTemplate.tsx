@@ -14,7 +14,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -30,7 +30,6 @@ import SectionCollapsible, {
   TemplateCollapsibleState,
   TemplateCollapsibleUIStates,
 } from './SectionCollapsible'
-import SettingsNotSavedToast from './SettingsNotSavedToast'
 import TemplateElementContent from './TemplateElementContent'
 import TemplateInfo from './TemplateInfo'
 import TemplateResetConfirmationPrompt from './TemplateResetConfirmationPrompt'
@@ -56,21 +55,24 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     useMutation(CreateLiveQuizFromTemplateDocument)
 
   // reset modal and information toast if previous information was loaded into the template
-  const [recoveredToast, setRecoveredToast] = useState(false)
   const [resetTemplatePrompt, setResetTemplatePrompt] = useState(false)
 
   // closing the settings step should be blocked unless the modified settings have been saved
   const [closingSettingsDisabled, setClosingSettingsDisabled] = useState(false)
-  const [settingsTouchedToast, setSettingsTouchedToast] = useState(false)
+
+  // submission error toast
+  const onSubmissionError = () =>
+    toast({
+      type: 'error',
+      message: t('manage.template.errorCreatingLiveQuizFromTemplate'),
+      options: { duration: 6000 },
+    })
 
   // time limit modal to set block time limit
   const [timeLimitModal, setTimeLimitModal] = useState({
     open: false,
     blockIx: 0,
   })
-
-  // submission error state
-  const [submissionError, setSubmissionError] = useState(false)
 
   // track states and validity of collapsibles
   const [collapsibles, setCollapsibles] = useState<TemplateCollapsibleUIStates>(
@@ -124,7 +126,11 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
       setCollapsibles(progress)
 
       // the saved data has already been loaded -> set toast
-      setRecoveredToast(true)
+      toast({
+        type: 'success',
+        message: t('manage.template.recoveredTemplateData'),
+        options: { duration: 8000 },
+      })
     }
     // initialize live quiz template form data based on the loaded live quiz data
     else {
@@ -152,43 +158,39 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         instructions={template.instructions}
       />
       <div className="mt-6 flex flex-col">
-        <>
-          <SectionCollapsible
-            title={t('shared.generic.activitySettings')}
-            status={collapsibles.settings.status}
-            isOpen={collapsibles.settings.open}
-            onOpenChange={() => {
-              if (closingSettingsDisabled) {
-                setSettingsTouchedToast(true)
-                return
-              }
+        <SectionCollapsible
+          title={t('shared.generic.activitySettings')}
+          status={collapsibles.settings.status}
+          isOpen={collapsibles.settings.open}
+          onOpenChange={() => {
+            if (closingSettingsDisabled) {
+              toast({
+                type: 'error',
+                message: t('manage.template.settingsNotSaved'),
+                options: { duration: 4000 },
+              })
+              return
+            }
 
-              setCollapsibles((prev) => ({
-                ...prev,
-                settings: {
-                  ...prev.settings,
-                  open: !prev.settings.open,
-                },
-              }))
-            }}
-            data={{ cy: 'live-quiz-template-settings' }}
-          >
-            {quizData && collapsibles.settings.open && (
-              <LiveQuizTemplateSettings
-                quizData={quizData}
-                setQuizData={setQuizData}
-                setCollapsibles={setCollapsibles}
-                setClosingSettingsDisabled={setClosingSettingsDisabled}
-              />
-            )}
-          </SectionCollapsible>
-          {closingSettingsDisabled && (
-            <SettingsNotSavedToast
-              open={settingsTouchedToast}
-              onClose={() => setSettingsTouchedToast(false)}
+            setCollapsibles((prev) => ({
+              ...prev,
+              settings: {
+                ...prev.settings,
+                open: !prev.settings.open,
+              },
+            }))
+          }}
+          data={{ cy: 'live-quiz-template-settings' }}
+        >
+          {quizData && collapsibles.settings.open && (
+            <LiveQuizTemplateSettings
+              quizData={quizData}
+              setQuizData={setQuizData}
+              setCollapsibles={setCollapsibles}
+              setClosingSettingsDisabled={setClosingSettingsDisabled}
             />
           )}
-        </>
+        </SectionCollapsible>
 
         {quizData?.blocks?.map((block, blockIx) => (
           <div key={`live-quiz-template-block-${blockIx}`} className="mt-4">
@@ -498,7 +500,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                   console.log(
                     'Template inputs were invalid, but submission was triggered'
                   )
-                  setSubmissionError(true)
+                  onSubmissionError()
                   return
                 }
 
@@ -543,11 +545,11 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     console.log(
                       'An error occurred while creating the live quiz from the template'
                     )
-                    setSubmissionError(true)
+                    onSubmissionError()
                   }
                 } catch (error) {
                   console.log(error)
-                  setSubmissionError(true)
+                  onSubmissionError()
                 }
               }}
             />
@@ -576,26 +578,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           }
         }}
       />
-      <Toast
-        dismissible
-        type="success"
-        duration={10000}
-        openExternal={recoveredToast}
-        onCloseExternal={() => setRecoveredToast(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.template.recoveredTemplateData')}
-      </Toast>
-      <Toast
-        dismissible
-        type="error"
-        duration={6000}
-        openExternal={submissionError}
-        onCloseExternal={() => setSubmissionError(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.template.errorCreatingLiveQuizFromTemplate')}
-      </Toast>
     </div>
   )
 }

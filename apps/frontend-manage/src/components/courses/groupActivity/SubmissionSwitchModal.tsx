@@ -1,4 +1,4 @@
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface SubmissionSwitchModalProps {
@@ -21,34 +21,20 @@ function SubmissionSwitchModal({
   return (
     <Modal
       title={t('manage.groupActivity.switchSubmission')}
-      onPrimaryAction={
-        <Button
-          primary
-          onClick={() => {
-            setSelectedSubmission(nextSubmission)
-            setCurrentEditing(false)
-            setSwitchingModal(false)
-          }}
-          data={{ cy: 'confirm-submission-switch' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setSwitchingModal(false)}
-          data={{ cy: 'cancel-submission-switch' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.confirm')}
+      onPrimaryAction={() => {
+        setSelectedSubmission(nextSubmission)
+        setCurrentEditing(false)
+        setSwitchingModal(false)
+      }}
+      dataPrimaryAction={{ cy: 'confirm-submission-switch' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setSwitchingModal(false)}
+      dataSecondaryAction={{ cy: 'cancel-submission-switch' }}
       onClose={(): void => setSwitchingModal(false)}
       open={switchingModal}
       hideCloseButton={true}
-      className={{
-        content: 'h-max min-h-max w-[40rem] self-center pt-0',
-        title: 'text-xl',
-      }}
+      className={{ content: 'max-w-xl' }}
     >
       <div className="text-base">
         {t('manage.groupActivity.confirmSubmissionSwitch')}

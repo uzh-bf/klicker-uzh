@@ -192,6 +192,19 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
   })
 
+  // recompute derived permissions for the catalog collections
+  await recomputeDerivedPermissions(
+    { catalogCollectionId: publicCatalogCollection.id, userId: USER_ID_TEST },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      catalogCollectionId: restrictedCatalogCollection.id,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+
   // assign answer collections to catalog collections, if defined in relation
   const catalogAnswerCollectionAssignments = await Promise.all(
     DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {
@@ -223,6 +236,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  const currentYear = new Date().getFullYear()
   const courseTest = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST,
@@ -233,8 +247,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
-      startDate: new Date('2020-01-01T00:00'),
-      endDate: new Date('2050-01-01T23:59'),
+      startDate: new Date(`${currentYear - 1}-01-01T00:00`),
+      endDate: new Date(`${currentYear + 10}-01-01T23:59`),
       isGroupCreationEnabled: true,
       groupDeadlineDate: new Date('2021-01-01T00:01'),
       maxGroupSize: 5,
@@ -409,9 +423,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       prisma
     )
 
-    // Add the processed question to our array
+    // add the processed question to our array
     questionsTest.push(newElement)
   }
+
+  const answerCollectionItems = answerCollections.reduce<
+    { id: number; name: string }[]
+  >((acc, collection) => {
+    acc.push(
+      ...collection.entries.map((entry) => ({
+        id: entry.id,
+        name: entry.value,
+      }))
+    )
+
+    return acc
+  }, [])
 
   for (const data of DATA_TEST.LIVE_QUIZZES) {
     const liveQuiz = await prismaClient.liveQuiz.upsert({
@@ -485,7 +512,27 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
         },
         templateInfo: data.template
-          ? { create: { ...data.template } }
+          ? {
+              create: {
+                ...data.template,
+                answerCollections: {
+                  connect: data.template.answerCollections.map(
+                    (collection) => ({
+                      id: answerCollections.find(
+                        (ac) => ac.name === collection
+                      )!.id,
+                    })
+                  ),
+                },
+                answerCollectionItems: {
+                  connect: data.template.answerCollectionItems.map((item) => ({
+                    id: answerCollectionItems.find(
+                      (acItem) => acItem.name === item
+                    )!.id,
+                  })),
+                },
+              },
+            }
           : undefined,
         owner: {
           connect: {

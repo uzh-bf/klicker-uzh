@@ -64,7 +64,7 @@ function GroupActivityClueModal({
         open={open}
         onClose={() => setOpen(false)}
         title={t('manage.activityWizard.groupActivityAddClue')}
-        className={{ content: 'w-[40rem]' }}
+        className={{ content: 'pb-2' }}
       >
         <Formik
           enableReinitialize

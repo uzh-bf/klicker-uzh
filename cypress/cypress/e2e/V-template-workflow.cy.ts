@@ -123,6 +123,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -265,6 +266,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC2.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE2.title,
       content: this.data.SE2.content,
@@ -407,6 +409,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC3.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE3.title,
       content: this.data.SE3.content,
@@ -862,6 +865,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.displayName
     )
     cy.get('[data-cy="submit-template-settings"]').click()
+    cy.wait(4000) // wait for the success toast to disappear to make the button below accessible
     cy.get(`[data-cy="live-quiz-template-element-0-0"]`).click() // close the automatically opened first element
 
     // test the content and functionalities for all elements
@@ -1197,6 +1201,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
+    cy.wait(5000) // wait for the auto-save notification toast to disappear (blocks submission button)
     cy.get('[data-cy="submit-template-settings"]').click()
     cy.wrap([
       { content: this.data.SC.content, identifier: '0-0' },

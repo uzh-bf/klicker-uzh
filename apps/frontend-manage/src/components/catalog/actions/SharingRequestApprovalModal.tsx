@@ -8,7 +8,7 @@ import {
   ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
+import { Button, Modal, SelectField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
@@ -28,8 +28,6 @@ function SharingRequestApprovalModal({
 }) {
   const t = useTranslations()
   const [permissionLevel, setPermissionLevel] = useState(PermissionLevel.Read)
-  const [errorToast, setErrorToast] = useState(false)
-
   const permissionLevelSelectItems = usePermissionLevelSelection({
     type: request.objectType,
   })
@@ -45,6 +43,7 @@ function SharingRequestApprovalModal({
         onClose()
       }}
       title={t('manage.catalog.approveSharingRequest')}
+      className={{ content: 'pb-2' }}
     >
       <div>
         {t('manage.catalog.specifyObjectPermissionLevel', {
@@ -139,7 +138,11 @@ function SharingRequestApprovalModal({
               onSuccess()
               onClose()
             } else {
-              setErrorToast(true)
+              toast({
+                type: 'error',
+                message: t('manage.catalog.approvalFailed'),
+                options: { duration: 5000 },
+              })
             }
           }}
         >
@@ -160,17 +163,6 @@ function SharingRequestApprovalModal({
         activePermissionLevel={permissionLevel}
         showPropagationSetting={request.objectType === ObjectType.Course}
       />
-
-      <Toast
-        dismissible
-        type="error"
-        duration={5000}
-        openExternal={errorToast}
-        onCloseExternal={() => setErrorToast(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('manage.catalog.approvalFailed')}
-      </Toast>
     </Modal>
   )
 }

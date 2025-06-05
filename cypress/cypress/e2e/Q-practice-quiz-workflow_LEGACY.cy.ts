@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 // timestamps need to be dynamic to ensure full continued functionality
 const currentYear = new Date().getFullYear()
@@ -926,17 +927,33 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear - 10}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: -36,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-36, '15') + ', 12:00',
+      }
+    ) // select publication date 3 years in the past -> course start date is beginning of the previous year
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
 
     // set future publication date
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear + 5}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: 40,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '15') + ', 12:00',
+      }
+    ) // select publication date 4 months in the future
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
       messages.shared.generic.scheduled
@@ -998,9 +1015,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: -1,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-1, '15') + ', 12:00',
+      }
+    ) // set last month as a publication date (within the course runtime, but past)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
       messages.shared.generic.published

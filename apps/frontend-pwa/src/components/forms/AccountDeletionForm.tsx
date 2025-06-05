@@ -45,37 +45,29 @@ function AccountDeletionForm() {
         </Button>
 
         <Modal
+          hideCloseButton
           title={t('pwa.profile.deleteProfile')}
           open={deleteModalOpen}
           onClose={(): void => setDeleteModalOpen(false)}
-          hideCloseButton={true}
+          primaryLabel={t('shared.generic.confirm')}
+          primaryButtonStyle="destructive"
+          primaryLoading={deletingAccount || loggingOut}
+          onPrimaryAction={async () => {
+            await deleteParticipantAccount()
+            try {
+              await logoutParticipant()
+            } catch (e) {}
+            window?.location.reload()
+          }}
+          dataPrimaryAction={{ cy: 'delete-account-command' }}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setDeleteModalOpen(false)}
+          dataSecondaryAction={{ cy: 'cancel-delete-account' }}
           className={{ content: 'max-w-md' }}
-          onPrimaryAction={
-            <Button
-              destructive
-              loading={deletingAccount || loggingOut}
-              onClick={async () => {
-                await deleteParticipantAccount()
-                try {
-                  await logoutParticipant()
-                } catch (e) {}
-                window?.location.reload()
-              }}
-              data={{ cy: 'delete-account-command' }}
-            >
-              <Button.Label> {t('shared.generic.confirm')}</Button.Label>
-            </Button>
-          }
-          onSecondaryAction={
-            <Button
-              onClick={() => setDeleteModalOpen(false)}
-              data={{ cy: 'cancel-delete-account' }}
-            >
-              <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-            </Button>
-          }
         >
-          {t('pwa.profile.deleteProfileConfirmation')}
+          <div className="mt-2 text-sm">
+            {t('pwa.profile.deleteProfileConfirmation')}
+          </div>
         </Modal>
       </div>
     </div>

@@ -5,10 +5,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -17,7 +17,6 @@ import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import AnswerCollectionDuplicationModal from './AnswerCollectionDuplicationModal'
-import AnswerCollectionDuplicationSuccessToast from './AnswerCollectionDuplicationSuccessToast'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -25,17 +24,9 @@ import CollectionDeletionModal from './CollectionDeletionModal'
 function AnswerCollectionItem({
   collection,
   highlighted = false,
-  setDeletionSuccess,
-  setDeletionFailure,
-  setRemovalSuccess,
-  setRemovalFailure,
 }: {
   collection: AnswerCollection
   highlighted?: boolean
-  setDeletionSuccess: Dispatch<SetStateAction<boolean>>
-  setDeletionFailure: Dispatch<SetStateAction<boolean>>
-  setRemovalSuccess: Dispatch<SetStateAction<boolean>>
-  setRemovalFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -47,7 +38,6 @@ function AnswerCollectionItem({
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
-  const [duplicationSuccessToast, setDuplicationSuccessToast] = useState(false)
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
     collectionName: collection.name,
@@ -157,7 +147,7 @@ function AnswerCollectionItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </Button>
               }
-              className={{ item: 'text-sm' }}
+              className={{ item: 'py-0.5 text-sm' }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />
           )}
@@ -177,13 +167,15 @@ function AnswerCollectionItem({
           collectionId={collection.id}
           open={duplicationModal}
           onClose={() => setDuplicationModal(false)}
-          onSuccess={() => setDuplicationSuccessToast(true)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.resources.duplicationSuccess'),
+              options: { duration: 3000 },
+            })
+          }
         />
       )}
-      <AnswerCollectionDuplicationSuccessToast
-        open={duplicationSuccessToast}
-        onClose={() => setDuplicationSuccessToast(false)}
-      />
 
       {!collection.isEditor && (
         <AnswerCollectionViewingModal
@@ -208,8 +200,6 @@ function AnswerCollectionItem({
             collection={collection}
             deletionModal={deletionModal}
             setDeletionModal={setDeletionModal}
-            setDeletionSuccess={setDeletionSuccess}
-            setDeletionFailure={setDeletionFailure}
           />
         </>
       )}
@@ -221,8 +211,6 @@ function AnswerCollectionItem({
           name={collection.name}
           removalModal={removalModal}
           setRemovalModal={setRemovalModal}
-          setRemovalSuccess={setRemovalSuccess}
-          setRemovalFailure={setRemovalFailure}
         />
       )}
 

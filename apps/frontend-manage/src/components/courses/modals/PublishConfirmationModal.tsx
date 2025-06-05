@@ -6,7 +6,7 @@ import {
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
@@ -58,31 +58,22 @@ function PublishConfirmationModal({
   return (
     <Modal
       title={t(`manage.course.publishItem${elementType}`)}
-      onPrimaryAction={
-        <Button
-          primary
-          loading={mlPublishLoading || gaPublishLoading}
-          onClick={async () => {
-            if (elementType === ElementInstanceType.Microlearning) {
-              await publishMicroLearning()
-            } else if (elementType === ElementInstanceType.GroupActivity) {
-              await publishGroupActivity()
-            }
-            setOpen(false)
-          }}
-          data={{ cy: 'confirm-publish-action' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-publish-action' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={mlPublishLoading || gaPublishLoading}
+      onPrimaryAction={async () => {
+        if (elementType === ElementInstanceType.Microlearning) {
+          await publishMicroLearning()
+        } else if (elementType === ElementInstanceType.GroupActivity) {
+          await publishGroupActivity()
+        }
+        setOpen(false)
+      }}
+      dataPrimaryAction={{ cy: 'confirm-publish-action' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        setOpen(false)
+      }}
+      dataSecondaryAction={{ cy: 'cancel-publish-action' }}
       onClose={(): void => setOpen(false)}
       open={open}
       hideCloseButton={true}
@@ -91,7 +82,7 @@ function PublishConfirmationModal({
         title: 'text-xl',
       }}
     >
-      <div>
+      <div className="mt-2">
         <div className="text-base">{t('manage.course.confirmPublishing')}</div>
         <div className="border-uzh-grey-40 mt-1 rounded border border-solid p-2">
           <H3>{title}</H3>

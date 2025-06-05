@@ -6,23 +6,17 @@ import {
   GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@uzh-bf/design-system/dist/future'
+import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
 import ElementExplanationField from './ElementExplanationField'
-import ElementFailureToast from './ElementFailureToast'
 import ElementFormErrors from './ElementFormErrors'
 import ElementformScoringSection from './ElementFormScoringSection'
 import ElementInformationFields from './ElementInformationFields'
@@ -89,7 +83,6 @@ function ElementEditForm({
   const t = useTranslations()
 
   const [activeTab, setActiveTab] = useState('preview')
-  const [failureToast, setFailureToast] = useState(false)
   const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -133,7 +126,11 @@ function ElementEditForm({
           // close modal, set success toast
           setSubmitting(false)
           if (!success) {
-            setFailureToast(true)
+            toast({
+              type: 'error',
+              message: t('manage.elements.questionSavedFailed'),
+              options: { duration: 6000 },
+            })
           } else {
             onSuccess()
           }
@@ -147,6 +144,7 @@ function ElementEditForm({
           setFieldValue,
           setFieldTouched,
           validateForm,
+          submitForm,
         }) => {
           if (loading) {
             return null
@@ -154,42 +152,29 @@ function ElementEditForm({
 
           return (
             <Modal
-              asPortal
               fullScreen
               title={t(`manage.elements.${mode}Title`)}
-              className={{
-                content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
-                title: 'text-xl',
-              }}
               open={open}
               onClose={() => onClose()}
               escapeDisabled={true}
-              onPrimaryAction={
-                !inputsDisabled ? (
-                  <Button
-                    primary
-                    type="submit"
-                    loading={isSubmitting}
-                    disabled={!isValid}
-                    className={{ root: 'mt-2' }}
-                    form="question-manipulation-form"
-                    data={{ cy: 'save-new-question' }}
-                  >
-                    <Button.Label>{t('shared.generic.save')}</Button.Label>
-                  </Button>
-                ) : undefined
+              onPrimaryAction={() => submitForm()}
+              primaryLabel={
+                !inputsDisabled ? t('shared.generic.save') : undefined
               }
+              primaryDisabled={!isValid}
+              primaryLoading={isSubmitting}
+              dataPrimaryAction={{ cy: 'save-new-question' }}
               onSecondaryAction={
-                !isTemplate && !inputsDisabled ? (
-                  <Button
-                    className={{ root: 'mt-2' }}
-                    onClick={() => onClose()}
-                    data={{ cy: 'close-element-modal' }}
-                  >
-                    <Button.Label>{t('shared.generic.close')}</Button.Label>
-                  </Button>
-                ) : undefined
+                !isTemplate && !inputsDisabled ? () => onClose() : undefined
               }
+              secondaryLabel={t('shared.generic.close')}
+              dataSecondaryAction={{ cy: 'close-element-modal-button' }}
+              className={{
+                title: 'text-xl',
+                content: 'text-sm md:text-base 2xl:max-w-[1400px]',
+                footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
+              }}
+              dataCloseButton={{ cy: 'close-element-modal' }}
             >
               {!inputsDisabled && (
                 <AutoSaveMonitor
@@ -204,7 +189,7 @@ function ElementEditForm({
                 validateForm={validateForm}
               />
               <div className="flex flex-row gap-12">
-                <div className="max-w-5xl flex-1">
+                <div className="flex-1">
                   <Form className="w-full" id="question-manipulation-form">
                     <ElementInformationFields
                       isTemplate={isTemplate}
@@ -331,35 +316,33 @@ function ElementEditForm({
                 {mode === ElementEditMode.EDIT ? (
                   <Tabs
                     defaultValue="preview"
-                    className="w-full max-w-sm"
                     onValueChange={(value) => {
                       setActiveTab(value)
                     }}
+                    tabs={[
+                      {
+                        id: 'preview',
+                        value: 'preview',
+                        label: t('shared.generic.preview'),
+                        data: { cy: 'element-preview-tab' },
+                      },
+                      {
+                        id: 'activity',
+                        value: 'activity',
+                        label: t('shared.generic.activity'),
+                        data: { cy: 'element-activity-tab' },
+                      },
+                    ]}
+                    className={{ root: 'w-full max-w-sm', list: 'w-sm' }}
                   >
-                    <TabsList className="w-full">
-                      <TabsTrigger
-                        value="preview"
-                        className="w-1/2 font-bold"
-                        data-cy="element-preview-tab"
-                      >
-                        {t('shared.generic.preview')}
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="activity"
-                        className="w-1/2 font-bold"
-                        data-cy="element-activity-tab"
-                      >
-                        {t('shared.generic.activity')}
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="preview">
+                    <TabContent value="preview">
                       <StudentElementPreview
                         values={values}
                         elementDataTypename={elementDataTypename}
                         answerCollectionEntries={answerCollectionEntries}
                       />
-                    </TabsContent>
-                    <TabsContent value="activity">
+                    </TabContent>
+                    <TabContent value="activity">
                       <div className="w-sm w-full flex-1">
                         <ActivityLog
                           visible={activeTab === 'activity'}
@@ -367,7 +350,7 @@ function ElementEditForm({
                           objectType={ObjectType.Element}
                         />
                       </div>
-                    </TabsContent>
+                    </TabContent>
                   </Tabs>
                 ) : (
                   <div className="w-full max-w-sm">
@@ -398,10 +381,6 @@ function ElementEditForm({
                     setIncludeTemplateUpdates={setIncludeTemplateUpdates}
                   />
                 )}
-              <ElementFailureToast
-                open={failureToast}
-                onClose={() => setFailureToast(false)}
-              />
             </Modal>
           )
         }}

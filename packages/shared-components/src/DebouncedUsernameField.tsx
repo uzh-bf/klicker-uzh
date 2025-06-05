@@ -90,6 +90,7 @@ function DebouncedUsernameField({
           className?.icon
         ),
         input: twMerge(
+          '!pl-8',
           valid === false || typeof meta.error !== 'undefined'
             ? 'border-red-600 bg-red-50'
             : '',

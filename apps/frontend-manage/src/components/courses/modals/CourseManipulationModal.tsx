@@ -2,21 +2,21 @@ import { Course } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
-  FormikDateChanger,
+  FormikDatePicker,
   FormikNumberField,
   FormikSwitchField,
   FormikTextField,
   H3,
   Modal,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { useRef } from 'react'
 import * as yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
-import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
 
@@ -30,7 +30,7 @@ interface CourseManipulationModalProps {
   onSubmit: (
     values: CourseManipulationFormData,
     setSubmitting: (isSubmitting: boolean) => void,
-    setShowErrorToast: Dispatch<SetStateAction<boolean>>
+    onError: () => void
   ) => Promise<void>
 }
 
@@ -39,11 +39,11 @@ export interface CourseManipulationFormData {
   displayName: string
   description: string
   color: string
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
-  groupCreationDeadline: string
+  groupCreationDeadline: Date
   maxGroupSize?: number
   preferredGroupSize?: number
 }
@@ -58,7 +58,6 @@ function CourseManipulationModal({
   onSubmit,
 }: CourseManipulationModalProps) {
   const t = useTranslations()
-  const [showErrorToast, setShowErrorToast] = useState(false)
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
 
   // check if initialValues.startDate is in the past
@@ -162,15 +161,24 @@ function CourseManipulationModal({
   })
 
   // convert all dates back to local time
+  // default start date is the first day of the next month (end date + 6 months)
   const today = new Date()
   const startDateInit = initialValues?.startDate
-    ? dayjs(initialValues?.startDate).local().format().slice(0, 10)
-    : new Date().toISOString().slice(0, 10)
+    ? dayjs(initialValues?.startDate).local().toDate()
+    : new Date(
+        new Date(today.getFullYear(), today.getMonth(), 1).setMonth(
+          today.getMonth() + 1
+        )
+      )
   const endDateInit = initialValues?.endDate
-    ? dayjs(initialValues?.endDate).local().format().slice(0, 10)
-    : new Date(today.setMonth(today.getMonth() + 6)).toISOString().slice(0, 10)
+    ? dayjs(initialValues?.endDate).local().toDate()
+    : new Date(
+        new Date(today.getFullYear(), today.getMonth(), 1).setMonth(
+          today.getMonth() + 7
+        )
+      )
   const groupDeadlineDateInit = initialValues?.groupDeadlineDate
-    ? dayjs(initialValues?.groupDeadlineDate).local().format().slice(0, 10)
+    ? dayjs(initialValues?.groupDeadlineDate).local().toDate()
     : endDateInit
 
   return (
@@ -202,7 +210,18 @@ function CourseManipulationModal({
           preferredGroupSize: initialValues?.preferredGroupSize ?? undefined,
         }}
         onSubmit={async (values, { setSubmitting }) =>
-          onSubmit(values, setSubmitting, setShowErrorToast)
+          onSubmit(values, setSubmitting, () =>
+            toast({
+              type: 'error',
+              message: (
+                <div>
+                  <div>{t('manage.courseList.courseCreationFailed')}</div>
+                  <div>{t('manage.activityWizard.considerFormErrors')}</div>
+                </div>
+              ),
+              options: { duration: 6000 },
+            })
+          )
         }
         validationSchema={schema}
       >
@@ -257,22 +276,28 @@ function CourseManipulationModal({
               />
               <div className="mt-2 flex flex-col gap-6">
                 <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
-                  <FormikDateChanger
+                  <FormikDatePicker
+                    required
                     name="startDate"
+                    disabled={startDatePast}
                     label={t('manage.courseList.startDate')}
                     tooltip={t('manage.courseList.startDateTooltip')}
-                    data={{ cy: 'course-start-date' }}
-                    dataButton={{ cy: 'course-start-date-button' }}
-                    disabled={startDatePast}
-                    required
+                    dataTrigger={{ cy: 'course-start-date' }}
+                    dataCalendar={{ cy: 'course-start-date-calendar' }}
+                    dataPreviousMonth={{
+                      cy: 'course-start-date-previous-month',
+                    }}
+                    dataNextMonth={{ cy: 'course-start-date-next-month' }}
                   />
-                  <FormikDateChanger
+                  <FormikDatePicker
+                    required
                     name="endDate"
                     label={t('manage.courseList.endDate')}
                     tooltip={t('manage.courseList.endDateTooltip')}
-                    data={{ cy: 'course-end-date' }}
-                    dataButton={{ cy: 'course-end-date-button' }}
-                    required
+                    dataTrigger={{ cy: 'course-end-date' }}
+                    dataCalendar={{ cy: 'course-end-date-calendar' }}
+                    dataPreviousMonth={{ cy: 'course-end-date-previous-month' }}
+                    dataNextMonth={{ cy: 'course-end-date-next-month' }}
                   />
                   <FormikColorPicker
                     required
@@ -328,15 +353,23 @@ function CourseManipulationModal({
                   {values.isGamificationEnabled &&
                     values.isGroupCreationEnabled && (
                       <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
-                        <FormikDateChanger
+                        <FormikDatePicker
+                          required
                           name="groupCreationDeadline"
                           label={t('manage.courseList.groupCreationDeadline')}
                           tooltip={t(
                             'manage.courseList.groupCreationDeadlineTooltip'
                           )}
-                          data={{ cy: 'group-creation-deadline' }}
-                          dataButton={{ cy: 'group-creation-deadline-button' }}
-                          required
+                          dataTrigger={{ cy: 'group-creation-deadline' }}
+                          dataCalendar={{
+                            cy: 'group-creation-deadline-calendar',
+                          }}
+                          dataPreviousMonth={{
+                            cy: 'group-creation-deadline-previous-month',
+                          }}
+                          dataNextMonth={{
+                            cy: 'group-creation-deadline-next-month',
+                          }}
                         />
                         {initialValues &&
                         initialValues.isGroupCreationEnabled ? (
@@ -413,11 +446,6 @@ function CourseManipulationModal({
           </Form>
         )}
       </Formik>
-      <ElementCreationErrorToast
-        open={showErrorToast}
-        setOpen={setShowErrorToast}
-        error={t('manage.courseList.courseCreationFailed')}
-      />
     </Modal>
   )
 }

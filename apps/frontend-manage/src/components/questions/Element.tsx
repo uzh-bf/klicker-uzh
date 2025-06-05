@@ -14,8 +14,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
@@ -148,7 +147,7 @@ function Element({
         disabled={disabled}
         checked={checked}
         onCheck={onCheck}
-        className={{ root: 'mr-1.5' }}
+        className={{ root: 'border-unset mr-1.5' }}
       />
       {drag(
         <div
@@ -188,7 +187,11 @@ function Element({
               </div>
 
               <div className="flex-1 text-sm">
-                <Ellipsis maxLines={2} withMarkdown={false}>
+                <Ellipsis
+                  maxLines={2}
+                  withMarkdown={false}
+                  className={{ root: 'text-left' }}
+                >
                   {element.content}
                 </Ellipsis>
               </div>
@@ -266,7 +269,7 @@ function Element({
                 items={availableActions.slice(2).map((action) => ({
                   label: (
                     <div
-                      className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100 ${
+                      className={`flex cursor-pointer items-center rounded hover:bg-gray-100 ${
                         action.className ?? ''
                       }`}
                     >
@@ -290,7 +293,7 @@ function Element({
                 }
                 className={{
                   viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
-                  item: 'text-sm',
+                  item: 'py-0.5 text-sm',
                 }}
               />
             )}

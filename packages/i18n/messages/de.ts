@@ -1240,6 +1240,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerCollection: 'Antwort-Sammlung',
       notSufficientPermissionsEditCollection:
         'Ihre Berechtigungen für diese Antwort-Sammlung sind nicht ausreichend, um diese zu bearbeiten.',
+      noAnswerCollectionSelected:
+        'Bitte wählen Sie zuerst eine Antwort-Sammlung mit ausreichenden Berechtigungen aus, bevor Sie diese ergänzen können.',
       caseStudyAnswerCollectionTooltip:
         'Bitte wählen Sie eine Antwort-Sammlung, aus welcher Sie die in der Fallstudie zu bewertenden Elemente auswählen möchten.',
       numberOfInputs: 'Anzahl Eingabefelder',
@@ -2562,6 +2564,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noGroups:
         'Sie haben noch keine Nutzergruppen erstellt oder wurden noch keiner Gruppe hinzugefügt. Um Ihre erste Nutzergruppe zu erstellen, klicken Sie bitte auf die Schaltfläche auf der rechten Seite.',
       userGroupCreation: 'Erstellung Nutzergruppe',
+      creationExplanation:
+        'Bitte füllen Sie alle Felder des folgenden Formulars aus, um eine Nutzergruppe zu erstellen. Die Auswahl der Gruppen-Admins kann nach der Erstellung noch geändert werden. Admin-Nutzer können Mitglieder zur Gruppe hinzufügen oder entfernen und den Namen der Gruppe ändern.',
       newUserGroup: 'Neue Nutzergruppe',
       nameTooltip:
         'Bitte geben Sie einen Namen für die Nutzergruppe an. Dieser Name wird benötigt, um die Gruppe zu identifizieren.',

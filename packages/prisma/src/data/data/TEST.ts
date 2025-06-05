@@ -825,6 +825,22 @@ export const LIVE_QUIZZES = [
         'General description of the template, that can be shown as an information to the user.',
       instructions:
         'General instructions of the template, how to use it and what reasoning is behind the composition.',
+      answerCollections: QUESTIONS.reduce<string[]>((acc, question) => {
+        if (question.collectionName && !acc.includes(question.collectionName)) {
+          acc.push(question.collectionName)
+        }
+        return acc
+      }, []),
+      answerCollectionItems: QUESTIONS.reduce<string[]>((acc, question) => {
+        if (question.answerCollectionItems) {
+          question.answerCollectionItems.forEach((item) => {
+            if (!acc.includes(item)) {
+              acc.push(item)
+            }
+          })
+        }
+        return acc
+      }, []),
     },
   },
   {

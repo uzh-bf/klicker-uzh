@@ -13,6 +13,7 @@ import {
   Button,
   FormikTextField,
   H3,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { FieldArray, Form, Formik } from 'formik'
@@ -26,15 +27,7 @@ type AnswerCollectionFormValues = {
   entries: { value?: string }[]
 }
 
-function AnswerCollectionCreationForm({
-  onClose,
-  openSuccessToast,
-  openErrorToast,
-}: {
-  onClose: () => void
-  openSuccessToast: () => void
-  openErrorToast: () => void
-}) {
+function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
 
@@ -100,10 +93,18 @@ function AnswerCollectionCreationForm({
           })
 
           if (data?.createAnswerCollection?.id) {
+            toast({
+              type: 'success',
+              message: t('manage.resources.collectionCreationSuccess'),
+              options: { duration: 3000 },
+            })
             onClose()
-            openSuccessToast()
           } else {
-            openErrorToast()
+            toast({
+              type: 'error',
+              message: t('manage.resources.collectionCreationError'),
+              options: { duration: 10000 },
+            })
           }
         }}
         validationSchema={validationSchema}

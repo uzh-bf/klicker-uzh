@@ -1,14 +1,13 @@
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DuplicateAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
-import AnswerCollectionDuplicationErrorToast from './AnswerCollectionDuplicationErrorToast'
 
 function AnswerCollectionDuplicationModal({
   collectionId,
@@ -25,84 +24,81 @@ function AnswerCollectionDuplicationModal({
   const [duplicateAnswerCollection, { loading }] = useMutation(
     DuplicateAnswerCollectionDocument
   )
-  const [errorToastOpen, setErrorToastOpen] = useState(false)
+
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.resources.duplicationFailure'),
+      options: { duration: 10000 },
+    })
 
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={onClose}
-        title={t('manage.resources.duplicateCollection')}
-        onSecondaryAction={
-          <Button onClick={onClose} data={{ cy: 'cancel-duplication' }}>
-            <Button.Icon icon={faBan} />
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('manage.resources.duplicateCollection')}
+      secondaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <FontAwesomeIcon icon={faBan} />
+          <span>{t('shared.generic.cancel')}</span>
+        </div>
+      }
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-duplication' }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!loading && <FontAwesomeIcon icon={faCopy} />}
+          <span>{t('manage.resources.duplicateCollection')}</span>
+        </div>
+      }
+      primaryLoading={loading}
+      onPrimaryAction={async () => {
+        try {
+          const result = await duplicateAnswerCollection({
+            variables: { id: collectionId },
+            update: (cache, { data }) => {
+              if (!data?.duplicateAnswerCollection) return
+
+              const queryData = cache.readQuery({
+                query: GetAnswerCollectionsInfoDocument,
+              })
+              const previousCollections = queryData?.getAnswerCollectionsInfo
+              if (!previousCollections) return
+
+              cache.writeQuery({
+                query: GetAnswerCollectionsInfoDocument,
+                data: {
+                  getAnswerCollectionsInfo: [
+                    ...previousCollections,
+                    data.duplicateAnswerCollection,
+                  ],
+                },
+              })
+            },
+          })
+
+          if (result.data?.duplicateAnswerCollection) {
+            onClose()
+            onSuccess()
+          } else {
+            onErrorToast()
+          }
+        } catch (error) {
+          console.error('Error duplicating collection:', error)
+          onErrorToast()
         }
-        onPrimaryAction={
-          <Button
-            primary
-            loading={loading}
-            onClick={async () => {
-              try {
-                const result = await duplicateAnswerCollection({
-                  variables: { id: collectionId },
-                  update: (cache, { data }) => {
-                    if (!data?.duplicateAnswerCollection) return
-
-                    const queryData = cache.readQuery({
-                      query: GetAnswerCollectionsInfoDocument,
-                    })
-                    const previousCollections =
-                      queryData?.getAnswerCollectionsInfo
-                    if (!previousCollections) return
-
-                    cache.writeQuery({
-                      query: GetAnswerCollectionsInfoDocument,
-                      data: {
-                        getAnswerCollectionsInfo: [
-                          ...previousCollections,
-                          data.duplicateAnswerCollection,
-                        ],
-                      },
-                    })
-                  },
-                })
-
-                if (result.data?.duplicateAnswerCollection) {
-                  onClose()
-                  onSuccess()
-                } else {
-                  setErrorToastOpen(true)
-                }
-              } catch (error) {
-                console.error('Error duplicating collection:', error)
-                setErrorToastOpen(true)
-              }
-            }}
-            data={{ cy: 'confirm-duplication' }}
-          >
-            <Button.Icon icon={faCopy} loading={loading} />
-            <Button.Label>
-              {t('manage.resources.duplicateCollection')}
-            </Button.Label>
-          </Button>
-        }
-        className={{ content: 'max-w-2xl' }}
-        dataCloseButton={{ cy: 'close-duplication-modal' }}
-      >
-        <div className="mb-2">{t('manage.resources.duplicationNote')}</div>
-        <ul className="list-disc pl-5">
-          <li>{t('manage.resources.duplicationNote1')}</li>
-          <li>{t('manage.resources.duplicationNote2')}</li>
-          <li>{t('manage.resources.duplicationNote3')}</li>
-        </ul>
-      </Modal>
-      <AnswerCollectionDuplicationErrorToast
-        open={errorToastOpen}
-        onClose={() => setErrorToastOpen(false)}
-      />
-    </>
+      }}
+      dataPrimaryAction={{ cy: 'confirm-duplication' }}
+      className={{ content: 'max-w-2xl' }}
+      dataCloseButton={{ cy: 'close-duplication-modal' }}
+    >
+      <div className="mb-2">{t('manage.resources.duplicationNote')}</div>
+      <ul className="list-disc pl-5">
+        <li>{t('manage.resources.duplicationNote1')}</li>
+        <li>{t('manage.resources.duplicationNote2')}</li>
+        <li>{t('manage.resources.duplicationNote3')}</li>
+      </ul>
+    </Modal>
   )
 }
 

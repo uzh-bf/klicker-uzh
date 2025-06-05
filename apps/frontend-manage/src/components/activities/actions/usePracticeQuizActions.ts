@@ -23,6 +23,7 @@ import {
   GetUserActivitiesDocument,
   UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -34,7 +35,6 @@ function usePracticeQuizActions({
   setDeletionModal,
   setSharingModal,
   setRemovalModal,
-  setCopyToast,
   setActivityLogOpen,
 }: {
   practiceQuiz: ActivityInfo
@@ -42,7 +42,6 @@ function usePracticeQuizActions({
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
-  setCopyToast: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
@@ -51,6 +50,13 @@ function usePracticeQuizActions({
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkAccessCopied'),
+      options: { duration: 4000 },
+    })
 
   const actions = useMemo(
     () => [
@@ -68,7 +74,7 @@ function usePracticeQuizActions({
         onClick: () => {
           try {
             navigator.clipboard.writeText(href)
-            setCopyToast(true)
+            onSuccessToast()
           } catch (e) {}
         },
         data: { cy: `copy-access-link-${practiceQuiz.name}` },
@@ -81,7 +87,7 @@ function usePracticeQuizActions({
           try {
             const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${href}`
             await navigator.clipboard.writeText(link)
-            setCopyToast(true)
+            onSuccessToast()
           } catch (e) {}
         },
         data: { cy: `copy-lti-link-${practiceQuiz.name}` },
@@ -206,7 +212,6 @@ function usePracticeQuizActions({
       evaluationHref,
       router,
       setPublishModal,
-      setCopyToast,
       setSharingModal,
       setRemovalModal,
       unpublishPracticeQuiz,

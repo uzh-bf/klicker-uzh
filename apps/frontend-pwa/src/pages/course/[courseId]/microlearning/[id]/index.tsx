@@ -14,19 +14,12 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import {
-  Button,
-  H3,
-  Prose,
-  Toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
@@ -42,7 +35,6 @@ function MicrolearningIntroduction({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
   useParticipantToken({
     participantToken,
@@ -96,8 +88,8 @@ function MicrolearningIntroduction({
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
+        microLearningName={microLearning.displayName}
         subscribeToMore={subscribeToMore}
-        setEndedMicroLearning={setEndedMicroLearning}
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
         {!selfData?.self &&
@@ -206,18 +198,6 @@ function MicrolearningIntroduction({
           </Button>
         </Link>
       </div>
-      <Toast
-        type="warning"
-        openExternal={endedMicroLearning}
-        onCloseExternal={() => setEndedMicroLearning(false)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.microLearningEndedToast', {
-          activityName: microLearning.displayName,
-        })}
-      </Toast>
     </Layout>
   )
 }

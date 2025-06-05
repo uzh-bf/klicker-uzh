@@ -17,7 +17,7 @@ import {
   Button,
   Dropdown,
   H1,
-  Toast,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -58,13 +58,18 @@ function CourseOverviewHeader({
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
   const user = dataUser?.userProfile
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkLTICopied'),
+    })
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -139,52 +144,56 @@ function CourseOverviewHeader({
           <Dropdown
             data={{ cy: `course-actions-${name}` }}
             className={{
-              trigger: 'px-2 py-4',
               item: 'p-1 hover:bg-gray-200',
               viewport: 'z-10 bg-white',
             }}
-            trigger={t('manage.course.otherActions')}
+            trigger={
+              <Button className={{ root: 'h-8' }}>
+                <Button.Icon icon={faHandPointer} />
+                <Button.Label>{t('manage.course.otherActions')}</Button.Label>
+              </Button>
+            }
             items={[
               user?.catalyst
                 ? [
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIPracticeQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIMicroLearningsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIAccountManagement'),
@@ -192,7 +201,6 @@ function CourseOverviewHeader({
                   ]
                 : [],
             ].flat()}
-            triggerIcon={faHandPointer}
           />
         )}
       </div>
@@ -208,19 +216,13 @@ function CourseOverviewHeader({
           onSubmit={async (
             values: CourseManipulationFormData,
             setSubmitting,
-            setShowErrorToast
+            onError
           ) => {
             try {
               // convert dates to UTC
-              const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-                .utc()
-                .toISOString()
-              const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-                .utc()
-                .toISOString()
-              const groupDeadlineDateUTC = dayjs(
-                values.groupCreationDeadline + 'T23:59:59.999'
-              )
+              const startDateUTC = dayjs(values.startDate).utc().toISOString()
+              const endDateUTC = dayjs(values.endDate).utc().toISOString()
+              const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
                 .utc()
                 .toISOString()
 
@@ -250,11 +252,11 @@ function CourseOverviewHeader({
               if (result.data?.updateCourseSettings) {
                 setCourseSettingsModal(false)
               } else {
-                setShowErrorToast(true)
+                onError()
                 setSubmitting(false)
               }
             } catch (error) {
-              setShowErrorToast(true)
+              onError()
               setSubmitting(false)
               console.log(error)
             }
@@ -272,15 +274,6 @@ function CourseOverviewHeader({
           onClose={() => setSharingModal(false)}
         />
       )}
-
-      <Toast
-        type="success"
-        openExternal={copyToast}
-        onCloseExternal={() => setCopyToast(false)}
-        className={{ root: 'w-[24rem]' }}
-      >
-        {t('manage.course.linkLTICopied')}
-      </Toast>
 
       <ActivityLogDialog
         objectId={course.id}

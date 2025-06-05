@@ -86,7 +86,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
         }}
         icon={faMagnifyingGlass}
         className={{
-          input: 'h-8 pl-8 text-sm',
+          input: 'h-8 !pl-8 text-sm',
           field: 'rounded-md',
         }}
       />

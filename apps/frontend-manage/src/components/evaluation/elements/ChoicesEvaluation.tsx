@@ -1,16 +1,15 @@
 import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
-import { ActivityEvaluationType } from '../ActivityEvaluation'
-import ElementChart from '../ElementChart'
-import { TextSizeType } from '../textSizes'
-import ChoicesSidebar from './ChoicesSidebar'
-
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+} from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
+import ElementChart from '../ElementChart'
+import { TextSizeType } from '../textSizes'
+import ChoicesSidebar from './ChoicesSidebar'
 
 interface ChoicesEvaluationProps {
   instanceEvaluation: ChoicesActivityEvaluationData

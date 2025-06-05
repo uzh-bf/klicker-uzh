@@ -6,22 +6,12 @@ import {
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { useState } from 'react'
 import SharingRequestApprovalModal from './SharingRequestApprovalModal'
 
-function CatalogSharingRequest({
-  request,
-  setDeclineSuccessful,
-  setDeclineFailure,
-  setApprovalSuccessful,
-}: {
-  request: ObjectSharingRequest
-  setDeclineSuccessful: Dispatch<SetStateAction<boolean>>
-  setDeclineFailure: Dispatch<SetStateAction<boolean>>
-  setApprovalSuccessful: Dispatch<SetStateAction<boolean>>
-}) {
+function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
   const t = useTranslations()
   const [approvalModal, setApprovalModal] = useState(false)
   const [declineObjectSharingRequest, { loading: declineLoading }] =
@@ -118,9 +108,17 @@ function CatalogSharingRequest({
             })
 
             if (result) {
-              setDeclineSuccessful(true)
+              toast({
+                type: 'success',
+                message: t('manage.catalog.declineSuccessful'),
+                options: { duration: 3000 },
+              })
             } else {
-              setDeclineFailure(true)
+              toast({
+                type: 'error',
+                message: t('manage.catalog.declineFailed'),
+                options: { duration: 5000 },
+              })
             }
           }}
         >
@@ -132,7 +130,13 @@ function CatalogSharingRequest({
         request={request}
         open={approvalModal}
         onClose={() => setApprovalModal(false)}
-        onSuccess={() => setApprovalSuccessful(true)}
+        onSuccess={() =>
+          toast({
+            type: 'success',
+            message: t('manage.catalog.approvalSuccessful'),
+            options: { duration: 3000 },
+          })
+        }
       />
     </div>
   )

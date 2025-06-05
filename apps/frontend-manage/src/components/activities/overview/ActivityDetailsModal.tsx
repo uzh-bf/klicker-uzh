@@ -35,7 +35,7 @@ function ActivityDetailsModal({
         {activity.stacks.map((stack, index) => (
           <div
             key={stack.id}
-            className="w-[22rem] min-w-[22rem] border-b border-black pb-4 last:border-r-0 last:pr-0"
+            className="w-full border-b border-black pb-4 last:border-r-0 last:pr-0"
           >
             <div className="mb-1 flex flex-row justify-between">
               <H4>

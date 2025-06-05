@@ -7,14 +7,13 @@ import {
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
+import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import { ElementSelectCourse } from '../../ElementCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
@@ -74,10 +73,7 @@ function MicroLearningWizard({
   editMode,
   duplicationMode,
 }: MicroLearningWizardProps) {
-  const router = useRouter()
   const t = useTranslations()
-
-  const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
@@ -189,8 +185,17 @@ function MicroLearningWizard({
         elements: [],
       },
     ],
-    startDate: dayjs().format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
+    startDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(12, 'hours')
+      .toDate(),
+    endDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(1, 'day')
+      .add(12, 'hours')
+      .toDate(),
     courseStartDate: undefined,
     courseEndDate: undefined,
     multiplier: '1',
@@ -249,12 +254,10 @@ function MicroLearningWizard({
         })
       : formDefaultValues.stacks,
     startDate: initialValues?.scheduledStartAt
-      ? dayjs(initialValues?.scheduledStartAt)
-          .local()
-          .format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledStartAt).local().toDate()
       : formDefaultValues.startDate,
     endDate: initialValues?.scheduledEndAt
-      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledEndAt).local().toDate()
       : formDefaultValues.endDate,
     courseStartDate: formDefaultValues.courseStartDate,
     courseEndDate: formDefaultValues.courseEndDate,
@@ -275,155 +278,158 @@ function MicroLearningWizard({
       submitMicrolearningForm({
         id: initialValues?.id,
         values,
+        editMode,
         createMicroLearning,
         editMicroLearning,
         setSelectedCourseId,
         setIsWizardCompleted,
-        setErrorToastOpen,
-        editMode,
+        onError: () =>
+          toast({
+            type: 'error',
+            message: (
+              <div>
+                <div>
+                  {editMode
+                    ? t('manage.activityWizard.microlearningEditingFailed')
+                    : t('manage.activityWizard.microlearningCreationFailed')}
+                </div>
+                <div>{t('manage.activityWizard.considerFormErrors')}</div>
+              </div>
+            ),
+            options: { duration: 6000 },
+          }),
       })
     },
     [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
   )
 
   return (
-    <>
-      <WizardLayout
-        title={title}
-        editMode={editMode}
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
-        workflowItems={workflowItems}
-        isCompleted={isWizardCompleted}
-        completionStep={
-          <CompletionStep
-            completionSuccessMessage={(elementName) => (
-              <div>
-                {editMode
-                  ? t.rich('manage.activityWizard.microlearningCreated', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })
-                  : t.rich('manage.activityWizard.microlearningEdited', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })}
-              </div>
-            )}
-            name={formData.name}
-            editMode={editMode}
-            previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microlearning/${microLearningCreateData?.createMicroLearning?.id || microLearningEditData?.editMicroLearning?.id}/`}
-            viewElementHref={`/courses/${selectedCourseId}?tab=microLearnings`}
-            onRestartForm={() => {
-              setIsWizardCompleted(false)
-              closeWizard()
-            }}
-            resetForm={() => setFormData(formDefaultValues)}
-            setStepNumber={setActiveStep}
-            onCloseWizard={closeWizard}
-          />
-        }
-        steps={[
-          <MicroLearningInformationStep
-            key="micro-learning-information-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={
-              gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
-            }
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={nameValidationSchema}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <MicroLearningDescriptionStep
-            key="micro-learning-description-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={descriptionValidationSchema}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <MicroLearningSettingsStep
-            key="micro-learning-settings-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={settingsValidationSchema}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <StackCreationStep
-            key="stack-creation-step"
-            editMode={editMode}
-            selection={selection}
-            resetSelection={resetSelection}
-            acceptedTypes={acceptedTypes}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={stackValiationSchema}
-            setStepValidity={setStepValidity}
-            onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            onSubmit={(newValues: MicroLearningFormValues) =>
-              handleSubmit({ ...formData, ...newValues })
-            }
-            closeWizard={closeWizard}
-          />,
-        ]}
-        saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
-        }}
-      />
-      <ElementCreationErrorToast
-        open={errorToastOpen}
-        setOpen={setErrorToastOpen}
-        error={
-          editMode
-            ? t('manage.activityWizard.microlearningEditingFailed')
-            : t('manage.activityWizard.microlearningCreationFailed')
-        }
-      />
-    </>
+    <WizardLayout
+      title={title}
+      editMode={editMode}
+      activeStep={activeStep}
+      setActiveStep={setActiveStep}
+      disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+      workflowItems={workflowItems}
+      isCompleted={isWizardCompleted}
+      completionStep={
+        <CompletionStep
+          completionSuccessMessage={(elementName) => (
+            <div>
+              {editMode
+                ? t.rich('manage.activityWizard.microlearningCreated', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
+                  })
+                : t.rich('manage.activityWizard.microlearningEdited', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
+                  })}
+            </div>
+          )}
+          name={formData.name}
+          editMode={editMode}
+          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microlearning/${microLearningCreateData?.createMicroLearning?.id || microLearningEditData?.editMicroLearning?.id}/`}
+          viewElementHref={`/courses/${selectedCourseId}?tab=microLearnings`}
+          onRestartForm={() => {
+            setIsWizardCompleted(false)
+            closeWizard()
+          }}
+          resetForm={() => setFormData(formDefaultValues)}
+          setStepNumber={setActiveStep}
+          onCloseWizard={closeWizard}
+        />
+      }
+      steps={[
+        <MicroLearningInformationStep
+          key="micro-learning-information-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={
+            gamifiedCourses?.length === 0 && nonGamifiedCourses?.length === 0
+          }
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={nameValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <MicroLearningDescriptionStep
+          key="micro-learning-description-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={descriptionValidationSchema}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <MicroLearningSettingsStep
+          key="micro-learning-settings-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={settingsValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <StackCreationStep
+          key="stack-creation-step"
+          editMode={editMode}
+          selection={selection}
+          resetSelection={resetSelection}
+          acceptedTypes={acceptedTypes}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={stackValiationSchema}
+          setStepValidity={setStepValidity}
+          onPrevStep={(newValues: Partial<MicroLearningFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          onSubmit={(newValues: MicroLearningFormValues) =>
+            handleSubmit({ ...formData, ...newValues })
+          }
+          closeWizard={closeWizard}
+        />,
+      ]}
+      saveFormData={() => {
+        setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
+      }}
+    />
   )
 }
 

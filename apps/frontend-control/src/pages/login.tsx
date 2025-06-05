@@ -1,18 +1,15 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Router from 'next/router'
-import { useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/common/LoginForm'
 
 function Login() {
   const t = useTranslations()
-  const [error, setError] = useState('')
-  const [showError, setShowError] = useState(false)
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
 
   const loginSchema = Yup.object().shape({
@@ -34,8 +31,11 @@ function Login() {
             },
           })
           if (id.data?.loginUserToken === null) {
-            setError(t('control.login.checkToken'))
-            setShowError(true)
+            toast({
+              type: 'error',
+              message: t('control.login.checkToken'),
+              options: { duration: 6000 },
+            })
             return
           }
           Router.push('/')
@@ -58,16 +58,6 @@ function Login() {
           )
         }}
       </Formik>
-      <Toast
-        dismissible
-        type="error"
-        duration={6000}
-        openExternal={showError}
-        onCloseExternal={() => setShowError(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {error}
-      </Toast>
     </div>
   )
 }

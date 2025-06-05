@@ -7,7 +7,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -110,40 +110,30 @@ function CancelLiveQuizModal({
         setOpen(false)
         setConfirmations({ ...initialConfirmations })
       }}
-      className={{ content: '!w-full max-w-[60rem]' }}
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
-      onPrimaryAction={
-        <Button
-          destructive
-          loading={quizDeleting}
-          disabled={
-            queryLoading ||
-            Object.values(confirmations).some((confirmation) => !confirmation)
-          }
-          onClick={async () => {
-            await cancelLiveQuiz()
-            router.push(
-              dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
-            )
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'confirm-cancel-live-quiz' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      primaryLoading={quizDeleting}
+      primaryDisabled={
+        queryLoading ||
+        Object.values(confirmations).some((confirmation) => !confirmation)
       }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'abort-cancel-live-quiz' }}
-        >
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      onPrimaryAction={async () => {
+        await cancelLiveQuiz()
+        router.push(
+          dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
+        )
+        setOpen(false)
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
+      secondaryLabel={t('shared.generic.close')}
+      onSecondaryAction={() => {
+        setOpen(false)
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
+      className={{ content: 'max-w-[60rem]' }}
     >
       <LiveQuizAbortionConfirmations
         summary={summary}

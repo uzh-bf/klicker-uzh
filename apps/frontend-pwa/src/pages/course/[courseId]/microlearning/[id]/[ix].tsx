@@ -5,11 +5,10 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Progress, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import Layout from '../../../../../components/Layout'
@@ -21,7 +20,6 @@ function MicrolearningInstance() {
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
-  const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
   const { loading, data, error, subscribeToMore } = useQuery(
     GetMicroLearningDocument,
@@ -76,8 +74,8 @@ function MicrolearningInstance() {
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
+        microLearningName={microLearning.displayName}
         subscribeToMore={subscribeToMore}
-        setEndedMicroLearning={setEndedMicroLearning}
       />
       <div className="flex-1">
         <div
@@ -121,18 +119,6 @@ function MicrolearningInstance() {
           />
         </div>
       </div>
-      <Toast
-        type="warning"
-        openExternal={endedMicroLearning}
-        onCloseExternal={() => setEndedMicroLearning(false)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.microLearningEndedToast', {
-          activityName: microLearning.displayName,
-        })}
-      </Toast>
     </Layout>
   )
 }

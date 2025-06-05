@@ -12,7 +12,7 @@ interface LiveQuizFormProps {
   createLiveQuiz: any
   editLiveQuiz: any
   setIsWizardCompleted: (isCompleted: boolean) => void
-  setErrorToastOpen: (isOpen: boolean) => void
+  onError: () => void
 }
 
 async function submitLiveQuizForm({
@@ -22,7 +22,7 @@ async function submitLiveQuizForm({
   createLiveQuiz,
   editLiveQuiz,
   setIsWizardCompleted,
-  setErrorToastOpen,
+  onError,
 }: LiveQuizFormProps) {
   const blockSubmission = values.blocks.map(
     (block: ElementBlockFormValues, ix) => {
@@ -127,10 +127,12 @@ async function submitLiveQuizForm({
 
     if (success) {
       setIsWizardCompleted(true)
+    } else {
+      onError()
     }
   } catch (error) {
     console.log('error: ', error)
-    setErrorToastOpen(true)
+    onError()
   }
 }
 
