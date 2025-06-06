@@ -11,13 +11,18 @@ import {
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
+import { H2, TextField, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import AddObjectToCatalogButton from '../administration/AddObjectToCatalogButton'
+import AddObjectToCatalogModal from '../administration/AddObjectToCatalogModal'
 import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
+import CreateCatalogCollectionButton from '../collections/CreateCatalogCollectionButton'
+import CreateCatalogCollectionModal from '../collections/CreateCatalogCollectionModal'
 import CatalogObjectItem from './CatalogObjectItem'
+import CatalogSeparatorTitle from './CatalogSeparatorTitle'
 import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
 
@@ -33,6 +38,8 @@ function ObjectImport({
   const t = useTranslations()
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false)
+  const [objectAdditionModalOpen, setObjectAdditionModalOpen] = useState(false)
   const [typeFilter, setTypeFilter] = useState<ObjectType | ''>('')
   const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
     ''
@@ -74,7 +81,7 @@ function ObjectImport({
   }
 
   return (
-    <div>
+    <div className="pb-4">
       {typeof catalogCollectionId !== 'undefined' && (
         <Link
           href="/resources/catalog"
@@ -93,29 +100,41 @@ function ObjectImport({
           ? `${t('manage.general.catalog')}: ${collectionName}`
           : t('manage.general.catalog')}
       </H2>
-      <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <TextField
-          placeholder={t('manage.general.searchPlaceholder')}
-          value={search}
-          onChange={(newValue: string) => setSearch(newValue)}
-          icon={faMagnifyingGlass}
-          className={{ input: 'w-60 !pl-8' }}
-          data={{ cy: 'search-catalog-collection' }}
-        />
-        <ObjectFilters
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-          accessTypeFilter={accessTypeFilter}
-          setAccessTypeFilter={setAccessTypeFilter}
-        />
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col items-end gap-2 md:flex-row">
+          <TextField
+            placeholder={t('manage.general.searchPlaceholder')}
+            value={search}
+            onChange={(newValue: string) => setSearch(newValue)}
+            icon={faMagnifyingGlass}
+            className={{ input: 'w-full !pl-8 lg:w-60' }}
+            data={{ cy: 'search-catalog-collection' }}
+          />
+          <ObjectFilters
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            accessTypeFilter={accessTypeFilter}
+            setAccessTypeFilter={setAccessTypeFilter}
+          />
+        </div>
+        <div className="flex flex-row gap-2 self-end">
+          {typeof catalogCollectionId === 'undefined' ? (
+            <CreateCatalogCollectionButton
+              setCollectionModalOpen={setCollectionModalOpen}
+            />
+          ) : null}
+          {collectionEditor ? (
+            <AddObjectToCatalogButton
+              setIsModalOpen={setObjectAdditionModalOpen}
+            />
+          ) : null}
+        </div>
       </div>
       <div className="mt-2 flex flex-col">
         {typeof catalogCollectionId === 'undefined' &&
         filteredCatalogCollections.length > 0 ? (
           <div>
-            <div className="mt-3 border-b border-slate-100 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase text-slate-500">
-              {t('shared.generic.collections')}
-            </div>
+            <CatalogSeparatorTitle title={t('shared.generic.collections')} />
             {filteredCatalogCollections.map((collection) => (
               <CatalogCollectionListItem
                 key={collection.id}
@@ -126,9 +145,7 @@ function ObjectImport({
         ) : null}
         {filteredObjects.length > 0 ? (
           <div>
-            <div className="mt-3 border-b border-slate-100 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase text-slate-500">
-              {t('shared.generic.objects')}
-            </div>
+            <CatalogSeparatorTitle title={t('shared.generic.objects')} />
 
             {filteredObjects.map((object) => (
               <CatalogObjectItem
@@ -155,6 +172,50 @@ function ObjectImport({
           />
         ) : null}
       </div>
+      {collectionEditor ? (
+        <AddObjectToCatalogModal
+          open={objectAdditionModalOpen}
+          onClose={() => setObjectAdditionModalOpen(false)}
+          catalogCollectionId={catalogCollectionId as string | undefined}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.catalog.objectAddedSuccess'),
+              options: { duration: 3500 },
+            })
+            setObjectAdditionModalOpen(false)
+          }}
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.catalog.objectAddedError'),
+              options: { duration: 5000 },
+            })
+          }
+        />
+      ) : null}
+
+      {typeof catalogCollectionId === 'undefined' ? (
+        <CreateCatalogCollectionModal
+          open={collectionModalOpen}
+          onClose={() => setCollectionModalOpen(false)}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.catalog.collectionCreationSuccess'),
+              options: { duration: 3500 },
+            })
+            setCollectionModalOpen(false)
+          }}
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.catalog.collectionCreationError'),
+              options: { duration: 5000 },
+            })
+          }
+        />
+      ) : null}
     </div>
   )
 }

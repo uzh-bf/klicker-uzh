@@ -2785,7 +2785,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Ändern des Namens der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       changeAccessError:
         'Beim Ändern der Object-Sichtbarkeit ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-      leaveCollection: 'Sammlung verlassen',
     },
     sharing: {
       noAccess: 'Kein Zugriff',
