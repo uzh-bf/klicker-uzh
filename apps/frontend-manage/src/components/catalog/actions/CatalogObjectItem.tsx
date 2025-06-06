@@ -89,7 +89,7 @@ function CatalogObjectItem({
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object

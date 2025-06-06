@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
-  faFolderTree,
+  faArrowLeft,
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,6 +13,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
@@ -72,9 +73,18 @@ function ObjectImport({
     return <Loader />
   }
 
-  // TODO: enable scrolling on this component on overflow!
   return (
     <div>
+      {typeof catalogCollectionId !== 'undefined' && (
+        <Link
+          href="/resources/catalog"
+          className="text-primary-100 mb-2 flex cursor-pointer items-center gap-2 hover:underline"
+          data-cy="leave-catalog-collection"
+        >
+          <FontAwesomeIcon icon={faArrowLeft} />
+          <span>{t('manage.catalog.backToCatalogOverview')}</span>
+        </Link>
+      )}
       <H2
         className={{ root: 'md:-mb-5' }}
         data={{ cy: 'catalog-browser-title' }}
@@ -99,30 +109,27 @@ function ObjectImport({
           setAccessTypeFilter={setAccessTypeFilter}
         />
       </div>
-      <div className="mt-2 flex flex-col border-t">
-        {typeof catalogCollectionId === 'undefined' ? (
-          filteredCatalogCollections.map((collection) => (
-            <CatalogCollectionListItem
-              key={collection.id}
-              collection={collection}
-            />
-          ))
-        ) : (
-          <div
-            className="h-9 border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
-            onClick={() => {
-              router.push('/resources/catalog')
-            }}
-            data-cy={'leave-catalog-collection'}
-          >
-            <div className="flex h-full flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faFolderTree} className="mr-1 w-4" />
-              <div className="flex w-4 justify-center">...</div>
+      <div className="mt-2 flex flex-col">
+        {typeof catalogCollectionId === 'undefined' &&
+        filteredCatalogCollections.length > 0 ? (
+          <div>
+            <div className="mt-3 border-b border-slate-100 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase text-slate-500">
+              {t('shared.generic.collections')}
             </div>
+            {filteredCatalogCollections.map((collection) => (
+              <CatalogCollectionListItem
+                key={collection.id}
+                collection={collection}
+              />
+            ))}
           </div>
-        )}
+        ) : null}
         {filteredObjects.length > 0 ? (
           <div>
+            <div className="mt-3 border-b border-slate-100 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase text-slate-500">
+              {t('shared.generic.objects')}
+            </div>
+
             {filteredObjects.map((object) => (
               <CatalogObjectItem
                 key={`catalog-object-${object.id}-${object.objectType}-${object.name}`}

@@ -361,6 +361,8 @@ export default {
       imported: 'Imported',
       dependency: 'Dependency',
       legend: 'Legend',
+      collections: 'Collections',
+      objects: 'Objects',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2693,7 +2695,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationSuccess: 'Catalog collection was successfully created.',
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
-      backToCatalogOverview: 'back to Catalog Overview',
+      backToCatalogOverview: 'Back to Catalog Overview',
       deleteCatalogCollection: 'Delete Catalog Collection',
       openCatalogCollection: 'Open Collection',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',
@@ -2754,6 +2756,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while changing the name of the catalog collection. Please try again.',
       changeAccessError:
         'An error occurred while changing the object visibility. Please try again.',
+      leaveCollection: 'Leave Collection',
     },
     sharing: {
       noAccess: 'No access',
