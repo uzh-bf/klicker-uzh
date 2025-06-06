@@ -362,6 +362,7 @@ export default {
       imported: 'Importiert',
       dependency: 'Abhängigkeit',
       tryAgain: 'Erneut versuchen',
+      legend: 'Legende',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1017,6 +1018,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityNameChangeError:
         'Der Name der Aktivität konnte nicht geändert werden.',
       noCourseAssigned: 'Kein Kurs zugewiesen',
+      actionsLegend: 'Aktionen für Aktivitäten',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
