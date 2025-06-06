@@ -58,6 +58,7 @@ function PracticeQuizList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.practiceQuizList')}`}</Button.Label>
         </Button>
+        <ActivityListLegend />
       </div>
 
       {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
@@ -90,14 +91,11 @@ function PracticeQuizList({
       privatePreview ? (
         <div className="mt-0.5 flex w-full flex-col">
           {privatePreview ? (
-            <>
-              <ActivityListLegend className="mr-2" />
-              <ActivityList
-                activities={practiceQuizActivities}
-                noActivities={false}
-                hideActivityType
-              />
-            </>
+            <ActivityList
+              activities={practiceQuizActivities}
+              noActivities={false}
+              hideActivityType
+            />
           ) : null}
         </div>
       ) : (

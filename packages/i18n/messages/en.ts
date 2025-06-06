@@ -360,6 +360,7 @@ export default {
       shared: 'Shared',
       imported: 'Imported',
       dependency: 'Dependency',
+      legend: 'Legend',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1016,6 +1017,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityNameChangeError:
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
+      actionsLegend: 'Actions Legend',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
