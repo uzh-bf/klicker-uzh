@@ -14,6 +14,7 @@ function CreateCatalogCollectionButton({
     <Button
       type="button"
       onClick={() => setCollectionModalOpen(true)}
+      className={{ root: 'h-9 w-max whitespace-nowrap' }}
       data={{ cy: 'create-catalog-collection-button' }}
     >
       <Button.Icon icon={faFolderPlus} />

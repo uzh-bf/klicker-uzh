@@ -363,6 +363,8 @@ export default {
       dependency: 'Abhängigkeit',
       tryAgain: 'Erneut versuchen',
       legend: 'Legende',
+      collections: 'Sammlungen',
+      objects: 'Objekte',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2722,7 +2724,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       collectionCreationSuccess: 'Katalog-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
         'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-      backToCatalogOverview: 'zurück zur Katalog-Übersicht',
+      backToCatalogOverview: 'Zurück zur Katalog-Übersicht',
       deleteCatalogCollection: 'Katalogsammlung löschen',
       openCatalogCollection: 'Sammlung öffnen',
       browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',

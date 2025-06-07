@@ -11,16 +11,15 @@ function AddObjectToCatalogButton({
   const t = useTranslations()
 
   return (
-    <div className="flex justify-end">
-      <Button
-        primary
-        onClick={() => setIsModalOpen(true)}
-        data={{ cy: 'add-object-to-catalog-button' }}
-      >
-        <Button.Icon icon={faPlus} />
-        <Button.Label>{t('manage.catalog.addObjectToCatalog')}</Button.Label>
-      </Button>
-    </div>
+    <Button
+      primary
+      onClick={() => setIsModalOpen(true)}
+      className={{ root: 'h-9 w-max whitespace-nowrap' }}
+      data={{ cy: 'add-object-to-catalog-button' }}
+    >
+      <Button.Icon icon={faPlus} />
+      <Button.Label>{t('manage.catalog.addObjectToCatalog')}</Button.Label>
+    </Button>
   )
 }
 
