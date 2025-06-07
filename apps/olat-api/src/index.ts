@@ -272,31 +272,23 @@ app.get(
 
 async function getActivities(
   courseID: string,
-  activityTypeKey: string
+  activityTypeKey: 'live-quiz' | 'quiz' | 'micro-learning'
 ): Promise<any[] | null> {
-  if (['live-quiz', 'quiz', 'micro-learning'].indexOf(activityTypeKey) === -1) {
-    return []
-  }
-  const activityMapping: Record<string, string> = {
-    'live-quiz': 'liveQuizzes',
-    quiz: 'practiceQuizzes',
-    'micro-learning': 'microLearnings',
-  }
-
-  const relationKey = activityMapping[activityTypeKey]
-  if (!relationKey) return []
-
-  const includeObj: any = {}
-  includeObj[relationKey] = true
-
   const course = await prisma.course.findUnique({
     where: { id: courseID },
-    include: includeObj,
+    include: {
+      liveQuizzes: activityTypeKey === 'live-quiz',
+      practiceQuizzes: activityTypeKey === 'quiz',
+      microLearnings: activityTypeKey === 'micro-learning',
+    },
   })
   if (!course) return null
 
-  const activities = course?.[relationKey] ?? []
-  const activityDetails = activities.map((activity) => ({
+  const activityDetails = (
+    course.liveQuizzes ??
+    course.practiceQuizzes ??
+    course.microLearnings
+  ).map((activity) => ({
     id: activity.id,
     title: activity.name,
   }))
@@ -327,37 +319,46 @@ app.get(
     }
 
     if (
+      ['live-quiz', 'quiz', 'micro-learning'].indexOf(activityTypeKey) !== -1 &&
+      !validateUUID(courseID)
+    ) {
+      getActivities(
+        courseID,
+        activityTypeKey as 'live-quiz' | 'quiz' | 'micro-learning'
+      ).then((activityTypes) => {
+        if (activityTypes === null) {
+          return res
+            .status(StatusCode.NOT_FOUND)
+            .json({ error: 'Course not found' })
+        }
+
+        res.set('Content-Type', 'application/json')
+        return res.status(StatusCode.SUCCESS).json({
+          activityTypes: activityTypes,
+          timestamp: new Date().toISOString(),
+          api: API_NAME,
+        })
+      })
+    } else if (
       [
         'live-quizzes',
         'practice-quizzes',
         'micro-learnings',
         'create-account',
         'docs',
-        'live-quiz',
-        'quiz',
-        'micro-learning',
         'leaderboard',
-      ].indexOf(activityTypeKey) === -1
+      ].indexOf(activityTypeKey) !== -1
     ) {
+      return res.status(StatusCode.SUCCESS).json({
+        activityTypes: [],
+        timestamp: new Date().toISOString(),
+        api: API_NAME,
+      })
+    } else {
       return res
         .status(StatusCode.BAD_REQUEST)
         .json({ error: 'Invalid activityTypeKey' })
     }
-
-    getActivities(courseID, activityTypeKey).then((activityTypes) => {
-      if (activityTypes === null) {
-        return res
-          .status(StatusCode.NOT_FOUND)
-          .json({ error: 'Course not found' })
-      }
-
-      res.set('Content-Type', 'application/json')
-      res.status(StatusCode.SUCCESS).json({
-        activityTypes: activityTypes,
-        timestamp: new Date().toISOString(),
-        api: API_NAME,
-      })
-    })
   }
 )
 
