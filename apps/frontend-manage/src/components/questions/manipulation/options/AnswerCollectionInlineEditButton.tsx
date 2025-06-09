@@ -16,8 +16,12 @@ function AnswerCollectionInlineEditButton({
   if (disabled || typeof selectedCollectionId === 'undefined') {
     return (
       <Tooltip
-        tooltip={t('manage.elements.notSufficientPermissionsEditCollection')}
-        className={{ tooltip: 'text-sm' }}
+        tooltip={
+          typeof selectedCollectionId === 'undefined'
+            ? t('manage.elements.noAnswerCollectionSelected')
+            : t('manage.elements.notSufficientPermissionsEditCollection')
+        }
+        className={{ tooltip: 'text-sm', trigger: 'cursor-not-allowed' }}
       >
         <Button
           disabled

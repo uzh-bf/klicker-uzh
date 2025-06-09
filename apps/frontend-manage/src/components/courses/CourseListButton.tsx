@@ -12,8 +12,7 @@ import {
   PermissionLevel,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Tooltip } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'

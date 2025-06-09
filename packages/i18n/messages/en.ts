@@ -360,6 +360,9 @@ export default {
       shared: 'Shared',
       imported: 'Imported',
       dependency: 'Dependency',
+      legend: 'Legend',
+      collections: 'Collections',
+      objects: 'Objects',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1016,6 +1019,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityNameChangeError:
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
+      actionsLegend: 'Actions Legend',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1234,11 +1238,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSAnswerCollectionRequired:
         'To create a case study question, you need access to an answer collection or can choose to <link>enter the case study items manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
       SEAnswerCollectionRequired:
-        'To create a case selection question, you need access to an answer collection or can choose to <link>enter the available options manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
+        'To create a selection question, you need access to an answer collection or can choose to <link>enter the available options manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
       selectCollection: 'Select collection...',
       answerCollection: 'Answer collection',
       notSufficientPermissionsEditCollection:
         'Your permissions for this answer collection are not sufficient to edit it.',
+      noAnswerCollectionSelected:
+        'Please select an answer collection with sufficient permissions before you can edit it.',
       caseStudyAnswerCollectionTooltip:
         'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',
       numberOfInputs: 'Number of inputs',
@@ -2689,7 +2695,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationSuccess: 'Catalog collection was successfully created.',
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
-      backToCatalogOverview: 'back to Catalog Overview',
+      backToCatalogOverview: 'Back to Catalog Overview',
       deleteCatalogCollection: 'Delete Catalog Collection',
       openCatalogCollection: 'Open Collection',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',

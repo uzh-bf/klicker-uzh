@@ -60,9 +60,8 @@ function ImgWithModal({
         </div>
       }
       onClose={() => setIsOpen(false)}
-      title={alt}
       className={{
-        content: className?.modal,
+        content: twMerge(className?.modal, 'h-max w-max'),
       }}
     >
       <div className="relative h-full w-full">

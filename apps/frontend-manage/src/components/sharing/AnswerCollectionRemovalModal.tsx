@@ -1,11 +1,12 @@
 import { useMutation } from '@apollo/client'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetAnswerCollectionsInfoDocument,
   ObjectType,
   RemoveObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
@@ -14,70 +15,74 @@ function AnswerCollectionRemovalModal({
   name,
   removalModal,
   setRemovalModal,
-  setRemovalSuccess,
-  setRemovalFailure,
 }: {
   id: number
   name: string
   removalModal: boolean
   setRemovalModal: Dispatch<SetStateAction<boolean>>
-  setRemovalSuccess: Dispatch<SetStateAction<boolean>>
-  setRemovalFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
+
+  const onRemovalError = () =>
+    toast({
+      type: 'error',
+      message: t('manage.sharing.removalFailed'),
+      options: { duration: 3000 },
+    })
 
   return (
     <Modal
       title={t(`manage.sharing.remove${ObjectType.AnswerCollection}`)}
       open={removalModal}
       onClose={() => setRemovalModal(false)}
-      dataCloseButton={{ cy: 'close-remove-object' }}
-    >
-      <div>
-        {t(`manage.sharing.confirmRemoval${ObjectType.AnswerCollection}`, {
-          objectName: name,
-        })}
-      </div>
-      <Button
-        destructive
-        loading={removing}
-        onClick={async () => {
-          try {
-            const res = await removeObject({
-              variables: {
-                objectId: String(id),
-                objectType: ObjectType.AnswerCollection,
-              },
-              optimisticResponse: {
-                removeObject: String(id),
-              },
-              refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
-            })
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!removing && <FontAwesomeIcon icon={faX} />}
+          <span>{t('manage.sharing.confirmRemoval')}</span>
+        </div>
+      }
+      primaryButtonStyle="destructive"
+      primaryLoading={removing}
+      onPrimaryAction={async () => {
+        try {
+          const res = await removeObject({
+            variables: {
+              objectId: String(id),
+              objectType: ObjectType.AnswerCollection,
+            },
+            optimisticResponse: {
+              removeObject: String(id),
+            },
+            refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
+          })
 
-            if (
-              typeof res.data?.removeObject !== 'undefined' &&
-              res.data?.removeObject !== null
-            ) {
-              setRemovalSuccess(true)
-              setRemovalModal(false)
-            } else {
-              setRemovalFailure(true)
-            }
-          } catch (error) {
-            setRemovalFailure(true)
-            console.error(error)
+          if (
+            typeof res.data?.removeObject !== 'undefined' &&
+            res.data?.removeObject !== null
+          ) {
+            toast({
+              type: 'success',
+              message: t('manage.sharing.removalSuccessful'),
+              options: { duration: 3000 },
+            })
+            setRemovalModal(false)
+          } else {
+            onRemovalError()
           }
-        }}
-        className={{
-          root: 'float-right mt-4',
-        }}
-        data={{ cy: 'confirm-remove-object' }}
-      >
-        <Button.Icon icon={faTrashCan} loading={removing} />
-        <Button.Label>{t('manage.sharing.confirmRemoval')}</Button.Label>
-      </Button>
+        } catch (error) {
+          onRemovalError()
+          console.error(error)
+        }
+      }}
+      dataPrimaryAction={{ cy: 'confirm-remove-object' }}
+      dataCloseButton={{ cy: 'close-remove-object' }}
+      className={{ content: 'max-w-xl', footer: 'justify-end' }}
+    >
+      {t(`manage.sharing.confirmRemoval${ObjectType.AnswerCollection}`, {
+        objectName: name,
+      })}
     </Modal>
   )
 }

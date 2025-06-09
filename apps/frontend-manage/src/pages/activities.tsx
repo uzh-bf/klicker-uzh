@@ -141,7 +141,7 @@ function Activities() {
                   }}
                   icon={faMagnifyingGlass}
                   className={{
-                    input: 'h-10 pl-9',
+                    input: 'h-10 !pl-8',
                     field: 'w-80 rounded-md pr-3',
                   }}
                 />

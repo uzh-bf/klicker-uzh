@@ -30,15 +30,15 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
 
   return (
     <Modal
+      fullScreen
       title={t('manage.support.modalTitle')}
       open={open}
       onClose={() => setOpen(false)}
       className={{
         overlay: 'my-auto text-black',
-        title: 'text-xl md:text-2xl',
-        content: 'h-max max-h-full',
+        title: 'text-left text-xl md:text-2xl',
+        content: 'h-max pb-1',
       }}
-      fullScreen
     >
       <div className="flex flex-col flex-wrap gap-8 md:flex-row md:gap-16">
         <div className="flex flex-1 flex-col justify-between">

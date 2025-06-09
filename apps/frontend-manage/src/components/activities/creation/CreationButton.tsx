@@ -56,9 +56,7 @@ function CreationButton({
   if (comingSoon && disabled) {
     return (
       <Tooltip
-        tooltip={
-          <div className="max-w-[300px]">{t('shared.generic.comingSoon')}</div>
-        }
+        tooltip={t('shared.generic.comingSoon')}
         className={{ tooltip: 'z-20' }}
       >
         {button}
@@ -69,21 +67,17 @@ function CreationButton({
   if (isCatalystRequired && disabled) {
     return (
       <Tooltip
-        tooltip={
-          <div className="max-w-[300px]">
-            {t.rich('manage.general.catalystRequired', {
-              link: () => (
-                <a
-                  target="_blank"
-                  href="https://www.klicker.uzh.ch/catalyst"
-                  className="underline"
-                >
-                  www.klicker.uzh.ch/catalyst
-                </a>
-              ),
-            })}
-          </div>
-        }
+        tooltip={t.rich('manage.general.catalystRequired', {
+          link: () => (
+            <a
+              target="_blank"
+              href="https://www.klicker.uzh.ch/catalyst"
+              className="underline"
+            >
+              www.klicker.uzh.ch/catalyst
+            </a>
+          ),
+        })}
         className={{ tooltip: 'z-20' }}
       >
         {button}

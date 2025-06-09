@@ -21,12 +21,12 @@ import {
   FormikNumberField,
   H2,
   H3,
-  Toast,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, Formik, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
@@ -49,8 +49,6 @@ function GroupActivityGradingStack({
   maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-  const [successToast, setSuccessToast] = useState(false)
-  const [errorToast, setErrorToast] = useState(false)
   const [gradeGroupActivitySubmissions] = useMutation(
     GradeGroupActivitySubmissionDocument
   )
@@ -240,11 +238,19 @@ function GroupActivityGradingStack({
         if (result.data?.gradeGroupActivitySubmission?.id) {
           setSubmitting(false)
           resetForm()
-          setSuccessToast(true)
+          toast({
+            type: 'success',
+            message: t('manage.groupActivity.stackGradingSuccess'),
+            options: { duration: 4000 },
+          })
           setEdited(false)
         } else {
           setSubmitting(false)
-          setErrorToast(true)
+          toast({
+            type: 'error',
+            message: t('manage.groupActivity.stackGradingError'),
+            options: { duration: 6000 },
+          })
         }
       }}
     >
@@ -257,196 +263,176 @@ function GroupActivityGradingStack({
         submitForm,
       }) => {
         return (
-          <>
-            <div className="flex flex-col gap-8">
-              {gradingCompleted && (
-                <UserNotification
-                  type="warning"
-                  message={t('manage.groupActivity.alreadyGraded')}
+          <div className="flex flex-col gap-8">
+            {gradingCompleted && (
+              <UserNotification
+                type="warning"
+                message={t('manage.groupActivity.alreadyGraded')}
+              />
+            )}
+            {elements.map((element, ix) => (
+              <div key={element.id} className="flex flex-col">
+                <H3 className={{ root: 'border-t border-gray-400 pt-2' }}>
+                  {element.elementData.name}
+                </H3>
+                <StudentElement
+                  preview
+                  element={element}
+                  elementIx={ix}
+                  studentResponse={
+                    (findResponse(
+                      element.id,
+                      element.elementType,
+                      element.elementData
+                    ) as StackStudentResponseType) ?? []
+                  }
+                  setStudentResponse={() => null}
+                  hideReadButton
+                  disabledInput={true}
                 />
-              )}
-              {elements.map((element, ix) => (
-                <div key={element.id} className="flex flex-col">
-                  <H3 className={{ root: 'border-t border-gray-400 pt-2' }}>
-                    {element.elementData.name}
-                  </H3>
-                  <StudentElement
-                    preview
-                    element={element}
-                    elementIx={ix}
-                    studentResponse={
-                      (findResponse(
-                        element.id,
-                        element.elementType,
-                        element.elementData
-                      ) as StackStudentResponseType) ?? []
-                    }
-                    setStudentResponse={() => null}
-                    hideReadButton
-                    disabledInput={true}
-                  />
-                  <FastField
-                    name={`grading.${ix}.feedback`}
-                    shouldUpdate={(next: any, prev: any) =>
-                      next?.formik.values.grading[ix].feedback !==
-                      prev?.formik.values.grading[ix].feedback
-                    }
-                  >
-                    {({ field, meta }: FastFieldProps) => (
-                      <div className="mt-2 w-full">
-                        <FormLabel
-                          label={t('shared.generic.feedback')}
-                          labelType="small"
-                          required={false}
-                          className={{ label: 'text-black' }}
-                        />
-                        <ContentInput
-                          error={meta.error}
-                          touched={meta.touched}
-                          content={field.value || '<br>'}
-                          onChange={(newValue: string) => {
-                            setFieldValue(`grading.${ix}.feedback`, newValue)
-                            setFieldTouched(`grading.${ix}.feedback`, true)
-                          }}
-                          disabled={gradingCompleted}
-                          showToolbarOnFocus={false}
-                          placeholder={t(
-                            'manage.groupActivity.optionalQuestionFeedback'
-                          )}
-                          data={{ cy: `groupActivity-grading-comment-${ix}` }}
-                          className={{ content: 'max-w-none' }}
-                        />
-                      </div>
-                    )}
-                  </FastField>
-                  <div className="mt-2 flex w-max flex-row items-center justify-end gap-3 self-end">
-                    <FormikNumberField
-                      hideError
-                      required
-                      disabled={gradingCompleted}
-                      name={`grading.${ix}.score`}
-                      label={t('manage.groupActivity.achievedScore')}
-                      labelType="large"
-                      tooltip={t('manage.groupActivity.maxScoreTooltip')}
-                      min={0}
-                      max={
-                        (element.options?.pointsMultiplier ?? 1) *
-                        pointsPerInstance
-                      }
-                      data={{ cy: `groupActivity-grading-score-${ix}` }}
-                      className={{ input: 'w-20' }}
-                    />
-                    <div className="min-w-max">{`/ ${t(
-                      'manage.groupActivity.nPoints',
-                      {
-                        number:
-                          (element.options?.pointsMultiplier ?? 1) *
-                          pointsPerInstance,
-                      }
-                    )}`}</div>
-                  </div>
-                </div>
-              ))}
-              <div className="self-end border-t border-black pt-2 text-lg font-bold">
-                {t('manage.groupActivity.totalAchievedPoints', {
-                  achieved: values.grading.reduce((acc: number, result) => {
-                    return (
-                      acc +
-                      (String(result.score) === ''
-                        ? 0
-                        : parseFloat(String(result.score ?? 0)))
-                    )
-                  }, 0),
-                  total: maxPoints,
-                })}
-              </div>
-              <div className="-mt-4">
-                <H2>{t('manage.groupActivity.generalFeedback')}</H2>
-                <div className="mb-3 flex flex-row items-center gap-2">
-                  <div className="flex flex-row">
-                    {t('manage.groupActivity.didGroupPass')}
-                    <div className="mb-1 ml-0.5 mr-2 text-red-600">*</div>
-                  </div>
-                  <Button
-                    destructive={values.passed === true}
-                    onClick={() => setFieldValue('passed', true)}
-                    className={{
-                      root: twMerge(
-                        values.passed ? 'bg-green-600 hover:bg-green-700' : ''
-                      ),
-                    }}
-                    disabled={gradingCompleted}
-                    data={{ cy: 'groupActivity-passed' }}
-                  >
-                    <Button.Icon withoutLabel icon={faCheck} />
-                  </Button>
-                  <Button
-                    destructive={values.passed === false}
-                    onClick={() => setFieldValue('passed', false)}
-                    disabled={gradingCompleted}
-                    data={{ cy: 'groupActivity-failed' }}
-                  >
-                    <Button.Icon withoutLabel icon={faX} />
-                  </Button>
-                </div>
                 <FastField
-                  name="comment"
+                  name={`grading.${ix}.feedback`}
                   shouldUpdate={(next: any, prev: any) =>
-                    next?.formik.values.comment !== prev?.formik.values.comment
+                    next?.formik.values.grading[ix].feedback !==
+                    prev?.formik.values.grading[ix].feedback
                   }
                 >
                   {({ field, meta }: FastFieldProps) => (
-                    <ContentInput
-                      error={meta.error}
-                      touched={meta.touched}
-                      content={field.value || '<br>'}
-                      onChange={(newValue: string) => {
-                        setFieldValue('comment', newValue)
-                        setFieldTouched('comment', true)
-                      }}
-                      disabled={gradingCompleted}
-                      showToolbarOnFocus={false}
-                      placeholder={t('manage.groupActivity.optionalFeedback')}
-                      data={{ cy: 'groupActivity-general-grading-comment' }}
-                      className={{ content: 'max-w-none' }}
-                    />
+                    <div className="mt-2 w-full">
+                      <FormLabel
+                        label={t('shared.generic.feedback')}
+                        labelType="small"
+                        required={false}
+                        className={{ label: 'text-black' }}
+                      />
+                      <ContentInput
+                        error={meta.error}
+                        touched={meta.touched}
+                        content={field.value || '<br>'}
+                        onChange={(newValue: string) => {
+                          setFieldValue(`grading.${ix}.feedback`, newValue)
+                          setFieldTouched(`grading.${ix}.feedback`, true)
+                        }}
+                        disabled={gradingCompleted}
+                        showToolbarOnFocus={false}
+                        placeholder={t(
+                          'manage.groupActivity.optionalQuestionFeedback'
+                        )}
+                        data={{ cy: `groupActivity-grading-comment-${ix}` }}
+                        className={{ content: 'max-w-none' }}
+                      />
+                    </div>
                   )}
                 </FastField>
+                <div className="mt-2 flex w-max flex-row items-center justify-end gap-3 self-end">
+                  <FormikNumberField
+                    hideError
+                    required
+                    disabled={gradingCompleted}
+                    name={`grading.${ix}.score`}
+                    label={t('manage.groupActivity.achievedScore')}
+                    labelType="large"
+                    tooltip={t('manage.groupActivity.maxScoreTooltip')}
+                    min={0}
+                    max={
+                      (element.options?.pointsMultiplier ?? 1) *
+                      pointsPerInstance
+                    }
+                    data={{ cy: `groupActivity-grading-score-${ix}` }}
+                    className={{ input: 'w-20' }}
+                  />
+                  <div className="min-w-max">{`/ ${t(
+                    'manage.groupActivity.nPoints',
+                    {
+                      number:
+                        (element.options?.pointsMultiplier ?? 1) *
+                        pointsPerInstance,
+                    }
+                  )}`}</div>
+                </div>
               </div>
-              <Button
-                primary
-                disabled={!isValid || gradingCompleted}
-                type="submit"
-                loading={isSubmitting}
-                onClick={() => submitForm()}
-                className={{ root: 'float-right self-end' }}
-                data={{ cy: 'groupActivity-save-submission-grading' }}
-              >
-                <Button.Label>
-                  {t('manage.groupActivity.saveGrading')}
-                </Button.Label>
-              </Button>
-              <EditingDetector />
+            ))}
+            <div className="self-end border-t border-black pt-2 text-lg font-bold">
+              {t('manage.groupActivity.totalAchievedPoints', {
+                achieved: values.grading.reduce((acc: number, result) => {
+                  return (
+                    acc +
+                    (String(result.score) === ''
+                      ? 0
+                      : parseFloat(String(result.score ?? 0)))
+                  )
+                }, 0),
+                total: maxPoints,
+              })}
             </div>
-            <Toast
-              dismissible
-              openExternal={successToast}
-              onCloseExternal={() => setSuccessToast(false)}
-              type="success"
-              duration={4000}
+            <div className="-mt-4">
+              <H2>{t('manage.groupActivity.generalFeedback')}</H2>
+              <div className="mb-3 flex flex-row items-center gap-2">
+                <div className="flex flex-row">
+                  {t('manage.groupActivity.didGroupPass')}
+                  <div className="mb-1 ml-0.5 mr-2 text-red-600">*</div>
+                </div>
+                <Button
+                  destructive={values.passed === true}
+                  onClick={() => setFieldValue('passed', true)}
+                  className={{
+                    root: twMerge(
+                      values.passed ? 'bg-green-600 hover:bg-green-700' : ''
+                    ),
+                  }}
+                  disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-passed' }}
+                >
+                  <Button.Icon withoutLabel icon={faCheck} />
+                </Button>
+                <Button
+                  destructive={values.passed === false}
+                  onClick={() => setFieldValue('passed', false)}
+                  disabled={gradingCompleted}
+                  data={{ cy: 'groupActivity-failed' }}
+                >
+                  <Button.Icon withoutLabel icon={faX} />
+                </Button>
+              </div>
+              <FastField
+                name="comment"
+                shouldUpdate={(next: any, prev: any) =>
+                  next?.formik.values.comment !== prev?.formik.values.comment
+                }
+              >
+                {({ field, meta }: FastFieldProps) => (
+                  <ContentInput
+                    error={meta.error}
+                    touched={meta.touched}
+                    content={field.value || '<br>'}
+                    onChange={(newValue: string) => {
+                      setFieldValue('comment', newValue)
+                      setFieldTouched('comment', true)
+                    }}
+                    disabled={gradingCompleted}
+                    showToolbarOnFocus={false}
+                    placeholder={t('manage.groupActivity.optionalFeedback')}
+                    data={{ cy: 'groupActivity-general-grading-comment' }}
+                    className={{ content: 'max-w-none' }}
+                  />
+                )}
+              </FastField>
+            </div>
+            <Button
+              primary
+              disabled={!isValid || gradingCompleted}
+              type="submit"
+              loading={isSubmitting}
+              onClick={() => submitForm()}
+              className={{ root: 'float-right self-end' }}
+              data={{ cy: 'groupActivity-save-submission-grading' }}
             >
-              {t('manage.groupActivity.stackGradingSuccess')}
-            </Toast>
-            <Toast
-              dismissible
-              openExternal={errorToast}
-              onCloseExternal={() => setErrorToast(false)}
-              type="error"
-              duration={6000}
-            >
-              {t('manage.groupActivity.stackGradingError')}
-            </Toast>
-          </>
+              <Button.Label>
+                {t('manage.groupActivity.saveGrading')}
+              </Button.Label>
+            </Button>
+            <EditingDetector />
+          </div>
         )
       }}
     </Formik>

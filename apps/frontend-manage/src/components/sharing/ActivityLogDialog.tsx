@@ -25,14 +25,13 @@ function ActivityLogDialog({
 
   return (
     <Modal
-      asPortal={false}
       open={open}
       onClose={() => onOpenChange(false)}
       title={t('shared.activity.title')}
       data={{ cy: 'activity-log-dialog' }}
       dataCloseButton={{ cy: 'close-activity-log' }}
       className={{
-        content: 'max-w-3xl',
+        content: 'max-w-3xl, pb-2',
       }}
     >
       <ActivityLog visible={open} objectId={objectId} objectType={objectType} />

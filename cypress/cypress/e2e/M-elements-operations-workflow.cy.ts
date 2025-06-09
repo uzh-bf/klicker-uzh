@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 // global variable for ensured consistency with current dates
 const currentYear = new Date().getFullYear()
@@ -485,8 +486,20 @@ describe('Create different types of elements (with and without sample solution) 
       cy.createMicroLearning({
         name: ml,
         displayName: ml,
-        startDate: `${currentYear - 1}-01-01T02:00`,
-        endDate: `${currentYear + 1}-01-01T02:00`,
+        startDate: {
+          monthDelta: -3,
+          day: 16,
+          hour: 2,
+          minute: 0,
+          validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+        }, // 2 months in the past at 2:00
+        endDate: {
+          monthDelta: 3,
+          day: 14,
+          hour: 18,
+          minute: 0,
+          validation: getDatetimeValidationString(4, '14') + ', 18:00',
+        }, // 4 months in the future at 18:00
         courseName: this.data.update.course,
         stacks: [{ elements: [this.data.update.title1] }],
       })
@@ -504,8 +517,20 @@ describe('Create different types of elements (with and without sample solution) 
         displayName: ga,
         task: 'Task Description',
         courseName: this.data.update.course,
-        scheduledStartDate: `${currentYear - 1}-01-01T02:00`,
-        scheduledEndDate: `${currentYear + 1}-01-01T02:00`,
+        scheduledStartDate: {
+          monthDelta: -2,
+          day: 10,
+          hour: 12,
+          minute: 30,
+          validation: getDatetimeValidationString(-1, '10') + ', 12:30',
+        }, // 1 month in the past at 12:30
+        scheduledEndDate: {
+          monthDelta: 1,
+          day: 20,
+          hour: 14,
+          minute: 0,
+          validation: getDatetimeValidationString(2, '20') + ', 14:00',
+        }, // 2 months in the future at 14:00
         clues: [
           {
             type: 'text',

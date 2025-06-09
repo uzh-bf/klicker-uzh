@@ -1,6 +1,6 @@
 import { faPencil, faUserTie } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function UserGroupBadge({

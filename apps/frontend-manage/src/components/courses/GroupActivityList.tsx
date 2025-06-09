@@ -32,7 +32,10 @@ function GroupActivityList({
   const t = useTranslations()
 
   return (
-    <>
+    <div className="flex w-full flex-col items-end">
+      <div className="flex flex-row gap-2">
+        <ActivityListLegend />
+      </div>
       {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
       {groupActivities && groupActivities.length > 0 && !privatePreview ? (
         <div className="flex flex-col gap-2">
@@ -65,14 +68,11 @@ function GroupActivityList({
       privatePreview ? (
         <div className="mt-0.5 flex w-full flex-col">
           {privatePreview ? (
-            <>
-              <ActivityListLegend className="mr-2" />
-              <ActivityList
-                activities={groupActivityActivities}
-                noActivities={false}
-                hideActivityType
-              />
-            </>
+            <ActivityList
+              activities={groupActivityActivities}
+              noActivities={false}
+              hideActivityType
+            />
           ) : null}
         </div>
       ) : (
@@ -85,7 +85,7 @@ function GroupActivityList({
           {t('manage.course.noGroupActivities')}
         </UserNotification>
       )}
-    </>
+    </div>
   )
 }
 

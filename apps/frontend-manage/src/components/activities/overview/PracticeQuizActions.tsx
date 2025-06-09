@@ -11,7 +11,6 @@ import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletion
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import usePracticeQuizActions from '../actions/usePracticeQuizActions'
 import ActivityActions from './ActivityActions'
@@ -73,7 +72,6 @@ function PracticeQuizActions({
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -110,7 +108,6 @@ function PracticeQuizActions({
     setDeletionModal,
     setSharingModal,
     setRemovalModal,
-    setCopyToast,
     setActivityLogOpen,
   })
 
@@ -174,7 +171,6 @@ function PracticeQuizActions({
             setModalOpen={setRemovalModal}
           />
         )}
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
 
         {practiceQuiz && (
           <ActivityLogDialog

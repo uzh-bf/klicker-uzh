@@ -15,7 +15,6 @@ import MicroLearningEndingModal from '../../courses/modals/MicroLearningEndingMo
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import useMicroLearningActions from '../actions/useMicroLearningActions'
 import ActivityActions from './ActivityActions'
@@ -88,7 +87,6 @@ function MicrolearningActions({
 }) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
@@ -131,7 +129,6 @@ function MicrolearningActions({
 
   const actions = useMicroLearningActions({
     microLearning,
-    setCopyToast,
     setPublishModal,
     setRemovalModal,
     setDeletionModal,
@@ -224,8 +221,6 @@ function MicrolearningActions({
             setOpen={setExtensionModal}
           />
         )}
-
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
 
         {microLearning && (
           <ActivityLogDialog

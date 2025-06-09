@@ -1,9 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faClock,
-  faFileLines,
-  faHandPointer,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, faFileLines } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faLock,
@@ -24,11 +20,11 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
 import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
@@ -52,12 +48,17 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
-
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkAccessCopied'),
+      options: { duration: 4000 },
+    })
 
   const statusTagMap: Record<PublicationStatus, React.ReactElement | null> = {
     [PublicationStatus.Draft]: (
@@ -167,22 +168,19 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <StartLiveQuizButton liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     getAccessLink({
                       href,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name: quiz.name,
                     }),
                     dataUser?.userProfile?.catalyst
                       ? getLTIAccessLink({
                           href,
-                          setCopyToast,
+                          onSuccess: onSuccessToast,
                           t,
                           name: quiz.name,
                         })
@@ -222,7 +220,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `delete-live-quiz-${quiz.name}` },
                     },
                   ].flat()}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}
@@ -231,22 +228,19 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <RunningLiveQuizLink liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     getAccessLink({
                       href,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name: quiz.name,
                     }),
                     dataUser?.userProfile?.catalyst
                       ? getLTIAccessLink({
                           href,
-                          setCopyToast,
+                          onSuccess: onSuccessToast,
                           t,
                           name: quiz.name,
                         })
@@ -259,7 +253,6 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
                   ].flat()}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}
@@ -268,11 +261,8 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                 <EvaluationLinkLiveQuiz liveQuiz={quiz} />
                 <Dropdown
                   data={{ cy: `live-quiz-actions-${quiz.name}` }}
-                  className={{
-                    item: 'p-1 hover:bg-gray-200',
-                    viewport: 'bg-white',
-                  }}
-                  trigger={t('manage.course.otherActions')}
+                  className={{ item: 'py-1 text-sm' }}
+                  trigger={<ActivityActionsTrigger />}
                   items={[
                     {
                       label: (
@@ -292,14 +282,12 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
                       data: { cy: `duplicate-live-quiz-${quiz.name}` },
                     }),
                   ]}
-                  triggerIcon={faHandPointer}
                 />
               </>
             )}
           </div>
         </div>
 
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
         <LiveQuizDeletionModal
           quizId={quiz.id}
           open={deletionModal}

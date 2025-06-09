@@ -8,23 +8,23 @@ import {
 interface MicroLearningFormProps {
   id?: string
   values: MicroLearningFormValues
+  editMode: boolean
   createMicroLearning: any
   editMicroLearning: any
   setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
-  setErrorToastOpen: (isOpen: boolean) => void
-  editMode: boolean
+  onError: () => void
 }
 
 async function submitMicrolearningForm({
   id,
   values,
+  editMode,
   createMicroLearning,
   editMicroLearning,
   setSelectedCourseId,
   setIsWizardCompleted,
-  setErrorToastOpen,
-  editMode,
+  onError,
 }: MicroLearningFormProps) {
   try {
     let success = false
@@ -96,10 +96,12 @@ async function submitMicrolearningForm({
     if (success) {
       setSelectedCourseId(values.courseId)
       setIsWizardCompleted(true)
+    } else {
+      onError()
     }
   } catch (error) {
     console.log(error)
-    setErrorToastOpen(true)
+    onError()
   }
 }
 

@@ -19,7 +19,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -31,13 +31,9 @@ import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogCopyModal from './CatalogCopyModal'
 import CatalogImportModal from './CatalogImportModal'
-import CatalogObjectCopySuccessToast from './CatalogObjectCopySuccessToast'
-import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
 import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
-import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
-import CatalogRequestSuccessToast from './CatalogRequestSuccessToast'
 
 function CatalogObjectItem({
   object,
@@ -78,15 +74,6 @@ function CatalogObjectItem({
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
 
-  // toast states
-  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
-  const [showCopySuccessToast, setShowCopySuccessToast] = useState(false)
-  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
-  const [
-    showRequestCancellationSuccessToast,
-    setShowRequestCancellationSuccessToast,
-  ] = useState(false)
-
   const dropdownItems = useCatalogObjectActionsDropdown({
     object,
     actionsDisabled,
@@ -102,7 +89,7 @@ function CatalogObjectItem({
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object
@@ -217,7 +204,7 @@ function CatalogObjectItem({
                   <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </ForwardRefButton>
               }
-              className={{ viewport: 'z-20' }}
+              className={{ viewport: 'z-20', item: 'py-0.5 text-sm' }}
               data={{ cy: `actions-dropdown-${object.name}` }}
             />
           ) : null}
@@ -229,7 +216,11 @@ function CatalogObjectItem({
         <CatalogRequestModal
           open={requestModal}
           onSuccess={() => {
-            setShowRequestSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
@@ -241,17 +232,17 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogRequestSuccessToast
-        open={showRequestSuccessToast}
-        onClose={() => setShowRequestSuccessToast(false)}
-      />
 
       {/* functionality for users to copy a publicly available object */}
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
         <CatalogCopyModal
           open={copyModal}
           onSuccess={() => {
-            setShowCopySuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.copyCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setCopyModal(false)
           }}
           onClose={() => setCopyModal(false)}
@@ -262,17 +253,17 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectImportSuccessToast
-        open={showCopySuccessToast}
-        onClose={() => setShowCopySuccessToast(false)}
-      />
 
       {/* functionality for users to import a publicly available object */}
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
         <CatalogImportModal
           open={importModal}
           onSuccess={() => {
-            setShowImportSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.importCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setImportModal(false)
           }}
           onClose={() => setImportModal(false)}
@@ -283,17 +274,17 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectCopySuccessToast
-        open={showImportSuccessToast}
-        onClose={() => setShowImportSuccessToast(false)}
-      />
 
       {/* functionality to cancel request for requested catalog object */}
       {object.isRequested ? (
         <CatalogRequestCancellationModal
           open={requestCancellationModal}
           onSuccess={() => {
-            setShowRequestCancellationSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCancellationSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestCancellationModal(false)
           }}
           onClose={() => setRequestCancellationModal(false)}
@@ -304,10 +295,6 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogRequestCancellationSuccessToast
-        open={showRequestCancellationSuccessToast}
-        onClose={() => setShowRequestCancellationSuccessToast(false)}
-      />
 
       {managedAccess ? (
         <>

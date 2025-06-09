@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   faClock,
   faFileLines,
-  faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -23,12 +22,12 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
-import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
+import ActivityActionsTrigger from './ActivityActionsTrigger'
 import StatusTag from './StatusTag'
 import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
@@ -42,7 +41,7 @@ interface AccessLinkArgs {
   name: string
   t: ReturnType<typeof useTranslations>
   href: string
-  setCopyToast: (value: boolean) => void
+  onSuccess: () => void
   label?: string
 }
 
@@ -50,7 +49,7 @@ export function getAccessLink({
   name,
   t,
   href,
-  setCopyToast,
+  onSuccess,
   label,
 }: AccessLinkArgs) {
   return {
@@ -67,7 +66,7 @@ export function getAccessLink({
     onClick: () => {
       try {
         navigator.clipboard.writeText(href)
-        setCopyToast(true)
+        onSuccess()
       } catch (e) {}
     },
     data: {
@@ -80,7 +79,7 @@ export function getLTIAccessLink({
   name,
   t,
   href,
-  setCopyToast,
+  onSuccess,
   label,
 }: AccessLinkArgs) {
   return {
@@ -98,7 +97,7 @@ export function getLTIAccessLink({
       try {
         const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${href}`
         await navigator.clipboard.writeText(link)
-        setCopyToast(true)
+        onSuccess()
       } catch (e) {}
     },
     data: {
@@ -123,7 +122,6 @@ function PracticeQuizElement({
 }: PracticeQuizElementProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -138,6 +136,13 @@ function PracticeQuizElement({
       { query: GetSingleCourseDocument, variables: { courseId: courseId } },
     ],
   })
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkAccessCopied'),
+      options: { duration: 4000 },
+    })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
@@ -231,22 +236,19 @@ function PracticeQuizElement({
               />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   getAccessLink({
                     href,
-                    setCopyToast,
+                    onSuccess: onSuccessToast,
                     t,
                     name: practiceQuiz.name,
                   }),
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: practiceQuiz.name,
                       })
@@ -288,7 +290,6 @@ function PracticeQuizElement({
                   }),
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -298,16 +299,13 @@ function PracticeQuizElement({
               <PracticeQuizAccessLink practiceQuiz={practiceQuiz} href={href} />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: practiceQuiz.name,
                       })
@@ -345,7 +343,6 @@ function PracticeQuizElement({
                   },
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -355,16 +352,13 @@ function PracticeQuizElement({
               <PracticeQuizAccessLink practiceQuiz={practiceQuiz} href={href} />
               <Dropdown
                 data={{ cy: `practice-quiz-actions-${practiceQuiz.name}` }}
-                className={{
-                  item: 'p-1 hover:bg-gray-200',
-                  viewport: 'bg-white',
-                }}
-                trigger={t('manage.course.otherActions')}
+                className={{ item: 'py-1 text-sm' }}
+                trigger={<ActivityActionsTrigger />}
                 items={[
                   user?.catalyst
                     ? getLTIAccessLink({
                         href,
-                        setCopyToast,
+                        onSuccess: onSuccessToast,
                         t,
                         name: practiceQuiz.name,
                       })
@@ -409,7 +403,6 @@ function PracticeQuizElement({
                     : [],
                   deletionItem,
                 ].flat()}
-                triggerIcon={faHandPointer}
               />
             </>
           )}
@@ -418,7 +411,6 @@ function PracticeQuizElement({
           {statusMap[practiceQuiz.status]}
         </div>
       </div>
-      <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
       <PracticeQuizDeletionModal
         open={deletionModal}
         setOpen={setDeletionModal}

@@ -31,7 +31,7 @@ import {
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Collapsible, H3, H4 } from '@uzh-bf/design-system'
+import { Button, Collapsible, H3, H4, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -41,14 +41,8 @@ import { twMerge } from 'tailwind-merge'
 import ActivityNameChangeModal from '../courses/actions/ActivityNameChangeModal'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
-import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
-import TemplateCreationSuccessToast from '../courses/modals/TemplateCreationSuccessToast'
-import TemplateDeletionErrorToast from '../courses/modals/TemplateDeletionErrorToast'
 import TemplateDeletionModal from '../courses/modals/TemplateDeletionModal'
-import TemplateDeletionSuccessToast from '../courses/modals/TemplateDeletionSuccessToast'
-import TemplateEditErrorToast from '../courses/modals/TemplateEditErrorToast'
 import TemplateEditModal from '../courses/modals/TemplateEditModal'
-import TemplateEditSuccessToast from '../courses/modals/TemplateEditSuccessToast'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
 import EmbeddingModal from './EmbeddingModal'
 
@@ -158,12 +152,6 @@ function LiveQuiz({
   const [deletionTemplateModal, setDeletionTemplateModal] =
     useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
-  const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
-  const [templateCreationError, setTemplateCreationError] = useState(false)
-  const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
-  const [templateEditError, setTemplateEditError] = useState(false)
-  const [templateDeletionSuccess, setTemplateDeletionSuccess] = useState(false)
-  const [templateDeletionError, setTemplateDeletionError] = useState(false)
 
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
@@ -575,16 +563,40 @@ function LiveQuiz({
           activityType={ActivityType.LiveQuiz}
           open={deletionTemplateModal}
           setOpen={setDeletionTemplateModal}
-          onSuccess={() => setTemplateDeletionSuccess(true)}
-          onError={() => setTemplateDeletionError(true)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.template.templateDeletionSuccess'),
+              options: { duration: 3000 },
+            })
+          }
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.template.templateDeletionError'),
+              options: { duration: 4500 },
+            })
+          }
         />
         <TemplateEditModal
           activityId={quiz.id}
           activityType={ActivityType.LiveQuiz}
           open={editTemplateModal}
           setOpen={setEditTemplateModal}
-          onSuccess={() => setTemplateEditSuccess(true)}
-          onError={() => setTemplateEditError(true)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.template.templateEditSuccess'),
+              options: { duration: 3000 },
+            })
+          }
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.template.templateEditError'),
+              options: { duration: 4500 },
+            })
+          }
         />
 
         <TemplateConversionModal
@@ -592,32 +604,19 @@ function LiveQuiz({
           setOpen={(open) => setConversionModal({ ...conversionModal, open })}
           activityId={conversionModal.activityId}
           activityType={conversionModal.activityType}
-          onSuccess={() => setTemplateCreationSuccess(true)}
-          onError={() => setTemplateCreationError(true)}
-        />
-        <TemplateCreationSuccessToast
-          open={templateCreationSuccess}
-          onClose={() => setTemplateCreationSuccess(false)}
-        />
-        <TemplateCreationErrorToast
-          open={templateCreationError}
-          onClose={() => setTemplateCreationError(false)}
-        />
-        <TemplateEditSuccessToast
-          open={templateEditSuccess}
-          onClose={() => setTemplateEditSuccess(false)}
-        />
-        <TemplateEditErrorToast
-          open={templateEditError}
-          onClose={() => setTemplateEditError(false)}
-        />
-        <TemplateDeletionSuccessToast
-          open={templateDeletionSuccess}
-          onClose={() => setTemplateDeletionSuccess(false)}
-        />
-        <TemplateDeletionErrorToast
-          open={templateDeletionError}
-          onClose={() => setTemplateDeletionError(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.template.templateCreationSuccess'),
+              options: { duration: 3500 },
+            })
+          }
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.template.templateCreationError'),
+            })
+          }
         />
       </div>
     </>

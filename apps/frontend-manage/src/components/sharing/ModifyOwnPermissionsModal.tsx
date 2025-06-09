@@ -1,5 +1,5 @@
 import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ModifyOwnPermissionsModalProps {
@@ -21,14 +21,21 @@ function ModifyOwnPermissionsModal({
 
   return (
     <Modal
+      hideCloseButton
       open={open}
       onClose={onClose}
       title={t('manage.sharing.modifyOwnPermissionsTitle')}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-modify-own-permissions' }}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={onConfirm}
+      dataPrimaryAction={{ cy: 'confirm-modify-own-permissions' }}
       className={{ content: 'max-w-lg' }}
       dataCloseButton={{ cy: 'close-modify-own-permissions-modal' }}
-      hideCloseButton
     >
-      <div className="mb-6">
+      <div className="mt-2">
         {action === 'remove' ? (
           <p className="text-sm" data-cy="remove-own-access-warning">
             {t('manage.sharing.removeOwnPermissionsWarning')}
@@ -42,22 +49,6 @@ function ModifyOwnPermissionsModal({
             })}
           </p>
         )}
-      </div>
-
-      <div className="flex flex-row justify-between gap-2">
-        <Button
-          onClick={onClose}
-          data={{ cy: 'cancel-modify-own-permissions' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          onClick={onConfirm}
-          data={{ cy: 'confirm-modify-own-permissions' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
       </div>
     </Modal>
   )

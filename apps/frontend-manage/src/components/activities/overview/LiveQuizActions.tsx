@@ -6,17 +6,13 @@ import {
   PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
-import TemplateCreationErrorToast from '../../courses/modals/TemplateCreationErrorToast'
-import TemplateCreationSuccessToast from '../../courses/modals/TemplateCreationSuccessToast'
-import TemplateDeletionErrorToast from '../../courses/modals/TemplateDeletionErrorToast'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
-import TemplateDeletionSuccessToast from '../../courses/modals/TemplateDeletionSuccessToast'
-import TemplateEditErrorToast from '../../courses/modals/TemplateEditErrorToast'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
-import TemplateEditSuccessToast from '../../courses/modals/TemplateEditSuccessToast'
 import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -90,6 +86,7 @@ function LiveQuizActions({
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
+  const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
@@ -97,12 +94,6 @@ function LiveQuizActions({
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
-  const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
-  const [templateCreationError, setTemplateCreationError] = useState(false)
-  const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
-  const [templateEditError, setTemplateEditError] = useState(false)
-  const [templateDeletionSuccess, setTemplateDeletionSuccess] = useState(false)
-  const [templateDeletionError, setTemplateDeletionError] = useState(false)
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
     activityId: string
@@ -197,8 +188,20 @@ function LiveQuizActions({
             activityType={ActivityType.LiveQuiz}
             open={templateDeletionModal}
             setOpen={setTemplateDeletionModal}
-            onSuccess={() => setTemplateDeletionSuccess(true)}
-            onError={() => setTemplateDeletionError(true)}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateDeletionSuccess'),
+                options: { duration: 3000 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateDeletionError'),
+                options: { duration: 4500 },
+              })
+            }
           />
         )}
         {templateEditingModal && (
@@ -207,8 +210,20 @@ function LiveQuizActions({
             activityType={ActivityType.LiveQuiz}
             open={templateEditingModal}
             setOpen={setTemplateEditingModal}
-            onSuccess={() => setTemplateEditSuccess(true)}
-            onError={() => setTemplateEditError(true)}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateEditSuccess'),
+                options: { duration: 3000 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateEditError'),
+                options: { duration: 4500 },
+              })
+            }
           />
         )}
 
@@ -262,32 +277,19 @@ function LiveQuizActions({
           setOpen={(open) => setConversionModal({ ...conversionModal, open })}
           activityId={conversionModal.activityId}
           activityType={conversionModal.activityType}
-          onSuccess={() => setTemplateCreationSuccess(true)}
-          onError={() => setTemplateCreationError(true)}
-        />
-        <TemplateCreationSuccessToast
-          open={templateCreationSuccess}
-          onClose={() => setTemplateCreationSuccess(false)}
-        />
-        <TemplateCreationErrorToast
-          open={templateCreationError}
-          onClose={() => setTemplateCreationError(false)}
-        />
-        <TemplateEditSuccessToast
-          open={templateEditSuccess}
-          onClose={() => setTemplateEditSuccess(false)}
-        />
-        <TemplateEditErrorToast
-          open={templateEditError}
-          onClose={() => setTemplateEditError(false)}
-        />
-        <TemplateDeletionSuccessToast
-          open={templateDeletionSuccess}
-          onClose={() => setTemplateDeletionSuccess(false)}
-        />
-        <TemplateDeletionErrorToast
-          open={templateDeletionError}
-          onClose={() => setTemplateDeletionError(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.template.templateCreationSuccess'),
+              options: { duration: 3500 },
+            })
+          }
+          onError={() =>
+            toast({
+              type: 'error',
+              message: t('manage.template.templateCreationError'),
+            })
+          }
         />
 
         {liveQuiz && (

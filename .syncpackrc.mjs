@@ -10,6 +10,12 @@ export default {
     // 'local',
   ],
   semverGroups: [
+    // design-system should always be used with an exact version
+    {
+      range: '',
+      dependencies: ['@uzh-bf/design-system'],
+      packages: ['**'],
+    },
     {
       range: '',
       dependencyTypes: [

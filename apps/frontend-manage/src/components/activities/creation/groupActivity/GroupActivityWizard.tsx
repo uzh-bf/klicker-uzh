@@ -8,14 +8,13 @@ import {
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
 import useCoursesGroupsSplit from '@lib/hooks/useCoursesGroupsSplit'
+import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import { ElementSelectCourse } from '../../ElementCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
@@ -77,10 +76,7 @@ function GroupActivityWizard({
   editMode,
   duplicationMode,
 }: GroupActivityWizardProps) {
-  const router = useRouter()
   const t = useTranslations()
-
-  const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
@@ -211,8 +207,17 @@ function GroupActivityWizard({
       description: '',
       elements: [],
     },
-    startDate: dayjs().local().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
-    endDate: dayjs().add(8, 'days').format('YYYY-MM-DDTHH:mm'),
+    startDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(12, 'hours')
+      .toDate(),
+    endDate: dayjs()
+      .startOf('month')
+      .add(1, 'month')
+      .add(7, 'day')
+      .add(12, 'hours')
+      .toDate(),
     multiplier: '1',
     courseId: undefined,
     courseStartDate: undefined,
@@ -277,12 +282,10 @@ function GroupActivityWizard({
       : formDefaultValues.stack,
 
     startDate: initialValues?.scheduledStartAt
-      ? dayjs(initialValues?.scheduledStartAt)
-          .local()
-          .format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledStartAt).local().toDate()
       : formDefaultValues.startDate,
     endDate: initialValues?.scheduledEndAt
-      ? dayjs(initialValues?.scheduledEndAt).local().format('YYYY-MM-DDTHH:mm')
+      ? dayjs(initialValues?.scheduledEndAt).local().toDate()
       : formDefaultValues.endDate,
     courseStartDate: formDefaultValues.courseStartDate,
     courseEndDate: formDefaultValues.courseEndDate,
@@ -303,148 +306,151 @@ function GroupActivityWizard({
         createGroupActivity,
         editGroupActivity,
         setIsWizardCompleted,
-        setErrorToastOpen,
         setSelectedCourseId,
+        onError: () =>
+          toast({
+            type: 'error',
+            message: (
+              <div>
+                <div>
+                  {editMode
+                    ? t('manage.activityWizard.groupActivityEditingFailed')
+                    : t('manage.activityWizard.groupActivityCreationFailed')}
+                </div>
+                <div>{t('manage.activityWizard.considerFormErrors')}</div>
+              </div>
+            ),
+            options: { duration: 6000 },
+          }),
       })
     },
     [createGroupActivity, editGroupActivity, initialValues?.id]
   )
 
   return (
-    <>
-      <WizardLayout
-        title={title}
-        editMode={editMode}
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
-        workflowItems={workflowItems}
-        isCompleted={isWizardCompleted}
-        completionStep={
-          <CompletionStep
-            completionSuccessMessage={(elementName) => (
-              <div>
-                {editMode
-                  ? t.rich('manage.activityWizard.groupActivityEdited', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })
-                  : t.rich('manage.activityWizard.groupActivityCreated', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })}
-              </div>
-            )}
-            name={formData.name}
-            editMode={editMode}
-            viewElementHref={`/courses/${selectedCourseId}?tab=groupActivities`}
-            onRestartForm={() => {
-              setIsWizardCompleted(false)
-              closeWizard()
-            }}
-            resetForm={() => setFormData(formDefaultValues)}
-            setStepNumber={setActiveStep}
-            onCloseWizard={closeWizard}
-          />
-        }
-        steps={[
-          <GroupActivityInformationStep
-            key="group-activity-information-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={nameValidationSchema}
-            coursesWithGroups={coursesWithGroups}
-            coursesWithoutGroups={coursesWithoutGroups}
-            continueDisabled={coursesWithGroups?.length === 0}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <GroupActivityDescriptionStep
-            key="group-activity-description-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={descriptionValidationSchema}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <GroupActivitySettingsStep
-            key="group-activity-settings-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={settingsValidationSchema}
-            coursesWithGroups={coursesWithGroups}
-            coursesWithoutGroups={coursesWithoutGroups}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <GroupActivityStackClues
-            key="group-activity-stack-clues"
-            editMode={editMode}
-            selection={selection}
-            resetSelection={resetSelection}
-            acceptedTypes={acceptedTypes}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={stackCluesValiationSchema}
-            setStepValidity={setStepValidity}
-            onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            onSubmit={(newValues: GroupActivityFormValues) =>
-              handleSubmit({ ...formData, ...newValues })
-            }
-            closeWizard={closeWizard}
-          />,
-        ]}
-        saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
-        }}
-      />
-      <ElementCreationErrorToast
-        open={errorToastOpen}
-        setOpen={setErrorToastOpen}
-        error={
-          editMode
-            ? t('manage.activityWizard.groupActivityEditingFailed')
-            : t('manage.activityWizard.groupActivityCreationFailed')
-        }
-      />
-    </>
+    <WizardLayout
+      title={title}
+      editMode={editMode}
+      activeStep={activeStep}
+      setActiveStep={setActiveStep}
+      disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+      workflowItems={workflowItems}
+      isCompleted={isWizardCompleted}
+      completionStep={
+        <CompletionStep
+          completionSuccessMessage={(elementName) => (
+            <div>
+              {editMode
+                ? t.rich('manage.activityWizard.groupActivityEdited', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
+                  })
+                : t.rich('manage.activityWizard.groupActivityCreated', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
+                  })}
+            </div>
+          )}
+          name={formData.name}
+          editMode={editMode}
+          viewElementHref={`/courses/${selectedCourseId}?tab=groupActivities`}
+          onRestartForm={() => {
+            setIsWizardCompleted(false)
+            closeWizard()
+          }}
+          resetForm={() => setFormData(formDefaultValues)}
+          setStepNumber={setActiveStep}
+          onCloseWizard={closeWizard}
+        />
+      }
+      steps={[
+        <GroupActivityInformationStep
+          key="group-activity-information-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={nameValidationSchema}
+          coursesWithGroups={coursesWithGroups}
+          coursesWithoutGroups={coursesWithoutGroups}
+          continueDisabled={coursesWithGroups?.length === 0}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <GroupActivityDescriptionStep
+          key="group-activity-description-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={descriptionValidationSchema}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <GroupActivitySettingsStep
+          key="group-activity-settings-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={settingsValidationSchema}
+          coursesWithGroups={coursesWithGroups}
+          coursesWithoutGroups={coursesWithoutGroups}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <GroupActivityStackClues
+          key="group-activity-stack-clues"
+          editMode={editMode}
+          selection={selection}
+          resetSelection={resetSelection}
+          acceptedTypes={acceptedTypes}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={stackCluesValiationSchema}
+          setStepValidity={setStepValidity}
+          onPrevStep={(newValues: Partial<GroupActivityFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          onSubmit={(newValues: GroupActivityFormValues) =>
+            handleSubmit({ ...formData, ...newValues })
+          }
+          closeWizard={closeWizard}
+        />,
+      ]}
+      saveFormData={() => {
+        setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
+      }}
+    />
   )
 }
 

@@ -7,26 +7,23 @@ import {
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
-import { Button, FormikTextField, Toast } from '@uzh-bf/design-system'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@uzh-bf/design-system/dist/future'
+  Button,
+  FormikTextField,
+  toast,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../components/Layout'
 
 function AdminPanel() {
   const t = useTranslations()
-  const [toastType, setToastType] = useState<
-    'success' | 'alreadyAccess' | 'userNotExist' | 'error' | null
-  >(null)
-
   const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
   const [grantPrivatePreviewAccess] = useMutation(
     GrantPrivatePreviewAccessDocument
@@ -67,23 +64,38 @@ function AdminPanel() {
                     })
 
                     if (success?.grantPrivatePreviewAccess === 0) {
-                      // Success toast - access granted successfully
-                      setToastType('success')
+                      // success toast - access granted successfully
+                      toast({
+                        type: 'success',
+                        message: t('manage.admin.accessGranted'),
+                      })
                       resetForm()
                       return
                     } else if (success?.grantPrivatePreviewAccess === 1) {
-                      // Error toast - user does not exist
-                      setToastType('userNotExist')
+                      // error toast - user does not exist
+                      toast({
+                        type: 'error',
+                        message: t('manage.admin.userNotExist'),
+                        options: { duration: 6000 },
+                      })
                       return
                     } else if (success?.grantPrivatePreviewAccess === 2) {
-                      // Success toast - user already has private preview access
-                      setToastType('alreadyAccess')
+                      // success toast - user already has private preview access
+                      toast({
+                        type: 'success',
+                        message: t('manage.admin.alreadyAccess'),
+                        options: { duration: 6000 },
+                      })
                       resetForm()
                       return
                     }
 
-                    // Error toast - mutation failed / insufficient permissions for user triggering it
-                    setToastType('error')
+                    // error toast - mutation failed / insufficient permissions for user triggering it
+                    toast({
+                      type: 'error',
+                      message: t('manage.admin.grantAccessError'),
+                      options: { duration: 6000 },
+                    })
                   }}
                 >
                   {({ isValid, isSubmitting }) => (
@@ -165,48 +177,6 @@ function AdminPanel() {
           </AccordionItem>
         </Accordion>
       </div>
-
-      {/* Success toast - access granted successfully */}
-      <Toast
-        dismissible
-        type="success"
-        openExternal={toastType === 'success'}
-        onCloseExternal={() => setToastType(null)}
-      >
-        {t('manage.admin.accessGranted')}
-      </Toast>
-
-      {/* Success toast - user already has access */}
-      <Toast
-        dismissible
-        type="success"
-        openExternal={toastType === 'alreadyAccess'}
-        onCloseExternal={() => setToastType(null)}
-      >
-        {t('manage.admin.alreadyAccess')}
-      </Toast>
-
-      {/* Error toast - user does not exist */}
-      <Toast
-        dismissible
-        type="error"
-        openExternal={toastType === 'userNotExist'}
-        onCloseExternal={() => setToastType(null)}
-        duration={6000}
-      >
-        {t('manage.admin.userNotExist')}
-      </Toast>
-
-      {/* Error toast - mutation failed */}
-      <Toast
-        dismissible
-        type="error"
-        openExternal={toastType === 'error'}
-        onCloseExternal={() => setToastType(null)}
-        duration={6000}
-      >
-        {t('manage.admin.grantAccessError')}
-      </Toast>
     </Layout>
   )
 }

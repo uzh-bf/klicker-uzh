@@ -58,6 +58,7 @@ function LiveQuizList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.liveQuizList')}`}</Button.Label>
         </Button>
+        <ActivityListLegend />
       </div>
 
       {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
@@ -88,14 +89,11 @@ function LiveQuizList({
       {liveQuizActivities && liveQuizActivities.length > 0 && privatePreview ? (
         <div className="mt-0.5 flex w-full flex-col">
           {privatePreview ? (
-            <>
-              <ActivityListLegend className="mr-2" />
-              <ActivityList
-                activities={liveQuizActivities}
-                noActivities={false}
-                hideActivityType
-              />
-            </>
+            <ActivityList
+              activities={liveQuizActivities}
+              noActivities={false}
+              hideActivityType
+            />
           ) : null}
         </div>
       ) : (

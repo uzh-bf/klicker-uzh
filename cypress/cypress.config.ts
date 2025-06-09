@@ -1279,6 +1279,79 @@ export default defineConfig({
         },
         // #endregion
 
+        // ! Control Application
+        // #region
+        async verifyControlToken({ token }: { token: string }) {
+          const prisma = await connect()
+
+          try {
+            const user = await prisma.user.findUnique({
+              where: {
+                shortname: 'lecturer',
+                loginTokenExpiresAt: { gte: new Date() },
+              },
+            })
+
+            if (!user) {
+              console.log(user)
+              throw new Error(
+                'No user with the corresponding shortname and valid login token found.'
+              )
+            }
+
+            // remove any whitespaces from the token passed to the function
+            const sanitizedToken = token.replace(/\s/g, '')
+
+            return user.loginToken === sanitizedToken
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async getControlToken() {
+          const prisma = await connect()
+
+          try {
+            const user = await prisma.user.findUnique({
+              where: {
+                shortname: 'lecturer',
+                loginTokenExpiresAt: { gte: new Date() },
+              },
+            })
+
+            if (!user) {
+              return null
+            }
+
+            return user.loginToken
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
+        // ! Course Management / PINs
+        // #region
+        async getCoursePin({ courseName }: { courseName: string }) {
+          const prisma = await connect()
+
+          try {
+            const course = await prisma.course.findFirst({
+              where: {
+                name: courseName,
+              },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            return course.pinCode
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
         // ! Cleanup / Seeding
         // #region
         async seedDatabase() {
@@ -1424,6 +1497,7 @@ export default defineConfig({
             })
 
             // ? Test course seeding
+            const currentYear = new Date().getFullYear()
             await prisma.course.upsert({
               where: {
                 id: COURSE_ID_TEST,
@@ -1437,8 +1511,8 @@ export default defineConfig({
                 isGamificationEnabled: true,
                 color: '#016272',
                 pinCode: 123456789,
-                startDate: new Date('2020-01-01T00:00'),
-                endDate: new Date('2050-01-01T23:59'),
+                startDate: new Date(`${currentYear - 1}-01-01T00:00`),
+                endDate: new Date(`${currentYear + 10}-01-01T23:59`),
                 isGroupCreationEnabled: true,
                 groupDeadlineDate: new Date('2021-01-01T00:01'),
                 maxGroupSize: 5,

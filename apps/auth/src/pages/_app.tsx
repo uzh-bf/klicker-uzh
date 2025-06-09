@@ -1,12 +1,12 @@
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
+import { Toaster } from '@uzh-bf/design-system'
 import { SessionProvider } from 'next-auth/react'
 import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
-import '@/styles/globals.css'
-import '@uzh-bf/design-system/dist/style.css'
+import '../globals.css'
 
 export default function App({
   Component,
@@ -27,6 +27,7 @@ export default function App({
         getMessageFallback={getMessageFallback}
       >
         <SessionProvider session={session}>
+          <Toaster closeButton position="top-right" />
           <Component {...pageProps} />
         </SessionProvider>
       </NextIntlClientProvider>

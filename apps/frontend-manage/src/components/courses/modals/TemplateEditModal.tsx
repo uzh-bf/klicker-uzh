@@ -49,7 +49,7 @@ function TemplateEditModal({
       title={t('manage.template.editTemplate')}
       open={open}
       onClose={() => setOpen(false)}
-      className={{ content: 'gap-2' }}
+      className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
