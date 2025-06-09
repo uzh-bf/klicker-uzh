@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.58...v3.3.0-alpha.59) (2025-06-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** make sure that microlearning list does not throw error when empty ([60513db](https://github.com/uzh-bf/klicker-uzh/commit/60513db92441d69ae5488fbfa8d69e545e27749e))
+* **packages/graphql:** make sure that emails for failed final group assignments are only sent once per course ([#4716](https://github.com/uzh-bf/klicker-uzh/issues/4716)) ([4246c90](https://github.com/uzh-bf/klicker-uzh/commit/4246c9053409d079615bf3723cf89ff079eba821))
+
+
+### Other
+
+* **apps/frontend-manage:** move activity list legend into popover ([c32cc03](https://github.com/uzh-bf/klicker-uzh/commit/c32cc03d35f42a9a89a0b7a66898be747ddd0c4d))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** enhance catalog view and layout ([#4725](https://github.com/uzh-bf/klicker-uzh/issues/4725)) ([0fc67d2](https://github.com/uzh-bf/klicker-uzh/commit/0fc67d20e5144ce228f761908a54910000acaaeb))
+
 ## [3.3.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.57...v3.3.0-alpha.58) (2025-06-04)
 
 
