@@ -74,7 +74,8 @@ const httpTrigger = async function (
           if (
             typeof participantData !== 'string' &&
             participantData.sub &&
-            participantData.role === 'PARTICIPANT'
+            (participantData.role === 'PARTICIPANT' ||
+              participantData.role === 'TEMPORARY_PARTICIPANT')
           ) {
             messageId = `${participantData.sub}-${body.sessionId}`
           }

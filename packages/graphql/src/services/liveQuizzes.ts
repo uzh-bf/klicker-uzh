@@ -49,12 +49,16 @@ async function getCachedBlockResults({
   ctx: Context
   activeBlock: DB.ElementBlock & { elements: DB.ElementInstance[] }
 }) {
-  const redisMulti = ctx.redisExec.multi()
+  const redisMultiLb = ctx.redisExec.multi()
 
-  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
-  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lbTemporary`)
+  redisMultiLb.hgetall(
+    `lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lbTemporary`
+  )
 
-  const cacheData = await redisMulti.exec()
+  const cacheData = await redisMultiLb.exec()
 
   if (!cacheData) {
     return null
@@ -64,13 +68,14 @@ async function getCachedBlockResults({
 
   const liveQuizLeaderboard: Record<string, string> = mappedResults[0]
   const blockLeaderboard: Record<string, string> = mappedResults[1]
+  const liveQuizLeaderboardTemporary: Record<string, string> = mappedResults[2]
+  const blockLeaderboardTemporary: Record<string, string> = mappedResults[3]
 
   const instanceResults: Record<
     string,
     {
       info: Record<string, string>
       responseHashes: Record<string, string>
-      responses: Record<string, string>
       anonymousResults:
         | ElementResultsChoices
         | ElementResultsOpen
@@ -98,7 +103,7 @@ async function getCachedBlockResults({
 
     const mappedResults: any[] = cacheData.map(([_, result]) => result)
 
-    const [info, responseHashes, responses, results] = mappedResults
+    const [info, responseHashes, _, results] = mappedResults
 
     // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
     let anonymousResults:
@@ -335,14 +340,15 @@ async function getCachedBlockResults({
     instanceResults[instance.id] = {
       info,
       responseHashes,
-      responses,
       anonymousResults: anonymousResults ?? { total: 0 },
     }
   }
 
   return {
     liveQuizLeaderboard,
+    liveQuizLeaderboardTemporary,
     blockLeaderboard,
+    blockLeaderboardTemporary,
     instanceResults,
     activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
   }
@@ -362,6 +368,7 @@ async function unlinkCachedBlockResults({
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
   unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
+  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
   activeInstanceIds.forEach((instanceId) => {
     unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
     unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
@@ -1314,10 +1321,7 @@ export async function deactivateLiveQuizBlock(
   if (quiz.activeBlockId !== blockId) return quiz
 
   try {
-    // TODO: on ananymous sign-up create temporary participant leaderboard entry, set role accordingly, ensure that powerless in graphql
-    // TODO: extend cache with additional table for leaderboard entries of temporary participants
-    // TODO: extend logic below to update (ONLY UPDATE) temporary leaderboard entries (filter for safety, add comment that this is not required, since all ids should be valid)
-    // TODO: IN CACHE: anonymous leaderboard id = anonymous participant id and score - use same cache data for everything except leaderboard (NEW HERE) and add prefix / postifx to entries in responses table; handle correctly where checked
+    // TODO: CACHE - CHECK IF WE CAN ADD PREFIX / POSTFIX to temporary participant ids in responses cache table to ensure distinguishability between temporary and normal participants
     const cachedResults = await getCachedBlockResults({
       ctx,
       activeBlock: quiz.activeBlock,
@@ -1325,9 +1329,14 @@ export async function deactivateLiveQuizBlock(
 
     if (!cachedResults) return null
 
-    const { instanceResults, liveQuizLeaderboard, activeInstanceIds } =
-      cachedResults
+    const {
+      instanceResults,
+      liveQuizLeaderboard,
+      liveQuizLeaderboardTemporary,
+      activeInstanceIds,
+    } = cachedResults
 
+    // filter the leaderboard entries to only include those that have a valid participant id
     const existingParticipantsLB = (
       await Promise.allSettled(
         Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
@@ -1336,9 +1345,29 @@ export async function deactivateLiveQuizBlock(
           })
 
           if (!participant) return null
-
           return [id, score] as [string, string]
         })
+      )
+    ).flatMap((result) => {
+      if (result.status !== 'fulfilled' || !result.value) return []
+      return [result.value]
+    })
+
+    // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
+    // technically, this should not be required, since all ids should be valid, but it is a safety check
+    const existingTemporaryLB = (
+      await Promise.allSettled(
+        Object.entries(liveQuizLeaderboardTemporary).map(
+          async ([id, score]) => {
+            const tempLeadeboardEntry =
+              await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+                where: { id, quizId },
+              })
+
+            if (!tempLeadeboardEntry) return null
+            return [id, score] as [string, string]
+          }
+        )
       )
     ).flatMap((result) => {
       if (result.status !== 'fulfilled' || !result.value) return []
@@ -1400,6 +1429,12 @@ export async function deactivateLiveQuizBlock(
               ),
             }
           : undefined,
+        temporaryLeaderboard: {
+          update: existingTemporaryLB.map(([id, score]: [string, string]) => ({
+            where: { id, quizId },
+            data: { score: parseInt(score) },
+          })),
+        },
       },
       include: { blocks: { orderBy: { order: 'asc' } } },
     })
@@ -1468,10 +1503,10 @@ export async function endLiveQuiz(
     return null
   }
 
+  // update course leaderboard and participant XP
   try {
     const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
     const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
-
     const participants: Record<string, any> = {}
 
     Object.entries(quizXP).forEach(([id, xp]) => {
@@ -1488,7 +1523,7 @@ export async function endLiveQuiz(
 
     // quizXP should always be around as soon as there are logged-in participants (check first)
     // quizLB only for live quizzes that are compatible with points collection (check second)
-    if (quizXP) {
+    if (Object.keys(participants).length > 0) {
       let existingParticipants: {
         id: string
         score?: number
@@ -1877,6 +1912,7 @@ export async function cancelLiveQuiz(
           pinCode: null,
           activeBlock: { disconnect: true },
           leaderboard: { deleteMany: {} },
+          temporaryLeaderboard: { deleteMany: {} },
           feedbacks: { deleteMany: {} },
           confusionFeedbacks: { deleteMany: {} },
           blocks: {
@@ -2296,14 +2332,12 @@ export async function getLiveQuizLeaderboard(
     },
     include: {
       leaderboard: {
-        orderBy: {
-          score: 'desc',
-        },
         include: {
           participant: true,
           sessionParticipation: true,
         },
       },
+      temporaryLeaderboard: true,
       blocks: true,
     },
   })
@@ -2320,8 +2354,9 @@ export async function getLiveQuizLeaderboard(
 
   const participantProfilePublic =
     (participant?.isProfilePublic ?? false) ||
-    ctx.user?.role === 'USER' ||
-    ctx.user?.role === 'ADMIN'
+    ctx.user?.role === DB.UserRole.TEMPORARY_PARTICIPANT ||
+    ctx.user?.role === DB.UserRole.USER ||
+    ctx.user?.role === DB.UserRole.ADMIN
 
   // find the order attribute of the last exectued block
   const executedBlockOrders = quiz?.blocks
@@ -2332,26 +2367,42 @@ export async function getLiveQuizLeaderboard(
     ? Math.max(...executedBlockOrders)
     : 0
 
-  const preparedEntries = quiz?.leaderboard?.flatMap((entry) => {
-    if (!entry.sessionParticipation?.isActive) return []
+  const preparedEntries =
+    quiz?.leaderboard
+      ?.flatMap((entry) => {
+        if (!entry.sessionParticipation?.isActive) return []
 
-    return {
-      id: entry.id,
-      participantId: entry.participant.id,
-      username:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.username
-          : 'Anonymous',
-      avatar:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.avatar
-          : null,
-      score: entry.score,
-      level: levelFromXp(entry.participant.xp),
-      // isSelf: entry.participantId === ctx.user.sub,
-      lastBlockOrder,
-    }
-  })
+        return {
+          id: entry.id,
+          participantId: entry.participant.id,
+          username:
+            entry.participant.isProfilePublic && participantProfilePublic
+              ? entry.participant.username
+              : 'Anonymous',
+          avatar:
+            entry.participant.isProfilePublic && participantProfilePublic
+              ? entry.participant.avatar
+              : null,
+          score: entry.score,
+          level: levelFromXp(entry.participant.xp),
+          // isSelf: entry.participantId === ctx.user.sub,
+          lastBlockOrder,
+        }
+      })
+      .concat(
+        quiz?.temporaryLeaderboard?.flatMap((entry) => {
+          return {
+            id: 0, // temporary leaderboard entries do not have an id
+            participantId: entry.id,
+            username: participantProfilePublic ? entry.username : 'Anonymous',
+            avatar: participantProfilePublic ? entry.avatar : null,
+            score: entry.score,
+            level: 1, // temporary leaderboard entries do not have a experience points
+            // isSelf: entry.id === ctx.user.sub,
+            lastBlockOrder,
+          }
+        }) ?? []
+      ) ?? []
 
   const sortedEntries = sortBy(
     preparedEntries,
