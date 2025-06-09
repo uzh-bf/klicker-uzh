@@ -106,6 +106,21 @@ export function createParticipantToken(participantId: string) {
   )
 }
 
+export function createTemporaryParticipantToken(participantId: string) {
+  return JWT.sign(
+    {
+      sub: participantId,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '2w',
+    }
+  )
+}
+
 async function doParticipantLogin(
   {
     participantId,
@@ -160,6 +175,63 @@ export async function loginParticipant(
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
+}
+
+export async function loginTemporaryParticipant(
+  {
+    liveQuizId,
+    pseudonym,
+    locale,
+  }: { liveQuizId: string; pseudonym: string; locale?: DB.Locale | null },
+  ctx: Context
+) {
+  // check if the live quiz exists and is running
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId, status: DB.PublicationStatus.PUBLISHED },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // verify that no other participant or temporary participant in this live quiz exists with the same pseudonym
+  const existingParticipant = await ctx.prisma.participant.findFirst({
+    where: { username: pseudonym.trim() },
+  })
+
+  if (existingParticipant) {
+    return null // error: 'pseudonym already taken'
+  }
+
+  const existingTemporaryParticipant =
+    await ctx.prisma.temporaryLeaderboardEntry.findFirst({
+      where: {
+        username: pseudonym.trim(),
+        quizId: liveQuizId,
+      },
+    })
+
+  if (existingTemporaryParticipant) {
+    return null // error: 'pseudonym already taken'
+  }
+
+  // create a temporary leaderboard entry linked to the mentioned live quiz
+  const temporaryParticipant =
+    await ctx.prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: uuidv4(),
+        username: pseudonym.trim(),
+        score: 0,
+        quiz: {
+          connect: { id: liveQuizId },
+        },
+      },
+    })
+
+  // create and return a new valid token for the temporary participant
+  const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  return jwt
 }
 
 const rateLimitStore: Record<string, { count: number; lastRequest: number }> =

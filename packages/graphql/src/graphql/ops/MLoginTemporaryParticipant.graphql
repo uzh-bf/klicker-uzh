@@ -1,0 +1,11 @@
+mutation LoginTemporaryParticipant(
+  $liveQuizId: String!
+  $pseudonym: String!
+  $locale: LocaleType
+) {
+  loginTemporaryParticipant(
+    liveQuizId: $liveQuizId
+    pseudonym: $pseudonym
+    locale: $locale
+  )
+}

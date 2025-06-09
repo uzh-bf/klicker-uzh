@@ -363,6 +363,7 @@ export default {
       legend: 'Legend',
       collections: 'Collections',
       objects: 'Objects',
+      pseudonym: 'Pseudonym',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -792,6 +793,26 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       allQuestionsAnswered: 'You have already answered all active questions.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
+      thisLiveQuizGamified: 'This live quiz is gamified!',
+      loginSelectionHint:
+        'You are about to join a gamified live quiz. Please choose between the following options: <ul><li>Login with <b>KlickerUZH-Account</b>: Collect points and XP</li><li>Create a <b>temporary pseudonym</b>: Collect points in this live quiz only (points not available in course)</li><li>Particiate <b>anonymously</b>: Do not participate in the gamification elements</li></ul>',
+      loginWithAccount: 'Login with Klicker-Account',
+      createTemporaryPseudonym: 'Create temporary pseudonym',
+      participateAnonymously: 'Participate anonymously',
+      changeLoginMode: 'Change login mode',
+      pseudonymExplanation:
+        'By entering a <b>pseudonym</b> here, you can collect points in this gamified live quiz without having to create a KlickerUZH account. Collected points are only stored in connection with this live quiz and will not be visible on the course leaderboard.',
+      pseudonymRequired: 'Please enter a pseudonym.',
+      pseudonymMinLength:
+        'The pseudonym must be at least {length} characters long.',
+      pseudonymMaxLength:
+        'The pseudonym must not be longer than {length} characters.',
+      joinedSuccessfullyWithPseudonym:
+        'You have successfully joined the live quiz with the pseudonym <b>{pseudonym}</b>.',
+      pseudonymAlreadyExists:
+        'The chosen pseudonym is unfortunately already taken. Please choose another one.',
+      pseudonymCreationFailed:
+        'The creation of the pseudonym failed. Please try again.',
     },
     feedbacks: {
       title: 'Feedback Channel',

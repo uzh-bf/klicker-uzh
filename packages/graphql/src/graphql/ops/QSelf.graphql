@@ -1,6 +1,7 @@
 query Self {
   self {
     id
+    role
     email
     username
     avatar

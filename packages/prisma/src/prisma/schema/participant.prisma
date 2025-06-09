@@ -179,7 +179,7 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  id       String  @id @db.Uuid // participant id of temporary participant
+  id       String  @id @default(uuid()) @db.Uuid // participant id of temporary participant
   username String
   score    Int
   avatar   String?
