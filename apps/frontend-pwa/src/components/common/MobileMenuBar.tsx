@@ -36,11 +36,7 @@ function MobileMenuBar({
   }
   const items = participantMissing
     ? menuItems
-      ? menuItems
-      : undefined
-    : menuItems
-      ? [homeMenuItem, ...menuItems]
-      : [homeMenuItem]
+    : [homeMenuItem, ...(menuItems ?? [])]
 
   if (!items) {
     return <></>

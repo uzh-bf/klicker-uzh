@@ -7,14 +7,15 @@ import {
   LocaleType,
   Participant,
   StudentCourse,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import AvatarWithLevel from './AvatarWithLevel'
 
 interface HeaderProps {
   participant?: Partial<Participant>
@@ -85,9 +86,12 @@ function Header({
                 },
               ]}
               onChange={(newValue: string) => {
-                changeParticipantLocale({
-                  variables: { locale: newValue as LocaleType },
-                })
+                if (participant && participant.role === UserRole.Participant) {
+                  changeParticipantLocale({
+                    variables: { locale: newValue as LocaleType },
+                  })
+                }
+
                 router.push({ pathname, query }, asPath, {
                   locale: newValue,
                 })
@@ -111,7 +115,7 @@ function Header({
           </Link>
         )}
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
-        {participant ? (
+        {participant && participant.role === UserRole.Participant ? (
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
@@ -135,7 +139,7 @@ function Header({
               </Button>
             </Link>
           ))
-        ) : !previewMode ? (
+        ) : !previewMode && !participant ? (
           <Link href="/login">
             <Button
               className={{
@@ -147,49 +151,34 @@ function Header({
             </Button>
           </Link>
         ) : null}
-        {participant && (!participant?.avatar || !participant?.email) && (
-          <Link href="/editProfile">
-            <Button
-              primary
-              className={{
-                root: 'bg-uzh-red-100 hover:bg-uzh-red-80 h-8 py-0 text-white hover:text-white',
-              }}
-              data={{ cy: 'header-setup-profile' }}
-            >
-              <Button.Label>{t('pwa.general.setupProfile')}</Button.Label>
-            </Button>
-          </Link>
-        )}
-        <Link href={participant ? '/profile' : '/login'} legacyBehavior>
-          <Button
-            basic
-            className={{ root: 'relative !p-0 hover:bg-transparent' }}
-            data={{ cy: 'header-avatar' }}
-          >
-            <Image
-              src={
-                participant?.avatar
-                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant?.avatar}.svg`
-                  : '/user-solid.svg'
-              }
-              alt=""
-              width="35"
-              height="35"
-              className={twMerge(
-                'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white',
-                participant?.avatar ? '' : 'p-1'
-              )}
-            />
-            {participant?.level && (
-              <div
-                className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-white text-xs font-bold text-slate-600"
-                data-cy="participant-level"
+        {participant &&
+          participant.role === UserRole.Participant &&
+          (!participant?.avatar || !participant?.email) && (
+            <Link href="/editProfile">
+              <Button
+                primary
+                className={{
+                  root: 'bg-uzh-red-100 hover:bg-uzh-red-80 h-8 py-0 text-white hover:text-white',
+                }}
+                data={{ cy: 'header-setup-profile' }}
               >
-                {participant.level}
-              </div>
-            )}
-          </Button>
-        </Link>
+                <Button.Label>{t('pwa.general.setupProfile')}</Button.Label>
+              </Button>
+            </Link>
+          )}
+        {!participant || participant.role === UserRole.Participant ? (
+          <Link href={participant ? '/profile' : '/login'} legacyBehavior>
+            <AvatarWithLevel
+              avatar={participant?.avatar}
+              level={participant?.level}
+            />
+          </Link>
+        ) : (
+          <AvatarWithLevel
+            avatar={participant?.avatar}
+            level={participant?.level}
+          />
+        )}
       </div>
     </div>
   )
