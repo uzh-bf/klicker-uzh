@@ -168,16 +168,26 @@ function Header({
           )}
         {!participant || participant.role === UserRole.Participant ? (
           <Link href={participant ? '/profile' : '/login'} legacyBehavior>
+            <div
+              className="relative !p-0 hover:bg-transparent"
+              data-cy="header-avatar"
+            >
+              <AvatarWithLevel
+                avatar={participant?.avatar}
+                level={participant?.level}
+              />
+            </div>
+          </Link>
+        ) : (
+          <div
+            className="relative !p-0 hover:bg-transparent"
+            data-cy="header-avatar"
+          >
             <AvatarWithLevel
               avatar={participant?.avatar}
               level={participant?.level}
             />
-          </Link>
-        ) : (
-          <AvatarWithLevel
-            avatar={participant?.avatar}
-            level={participant?.level}
-          />
+          </div>
         )}
       </div>
     </div>

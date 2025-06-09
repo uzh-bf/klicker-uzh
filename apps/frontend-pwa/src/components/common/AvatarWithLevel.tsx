@@ -9,7 +9,7 @@ function AvatarWithLevel({
   level?: number | null
 }) {
   return (
-    <div className="relative !p-0 hover:bg-transparent" data-cy="header-avatar">
+    <>
       <Image
         src={
           avatar
@@ -32,7 +32,7 @@ function AvatarWithLevel({
           {level}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
