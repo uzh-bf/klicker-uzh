@@ -64,7 +64,7 @@ function ParticipantProfileModal({
         <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData
             level={participant.levelData}
-            xp={participant.xp}
+            xp={participant.xp ?? 0}
             avatar={participant.avatar}
             username={participant.username}
             achievements={participant.achievements}

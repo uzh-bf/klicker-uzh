@@ -2,73 +2,41 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementBlock,
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
-  LiveQuiz,
-  RunningLiveQuizUpdatedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
+import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
 import QuestionArea from '../../components/liveQuiz/QuestionArea'
 
-function Subscriber({
-  id,
-  subscribeToMore,
-}: {
-  id: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
-}) {
-  useEffect(() => {
-    subscribeToMore({
-      document: RunningLiveQuizUpdatedDocument,
-      variables: {
-        quizId: id,
-      },
-      updateQuery: (
-        prev: { studentLiveQuiz: LiveQuiz },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { runningLiveQuizUpdated: ElementBlock } }
-        }
-      ) => {
-        if (!subscriptionData.data) return prev
-        return Object.assign({}, prev, {
-          studentLiveQuiz: {
-            ...prev.studentLiveQuiz,
-            activeBlock: subscriptionData.data.runningLiveQuizUpdated,
-          },
-        })
-      },
-    })
-  }, [id, subscribeToMore])
-
-  return <div />
-}
+const DynamicAccountSelector = dynamic(
+  () => import('../../components/liveQuiz/AccountSelector'),
+  { ssr: false }
+)
 
 function Index({ id }: { id: string }) {
-  const [activeMobilePage, setActiveMobilePage] = useState('questions')
   const t = useTranslations()
+  const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
     variables: { id },
   })
-
   const { data: selfData } = useQuery(SelfDocument)
 
   if (!data?.studentLiveQuiz) {
@@ -204,7 +172,11 @@ function Index({ id }: { id: string }) {
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
     >
-      <Subscriber id={id} subscribeToMore={subscribeToMore} />
+      <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />
+      <DynamicAccountSelector
+        isGamificationEnabled={isGamificationEnabled}
+        quizId={id}
+      />
 
       <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
         <div

@@ -190,6 +190,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginTemporaryParticipant: t.id({
+        nullable: true,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pseudonym: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginTemporaryParticipant(args, ctx)
+        },
+      }),
+
       loginParticipantMagicLink: t.id({
         nullable: true,
         args: {

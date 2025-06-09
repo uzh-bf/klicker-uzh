@@ -105,12 +105,7 @@ export const Query = builder.queryType({
       self: t.field({
         nullable: true,
         type: Participant,
-        resolve: async (_, __, ctx) => {
-          if (!ctx.user?.sub) return null
-          return await ctx.prisma.participant.findUnique({
-            where: { id: ctx.user.sub },
-          })
-        },
+        resolve: async (_, __, ctx) => ParticipantService.getSelf(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({

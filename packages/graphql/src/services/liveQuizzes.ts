@@ -1314,6 +1314,10 @@ export async function deactivateLiveQuizBlock(
   if (quiz.activeBlockId !== blockId) return quiz
 
   try {
+    // TODO: on ananymous sign-up create temporary participant leaderboard entry, set role accordingly, ensure that powerless in graphql
+    // TODO: extend cache with additional table for leaderboard entries of temporary participants
+    // TODO: extend logic below to update (ONLY UPDATE) temporary leaderboard entries (filter for safety, add comment that this is not required, since all ids should be valid)
+    // TODO: IN CACHE: anonymous leaderboard id = anonymous participant id and score - use same cache data for everything except leaderboard (NEW HERE) and add prefix / postifx to entries in responses table; handle correctly where checked
     const cachedResults = await getCachedBlockResults({
       ctx,
       activeBlock: quiz.activeBlock,

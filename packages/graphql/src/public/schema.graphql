@@ -1588,6 +1588,7 @@ type Mutation {
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
+  loginTemporaryParticipant(liveQuizId: String!, pseudonym: String!): ID
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
@@ -1853,12 +1854,13 @@ type Participant {
   lastLoginAt: Date
   level: Int
   levelData: Level
-  locale: LocaleType!
+  locale: LocaleType
   participantGroups: [ParticipantGroup!]
   rank: Int
+  role: UserRole
   score: Float
   username: String!
-  xp: Int!
+  xp: Int
 }
 
 type ParticipantAchievementInstance {
@@ -2518,6 +2520,7 @@ enum UserLoginScope {
 enum UserRole {
   ADMIN
   PARTICIPANT
+  TEMPORARY_PARTICIPANT
   USER
 }
 

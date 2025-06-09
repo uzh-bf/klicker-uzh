@@ -365,6 +365,7 @@ export default {
       legend: 'Legende',
       collections: 'Sammlungen',
       objects: 'Objekte',
+      pseudonym: 'Pseudonym',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -795,6 +796,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bereits alle aktiven Fragen beantwortet.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
+      thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
+      loginSelectionHint:
+        'Sie sind dabei, an einem gamifizierten Live-Quiz teilzunehmen. Bitte wählen Sie zwischen den folgenden Optionen: <ul><li>Login mit <b>KlickerUZH-Konto</b>: Punkte und XP sammeln</li><li>Erstellen Sie ein <b>temporäres Pseudonym</b>: Sammeln Sie Punkte nur in diesem Live-Quiz (Punkte nicht im Kurs verfügbar)</li><li><b>Anonyme</b> Teilnahme: Nicht an den Gamifizierungselementen teilnehmen</li></ul>',
+      loginWithAccount: 'Login mit KlickerUZH-Konto',
+      createTemporaryPseudonym: 'Temporäres Pseudonym erstellen',
+      participateAnonymously: 'Anonym teilnehmen',
+      changeLoginMode: 'Login-Modus ändern',
+      pseudonymExplanation:
+        'Durch die Eingabe eines <b>Pseudonyms</b> können Sie Punkte in diesem gamifizierten Live-Quiz sammeln, ohne ein KlickerUZH-Konto erstellen zu müssen. Gesammelte Punkte werden nur im Zusammenhang mit diesem Live-Quiz gespeichert und nicht in der Kursrangliste angezeigt.',
+      pseudonymRequired: 'Bitte geben Sie ein Pseudonym ein.',
+      pseudonymMinLength:
+        'Das Pseudonym muss mindestens {length} Zeichen lang sein.',
+      pseudonymMaxLength:
+        'Das Pseudonym darf nicht länger als {length} Zeichen sein.',
+      joinedSuccessfullyWithPseudonym:
+        'Sie sind dem Live Quiz erfolgreich mit dem Pseudonym <b>{pseudonym}</b> beigetreten.',
+      pseudonymAlreadyExists:
+        'Das gewählte Pseudonym ist leider bereits vergeben. Bitte wählen Sie ein anderes.',
+      pseudonymCreationFailed:
+        'Die Erstellung des Pseudonyms ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
