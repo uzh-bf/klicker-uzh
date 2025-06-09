@@ -222,7 +222,7 @@ const serviceBusTrigger = async function (
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
-            response.choices
+            `[${String(response.choices)}]`
           )
           redisMulti.hincrby(
             `${sessionKey}:b:${sessionBlockId}:lb`,
@@ -301,7 +301,7 @@ const serviceBusTrigger = async function (
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
-            response.value
+            String(response.value)
           )
           redisMulti.hincrby(
             `${sessionKey}:b:${sessionBlockId}:lb`,
@@ -451,7 +451,7 @@ const serviceBusTrigger = async function (
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
-            response.selection.filter((r: number) => r !== -1) // filter out skipped response fields
+            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
           )
           redisMulti.hincrby(
             `${sessionKey}:b:${sessionBlockId}:lb`,
