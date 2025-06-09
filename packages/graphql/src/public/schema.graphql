@@ -1588,7 +1588,7 @@ type Mutation {
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
-  loginTemporaryParticipant(liveQuizId: String!, locale: LocaleType, pseudonym: String!): ID
+  loginTemporaryParticipant(liveQuizId: String!, pseudonym: String!): ID
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID

@@ -1,11 +1,3 @@
-mutation LoginTemporaryParticipant(
-  $liveQuizId: String!
-  $pseudonym: String!
-  $locale: LocaleType
-) {
-  loginTemporaryParticipant(
-    liveQuizId: $liveQuizId
-    pseudonym: $pseudonym
-    locale: $locale
-  )
+mutation LoginTemporaryParticipant($liveQuizId: String!, $pseudonym: String!) {
+  loginTemporaryParticipant(liveQuizId: $liveQuizId, pseudonym: $pseudonym)
 }

@@ -178,11 +178,7 @@ export async function loginParticipant(
 }
 
 export async function loginTemporaryParticipant(
-  {
-    liveQuizId,
-    pseudonym,
-    locale,
-  }: { liveQuizId: string; pseudonym: string; locale?: DB.Locale | null },
+  { liveQuizId, pseudonym }: { liveQuizId: string; pseudonym: string },
   ctx: Context
 ) {
   // check if the live quiz exists and is running

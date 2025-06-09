@@ -6,7 +6,6 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  LocaleType,
   LoginTemporaryParticipantDocument,
   SelfDocument,
   UserRole,
@@ -168,10 +167,6 @@ function AccountSelector({
                   variables: {
                     liveQuizId: quizId,
                     pseudonym: values.pseudonym,
-                    locale:
-                      typeof router.query.locale === 'string'
-                        ? (router.query.locale as LocaleType)
-                        : LocaleType.En,
                   },
                 })
 

@@ -43,7 +43,7 @@ const Profile = () => {
           isSelf={true}
           username={participant.username}
           avatar={participant.avatar}
-          xp={participant.xp}
+          xp={participant.xp ?? 0}
           level={participant.levelData}
           achievements={participant.achievements}
           possibleAchievements={achievements}

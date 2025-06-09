@@ -22476,18 +22476,6 @@
                 "deprecationReason": null
               },
               {
-                "name": "locale",
-                "description": null,
-                "type": {
-                  "kind": "ENUM",
-                  "name": "LocaleType",
-                  "ofType": null
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "pseudonym",
                 "description": null,
                 "type": {
