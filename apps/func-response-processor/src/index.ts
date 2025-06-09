@@ -278,7 +278,7 @@ const serviceBusTrigger = async function (
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            response.choices
+            `[${String(response.choices)}]`
           )
 
           // update both the regular and temporary live quiz leaderboards
@@ -362,7 +362,7 @@ const serviceBusTrigger = async function (
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            response.value
+            String(response.value)
           )
 
           // update both the regular and temporary live quiz leaderboards
@@ -521,7 +521,7 @@ const serviceBusTrigger = async function (
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            response.selection.filter((r: number) => r !== -1) // filter out skipped response fields
+            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
           )
 
           // update both the regular and temporary live quiz leaderboards
