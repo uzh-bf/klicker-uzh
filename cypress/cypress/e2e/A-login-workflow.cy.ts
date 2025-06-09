@@ -17,11 +17,11 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   it('Sign in to student account', () => {
     cy.clearAllCookies()
@@ -33,7 +33,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="submit-login"]').click()
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
   })
@@ -48,7 +48,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="submit-login"]').click()
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.viewport('macbook-16')
@@ -63,7 +63,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="submit-login"]').click()
     cy.get('[data-cy="homepage"]').should('exist')
 
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="edit-profile"]').click()
 
     cy.get('[data-cy="avatar-hair-select"]').contains(
@@ -172,17 +172,17 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.wait(1000)
 
     // modify password
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(this.data.newPassword)
     cy.get('[data-cy="update-account-password-repetition"]').type(
       this.data.newPassword
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // logout, reload page and log in again with new password
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.reload()
@@ -193,7 +193,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="homepage"]').should('exist')
 
     // modify password back to original value
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(
       Cypress.env('STUDENT_PASSWORD')
@@ -202,10 +202,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
       Cypress.env('STUDENT_PASSWORD')
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // login again with original credentials
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.reload()
@@ -226,7 +226,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="submit-login"]').click()
     cy.get('[data-cy="homepage"]').should('exist')
     cy.wait(1000)
-    cy.get('[data-cy="header-avatar"]').realClick()
+    cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="logout"]').click()
     cy.get('[data-cy="login-logo"]').should('exist')
   })

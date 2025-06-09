@@ -2344,13 +2344,14 @@ export async function getLiveQuizLeaderboard(
 
   if (!quiz) return []
 
-  const participant = ctx.user?.sub
-    ? await ctx.prisma.participant.findUnique({
-        where: {
-          id: ctx.user.sub,
-        },
-      })
-    : null
+  const participant =
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+      ? await ctx.prisma.participant.findUnique({
+          where: {
+            id: ctx.user.sub,
+          },
+        })
+      : null
 
   const participantProfilePublic =
     (participant?.isProfilePublic ?? false) ||
@@ -2392,7 +2393,7 @@ export async function getLiveQuizLeaderboard(
       .concat(
         quiz?.temporaryLeaderboard?.flatMap((entry) => {
           return {
-            id: 0, // temporary leaderboard entries do not have an id
+            id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
             participantId: entry.id,
             username: participantProfilePublic ? entry.username : 'Anonymous',
             avatar: participantProfilePublic ? entry.avatar : null,

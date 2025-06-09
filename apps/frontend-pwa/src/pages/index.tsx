@@ -20,14 +20,13 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import useStudentOverviewSplit from '~/lib/hooks/useStudentOverviewSplit'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
 
-const Index = function () {
+function Index() {
   const t = useTranslations()
 
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
@@ -35,9 +34,6 @@ const Index = function () {
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
-  const [endedMicroLearning, setEndedMicroLearning] = useState<
-    string | undefined
-  >()
 
   async function subscribeUser(
     subscriptionObject: PushSubscription,

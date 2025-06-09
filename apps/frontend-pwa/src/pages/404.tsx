@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import { SelfDocument, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -18,7 +18,8 @@ function MissingPage() {
           <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
           <div>{t('shared.error.404')}</div>
         </div>
-        {!dataParticipant?.self && (
+        {!dataParticipant?.self ||
+        dataParticipant.self.role !== UserRole.Participant ? (
           <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
             {t.rich('shared.error.pwaWithoutUser', {
               login: (text) => (
@@ -33,8 +34,7 @@ function MissingPage() {
               ),
             })}
           </div>
-        )}
-        {dataParticipant?.self && (
+        ) : (
           <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
             {t.rich('shared.error.pwaWithUser', {
               home: (text) => (

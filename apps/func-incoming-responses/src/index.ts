@@ -74,8 +74,20 @@ const httpTrigger = async function (
           if (
             typeof participantData !== 'string' &&
             participantData.sub &&
-            (participantData.role === 'PARTICIPANT' ||
-              participantData.role === 'TEMPORARY_PARTICIPANT')
+            participantData.role === 'PARTICIPANT'
+          ) {
+            messageId = `${participantData.sub}-${body.sessionId}`
+          }
+        } else if (parsedCookies['temporary_participant_token'] !== undefined) {
+          const participantData = verify(
+            parsedCookies['temporary_participant_token'],
+            process.env.APP_SECRET
+          )
+
+          if (
+            typeof participantData !== 'string' &&
+            participantData.sub &&
+            participantData.role === 'TEMPORARY_PARTICIPANT'
           ) {
             messageId = `${participantData.sub}-${body.sessionId}`
           }

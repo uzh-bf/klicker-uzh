@@ -38,7 +38,11 @@ export async function joinCourseWithPin(
     where: { pinCode: pin },
   })
 
-  if (!course || course.pinCode !== pin) {
+  if (
+    !course ||
+    course.pinCode !== pin ||
+    ctx.user.role !== DB.UserRole.PARTICIPANT
+  ) {
     return null
   }
 
@@ -219,7 +223,7 @@ export async function getCourseOverviewData(
   ctx: ContextWithUser
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -333,7 +337,7 @@ export async function getCourseOverviewData(
   if (!course) return null
 
   let participant: DB.Participant | null = null
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
     })
@@ -532,7 +536,11 @@ export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: ContextWithUser
 ) {
-  if (ctx.user?.sub && mode === 'course') {
+  if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'course'
+  ) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -628,7 +636,11 @@ export async function getStudentCourseLeaderboard(
         },
       }
     }
-  } else if (ctx.user?.sub && mode === 'biweekly') {
+  } else if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'biweekly'
+  ) {
     const { leaderboardEntries, count, sum } =
       await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
 

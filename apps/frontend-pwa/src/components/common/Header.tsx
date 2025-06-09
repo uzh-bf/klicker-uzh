@@ -139,7 +139,10 @@ function Header({
               </Button>
             </Link>
           ))
-        ) : !previewMode && !participant ? (
+        ) : !previewMode &&
+          (!participant ||
+            (participant?.role === UserRole.TemporaryParticipant &&
+              !router.pathname.includes('/session'))) ? (
           <Link href="/login">
             <Button
               className={{
@@ -166,7 +169,8 @@ function Header({
               </Button>
             </Link>
           )}
-        {!participant || participant.role === UserRole.Participant ? (
+        {!router.pathname.includes('/session') ||
+        participant?.role === UserRole.Participant ? (
           <Link href={participant ? '/profile' : '/login'} legacyBehavior>
             <div
               className="relative !p-0 hover:bg-transparent"
