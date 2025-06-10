@@ -2374,9 +2374,10 @@ export async function getLiveQuizLeaderboard(
     .filter((quizBlock) => quizBlock.status === DB.ElementBlockStatus.EXECUTED)
     .map((quizBlock) => Number(quizBlock.order))
 
-  const lastBlockOrder = executedBlockOrders
-    ? Math.max(...executedBlockOrders)
-    : 0
+  const lastBlockOrder =
+    executedBlockOrders && executedBlockOrders.length > 0
+      ? Math.max(...executedBlockOrders)
+      : 0
 
   const preparedEntries =
     quiz?.leaderboard
