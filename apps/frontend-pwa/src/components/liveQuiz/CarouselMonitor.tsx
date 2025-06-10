@@ -1,13 +1,13 @@
+import { CarouselApi } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useEffect } from 'react'
 
-// api is of type EmblaCarouselType | undefined (not exported from design-system)
 function CarouselMonitor({
   api,
   avatars,
   setFieldValue,
 }: {
-  api: any
+  api: CarouselApi | undefined
   avatars: string[]
   setFieldValue: (
     field: string,
