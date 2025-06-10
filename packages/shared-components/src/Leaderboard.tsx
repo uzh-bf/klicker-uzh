@@ -102,6 +102,11 @@ function Leaderboard({
     )
   }, [rankedEntriesAndSelf, topKOnly])
 
+  const hasTemporaryParticipants = useMemo(
+    () => filteredEntries.some((entry) => entry.isTemporary),
+    [filteredEntries]
+  )
+
   return (
     <div className={twMerge('space-y-4', className?.root)}>
       {!hidePodium && (
@@ -169,7 +174,7 @@ function Leaderboard({
             onLeaveLeaderboard={onLeave}
           />
         )}
-        {filteredEntries.some((entry) => entry.isTemporary) && (
+        {hasTemporaryParticipants && (
           <div className="text-base">
             * {t('pwa.liveQuiz.temporaryParticipantsLeaderboard')}
           </div>
