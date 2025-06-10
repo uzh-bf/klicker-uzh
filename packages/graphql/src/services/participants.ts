@@ -64,6 +64,10 @@ export async function updateParticipantProfile(
   { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return null
+  }
+
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 15) {
       return null
@@ -191,7 +195,7 @@ export async function getParticipation(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 
@@ -603,7 +607,8 @@ export async function flagElement(
       questionId: elementInstance.elementId,
       questionName: elementInstance.elementData.name,
       content: content,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
         practiceQuiz?.course?.notificationEmail ||

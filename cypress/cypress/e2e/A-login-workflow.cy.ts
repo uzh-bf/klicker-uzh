@@ -17,11 +17,11 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   it('Sign in to student account', () => {
     cy.clearAllCookies()
@@ -179,7 +179,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
       this.data.newPassword
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // logout, reload page and log in again with new password
     cy.get('[data-cy="header-avatar"]').click()
@@ -202,7 +202,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
       Cypress.env('STUDENT_PASSWORD')
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // login again with original credentials
     cy.get('[data-cy="header-avatar"]').click()

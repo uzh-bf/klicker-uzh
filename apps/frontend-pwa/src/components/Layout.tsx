@@ -3,6 +3,7 @@ import {
   Course,
   SelfDocument,
   StudentCourse,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
@@ -86,7 +87,10 @@ function Layout({
         <MobileMenuBar
           menuItems={mobileMenuItems}
           onClick={setActiveMobilePage}
-          participantMissing={!dataParticipant?.self}
+          participantMissing={
+            !dataParticipant?.self ||
+            dataParticipant.self.role === UserRole.TemporaryParticipant
+          }
         />
       </div>
     </>

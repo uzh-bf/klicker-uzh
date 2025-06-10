@@ -138,15 +138,21 @@ const serviceBusTrigger = async function (
             process.env.APP_SECRET
           ) as { sub: string; role: string }
 
-          if (
-            !(
-              participantData.role === 'PARTICIPANT' ||
-              participantData.role === 'TEMPORARY_PARTICIPANT'
-            )
-          ) {
+          if (participantData.role !== 'PARTICIPANT') {
             participantData = null
           } else {
             context.log("Participant's JWT verified", participantData)
+          }
+        } else if (parsedCookies['temporary_participant_token'] !== undefined) {
+          participantData = verify(
+            parsedCookies['temporary_participant_token'],
+            process.env.APP_SECRET
+          ) as { sub: string; role: string }
+
+          if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
+            participantData = null
+          } else {
+            context.log("Temporary Participant's JWT verified", participantData)
           }
         }
       } catch (e) {

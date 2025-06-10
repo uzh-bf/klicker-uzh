@@ -376,7 +376,7 @@ export async function getBookmarksPracticeQuiz(
   { quizId, courseId }: GetBookmarksPracticeQuizArgs,
   ctx: Context
 ) {
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 

@@ -226,7 +226,7 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
 
@@ -914,7 +914,12 @@ export async function checkParticipantNameAvailable(
     where: { username: username.trim() },
   })
 
-  if (!participant || participant.id === ctx.user?.sub) return true
+  if (
+    !participant ||
+    (ctx.user?.role === DB.UserRole.PARTICIPANT &&
+      participant.id === ctx.user?.sub)
+  )
+    return true
 
   return false
 }
@@ -1058,7 +1063,11 @@ export async function changeInitialSettings(
 
 export async function checkPublicPreviewAvailable(ctx: Context) {
   // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === DB.UserRole.PARTICIPANT) {
+  if (
+    !ctx.user?.sub ||
+    ctx.user?.role === DB.UserRole.PARTICIPANT ||
+    ctx.user?.role === DB.UserRole.TEMPORARY_PARTICIPANT
+  ) {
     return false
   }
 
@@ -1071,7 +1080,11 @@ export async function checkPublicPreviewAvailable(ctx: Context) {
 
 export async function checkPrivatePreviewAvailable(ctx: Context) {
   // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === DB.UserRole.PARTICIPANT) {
+  if (
+    !ctx.user?.sub ||
+    ctx.user?.role === DB.UserRole.PARTICIPANT ||
+    ctx.user?.role === DB.UserRole.TEMPORARY_PARTICIPANT
+  ) {
     return false
   }
 

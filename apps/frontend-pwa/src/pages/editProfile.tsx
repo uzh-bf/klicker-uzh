@@ -25,13 +25,13 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
     toast({
       type: 'error',
       message: t('pwa.profile.editProfileFailed'),
-      options: { duration: 8000 },
+      options: { duration: 6000 },
     })
   const onSuccess = () =>
     toast({
       type: 'success',
       message: t('pwa.profile.editProfileSuccess'),
-      options: { duration: 4000 },
+      options: { duration: 3500 },
     })
 
   useParticipantToken({
