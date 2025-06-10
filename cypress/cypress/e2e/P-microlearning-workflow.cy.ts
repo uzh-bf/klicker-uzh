@@ -768,6 +768,7 @@ describe('Different microlearning workflows', function () {
     })
 
     cy.get('[data-cy="extend-activity-confirm"]').click()
+    cy.wait(1000) // wait for the extension to be processed and stored
 
     // check that changing the date to the past does not work
     cy.get(
