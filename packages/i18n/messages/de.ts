@@ -816,6 +816,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das gewählte Pseudonym ist leider bereits vergeben. Bitte wählen Sie ein anderes.',
       pseudonymCreationFailed:
         'Die Erstellung des Pseudonyms ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      temporaryParticipantsLeaderboard:
+        'Temporäre Teilnehmende (sammeln nur in diesem gamifizierten Live-Quiz Punkte)',
     },
     feedbacks: {
       title: 'Feedback-Kanal',

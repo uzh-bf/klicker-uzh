@@ -276,6 +276,7 @@ export interface ILeaderboardEntry
   rank: number
   lastBlockOrder?: number
   isSelf?: boolean
+  isTemporary?: boolean // true for temporary participants, false for regular participants
   level?: number
   participant?: IParticipant
   participation?: IParticipation
@@ -297,6 +298,9 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     rank: t.exposeInt('rank'),
     lastBlockOrder: t.exposeInt('lastBlockOrder', { nullable: true }),
     isSelf: t.exposeBoolean('isSelf', {
+      nullable: true,
+    }),
+    isTemporary: t.exposeBoolean('isTemporary', {
       nullable: true,
     }),
     level: t.exposeInt('level', { nullable: true }),

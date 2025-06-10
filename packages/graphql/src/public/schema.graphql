@@ -1377,6 +1377,7 @@ type LeaderboardEntry {
   email: String
   id: Int!
   isSelf: Boolean
+  isTemporary: Boolean
   lastBlockOrder: Int
   level: Int
   participant: Participant
@@ -1858,6 +1859,7 @@ type Participant {
   participantGroups: [ParticipantGroup!]
   rank: Int
   role: UserRole
+  scopeQuizId: String
   score: Float
   username: String!
   xp: Int

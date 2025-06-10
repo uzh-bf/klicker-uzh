@@ -1321,7 +1321,6 @@ export async function deactivateLiveQuizBlock(
   if (quiz.activeBlockId !== blockId) return quiz
 
   try {
-    // TODO: CACHE - CHECK IF WE CAN ADD PREFIX / POSTFIX to temporary participant ids in responses cache table to ensure distinguishability between temporary and normal participants
     const cachedResults = await getCachedBlockResults({
       ctx,
       activeBlock: quiz.activeBlock,
@@ -1644,6 +1643,17 @@ export async function endLiveQuiz(
             })
           }
         }
+
+        // remove any temporary leaderboard entries that have not been updated after their creation (with score 0)
+        await prisma.temporaryLeaderboardEntry.deleteMany({
+          where: {
+            quizId: id,
+            score: 0,
+            createdAt: {
+              equals: prisma.temporaryLeaderboardEntry.fields.updatedAt,
+            },
+          },
+        })
 
         // if the live quiz is part of a course, update the course leaderboard
         // with the accumulated points and award achievements
@@ -2387,6 +2397,7 @@ export async function getLiveQuizLeaderboard(
           score: entry.score,
           level: levelFromXp(entry.participant.xp),
           // isSelf: entry.participantId === ctx.user.sub,
+          isTemporary: false,
           lastBlockOrder,
         }
       })
@@ -2400,6 +2411,7 @@ export async function getLiveQuizLeaderboard(
             score: entry.score,
             level: 1, // temporary leaderboard entries do not have a experience points
             // isSelf: entry.id === ctx.user.sub,
+            isTemporary: true,
             lastBlockOrder,
           }
         }) ?? []

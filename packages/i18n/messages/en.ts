@@ -813,6 +813,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The chosen pseudonym is unfortunately already taken. Please choose another one.',
       pseudonymCreationFailed:
         'The creation of the pseudonym failed. Please try again.',
+      temporaryParticipantsLeaderboard:
+        'Temporary participants (only collect points in this gamified live quiz)',
     },
     feedbacks: {
       title: 'Feedback Channel',

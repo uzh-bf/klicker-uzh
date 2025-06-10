@@ -37,6 +37,7 @@ export async function getSelf(ctx: Context) {
       ...temporaryParticipantData,
       id: ctx.user.sub,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
+      scopeQuizId: temporaryParticipantData.quizId,
       lastLoginAt: temporaryParticipantData.createdAt,
       isActive: true,
       isProfilePublic: true,

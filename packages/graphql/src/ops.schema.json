@@ -15687,6 +15687,18 @@
             "deprecationReason": null
           },
           {
+            "name": "isTemporary",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "lastBlockOrder",
             "description": null,
             "args": [],
@@ -28035,6 +28047,18 @@
             "type": {
               "kind": "ENUM",
               "name": "UserRole",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "scopeQuizId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,

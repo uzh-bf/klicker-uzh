@@ -1,4 +1,5 @@
 import type { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
@@ -14,6 +15,7 @@ export interface LeaderboardCombinedEntry {
   rank: number
   level?: number | null
   isSelf?: boolean | null
+  isTemporary?: boolean | null
 }
 
 interface LeaderboardProps {
@@ -54,6 +56,7 @@ function Leaderboard({
   podiumImgSrc,
   topKOnly,
 }: LeaderboardProps): React.ReactElement {
+  const t = useTranslations()
   const { rankedEntriesAndSelf, inTopK, selfEntry } = useMemo(
     () =>
       leaderboard.reduce<{
@@ -117,6 +120,7 @@ function Leaderboard({
             <ParticipantSelf
               key={entry.id}
               isActive={entry.isSelf}
+              isTemporary={entry.isTemporary}
               pseudonym={entry.username}
               avatar={entry.avatar}
               withAvatar={!hideAvatars}
@@ -134,6 +138,7 @@ function Leaderboard({
           ) : (
             <ParticipantOther
               key={entry.id}
+              isTemporary={entry.isTemporary}
               rank={entry.rank}
               pseudonym={entry.username}
               avatar={entry.avatar}
@@ -152,6 +157,7 @@ function Leaderboard({
         {typeof topKOnly !== 'undefined' && !inTopK && selfEntry && (
           <ParticipantSelf
             key={selfEntry.id}
+            isTemporary={selfEntry.isTemporary}
             isActive={selfEntry.isSelf ?? false}
             pseudonym={selfEntry.username}
             avatar={selfEntry.avatar}
@@ -162,6 +168,11 @@ function Leaderboard({
             onJoinLeaderboard={onJoin}
             onLeaveLeaderboard={onLeave}
           />
+        )}
+        {filteredEntries.some((entry) => entry.isTemporary) && (
+          <div className="text-base">
+            * {t('pwa.liveQuiz.temporaryParticipantsLeaderboard')}
+          </div>
         )}
       </div>
     </div>

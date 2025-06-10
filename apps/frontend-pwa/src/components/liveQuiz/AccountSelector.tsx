@@ -49,7 +49,10 @@ function AccountSelector({
     }
 
     // once the query has finished loading, check if the user is logged in and show the modal otherwise
-    if (!data?.self) {
+    if (
+      !data?.self ||
+      (data.self.scopeQuizId !== null && data.self.scopeQuizId !== quizId)
+    ) {
       setOpen(true)
       setLoginState(undefined) // reset login state if the user is not logged in
       return

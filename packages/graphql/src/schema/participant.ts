@@ -105,6 +105,7 @@ export const AvatarSettings = AvatarSettingsRef.implement({
 export interface IParticipant
   extends Omit<DB.Participant, 'password' | 'xp' | 'locale'> {
   role?: DB.UserRole
+  scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
   xp?: number | null
   locale?: DB.Locale | null
   rank?: number
@@ -121,6 +122,7 @@ export const Participant = ParticipantRef.implement({
     id: t.exposeID('id'),
 
     role: t.expose('role', { type: UserRole, nullable: true }),
+    scopeQuizId: t.exposeString('scopeQuizId', { nullable: true }), //
 
     locale: t.expose('locale', { type: LocaleType, nullable: true }),
     email: t.exposeString('email', { nullable: true }),

@@ -2,6 +2,7 @@ query Self {
   self {
     id
     role
+    scopeQuizId
     email
     username
     avatar
