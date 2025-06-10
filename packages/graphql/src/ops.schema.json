@@ -22472,6 +22472,18 @@
             "description": null,
             "args": [
               {
+                "name": "avatar",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "liveQuizId",
                 "description": null,
                 "type": {

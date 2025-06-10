@@ -42,7 +42,6 @@ export async function getSelf(ctx: Context) {
       isActive: true,
       isProfilePublic: true,
       isSSOAccount: false,
-      avatar: null,
       email: null,
       isEmailValid: false,
       avatarSettings: null,

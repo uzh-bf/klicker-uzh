@@ -178,7 +178,11 @@ export async function loginParticipant(
 }
 
 export async function loginTemporaryParticipant(
-  { liveQuizId, pseudonym }: { liveQuizId: string; pseudonym: string },
+  {
+    liveQuizId,
+    pseudonym,
+    avatar,
+  }: { liveQuizId: string; pseudonym: string; avatar?: string | null },
   ctx: Context
 ) {
   // check if the live quiz exists and is running
@@ -217,6 +221,7 @@ export async function loginTemporaryParticipant(
       data: {
         id: uuidv4(),
         username: pseudonym.trim(),
+        avatar: avatar ?? undefined,
         score: 0,
         quiz: {
           connect: { id: liveQuizId },

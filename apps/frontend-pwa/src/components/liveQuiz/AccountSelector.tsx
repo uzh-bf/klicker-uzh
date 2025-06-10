@@ -190,7 +190,9 @@ function AccountSelector({
               variables: {
                 liveQuizId: quizId,
                 pseudonym: values.pseudonym,
+                avatar: values.avatar !== '' ? values.avatar : undefined,
               },
+              refetchQueries: [{ query: SelfDocument }],
             })
 
             if (data?.loginTemporaryParticipant) {
