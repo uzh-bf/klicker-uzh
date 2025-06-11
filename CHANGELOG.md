@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.59...v3.3.0-alpha.60) (2025-06-11)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve rendering loop that blocked creation of case study elements ([#4732](https://github.com/uzh-bf/klicker-uzh/issues/4732)) ([1610ae3](https://github.com/uzh-bf/klicker-uzh/commit/1610ae3dcdf3faadaa61307d9fdc6dafea562434))
+
 ## [3.3.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.58...v3.3.0-alpha.59) (2025-06-09)
 
 
