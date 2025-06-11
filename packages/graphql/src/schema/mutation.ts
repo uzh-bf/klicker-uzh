@@ -195,6 +195,7 @@ export const Mutation = builder.mutationType({
         args: {
           liveQuizId: t.arg.string({ required: true }),
           pseudonym: t.arg.string({ required: true }),
+          avatar: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.loginTemporaryParticipant(args, ctx)

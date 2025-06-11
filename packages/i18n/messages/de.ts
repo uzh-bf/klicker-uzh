@@ -366,6 +366,7 @@ export default {
       collections: 'Sammlungen',
       objects: 'Objekte',
       pseudonym: 'Pseudonym',
+      selected: 'Ausgewählt',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -818,6 +819,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Erstellung des Pseudonyms ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
       temporaryParticipantsLeaderboard:
         'Temporäre Teilnehmende (sammeln nur in diesem gamifizierten Live-Quiz Punkte)',
+      pseudonymSelection: 'Pseudonym-Auswahl',
+      avatarExplanation:
+        'Falls sie möchten, können Sie hier Ihren <b>Avatar</b> für das Live-Quiz auswählen.',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
