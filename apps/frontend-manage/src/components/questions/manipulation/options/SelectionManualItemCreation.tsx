@@ -6,12 +6,11 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useEffect } from 'react'
 import Select from 'react-select'
 import Creatable from 'react-select/creatable'
 import { ElementFormTypesSelection } from '../types'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
-import useSelectionItemsChangeEffect from './useSelectionItemsChangeEffect'
 
 interface SelectionManualItemCreationProps {
   inputsDisabled?: boolean
@@ -48,11 +47,20 @@ function SelectionManualItemCreation({
   })
 
   // make sure that only valid elements are stored as correct answers (-> on item removal, the item should also be removed from the correct answers)
-  useSelectionItemsChangeEffect({
-    items,
-    solutions,
-    solutionHelpers,
-  })
+  useEffect(() => {
+    if (!solutions.value || !items.value || items.value.length === 0) {
+      return
+    }
+
+    const newFieldValues = solutions.value.filter((id) =>
+      items.value!.map((item) => item.id).includes(id)
+    )
+
+    solutionHelpers.setValue(newFieldValues)
+
+    // do not add value as a dependency --> rendering loop! - updates only on collection change desired
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.value])
 
   return (
     <div className="flex w-full flex-col">
