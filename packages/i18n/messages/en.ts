@@ -1141,6 +1141,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       emailUpdates: 'Project Updates via E-Mail',
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
+      newPassword: 'New Password',
+      changePassword: 'Change Password',
+      changeDelegatedLoginPassword: 'Change delegated login password',
+      changeDelegatedLoginPasswordMessage:
+        'Here you can change the password of the selected delegated login. Please note that the password will only be displayed once, so please write it down before confirming.',
     },
     token: {
       pageName: 'Token Generation',

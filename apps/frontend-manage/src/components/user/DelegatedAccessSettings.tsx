@@ -1,22 +1,19 @@
 import { useMutation, useSuspenseQuery } from '@apollo/client'
-import { faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faKey } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateUserLoginDocument,
   DeleteUserLoginDocument,
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
-import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import {
   Button,
   FormikSelectField,
   FormikTextField,
   H4,
   Label,
-  Modal,
   Prose,
-  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -25,24 +22,19 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import DelegatedAccessCreationModal from './DelegatedAccessCreationModal'
+import DelegatedAccessPassword, { PW_SETTINGS } from './DelegatedAccessPassword'
+import DelegatedPasswordChangeModal from './DelegatedPasswordChangeModal'
 import Setting from './Setting'
 
-const PW_SETTINGS = {
-  length: 16,
-  uppercase: true,
-  symbols: false,
-  numbers: true,
-}
-
-interface DelegatedAccessSettingsProps {
-  shortname?: string
-}
-
-function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
+function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   const t = useTranslations()
   const [confirmationModal, setConfirmationModal] = useState(false)
+  const [changePasswortModal, setChangePasswordModal] = useState<{
+    open: boolean
+    loginId?: string
+  }>({ open: false, loginId: undefined })
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
-  // const { data: scope } = useSuspenseQuery(GetUserScopeDocument)
 
   const [createUserLogin] = useMutation(CreateUserLoginDocument, {
     refetchQueries: [{ query: GetUserLoginsDocument }],
@@ -75,7 +67,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             <div
               key={login.id}
               className={twMerge(
-                'flex w-full flex-row justify-between rounded border border-solid bg-neutral-200 p-1'
+                'flex w-full flex-row justify-between rounded-md border border-solid px-2.5 py-1.5 shadow-sm'
               )}
             >
               <div className="ml-1 flex flex-row items-center gap-5">
@@ -92,8 +84,8 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   {t(`manage.settings.${login.scope}`)}
                 </div>
               </div>
-              <div className="flex flex-row gap-0.5">
-                <div className="mr-2 mt-auto text-sm text-neutral-500">
+              <div className="flex flex-row gap-1.5">
+                <div className="mr-1 mt-auto text-sm text-neutral-500">
                   {login.lastLoginAt
                     ? t('manage.settings.lastUsed', {
                         date: dayjs(login.lastLoginAt).format('DD.MM.YYYY'),
@@ -101,9 +93,20 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     : t('manage.settings.lastUsedNever')}
                 </div>
                 <Button
-                  className={{
-                    root: 'group h-7 w-7 border-red-600 bg-transparent text-red-600 hover:text-red-600',
-                  }}
+                  className={{ root: 'h-7 w-7' }}
+                  onClick={() =>
+                    setChangePasswordModal({
+                      open: true,
+                      loginId: login.id,
+                    })
+                  }
+                  data={{ cy: `change-password-delegated-login-${login.name}` }}
+                >
+                  <Button.Icon withoutLabel icon={faKey} />
+                </Button>
+                <Button
+                  destructive
+                  className={{ root: 'h-7 w-7' }}
                   onClick={() =>
                     deleteUserLogin({ variables: { id: login.id } })
                   }
@@ -117,8 +120,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
         </div>
 
         <div className={(userLogins.userLogins?.length || 0) > 0 ? 'mt-5' : ''}>
-          <H4>{t('manage.settings.createDelegatedLogin')}</H4>
-          <Prose className={{ root: 'max-w-none' }}>
+          <H4 className={{ root: 'mb-0' }}>
+            {t('manage.settings.createDelegatedLogin')}
+          </H4>
+          <Prose className={{ root: 'mb-3 max-w-none' }}>
             {t('manage.settings.delegatedLoginDescription')}
           </Prose>
           <Formik
@@ -170,53 +175,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       />
                       <div>{shortname}</div>
                     </div>
-                    <div className="flex w-full flex-row items-center justify-between md:w-1/2">
-                      <div className="flex flex-row items-center gap-3">
-                        <Label
-                          label={t('shared.generic.password')}
-                          tooltip={t('manage.settings.passwordTooltip')}
-                          className={{
-                            root: 'font-bold',
-                            tooltip: 'font-normal',
-                          }}
-                          showTooltipSymbol
-                        />
-                        <div className={monoSpaceFont.className}>
-                          {values.password}
-                        </div>
-                      </div>
-                      <div className="flex flex-row gap-0.5">
-                        <Button
-                          onClick={() => {
-                            navigator?.clipboard
-                              ?.writeText(values.password)
-                              .then(() => {
-                                toast({
-                                  type: 'success',
-                                  message: t('manage.settings.copiedPassword'),
-                                  options: { duration: 4000 },
-                                })
-                              })
-                          }}
-                          className={{ root: 'h-8 w-8' }}
-                          data={{ cy: 'copy-new-delegated-login-password' }}
-                        >
-                          <Button.Icon withoutLabel icon={faClipboard} />
-                        </Button>
-                        <Button
-                          onClick={() =>
-                            setFieldValue(
-                              'password',
-                              generatePassword.generate(PW_SETTINGS)
-                            )
-                          }
-                          className={{ root: 'h-8 w-8' }}
-                          data={{ cy: 'generate-new-delegated-login-password' }}
-                        >
-                          <Button.Icon withoutLabel icon={faArrowsRotate} />
-                        </Button>
-                      </div>
-                    </div>
+                    <DelegatedAccessPassword
+                      password={values.password}
+                      setFieldValue={setFieldValue}
+                    />
                   </div>
                   <div className="mt-1.5 flex flex-col gap-2 md:flex-row md:gap-0">
                     <FormikTextField
@@ -263,65 +225,25 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       {t('manage.settings.createLogin')}
                     </Button.Label>
                   </Button>
-                  <Modal
-                    title={t('manage.settings.confirmDelegatedAcces')}
-                    open={confirmationModal}
-                    onClose={() => setConfirmationModal(false)}
-                    className={{ content: 'h-max !min-h-[10rem] w-1/2 !pb-1' }}
-                  >
-                    <div>
-                      {t('manage.settings.confirmDelegatedAccesTooltip')}
-                    </div>
-                    <div className="my-2 rounded-lg bg-gray-300 px-3 py-2">
-                      <div>
-                        <span className="font-bold">
-                          {t('shared.generic.shortname')}:{' '}
-                        </span>
-                        {shortname}
-                      </div>
-                      <div className="flex flex-row items-center gap-2">
-                        <div>
-                          <span className="font-bold">
-                            {t('shared.generic.password')}:{' '}
-                          </span>
-                          {values.password}
-                        </div>
-                        <Button
-                          onClick={() => {
-                            navigator?.clipboard
-                              ?.writeText(values.password)
-                              .then(() => {
-                                toast({
-                                  type: 'success',
-                                  message: t('manage.settings.copiedPassword'),
-                                  options: { duration: 4000 },
-                                })
-                              })
-                          }}
-                          className={{ root: 'h-8 w-8' }}
-                          data={{ cy: 'copy-new-delegated-login-password' }}
-                        >
-                          <Button.Icon withoutLabel icon={faClipboard} />
-                        </Button>
-                      </div>
-                    </div>
-                    <Button
-                      primary
-                      loading={isSubmitting}
-                      disabled={!isValid}
-                      onClick={() => submitForm()}
-                      className={{ root: 'float-right my-2' }}
-                      data={{ cy: 'confirm-delegated-login-creation' }}
-                    >
-                      <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-                    </Button>
-                  </Modal>
+                  <DelegatedAccessCreationModal
+                    confirmationModal={confirmationModal}
+                    setConfirmationModal={setConfirmationModal}
+                    shortname={shortname ?? ''}
+                    values={values}
+                    isSubmitting={isSubmitting}
+                    isValid={isValid}
+                    submitForm={submitForm}
+                  />
                 </Form>
               )
             }}
           </Formik>
         </div>
       </div>
+      <DelegatedPasswordChangeModal
+        changePasswortModal={changePasswortModal}
+        setChangePasswordModal={setChangePasswordModal}
+      />
     </Setting>
   )
 }
