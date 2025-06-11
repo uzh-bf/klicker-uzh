@@ -71,25 +71,6 @@ function CaseStudyCollectionSelection({
     setSelectedItems,
   })
 
-  // update the selected correct answers if the answer collection changes
-  useEffect(() => {
-    if (
-      !itemsField.value ||
-      !collectionAnswers ||
-      collectionAnswers.length === 0
-    ) {
-      return
-    }
-
-    const newFieldValues = itemsField.value.filter((id) =>
-      collectionAnswers.map((entry) => entry.value).includes(id)
-    )
-
-    itemsHelpers.setValue(newFieldValues)
-    // do not add value as a dependency --> rendering loop! - updates only on collection change desired
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionAnswers])
-
   // update the solutions stored on the cases to be consistent with the selected items
   useEffect(() => {
     // map over the cases and remove any solutions that do not belong to one of the selected items

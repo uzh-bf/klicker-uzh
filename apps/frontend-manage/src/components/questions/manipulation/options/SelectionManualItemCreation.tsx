@@ -48,7 +48,11 @@ function SelectionManualItemCreation({
 
   // make sure that only valid elements are stored as correct answers (-> on item removal, the item should also be removed from the correct answers)
   useEffect(() => {
+    // if no items are available, reset the solution field
     if (!solutions.value || !items.value || items.value.length === 0) {
+      if (solutions.value?.length) {
+        solutionHelpers.setValue([])
+      }
       return
     }
 
@@ -56,7 +60,13 @@ function SelectionManualItemCreation({
       items.value!.map((item) => item.id).includes(id)
     )
 
-    solutionHelpers.setValue(newFieldValues)
+    // if the existing solutions and the new ones are not the same, update the solutions field
+    if (
+      solutions.value.length !== newFieldValues.length ||
+      solutions.value.some((id) => !newFieldValues.includes(id))
+    ) {
+      solutionHelpers.setValue(newFieldValues)
+    }
 
     // do not add value as a dependency --> rendering loop! - updates only on collection change desired
     // eslint-disable-next-line react-hooks/exhaustive-deps

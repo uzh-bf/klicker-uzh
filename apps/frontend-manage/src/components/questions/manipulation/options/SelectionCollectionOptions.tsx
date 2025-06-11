@@ -67,11 +67,15 @@ function SelectionCollectionOptions({
 
   // udpate the selected correct answers if the answer collection changes
   useEffect(() => {
+    // if no collection answers are available, reset the solutions field
     if (
       !solutions.value ||
       !collectionAnswers ||
       collectionAnswers.length === 0
     ) {
+      if (solutions.value?.length) {
+        solutionHelpers.setValue([])
+      }
       return
     }
 
@@ -79,13 +83,17 @@ function SelectionCollectionOptions({
       collectionAnswers.map((entry) => entry.value).includes(id)
     )
 
-    solutionHelpers.setValue(newFieldValues)
+    // if the existing solutions and the new ones are not the same, update the solutions field
+    if (
+      solutions.value.length !== newFieldValues.length ||
+      solutions.value.some((id) => !newFieldValues.includes(id))
+    ) {
+      solutionHelpers.setValue(newFieldValues)
+    }
 
     // do not add value as a dependency --> rendering loop! - updates only on collection change desired
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionAnswers])
-
-  console.log(solutions.value)
 
   // locally store the selected answer collection
   const selectedCollection = useMemo(() => {
