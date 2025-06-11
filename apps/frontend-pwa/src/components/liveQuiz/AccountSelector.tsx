@@ -315,7 +315,6 @@ function AccountSelector({
                             'flex h-40 w-40 cursor-pointer items-center justify-center',
                             avatar === '' && 'p-5 pt-14'
                           )}
-                          onClick={() => setFieldValue('avatar', avatar)}
                         >
                           <Image
                             src={

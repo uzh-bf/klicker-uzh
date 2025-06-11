@@ -952,6 +952,11 @@ export async function createUserLogin(
   { password, name, scope }: UserLoginProps,
   ctx: ContextWithUser
 ) {
+  // verify that the user is account owner
+  if (ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER) {
+    return null
+  }
+
   const hashedPassword = await bcrypt.hash(password, 12)
   const login = await ctx.prisma.userLogin.create({
     data: {
@@ -972,6 +977,36 @@ export async function createUserLogin(
   })
 
   return login
+}
+
+export async function updateUserLogin(
+  {
+    id,
+    password,
+  }: {
+    id: string
+    password: string
+  },
+  ctx: ContextWithUser
+) {
+  // check if the user is the owner of the account belonging to the login
+  const login = await ctx.prisma.userLogin.findUnique({
+    where: { id, userId: ctx.user.sub },
+  })
+
+  if (!login || ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER) {
+    return null
+  }
+
+  // update the password
+  const hashedPassword = await bcrypt.hash(password, 12)
+  const updatedLogin = await ctx.prisma.userLogin.update({
+    where: { id },
+    data: { password: hashedPassword },
+    include: { user: true },
+  })
+
+  return updatedLogin
 }
 
 export async function deleteUserLogin(

@@ -3423,6 +3423,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateUserLogin: t.withAuth(asUserOwner).field({
+        nullable: true,
+        type: UserLogin,
+        args: {
+          id: t.arg.string({ required: true }),
+          password: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.updateUserLogin(args, ctx)
+        },
+      }),
+
       deleteUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,

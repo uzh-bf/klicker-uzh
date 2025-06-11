@@ -1106,7 +1106,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       languageTooltip:
         'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
       confirmDelegatedAcces: 'Delegierten Login bestätigen',
-      confirmDelegatedAccesTooltip:
+      confirmDelegatedAccessTooltip:
         'Bitte überprüfen Sie die Zugangsdaten für den delegierten Login. Kopieren Sie das Passwort, bevor Sie dieses Pop-Up schliessen, da es nicht erneut angezeigt werden kann.',
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Live Quizzes',
@@ -1142,6 +1142,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
+      changePassword: 'Passwort ändern',
+      changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
+      changeDelegatedLoginPasswordMessage:
+        'Hier können Sie das Passwort des gewählten delegierten Logins ändern. Bitte beachten Sie, dass das Passwort nur einmalig angezeigt wird, bitte notieren Sie es sich daher vor dem Bestätigen.',
+      newPassword: 'Neues Passwort',
     },
     token: {
       pageName: 'Token Generation',
