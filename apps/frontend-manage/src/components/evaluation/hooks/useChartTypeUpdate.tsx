@@ -32,6 +32,7 @@ function useChartTypeUpdate({
         setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInstance, activeElementType])
 }
 
