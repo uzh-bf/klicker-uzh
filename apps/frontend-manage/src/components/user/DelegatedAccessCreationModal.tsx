@@ -28,7 +28,7 @@ function DelegatedAccessCreationModal({
       onClose={() => setConfirmationModal(false)}
       className={{ content: 'h-max !min-h-[10rem] max-w-[35rem] !pb-1' }}
     >
-      <div>{t('manage.settings.confirmDelegatedAccesTooltip')}</div>
+      <div>{t('manage.settings.confirmDelegatedAccessTooltip')}</div>
       <div className="my-2 w-max rounded-lg border px-3 py-2 shadow-sm">
         <div>
           <span className="font-bold">{t('shared.generic.shortname')}: </span>
