@@ -1,8 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faPencil,
-  faPersonWalkingArrowRight,
-} from '@fortawesome/free-solid-svg-icons'
+import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import {
   LogoutParticipantDocument,
   SelfWithAchievementsDocument,
@@ -63,25 +60,7 @@ const Profile = () => {
           showProfileDetails={true}
         />
 
-        <div className="w-full px-4">
-          {!pageInFrame && (
-            <Button
-              destructive
-              loading={loggingOut}
-              onClick={async () => {
-                await logoutParticipant()
-                router.push('/login')
-              }}
-              className={{ root: 'w-full self-end' }}
-              data={{ cy: 'logout' }}
-            >
-              <Button.Icon icon={faPersonWalkingArrowRight} />
-              <Button.Label>{t('shared.generic.logout')}</Button.Label>
-            </Button>
-          )}
-        </div>
-
-        <div className="mt-8 self-center">
+        <div className="mt-4 self-center">
           <Image
             src="/KlickerLogo.png"
             width={200}

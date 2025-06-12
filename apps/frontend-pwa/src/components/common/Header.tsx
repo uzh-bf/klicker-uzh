@@ -3,6 +3,7 @@ import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
   faLanguage,
+  faPersonWalkingArrowRight,
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -10,6 +11,7 @@ import {
   ChangeParticipantLocaleDocument,
   Course,
   LocaleType,
+  LogoutParticipantDocument,
   Participant,
   StudentCourse,
   UserRole,
@@ -44,6 +46,9 @@ function Header({
 
   const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
     ChangeParticipantLocaleDocument
+  )
+  const [logoutParticipant, { loading: loggingOut }] = useMutation(
+    LogoutParticipantDocument
   )
 
   const pageInFrame =
@@ -256,6 +261,29 @@ function Header({
                 selected: router.locale === language.value,
               })),
             },
+            ...(participant?.role === UserRole.Participant && !pageInFrame
+              ? [
+                  {
+                    id: 'logout',
+                    type: 'standard' as 'standard',
+                    disabled: loggingOut,
+                    label: (
+                      <div className="text-red-500">
+                        <FontAwesomeIcon
+                          icon={faPersonWalkingArrowRight}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.logout')}</span>
+                      </div>
+                    ),
+                    onClick: async () => {
+                      await logoutParticipant()
+                      router.push('/login')
+                    },
+                    data: { cy: 'logout' },
+                  },
+                ]
+              : []),
             // TODO: add functionality to log out of temporary account and delete corresponding temporary leaderboard entry
           ]}
           className={{ item: 'h-8 text-sm md:h-8 md:text-base' }}
