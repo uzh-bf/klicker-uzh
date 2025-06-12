@@ -1,5 +1,6 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import express, { Request, Response } from 'express'
+import fs from 'fs/promises'
 import { validate as validateUUID } from 'uuid'
 
 const app: express.Express = express()
@@ -16,6 +17,15 @@ enum StatusCode {
   NOT_FOUND = 404, // Resource not found (optional, e.g. courseID not found)
   UNSUPPORTED_MEDIA_TYPE = 415, // Wrong Content-Type header
 }
+
+let activityTypesAvailable: any[] = []
+const activityKeysSubselection: string[] = [
+  'live-quiz',
+  'practice-quiz',
+  'micro-learning',
+] as const // NOTE: add more if required
+let activityKeysGeneral: string[] = []
+type ActivityTypeSubselection = (typeof activityKeysSubselection)[number]
 
 async function apiKeyMiddleware(req: Request, res: Response, next: () => void) {
   const apiKey = req.headers['x-api-key']
@@ -69,14 +79,16 @@ async function getCourses(
         providerAccountId: providerAccountId,
       },
     },
+    include: {
+      user: {
+        include: {
+          courses: true,
+        },
+      },
+    },
   })
-  if (!account) return null
 
-  const user = await prisma.user.findUnique({
-    where: { id: account.userId },
-    include: { courses: true },
-  })
-  const courses = user?.courses ?? []
+  const courses = account?.user?.courses ?? []
   if (courses.length === 0) {
     return []
   }
@@ -131,10 +143,49 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
   })
 })
 
-async function getActivityTypes(courseId: string): Promise<any[] | null> {
+async function getActivityTypes(): Promise<any[] | null> {
+  // filter out fields
+  return activityTypesAvailable.map(
+    ({
+      id,
+      title,
+      path,
+      olatConfigurationKey,
+      isSubselectionRequired,
+      isEmailTransferRequired,
+    }) => ({ id, path, olatConfigurationKey, isEmailTransferRequired })
+  )
+}
+
+app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
+  const headerStatusCode = checkHeader(req)
+  if (headerStatusCode !== StatusCode.SUCCESS) {
+    return res
+      .status(headerStatusCode)
+      .json({ error: 'Invalid request headers' })
+  }
+
+  getActivityTypes().then((activityTypes) => {
+    if (activityTypes === null) {
+      return res
+        .status(StatusCode.NOT_FOUND)
+        .json({ error: 'Course not found' })
+    }
+
+    res.set('Content-Type', 'application/json')
+    res.status(StatusCode.SUCCESS).json({
+      activityTypes: activityTypes,
+      timestamp: new Date().toISOString(),
+      api: API_NAME,
+    })
+  })
+})
+
+async function getCourseActivityTypes(courseId: string): Promise<any[] | null> {
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
+      // NOTE: modify if required
       liveQuizzes: true,
       practiceQuizzes: true,
       microLearnings: true,
@@ -147,87 +198,56 @@ async function getActivityTypes(courseId: string): Promise<any[] | null> {
   const practiceQuizzes = course.liveQuizzes ?? []
   const microLearnings = course.liveQuizzes ?? []
 
-  const activityTypes = [
-    {
-      id: 'LIVE_QUIZZES',
-      title: `Live Quiz Overview (${liveQuizzes.length})`,
-      path: '/liveQuizzes',
-      subselectionNeeded: false,
-      olatConfigurationKey: 'live-quizzes',
-    },
-    {
-      id: 'PRACTICE_QUIZZES',
-      title: `Practice Quiz Overview (${practiceQuizzes.length})`,
-      path: '/practiceQuizzes',
-      subselectionNeeded: false,
-      olatConfigurationKey: 'practice-quizzes',
-    },
-    {
-      id: 'MICRO_LEARNINGS',
-      title: `Micro Learning Overview (${microLearnings.length})`,
-      path: '/microLearnings',
-      subselectionNeeded: false,
-      olatConfigurationKey: 'micro-learnings',
-    },
-    {
-      id: 'CREATE_ACCOUNT',
-      title: 'Create Account',
-      path: '/createAccount',
-      subselectionNeeded: false,
-      olatConfigurationKey: 'create-account',
-    },
-    {
-      id: 'DOCS',
-      title: 'Documentation',
-      path: '/docs',
-      subselectionNeeded: false,
-      olatConfigurationKey: 'docs',
-    },
-    ...(liveQuizzes.length > 0
-      ? [
-          {
-            id: 'LIVE_QUIZ',
-            title: 'Live Quiz',
-            path: '/liveQuiz',
-            subselectionNeeded: true,
-            olatConfigurationKey: 'live-quiz',
-          },
-        ]
-      : []),
-    ...(practiceQuizzes.length > 0
-      ? [
-          {
-            id: 'PRACTICE_QUIZ',
-            title: 'Practice Quiz',
-            path: '/quiz',
-            subselectionNeeded: true,
-            olatConfigurationKey: 'quiz',
-          },
-        ]
-      : []),
-    ...(microLearnings.length > 0
-      ? [
-          {
-            id: 'MICRO_LEARNING',
-            title: 'Micro Learning',
-            path: '/microLearning',
-            subselectionNeeded: true,
-            olatConfigurationKey: 'micro-learning',
-          },
-        ]
-      : []),
-    ...(isGamificationEnabled
-      ? [
-          {
-            id: 'LEADERBOARD',
-            title: `Leaderboard`,
-            path: '/',
-            subselectionNeeded: false,
-            olatConfigurationKey: 'leaderboard',
-          },
-        ]
-      : []),
-  ]
+  const mapOverview: Record<string, any[]> = {
+    // NOTE: modify if required
+    'live-quizzes': liveQuizzes,
+    'practice-quizzes': practiceQuizzes,
+    'micro-learnings': microLearnings,
+  }
+
+  const mapSubselection: Record<string, any[]> = {
+    // NOTE: modify if required
+    'live-quiz': liveQuizzes,
+    'practice-quiz': practiceQuizzes,
+    'micro-learning': microLearnings,
+  }
+  const activityKeysGamification = ['leaderboard'] // NOTE: modify if required
+
+  const activityTypes = activityTypesAvailable
+    .map(
+      ({
+        id,
+        title,
+        path,
+        olatConfigurationKey,
+        isSubselectionRequired,
+        isEmailTransferRequired,
+      }) => {
+        if (olatConfigurationKey in mapOverview) {
+          const count = mapOverview[olatConfigurationKey]?.length || 0
+          const newTitle = title + ` (${count})`
+          return { id, newTitle, olatConfigurationKey, isSubselectionRequired }
+        } else if (olatConfigurationKey in mapSubselection) {
+          const count = mapSubselection[olatConfigurationKey]?.length || 0
+          return count > 0
+            ? { id, title, olatConfigurationKey, isSubselectionRequired }
+            : undefined
+        } else if (activityKeysGamification.includes(olatConfigurationKey)) {
+          return isGamificationEnabled
+            ? { id, title, path, olatConfigurationKey, isSubselectionRequired }
+            : undefined
+        } else {
+          return {
+            id,
+            title,
+            path,
+            olatConfigurationKey,
+            isSubselectionRequired,
+          }
+        }
+      }
+    )
+    .filter((activityType) => activityType !== undefined)
 
   return activityTypes
 }
@@ -253,7 +273,7 @@ app.get(
         .json({ error: 'Invalid courseID' })
     }
 
-    getActivityTypes(courseID).then((activityTypes) => {
+    getCourseActivityTypes(courseID).then((activityTypes) => {
       if (activityTypes === null) {
         return res
           .status(StatusCode.NOT_FOUND)
@@ -272,11 +292,12 @@ app.get(
 
 async function getActivities(
   courseID: string,
-  activityTypeKey: 'live-quiz' | 'quiz' | 'micro-learning'
+  activityTypeKey: ActivityTypeSubselection // NOTE: modify if required
 ): Promise<any[] | null> {
   const course = await prisma.course.findUnique({
     where: { id: courseID },
     include: {
+      // NOTE: modify if required
       liveQuizzes: activityTypeKey === 'live-quiz',
       practiceQuizzes: activityTypeKey === 'quiz',
       microLearnings: activityTypeKey === 'micro-learning',
@@ -288,10 +309,11 @@ async function getActivities(
     course.liveQuizzes ??
     course.practiceQuizzes ??
     course.microLearnings
-  ).map((activity) => ({
-    id: activity.id,
-    title: activity.name,
-  }))
+  ) // NOTE: modify if required
+    .map((activity) => ({
+      id: activity.id,
+      title: activity.name,
+    }))
   return activityDetails
 }
 
@@ -317,38 +339,27 @@ app.get(
         .status(StatusCode.BAD_REQUEST)
         .json({ error: 'activityTypeKey is required' })
     }
-
     if (
-      ['live-quiz', 'quiz', 'micro-learning'].indexOf(activityTypeKey) !== -1 &&
-      !validateUUID(courseID)
+      activityKeysSubselection.indexOf(activityTypeKey) !== -1 &&
+      validateUUID(courseID)
     ) {
-      getActivities(
-        courseID,
-        activityTypeKey as 'live-quiz' | 'quiz' | 'micro-learning'
-      ).then((activityTypes) => {
-        if (activityTypes === null) {
-          return res
-            .status(StatusCode.NOT_FOUND)
-            .json({ error: 'Course not found' })
-        }
+      getActivities(courseID, activityTypeKey as ActivityTypeSubselection).then(
+        (activityTypes) => {
+          if (activityTypes === null) {
+            return res
+              .status(StatusCode.NOT_FOUND)
+              .json({ error: 'Course not found' })
+          }
 
-        res.set('Content-Type', 'application/json')
-        return res.status(StatusCode.SUCCESS).json({
-          activityTypes: activityTypes,
-          timestamp: new Date().toISOString(),
-          api: API_NAME,
-        })
-      })
-    } else if (
-      [
-        'live-quizzes',
-        'practice-quizzes',
-        'micro-learnings',
-        'create-account',
-        'docs',
-        'leaderboard',
-      ].indexOf(activityTypeKey) !== -1
-    ) {
+          res.set('Content-Type', 'application/json')
+          return res.status(StatusCode.SUCCESS).json({
+            activityTypes: activityTypes,
+            timestamp: new Date().toISOString(),
+            api: API_NAME,
+          })
+        }
+      )
+    } else if (activityKeysGeneral.indexOf(activityTypeKey) !== -1) {
       return res.status(StatusCode.SUCCESS).json({
         activityTypes: [],
         timestamp: new Date().toISOString(),
@@ -362,10 +373,25 @@ app.get(
   }
 )
 
-app.listen(PORT, () => {
-  console.log(`🚀 OLAT API server is running on port ${PORT}`)
-  console.log(`📍 Health check: http://localhost:${PORT}/health`)
-  console.log(`👋 Hello endpoint: http://localhost:${PORT}/hello`)
+async function readData() {
+  try {
+    const data = await fs.readFile('./static/activityTypes.json', 'utf-8')
+    activityTypesAvailable = JSON.parse(data)
+    activityKeysGeneral = activityTypesAvailable
+      .map((activityType) => activityType.olatConfigurationKey)
+      .filter((key) => !activityKeysSubselection.includes(key))
+  } catch (error) {
+    console.error('Error reading data:', error)
+    process.exit(1)
+  }
+}
+
+readData().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 OLAT API server is running on port ${PORT}`)
+    console.log(`📍 Health check: http://localhost:${PORT}/health`)
+    console.log(`👋 Hello endpoint: http://localhost:${PORT}/hello`)
+  })
 })
 
 export default app

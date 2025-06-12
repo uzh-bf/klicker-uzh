@@ -1,0 +1,74 @@
+[
+  {
+    "id": "LIVE_QUIZZES",
+    "title": "Live Quiz Overview",
+    "path": "/liveQuizzes",
+    "olatConfigurationKey": "live-quizzes",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "PRACTICE_QUIZZES",
+    "title": "Practice Quiz Overview",
+    "path": "/practiceQuizzes",
+    "olatConfigurationKey": "practice-quizzes",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "MICRO_LEARNINGS",
+    "title": "Micro Learning Overview",
+    "path": "/microLearnings",
+    "olatConfigurationKey": "micro-learnings",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "CREATE_ACCOUNT",
+    "title": "Create Account",
+    "path": "/createAccount",
+    "olatConfigurationKey": "create-account",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": true
+  },
+  {
+    "id": "DOCS",
+    "title": "Documentation",
+    "path": "/docs",
+    "olatConfigurationKey": "docs",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "LIVE_QUIZ",
+    "title": "Live Quiz",
+    "path": "/liveQuiz",
+    "olatConfigurationKey": "live-quiz",
+    "isSubselectionRequired": true,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "PRACTICE_QUIZ",
+    "title": "Practice Quiz",
+    "path": "/quiz",
+    "olatConfigurationKey": "quiz",
+    "isSubselectionRequired": true,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "MICRO_LEARNING",
+    "title": "Micro Learning",
+    "path": "/microLearning",
+    "olatConfigurationKey": "micro-learning",
+    "isSubselectionRequired": true,
+    "isEmailTransferRequired": false
+  },
+  {
+    "id": "LEADERBOARD",
+    "title": "Leaderboard",
+    "path": "/",
+    "olatConfigurationKey": "leaderboard",
+    "isSubselectionRequired": false,
+    "isEmailTransferRequired": false
+  }
+]
