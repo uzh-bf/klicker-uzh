@@ -26,7 +26,7 @@ function AvatarWithLevel({
       />
       {level && (
         <div
-          className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white pl-[0.3rem] text-xs font-bold text-slate-600"
+          className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white text-xs font-bold text-slate-600"
           data-cy="participant-level"
         >
           {level}

@@ -9,10 +9,10 @@ import * as Yup from 'yup'
 import DelegatedAccessPassword, { PW_SETTINGS } from './DelegatedAccessPassword'
 
 function DelegatedPasswordChangeModal({
-  changePasswortModal,
+  changePasswordModal,
   setChangePasswordModal,
 }: {
-  changePasswortModal: { open: boolean; loginId?: string }
+  changePasswordModal: { open: boolean; loginId?: string }
   setChangePasswordModal: (value: { open: boolean; loginId?: string }) => void
 }) {
   const t = useTranslations()
@@ -21,7 +21,7 @@ function DelegatedPasswordChangeModal({
   return (
     <Modal
       title={t('manage.settings.changeDelegatedLoginPassword')}
-      open={changePasswortModal.open}
+      open={changePasswordModal.open}
       onClose={() =>
         setChangePasswordModal({
           open: false,
@@ -46,7 +46,7 @@ function DelegatedPasswordChangeModal({
           setSubmitting(true)
           await updateUserLogin({
             variables: {
-              id: changePasswortModal.loginId!,
+              id: changePasswordModal.loginId!,
               password: values.password,
             },
           })
