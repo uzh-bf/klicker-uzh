@@ -203,7 +203,7 @@ function Header({
                           icon={faCircleQuestion}
                           className="mr-2 w-4"
                         />
-                        <span>{t('shared.generic.docs')}</span>
+                        <span>{t('shared.generic.documentation')}</span>
                       </div>
                     ),
                     onClick: () => router.push(`/course/${course.id}/docs`),

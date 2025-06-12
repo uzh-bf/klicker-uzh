@@ -365,7 +365,6 @@ export default {
       objects: 'Objects',
       pseudonym: 'Pseudonym',
       selected: 'Selected',
-      docs: 'Documentation',
     },
     types: {
       ACTIVITIES: 'Activities',
