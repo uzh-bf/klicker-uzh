@@ -171,6 +171,7 @@ function Index({ id }: { id: string }) {
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
+      className={{ body: 'p-0 px-4 pb-4' }}
     >
       <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />
       <DynamicAccountSelector
@@ -178,7 +179,7 @@ function Index({ id }: { id: string }) {
         quizId={id}
       />
 
-      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
+      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row md:pt-3">
         <div
           className={twMerge(
             'hidden flex-1 border-gray-300 bg-white md:border-r md:pr-5',

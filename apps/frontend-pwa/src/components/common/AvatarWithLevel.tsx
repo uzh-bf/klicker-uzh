@@ -17,7 +17,7 @@ function AvatarWithLevel({
             : '/user-solid.svg'
         }
         alt=""
-        width="35"
+        width={avatar ? '35' : '32'}
         height="35"
         className={twMerge(
           'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white',

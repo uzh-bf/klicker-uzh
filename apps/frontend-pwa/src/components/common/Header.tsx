@@ -3,7 +3,7 @@ import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
   faLanguage,
-  faPersonWalkingArrowRight,
+  faRightFromBracket,
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -63,7 +63,7 @@ function Header({
     <div
       style={{ borderColor: course?.color || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between border-b-8 bg-slate-700 py-1 pl-2 pr-4 text-white',
+        'flex flex-row items-center justify-between border-b-8 bg-slate-700 py-1.5 pl-2 pr-2 text-white md:py-1',
         !course?.color && 'border-uzh-red-60'
       )}
     >
@@ -270,7 +270,7 @@ function Header({
                     label: (
                       <div className="text-red-500">
                         <FontAwesomeIcon
-                          icon={faPersonWalkingArrowRight}
+                          icon={faRightFromBracket}
                           className="mr-2 w-4"
                         />
                         <span>{t('shared.generic.logout')}</span>

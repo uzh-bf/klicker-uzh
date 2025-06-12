@@ -202,14 +202,14 @@ function QuestionArea({
 
   return (
     <div className="min-h-content h-full w-full">
-      <H2 className={{ root: 'mb-2 hidden md:block' }}>
+      <H2 className={{ root: 'mb-0 hidden md:block' }}>
         {t('shared.generic.question')}
       </H2>
 
       {remainingQuestions.length === 0 ? (
         t('pwa.liveQuiz.allQuestionsAnswered')
       ) : (
-        <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full flex-col">
           <LiveQuizProgress
             activeIndex={instances.length - remainingQuestions.length}
             contentInstance={
