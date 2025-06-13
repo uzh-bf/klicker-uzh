@@ -218,12 +218,14 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           quizzes?.length !== 0 ? 'text-green-600' : 'text-slate-400'
         ),
       },
+      data: { cy: 'running-live-quiz-dropdown' },
       elements:
         quizzes?.map((quiz) => ({
           key: quiz.id,
           type: 'link',
           label: quiz.name,
           onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
+          data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
     {

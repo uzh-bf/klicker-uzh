@@ -46,6 +46,7 @@ function LiveQuizQRModal({
               className={{ title: 'text-base', canvas: 'flex justify-center' }}
               path={accountRelativeLink}
               width={100}
+              data={{ cy: 'qr-link-shortname' }}
             />
             <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
               <Button
@@ -72,14 +73,10 @@ function LiveQuizQRModal({
               className={{ title: 'text-base', canvas: 'flex justify-center' }}
               path={quizRelativeLink}
               width={100}
+              data={{ cy: 'qr-link-direct' }}
             />
             <Link passHref href={`/qr${quizRelativeLink}`} target="_blank">
-              <Button
-                fluid
-                primary
-                className={{ root: 'mt-2' }}
-                data={{ cy: `qr-direct-link-${quizId}` }}
-              >
+              <Button fluid primary className={{ root: 'mt-2' }}>
                 <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
               </Button>
             </Link>

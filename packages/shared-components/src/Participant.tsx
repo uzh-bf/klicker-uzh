@@ -42,6 +42,7 @@ function Participant({
         className
       )}
       onClick={onClick}
+      data-cy={`leaderboard-entry-${pseudonym}`}
     >
       <div className="flex flex-1 flex-row items-center gap-2">
         {rank && <div className="ml-1 w-3 text-lg font-bold">{rank}</div>}

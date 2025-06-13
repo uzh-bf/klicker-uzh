@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 describe('Different live-quiz workflows', function () {
   before(() => {
@@ -3124,6 +3125,295 @@ describe('Different live-quiz workflows', function () {
       ).should('not.exist')
       cy.get(`[data-cy="close-share-object"]`).click()
     })
+  })
+  // #endregion
+
+  // ! Part 6: Participation Modes Live Quiz
+  // #region
+  it('Create a gamified live quiz on which the different access modes can be tested and other activity types to validate limitations of live-quiz specific temporary accounts', function () {
+    cy.loginLecturer()
+    cy.createLiveQuiz({
+      name: this.data.modes.name,
+      displayName: this.data.modes.displayName,
+      courseName: this.data.modes.course,
+      blocks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createPracticeQuiz({
+      name: this.data.modes.practiceQuizName,
+      displayName: this.data.modes.practiceQuizDisplayName,
+      courseName: this.data.modes.course,
+      stacks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createMicroLearning({
+      name: this.data.modes.microLearningName,
+      displayName: this.data.modes.microLearningDisplayName,
+      courseName: this.data.modes.course,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
+      stacks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    // start live quiz and open first block
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  })
+
+  it('Choose anonymous participation in live quiz and verify the correct availability of account actions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            messages,
+            data: this.data,
+          },
+        },
+        ({ username, password, messages, data }) => {
+          cy.get('[data-cy="participate-anonymously"]').click()
+          cy.get('[data-cy="participate-anonymously"]').should('not.exist') // wait for temporary account creation to finish
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]').should('not.exist')
+          cy.get('[data-cy="header-setup-profile"]').should('not.exist')
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.login)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('not.exist')
+
+          // reload and verify that the anonymous participation choice persists
+          cy.reload()
+          cy.get('[data-cy="participate-anonymously"]').should('not.exist')
+
+          // log in with a valid account and verify that account mode selection is not shown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="participant-profile-login"]').click()
+          cy.get('[data-cy="username-field"]').type(username)
+          cy.get('[data-cy="password-field"]').type(password)
+          cy.get('[data-cy="submit-login"]').click()
+          cy.get(`[data-cy="live-quiz-${data.modes.displayName}"]`).click()
+          cy.wait(1000)
+
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.profile)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+        }
+      )
+    })
+  })
+
+  it('Choose a temporary pseudonymm and verify the correct availability of account actions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        { args: { data: this.data } },
+        ({ data }) => {
+          // choose a temporary pseudonym
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="cancel-define-pseudonym"]').click()
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym)
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="cancel-choose-avatar"]').click()
+          cy.get('[data-cy="pseudonym-input"]').should(
+            'have.value',
+            data.modes.pseudonym
+          )
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should(
+            'not.be.disabled'
+          )
+          cy.get('[data-cy="avatar-carousel-next"]').click().click()
+          cy.get('[data-cy="avatar-carousel-prev"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym)
+          cy.get('[data-cy="header-setup-profile"]').should('not.exist')
+          cy.get('[data-cy="participant-profile-login"]').should('not.exist')
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+
+          // reload and verify that the temporary account is still logged in
+          cy.reload()
+          cy.get('[data-cy="create-temporary-pseudonym"]').should('not.exist')
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym)
+
+          // log out of the current pseudonym and create a new one
+          cy.reload()
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="logout"]').click()
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym2)
+        }
+      )
+    })
+  })
+
+  it('Log in as a regular user and verify that all redirects work correctly', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            quizLink,
+            messages,
+          },
+        },
+        ({ username, password, quizLink, messages }) => {
+          // choose regular login
+          cy.get('[data-cy="login-with-account"]').click()
+          cy.get('[data-cy="username-field"]').type(username)
+          cy.get('[data-cy="password-field"]').type(password)
+          cy.get('[data-cy="submit-login"]').click()
+          cy.wait(1000) // wait for the live quiz to load
+
+          // verify that the participant has been automatically redirected to the live quiz
+          cy.location('href').then((href) => {
+            expect(href).to.include(quizLink)
+          })
+
+          // verify that the correct account actions are available
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.profile)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+
+          // verify that login persists on reload
+          cy.reload()
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+        }
+      )
+    })
+  })
+
+  it('Visit the live quiz leaderboard and check out that valid temporary participants are visible', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.modes.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
+    })
+    cy.get('[data-cy="evaluation-leaderboard"]').click()
+
+    // check that the user with "pseudonym" usename is not available, but the one with "pseudonym2" is
+    cy.get(`[data-cy="leaderboard-entry-${this.data.modes.pseudonym}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="leaderboard-entry-${this.data.modes.pseudonym2}"]`)
+      .should('exist')
+      .contains(this.data.modes.pseudonym2)
   })
   // #endregion
 })
