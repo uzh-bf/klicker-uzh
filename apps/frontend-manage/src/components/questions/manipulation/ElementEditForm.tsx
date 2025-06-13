@@ -171,7 +171,7 @@ function ElementEditForm({
               dataSecondaryAction={{ cy: 'close-element-modal-button' }}
               className={{
                 title: 'text-xl',
-                content: 'text-sm md:text-base 2xl:max-w-[1400px]',
+                content: 'h-max text-sm md:text-base 2xl:max-w-[1400px]',
                 footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
               }}
               dataCloseButton={{ cy: 'close-element-modal' }}

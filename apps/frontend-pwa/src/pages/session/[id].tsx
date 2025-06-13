@@ -208,7 +208,7 @@ function Index({ id }: { id: string }) {
                 <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
-              <UserNotification type="info">
+              <UserNotification type="info" className={{ root: 'mt-4' }}>
                 {t('pwa.liveQuiz.noActiveQuestion')}
               </UserNotification>
             )

@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AddObjectToCatalogButton from '../administration/AddObjectToCatalogButton'
 import AddObjectToCatalogModal from '../administration/AddObjectToCatalogModal'
 import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
@@ -93,7 +94,7 @@ function ObjectImport({
         </Link>
       )}
       <H2
-        className={{ root: 'md:-mb-5' }}
+        className={{ root: twMerge(!collectionName && 'md:-mb-5') }}
         data={{ cy: 'catalog-browser-title' }}
       >
         {collectionName
