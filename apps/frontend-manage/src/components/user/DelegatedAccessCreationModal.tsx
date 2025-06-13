@@ -23,7 +23,7 @@ function DelegatedAccessCreationModal({
 
   return (
     <Modal
-      title={t('manage.settings.confirmDelegatedAcces')}
+      title={t('manage.settings.confirmDelegatedAccess')}
       open={confirmationModal}
       onClose={() => setConfirmationModal(false)}
       className={{ content: 'h-max !min-h-[10rem] max-w-[35rem] !pb-1' }}

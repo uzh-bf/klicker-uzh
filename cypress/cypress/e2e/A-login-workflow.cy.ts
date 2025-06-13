@@ -64,6 +64,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="homepage"]').should('exist')
 
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
 
     cy.get('[data-cy="avatar-hair-select"]').contains(
@@ -173,6 +174,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     // modify password
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(this.data.newPassword)
     cy.get('[data-cy="update-account-password-repetition"]').type(
@@ -194,6 +196,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     // modify password back to original value
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(
       Cypress.env('STUDENT_PASSWORD')

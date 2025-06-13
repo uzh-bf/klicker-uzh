@@ -1,16 +1,24 @@
 import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import {
+  faExclamationCircle,
+  faLanguage,
+  faRightFromBracket,
+  faUser,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
   LocaleType,
+  LogoutParticipantDocument,
   Participant,
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2, Select } from '@uzh-bf/design-system'
+import { Button, Dropdown, H1, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -36,86 +44,66 @@ function Header({
   const { pathname, asPath, query } = router
   const t = useTranslations()
 
-  // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
-  //   useStickyState('hasSeenSurvey', 'false')
-
   const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
     ChangeParticipantLocaleDocument
+  )
+  const [logoutParticipant, { loading: loggingOut }] = useMutation(
+    LogoutParticipantDocument
   )
 
   const pageInFrame =
     global?.window &&
     global?.window?.location !== global?.window?.parent.location
+  const showProfileSetup =
+    participant &&
+    participant.role === UserRole.Participant &&
+    (!participant?.avatar || !participant?.email)
 
   return (
     <div
       style={{ borderColor: course?.color || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between border-b-8 bg-slate-800 px-4 py-1 text-white',
+        'flex flex-row items-center justify-between border-b-8 bg-slate-700 py-1.5 pl-2 pr-2 text-white md:py-1',
         !course?.color && 'border-uzh-red-60'
       )}
     >
-      {title && course?.displayName && (
-        <div>
-          <H1 className={{ root: 'text-uzh-grey-60 m-0 text-xs md:text-sm' }}>
-            {course.displayName}
+      <div className="flex max-w-[calc(100%-2.5rem)] flex-row items-center gap-3">
+        <Image
+          priority
+          src="/klicker-icon-inverted.png"
+          alt="KlickerUZH Logo"
+          width={35}
+          height={35}
+        />
+
+        {title && course?.displayName && (
+          <div>
+            <H1
+              className={{
+                root: 'text-uzh-grey-60 m-0 line-clamp-1 text-xs md:text-sm',
+              }}
+            >
+              {course.displayName}
+            </H1>
+            <H2
+              className={{
+                root: 'm-0 line-clamp-1 text-sm md:text-base',
+              }}
+            >
+              {title}
+            </H2>
+          </div>
+        )}
+        {title && !course?.displayName && (
+          <H1 className={{ root: 'mb-0 line-clamp-1 text-base md:text-lg' }}>
+            {title}
           </H1>
-          <H2 className={{ root: 'm-0 text-sm md:text-base' }}>{title}</H2>
-        </div>
-      )}
-      {title && !course?.displayName && (
-        <H1 className={{ root: 'mb-0 text-base md:text-lg' }}>{title}</H1>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
-        {!previewMode ? (
-          <div className="flex flex-row rounded bg-transparent text-black">
-            <Select
-              disabled={changingLocale}
-              value={router.locale}
-              items={[
-                {
-                  value: LocaleType.De,
-                  label: 'DE',
-                  data: { cy: 'language-de' },
-                },
-                {
-                  value: LocaleType.En,
-                  label: 'EN',
-                  data: { cy: 'language-en' },
-                },
-              ]}
-              onChange={(newValue: string) => {
-                if (participant && participant.role === UserRole.Participant) {
-                  changeParticipantLocale({
-                    variables: { locale: newValue as LocaleType },
-                  })
-                }
-
-                router.push({ pathname, query }, asPath, {
-                  locale: newValue,
-                })
-              }}
-              className={{
-                trigger: 'p-0 px-1 text-white focus:ring-0',
-              }}
-              data={{ cy: 'language-select' }}
-              basic
-              contentPosition="popper"
-            />
-          </div>
-        ) : null}
-        {course?.id && (
-          <Link
-            href={`/course/${course.id}/docs`}
-            data-cy="course-docs"
-            className="flex items-center"
-          >
-            <FontAwesomeIcon icon={faCircleQuestion} className="h-6 w-6" />
-          </Link>
-        )}
-        {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
-        {participant && participant.role === UserRole.Participant ? (
+        {participant &&
+          participant.role === UserRole.Participant &&
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
@@ -138,61 +126,169 @@ function Header({
                 <Button.Label>{t('shared.generic.home')}</Button.Label>
               </Button>
             </Link>
-          ))
-        ) : !previewMode &&
-          (!participant ||
-            (participant?.role === UserRole.TemporaryParticipant &&
-              !router.pathname.includes('/session'))) ? (
-          <Link href="/login">
-            <Button
-              className={{
-                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
-              }}
-              data={{ cy: 'header-login' }}
-            >
-              <Button.Label>{t('shared.generic.login')}</Button.Label>
-            </Button>
-          </Link>
-        ) : null}
-        {participant &&
-          participant.role === UserRole.Participant &&
-          (!participant?.avatar || !participant?.email) && (
-            <Link href="/editProfile">
-              <Button
-                primary
-                className={{
-                  root: 'bg-uzh-red-100 hover:bg-uzh-red-80 h-8 py-0 text-white hover:text-white',
-                }}
-                data={{ cy: 'header-setup-profile' }}
-              >
-                <Button.Label>{t('pwa.general.setupProfile')}</Button.Label>
-              </Button>
-            </Link>
-          )}
-        {!router.pathname.includes('/session') ||
-        participant?.role === UserRole.Participant ? (
-          <Link href={participant ? '/profile' : '/login'} legacyBehavior>
-            <div
-              className="relative !p-0 hover:bg-transparent"
-              data-cy="header-avatar"
-            >
+          ))}
+
+        <Dropdown
+          trigger={
+            <div className="relative !p-0 hover:bg-transparent">
               <AvatarWithLevel
                 avatar={participant?.avatar}
                 level={participant?.level}
               />
+              {showProfileSetup && (
+                <FontAwesomeIcon
+                  icon={faExclamationCircle}
+                  className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-orange-500"
+                />
+              )}
             </div>
-          </Link>
-        ) : (
-          <div
-            className="relative !p-0 hover:bg-transparent"
-            data-cy="header-avatar"
-          >
-            <AvatarWithLevel
-              avatar={participant?.avatar}
-              level={participant?.level}
-            />
-          </div>
-        )}
+          }
+          items={[
+            ...(showProfileSetup
+              ? [
+                  {
+                    id: 'setupProfile',
+                    type: 'standard' as 'standard',
+                    label: (
+                      <div>
+                        <FontAwesomeIcon
+                          icon={faExclamationCircle}
+                          className="mr-2 w-4 text-orange-500"
+                        />
+                        <span className="text-orange-500">
+                          {t('pwa.general.setupProfile')}
+                        </span>
+                      </div>
+                    ),
+                    onClick: () => router.push('/editProfile'),
+                    data: { cy: 'header-setup-profile' },
+                  },
+                ]
+              : []),
+            ...(!router.pathname.includes('/session') ||
+            participant?.role !== UserRole.TemporaryParticipant
+              ? [
+                  {
+                    id: 'profileOrLogin',
+                    type: 'standard' as 'standard',
+                    label: (
+                      <div>
+                        <FontAwesomeIcon icon={faUser} className="mr-2 w-4" />
+                        <span>
+                          {participant
+                            ? t('shared.generic.profile')
+                            : t('shared.generic.login')}
+                        </span>
+                      </div>
+                    ),
+                    onClick: () => {
+                      if (participant) {
+                        router.push('/profile')
+                      } else {
+                        router.push('/login')
+                      }
+                    },
+                    data: { cy: 'participant-profile-login' },
+                  },
+                ]
+              : []),
+            ...(course?.id
+              ? [
+                  {
+                    id: 'docs',
+                    type: 'standard' as 'standard',
+                    label: (
+                      <div>
+                        <FontAwesomeIcon
+                          icon={faCircleQuestion}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.documentation')}</span>
+                      </div>
+                    ),
+                    onClick: () => router.push(`/course/${course.id}/docs`),
+                    data: { cy: 'course-docs' },
+                  },
+                ]
+              : []),
+            {
+              id: 'languageSwitch',
+              label: (
+                <div>
+                  <FontAwesomeIcon icon={faLanguage} className="mr-2 w-4" />
+                  <span>{t('shared.generic.language')}</span>
+                </div>
+              ),
+              type: 'submenu',
+              data: { cy: 'language-switch' },
+              items: [
+                {
+                  id: 'languageDE',
+                  value: LocaleType.De,
+                  flag: '🇩🇪',
+                  label: t('shared.generic.german'),
+                },
+                {
+                  id: 'languageEN',
+                  value: LocaleType.En,
+                  flag: '🇬🇧',
+                  label: t('shared.generic.english'),
+                },
+              ].map((language) => ({
+                id: language.id,
+                disabled: changingLocale,
+                label: (
+                  <>
+                    <span className="mr-1 md:mr-2">{language.flag}</span>
+                    <span>{language.label}</span>
+                  </>
+                ),
+                type: 'checkbox',
+                onClick: async () => {
+                  if (
+                    participant &&
+                    participant.role === UserRole.Participant
+                  ) {
+                    await changeParticipantLocale({
+                      variables: { locale: language.value },
+                    })
+                  }
+
+                  router.push({ pathname, query }, asPath, {
+                    locale: language.value,
+                  })
+                },
+                selected: router.locale === language.value,
+              })),
+            },
+            ...(participant?.role === UserRole.Participant && !pageInFrame
+              ? [
+                  {
+                    id: 'logout',
+                    type: 'standard' as 'standard',
+                    disabled: loggingOut,
+                    label: (
+                      <div className="text-red-500">
+                        <FontAwesomeIcon
+                          icon={faRightFromBracket}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.logout')}</span>
+                      </div>
+                    ),
+                    onClick: async () => {
+                      await logoutParticipant()
+                      router.push('/login')
+                    },
+                    data: { cy: 'logout' },
+                  },
+                ]
+              : []),
+            // TODO: add functionality to log out of temporary account and delete corresponding temporary leaderboard entry
+          ]}
+          className={{ item: 'h-8 text-sm md:h-8 md:text-base' }}
+          data={{ cy: 'header-avatar' }}
+        />
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { toast } from '@uzh-bf/design-system'
+import { H3, toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -73,7 +73,16 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
             />
           </div>
         </div>
-        <AccountDeletionForm />
+        <div className="flex flex-col gap-4 md:flex-row">
+          <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
+            <div className="flex-initial space-y-2">
+              <H3 className={{ root: 'mb-0 border-b' }}>
+                {t('shared.generic.settings')}
+              </H3>
+            </div>
+          </div>
+          <AccountDeletionForm />
+        </div>
       </div>
     </Layout>
   )

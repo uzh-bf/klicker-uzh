@@ -28,7 +28,7 @@ interface LayoutProps {
   }[]
   setActiveMobilePage?: (value: string) => void
   previewMode?: boolean
-  className?: string
+  className?: { header?: string; body?: string }
 }
 
 function Layout({
@@ -65,7 +65,7 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className={twMerge('flex-none', className)}>
+      <div className={twMerge('flex-none', className?.header)}>
         <Header
           participant={dataParticipant?.self || undefined}
           title={displayName}
@@ -77,7 +77,8 @@ function Layout({
       <div
         className={twMerge(
           'flex min-h-0 flex-1 flex-col overflow-y-auto p-4',
-          pageInFrame && 'px-0'
+          pageInFrame && 'px-0',
+          className?.body
         )}
       >
         {children}

@@ -30,7 +30,7 @@ import Setting from './Setting'
 function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   const t = useTranslations()
   const [confirmationModal, setConfirmationModal] = useState(false)
-  const [changePasswortModal, setChangePasswordModal] = useState<{
+  const [changePasswordModal, setChangePasswordModal] = useState<{
     open: boolean
     loginId?: string
   }>({ open: false, loginId: undefined })
@@ -241,7 +241,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
         </div>
       </div>
       <DelegatedPasswordChangeModal
-        changePasswortModal={changePasswortModal}
+        changePasswordModal={changePasswordModal}
         setChangePasswordModal={setChangePasswordModal}
       />
     </Setting>
