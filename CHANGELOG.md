@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.60...v3.3.0-alpha.61) (2025-06-13)
+
+
+### Features
+
+* add possibility to create temporary pseudonym for participation in gamified live quiz ([#4726](https://github.com/uzh-bf/klicker-uzh/issues/4726)) ([d9f0746](https://github.com/uzh-bf/klicker-uzh/commit/d9f074676177f1f7ae60b0a4b5b6d46b399cec88))
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** ensure that all responses stored in redis are stringified ([5008128](https://github.com/uzh-bf/klicker-uzh/commit/500812842f859350a4ff47e374a661483e30f4ee))
+* **packages/graphql:** ensure that live quiz leaderboard is not stuck loading when before first block ([ad07caf](https://github.com/uzh-bf/klicker-uzh/commit/ad07cafdad9ad8296eb9c5ee160bc9996ff1e02d))
+
+
+### Enhancements
+
+* add functionality to change password of existing delegated login ([#4731](https://github.com/uzh-bf/klicker-uzh/issues/4731)) ([72532a7](https://github.com/uzh-bf/klicker-uzh/commit/72532a7b6172c674a9b7eb752554392d1f141e54))
+* add possibility to select avatar from selection for temporary accounts without login ([#4730](https://github.com/uzh-bf/klicker-uzh/issues/4730)) ([cf7d558](https://github.com/uzh-bf/klicker-uzh/commit/cf7d5582da8f1fa1e3834b3a1b171fb28c5cf483))
+* **apps/frontend-pwa:** add functionality to log out of created temporary live quiz account ([#4734](https://github.com/uzh-bf/klicker-uzh/issues/4734)) ([53fce36](https://github.com/uzh-bf/klicker-uzh/commit/53fce36ac960d998294d98a22545b16c24846ba0))
+* **apps/frontend-pwa:** hide functionalities not available to temporary participants on live quiz view and update existing pages to correctly handle temporary participant accounts  ([#4729](https://github.com/uzh-bf/klicker-uzh/issues/4729)) ([73719cb](https://github.com/uzh-bf/klicker-uzh/commit/73719cb830105becea4b47a2155ba6a30163d9c8))
+* **apps/frontend-pwa:** improve styling of student application, including sticky live quiz progress and submission ([#4733](https://github.com/uzh-bf/klicker-uzh/issues/4733)) ([5b703c1](https://github.com/uzh-bf/klicker-uzh/commit/5b703c134bde9f23dfbe8f0b22822e565b9809e1))
+* **packages/graphql:** remove untouched temporary leaderboard entries on live quiz end and mark temporary participants on live quiz evaluation ([b4ea8aa](https://github.com/uzh-bf/klicker-uzh/commit/b4ea8aae93fdfc85ecb62c7958cc5de7a54edeee))
+* update live quiz response logic to support temporary participant accounts ([#4727](https://github.com/uzh-bf/klicker-uzh/issues/4727)) ([1e00e8b](https://github.com/uzh-bf/klicker-uzh/commit/1e00e8b48eb9cac4731d5bef1c803e36e36ac395))
+
 ## [3.3.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.59...v3.3.0-alpha.60) (2025-06-11)
 
 
