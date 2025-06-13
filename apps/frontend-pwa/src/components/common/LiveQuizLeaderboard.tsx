@@ -86,7 +86,7 @@ function LiveQuizLeaderboard({
 
   const leaderboard = data.liveQuizLeaderboard ?? []
   return (
-    <div className={twMerge('space-y-4', className)}>
+    <div className={twMerge('space-y-4 pt-4', className)}>
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
       <div>
         {leaderboard.length && leaderboard.length > 0 ? (

@@ -867,6 +867,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
       forgotPasswordInfo:
         'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
+      errorLogoutTemporaryParticipant:
+        'An error occurred while logging out of your temporary pseudonym. Please try again.',
+      loggedInAs: 'Logged in as',
+      temporaryPseudonym: 'temporary pseudonym',
     },
     avatar: {
       hair: 'Hair',

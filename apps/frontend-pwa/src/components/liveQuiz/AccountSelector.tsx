@@ -301,7 +301,7 @@ function AccountSelector({
                   className="w-full overflow-visible"
                   setApi={setApi}
                 >
-                  <CarouselContent className="mt-4 overflow-visible px-10">
+                  <CarouselContent className="mt-4 overflow-visible px-10 pb-0.5">
                     {AVAILABLE_AVATARS.map((avatar, index) => (
                       <div
                         key={avatar}

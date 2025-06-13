@@ -94,6 +94,10 @@ const withPermission = SharingService.withPermission
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
+    const asTemporaryParticipant = {
+      authenticated: true,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
+    }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
     const asUserWithCatalyst = { ...asUser, catalyst: true }
@@ -528,8 +532,18 @@ export const Mutation = builder.mutationType({
 
       logoutParticipant: t.withAuth(asParticipant).id({
         nullable: true,
+        resolve: async (_, __, ctx) => {
+          return await AccountService.logoutParticipant(ctx)
+        },
+      }),
+
+      logoutTemporaryParticipant: t.withAuth(asTemporaryParticipant).boolean({
+        nullable: true,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+        },
         resolve: async (_, args, ctx) => {
-          return await AccountService.logoutParticipant(args, ctx)
+          return await AccountService.logoutTemporaryParticipant(args, ctx)
         },
       }),
 

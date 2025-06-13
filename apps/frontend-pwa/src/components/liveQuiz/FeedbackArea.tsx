@@ -226,7 +226,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full pt-4">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <FeedbackAreaSubscriber

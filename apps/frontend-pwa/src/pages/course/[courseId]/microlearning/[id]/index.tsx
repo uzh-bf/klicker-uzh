@@ -85,7 +85,6 @@ function MicrolearningIntroduction({
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
-      previewMode={microLearning.isOwner ?? undefined}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}

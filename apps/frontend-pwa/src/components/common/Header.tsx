@@ -12,11 +12,13 @@ import {
   Course,
   LocaleType,
   LogoutParticipantDocument,
+  LogoutTemporaryParticipantDocument,
   Participant,
+  SelfDocument,
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, H2 } from '@uzh-bf/design-system'
+import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -31,14 +33,14 @@ interface HeaderProps {
   course?:
     | Partial<Course>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
-  previewMode?: boolean
+  liveQuizId?: string
 }
 
 function Header({
   participant,
   title,
   course,
-  previewMode = false,
+  liveQuizId,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const { pathname, asPath, query } = router
@@ -50,6 +52,8 @@ function Header({
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
+  const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
+    useMutation(LogoutTemporaryParticipantDocument)
 
   const pageInFrame =
     global?.window &&
@@ -144,6 +148,28 @@ function Header({
             </div>
           }
           items={[
+            ...(participant
+              ? [
+                  {
+                    id: 'loggedInAs',
+                    type: 'label' as 'label',
+                    label: (
+                      <div className="">
+                        <div>{t('pwa.profile.loggedInAs')}</div>
+                        <div className="font-normal">
+                          {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                        </div>
+                      </div>
+                    ),
+                    className: { item: '!h-max py-0.5' },
+                  },
+                  {
+                    id: 'separator',
+                    type: 'separator' as 'separator',
+                    className: { item: '!h-1.5' },
+                  },
+                ]
+              : []),
             ...(showProfileSetup
               ? [
                   {
@@ -284,7 +310,60 @@ function Header({
                   },
                 ]
               : []),
-            // TODO: add functionality to log out of temporary account and delete corresponding temporary leaderboard entry
+            ...(participant?.role === UserRole.TemporaryParticipant &&
+            liveQuizId
+              ? [
+                  {
+                    id: 'logout',
+                    type: 'standard' as 'standard',
+                    disabled: loggingOutTemporary,
+                    label: (
+                      <div className="text-red-500">
+                        <FontAwesomeIcon
+                          icon={faRightFromBracket}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.logout')}</span>
+                      </div>
+                    ),
+                    onClick: async () => {
+                      try {
+                        // log out temporary participant for this live quiz
+                        const { data } = await logoutTemporaryParticipant({
+                          variables: { liveQuizId },
+                          refetchQueries: [{ query: SelfDocument }],
+                        })
+
+                        if (data?.logoutTemporaryParticipant) {
+                          // remove local storage entry for temporary participant
+                          localStorage.removeItem(`login-state-${liveQuizId}`)
+
+                          router.reload()
+                        } else {
+                          toast({
+                            type: 'error',
+                            message: t(
+                              'pwa.profile.errorLogoutTemporaryParticipant'
+                            ),
+                          })
+                        }
+                      } catch (e) {
+                        console.error(
+                          'Error logging out temporary participant:',
+                          e
+                        )
+                        toast({
+                          type: 'error',
+                          message: t(
+                            'pwa.profile.errorLogoutTemporaryParticipant'
+                          ),
+                        })
+                      }
+                    },
+                    data: { cy: 'logout' },
+                  },
+                ]
+              : []),
           ]}
           className={{ item: 'h-8 text-sm md:h-8 md:text-base' }}
           data={{ cy: 'header-avatar' }}
