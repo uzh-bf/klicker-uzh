@@ -284,7 +284,6 @@ function Header({
                   },
                 ]
               : []),
-            // TODO: add functionality to log out of temporary account and delete corresponding temporary leaderboard entry
           ]}
           className={{ item: 'h-8 text-sm md:h-8 md:text-base' }}
           data={{ cy: 'header-avatar' }}
