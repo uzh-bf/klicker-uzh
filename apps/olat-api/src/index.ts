@@ -1,6 +1,8 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import express, { Request, Response } from 'express'
 import fs from 'fs/promises'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { validate as validateUUID } from 'uuid'
 
 const app: express.Express = express()
@@ -56,13 +58,11 @@ app.get('/', (req: Request, res: Response) => {
 
 function checkHeader(req: Request): StatusCode {
   const contentType = req.headers['content-type']
+  if (!contentType || typeof contentType !== 'string') {
+    return StatusCode.BAD_REQUEST
+  }
   if (contentType !== 'application/json') {
     return StatusCode.UNSUPPORTED_MEDIA_TYPE
-  }
-
-  const apiKey = req.headers['x-api-key']
-  if (apiKey !== API_KEY) {
-    return StatusCode.UNAUTHORIZED
   }
 
   return StatusCode.SUCCESS
@@ -109,26 +109,19 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
   }
 
   const provider = req.query.provider
-  const identityMappingIdentifier = req.query.identityMappingIdentifier // TODO: maybe rename to providerAccountId
+  const providerAccountId = req.query.providerAccountId
   if (!provider || typeof provider !== 'string') {
     return res
       .status(StatusCode.BAD_REQUEST)
       .json({ error: 'Missing provider' })
-  } else if (
-    !identityMappingIdentifier ||
-    typeof identityMappingIdentifier !== 'string'
-  ) {
+  } else if (!providerAccountId || typeof providerAccountId !== 'string') {
     return res
       .status(StatusCode.BAD_REQUEST)
-      .json({ error: 'Missing identityMappingIdentifier' })
+      .json({ error: 'Missing providerAccountId' })
   }
 
-  getCourses(provider, identityMappingIdentifier).then((courses) => {
-    if (courses === null) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ error: 'No account found' })
-    } else if (courses.length === 0) {
+  getCourses(provider, providerAccountId).then((courses) => {
+    if (courses?.length === 0) {
       return res
         .status(StatusCode.NOT_FOUND)
         .json({ error: 'No courses found for this user' })
@@ -266,7 +259,7 @@ app.get(
     if (!courseID || typeof courseID !== 'string') {
       return res
         .status(StatusCode.BAD_REQUEST)
-        .json({ error: 'Missing courseID' })
+        .json({ error: 'Missing courseID' }) // should not happen
     } else if (!validateUUID(courseID)) {
       return res
         .status(StatusCode.BAD_REQUEST)
@@ -299,7 +292,7 @@ async function getActivities(
     include: {
       // NOTE: modify if required
       liveQuizzes: activityTypeKey === 'live-quiz',
-      practiceQuizzes: activityTypeKey === 'quiz',
+      practiceQuizzes: activityTypeKey === 'practice-quiz',
       microLearnings: activityTypeKey === 'micro-learning',
     },
   })
@@ -331,13 +324,13 @@ app.get(
     if (!courseID || typeof courseID !== 'string' || !validateUUID(courseID)) {
       return res
         .status(StatusCode.BAD_REQUEST)
-        .json({ error: 'courseID is required' })
+        .json({ error: 'Invalid courseID' })
     }
     const activityTypeKey = req.params.activityTypeKey
     if (!activityTypeKey || typeof activityTypeKey !== 'string') {
       return res
         .status(StatusCode.BAD_REQUEST)
-        .json({ error: 'activityTypeKey is required' })
+        .json({ error: 'Missing activityTypeKey' }) // should not happen
     }
     if (
       activityKeysSubselection.indexOf(activityTypeKey) !== -1 &&
@@ -375,7 +368,10 @@ app.get(
 
 async function readData() {
   try {
-    const data = await fs.readFile('./static/activityTypes.json', 'utf-8')
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const dataPath = path.join(__dirname, '../static/activityTypes.json')
+    const data = await fs.readFile(dataPath, 'utf-8')
     activityTypesAvailable = JSON.parse(data)
     activityKeysGeneral = activityTypesAvailable
       .map((activityType) => activityType.olatConfigurationKey)
@@ -394,4 +390,5 @@ readData().then(() => {
   })
 })
 
+export { StatusCode }
 export default app
