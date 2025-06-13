@@ -404,13 +404,40 @@ export async function activateParticipantAccount(
   return null
 }
 
-export async function logoutParticipant(_: any, ctx: ContextWithUser) {
+export async function logoutParticipant(ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
   return ctx.user.sub
+}
+
+export async function logoutTemporaryParticipant(
+  { liveQuizId }: { liveQuizId: string },
+  ctx: ContextWithUser
+) {
+  // check if there exists a temporary leaderboard entry for the current user
+  const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+    where: { id: ctx.user.sub, quizId: liveQuizId },
+  })
+
+  if (!lbEntry) {
+    return false // no temporary participant found
+  }
+
+  // delete the temporary leaderboard entry
+  await ctx.prisma.temporaryLeaderboardEntry.delete({
+    where: { id: ctx.user.sub, quizId: liveQuizId },
+  })
+
+  // delete the cookie
+  ctx.res.cookie('temporary_participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  return true
 }
 
 export async function generateLoginToken(ctx: ContextWithUser) {

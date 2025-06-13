@@ -12,11 +12,13 @@ import {
   Course,
   LocaleType,
   LogoutParticipantDocument,
+  LogoutTemporaryParticipantDocument,
   Participant,
+  SelfDocument,
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, H2 } from '@uzh-bf/design-system'
+import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -31,14 +33,14 @@ interface HeaderProps {
   course?:
     | Partial<Course>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
-  previewMode?: boolean
+  liveQuizId?: string
 }
 
 function Header({
   participant,
   title,
   course,
-  previewMode = false,
+  liveQuizId,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const { pathname, asPath, query } = router
@@ -50,6 +52,8 @@ function Header({
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
+  const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
+    useMutation(LogoutTemporaryParticipantDocument)
 
   const pageInFrame =
     global?.window &&
@@ -279,6 +283,60 @@ function Header({
                     onClick: async () => {
                       await logoutParticipant()
                       router.push('/login')
+                    },
+                    data: { cy: 'logout' },
+                  },
+                ]
+              : []),
+            ...(participant?.role === UserRole.TemporaryParticipant &&
+            liveQuizId
+              ? [
+                  {
+                    id: 'logout',
+                    type: 'standard' as 'standard',
+                    disabled: loggingOutTemporary,
+                    label: (
+                      <div className="text-red-500">
+                        <FontAwesomeIcon
+                          icon={faRightFromBracket}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.logout')}</span>
+                      </div>
+                    ),
+                    onClick: async () => {
+                      try {
+                        // log out temporary participant for this live quiz
+                        const success = await logoutTemporaryParticipant({
+                          variables: { liveQuizId },
+                          refetchQueries: [{ query: SelfDocument }],
+                        })
+
+                        if (success) {
+                          // remove local storage entry for temporary participant
+                          localStorage.removeItem(`login-state-${liveQuizId}`)
+
+                          router.reload()
+                        } else {
+                          toast({
+                            type: 'error',
+                            message: t(
+                              'pwa.profile.errorLogoutTemporaryParticipant'
+                            ),
+                          })
+                        }
+                      } catch (e) {
+                        console.error(
+                          'Error logging out temporary participant:',
+                          e
+                        )
+                        toast({
+                          type: 'error',
+                          message: t(
+                            'pwa.profile.errorLogoutTemporaryParticipant'
+                          ),
+                        })
+                      }
                     },
                     data: { cy: 'logout' },
                   },

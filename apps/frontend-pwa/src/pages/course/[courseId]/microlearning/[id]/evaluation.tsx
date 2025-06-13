@@ -52,7 +52,6 @@ function MicrolearningEvaluation() {
     <Layout
       displayName={microlearning.displayName}
       course={microlearning.course ?? undefined}
-      previewMode={microlearning.isOwner ?? undefined}
     >
       <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
         {microlearning.isOwner ? (

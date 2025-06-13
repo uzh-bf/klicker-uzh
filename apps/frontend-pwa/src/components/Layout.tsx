@@ -27,7 +27,7 @@ interface LayoutProps {
     data?: { cy?: string; test?: string }
   }[]
   setActiveMobilePage?: (value: string) => void
-  previewMode?: boolean
+  liveQuizId?: string
   className?: { header?: string; body?: string }
 }
 
@@ -37,7 +37,7 @@ function Layout({
   course,
   mobileMenuItems,
   setActiveMobilePage,
-  previewMode = false,
+  liveQuizId,
   className,
 }: LayoutProps) {
   const { data: dataParticipant } = useQuery(SelfDocument)
@@ -70,7 +70,7 @@ function Layout({
           participant={dataParticipant?.self || undefined}
           title={displayName}
           course={course}
-          previewMode={previewMode}
+          liveQuizId={liveQuizId}
         />
       </div>
 

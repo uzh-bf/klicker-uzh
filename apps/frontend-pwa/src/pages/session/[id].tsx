@@ -171,6 +171,7 @@ function Index({ id }: { id: string }) {
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
+      liveQuizId={id}
       className={{ body: 'p-0 px-4 pb-4' }}
     >
       <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />

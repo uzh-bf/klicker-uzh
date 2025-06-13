@@ -1592,6 +1592,7 @@ type Mutation {
   loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
+  logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element

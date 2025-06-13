@@ -71,7 +71,6 @@ function MicrolearningInstance() {
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
-      previewMode={previewMode}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
