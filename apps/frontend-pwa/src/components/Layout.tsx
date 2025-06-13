@@ -67,7 +67,12 @@ function Layout({
 
       <div className={twMerge('flex-none', className?.header)}>
         <Header
-          participant={dataParticipant?.self || undefined}
+          participant={
+            dataParticipant?.self &&
+            (dataParticipant.self.role === UserRole.Participant || liveQuizId)
+              ? dataParticipant.self
+              : undefined
+          }
           title={displayName}
           course={course}
           liveQuizId={liveQuizId}

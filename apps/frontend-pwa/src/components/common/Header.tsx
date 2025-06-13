@@ -148,6 +148,28 @@ function Header({
             </div>
           }
           items={[
+            ...(participant
+              ? [
+                  {
+                    id: 'loggedInAs',
+                    type: 'label' as 'label',
+                    label: (
+                      <div className="">
+                        <div>{t('pwa.profile.loggedInAs')}</div>
+                        <div className="font-normal">
+                          {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                        </div>
+                      </div>
+                    ),
+                    className: { item: '!h-max py-0.5' },
+                  },
+                  {
+                    id: 'separator',
+                    type: 'separator' as 'separator',
+                    className: { item: '!h-1.5' },
+                  },
+                ]
+              : []),
             ...(showProfileSetup
               ? [
                   {

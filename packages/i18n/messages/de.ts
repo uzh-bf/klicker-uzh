@@ -868,6 +868,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
       errorLogoutTemporaryParticipant:
         'Beim Ausloggen aus ihrem temporären Pseudonym ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      loggedInAs: 'Angemeldet als',
+      temporaryPseudonym: 'temporäres Pseudonym',
     },
     avatar: {
       hair: 'Frisur',
