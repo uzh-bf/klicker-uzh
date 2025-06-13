@@ -329,12 +329,12 @@ function Header({
                     onClick: async () => {
                       try {
                         // log out temporary participant for this live quiz
-                        const success = await logoutTemporaryParticipant({
+                        const { data } = await logoutTemporaryParticipant({
                           variables: { liveQuizId },
                           refetchQueries: [{ query: SelfDocument }],
                         })
 
-                        if (success) {
+                        if (data?.logoutTemporaryParticipant) {
                           // remove local storage entry for temporary participant
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 

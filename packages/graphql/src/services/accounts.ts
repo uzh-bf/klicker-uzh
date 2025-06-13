@@ -417,6 +417,11 @@ export async function logoutTemporaryParticipant(
   { liveQuizId }: { liveQuizId: string },
   ctx: ContextWithUser
 ) {
+  // verify that the requesting user is a temporary participant
+  if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
+    return false // not a temporary participant
+  }
+
   // check if there exists a temporary leaderboard entry for the current user
   const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
     where: { id: ctx.user.sub, quizId: liveQuizId },
