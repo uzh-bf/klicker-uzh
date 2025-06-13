@@ -162,6 +162,7 @@ function Header({
                       </div>
                     ),
                     className: { item: '!h-max py-0.5' },
+                    data: { cy: 'header-logged-in-as' },
                   },
                   {
                     id: 'separator',

@@ -256,6 +256,7 @@ function AccountSelector({
                   label={t('shared.generic.pseudonym')}
                   placeholder="klicker123"
                   className={{ label: 'text-sm' }}
+                  data={{ cy: 'pseudonym-input' }}
                 />
                 <Button
                   type="button"
@@ -266,6 +267,7 @@ function AccountSelector({
                   }
                   onClick={() => setStep('avatar')}
                   className={{ root: 'mt-2 self-end' }}
+                  data={{ cy: 'pseudonym-next-step' }}
                 >
                   <Button.Icon icon={faArrowRight} />
                   <Button.Label>{t('shared.generic.next')}</Button.Label>
@@ -343,14 +345,23 @@ function AccountSelector({
                       </div>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious type="button" className="left-0" />
-                  <CarouselNext type="button" className="right-0" />
+                  <CarouselPrevious
+                    type="button"
+                    className="left-0"
+                    data-cy="avatar-carousel-prev"
+                  />
+                  <CarouselNext
+                    type="button"
+                    className="right-0"
+                    data-cy="avatar-carousel-next"
+                  />
                 </Carousel>
                 <Button
                   primary
                   type="submit"
                   loading={loggingIn}
                   className={{ root: 'mt-2 self-end' }}
+                  data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >
                   {t('shared.generic.submit')}
                 </Button>
