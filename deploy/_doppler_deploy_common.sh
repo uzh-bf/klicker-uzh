@@ -20,6 +20,8 @@
 #        c. If token is missing → instruct user how to create a Service Token
 #           in the Doppler dashboard, suggest naming it
 #           `<project>-<config>`, and where to save it; then exit 1.
+#        d. You can create a Service Token in the Doppler web UI under:
+#           Projects → <your project> → <config> → Access tab → "Generate Service Token".
 # 4. If not on an external drive and doppler still failed, prompt the user to
 #    run `doppler login` and `doppler setup`, then exit 1.
 #
@@ -72,7 +74,8 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
     DOPPLER_CONFIG="$(grep -E '^\s*config:' "$DOPPLER_YAML" | head -n1 | awk '{print $2}')"
   fi
 
-  echo "To fix this, create a Service Token for project '${DOPPLER_PROJECT:-<project>}' and config '${DOPPLER_CONFIG:-<config>}' in the Doppler dashboard (https://doppler.com)."
+  # Guidance for the user (also echoed to terminal)
+echo "To fix this, create a Service Token for project '${DOPPLER_PROJECT:-<project>}' and config '${DOPPLER_CONFIG:-<config>}' in the Doppler dashboard (https://doppler.com)."
   echo "Name the token something like '${DOPPLER_PROJECT:-<project>}-${DOPPLER_CONFIG:-<config>}' so it's clear which environment it belongs to."
   echo "Copy the token and save it into: $TOKEN_FILE"
   echo ""
