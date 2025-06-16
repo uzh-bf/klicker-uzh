@@ -411,12 +411,13 @@ function PracticeQuizElement({
           {statusMap[practiceQuiz.status]}
         </div>
       </div>
-      <PracticeQuizDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        activityId={practiceQuiz.id}
-        courseId={courseId}
-      />
+      {deletionModal && (
+        <PracticeQuizDeletionModal
+          onClose={() => setDeletionModal(false)}
+          activityId={practiceQuiz.id}
+          courseId={courseId}
+        />
+      )}
     </div>
   )
 }

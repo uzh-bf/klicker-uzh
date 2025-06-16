@@ -4,12 +4,10 @@ import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function RecoveryPrompt({
-  open,
   onRecovery,
   onDiscard,
   editMode = false,
 }: {
-  open: boolean
   onRecovery: () => void
   onDiscard: () => void
   editMode?: boolean
@@ -18,9 +16,9 @@ function RecoveryPrompt({
 
   return (
     <Modal
+      open
       hideCloseButton
       escapeDisabled
-      open={open}
       onClose={() => null}
       title={t('manage.elements.recoverData')}
       secondaryLabel={

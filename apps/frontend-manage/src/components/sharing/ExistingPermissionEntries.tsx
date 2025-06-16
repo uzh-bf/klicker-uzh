@@ -226,25 +226,29 @@ function ExistingPermissionEntries({
           </tr>
         ))}
 
-      <ModifyOwnPermissionsModal
-        open={modifyOwnPermissionsModal.open}
-        onClose={() =>
-          setModifyOwnPermissionsModal({
-            ...modifyOwnPermissionsModal,
-            open: false,
-          })
-        }
-        onConfirm={confirmModifyOwnPermissions}
-        action={modifyOwnPermissionsModal.action}
-        newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
-      />
-      <PermissionRevocationModal
-        open={revocationModal.open}
-        onClose={() => setRevocationModal({ ...revocationModal, open: false })}
-        onRevocation={confirmRevocation}
-        username={revocationModal.username}
-        userGroup={revocationModal.userGroup}
-      />
+      {modifyOwnPermissionsModal.open && (
+        <ModifyOwnPermissionsModal
+          onClose={() =>
+            setModifyOwnPermissionsModal({
+              ...modifyOwnPermissionsModal,
+              open: false,
+            })
+          }
+          onConfirm={confirmModifyOwnPermissions}
+          action={modifyOwnPermissionsModal.action}
+          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+        />
+      )}
+      {revocationModal.open && (
+        <PermissionRevocationModal
+          onClose={() =>
+            setRevocationModal({ ...revocationModal, open: false })
+          }
+          onRevocation={confirmRevocation}
+          username={revocationModal.username}
+          userGroup={revocationModal.userGroup}
+        />
+      )}
     </>
   )
 }

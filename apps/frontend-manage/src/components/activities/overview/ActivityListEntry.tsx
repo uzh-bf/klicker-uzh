@@ -204,34 +204,38 @@ function ActivityListEntry({
           ) : null}
         </div>
       </div>
-      <ActivityDetailsModal
-        activity={activity}
-        open={showDetails}
-        onClose={() => setShowDetails(false)}
-      />
-      <ActivityNameChangeModal
-        id={activity.id}
-        name={activity.name}
-        type={activity.type}
-        displayName={activity.displayName}
-        open={changeName}
-        setOpen={setChangeName}
-      />
+      {showDetails && (
+        <ActivityDetailsModal
+          activity={activity}
+          onClose={() => setShowDetails(false)}
+        />
+      )}
+      {changeName && (
+        <ActivityNameChangeModal
+          id={activity.id}
+          name={activity.name}
+          type={activity.type}
+          displayName={activity.displayName}
+          onClose={() => setChangeName(false)}
+        />
+      )}
 
-      <ActivityLogDialog
-        objectId={String(activity.id)}
-        objectType={
-          activity.type === ActivityType.LiveQuiz
-            ? ObjectType.LiveQuiz
-            : activity.type === ActivityType.PracticeQuiz
-              ? ObjectType.PracticeQuiz
-              : activity.type === ActivityType.MicroLearning
-                ? ObjectType.MicroLearning
-                : ObjectType.GroupActivity
-        }
-        open={isActivityLogOpen}
-        onOpenChange={setActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={String(activity.id)}
+          objectType={
+            activity.type === ActivityType.LiveQuiz
+              ? ObjectType.LiveQuiz
+              : activity.type === ActivityType.PracticeQuiz
+                ? ObjectType.PracticeQuiz
+                : activity.type === ActivityType.MicroLearning
+                  ? ObjectType.MicroLearning
+                  : ObjectType.GroupActivity
+          }
+          open={isActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
+        />
+      )}
     </>
   )
 }

@@ -31,15 +31,16 @@ function PublishMicroLearningButton({
         <Button.Icon icon={faUserGroup} />
         <Button.Label>{t('manage.course.publishMicrolearning')}</Button.Label>
       </Button>
-      <PublishConfirmationModal
-        open={publishModal}
-        setOpen={setPublishModal}
-        elementType={ElementInstanceType.Microlearning}
-        elementId={microLearning.id}
-        title={microLearning.name}
-        courseId={courseId}
-        publicationHint={t('manage.course.microPublishingHint')}
-      />
+      {publishModal && (
+        <PublishConfirmationModal
+          onClose={() => setPublishModal(false)}
+          elementType={ElementInstanceType.Microlearning}
+          elementId={microLearning.id}
+          title={microLearning.name}
+          courseId={courseId}
+          publicationHint={t('manage.course.microPublishingHint')}
+        />
+      )}
     </div>
   )
 }

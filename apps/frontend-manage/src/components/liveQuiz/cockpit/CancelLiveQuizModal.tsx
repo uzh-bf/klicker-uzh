@@ -7,6 +7,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -23,13 +24,11 @@ export interface LiveQuizAbortionConfirmationType {
 function CancelLiveQuizModal({
   quizId,
   title,
-  open,
-  setOpen,
+  onClose,
 }: {
   quizId: string
   title: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }) {
   const router = useRouter()
   const t = useTranslations()
@@ -96,18 +95,13 @@ function CancelLiveQuizModal({
         data.getLiveQuizSummary.numOfLeaderboardEntries === 0,
     })
   }, [data?.getLiveQuizSummary])
-
-  if (!data?.getLiveQuizSummary) {
-    return null
-  }
-
-  const summary = data.getLiveQuizSummary
+  const summary = data?.getLiveQuizSummary
 
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
@@ -123,23 +117,27 @@ function CancelLiveQuizModal({
         router.push(
           dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
         )
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
       secondaryLabel={t('shared.generic.close')}
       onSecondaryAction={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
       className={{ content: 'max-w-[60rem]' }}
     >
-      <LiveQuizAbortionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <LiveQuizAbortionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

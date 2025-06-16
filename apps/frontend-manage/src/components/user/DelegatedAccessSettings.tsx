@@ -225,25 +225,30 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                       {t('manage.settings.createLogin')}
                     </Button.Label>
                   </Button>
-                  <DelegatedAccessCreationModal
-                    confirmationModal={confirmationModal}
-                    setConfirmationModal={setConfirmationModal}
-                    shortname={shortname ?? ''}
-                    values={values}
-                    isSubmitting={isSubmitting}
-                    isValid={isValid}
-                    submitForm={submitForm}
-                  />
+                  {confirmationModal && (
+                    <DelegatedAccessCreationModal
+                      onClose={() => setConfirmationModal(false)}
+                      shortname={shortname ?? ''}
+                      values={values}
+                      isSubmitting={isSubmitting}
+                      isValid={isValid}
+                      submitForm={submitForm}
+                    />
+                  )}
                 </Form>
               )
             }}
           </Formik>
         </div>
       </div>
-      <DelegatedPasswordChangeModal
-        changePasswordModal={changePasswordModal}
-        setChangePasswordModal={setChangePasswordModal}
-      />
+      {changePasswordModal.open && (
+        <DelegatedPasswordChangeModal
+          loginId={changePasswordModal.loginId}
+          onClose={() =>
+            setChangePasswordModal({ open: false, loginId: undefined })
+          }
+        />
+      )}
     </Setting>
   )
 }

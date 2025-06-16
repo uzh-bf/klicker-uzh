@@ -173,9 +173,8 @@ function ObjectImport({
           />
         ) : null}
       </div>
-      {collectionEditor ? (
+      {collectionEditor && objectAdditionModalOpen ? (
         <AddObjectToCatalogModal
-          open={objectAdditionModalOpen}
           onClose={() => setObjectAdditionModalOpen(false)}
           catalogCollectionId={catalogCollectionId as string | undefined}
           onSuccess={() => {
@@ -196,9 +195,8 @@ function ObjectImport({
         />
       ) : null}
 
-      {typeof catalogCollectionId === 'undefined' ? (
+      {typeof catalogCollectionId === 'undefined' && collectionModalOpen ? (
         <CreateCatalogCollectionModal
-          open={collectionModalOpen}
           onClose={() => setCollectionModalOpen(false)}
           onSuccess={() => {
             toast({

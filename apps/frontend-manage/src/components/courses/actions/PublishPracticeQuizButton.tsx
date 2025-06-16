@@ -30,14 +30,15 @@ function PublishPracticeQuizButton({
         <Button.Icon icon={faUserGroup} />
         <Button.Label>{t('manage.course.publishPracticeQuiz')}</Button.Label>
       </Button>
-      <PracticeQuizPublishingModal
-        elementId={practiceQuiz.id}
-        title={practiceQuiz.name}
-        open={publishModal}
-        setOpen={setPublishModal}
-        courseId={courseId}
-        courseStartDate={courseStartDate}
-      />
+      {publishModal && (
+        <PracticeQuizPublishingModal
+          elementId={practiceQuiz.id}
+          title={practiceQuiz.name}
+          onClose={() => setPublishModal(false)}
+          courseId={courseId}
+          courseStartDate={courseStartDate}
+        />
+      )}
     </>
   )
 }

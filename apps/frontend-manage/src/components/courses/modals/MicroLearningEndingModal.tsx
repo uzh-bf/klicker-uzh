@@ -9,19 +9,15 @@ import { useTranslations } from 'next-intl'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface MicroLearningEndingModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function MicroLearningEndingModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: MicroLearningEndingModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetMicroLearningSummaryDocument,
@@ -90,8 +86,7 @@ function MicroLearningEndingModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.endMicroLearning')}
       message={t('manage.course.endMicroLearningMessage')}
       onSubmit={async () => await endMicroLearning()}

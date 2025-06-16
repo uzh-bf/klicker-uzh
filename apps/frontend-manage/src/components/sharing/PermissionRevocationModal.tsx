@@ -3,7 +3,6 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 interface PermissionRevocationModalProps {
-  open: boolean
   onClose: () => void
   onRevocation: () => Promise<void>
   username?: string
@@ -11,7 +10,6 @@ interface PermissionRevocationModalProps {
 }
 
 function PermissionRevocationModal({
-  open,
   onClose,
   onRevocation,
   username,
@@ -32,8 +30,8 @@ function PermissionRevocationModal({
 
   return (
     <Modal
+      open
       hideCloseButton
-      open={open}
       onClose={onClose}
       title={t('manage.sharing.revokeDirectPermission')}
       secondaryLabel={t('shared.generic.cancel')}

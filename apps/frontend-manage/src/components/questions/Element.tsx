@@ -304,7 +304,6 @@ function Element({
       {showRecoveryPrompt && (
         <RecoveryPrompt
           editMode
-          open={showRecoveryPrompt}
           onRecovery={() => {
             setShowRecoveryPrompt(false)
             setModificationModalOpen(true)
@@ -353,23 +352,24 @@ function Element({
           unsetDeletedQuestion={unsetDeletedQuestion}
         />
       )}
-      {isSharingModalOpen && element.isManager && (
+      {isSharingModalOpen && element.isManager ? (
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
           objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
-          open={isSharingModalOpen}
           onClose={() => setSharingModalOpen(false)}
         />
-      )}
+      ) : null}
 
-      <ActivityLogDialog
-        objectId={element.id}
-        objectType={ObjectType.Element}
-        open={isActivityLogOpen}
-        onOpenChange={setActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={element.id}
+          objectType={ObjectType.Element}
+          open={isActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

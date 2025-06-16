@@ -1,32 +1,25 @@
 import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
 import ActivityLog from './ActivityLog'
-
-interface ActivityLogDialogProps {
-  // the ID of the object to fetch activity for
-  objectId: string | number
-  // the type of object (Element, Course, etc.)
-  objectType: ObjectType
-  // controlled open state
-  open: boolean
-  // callback for open state change
-  onOpenChange: Dispatch<SetStateAction<boolean>>
-}
 
 function ActivityLogDialog({
   objectId,
   objectType,
   open,
-  onOpenChange,
-}: ActivityLogDialogProps) {
+  onClose,
+}: {
+  objectId: string | number
+  objectType: ObjectType
+  open: boolean
+  onClose: () => void
+}) {
   const t = useTranslations()
 
   return (
     <Modal
-      open={open}
-      onClose={() => onOpenChange(false)}
+      open
+      onClose={onClose}
       title={t('shared.activity.title')}
       data={{ cy: 'activity-log-dialog' }}
       dataCloseButton={{ cy: 'close-activity-log' }}

@@ -10,19 +10,17 @@ import Link from 'next/link'
 
 function ActivityDetailsModal({
   activity,
-  open,
   onClose,
 }: {
   activity: ActivityInfo
-  open: boolean
   onClose: () => void
 }) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
       title={t('manage.activities.activityDetails')}
-      open={open}
       onClose={onClose}
       className={{ content: 'w-96 min-w-96 max-w-96' }}
       data={{ cy: 'activity-details-modal' }}

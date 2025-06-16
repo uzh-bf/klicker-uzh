@@ -6,6 +6,7 @@ import {
   GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -38,7 +39,6 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
-  open,
   onClose,
   onSuccess,
   mode,
@@ -59,7 +59,6 @@ function ElementEditForm({
   isTemplate?: boolean
   templateId?: string
   // modal state props
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   // element mode and identification
@@ -147,14 +146,18 @@ function ElementEditForm({
           submitForm,
         }) => {
           if (loading) {
-            return null
+            return (
+              <Modal open onClose={() => onClose()} fullScreen>
+                <Loader />
+              </Modal>
+            )
           }
 
           return (
             <Modal
+              open
               fullScreen
               title={t(`manage.elements.${mode}Title`)}
-              open={open}
               onClose={() => onClose()}
               escapeDisabled={true}
               onPrimaryAction={() => submitForm()}
@@ -390,7 +393,6 @@ function ElementEditForm({
         <AnswerCollectionEditModal
           inlineEditing
           collectionId={collectionModal.id}
-          open={collectionModal.open}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
           refetchAnswerCollections={async () => {
             await refetch()

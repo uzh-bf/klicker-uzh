@@ -7,14 +7,15 @@ import {
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface TagDeletionModalProps {
+function TagDeletionModal({
+  id,
+  name,
+  onClose,
+}: {
   id: number
   name: string
-  open: boolean
-  setOpen: (value: boolean) => void
-}
-
-function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
+  onClose: () => void
+}) {
   const t = useTranslations()
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
     variables: {
@@ -49,19 +50,19 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
 
   return (
     <Modal
-      onClose={(): void => setOpen(false)}
-      open={open}
+      open
+      onClose={onClose}
       title={t('manage.tags.deleteTag')}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={deleting}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
         await deleteTag()
-        setOpen(false)
+        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-delete-tag' }}
       className={{ content: 'max-w-xl' }}
     >

@@ -153,51 +153,52 @@ function CatalogCollectionListItem({
 
       {collection.isManager ? (
         <>
-          <ObjectSharingModalWrapper
-            open={sharingModal}
-            onClose={() => setSharingModal(false)}
-            objectUuid={collection.id}
-            objectName={collection.name}
-            objectType={ObjectType.CatalogCollection}
-            isOwner={collection.isOwner ?? false}
-          />
-          <CatalogCollectionDeletionModal
-            catalogCollectionId={collection.id}
-            catalogCollectionName={collection.name}
-            open={deletionModal}
-            onClose={() => setDeletionModal(false)}
-            onSuccess={() =>
-              toast({
-                type: 'success',
-                message: t('manage.catalog.deletionSuccessful'),
-                options: { duration: 3500 },
-              })
-            }
-          />
-          <CatalogChangeAccessModal
-            open={changeAccessModal}
-            onClose={() => setChangeAccessModal(false)}
-            objectType={ObjectType.CatalogCollection}
-            objectName={collection.name}
-            newAccess={newAccess}
-            catalogCollectionId={collection.id}
-          />
+          {sharingModal && (
+            <ObjectSharingModalWrapper
+              onClose={() => setSharingModal(false)}
+              objectUuid={collection.id}
+              objectName={collection.name}
+              objectType={ObjectType.CatalogCollection}
+              isOwner={collection.isOwner ?? false}
+            />
+          )}
+          {deletionModal && (
+            <CatalogCollectionDeletionModal
+              catalogCollectionId={collection.id}
+              catalogCollectionName={collection.name}
+              onClose={() => setDeletionModal(false)}
+              onSuccess={() =>
+                toast({
+                  type: 'success',
+                  message: t('manage.catalog.deletionSuccessful'),
+                  options: { duration: 3500 },
+                })
+              }
+            />
+          )}
+          {changeAccessModal && (
+            <CatalogChangeAccessModal
+              onClose={() => setChangeAccessModal(false)}
+              objectType={ObjectType.CatalogCollection}
+              objectName={collection.name}
+              newAccess={newAccess}
+              catalogCollectionId={collection.id}
+            />
+          )}
         </>
       ) : null}
 
-      {collection.isEditor ? (
+      {collection.isEditor && nameChangeModal ? (
         <CatalogCollectionNameChangeModal
           catalogCollectionId={collection.id}
           name={collection.name}
-          open={nameChangeModal}
           onClose={() => setNameChangeModal(false)}
         />
       ) : null}
 
       {/* functionality for users without access to request it for restricted catalog collections */}
-      {isRequestable ? (
+      {isRequestable && requestModal ? (
         <CatalogRequestModal
-          open={requestModal}
           onSuccess={() => {
             toast({
               type: 'success',

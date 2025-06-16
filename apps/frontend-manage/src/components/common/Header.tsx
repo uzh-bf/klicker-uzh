@@ -302,11 +302,9 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           className={{ root: '-gap-1 flex flex-row' }}
         />
       </div>
-      <SupportModal
-        open={showSupportModal}
-        setOpen={setShowSupportModal}
-        user={user}
-      />
+      {showSupportModal && (
+        <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+      )}
     </>
   )
 }

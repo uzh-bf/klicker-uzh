@@ -11,7 +11,6 @@ import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CatalogChangeAccessModal({
-  open,
   onClose,
   objectType,
   objectName,
@@ -19,7 +18,6 @@ function CatalogChangeAccessModal({
   newAccess,
   catalogCollectionId,
 }: {
-  open: boolean
   onClose: () => void
   objectType: ObjectType
   objectName: string
@@ -37,7 +35,7 @@ function CatalogChangeAccessModal({
 
   return (
     <Modal
-      open={open}
+      open
       title={t('manage.catalog.changeAccessTitle')}
       onClose={onClose}
       primaryLabel={t('manage.catalog.changeAccessConfirm')}

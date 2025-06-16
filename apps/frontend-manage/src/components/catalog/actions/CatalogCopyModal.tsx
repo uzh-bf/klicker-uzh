@@ -10,7 +10,6 @@ import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useCopyCatalogObject from './useCopyCatalogObject'
 
 function CatalogCopyModal({
-  open,
   onSuccess,
   onClose,
   objectType,
@@ -19,7 +18,6 @@ function CatalogCopyModal({
   objectOwner,
   catalogCollectionId,
 }: {
-  open: boolean
   onSuccess: () => void
   onClose: () => void
   objectType: ObjectType
@@ -45,7 +43,7 @@ function CatalogCopyModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={(e) => {
         e?.stopPropagation()
         onClose()

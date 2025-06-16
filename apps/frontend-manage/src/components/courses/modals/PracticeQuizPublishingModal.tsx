@@ -18,8 +18,7 @@ interface PracticeQuizPublishingModalProps {
   title: string
   courseId: string
   courseStartDate: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }
 
 function PracticeQuizPublishingModal({
@@ -27,8 +26,7 @@ function PracticeQuizPublishingModal({
   title,
   courseId,
   courseStartDate,
-  open,
-  setOpen,
+  onClose,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
@@ -36,9 +34,9 @@ function PracticeQuizPublishingModal({
 
   return (
     <Modal
+      open
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
-      onClose={(): void => setOpen(false)}
-      open={open}
+      onClose={onClose}
       className={{ content: 'pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
@@ -70,7 +68,7 @@ function PracticeQuizPublishingModal({
                   { query: GetUserActivitiesDocument },
                 ],
               })
-              setOpen(false)
+              onClose()
             }}
             loading={practiceQuizPublishing}
             data={{ cy: 'publish-practice-quiz-immediately' }}
@@ -109,7 +107,7 @@ function PracticeQuizPublishingModal({
                   { query: GetUserActivitiesDocument },
                 ],
               })
-              setOpen(false)
+              onClose()
             }}
             validationSchema={yup.object().shape({
               availableFrom: yup

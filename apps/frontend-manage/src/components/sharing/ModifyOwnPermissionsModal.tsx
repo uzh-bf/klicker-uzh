@@ -3,7 +3,6 @@ import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface ModifyOwnPermissionsModalProps {
-  open: boolean
   onClose: () => void
   onConfirm: () => void
   action: 'change' | 'remove'
@@ -11,7 +10,6 @@ interface ModifyOwnPermissionsModalProps {
 }
 
 function ModifyOwnPermissionsModal({
-  open,
   onClose,
   onConfirm,
   action,
@@ -21,8 +19,8 @@ function ModifyOwnPermissionsModal({
 
   return (
     <Modal
+      open
       hideCloseButton
-      open={open}
       onClose={onClose}
       title={t('manage.sharing.modifyOwnPermissionsTitle')}
       secondaryLabel={t('shared.generic.cancel')}
