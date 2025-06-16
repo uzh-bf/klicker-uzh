@@ -242,13 +242,14 @@ function TemplateElementContent({
         />
       )}
 
-      <TemplateNewElementModal
-        templateId={templateId}
-        open={newElementModal}
-        onClose={() => setNewElementModal(false)}
-        templateElement={templateElement}
-        onSaveNewElement={saveNewElement}
-      />
+      {newElementModal && (
+        <TemplateNewElementModal
+          templateId={templateId}
+          onClose={() => setNewElementModal(false)}
+          templateElement={templateElement}
+          onSaveNewElement={saveNewElement}
+        />
+      )}
 
       {comfirmDiscardCustom.open && (
         <NewElementDataDiscardingModal
