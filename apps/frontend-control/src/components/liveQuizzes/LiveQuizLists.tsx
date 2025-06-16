@@ -106,7 +106,7 @@ function LiveQuizLists({
         <StartModal
           quizId={startId}
           quizName={startName}
-          setStartModalOpen={setStartModalOpen}
+          onClose={() => setStartModalOpen(false)}
         />
       )}
     </>

@@ -7,6 +7,7 @@ import {
   GetUserRunningLiveQuizzesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -94,12 +95,7 @@ function CancelLiveQuizModal({
         data.getLiveQuizSummary.numOfLeaderboardEntries === 0,
     })
   }, [data?.getLiveQuizSummary])
-
-  if (!data?.getLiveQuizSummary) {
-    return null
-  }
-
-  const summary = data.getLiveQuizSummary
+  const summary = data?.getLiveQuizSummary
 
   return (
     <Modal
@@ -133,11 +129,15 @@ function CancelLiveQuizModal({
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
       className={{ content: 'max-w-[60rem]' }}
     >
-      <LiveQuizAbortionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <LiveQuizAbortionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

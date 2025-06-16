@@ -6,6 +6,7 @@ import {
   GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -145,7 +146,11 @@ function ElementEditForm({
           submitForm,
         }) => {
           if (loading) {
-            return null
+            return (
+              <Modal open onClose={() => onClose()} fullScreen>
+                <Loader />
+              </Modal>
+            )
           }
 
           return (

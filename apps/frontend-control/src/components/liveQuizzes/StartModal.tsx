@@ -11,11 +11,11 @@ import { useRouter } from 'next/router'
 function StartModal({
   quizId,
   quizName,
-  setStartModalOpen,
+  onClose,
 }: {
   quizId: string
   quizName: string
-  setStartModalOpen: (open: boolean) => void
+  onClose: () => void
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -56,7 +56,7 @@ function StartModal({
   return (
     <Modal
       open
-      onClose={() => setStartModalOpen(false)}
+      onClose={onClose}
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
         try {
@@ -65,7 +65,7 @@ function StartModal({
           })
           router.push(`/session/${quizId}`)
         } catch (error) {
-          setStartModalOpen(false)
+          onClose()
           toast({
             type: 'error',
             message: t('control.course.liveQuizStartFailed'),
@@ -76,7 +76,7 @@ function StartModal({
       primaryLoading={startingLiveQuiz}
       dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setStartModalOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
       className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton

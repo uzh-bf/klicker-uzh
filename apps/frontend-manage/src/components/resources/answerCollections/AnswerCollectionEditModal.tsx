@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
   AccordionContent,
@@ -91,10 +92,6 @@ function AnswerCollectionEditModal({
     return search.search(searchQuery) as typeof collection.entries
   }, [collection, search, searchQuery])
 
-  if (loading || !collection) {
-    return null
-  }
-
   return (
     <Modal
       open
@@ -103,125 +100,134 @@ function AnswerCollectionEditModal({
         setOptionsEditingDisabled(false)
         onClose()
       }}
-      title={t('manage.resources.answerCollection', { name: collection.name })}
+      title={t('manage.resources.answerCollection', {
+        name:
+          loading || !collection
+            ? t('shared.generic.loading')
+            : collection.name,
+      })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
       className={{
         content: twMerge('max-h-[calc(100vh-1.5rem)] pb-2', className?.content),
         overlay: className?.overlay,
       }}
     >
-      <Accordion
-        collapsible
-        type="single"
-        defaultValue={'metadata'}
-        value={accordionState}
-        onValueChange={(newValue) => {
-          if (metadataTouched || optionsTouched) {
-            onErrorToast()
-          } else {
-            setAccordionState(newValue as 'metadata' | 'options')
-          }
-        }}
-        className="w-full"
-      >
-        <AccordionItem value="metadata">
-          <AccordionTrigger
-            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
-            data-cy="open-answer-collection-metadata"
-          >
-            {t('manage.resources.nameAndDescription')}
-          </AccordionTrigger>
-          <AccordionContent className="px-1">
-            <AnswerCollectionMetaForm
-              collection={collection}
-              onSuccess={() => {
-                setMetadataTouched(false)
-                onSuccessToast()
-              }}
-              metadataTouched={metadataTouched}
-              setMetadataTouched={setMetadataTouched}
-              inlineEditing={inlineEditing}
-              refetchAnswerCollections={refetchAnswerCollections}
-            />
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="options">
-          <AccordionTrigger
-            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
-            data-cy="open-answer-collection-options"
-          >
-            {t('manage.resources.answerOptions')}
-          </AccordionTrigger>
-          <AccordionContent className="px-1 pb-2">
-            <div className="my-1.5 text-sm">
-              {t('manage.resources.changesImmediateEffect')}
-            </div>
-            {collection.entries?.some(
-              (entry) => (entry.numSolutionUsages ?? 0) > 0
-            ) ? (
-              <UserNotification
-                message={t('manage.resources.answerOptionUsed')}
-                type="warning"
-                className={{ root: 'mb-2' }}
+      {loading || !collection ? (
+        <Loader />
+      ) : (
+        <Accordion
+          collapsible
+          type="single"
+          defaultValue={'metadata'}
+          value={accordionState}
+          onValueChange={(newValue) => {
+            if (metadataTouched || optionsTouched) {
+              onErrorToast()
+            } else {
+              setAccordionState(newValue as 'metadata' | 'options')
+            }
+          }}
+          className="w-full"
+        >
+          <AccordionItem value="metadata">
+            <AccordionTrigger
+              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              data-cy="open-answer-collection-metadata"
+            >
+              {t('manage.resources.nameAndDescription')}
+            </AccordionTrigger>
+            <AccordionContent className="px-1">
+              <AnswerCollectionMetaForm
+                collection={collection}
+                onSuccess={() => {
+                  setMetadataTouched(false)
+                  onSuccessToast()
+                }}
+                metadataTouched={metadataTouched}
+                setMetadataTouched={setMetadataTouched}
+                inlineEditing={inlineEditing}
+                refetchAnswerCollections={refetchAnswerCollections}
               />
-            ) : null}
+            </AccordionContent>
+          </AccordionItem>
 
-            <TextField
-              value={searchQuery}
-              onChange={(searchString) => setSearchQuery(searchString)}
-              icon={faSearch}
-              placeholder={t('manage.resources.searchAnswerOptions')}
-              data={{ cy: 'search-answer-options' }}
-              className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
-            />
-            <div className="my-2 flex max-h-[calc(100vh-35rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-29rem)] lg:max-h-[calc(100vh-26rem)]">
-              {filteredEntries.length === 0 ? (
-                <UserNotification type="info">
-                  {t('manage.resources.noMatchingOptions')}
-                </UserNotification>
-              ) : (
-                filteredEntries.map((entry, ix) => (
-                  <AnswerCollectionOption
-                    key={`collection-entry-${entry.id}`}
-                    entry={entry}
-                    otherEntries={collection
-                      .entries!.filter((e) => e.id !== entry.id)
-                      .map((e) => e.value)}
-                    last={ix === filteredEntries.length - 1}
-                    collectionId={collection.id}
-                    deletionDisabled={collection.entries!.length <= 2}
-                    editDisabled={optionsEditingDisabled}
-                    setEditDisabled={setOptionsEditingDisabled}
-                    onTouched={() => setOptionsTouched(true)}
-                    onSuccess={() => {
-                      setOptionsTouched(false)
-                      onSuccessToast()
-                    }}
-                    inlineEditing={inlineEditing}
-                    refetchAnswerCollections={refetchAnswerCollections}
-                  />
-                ))
-              )}
-            </div>
-            <AddAnswerCollectionEntry
-              collectionId={collection.id}
-              entries={collection.entries ?? []}
-              setOptionsEditingDisabled={setOptionsEditingDisabled}
-              onTouched={() => setOptionsTouched(true)}
-              onUntouched={() => {
-                setOptionsTouched(false)
-              }}
-              onSuccess={() => {
-                setOptionsTouched(false)
-                onSuccessToast()
-              }}
-              inlineEditing={inlineEditing}
-              refetchAnswerCollections={refetchAnswerCollections}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+          <AccordionItem value="options">
+            <AccordionTrigger
+              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              data-cy="open-answer-collection-options"
+            >
+              {t('manage.resources.answerOptions')}
+            </AccordionTrigger>
+            <AccordionContent className="px-1 pb-2">
+              <div className="my-1.5 text-sm">
+                {t('manage.resources.changesImmediateEffect')}
+              </div>
+              {collection.entries?.some(
+                (entry) => (entry.numSolutionUsages ?? 0) > 0
+              ) ? (
+                <UserNotification
+                  message={t('manage.resources.answerOptionUsed')}
+                  type="warning"
+                  className={{ root: 'mb-2' }}
+                />
+              ) : null}
+
+              <TextField
+                value={searchQuery}
+                onChange={(searchString) => setSearchQuery(searchString)}
+                icon={faSearch}
+                placeholder={t('manage.resources.searchAnswerOptions')}
+                data={{ cy: 'search-answer-options' }}
+                className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
+              />
+              <div className="my-2 flex max-h-[calc(100vh-35rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-29rem)] lg:max-h-[calc(100vh-26rem)]">
+                {filteredEntries.length === 0 ? (
+                  <UserNotification type="info">
+                    {t('manage.resources.noMatchingOptions')}
+                  </UserNotification>
+                ) : (
+                  filteredEntries.map((entry, ix) => (
+                    <AnswerCollectionOption
+                      key={`collection-entry-${entry.id}`}
+                      entry={entry}
+                      otherEntries={collection
+                        .entries!.filter((e) => e.id !== entry.id)
+                        .map((e) => e.value)}
+                      last={ix === filteredEntries.length - 1}
+                      collectionId={collection.id}
+                      deletionDisabled={collection.entries!.length <= 2}
+                      editDisabled={optionsEditingDisabled}
+                      setEditDisabled={setOptionsEditingDisabled}
+                      onTouched={() => setOptionsTouched(true)}
+                      onSuccess={() => {
+                        setOptionsTouched(false)
+                        onSuccessToast()
+                      }}
+                      inlineEditing={inlineEditing}
+                      refetchAnswerCollections={refetchAnswerCollections}
+                    />
+                  ))
+                )}
+              </div>
+              <AddAnswerCollectionEntry
+                collectionId={collection.id}
+                entries={collection.entries ?? []}
+                setOptionsEditingDisabled={setOptionsEditingDisabled}
+                onTouched={() => setOptionsTouched(true)}
+                onUntouched={() => {
+                  setOptionsTouched(false)
+                }}
+                onSuccess={() => {
+                  setOptionsTouched(false)
+                  onSuccessToast()
+                }}
+                inlineEditing={inlineEditing}
+                refetchAnswerCollections={refetchAnswerCollections}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
     </Modal>
   )
 }

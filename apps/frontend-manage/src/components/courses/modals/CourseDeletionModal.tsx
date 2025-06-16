@@ -4,6 +4,7 @@ import {
   GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -87,11 +88,10 @@ function CourseDeletionModal({
     })
   }, [courseId, data?.getCourseSummary])
 
-  if (!courseId || !data?.getCourseSummary) {
+  const summary = data?.getCourseSummary
+  if (!courseId) {
     return null
   }
-
-  const summary = data.getCourseSummary
 
   return (
     <Modal
@@ -132,11 +132,15 @@ function CourseDeletionModal({
       }}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
-      <CourseDeletionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <CourseDeletionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

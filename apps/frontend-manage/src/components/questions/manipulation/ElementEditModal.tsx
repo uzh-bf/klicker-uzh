@@ -15,7 +15,9 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import { Modal } from '@uzh-bf/design-system'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -117,7 +119,11 @@ function ElementEditModal({
   }, [isOpen, isDuplication, initialValues])
 
   if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
-    return <div />
+    return (
+      <Modal open onClose={() => null} fullScreen>
+        <Loader />
+      </Modal>
+    )
   }
 
   return (
