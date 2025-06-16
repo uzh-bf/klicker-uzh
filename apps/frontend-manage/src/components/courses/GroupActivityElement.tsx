@@ -319,27 +319,30 @@ function GroupActivityElement({
 
         <div>{statusMap[groupActivity.status ?? PublicationStatus.Draft]}</div>
       </div>
-      <GroupActivityDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        activityId={groupActivity.id}
-        courseId={courseId}
-      />
-      <GroupActivityEndingModal
-        open={endingModal}
-        setOpen={setEndingModal}
-        activityId={groupActivity.id}
-        courseId={courseId}
-      />
-      <GroupActivityStartingModal
-        open={startingModal}
-        setOpen={setStartingModal}
-        activityId={groupActivity.id}
-        activityEndDate={groupActivity.scheduledEndAt}
-        groupDeadlineDate={groupDeadlineDate}
-        numOfParticipantGroups={numOfParticipantGroups}
-        courseId={courseId}
-      />
+      {deletionModal && (
+        <GroupActivityDeletionModal
+          onClose={() => setDeletionModal(false)}
+          activityId={groupActivity.id}
+          courseId={courseId}
+        />
+      )}
+      {endingModal && (
+        <GroupActivityEndingModal
+          onClose={() => setEndingModal(false)}
+          activityId={groupActivity.id}
+          courseId={courseId}
+        />
+      )}
+      {startingModal && (
+        <GroupActivityStartingModal
+          onClose={() => setStartingModal(false)}
+          activityId={groupActivity.id}
+          activityEndDate={groupActivity.scheduledEndAt}
+          groupDeadlineDate={groupDeadlineDate}
+          numOfParticipantGroups={numOfParticipantGroups}
+          courseId={courseId}
+        />
+      )}
     </div>
   )
 }

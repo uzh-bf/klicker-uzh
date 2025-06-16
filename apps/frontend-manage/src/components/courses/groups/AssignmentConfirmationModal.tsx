@@ -8,12 +8,10 @@ import { useTranslations } from 'next-intl'
 
 function AssignmentConfirmationModal({
   courseId,
-  open,
-  setOpen,
+  onClose,
 }: {
   courseId: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }) {
   const t = useTranslations()
   const [
@@ -50,8 +48,8 @@ function AssignmentConfirmationModal({
 
   return (
     <Modal
-      open={open}
-      onClose={(): void => setOpen(false)}
+      open
+      onClose={onClose}
       title={t('manage.course.finalizeRandomGroupAssignment')}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={randomGroupCreationLoading}
@@ -65,7 +63,7 @@ function AssignmentConfirmationModal({
             message: t('manage.course.groupAssignmentSuccessful'),
             options: { duration: 5000 },
           })
-          setOpen(false)
+          onClose()
         } else {
           console.error('Error while creating random groups')
           toast({
@@ -77,7 +75,7 @@ function AssignmentConfirmationModal({
       }}
       dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-random-group-assignment' }}
     >
       <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>

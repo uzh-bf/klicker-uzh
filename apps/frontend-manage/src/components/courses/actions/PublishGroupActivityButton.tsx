@@ -31,15 +31,16 @@ function PublishGroupActivityButton({
         <Button.Icon icon={faUserGroup} />
         <Button.Label>{t('manage.course.publishGroupActivity')}</Button.Label>
       </Button>
-      <PublishConfirmationModal
-        open={publishModal}
-        setOpen={setPublishModal}
-        elementType={ElementInstanceType.GroupActivity}
-        elementId={groupActivity.id}
-        title={groupActivity.name}
-        courseId={courseId}
-        publicationHint={t('manage.course.groupActivityPublishingHint')}
-      />
+      {publishModal && (
+        <PublishConfirmationModal
+          onClose={() => setPublishModal(false)}
+          elementType={ElementInstanceType.GroupActivity}
+          elementId={groupActivity.id}
+          title={groupActivity.name}
+          courseId={courseId}
+          publicationHint={t('manage.course.groupActivityPublishingHint')}
+        />
+      )}
     </>
   )
 }

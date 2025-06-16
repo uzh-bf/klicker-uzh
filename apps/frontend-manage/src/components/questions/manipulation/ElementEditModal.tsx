@@ -16,7 +16,6 @@ import {
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -56,8 +55,6 @@ function ElementEditModal({
   elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
-  const t = useTranslations()
-
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
@@ -131,7 +128,6 @@ function ElementEditModal({
       loading={loadingQuestion}
       initialValues={formikInitialValues}
       initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
-      open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}

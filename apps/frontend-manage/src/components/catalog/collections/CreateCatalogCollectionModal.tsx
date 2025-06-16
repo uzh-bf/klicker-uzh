@@ -15,26 +15,22 @@ import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 
-interface CreateCatalogCollectionModalProps {
-  open: boolean
-  onClose: () => void
-  onSuccess: () => void
-  onError: () => void
-}
-
 function CreateCatalogCollectionModal({
-  open,
   onClose,
   onSuccess,
   onError,
-}: CreateCatalogCollectionModalProps) {
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  onError: () => void
+}) {
   const t = useTranslations()
   const [createCatalogCollection] = useMutation(CreateCatalogCollectionDocument)
 
   return (
     <>
       <Modal
-        open={open}
+        open
         onClose={onClose}
         title={t('manage.catalog.createCatalogCollectionTitle')}
         data={{ cy: 'create-catalog-collection-modal' }}

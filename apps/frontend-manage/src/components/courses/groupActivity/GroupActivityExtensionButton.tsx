@@ -35,16 +35,17 @@ function GroupActivityExtensionButton({
         <Button.Icon icon={faCalendar} />
         <Button.Label>{t('manage.course.extendGroupActivity')}</Button.Label>
       </Button>
-      <ExtensionModal
-        type="groupActivity"
-        id={activityId}
-        currentEndDate={scheduledEndAt}
-        courseId={courseId}
-        title={t('manage.course.extendGroupActivity')}
-        description={t('manage.course.extendGroupActivityDescription')}
-        open={extensionModal}
-        setOpen={setExtensionModal}
-      />
+      {extensionModal && (
+        <ExtensionModal
+          type="groupActivity"
+          id={activityId}
+          currentEndDate={scheduledEndAt}
+          courseId={courseId}
+          title={t('manage.course.extendGroupActivity')}
+          description={t('manage.course.extendGroupActivityDescription')}
+          onClose={() => setExtensionModal(false)}
+        />
+      )}
     </>
   )
 }

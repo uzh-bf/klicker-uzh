@@ -223,23 +223,24 @@ function TemplateElementContent({
         </Button>
       </div>
 
-      <ExistingElementSelectionModal
-        open={existingElementModal}
-        onClose={() => setExistingElementModal(false)}
-        replaceWithExistingElement={replaceWithExistingElement}
-        requiredElementType={templateElement.instance.elementType}
-        hasSampleSolution={
-          'options' in templateElement.instance.elementData
-            ? templateElement.instance.elementData.options.hasSampleSolution
-            : null
-        }
-        hasAnswerFeedbacks={
-          'options' in templateElement.instance.elementData &&
-          'hasAnswerFeedbacks' in templateElement.instance.elementData.options
-            ? templateElement.instance.elementData.options.hasAnswerFeedbacks
-            : null
-        }
-      />
+      {existingElementModal && (
+        <ExistingElementSelectionModal
+          onClose={() => setExistingElementModal(false)}
+          replaceWithExistingElement={replaceWithExistingElement}
+          requiredElementType={templateElement.instance.elementType}
+          hasSampleSolution={
+            'options' in templateElement.instance.elementData
+              ? templateElement.instance.elementData.options.hasSampleSolution
+              : null
+          }
+          hasAnswerFeedbacks={
+            'options' in templateElement.instance.elementData &&
+            'hasAnswerFeedbacks' in templateElement.instance.elementData.options
+              ? templateElement.instance.elementData.options.hasAnswerFeedbacks
+              : null
+          }
+        />
+      )}
 
       <TemplateNewElementModal
         templateId={templateId}
@@ -249,16 +250,17 @@ function TemplateElementContent({
         onSaveNewElement={saveNewElement}
       />
 
-      <NewElementDataDiscardingModal
-        open={comfirmDiscardCustom.open}
-        onClose={() =>
-          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
-        }
-        onConfirm={() => {
-          comfirmDiscardCustom.onConfirm()
-          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
-        }}
-      />
+      {comfirmDiscardCustom.open && (
+        <NewElementDataDiscardingModal
+          onClose={() =>
+            setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+          }
+          onConfirm={() => {
+            comfirmDiscardCustom.onConfirm()
+            setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+          }}
+        />
+      )}
     </>
   )
 }

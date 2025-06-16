@@ -412,8 +412,7 @@ function PracticeQuizElement({
         </div>
       </div>
       <PracticeQuizDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
+        onClose={() => setDeletionModal(false)}
         activityId={practiceQuiz.id}
         courseId={courseId}
       />

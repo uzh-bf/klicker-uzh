@@ -160,21 +160,19 @@ function MicrolearningActions({
         activityType={microLearning.type}
       />
       <div>
-        {sharingModal && microLearning.isManager && (
+        {sharingModal && microLearning.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={microLearning.id}
             objectName={microLearning.name}
             objectType={ObjectType.MicroLearning}
             isTemplate={isTemplate}
             isOwner={microLearning.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {publishModal && (
           <PublishConfirmationModal
-            open={publishModal}
-            setOpen={setPublishModal}
+            onClose={() => setPublishModal(false)}
             elementType={ElementInstanceType.Microlearning}
             elementId={microLearning.id}
             title={microLearning.name}
@@ -194,8 +192,7 @@ function MicrolearningActions({
         )}
         {deletionModal && (
           <MicroLearningDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
           />
@@ -203,8 +200,7 @@ function MicrolearningActions({
 
         {endingModal && (
           <MicroLearningEndingModal
-            open={endingModal}
-            setOpen={setEndingModal}
+            onClose={() => setEndingModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
           />
@@ -217,19 +213,18 @@ function MicrolearningActions({
             courseId={microLearning.courseId!}
             title={t('manage.course.extendMicroLearning')}
             description={t('manage.course.extendMicroLearningDescription')}
-            open={extensionModal}
-            setOpen={setExtensionModal}
+            onClose={() => setExtensionModal(false)}
           />
         )}
 
-        {microLearning && (
+        {microLearning && activityLogOpen ? (
           <ActivityLogDialog
             objectId={microLearning.id}
             objectType={ObjectType.MicroLearning}
             open={activityLogOpen}
-            onOpenChange={setActivityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

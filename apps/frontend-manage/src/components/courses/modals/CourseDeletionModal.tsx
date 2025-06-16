@@ -19,17 +19,13 @@ export interface CourseDeletionConfirmationType {
   deleteLeaderboardEntries: boolean
 }
 
-interface CourseDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  courseId: string | null
-}
-
 function CourseDeletionModal({
-  open,
-  setOpen,
+  onClose,
   courseId,
-}: CourseDeletionModalProps) {
+}: {
+  onClose: () => void
+  courseId: string | null
+}) {
   const initialConfirmations: CourseDeletionConfirmationType = {
     deleteParticipations: false,
     disconnectLiveQuizzes: false,
@@ -99,9 +95,9 @@ function CourseDeletionModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       className={{ content: '!w-full max-w-[60rem]' }}
@@ -125,13 +121,13 @@ function CourseDeletionModal({
             },
           },
         })
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}
       onSecondaryAction={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}

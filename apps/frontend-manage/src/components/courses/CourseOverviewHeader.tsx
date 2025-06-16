@@ -208,7 +208,6 @@ function CourseOverviewHeader({
       {courseSettingsModal && (
         <CourseManipulationModal
           initialValues={course}
-          modalOpen={courseSettingsModal}
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
@@ -264,23 +263,24 @@ function CourseOverviewHeader({
         />
       )}
 
-      {sharingModal && course.isManager && (
+      {sharingModal && course.isManager ? (
         <ObjectSharingModalWrapper
           objectUuid={course.id}
           objectName={course.name}
           objectType={ObjectType.Course}
           isOwner={course.isOwner ?? false}
-          open={sharingModal}
           onClose={() => setSharingModal(false)}
         />
-      )}
+      ) : null}
 
-      <ActivityLogDialog
-        objectId={course.id}
-        objectType={ObjectType.Course}
-        open={isActivityLogOpen}
-        onOpenChange={setIsActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={course.id}
+          objectType={ObjectType.Course}
+          open={isActivityLogOpen}
+          onClose={() => setIsActivityLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

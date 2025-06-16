@@ -48,7 +48,7 @@ function InstanceHeader({
   const t = useTranslations()
   const [rateElement, { loading: ratingLoading }] =
     useMutation(RateElementDocument)
-  const [modalOpen, setModalOpen] = useState(false)
+
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
       ? 1
@@ -198,8 +198,6 @@ function InstanceHeader({
             </Button>
             <FlagElementModal
               index={index}
-              open={modalOpen}
-              setOpen={setModalOpen}
               instanceId={instanceId}
               elementId={elementId}
               feedbackValue={feedbackValue}

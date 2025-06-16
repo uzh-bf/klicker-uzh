@@ -9,25 +9,24 @@ import * as Yup from 'yup'
 import DelegatedAccessPassword, { PW_SETTINGS } from './DelegatedAccessPassword'
 
 function DelegatedPasswordChangeModal({
-  changePasswordModal,
-  setChangePasswordModal,
+  loginId,
+  onClose,
 }: {
-  changePasswordModal: { open: boolean; loginId?: string }
-  setChangePasswordModal: (value: { open: boolean; loginId?: string }) => void
+  loginId?: string
+  onClose: () => void
 }) {
   const t = useTranslations()
   const [updateUserLogin] = useMutation(UpdateUserLoginDocument)
 
+  if (!loginId) {
+    return null
+  }
+
   return (
     <Modal
+      open
       title={t('manage.settings.changeDelegatedLoginPassword')}
-      open={changePasswordModal.open}
-      onClose={() =>
-        setChangePasswordModal({
-          open: false,
-          loginId: undefined,
-        })
-      }
+      onClose={onClose}
       className={{
         content: 'h-max !min-h-[10rem] max-w-[25rem] pb-2',
       }}
@@ -46,12 +45,12 @@ function DelegatedPasswordChangeModal({
           setSubmitting(true)
           await updateUserLogin({
             variables: {
-              id: changePasswordModal.loginId!,
+              id: loginId!,
               password: values.password,
             },
           })
           setSubmitting(false)
-          setChangePasswordModal({ open: false, loginId: undefined })
+          onClose()
         }}
       >
         {({ values, setFieldValue, isValid, isSubmitting }) => (

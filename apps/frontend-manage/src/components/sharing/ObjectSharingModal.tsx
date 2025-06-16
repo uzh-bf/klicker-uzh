@@ -14,7 +14,6 @@ import usePermissionLevelChange from './usePermissionLevelChange'
 import usePermissionRevocation from './usePermissionRevocation'
 
 function ObjectSharingModal({
-  open,
   onClose,
   objectId,
   objectType,
@@ -24,7 +23,6 @@ function ObjectSharingModal({
   isOwner,
   derivedPermissionsAvailable,
 }: {
-  open: boolean
   onClose: () => void
   objectId: number | string
   objectType: ObjectType
@@ -101,9 +99,9 @@ function ObjectSharingModal({
 
   return (
     <Modal
+      open
       fullScreen
       title={t(`manage.sharing.share${objectType}`)}
-      open={open}
       onClose={onClose}
       dataCloseButton={{ cy: 'close-share-object' }}
       className={{ content: 'h-max max-w-5xl pb-0' }}

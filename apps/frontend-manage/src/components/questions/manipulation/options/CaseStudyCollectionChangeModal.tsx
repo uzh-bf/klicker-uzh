@@ -2,11 +2,9 @@ import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CaseStudyCollectionChangeModal({
-  open,
   onClose,
   onConfirm,
 }: {
-  open: boolean
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -14,7 +12,7 @@ function CaseStudyCollectionChangeModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.elements.changeOfAnswerCollection')}
       primaryLabel={t('shared.generic.confirm')}

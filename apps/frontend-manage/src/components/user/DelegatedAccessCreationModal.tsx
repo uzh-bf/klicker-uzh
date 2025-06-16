@@ -3,16 +3,14 @@ import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function DelegatedAccessCreationModal({
-  confirmationModal,
-  setConfirmationModal,
+  onClose,
   shortname,
   values,
   isSubmitting,
   isValid,
   submitForm,
 }: {
-  confirmationModal: boolean
-  setConfirmationModal: (value: boolean) => void
+  onClose: () => void
   shortname: string
   values: { password: string }
   isSubmitting: boolean
@@ -23,9 +21,9 @@ function DelegatedAccessCreationModal({
 
   return (
     <Modal
+      open
       title={t('manage.settings.confirmDelegatedAccess')}
-      open={confirmationModal}
-      onClose={() => setConfirmationModal(false)}
+      onClose={onClose}
       className={{ content: 'h-max !min-h-[10rem] max-w-[35rem] !pb-1' }}
     >
       <div>{t('manage.settings.confirmDelegatedAccessTooltip')}</div>

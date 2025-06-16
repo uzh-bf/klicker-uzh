@@ -8,19 +8,15 @@ import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
-interface StartModalProps {
-  quizId: string
-  quizName: string
-  startModalOpen: boolean
-  setStartModalOpen: (open: boolean) => void
-}
-
 function StartModal({
   quizId,
   quizName,
-  startModalOpen,
   setStartModalOpen,
-}: StartModalProps) {
+}: {
+  quizId: string
+  quizName: string
+  setStartModalOpen: (open: boolean) => void
+}) {
   const t = useTranslations()
   const router = useRouter()
   const [startLiveQuiz, { loading: startingLiveQuiz }] = useMutation(
@@ -59,7 +55,7 @@ function StartModal({
 
   return (
     <Modal
-      open={startModalOpen}
+      open
       onClose={() => setStartModalOpen(false)}
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {

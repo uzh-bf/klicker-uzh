@@ -10,12 +10,6 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
-interface EmbeddingModalProps {
-  open: boolean
-  setOpen: (newValue: boolean) => void
-  quizId: string
-}
-
 function HMACLink({
   quizId,
   hmac,
@@ -53,7 +47,13 @@ function HMACLink({
   )
 }
 
-function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
+function EmbeddingModal({
+  onClose,
+  quizId,
+}: {
+  onClose: () => void
+  quizId: string
+}) {
   const t = useTranslations()
   const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
     variables: { quizId: quizId || '' },
@@ -73,10 +73,10 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
 
   return (
     <Modal
+      open
       hideCloseButton
-      open={open}
-      onClose={() => setOpen(false)}
-      onSecondaryAction={() => setOpen(false)}
+      onClose={onClose}
+      onSecondaryAction={onClose}
       secondaryLabel={t('shared.generic.close')}
       dataSecondaryAction={{ cy: 'close-embedding-modal' }}
     >

@@ -16,8 +16,7 @@ interface ActivityNameChangeModalProps {
   name: string
   displayName: string
   courseId?: string | null
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }
 
 function ActivityNameChangeModal({
@@ -26,8 +25,7 @@ function ActivityNameChangeModal({
   name,
   displayName,
   courseId,
-  open,
-  setOpen,
+  onClose,
 }: ActivityNameChangeModalProps) {
   const t = useTranslations()
   const [changeActivityName] = useMutation(ChangeActivityNameDocument)
@@ -41,10 +39,10 @@ function ActivityNameChangeModal({
 
   return (
     <Modal
+      open
       hideCloseButton
       escapeDisabled
-      open={open}
-      onClose={(): void => setOpen(false)}
+      onClose={onClose}
       title={t('manage.activities.changeActivityName')}
       className={{
         content: 'max-w-lg pb-1',
@@ -85,7 +83,7 @@ function ActivityNameChangeModal({
               options: { duration: 4000 },
             })
             setSubmitting(false)
-            setOpen(false)
+            onClose()
           } else {
             toast({
               type: 'error',
@@ -130,7 +128,7 @@ function ActivityNameChangeModal({
             <div className="mt-3 flex flex-row justify-between">
               <Button
                 type="button"
-                onClick={(): void => setOpen(false)}
+                onClick={onClose}
                 data={{ cy: 'activity-name-change-cancel' }}
               >
                 <Button.Label>{t('shared.generic.cancel')}</Button.Label>

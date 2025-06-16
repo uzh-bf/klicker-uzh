@@ -107,41 +107,41 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
         </div>
       </div>
 
-      <LeaveUserGroupModal
-        open={leaveGroupModal}
-        onClose={() => setLeaveGroupModal(false)}
-        onSuccess={() => {
-          toast({
-            type: 'success',
-            message: t('manage.userGroups.leaveGroupSuccess'),
-            options: { duration: 3000 },
-          })
-          setLeaveGroupModal(false)
-        }}
-        groupId={group.id}
-        groupName={group.name}
-      />
+      {leaveGroupModal && (
+        <LeaveUserGroupModal
+          onClose={() => setLeaveGroupModal(false)}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.userGroups.leaveGroupSuccess'),
+              options: { duration: 3000 },
+            })
+            setLeaveGroupModal(false)
+          }}
+          groupId={group.id}
+          groupName={group.name}
+        />
+      )}
 
-      <DeleteUserGroupModal
-        open={deleteGroupModal}
-        onClose={() => setDeleteGroupModal(false)}
-        groupId={group.id}
-        groupName={group.name}
-        onSuccess={() => {
-          toast({
-            type: 'success',
-            message: t('manage.userGroups.deleteGroupSuccess'),
-            options: { duration: 3000 },
-          })
-          setDeleteGroupModal(false)
-        }}
-      />
+      {deleteGroupModal && (
+        <DeleteUserGroupModal
+          onClose={() => setDeleteGroupModal(false)}
+          groupId={group.id}
+          groupName={group.name}
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.userGroups.deleteGroupSuccess'),
+              options: { duration: 3000 },
+            })
+            setDeleteGroupModal(false)
+          }}
+        />
+      )}
 
-      <UserGroupEditModal
-        open={editModal}
-        onClose={() => setEditModal(false)}
-        group={group}
-      />
+      {editModal && (
+        <UserGroupEditModal onClose={() => setEditModal(false)} group={group} />
+      )}
     </>
   )
 }

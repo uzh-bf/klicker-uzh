@@ -141,21 +141,19 @@ function GroupActivityActions({
         activityType={groupActivity.type}
       />
       <div>
-        {sharingModal && groupActivity.isManager && (
+        {sharingModal && groupActivity.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={groupActivity.id}
             objectName={groupActivity.name}
             objectType={ObjectType.GroupActivity}
             isTemplate={isTemplate}
             isOwner={groupActivity.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {publishingModal && (
           <PublishConfirmationModal
-            open={publishingModal}
-            setOpen={setPublishingModal}
+            onClose={() => setPublishingModal(false)}
             elementType={ElementInstanceType.GroupActivity}
             elementId={groupActivity.id}
             title={groupActivity.name}
@@ -163,16 +161,17 @@ function GroupActivityActions({
             publicationHint={t('manage.course.groupActivityPublishingHint')}
           />
         )}
-        <ExtensionModal
-          open={extensionModal}
-          setOpen={setExtensionModal}
-          type="groupActivity"
-          id={groupActivity.id}
-          currentEndDate={groupActivity.scheduledEndAt}
-          courseId={groupActivity.courseId!}
-          title={t('manage.course.extendGroupActivity')}
-          description={t('manage.course.extendGroupActivityDescription')}
-        />
+        {extensionModal && (
+          <ExtensionModal
+            onClose={() => setExtensionModal(false)}
+            type="groupActivity"
+            id={groupActivity.id}
+            currentEndDate={groupActivity.scheduledEndAt}
+            courseId={groupActivity.courseId!}
+            title={t('manage.course.extendGroupActivity')}
+            description={t('manage.course.extendGroupActivityDescription')}
+          />
+        )}
 
         {removalModal && groupActivity.isRemovable && (
           <ActivityRemovalModal
@@ -185,8 +184,7 @@ function GroupActivityActions({
         )}
         {deletionModal && (
           <GroupActivityDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
           />
@@ -194,16 +192,14 @@ function GroupActivityActions({
 
         {endingModal && (
           <GroupActivityEndingModal
-            open={endingModal}
-            setOpen={setEndingModal}
+            onClose={() => setEndingModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
           />
         )}
         {startingModal && (
           <GroupActivityStartingModal
-            open={startingModal}
-            setOpen={setStartingModal}
+            onClose={() => setStartingModal(false)}
             activityId={groupActivity.id}
             activityEndDate={groupActivity.scheduledEndAt}
             groupDeadlineDate={groupActivity.groupDeadlineDate}
@@ -212,14 +208,14 @@ function GroupActivityActions({
           />
         )}
 
-        {groupActivity && (
+        {groupActivity && activityLogOpen ? (
           <ActivityLogDialog
             objectId={groupActivity.id}
             objectType={ObjectType.GroupActivity}
             open={activityLogOpen}
-            onOpenChange={setActivityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

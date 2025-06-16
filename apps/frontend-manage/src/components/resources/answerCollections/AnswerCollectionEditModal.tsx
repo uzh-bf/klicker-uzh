@@ -21,14 +21,12 @@ import AnswerCollectionOption from './AnswerCollectionOption'
 
 function AnswerCollectionEditModal({
   collectionId,
-  open,
   onClose,
   inlineEditing = false,
   refetchAnswerCollections,
   className,
 }: {
   collectionId: number
-  open: boolean
   onClose: () => void
   inlineEditing?: boolean
   refetchAnswerCollections?: () => Promise<any>
@@ -99,8 +97,8 @@ function AnswerCollectionEditModal({
 
   return (
     <Modal
+      open
       escapeDisabled
-      open={open}
       onClose={() => {
         setOptionsEditingDisabled(false)
         onClose()

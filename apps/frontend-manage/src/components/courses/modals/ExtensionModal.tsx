@@ -18,8 +18,7 @@ interface ExtensionModalProps {
   courseId: string
   title: string
   description: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }
 
 function ExtensionModal({
@@ -29,8 +28,7 @@ function ExtensionModal({
   courseId,
   title,
   description,
-  open,
-  setOpen,
+  onClose,
 }: ExtensionModalProps) {
   const t = useTranslations()
   const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
@@ -38,8 +36,8 @@ function ExtensionModal({
 
   return (
     <Modal
-      onClose={(): void => setOpen(false)}
-      open={open}
+      open
+      onClose={onClose}
       hideCloseButton={true}
       title={title}
       className={{
@@ -109,7 +107,7 @@ function ExtensionModal({
             }
 
             setSubmitting(false)
-            setOpen(false)
+            onClose()
           }}
         >
           {({ isValid, isSubmitting }) => (
@@ -132,7 +130,7 @@ function ExtensionModal({
               />
               <div className="mt-3 flex flex-row justify-between">
                 <Button
-                  onClick={(): void => setOpen(false)}
+                  onClick={onClose}
                   data={{ cy: 'extend-activity-cancel' }}
                 >
                   <Button.Label>{t('shared.generic.cancel')}</Button.Label>

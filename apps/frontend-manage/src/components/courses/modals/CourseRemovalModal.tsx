@@ -41,8 +41,7 @@ function CourseRemovalModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.course.removeCourse')}
       message={t.rich('manage.course.confirmCourseRemoval', {
         name: title,

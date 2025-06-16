@@ -7,7 +7,6 @@ import * as Yup from 'yup'
 import useTransferObjectOwnership from './useTransferObjectOwnership'
 
 function TransferOwnershipModal({
-  open,
   onClose,
   objectId,
   objectType,
@@ -15,7 +14,6 @@ function TransferOwnershipModal({
   isTemplate = false,
   catalogCollectionId,
 }: {
-  open: boolean
   onClose: () => void
   objectId: number | string
   objectType: ObjectType
@@ -47,9 +45,9 @@ function TransferOwnershipModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       title={t('manage.sharing.transferOwnership')}
-      open={open}
       onClose={onClose}
       className={{ content: 'max-w-lg pb-2' }}
       dataCloseButton={{ cy: 'close-transfer-ownership-modal' }}

@@ -38,7 +38,6 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
-  open,
   onClose,
   onSuccess,
   mode,
@@ -59,7 +58,6 @@ function ElementEditForm({
   isTemplate?: boolean
   templateId?: string
   // modal state props
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   // element mode and identification
@@ -152,9 +150,9 @@ function ElementEditForm({
 
           return (
             <Modal
+              open
               fullScreen
               title={t(`manage.elements.${mode}Title`)}
-              open={open}
               onClose={() => onClose()}
               escapeDisabled={true}
               onPrimaryAction={() => submitForm()}
@@ -390,7 +388,6 @@ function ElementEditForm({
         <AnswerCollectionEditModal
           inlineEditing
           collectionId={collectionModal.id}
-          open={collectionModal.open}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
           refetchAnswerCollections={async () => {
             await refetch()

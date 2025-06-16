@@ -44,19 +44,15 @@ function HMACLink({
   )
 }
 
-interface EmbeddingModalProps {
-  open: boolean
-  onClose: () => void
-  quizId: string
-  elements?: { id: number; name: string }[]
-}
-
 function EmbeddingModal({
-  open,
   onClose,
   quizId,
   elements,
-}: EmbeddingModalProps) {
+}: {
+  onClose: () => void
+  quizId: string
+  elements?: { id: number; name: string }[]
+}) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
@@ -67,8 +63,8 @@ function EmbeddingModal({
 
   return (
     <Modal
+      open
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
-      open={open}
       onClose={onClose}
       primaryLabel={t('shared.generic.close')}
       primaryButtonStyle="default"

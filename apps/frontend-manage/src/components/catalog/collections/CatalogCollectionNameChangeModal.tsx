@@ -8,19 +8,15 @@ import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 
-interface CatalogCollectionNameChangeModalProps {
-  catalogCollectionId: string
-  name: string
-  open: boolean
-  onClose: () => void
-}
-
 function CatalogCollectionNameChangeModal({
   catalogCollectionId,
   name,
-  open,
   onClose,
-}: CatalogCollectionNameChangeModalProps) {
+}: {
+  catalogCollectionId: string
+  name: string
+  onClose: () => void
+}) {
   const t = useTranslations()
   const [changeCatalogCollectionName] = useMutation(
     ChangeCatalogCollectionNameDocument
@@ -39,9 +35,9 @@ function CatalogCollectionNameChangeModal({
 
   return (
     <Modal
+      open
       hideCloseButton
       escapeDisabled
-      open={open}
       onClose={onClose}
       title={t('manage.catalog.changeCatalogCollectionName')}
       className={{ content: 'max-w-xl pb-1' }}

@@ -12,7 +12,6 @@ interface ObjectSharingModalBaseProps {
   courseId?: string
   catalogCollectionId?: string
   isOwner: boolean
-  open: boolean
   onClose: () => void
 }
 
@@ -33,7 +32,6 @@ function ObjectSharingModalWrapper({
   isTemplate = false,
   catalogCollectionId,
   isOwner,
-  open,
   onClose,
 }: ObjectSharingModalIdProps | ObjectSharingModalUuidProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
@@ -45,7 +43,6 @@ function ObjectSharingModalWrapper({
   return (
     <>
       <ObjectSharingModal
-        open={open}
         onClose={onClose}
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}
@@ -57,15 +54,16 @@ function ObjectSharingModalWrapper({
           objectType !== ObjectType.Course
         }
       />
-      <TransferOwnershipModal
-        open={transferModalOpen}
-        onClose={() => setTransferModalOpen(false)}
-        objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
-        objectType={objectType}
-        objectName={objectName}
-        isTemplate={isTemplate}
-        catalogCollectionId={catalogCollectionId}
-      />
+      {transferModalOpen && (
+        <TransferOwnershipModal
+          onClose={() => setTransferModalOpen(false)}
+          objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
+          objectType={objectType}
+          objectName={objectName}
+          isTemplate={isTemplate}
+          catalogCollectionId={catalogCollectionId}
+        />
+      )}
     </>
   )
 }

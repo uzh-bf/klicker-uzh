@@ -10,19 +10,15 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface PracticeQuizDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function PracticeQuizDeletionModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: PracticeQuizDeletionModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetPracticeQuizSummaryDocument,
@@ -73,8 +69,7 @@ function PracticeQuizDeletionModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
       onSubmit={async () => await deletePracticeQuiz()}

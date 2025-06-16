@@ -17,11 +17,9 @@ import { useMemo, useState } from 'react'
 
 function AnswerCollectionViewingModal({
   collectionId,
-  open,
   onClose,
 }: {
   collectionId: number
-  open: boolean
   onClose: () => void
 }) {
   const t = useTranslations()
@@ -53,7 +51,7 @@ function AnswerCollectionViewingModal({
     }
 
     return search.search(searchQuery) as typeof collection.entries
-  }, [collection?.entries, searchQuery, search])
+  }, [collection, search, searchQuery])
 
   if (loading || !collection) {
     return null
@@ -61,7 +59,7 @@ function AnswerCollectionViewingModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={
         <div

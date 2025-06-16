@@ -11,13 +11,11 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../common/ConfirmationItem'
 
 function DeleteUserGroupModal({
-  open,
   onClose,
   onSuccess,
   groupId,
   groupName,
 }: {
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   groupId: number
@@ -41,18 +39,16 @@ function DeleteUserGroupModal({
 
   // on open, reset confirmations
   useEffect(() => {
-    if (open) {
-      setConfirmations({
-        resolveGroup: false,
-        revokeDirectPermissions: false,
-        irreversibleAction: false,
-      })
-    }
-  }, [open])
+    setConfirmations({
+      resolveGroup: false,
+      revokeDirectPermissions: false,
+      irreversibleAction: false,
+    })
+  }, [])
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.userGroups.deleteGroup')}
       primaryLabel={

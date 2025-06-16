@@ -12,11 +12,9 @@ import { Dispatch, SetStateAction } from 'react'
 
 function CollectionDeletionModal({
   collection,
-  deletionModal,
   setDeletionModal,
 }: {
   collection: AnswerCollection
-  deletionModal: boolean
   setDeletionModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
@@ -33,8 +31,8 @@ function CollectionDeletionModal({
 
   return (
     <Modal
+      open
       title={t('manage.resources.deleteAnswerCollection')}
-      open={deletionModal}
       onClose={() => setDeletionModal(false)}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">

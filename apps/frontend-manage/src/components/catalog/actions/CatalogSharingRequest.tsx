@@ -122,18 +122,19 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
           <Button.Label>{t('shared.generic.decline')}</Button.Label>
         </Button>
       </div>
-      <SharingRequestApprovalModal
-        request={request}
-        open={approvalModal}
-        onClose={() => setApprovalModal(false)}
-        onSuccess={() =>
-          toast({
-            type: 'success',
-            message: t('manage.catalog.approvalSuccessful'),
-            options: { duration: 3000 },
-          })
-        }
-      />
+      {approvalModal && (
+        <SharingRequestApprovalModal
+          request={request}
+          onClose={() => setApprovalModal(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.catalog.approvalSuccessful'),
+              options: { duration: 3000 },
+            })
+          }
+        />
+      )}
     </div>
   )
 }

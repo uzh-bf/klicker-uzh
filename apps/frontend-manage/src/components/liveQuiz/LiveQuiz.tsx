@@ -245,23 +245,24 @@ function LiveQuiz({
                           {t('manage.liveQuizzes.embeddingEvaluation')}
                         </Button.Label>
                       </Button>
-                      <EmbeddingModal
-                        key={quiz.id}
-                        open={embedModalOpen}
-                        onClose={() => setEmbedModalOpen(false)}
-                        quizId={quiz.id}
-                        elements={quiz.blocks
-                          ?.flatMap((block) => block.elements)
-                          .filter(
-                            (instance) =>
-                              typeof instance !== 'undefined' &&
-                              instance !== null
-                          )
-                          .map((instance) => ({
-                            id: instance.id,
-                            name: instance.elementData.name,
-                          }))}
-                      />
+                      {embedModalOpen && (
+                        <EmbeddingModal
+                          key={quiz.id}
+                          onClose={() => setEmbedModalOpen(false)}
+                          quizId={quiz.id}
+                          elements={quiz.blocks
+                            ?.flatMap((block) => block.elements)
+                            .filter(
+                              (instance) =>
+                                typeof instance !== 'undefined' &&
+                                instance !== null
+                            )
+                            .map((instance) => ({
+                              id: instance.id,
+                              name: instance.elementData.name,
+                            }))}
+                        />
+                      )}
                     </>
                   )}
 
@@ -278,11 +279,12 @@ function LiveQuiz({
                           {t('manage.general.qrCode')}
                         </Button.Label>
                       </Button>
-                      <LiveQuizQRModal
-                        quizId={quiz.id}
-                        open={qrModalOpen}
-                        setOpen={setQrModalOpen}
-                      />
+                      {qrModalOpen && (
+                        <LiveQuizQRModal
+                          quizId={quiz.id}
+                          onClose={() => setQrModalOpen(false)}
+                        />
+                      )}
                     </>
                   )}
 
@@ -543,81 +545,88 @@ function LiveQuiz({
         </Collapsible>
       </div>
       <div>
-        <LiveQuizDeletionModal
-          quizId={quiz.id}
-          open={deletionModal}
-          setOpen={setDeletionModal}
-          onDelete={deleteLiveQuiz}
-          deleting={deletingLiveQuiz}
-        />
-        <ActivityNameChangeModal
-          id={quiz.id}
-          name={quiz.name}
-          type={ActivityType.LiveQuiz}
-          displayName={quiz.displayName}
-          open={changeName}
-          setOpen={setChangeName}
-        />
-        <TemplateDeletionModal
-          activityId={quiz.id}
-          activityType={ActivityType.LiveQuiz}
-          open={deletionTemplateModal}
-          setOpen={setDeletionTemplateModal}
-          onSuccess={() =>
-            toast({
-              type: 'success',
-              message: t('manage.template.templateDeletionSuccess'),
-              options: { duration: 3000 },
-            })
-          }
-          onError={() =>
-            toast({
-              type: 'error',
-              message: t('manage.template.templateDeletionError'),
-              options: { duration: 4500 },
-            })
-          }
-        />
-        <TemplateEditModal
-          activityId={quiz.id}
-          activityType={ActivityType.LiveQuiz}
-          open={editTemplateModal}
-          setOpen={setEditTemplateModal}
-          onSuccess={() =>
-            toast({
-              type: 'success',
-              message: t('manage.template.templateEditSuccess'),
-              options: { duration: 3000 },
-            })
-          }
-          onError={() =>
-            toast({
-              type: 'error',
-              message: t('manage.template.templateEditError'),
-              options: { duration: 4500 },
-            })
-          }
-        />
+        {deletionModal && (
+          <LiveQuizDeletionModal
+            quizId={quiz.id}
+            onClose={() => setDeletionModal(false)}
+            onDelete={deleteLiveQuiz}
+            deleting={deletingLiveQuiz}
+          />
+        )}
+        {changeName && (
+          <ActivityNameChangeModal
+            id={quiz.id}
+            name={quiz.name}
+            type={ActivityType.LiveQuiz}
+            displayName={quiz.displayName}
+            onClose={() => setChangeName(false)}
+          />
+        )}
+        {deletionTemplateModal && (
+          <TemplateDeletionModal
+            activityId={quiz.id}
+            activityType={ActivityType.LiveQuiz}
+            onClose={() => setDeletionTemplateModal(false)}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateDeletionSuccess'),
+                options: { duration: 3000 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateDeletionError'),
+                options: { duration: 4500 },
+              })
+            }
+          />
+        )}
+        {editTemplateModal && (
+          <TemplateEditModal
+            activityId={quiz.id}
+            activityType={ActivityType.LiveQuiz}
+            onClose={() => setEditTemplateModal(false)}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateEditSuccess'),
+                options: { duration: 3000 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateEditError'),
+                options: { duration: 4500 },
+              })
+            }
+          />
+        )}
 
-        <TemplateConversionModal
-          open={conversionModal.open}
-          setOpen={(open) => setConversionModal({ ...conversionModal, open })}
-          activityId={conversionModal.activityId}
-          activityType={conversionModal.activityType}
-          onSuccess={() =>
-            toast({
-              type: 'success',
-              message: t('manage.template.templateCreationSuccess'),
-              options: { duration: 3500 },
-            })
-          }
-          onError={() =>
-            toast({
-              type: 'error',
-              message: t('manage.template.templateCreationError'),
-            })
-          }
-        />
+        {conversionModal.open && (
+          <TemplateConversionModal
+            onClose={() =>
+              setConversionModal((prev) => ({ ...prev, open: false }))
+            }
+            activityId={conversionModal.activityId}
+            activityType={conversionModal.activityType}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateCreationSuccess'),
+                options: { duration: 3500 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateCreationError'),
+              })
+            }
+          />
+        )}
       </div>
     </>
   )

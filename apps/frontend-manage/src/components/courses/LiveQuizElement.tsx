@@ -288,13 +288,14 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
           </div>
         </div>
 
-        <LiveQuizDeletionModal
-          quizId={quiz.id}
-          open={deletionModal}
-          setOpen={setDeletionModal}
-          onDelete={deleteLiveQuiz}
-          deleting={deletingLiveQuiz}
-        />
+        {deletionModal && (
+          <LiveQuizDeletionModal
+            quizId={quiz.id}
+            onClose={() => setDeletionModal(false)}
+            onDelete={deleteLiveQuiz}
+            deleting={deletingLiveQuiz}
+          />
+        )}
       </div>
 
       <div className="flex w-full flex-row justify-between">

@@ -8,18 +8,15 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
 
 function AnswerCollectionRemovalModal({
   id,
   name,
-  removalModal,
-  setRemovalModal,
+  onClose,
 }: {
   id: number
   name: string
-  removalModal: boolean
-  setRemovalModal: Dispatch<SetStateAction<boolean>>
+  onClose: () => void
 }) {
   const t = useTranslations()
   const [removeObject, { loading: removing }] =
@@ -34,9 +31,9 @@ function AnswerCollectionRemovalModal({
 
   return (
     <Modal
+      open
       title={t(`manage.sharing.remove${ObjectType.AnswerCollection}`)}
-      open={removalModal}
-      onClose={() => setRemovalModal(false)}
+      onClose={onClose}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
           {!removing && <FontAwesomeIcon icon={faX} />}
@@ -67,7 +64,7 @@ function AnswerCollectionRemovalModal({
               message: t('manage.sharing.removalSuccessful'),
               options: { duration: 3000 },
             })
-            setRemovalModal(false)
+            onClose()
           } else {
             onRemovalError()
           }

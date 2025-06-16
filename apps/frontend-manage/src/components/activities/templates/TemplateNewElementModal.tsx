@@ -30,7 +30,6 @@ function TemplateNewElementModal({
     <ElementEditForm
       isTemplate
       templateId={templateId}
-      open={open}
       onClose={onClose}
       onSuccess={onClose} // success toast is not required -> success immediately visible
       mode={ElementEditMode.CREATE}

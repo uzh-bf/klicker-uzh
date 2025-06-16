@@ -461,28 +461,31 @@ function MicroLearningElement({
         </div>
       </div>
 
-      <MicroLearningDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        activityId={microLearning.id}
-        courseId={courseId}
-      />
-      <MicroLearningEndingModal
-        open={endingModal}
-        setOpen={setEndingModal}
-        activityId={microLearning.id}
-        courseId={courseId}
-      />
-      <ExtensionModal
-        type="microLearning"
-        id={microLearning.id}
-        currentEndDate={microLearning.scheduledEndAt}
-        courseId={courseId}
-        title={t('manage.course.extendMicroLearning')}
-        description={t('manage.course.extendMicroLearningDescription')}
-        open={extensionModal}
-        setOpen={setExtensionModal}
-      />
+      {deletionModal && (
+        <MicroLearningDeletionModal
+          onClose={() => setDeletionModal(false)}
+          activityId={microLearning.id}
+          courseId={courseId}
+        />
+      )}
+      {endingModal && (
+        <MicroLearningEndingModal
+          onClose={() => setEndingModal(false)}
+          activityId={microLearning.id}
+          courseId={courseId}
+        />
+      )}
+      {extensionModal && (
+        <ExtensionModal
+          type="microLearning"
+          id={microLearning.id}
+          currentEndDate={microLearning.scheduledEndAt}
+          courseId={courseId}
+          title={t('manage.course.extendMicroLearning')}
+          description={t('manage.course.extendMicroLearningDescription')}
+          onClose={() => setExtensionModal(false)}
+        />
+      )}
     </div>
   )
 }

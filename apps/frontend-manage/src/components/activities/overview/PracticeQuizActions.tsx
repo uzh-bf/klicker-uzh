@@ -137,31 +137,28 @@ function PracticeQuizActions({
           <PracticeQuizPublishingModal
             elementId={practiceQuiz.id}
             title={practiceQuiz.name}
-            open={publishModal}
-            setOpen={setPublishModal}
+            onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
             courseStartDate={practiceQuiz.courseStartDate}
           />
         )}
         {deletionModal && (
           <PracticeQuizDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={practiceQuiz.id}
             courseId={practiceQuiz.courseId!}
           />
         )}
-        {sharingModal && practiceQuiz.isManager && (
+        {sharingModal && practiceQuiz.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={practiceQuiz.id}
             objectName={practiceQuiz.name}
             objectType={ObjectType.PracticeQuiz}
             isTemplate={isTemplate}
             isOwner={practiceQuiz.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {removalModal && practiceQuiz.isRemovable && (
           <ActivityRemovalModal
             activityId={practiceQuiz.id}
@@ -172,14 +169,14 @@ function PracticeQuizActions({
           />
         )}
 
-        {practiceQuiz && (
+        {practiceQuiz && activityLogOpen ? (
           <ActivityLogDialog
             objectId={practiceQuiz.id}
             objectType={ObjectType.PracticeQuiz}
             open={activityLogOpen}
-            onOpenChange={setActivityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

@@ -23,13 +23,11 @@ export interface LiveQuizAbortionConfirmationType {
 function CancelLiveQuizModal({
   quizId,
   title,
-  open,
-  setOpen,
+  onClose,
 }: {
   quizId: string
   title: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }) {
   const router = useRouter()
   const t = useTranslations()
@@ -105,9 +103,9 @@ function CancelLiveQuizModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
@@ -123,13 +121,13 @@ function CancelLiveQuizModal({
         router.push(
           dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
         )
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
       secondaryLabel={t('shared.generic.close')}
       onSecondaryAction={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}

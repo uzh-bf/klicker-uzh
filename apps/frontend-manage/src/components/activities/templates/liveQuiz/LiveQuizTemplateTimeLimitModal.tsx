@@ -4,13 +4,11 @@ import { Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LiveQuizTemplateTimeLimitModal({
-  open,
   onClose,
   blockIx,
   timeLimit,
   setTimeLimit,
 }: {
-  open: boolean
   onClose: () => void
   blockIx: number
   timeLimit: string | undefined
@@ -20,7 +18,7 @@ function LiveQuizTemplateTimeLimitModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.activityWizard.blockSettingsTitle', {
         blockIx: blockIx + 1,
