@@ -37,7 +37,8 @@ if [[ -z "${CONFIG:-}" ]]; then
 fi
 
 # First, try Doppler normally
-if doppler run --config "$CONFIG" -- helmfile "$@" 2>/dev/null; then
+if doppler settings 2>/dev/null; then
+  doppler run --config "$CONFIG" -- helmfile "$@"
   exit 0
 fi
 
