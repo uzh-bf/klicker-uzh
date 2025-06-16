@@ -76,11 +76,13 @@ function ElementHistogram({
         )
       : undefined,
     minValue:
-      !lowerLimit || (typeof minValue === 'number' && lowerLimit < minValue)
+      lowerLimit == null ||
+      (typeof minValue === 'number' && lowerLimit < minValue)
         ? minValue
         : lowerLimit,
     maxValue:
-      !upperLimit || (typeof maxValue === 'number' && upperLimit > maxValue)
+      upperLimit == null ||
+      (typeof maxValue === 'number' && upperLimit > maxValue)
         ? maxValue
         : upperLimit,
     binCount:
@@ -330,7 +332,8 @@ function ElementHistogram({
             error={
               upperLimit === null || upperLimit > processedData.domain.max
                 ? t('manage.evaluation.histogramUpperLimitError', { maxValue })
-                : upperLimit < processedData.domain.min
+                : upperLimit < processedData.domain.min ||
+                    (lowerLimit != null && upperLimit < lowerLimit)
                   ? t('manage.evaluation.histogramRangeError')
                   : undefined
             }
