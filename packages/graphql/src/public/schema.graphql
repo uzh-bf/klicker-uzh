@@ -74,6 +74,7 @@ type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  timeLimit: Int
 }
 
 enum ActivityLevel {

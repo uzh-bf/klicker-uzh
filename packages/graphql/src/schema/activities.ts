@@ -30,6 +30,7 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
 interface IActivityInfoStack {
   id: number
   numOfParticipants?: number | null
+  timeLimit?: number | null
   elements: IActivityInfoElement[]
 }
 
@@ -40,6 +41,7 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
   fields: (t) => ({
     id: t.exposeInt('id'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
+    timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     elements: t.expose('elements', { type: [ActivityInfoElement] }),
   }),
 })

@@ -17,6 +17,7 @@ fragment ActivityInfoData on ActivityInfo {
   stacks {
     id
     numOfParticipants
+    timeLimit
     elements {
       id
       name
