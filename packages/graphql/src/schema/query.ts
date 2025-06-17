@@ -732,6 +732,7 @@ export const Query = builder.queryType({
         type: [LeaderboardEntry],
         args: {
           quizId: t.arg.string({ required: true }),
+          hmac: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getLiveQuizLeaderboard(args, ctx)

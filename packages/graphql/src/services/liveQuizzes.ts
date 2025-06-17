@@ -2333,7 +2333,7 @@ export async function getCourseRunningLiveQuizzes(
 }
 
 export async function getLiveQuizLeaderboard(
-  { quizId }: { quizId: string },
+  { quizId, hmac }: { quizId: string; hmac?: string | null },
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
@@ -2363,11 +2363,23 @@ export async function getLiveQuizLeaderboard(
         })
       : null
 
-  const participantProfilePublic =
+  let participantProfilesVisible =
     (participant?.isProfilePublic ?? false) ||
     ctx.user?.role === DB.UserRole.TEMPORARY_PARTICIPANT ||
     ctx.user?.role === DB.UserRole.USER ||
     ctx.user?.role === DB.UserRole.ADMIN
+
+  // if a valid hmac is passed, the participant profile is also visible
+  if (typeof hmac === 'string' && hmac !== null && hmac !== '') {
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(quiz.namespace + quiz.id)
+    const quizHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed quiz.namespace and quiz.id equals the hmac
+    if (quizHmac === hmac) {
+      participantProfilesVisible = true
+    }
+  }
 
   // find the order attribute of the last exectued block
   const executedBlockOrders = quiz?.blocks
@@ -2388,11 +2400,11 @@ export async function getLiveQuizLeaderboard(
           id: entry.id,
           participantId: entry.participant.id,
           username:
-            entry.participant.isProfilePublic && participantProfilePublic
+            entry.participant.isProfilePublic && participantProfilesVisible
               ? entry.participant.username
               : 'Anonymous',
           avatar:
-            entry.participant.isProfilePublic && participantProfilePublic
+            entry.participant.isProfilePublic && participantProfilesVisible
               ? entry.participant.avatar
               : null,
           score: entry.score,
@@ -2407,8 +2419,8 @@ export async function getLiveQuizLeaderboard(
           return {
             id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
             participantId: entry.id,
-            username: participantProfilePublic ? entry.username : 'Anonymous',
-            avatar: participantProfilePublic ? entry.avatar : null,
+            username: participantProfilesVisible ? entry.username : 'Anonymous',
+            avatar: participantProfilesVisible ? entry.avatar : null,
             score: entry.score,
             level: 1, // temporary leaderboard entries do not have a experience points
             // isSelf: entry.id === ctx.user.sub,
