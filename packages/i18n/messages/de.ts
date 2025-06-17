@@ -2126,6 +2126,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selection: 'Auswahl',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
+      histogramBinsError:
+        'Bitte geben Sie eine Anzahl Unterteilungen zwischen 2 und 100 ein.',
+      histogramLowerLimit: 'Untere Grenze',
+      histogramUpperLimit: 'Obere Grenze',
+      histogramLowerLimitError:
+        'Die untere Grenze muss grösser als {minValue} sein.',
+      histogramUpperLimitError:
+        'Die obere Grenze muss kleiner als {maxValue} sein.',
+      histogramRangeError:
+        'Bitte stellen Sie sicher, dass die untere Grenze kleiner als die obere Grenze ist.',
       correctLabel: 'Korrekt',
       correctLabelValue: 'Korrekt: {value}',
       resetSorting: 'Sortierung zurücksetzen',

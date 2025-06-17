@@ -2093,6 +2093,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selection: 'Selection',
       histogramRange: 'Range',
       histogramBins: 'Bins',
+      histogramBinsError: 'Please enter a number of bins between 2 and 100.',
+      histogramLowerLimit: 'Lower Limit',
+      histogramUpperLimit: 'Upper Limit',
+      histogramLowerLimitError:
+        'The lower limit must be greater than {minValue}.',
+      histogramUpperLimitError:
+        'The upper limit must be smaller than {maxValue}.',
+      histogramRangeError:
+        'Please ensure that the lower limit is smaller than the upper limit.',
       correctLabel: 'Correct',
       correctLabelValue: 'Correct: {value}',
       resetSorting: 'Reset sorting',
