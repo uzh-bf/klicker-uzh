@@ -1162,8 +1162,8 @@ importers:
         specifier: 9.0.2
         version: 9.0.2
       ltijs:
-        specifier: 5.9.5
-        version: 5.9.5
+        specifier: 5.9.7
+        version: 5.9.7
       ltijs-sequelize:
         specifier: 2.4.4
         version: 2.4.4(@types/node@20.17.12)
@@ -3066,6 +3066,10 @@ packages:
 
   '@babel/runtime@7.26.0':
     resolution: {integrity: sha512-FDSOghenHTiToteC/QRlv2q3DhPZ/oOXTBoirfWNx1Cx3TMVcGWQtMMmQcSvb/JjpNeGzx8Pq/b4fKEJuWm1sw==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/runtime@7.27.6':
+    resolution: {integrity: sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==}
     engines: {node: '>=6.9.0'}
 
   '@babel/template@7.25.9':
@@ -9612,6 +9616,15 @@ packages:
       supports-color:
         optional: true
 
+  debug@4.4.1:
+    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   decamelize-keys@1.1.1:
     resolution: {integrity: sha512-WiPxgEirIV0/eIOMcnFBA3/IJZAZqKnwAwWyvvdi4lsr1WCN22nhdf/3db3DoZcUjTV2SqfzIwNyp6y2xs3nmg==}
     engines: {node: '>=0.10.0'}
@@ -10786,6 +10799,10 @@ packages:
 
   get-tsconfig@4.8.1:
     resolution: {integrity: sha512-k9PN+cFBmaLWtVz29SkUoqU5O0slLuHJXt/2P+tMVFT+phsSGXGkp9t3rQIqdz0e+06EHNGs3oM6ZX1s2zHxRg==}
+
+  get-value@3.0.1:
+    resolution: {integrity: sha512-mKZj9JLQrwMBtj5wxi6MH8Z5eSKaERpAwjg43dPtlGI1ZVEgH/qC7T8/6R2OBSUA+zzHBZgICsVJaEIV2tKTDA==}
+    engines: {node: '>=6.0'}
 
   getos@3.2.1:
     resolution: {integrity: sha512-U56CfOK17OKgTVqozZjUKNdkfEv6jk5WISBJ8SHoagjE6L69zOwl3Z+O8myjY9MEW3i2HPWQBt/LTbCgcC973Q==}
@@ -12457,8 +12474,8 @@ packages:
     resolution: {integrity: sha512-YzWfD5IG6K0uVXfEr0bhUMkMSJfvyAfRa90Q9x1cZdXlRDwNLpXLuBdAg8TDc5rS96PB/5eFT+M64FbGUEOGkg==}
     engines: {node: '>=10.19.0'}
 
-  ltijs@5.9.5:
-    resolution: {integrity: sha512-rD5Hd1GebcqxDHsLibqbuyrM1g8rINkFFg0WwxWk32soE4ZP5/oJSoDLoJ5vs4tK4awMo3v/SY/8e3jz5KU0Jg==}
+  ltijs@5.9.7:
+    resolution: {integrity: sha512-0Hc9e5xBMSJWDidJGYVOelbe+PGKYn+xwcRKbpC2sixzL47ckOElTlBuVHm6J4DmiaPJcc42EZzE29YNrJWzaA==}
     engines: {node: '>=12.13.0'}
 
   lucide-react@0.424.0:
@@ -13024,8 +13041,8 @@ packages:
       snappy:
         optional: true
 
-  mongoose@7.8.4:
-    resolution: {integrity: sha512-qqQ7imsb9lyrW1jmYj6/wDiSewRtd/gpOU2Vdy1AMRBT7jrghKnoDMbC3keFUzZ0iyo3ZcYumisPKFnap5R4zQ==}
+  mongoose@7.8.7:
+    resolution: {integrity: sha512-5Bo4CrUxrPITrhMKsqUTOkXXo2CoRC5tXxVQhnddCzqDMwRXfyStrxj1oY865g8gaekSBhxAeNkYyUSJvGm9Hw==}
     engines: {node: '>=14.20.1'}
 
   mpath@0.9.0:
@@ -15984,6 +16001,10 @@ packages:
 
   sponge-case@1.0.1:
     resolution: {integrity: sha512-dblb9Et4DAtiZ5YSUZHLl4XhH4uK80GhAZrVXdN4O2P4gQ40Wa5UIOPUHlA/nFd2PLblBZWUioLMMAVrgpoYcA==}
+
+  sprightly@2.0.1:
+    resolution: {integrity: sha512-wzy7HByQJ/oh7TF5n8qbqIRVq3a52I+4lVChZToSA4RPpqL9AVVtgmUM8iu3zTabGhcGUFubIzMZvBHfU7z9RA==}
+    engines: {node: '>=10.0.0'}
 
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
@@ -18972,6 +18993,8 @@ snapshots:
   '@babel/runtime@7.26.0':
     dependencies:
       regenerator-runtime: 0.14.1
+
+  '@babel/runtime@7.27.6': {}
 
   '@babel/template@7.25.9':
     dependencies:
@@ -27294,6 +27317,10 @@ snapshots:
     optionalDependencies:
       supports-color: 8.1.1
 
+  debug@4.4.1:
+    dependencies:
+      ms: 2.1.3
+
   decamelize-keys@1.1.1:
     dependencies:
       decamelize: 1.2.0
@@ -28851,6 +28878,10 @@ snapshots:
   get-tsconfig@4.8.1:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  get-value@3.0.1:
+    dependencies:
+      isobject: 3.0.1
 
   getos@3.2.1:
     dependencies:
@@ -30917,21 +30948,22 @@ snapshots:
       - sqlite3
       - supports-color
 
-  ltijs@5.9.5:
+  ltijs@5.9.7:
     dependencies:
-      '@babel/runtime': 7.26.0
+      '@babel/runtime': 7.27.6
       body-parser: 1.20.3
       cookie-parser: 1.4.7
       cors: 2.8.5
-      debug: 4.4.0(supports-color@8.1.1)
+      debug: 4.4.1
       express: 4.21.1
       fast-url-parser: 1.1.3
       got: 11.8.6
       helmet: 6.2.0
       jsonwebtoken: 9.0.2
-      mongoose: 7.8.4
+      mongoose: 7.8.7
       parse-link-header: 2.0.0
       rasha: 1.2.5
+      sprightly: 2.0.1
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
       - '@mongodb-js/zstd'
@@ -31889,7 +31921,7 @@ snapshots:
     optionalDependencies:
       '@mongodb-js/saslprep': 1.1.9
 
-  mongoose@7.8.4:
+  mongoose@7.8.7:
     dependencies:
       bson: 5.5.1
       kareem: 2.5.1
@@ -31910,7 +31942,7 @@ snapshots:
 
   mquery@5.0.0:
     dependencies:
-      debug: 4.4.0(supports-color@8.1.1)
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
 
@@ -35431,6 +35463,10 @@ snapshots:
   sponge-case@1.0.1:
     dependencies:
       tslib: 2.8.1
+
+  sprightly@2.0.1:
+    dependencies:
+      get-value: 3.0.1
 
   sprintf-js@1.0.3: {}
 
