@@ -363,7 +363,7 @@ function AccountSelector({
                   className={{ root: 'mt-2 self-end' }}
                   data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >
-                  {t('shared.generic.submit')}
+                  {t('shared.generic.confirm')}
                 </Button>
               </>
             ) : null}

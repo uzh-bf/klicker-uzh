@@ -207,7 +207,9 @@ function QuestionArea({
       </H2>
 
       {remainingQuestions.length === 0 ? (
-        t('pwa.liveQuiz.allQuestionsAnswered')
+        <div className="pt-4 md:pt-1">
+          {t('pwa.liveQuiz.allQuestionsAnswered')}
+        </div>
       ) : (
         <div className="flex w-full flex-col">
           <LiveQuizProgress
