@@ -115,6 +115,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           ? block.elements[0].results.total +
             block.elements[0].anonymousResults.total
           : 0,
+        timeLimit: block.timeLimit,
         elements: block.elements.map((instance) => ({
           id: instance.id,
           name: instance.elementData.name,
