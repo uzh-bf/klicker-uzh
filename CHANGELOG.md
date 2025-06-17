@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.61...v3.3.0-alpha.62) (2025-06-17)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure avatars and usernames are returned on live quiz leaderboard query with hmac ([#4739](https://github.com/uzh-bf/klicker-uzh/issues/4739)) ([885321c](https://github.com/uzh-bf/klicker-uzh/commit/885321cc35dce597505a09fd649a8d9e70d123ce))
+
+
+### Refactors
+
+* **apps/frontend-*:** improve rendering efficiency by ensuring that modals are only rendered when required ([#4737](https://github.com/uzh-bf/klicker-uzh/issues/4737)) ([08deed8](https://github.com/uzh-bf/klicker-uzh/commit/08deed839f809b23c3f8a659e4369a5625c2c1a9))
+
+
+### Enhancements
+
+* **packages/shared-components:** add possibility to override lower and upper bounds of histogram within bounds ([#4738](https://github.com/uzh-bf/klicker-uzh/issues/4738)) ([5c82856](https://github.com/uzh-bf/klicker-uzh/commit/5c828566f25bb74fe491111daac6466bae46a2ec))
+
+
+### Other
+
+* **apps/frontend-manage:** resolve datepicker and input styling issues, add countdowns to activity details view ([#4740](https://github.com/uzh-bf/klicker-uzh/issues/4740)) ([9cafe74](https://github.com/uzh-bf/klicker-uzh/commit/9cafe74dfb8fa22fc0ed6680c20dea9b4283878b))
+
 ## [3.3.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.60...v3.3.0-alpha.61) (2025-06-13)
 
 
