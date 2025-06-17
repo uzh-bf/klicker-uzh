@@ -2104,7 +2104,7 @@ type Query {
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizHMAC(id: String!): String
-  liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
+  liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]

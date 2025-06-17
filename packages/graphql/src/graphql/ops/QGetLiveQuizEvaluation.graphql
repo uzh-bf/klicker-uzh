@@ -30,7 +30,7 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
       createdAt
     }
   }
-  liveQuizLeaderboard(quizId: $id) {
+  liveQuizLeaderboard(quizId: $id, hmac: $hmac) {
     id
     participantId
     rank
