@@ -19,6 +19,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
@@ -32,6 +33,7 @@ const DynamicAccountSelector = dynamic(
 
 function Index({ id }: { id: string }) {
   const t = useTranslations()
+  const router = useRouter()
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
@@ -184,7 +186,8 @@ function Index({ id }: { id: string }) {
         <div
           className={twMerge(
             'hidden flex-1 border-gray-300 bg-white md:pr-5',
-            isLiveQAEnabled && 'md:w-1/2 md:border-r',
+            (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
+              'md:w-1/2 md:border-r',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||
               activeMobilePage === 'leaderboard') &&
@@ -199,9 +202,11 @@ function Index({ id }: { id: string }) {
               <div data-cy="live-quiz-description">
                 <H3>{displayName}</H3>
                 <Markdown content={description} />
-                <UserNotification type="info" className={{ root: 'mt-4' }}>
-                  {t('pwa.liveQuiz.noActiveQuestion')}
-                </UserNotification>
+                <UserNotification
+                  type="info"
+                  message={t('pwa.liveQuiz.noActiveQuestion')}
+                  className={{ root: 'mt-4 text-base' }}
+                />
               </div>
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
@@ -209,11 +214,22 @@ function Index({ id }: { id: string }) {
               </div>
             ) : (
               <UserNotification type="info" className={{ root: 'mt-4' }}>
-                {t('pwa.liveQuiz.noActiveQuestion')}
+                {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                  reload: (text) => (
+                    <span
+                      className="cursor-pointer underline"
+                      onClick={() => router.reload()}
+                      data-cy="reload-live-quiz"
+                    >
+                      {text}
+                    </span>
+                  ),
+                })}
               </UserNotification>
             )
           ) : (
             <QuestionArea
+              gamificationEnabled={isGamificationEnabled}
               expiresAt={activeBlock.expiresAt}
               instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}

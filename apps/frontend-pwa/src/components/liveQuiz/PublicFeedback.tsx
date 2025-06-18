@@ -137,7 +137,7 @@ function PublicFeedback({
 
   return (
     <div className="mb-3 w-full">
-      <div className="bg-primary-20 border-primary-40 mb-1 flex w-full flex-row rounded-md border border-solid bg-opacity-30 p-1.5 text-sm">
+      <div className="mb-2 flex w-full flex-row rounded-lg border bg-white p-2 shadow-sm transition-shadow duration-200 hover:shadow-md">
         <div className="flex flex-1 flex-col">
           <div className="mb-0.5">{feedback.content}</div>
           <div className="text-xs italic text-gray-600">
@@ -154,7 +154,10 @@ function PublicFeedback({
           active={upvotes.upvote}
           disabled={feedback.resolvedAt}
           onClick={() => onUpvote(upvotes.upvote)}
-          className={{ root: 'h-10 w-10' }}
+          className={{
+            root: 'h-10 w-10 transform transition hover:scale-105',
+            active: 'border-unset',
+          }}
           data={{ cy: `feedback-upvote-${feedback.content}` }}
         >
           <Button.Icon
@@ -171,7 +174,7 @@ function PublicFeedback({
             response && (
               <div
                 key={response.content}
-                className="border-uzh-grey-60 bg-uzh-grey-20 mb-1 ml-8 flex flex-1 flex-row rounded-md border-2 border-solid p-1.5 text-sm"
+                className="border-uzh-grey-60 bg-uzh-grey-20 mb-1 ml-8 flex flex-1 transform flex-row rounded-md border border-solid p-1.5 text-sm shadow-sm transition-shadow duration-300 hover:shadow-md"
               >
                 <div className="flex flex-1 flex-col">{response.content}</div>
                 <div>
@@ -184,7 +187,8 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === 1}
                     className={{
-                      root: 'mr-1 h-9 w-9',
+                      root: 'mr-1 h-9 w-9 transform transition hover:scale-105',
+                      active: 'border-unset',
                     }}
                     data={{
                       cy: `feedback-response-upvote-${response.content}`,
@@ -205,7 +209,8 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === -1}
                     className={{
-                      root: 'h-9 w-9',
+                      root: 'h-9 w-9 transform transition hover:scale-105',
+                      active: 'border-unset',
                     }}
                     data={{ cy: 'feedback-response-downvote' }}
                   >

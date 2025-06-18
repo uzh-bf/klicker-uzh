@@ -790,7 +790,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
     liveQuiz: {
-      noActiveQuestion: 'No question active.',
+      noActiveQuestion:
+        'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered: 'You have already answered all active questions.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
@@ -829,6 +830,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       feedbackPlaceholder: 'Enter your question / feedback',
       postedAt: 'Posted at {date}',
       solvedAt: 'Resolved at {date}',
+      feedbackSubmitted:
+        'Your feedback / question has been successfully submitted.',
     },
     profile: {
       publicProfile: 'Profile Visibility',

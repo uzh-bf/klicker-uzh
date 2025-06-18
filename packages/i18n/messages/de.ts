@@ -792,7 +792,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     liveQuiz: {
-      noActiveQuestion: 'Keine Frage aktiv.',
+      noActiveQuestion:
+        'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
       previousCase: 'Vorheriger Fall',
@@ -832,6 +833,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       feedbackPlaceholder: 'Feedback / Frage eingeben',
       postedAt: 'Gepostet am {date}',
       solvedAt: 'Gelöst am {date}',
+      feedbackSubmitted:
+        'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',
