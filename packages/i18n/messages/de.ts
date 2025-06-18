@@ -1055,6 +1055,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität konnte nicht geändert werden.',
       noCourseAssigned: 'Kein Kurs zugewiesen',
       actionsLegend: 'Aktionen für Aktivitäten',
+      furtherActions: 'Weitere Aktionen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

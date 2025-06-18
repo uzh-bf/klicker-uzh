@@ -43,7 +43,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
             items={[
               {
                 label: (
-                  <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+                  <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
                     <FontAwesomeIcon
                       icon={group.isMember ? faEye : faPencil}
                       className="mr-2.5 h-4 w-4"
@@ -60,7 +60,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 ? [
                     {
                       label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon
                             icon={faPersonWalkingArrowRight}
                             className="mr-2.5 h-4 w-4"
@@ -77,7 +77,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 ? [
                     {
                       label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon
                             icon={faTrashCan}
                             className="mr-2.5 h-4 w-4"
@@ -95,7 +95,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
               <Button
                 basic
                 className={{
-                  root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
+                  root: 'rounded-full p-1.5 text-gray-500',
                 }}
               >
                 <Button.Icon withoutLabel icon={faEllipsisVertical} />

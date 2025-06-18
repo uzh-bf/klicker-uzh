@@ -1054,6 +1054,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
+      furtherActions: 'Further Actions',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
