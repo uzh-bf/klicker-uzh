@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.62...v3.3.0-alpha.63) (2025-06-18)
+
+
+### Enhancements
+
+* add option to enable / disable demo question seeding on first login dialogue ([76f585e](https://github.com/uzh-bf/klicker-uzh/commit/76f585ef9a60910b2b719d01bf99a29fc5e1e89c))
+* add subscriptions for live quiz q&a channel and confusion feedback setting changes ([#4742](https://github.com/uzh-bf/klicker-uzh/issues/4742)) ([696a43a](https://github.com/uzh-bf/klicker-uzh/commit/696a43a187cdf3df4f3808894c8b96c1d374327e))
+* **apps/frontend-pwa:** add basic animations to gamified live quizzes ([#4741](https://github.com/uzh-bf/klicker-uzh/issues/4741)) ([9c17c58](https://github.com/uzh-bf/klicker-uzh/commit/9c17c580cbcd5d91898d64ce3143b30eb445bee6))
+
 ## [3.3.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.61...v3.3.0-alpha.62) (2025-06-17)
 
 
