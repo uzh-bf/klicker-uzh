@@ -2048,7 +2048,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
       reopenToAnswer: 'Reopen feedback to answer...',
-      insertResponseHere: 'Insert your response here...',
+      enterResponseHere: 'Enter your response here...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Reopen',

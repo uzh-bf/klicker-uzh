@@ -2081,7 +2081,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortByTime: 'Nach Zeitpunkt sortieren',
       answersGiven: '{number} Antwort(en) gegeben',
       reopenToAnswer: 'Öffnen Sie das Feedback wieder, um zu antworten...',
-      insertResponseHere: 'Formulieren Sie Ihre Antwort hier...',
+      enterResponseHere: 'Geben Sie Ihre Antwort hier ein...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Wieder öffnen',

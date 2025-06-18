@@ -15,6 +15,8 @@ function FeedbackAreaSubscriber({
   subscribeToMore: (doc: SubscribeToMoreOptions) => any
 }) {
   useEffect(() => {
+    if (!quizId) return
+
     const feedbackAdded = subscribeToMore({
       document: FeedbackAddedDocument,
       variables: { quizId },
@@ -25,14 +27,11 @@ function FeedbackAreaSubscriber({
         }: { subscriptionData: { data: { feedbackAdded: Feedback } } }
       ) => {
         if (!subscriptionData.data) return prev
-        const newItem = {
-          ...subscriptionData.data.feedbackAdded,
-          animate: true, // Add this flag to identify newly added feedback for animation
+        const newItem = subscriptionData.data.feedbackAdded
+        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id)) {
+          return prev
         }
-        return {
-          ...prev,
-          feedbacks: [...prev.feedbacks, newItem],
-        }
+        return { ...prev, feedbacks: [newItem, ...prev.feedbacks] }
       },
     })
 

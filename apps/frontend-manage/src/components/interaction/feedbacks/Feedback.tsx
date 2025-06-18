@@ -209,7 +209,7 @@ function Feedback({
                       placeholder={
                         resolved
                           ? t('manage.cockpit.reopenToAnswer')
-                          : t('manage.cockpit.insertResponseHere')
+                          : t('manage.cockpit.enterResponseHere')
                       }
                       disabled={resolved}
                       maxLength={1000}

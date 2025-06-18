@@ -240,9 +240,9 @@ function FeedbackArea({
         <div className="mb-8">
           <Formik
             initialValues={{ feedbackInput: '' }}
-            onSubmit={(values, { setSubmitting, resetForm }) => {
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
               if (values.feedbackInput !== '') {
-                onAddFeedback(values.feedbackInput)
+                await onAddFeedback(values.feedbackInput)
                 resetForm()
 
                 setTimeout(() => {
@@ -260,7 +260,7 @@ function FeedbackArea({
                   placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
                     input:
-                      'border-uzh-grey-80 focus:ring-primary-60 mb-1 w-full transform rounded-md border-2 border-solid bg-white p-1.5 text-sm transition-all duration-200 focus:ring-2',
+                      'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
                     root: 'mb-1',
                   }}
                   component="textarea"
