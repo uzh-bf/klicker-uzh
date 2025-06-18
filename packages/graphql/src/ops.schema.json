@@ -16614,6 +16614,50 @@
       },
       {
         "kind": "OBJECT",
+        "name": "LiveQuizStudentSettings",
+        "description": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "isConfusionFeedbackEnabled",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isLiveQAEnabled",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
         "name": "LiveQuizSummary",
         "description": null,
         "isOneOf": null,
@@ -36087,6 +36131,35 @@
                 "name": "GroupActivity",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "liveQuizSettingsChanged",
+            "description": null,
+            "args": [
+              {
+                "name": "quizId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "LiveQuizStudentSettings",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null

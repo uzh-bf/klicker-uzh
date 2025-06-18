@@ -262,6 +262,7 @@
    "FeedbackUpdated": "ff471e7074f90a5f5d884e8a80d4c711b25aa69cd18d79faa9df8aed1334ef97",
    "GroupActivityEnded": "0ad24543da1344f7c15139865c767cfdd51952a6a1630f3e080a14e577852b2f",
    "GroupActivityStarted": "68ba757fcf30a19c49cfdb2d47e803a0a4f0ed3ecf60a30e0b7ea3390ae0cf20",
+   "LiveQuizSettingsChanged": "212af644b03fa955abc0a3c907b9543c9831e9432d5dcb0cdf6708a927b5886c",
    "MicroLearningEnded": "b296f5b68bb5cccea3da7f8947ee13a88ce78307e694e4caef561b3b5b8766cb",
    "RunningLiveQuizUpdated": "dc785e725af616e684230791a7e901ab0ee9ae8a20424f96c2b8e912e116d99f",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
