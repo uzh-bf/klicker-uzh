@@ -1105,6 +1105,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Stellen Sie sicher, dass Sie die folgenden relevanten Links gesehen/gespeichert haben:',
       watchVideo:
         'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
+      seedDemoElements: 'Demo-Elemente generieren',
+      seedDemoElementsExplanation:
+        'Bitte wählen Sie, ob Demo-Elemente zur Demonstration der verfügbaren Element-Typen in Ihrer Bibliothek generiert werden sollen. Diese können jederzeit gelöscht werden.',
+      seedDemoElementsDecisionRequired:
+        'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
       userSettings: 'Benutzereinstellungen',

@@ -1101,7 +1101,13 @@ export async function changeInitialSettings(
     shortname,
     locale,
     sendUpdates,
-  }: { shortname: string; locale: DB.Locale; sendUpdates: boolean },
+    seedDemoElements,
+  }: {
+    shortname: string
+    locale: DB.Locale
+    sendUpdates: boolean
+    seedDemoElements: boolean
+  },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
@@ -1118,7 +1124,9 @@ export async function changeInitialSettings(
   }
 
   // seed demo questions
-  await seedDemoQuestions(ctx)
+  if (seedDemoElements) {
+    await seedDemoQuestions(ctx)
+  }
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },

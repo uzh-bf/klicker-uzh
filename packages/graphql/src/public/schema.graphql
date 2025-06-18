@@ -1520,7 +1520,7 @@ type Mutation {
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
   changeElementStatus(elementId: Int!, status: ElementStatus!): Boolean
   changeEmailSettings(projectUpdates: Boolean!): User
-  changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
+  changeInitialSettings(locale: LocaleType!, seedDemoElements: Boolean!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changePermissionLevel(objectId: String!, objectType: ObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!

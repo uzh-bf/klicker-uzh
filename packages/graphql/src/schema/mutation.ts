@@ -1554,6 +1554,7 @@ export const Mutation = builder.mutationType({
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
           sendUpdates: t.arg.boolean({ required: true }),
+          seedDemoElements: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)

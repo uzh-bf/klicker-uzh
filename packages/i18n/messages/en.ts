@@ -1105,6 +1105,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Make sure you have seen and/or bookmarked the following relevant links:',
       watchVideo:
         'Please consider taking the time to watch the following introductory video, covering all core concepts of KlickerUZH v3.0 and its main features. In case you are in a hurry, directly submit your initial settings with the button below the video.',
+      seedDemoElements: 'Generate Demo Elements',
+      seedDemoElementsExplanation:
+        'Please choose whether demo elements should be generated in your library for demonstration purposes. They can be deleted at any time.',
+      seedDemoElementsDecisionRequired:
+        'Please choose whether demo elements should be generated or not.',
     },
     settings: {
       userSettings: 'User Settings',
