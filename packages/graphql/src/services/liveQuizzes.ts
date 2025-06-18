@@ -1810,6 +1810,13 @@ export async function changeLiveQuizSettings(
       isGamificationEnabled: isGamificationEnabled ?? undefined,
     },
   })
+
+  ctx.pubSub.publish('liveQuizSettingsChanged', {
+    liveQuizId: quiz.id,
+    isLiveQAEnabled: quiz.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,
+  })
+
   return quiz
 }
 

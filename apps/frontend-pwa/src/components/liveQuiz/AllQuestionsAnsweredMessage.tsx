@@ -1,7 +1,12 @@
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
-import ConfettiExplosion from 'react-confetti-explosion'
+
+// load confetti explosion dynamically to avoid SSR issues
+const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
+  ssr: false,
+})
 
 function AllQuestionsAnsweredMessage({
   gamificationEnabled,

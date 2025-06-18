@@ -1459,6 +1459,11 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizStudentSettings {
+  isConfusionFeedbackEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
+}
+
 type LiveQuizSummary {
   numOfConfusionFeedbacks: Int!
   numOfFeedbacks: Int!
@@ -2401,6 +2406,7 @@ type Subscription {
   feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
+  liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
   runningLiveQuizUpdated(quizId: String!): ElementBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
