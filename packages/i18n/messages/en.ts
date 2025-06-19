@@ -1038,6 +1038,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      automaticPublicationAt: 'Automatic publication at {date}',
+      availability: 'Availability: {startDate} - {endDate}',
       removeActivity: 'Remove Activity',
       confirmActivityRemoval:
         'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
@@ -1054,7 +1056,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
-      furtherActions: 'Further Actions',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2458,7 +2459,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade Group Activity',
       courseElements: 'Course Elements',
-      otherActions: 'Other actions',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Enable gamification',
       enableGamificationWarning:
         'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',

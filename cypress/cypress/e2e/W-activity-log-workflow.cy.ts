@@ -221,7 +221,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="save-new-question"]').click()
 
     // open the activity log modal from the element dropdown
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
       .click()
@@ -240,7 +240,7 @@ describe('Feature test for activity logs', function () {
     const creationMessage = `${Cypress.env('LECTURER_SHORTNAME')} created this object.`
 
     // verify that creation message is displayed correctly in the activity log
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="activity-log-entry-${creationMessage}"]`).should('exist')
     cy.get('[data-cy="close-activity-log"]').click()
@@ -283,7 +283,7 @@ describe('Feature test for activity logs', function () {
 
     // check the activity log and that a corresponding message is shown
     const statusChangeMessage = `${Cypress.env('LECTURER_SHORTNAME')} modified status (READY -> REVIEW).`
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="activity-log-entry-${statusChangeMessage}"]`).should(
       'exist'
@@ -309,9 +309,7 @@ describe('Feature test for activity logs', function () {
 
     // check the activity log and that a corresponding message is shown
     const titleChangeMessage = `${Cypress.env('LECTURER_SHORTNAME')} modified title (${this.data.SC.title} -> ${this.data.element.newTitle}).`
-    cy.get(
-      `[data-cy="actions-element-${this.data.element.newTitle}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.element.newTitle}"]`).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.element.newTitle}"]`
     ).click()
@@ -343,7 +341,7 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with READ permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst()
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
       .click()
@@ -365,7 +363,7 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with WRITE permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst()
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
       .click()
@@ -387,7 +385,7 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with ADMIN permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst2()
-    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).realClick()
+    cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
       .click()
@@ -507,9 +505,7 @@ describe('Feature test for activity logs', function () {
 
     // share live quiz with different permissions
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="share-live-quiz-${this.data.liveQuiz.name}"]`).click()
     setUserPermissions()
 
@@ -528,7 +524,7 @@ describe('Feature test for activity logs', function () {
     // share practice quiz with different permissions
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.practiceQuiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="share-practice-quiz-${this.data.practiceQuiz.name}"]`
     ).click()
@@ -553,7 +549,7 @@ describe('Feature test for activity logs', function () {
     // share microlearning with different permissions
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.microLearning.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="share-microlearning-${this.data.microLearning.name}"]`
     ).click()
@@ -578,13 +574,16 @@ describe('Feature test for activity logs', function () {
     // share group activity with different permissions
     cy.get(
       `[data-cy="actions-GROUP_ACTIVITY-${this.data.groupActivity.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="share-group-activity-${this.data.groupActivity.name}"]`
     ).click()
     setUserPermissions()
 
     // add a comment to the group activity
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.groupActivity.name}"]`
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.groupActivity.name}"]`
     ).click()
@@ -603,6 +602,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="activities"]').click()
 
     // check live quiz activity log and add another message
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.liveQuiz.name}"]`).click()
     verifyActivityComments({
       message: this.data.liveQuiz.message,
@@ -612,7 +612,7 @@ describe('Feature test for activity logs', function () {
     // check practice quiz activity log and add another message
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.practiceQuiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.practiceQuiz.name}"]`
     ).click()
@@ -624,7 +624,7 @@ describe('Feature test for activity logs', function () {
     // check microlearning activity log and add another message
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.microLearning.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.microLearning.name}"]`
     ).click()
@@ -648,9 +648,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="activities"]').click()
 
     // check live quiz activity log and add another message
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.liveQuiz.name}"]`).click()
     verifyActivityComments({
       message: this.data.liveQuiz.message,
@@ -661,7 +659,7 @@ describe('Feature test for activity logs', function () {
     // check practice quiz activity log and add another message
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.practiceQuiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.practiceQuiz.name}"]`
     ).click()
@@ -674,7 +672,7 @@ describe('Feature test for activity logs', function () {
     // check microlearning activity log and add another message
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.microLearning.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.microLearning.name}"]`
     ).click()
@@ -685,6 +683,9 @@ describe('Feature test for activity logs', function () {
     })
 
     // check group activity activity log and add another message
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.groupActivity.name}"]`
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.groupActivity.name}"]`
     ).click()
@@ -700,9 +701,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="activities"]').click()
 
     // check live quiz activity log and add another message
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.liveQuiz.name}"]`).click()
     verifyActivityComments({
       message: this.data.liveQuiz.message,
@@ -714,7 +713,7 @@ describe('Feature test for activity logs', function () {
     // check practice quiz activity log and add another message
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.practiceQuiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.practiceQuiz.name}"]`
     ).click()
@@ -728,7 +727,7 @@ describe('Feature test for activity logs', function () {
     // check microlearning activity log and add another message
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.microLearning.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.microLearning.name}"]`
     ).click()
@@ -740,6 +739,9 @@ describe('Feature test for activity logs', function () {
     })
 
     // check group activity activity log and add another message
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.groupActivity.name}"]`
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.groupActivity.name}"]`
     ).click()
@@ -756,9 +758,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="activities"]').click()
 
     // check live quiz activity log and add another message
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.liveQuiz.name}"]`).click()
     verifyActivityComments({
       message: this.data.liveQuiz.message,
@@ -771,7 +771,7 @@ describe('Feature test for activity logs', function () {
     // check practice quiz activity log and add another message
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.practiceQuiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.practiceQuiz.name}"]`
     ).click()
@@ -786,7 +786,7 @@ describe('Feature test for activity logs', function () {
     // check microlearning activity log and add another message
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.microLearning.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.microLearning.name}"]`
     ).click()
@@ -799,6 +799,9 @@ describe('Feature test for activity logs', function () {
     })
 
     // check group activity activity log and add another message
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.groupActivity.name}"]`
+    ).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.groupActivity.name}"]`
     ).click()
@@ -904,7 +907,7 @@ describe('Feature test for activity logs', function () {
     // add a comment to the answer collection
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
-    ).realClick()
+    ).click()
     cy.get(`[data-cy="view-activity-log-${this.data.collection.name}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
       .click()
@@ -918,7 +921,7 @@ describe('Feature test for activity logs', function () {
     // share the answer collection with other users
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
-    ).realClick()
+    ).click()
     cy.get(`[data-cy="share-answer-collection"]`).click()
     setUserPermissionsElementCollection()
   })
@@ -931,7 +934,7 @@ describe('Feature test for activity logs', function () {
     // check answer collection activity log and add another message
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
-    ).realClick()
+    ).click()
     cy.get(`[data-cy="view-activity-log-${this.data.collection.name}"]`).click()
     verifyActivityComments({
       message: this.data.answerCollection.message,
@@ -947,7 +950,7 @@ describe('Feature test for activity logs', function () {
     // check answer collection activity log and add another message
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
-    ).realClick()
+    ).click()
     cy.get(`[data-cy="view-activity-log-${this.data.collection.name}"]`).click()
     verifyActivityComments({
       message: this.data.answerCollection.message,
@@ -963,7 +966,7 @@ describe('Feature test for activity logs', function () {
     // check answer collection activity log and add another message
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.collection.name}"]`
-    ).realClick()
+    ).click()
     cy.get(`[data-cy="view-activity-log-${this.data.collection.name}"]`).click()
     verifyActivityComments({
       message: this.data.answerCollection.message,

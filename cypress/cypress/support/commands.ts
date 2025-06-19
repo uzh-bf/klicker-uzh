@@ -650,6 +650,7 @@ Cypress.Commands.add(
     cy.get(`[data-cy="confirm-derived-access"]`).click()
     cy.get(`[data-cy="confirm-dependency-access"]`).click()
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
+    cy.wait(500)
   }
 )
 

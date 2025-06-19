@@ -283,18 +283,13 @@ function Element({
                   onClick: action.onClick,
                   data: action.data,
                 }))}
-                trigger={
-                  <Button
-                    className={{ root: 'h-8 w-8 p-0' }}
-                    data={{ cy: `actions-element-${element.name}` }}
-                  >
-                    <Button.Icon withoutLabel icon={faEllipsis} />
-                  </Button>
-                }
+                trigger={<FontAwesomeIcon icon={faEllipsis} />}
                 className={{
                   viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
                   item: 'py-0.5 text-sm',
+                  trigger: 'h-8 w-8 p-0',
                 }}
+                data={{ cy: `actions-element-${element.name}` }}
               />
             )}
           </div>

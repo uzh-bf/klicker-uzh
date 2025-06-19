@@ -35,7 +35,7 @@ function ActivityActions({
         )
       })}
 
-      {availableActions.length > 3 && (
+      {availableActions.length > 1 && (
         <Dropdown
           items={availableActions.slice(1).map((action) => ({
             label: (
@@ -54,22 +54,12 @@ function ActivityActions({
             onClick: action.onClick,
             data: action.data,
           }))}
-          trigger={
-            <Button
-              basic
-              onClick={() => {}}
-              className={{ root: 'h-8 w-8 text-sm' }}
-              data={{ cy: `actions-${activityType}-${activityName}` }}
-            >
-              <Button.Icon withoutLabel icon={faEllipsis} />
-              {/* <Button.Label>
-                {t('manage.activities.furtherActions')}
-              </Button.Label> */}
-            </Button>
-          }
+          trigger={<FontAwesomeIcon icon={faEllipsis} />}
+          data={{ cy: `actions-${activityType}-${activityName}` }}
           className={{
             viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
             item: 'py-0.5 text-sm',
+            trigger: 'h-8 w-8 border-none text-sm',
           }}
         />
       )}

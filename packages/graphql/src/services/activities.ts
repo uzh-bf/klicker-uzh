@@ -185,7 +185,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           (acc, block) => acc + block.elements.length,
           0
         ),
-        scheduledStartAt: object.practiceQuiz.availableFrom,
+        automaticPublicationAt: object.practiceQuiz.availableFrom,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,

@@ -1039,6 +1039,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
       lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
+      availability: 'Verfügbarkeit: {startDate} - {endDate}',
       removeActivity: 'Aktivität entfernen',
       confirmActivityRemoval:
         'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
@@ -1055,7 +1057,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität konnte nicht geändert werden.',
       noCourseAssigned: 'Kein Kurs zugewiesen',
       actionsLegend: 'Aktionen für Aktivitäten',
-      furtherActions: 'Weitere Aktionen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2491,7 +2492,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
-      otherActions: 'Weitere Aktionen',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Gamifizierung aktivieren',
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',

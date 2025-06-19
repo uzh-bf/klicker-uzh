@@ -9,6 +9,7 @@ fragment ActivityInfoData on ActivityInfo {
 
   numOfStacks
   numOfElements
+  automaticPublicationAt
   scheduledStartAt
   scheduledEndAt
   groupDeadlineDate
