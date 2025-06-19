@@ -1,4 +1,4 @@
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ActivityList from '../activities/overview/ActivityList'
@@ -14,7 +14,7 @@ function GroupActivityList({
   return (
     <div className="flex w-full flex-col items-end">
       <div className="flex flex-row gap-2">
-        <ActivityListLegend />
+        <ActivityListLegend type={ActivityType.GroupActivity} />
       </div>
 
       {groupActivities && groupActivities.length > 0 ? (

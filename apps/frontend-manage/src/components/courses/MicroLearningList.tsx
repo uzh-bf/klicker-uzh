@@ -1,5 +1,5 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ActivityList from '../activities/overview/ActivityList'
@@ -42,7 +42,7 @@ function MicroLearningList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.microLearningList')}`}</Button.Label>
         </Button>
-        <ActivityListLegend />
+        <ActivityListLegend type={ActivityType.MicroLearning} />
       </div>
 
       {microLearnings && microLearnings.length > 0 ? (
