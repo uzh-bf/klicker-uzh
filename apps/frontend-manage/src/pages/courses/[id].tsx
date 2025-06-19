@@ -5,10 +5,7 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetSingleCourseDocument,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
@@ -37,15 +34,14 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
-  const { data: user } = useQuery(UserProfileDocument)
 
   const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
     useEarliestLatestCourseDates({
       activities: [
-        ...(data?.course?.groupActivityActivities ?? []),
-        ...(data?.course?.microLearningActivities ?? []),
-        ...(data?.course?.practiceQuizActivities ?? []),
-        ...(data?.course?.liveQuizActivities ?? []),
+        ...(data?.course?.groupActivities ?? []),
+        ...(data?.course?.microLearnings ?? []),
+        ...(data?.course?.practiceQuizzes ?? []),
+        ...(data?.course?.liveQuizzes ?? []),
       ],
     })
 
@@ -209,7 +205,7 @@ function CourseOverviewPage() {
           >
             <LiveQuizList
               courseId={course.id}
-              liveQuizActivities={course.liveQuizActivities ?? []}
+              liveQuizzes={course.liveQuizzes ?? []}
             />
           </TabContent>
           <TabContent
@@ -219,7 +215,7 @@ function CourseOverviewPage() {
           >
             <PracticeQuizList
               courseId={course.id}
-              practiceQuizActivities={course.practiceQuizActivities ?? []}
+              practiceQuizzes={course.practiceQuizzes ?? []}
             />
           </TabContent>
           <TabContent
@@ -229,7 +225,7 @@ function CourseOverviewPage() {
           >
             <MicroLearningList
               courseId={course.id}
-              microLearningActivities={course.microLearningActivities ?? []}
+              microLearnings={course.microLearnings ?? []}
             />
           </TabContent>
           <TabContent
@@ -237,9 +233,7 @@ function CourseOverviewPage() {
             value="groupActivities"
             className={{ root: 'px-0 py-1' }}
           >
-            <GroupActivityList
-              groupActivityActivities={course.groupActivityActivities ?? []}
-            />
+            <GroupActivityList groupActivities={course.groupActivities ?? []} />
           </TabContent>
         </Tabs>
 

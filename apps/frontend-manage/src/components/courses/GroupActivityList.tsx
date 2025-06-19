@@ -5,9 +5,9 @@ import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
 
 function GroupActivityList({
-  groupActivityActivities,
+  groupActivities,
 }: {
-  groupActivityActivities: ActivityInfo[]
+  groupActivities: ActivityInfo[]
 }) {
   const t = useTranslations()
 
@@ -17,10 +17,10 @@ function GroupActivityList({
         <ActivityListLegend />
       </div>
 
-      {groupActivityActivities && groupActivityActivities.length > 0 ? (
+      {groupActivities && groupActivities.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
-            activities={groupActivityActivities}
+            activities={groupActivities}
             noActivities={false}
             hideActivityType
           />

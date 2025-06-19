@@ -1316,7 +1316,7 @@ export async function getCourseData(
     permission: coursePermission,
   })
 
-  const liveQuizActivities = course.liveQuizzes.flatMap((liveQuiz) => {
+  const liveQuizzes = course.liveQuizzes.flatMap((liveQuiz) => {
     const permission = liveQuiz.permissions[0]
 
     if (!permission) {
@@ -1379,204 +1379,198 @@ export async function getCourseData(
     }
   })
 
-  const practiceQuizActivities = course.practiceQuizzes.flatMap(
-    (practiceQuiz) => {
-      const permission = practiceQuiz.permissions[0]
+  const practiceQuizzes = course.practiceQuizzes.flatMap((practiceQuiz) => {
+    const permission = practiceQuiz.permissions[0]
 
-      if (!permission) {
-        return []
-      }
-
-      const {
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-      } = getPermissionBooleans({
-        permission,
-      })
-
-      const stacks = practiceQuiz.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
-      return {
-        id: practiceQuiz.id,
-        templateId: practiceQuiz.templateInfo?.id ?? null,
-        name: practiceQuiz.name,
-        displayName: practiceQuiz.displayName,
-        type: ActivityType.PRACTICE_QUIZ,
-        status: practiceQuiz.status,
-        courseId: course.id,
-        courseName: course.name,
-        courseStartDate: course.startDate,
-        numOfStacks: practiceQuiz.stacks.length,
-        numOfElements: practiceQuiz.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
-          0
-        ),
-        automaticPublicationAt: practiceQuiz.availableFrom,
-        stacks,
-        permissionLevel: permission.permissionLevel,
-        derivedAccess: permission.derived,
-        numSharedUsers: practiceQuiz._count.permissions - 1,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-        updatedAt: practiceQuiz.updatedAt,
-      }
+    if (!permission) {
+      return []
     }
-  )
 
-  const microLearningActivities = course.microLearnings.flatMap(
-    (microLearning) => {
-      const permission = microLearning.permissions[0]
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
 
-      if (!permission) {
-        return []
-      }
+    const stacks = practiceQuiz.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
 
-      const {
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-      } = getPermissionBooleans({
-        permission,
-      })
-
-      const stacks = microLearning.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
-      return {
-        id: microLearning.id,
-        templateId: microLearning.templateInfo?.id ?? null,
-        name: microLearning.name,
-        displayName: microLearning.displayName,
-        type: ActivityType.MICRO_LEARNING,
-        status: microLearning.status,
-        courseId: course.id,
-        courseName: course.name,
-        courseStartDate: course.startDate,
-        numOfStacks: microLearning.stacks.length,
-        numOfElements: microLearning.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
-          0
-        ),
-        scheduledStartAt: microLearning.scheduledStartAt,
-        scheduledEndAt: microLearning.scheduledEndAt,
-        stacks,
-        permissionLevel: permission.permissionLevel,
-        derivedAccess: permission.derived,
-        numSharedUsers: microLearning._count.permissions - 1,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-        updatedAt: microLearning.updatedAt,
-      }
+    return {
+      id: practiceQuiz.id,
+      templateId: practiceQuiz.templateInfo?.id ?? null,
+      name: practiceQuiz.name,
+      displayName: practiceQuiz.displayName,
+      type: ActivityType.PRACTICE_QUIZ,
+      status: practiceQuiz.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: practiceQuiz.stacks.length,
+      numOfElements: practiceQuiz.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      automaticPublicationAt: practiceQuiz.availableFrom,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: practiceQuiz._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: practiceQuiz.updatedAt,
     }
-  )
+  })
 
-  const groupActivityActivities = course.groupActivities.flatMap(
-    (groupActivity) => {
-      const permission = groupActivity.permissions[0]
+  const microLearnings = course.microLearnings.flatMap((microLearning) => {
+    const permission = microLearning.permissions[0]
 
-      if (!permission) {
-        return []
-      }
-
-      const {
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-      } = getPermissionBooleans({
-        permission,
-      })
-
-      const stacks = groupActivity.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
-      return {
-        id: groupActivity.id,
-        templateId: groupActivity.templateInfo?.id ?? null,
-        name: groupActivity.name,
-        displayName: groupActivity.displayName,
-        type: ActivityType.GROUP_ACTIVITY,
-        status: groupActivity.status,
-        courseId: course.id,
-        courseName: course.name,
-        courseStartDate: course.startDate,
-        numOfStacks: groupActivity.stacks.length,
-        numOfElements: groupActivity.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
-          0
-        ),
-        scheduledStartAt: groupActivity.scheduledStartAt,
-        scheduledEndAt: groupActivity.scheduledEndAt,
-        groupDeadlineDate: course.groupDeadlineDate,
-        numOfParticipantGroups: course._count.participantGroups,
-        stacks,
-        permissionLevel: permission.permissionLevel,
-        derivedAccess: permission.derived,
-        numSharedUsers: groupActivity._count.permissions - 1,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        sharingType,
-        updatedAt: groupActivity.updatedAt,
-      }
+    if (!permission) {
+      return []
     }
-  )
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
+
+    const stacks = microLearning.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
+
+    return {
+      id: microLearning.id,
+      templateId: microLearning.templateInfo?.id ?? null,
+      name: microLearning.name,
+      displayName: microLearning.displayName,
+      type: ActivityType.MICRO_LEARNING,
+      status: microLearning.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: microLearning.stacks.length,
+      numOfElements: microLearning.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      scheduledStartAt: microLearning.scheduledStartAt,
+      scheduledEndAt: microLearning.scheduledEndAt,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: microLearning._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: microLearning.updatedAt,
+    }
+  })
+
+  const groupActivities = course.groupActivities.flatMap((groupActivity) => {
+    const permission = groupActivity.permissions[0]
+
+    if (!permission) {
+      return []
+    }
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
+
+    const stacks = groupActivity.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
+
+    return {
+      id: groupActivity.id,
+      templateId: groupActivity.templateInfo?.id ?? null,
+      name: groupActivity.name,
+      displayName: groupActivity.displayName,
+      type: ActivityType.GROUP_ACTIVITY,
+      status: groupActivity.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: groupActivity.stacks.length,
+      numOfElements: groupActivity.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      scheduledStartAt: groupActivity.scheduledStartAt,
+      scheduledEndAt: groupActivity.scheduledEndAt,
+      groupDeadlineDate: course.groupDeadlineDate,
+      numOfParticipantGroups: course._count.participantGroups,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: groupActivity._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: groupActivity.updatedAt,
+    }
+  })
 
   return {
     ...course,
@@ -1589,10 +1583,10 @@ export async function getCourseData(
     isExecutor: courseExecutor,
     isShared: courseShared,
     isRemovable: courseRemovable,
-    liveQuizActivities,
-    practiceQuizActivities,
-    microLearningActivities,
-    groupActivityActivities,
+    liveQuizzes,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
     numOfParticipants: course.participations.length,
     numOfParticipantGroups: course._count.participantGroups,
   }

@@ -2,9 +2,6 @@ import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import { ActivityInfoRef, IActivityInfo } from './activities.js'
-import { type IGroupActivity, GroupActivityRef } from './groupActivity.js'
-import { type ILiveQuiz, LiveQuizRef } from './liveQuiz.js'
-import { type IMicroLearning, MicroLearningRef } from './microLearning.js'
 import {
   type IGroupAssignmentPoolEntryRef,
   type IParticipant,
@@ -15,26 +12,20 @@ import {
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
-import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
 import { type IUser, UserRef } from './user.js'
 
-// TODO: remove liveQuizzes, practiceQuizzes, microLearnings, groupActivities, replace them with the corresponding activity types throughout the app
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
   numOfParticipantGroups?: number
   averageScore?: number
   isGroupDeadlinePassed?: boolean
-  liveQuizzes?: ILiveQuiz[]
-  liveQuizActivities?: IActivityInfo[]
-  practiceQuizzes?: IPracticeQuiz[]
-  practiceQuizActivities?: IActivityInfo[]
-  microLearnings?: IMicroLearning[]
-  microLearningActivities?: IActivityInfo[]
+  liveQuizzes?: IActivityInfo[]
+  practiceQuizzes?: IActivityInfo[]
+  microLearnings?: IActivityInfo[]
   participantGroups?: IParticipantGroup[]
   groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
-  groupActivities?: IGroupActivity[]
-  groupActivityActivities?: IActivityInfo[]
+  groupActivities?: IActivityInfo[]
   awards?: IAwardEntry[]
   owner?: IUser
 
@@ -112,26 +103,14 @@ export const Course = builder.objectType(CourseRef, {
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
 
     liveQuizzes: t.expose('liveQuizzes', {
-      type: [LiveQuizRef],
-      nullable: true,
-    }),
-    liveQuizActivities: t.expose('liveQuizActivities', {
       type: [ActivityInfoRef],
       nullable: true,
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
-      type: [PracticeQuizRef],
-      nullable: true,
-    }),
-    practiceQuizActivities: t.expose('practiceQuizActivities', {
       type: [ActivityInfoRef],
       nullable: true,
     }),
     microLearnings: t.expose('microLearnings', {
-      type: [MicroLearningRef],
-      nullable: true,
-    }),
-    microLearningActivities: t.expose('microLearningActivities', {
       type: [ActivityInfoRef],
       nullable: true,
     }),
@@ -144,10 +123,6 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
-      type: [GroupActivityRef],
-      nullable: true,
-    }),
-    groupActivityActivities: t.expose('groupActivityActivities', {
       type: [ActivityInfoRef],
       nullable: true,
     }),

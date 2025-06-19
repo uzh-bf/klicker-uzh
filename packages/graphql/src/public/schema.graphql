@@ -716,8 +716,7 @@ type Course {
   description: String
   displayName: String!
   endDate: Date!
-  groupActivities: [GroupActivity!]
-  groupActivityActivities: [ActivityInfo!]
+  groupActivities: [ActivityInfo!]
   groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
@@ -730,11 +729,9 @@ type Course {
   isOwner: Boolean
   isRemovable: Boolean
   isShared: Boolean
-  liveQuizActivities: [ActivityInfo!]
-  liveQuizzes: [LiveQuiz!]
+  liveQuizzes: [ActivityInfo!]
   maxGroupSize: Int!
-  microLearningActivities: [ActivityInfo!]
-  microLearnings: [MicroLearning!]
+  microLearnings: [ActivityInfo!]
   name: String!
   notificationEmail: String
   numOfParticipantGroups: Int
@@ -744,8 +741,7 @@ type Course {
   participantGroups: [ParticipantGroup!]
   permissionLevel: PermissionLevel
   pinCode: Int
-  practiceQuizActivities: [ActivityInfo!]
-  practiceQuizzes: [PracticeQuiz!]
+  practiceQuizzes: [ActivityInfo!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
   startDate: Date!

@@ -8,10 +8,10 @@ import QRCodePopover from './QRCodePopover'
 
 function MicroLearningList({
   courseId,
-  microLearningActivities,
+  microLearnings,
 }: {
   courseId: string
-  microLearningActivities: ActivityInfo[]
+  microLearnings: ActivityInfo[]
 }) {
   const t = useTranslations()
 
@@ -45,10 +45,10 @@ function MicroLearningList({
         <ActivityListLegend />
       </div>
 
-      {microLearningActivities && microLearningActivities.length > 0 ? (
+      {microLearnings && microLearnings.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
-            activities={microLearningActivities}
+            activities={microLearnings}
             noActivities={false}
             hideActivityType
           />

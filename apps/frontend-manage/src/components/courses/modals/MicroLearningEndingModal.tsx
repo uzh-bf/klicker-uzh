@@ -64,16 +64,6 @@ function MicroLearningEndingModal({
                     }
                   : micro
               ),
-              microLearningActivities: data.course.microLearningActivities?.map(
-                (micro) =>
-                  micro.id === activityId
-                    ? {
-                        ...micro,
-                        scheduledEndAt: endedMicro.scheduledEndAt,
-                        status: endedMicro.status,
-                      }
-                    : micro
-              ),
             },
           },
         })

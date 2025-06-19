@@ -29,16 +29,16 @@ query GetSingleCourse($courseId: String!) {
     isShared
     isRemovable
 
-    liveQuizActivities {
+    liveQuizzes {
       ...ActivityInfoData
     }
-    practiceQuizActivities {
+    practiceQuizzes {
       ...ActivityInfoData
     }
-    microLearningActivities {
+    microLearnings {
       ...ActivityInfoData
     }
-    groupActivityActivities {
+    groupActivities {
       ...ActivityInfoData
     }
   }

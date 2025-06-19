@@ -8,10 +8,10 @@ import QRCodePopover from './QRCodePopover'
 
 function LiveQuizList({
   courseId,
-  liveQuizActivities,
+  liveQuizzes,
 }: {
   courseId: string
-  liveQuizActivities: ActivityInfo[]
+  liveQuizzes: ActivityInfo[]
 }) {
   const t = useTranslations()
 
@@ -45,10 +45,10 @@ function LiveQuizList({
         <ActivityListLegend />
       </div>
 
-      {liveQuizActivities && liveQuizActivities.length > 0 ? (
+      {liveQuizzes && liveQuizzes.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
-            activities={liveQuizActivities}
+            activities={liveQuizzes}
             noActivities={false}
             hideActivityType
           />

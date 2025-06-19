@@ -8183,26 +8183,6 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "GroupActivity",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "groupActivityActivities",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
                   "name": "ActivityInfo",
                   "ofType": null
                 }
@@ -8380,26 +8360,6 @@
             "deprecationReason": null
           },
           {
-            "name": "liveQuizActivities",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "ActivityInfo",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "liveQuizzes",
             "description": null,
             "args": [],
@@ -8411,7 +8371,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "LiveQuiz",
+                  "name": "ActivityInfo",
                   "ofType": null
                 }
               }
@@ -8436,26 +8396,6 @@
             "deprecationReason": null
           },
           {
-            "name": "microLearningActivities",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "ActivityInfo",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "microLearnings",
             "description": null,
             "args": [],
@@ -8467,7 +8407,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "MicroLearning",
+                  "name": "ActivityInfo",
                   "ofType": null
                 }
               }
@@ -8596,26 +8536,6 @@
             "deprecationReason": null
           },
           {
-            "name": "practiceQuizActivities",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "ActivityInfo",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "practiceQuizzes",
             "description": null,
             "args": [],
@@ -8627,7 +8547,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "PracticeQuiz",
+                  "name": "ActivityInfo",
                   "ofType": null
                 }
               }
