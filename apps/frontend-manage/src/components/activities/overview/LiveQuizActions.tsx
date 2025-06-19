@@ -116,8 +116,9 @@ function LiveQuizActions({
     return {
       isManager: [
         'duplicateLiveQuiz',
-        'templateFromLiveQuiz',
-        'shareLiveQuiz',
+        ...(user?.privatePreview
+          ? ['templateFromLiveQuiz', 'shareLiveQuiz']
+          : []),
         'deleteLiveQuiz',
         'deleteTemplate',
       ],

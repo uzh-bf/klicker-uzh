@@ -114,9 +114,7 @@ function CancelLiveQuizModal({
       }
       onPrimaryAction={async () => {
         await cancelLiveQuiz()
-        router.push(
-          dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
-        )
+        router.push('/activities')
         onClose()
         setConfirmations({ ...initialConfirmations })
       }}

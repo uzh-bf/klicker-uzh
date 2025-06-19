@@ -92,7 +92,10 @@ function GroupActivityActions({
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {
     return {
-      isManager: ['shareGroupActivity', 'deleteGroupActivity'],
+      isManager: [
+        ...(user?.privatePreview ? ['shareGroupActivity'] : []),
+        'deleteGroupActivity',
+      ],
       isEditor: ['editGroupActivity'],
       isExecutor: [
         'publishGroupActivity',

@@ -29,53 +29,6 @@ query GetSingleCourse($courseId: String!) {
     isShared
     isRemovable
 
-    liveQuizzes {
-      id
-      name
-      displayName
-      isGamificationEnabled
-      isLiveQAEnabled
-      isConfusionFeedbackEnabled
-      isModerationEnabled
-      pinCode
-      accessMode
-      status
-      pointsMultiplier
-      createdAt
-      numOfBlocks
-      numOfInstances
-    }
-    practiceQuizzes {
-      id
-      name
-      displayName
-      status
-      availableFrom
-      orderType
-      pointsMultiplier
-      resetTimeDays
-      numOfStacks
-    }
-    groupActivities {
-      id
-      name
-      displayName
-      status
-      scheduledStartAt
-      scheduledEndAt
-      numOfQuestions
-    }
-    microLearnings {
-      id
-      name
-      displayName
-      status
-      scheduledStartAt
-      scheduledEndAt
-      pointsMultiplier
-      numOfStacks
-    }
-
     liveQuizActivities {
       ...ActivityInfoData
     }

@@ -33,7 +33,7 @@ function Layout({
     loading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument)
+  } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
 
   if (!dataUser && !loadingUser) {
     router.push('/login')

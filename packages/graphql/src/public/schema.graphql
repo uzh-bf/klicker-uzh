@@ -2034,8 +2034,6 @@ type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
-  checkPrivatePreviewAvailable: Boolean!
-  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo

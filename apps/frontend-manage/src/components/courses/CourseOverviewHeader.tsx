@@ -25,10 +25,10 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import getLTIAccessLink from './getLTIAccessLink'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
-import { getLTIAccessLink } from './PracticeQuizElement'
 import QRCodePopover from './QRCodePopover'
 
 interface CourseOverviewHeaderProps {

@@ -41,9 +41,12 @@ function CourseOverviewPage() {
 
   const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
     useEarliestLatestCourseDates({
-      groupActivities: data?.course?.groupActivities ?? undefined,
-      microLearnings: data?.course?.microLearnings ?? undefined,
-      practiceQuizzes: data?.course?.practiceQuizzes ?? undefined,
+      activities: [
+        ...(data?.course?.groupActivityActivities ?? []),
+        ...(data?.course?.microLearningActivities ?? []),
+        ...(data?.course?.practiceQuizActivities ?? []),
+        ...(data?.course?.liveQuizActivities ?? []),
+      ],
     })
 
   useEffect(() => {
@@ -205,9 +208,7 @@ function CourseOverviewPage() {
             className={{ root: 'overflow-y-auto px-0 py-1' }}
           >
             <LiveQuizList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
               courseId={course.id}
-              liveQuizzes={course.liveQuizzes ?? []}
               liveQuizActivities={course.liveQuizActivities ?? []}
             />
           </TabContent>
@@ -217,12 +218,8 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <PracticeQuizList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              practiceQuizzes={course.practiceQuizzes ?? []}
-              practiceQuizActivities={course.practiceQuizActivities ?? []}
               courseId={course.id}
-              courseStartDate={course.startDate}
-              userCatalyst={user?.userProfile?.catalyst}
+              practiceQuizActivities={course.practiceQuizActivities ?? []}
             />
           </TabContent>
           <TabContent
@@ -231,11 +228,8 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <MicroLearningList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              microLearnings={course.microLearnings ?? []}
-              microLearningActivities={course.microLearningActivities ?? []}
               courseId={course.id}
-              userCatalyst={user?.userProfile?.catalyst}
+              microLearningActivities={course.microLearningActivities ?? []}
             />
           </TabContent>
           <TabContent
@@ -244,14 +238,7 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <GroupActivityList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              groupActivities={course.groupActivities ?? []}
               groupActivityActivities={course.groupActivityActivities ?? []}
-              groupDeadlineDate={course.groupDeadlineDate}
-              numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
-              courseId={course.id}
-              courseStartDate={course.startDate}
-              userCatalyst={user?.userProfile?.catalyst}
             />
           </TabContent>
         </Tabs>

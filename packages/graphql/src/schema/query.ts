@@ -970,20 +970,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkPublicPreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPublicPreviewAvailable(ctx)
-        },
-      }),
-
-      checkPrivatePreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPrivatePreviewAvailable(ctx)
-        },
-      }),
-
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',

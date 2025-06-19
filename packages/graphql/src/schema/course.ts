@@ -19,6 +19,7 @@ import { type IPracticeQuiz, PracticeQuizRef } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
 import { type IUser, UserRef } from './user.js'
 
+// TODO: remove liveQuizzes, practiceQuizzes, microLearnings, groupActivities, replace them with the corresponding activity types throughout the app
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
   numOfParticipantGroups?: number

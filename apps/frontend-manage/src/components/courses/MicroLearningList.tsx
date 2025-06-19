@@ -1,37 +1,18 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, MicroLearning } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
-import CatalystNotification from './CatalystNotification'
-import MicroLearningElement from './MicroLearningElement'
 import QRCodePopover from './QRCodePopover'
 
-interface MicroLearningListProps {
-  microLearnings: Pick<
-    MicroLearning,
-    | 'id'
-    | 'name'
-    | 'status'
-    | 'numOfStacks'
-    | 'scheduledStartAt'
-    | 'scheduledEndAt'
-  >[]
-  microLearningActivities: ActivityInfo[]
-  courseId: string
-  userCatalyst?: boolean
-  privatePreview: boolean
-}
-
 function MicroLearningList({
-  microLearnings,
-  microLearningActivities,
   courseId,
-  userCatalyst,
-  privatePreview,
-}: MicroLearningListProps) {
+  microLearningActivities,
+}: {
+  courseId: string
+  microLearningActivities: ActivityInfo[]
+}) {
   const t = useTranslations()
 
   return (
@@ -64,48 +45,18 @@ function MicroLearningList({
         <ActivityListLegend />
       </div>
 
-      {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
-      {microLearnings && microLearnings.length > 0 && !privatePreview ? (
-        <div className="flex w-full flex-col gap-2">
-          {microLearnings.map((microlearning) => (
-            <MicroLearningElement
-              microLearning={microlearning}
-              courseId={courseId}
-              key={microlearning.id}
-            />
-          ))}
-        </div>
-      ) : userCatalyst ? (
-        <UserNotification
-          type="warning"
-          className={{
-            root: twMerge('w-full text-left', privatePreview && 'hidden'),
-          }}
-        >
-          {t('manage.course.noMicrolearnings')}
-        </UserNotification>
-      ) : (
-        <CatalystNotification />
-      )}
-
-      {microLearningActivities &&
-      microLearningActivities.length > 0 &&
-      privatePreview ? (
+      {microLearningActivities && microLearningActivities.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
-          {privatePreview ? (
-            <ActivityList
-              activities={microLearningActivities}
-              noActivities={false}
-              hideActivityType
-            />
-          ) : null}
+          <ActivityList
+            activities={microLearningActivities}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
       ) : (
         <UserNotification
           type="warning"
-          className={{
-            root: twMerge('w-full text-left', !privatePreview && 'hidden'),
-          }}
+          className={{ root: 'w-full text-left' }}
         >
           {t('manage.course.noMicrolearnings')}
         </UserNotification>

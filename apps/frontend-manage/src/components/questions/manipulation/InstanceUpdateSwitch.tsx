@@ -3,9 +3,9 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CheckPrivatePreviewAvailableDocument,
   GetInstanceUpdateActivitiesDocument,
   PublicationStatus,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H4, Prose, Switch } from '@uzh-bf/design-system'
@@ -31,11 +31,9 @@ function InstanceUpdateSwitch({
   setIncludeTemplateUpdates,
 }: InstanceUpdateSwitchProps) {
   const t = useTranslations()
-
-  const { data: privatePreview } = useQuery(
-    CheckPrivatePreviewAvailableDocument,
-    { fetchPolicy: 'cache-first' }
-  )
+  const { data: user } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
     variables: {
@@ -87,7 +85,7 @@ function InstanceUpdateSwitch({
 
       {usedInTemplates &&
         updateInstances &&
-        privatePreview?.checkPrivatePreviewAvailable && (
+        user?.userProfile?.privatePreview && (
           <div className="mt-2 flex flex-row items-center gap-5">
             <Switch
               checked={includeTemplateUpdates}
