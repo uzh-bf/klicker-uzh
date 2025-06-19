@@ -1,6 +1,8 @@
 {
   "seed": {
+    "liveQuiz": "Seed Live Quiz",
     "microlearning": "Seed Microlearning",
-    "practiceQuiz": "Seed Practice Quiz"
+    "practiceQuiz": "Seed Practice Quiz",
+    "groupActivity": "Seed Group Activity"
   }
 }
