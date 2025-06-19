@@ -1449,7 +1449,7 @@ export async function getCourseData(
             (acc, block) => acc + block.elements.length,
             0
           ),
-          scheduledStartAt: practiceQuiz.availableFrom,
+          automaticPublicationAt: practiceQuiz.availableFrom,
           stacks,
           permissionLevel: permission.permissionLevel,
           derivedAccess: permission.derived,

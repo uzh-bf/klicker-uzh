@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faLink,
   faMessage,
   faPencil,
   faShare,
@@ -146,12 +146,13 @@ function CourseOverviewHeader({
             className={{
               item: 'p-1 hover:bg-gray-200',
               viewport: 'z-10 bg-white',
+              trigger: 'h-8',
             }}
             trigger={
-              <Button className={{ root: 'h-8' }}>
-                <Button.Icon icon={faHandPointer} />
-                <Button.Label>{t('manage.course.otherActions')}</Button.Label>
-              </Button>
+              <>
+                <Button.Icon icon={faLink} />
+                <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+              </>
             }
             items={[
               user?.catalyst

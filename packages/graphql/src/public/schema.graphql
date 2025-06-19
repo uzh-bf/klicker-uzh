@@ -35,6 +35,7 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
+  automaticPublicationAt: Date
   courseId: String
   courseName: String
   courseStartDate: Date

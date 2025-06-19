@@ -134,7 +134,7 @@ function Header({
 
         <Dropdown
           trigger={
-            <div className="relative !p-0 hover:bg-transparent">
+            <>
               <AvatarWithLevel
                 avatar={participant?.avatar}
                 level={participant?.level}
@@ -145,7 +145,7 @@ function Header({
                   className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-orange-500"
                 />
               )}
-            </div>
+            </>
           }
           items={[
             ...(participant
@@ -366,7 +366,11 @@ function Header({
                 ]
               : []),
           ]}
-          className={{ item: 'h-8 text-sm md:h-8 md:text-base' }}
+          className={{
+            item: 'h-8 text-sm md:h-8 md:text-base',
+            trigger:
+              'relative my-1 border-none bg-transparent !p-0 hover:bg-transparent',
+          }}
           data={{ cy: 'header-avatar' }}
         />
       </div>

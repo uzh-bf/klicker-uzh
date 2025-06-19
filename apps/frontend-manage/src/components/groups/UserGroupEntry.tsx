@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, toast } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import DeleteUserGroupModal from './DeleteUserGroupModal'
@@ -33,7 +33,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
           </div>
           <div className="text-sm text-gray-500">{`${group.numOfMembers} ${t('manage.userGroups.members')}`}</div>
         </div>
-        <div className="flex flex-row items-center gap-3">
+        <div className="flex flex-row items-center gap-2">
           <UserGroupBadge
             isMember={group.isMember ?? false}
             isAdmin={group.isAdmin ?? false}
@@ -43,7 +43,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
             items={[
               {
                 label: (
-                  <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+                  <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
                     <FontAwesomeIcon
                       icon={group.isMember ? faEye : faPencil}
                       className="mr-2.5 h-4 w-4"
@@ -60,7 +60,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 ? [
                     {
                       label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon
                             icon={faPersonWalkingArrowRight}
                             className="mr-2.5 h-4 w-4"
@@ -77,7 +77,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                 ? [
                     {
                       label: (
-                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+                        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon
                             icon={faTrashCan}
                             className="mr-2.5 h-4 w-4"
@@ -91,17 +91,12 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                   ]
                 : []),
             ]}
-            trigger={
-              <Button
-                basic
-                className={{
-                  root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                }}
-              >
-                <Button.Icon withoutLabel icon={faEllipsisVertical} />
-              </Button>
-            }
-            className={{ item: 'py-0.5 text-sm' }}
+            trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+            className={{
+              item: 'py-0.5 text-sm',
+              trigger:
+                'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+            }}
             data={{ cy: `user-group-actions-${group.name}` }}
           />
         </div>

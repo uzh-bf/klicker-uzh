@@ -863,6 +863,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.deletion.lqName}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -877,9 +878,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.deletion.lqName}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.deletion.lqName}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.deletion.lqName).should('not.exist')

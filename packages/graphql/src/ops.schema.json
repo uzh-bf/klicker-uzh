@@ -373,6 +373,18 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "automaticPublicationAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "courseId",
             "description": null,
             "args": [],

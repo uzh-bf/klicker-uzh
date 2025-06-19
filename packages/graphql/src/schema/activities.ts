@@ -60,6 +60,7 @@ export interface IActivityInfo {
   courseStartDate?: Date | null
   numOfStacks: number
   numOfElements: number
+  automaticPublicationAt?: Date | null
   scheduledStartAt?: Date | null
   scheduledEndAt?: Date | null
   groupDeadlineDate?: Date | null
@@ -102,6 +103,10 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     numOfStacks: t.exposeInt('numOfStacks'),
     numOfElements: t.exposeInt('numOfElements'),
+    automaticPublicationAt: t.expose('automaticPublicationAt', {
+      type: 'Date',
+      nullable: true,
+    }),
     scheduledStartAt: t.expose('scheduledStartAt', {
       type: 'Date',
       nullable: true,
