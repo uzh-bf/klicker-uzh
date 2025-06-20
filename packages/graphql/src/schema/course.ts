@@ -1,7 +1,15 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
-import { ActivityInfoRef, IActivityInfo } from './activities.js'
+import {
+  ActivityInfo,
+  IActivityInfo,
+  IReducedActivityInfo,
+  ReducedActivityInfo,
+} from './activities.js'
+import { GroupActivity, IGroupActivity } from './groupActivity.js'
+import { ILiveQuiz, LiveQuiz } from './liveQuiz.js'
+import { IMicroLearning, MicroLearning } from './microLearning.js'
 import {
   type IGroupAssignmentPoolEntryRef,
   type IParticipant,
@@ -12,6 +20,7 @@ import {
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
+import { IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
 import { type IUser, UserRef } from './user.js'
 
@@ -20,12 +29,16 @@ export interface ICourse extends DB.Course {
   numOfParticipantGroups?: number
   averageScore?: number
   isGroupDeadlinePassed?: boolean
-  liveQuizzes?: IActivityInfo[]
-  practiceQuizzes?: IActivityInfo[]
-  microLearnings?: IActivityInfo[]
+  liveQuizzes?: ILiveQuiz[] | null
+  liveQuizzesInfo?: IActivityInfo[] | null
+  practiceQuizzes?: IPracticeQuiz[] | null
+  practiceQuizzesInfo?: IActivityInfo[] | null
+  microLearnings?: IMicroLearning[] | null
+  microLearningsInfo?: IActivityInfo[] | null
   participantGroups?: IParticipantGroup[]
   groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
-  groupActivities?: IActivityInfo[]
+  groupActivities?: IGroupActivity[] | null
+  groupActivitiesInfo?: IActivityInfo[] | null
   awards?: IAwardEntry[]
   owner?: IUser
 
@@ -102,16 +115,40 @@ export const Course = builder.objectType(CourseRef, {
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
 
+    // liveQuizzes: t.expose('liveQuizzes', {
+    //   type: [ActivityInfoRef],
+    //   nullable: true,
+    // }),
+    // practiceQuizzes: t.expose('practiceQuizzes', {
+    //   type: [ActivityInfoRef],
+    //   nullable: true,
+    // }),
+    // microLearnings: t.expose('microLearnings', {
+    //   type: [ActivityInfoRef],
+    //   nullable: true,
+    // }),
     liveQuizzes: t.expose('liveQuizzes', {
-      type: [ActivityInfoRef],
+      type: [LiveQuiz],
+      nullable: true,
+    }),
+    liveQuizzesInfo: t.expose('liveQuizzesInfo', {
+      type: [ActivityInfo],
       nullable: true,
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
-      type: [ActivityInfoRef],
+      type: [PracticeQuiz],
+      nullable: true,
+    }),
+    practiceQuizzesInfo: t.expose('practiceQuizzesInfo', {
+      type: [ActivityInfo],
       nullable: true,
     }),
     microLearnings: t.expose('microLearnings', {
-      type: [ActivityInfoRef],
+      type: [MicroLearning],
+      nullable: true,
+    }),
+    microLearningsInfo: t.expose('microLearningsInfo', {
+      type: [ActivityInfo],
       nullable: true,
     }),
     participantGroups: t.expose('participantGroups', {
@@ -122,8 +159,13 @@ export const Course = builder.objectType(CourseRef, {
       type: [GroupAssignmentPoolEntryRef],
       nullable: true,
     }),
+
     groupActivities: t.expose('groupActivities', {
-      type: [ActivityInfoRef],
+      type: [GroupActivity],
+      nullable: true,
+    }),
+    groupActivitiesInfo: t.expose('groupActivitiesInfo', {
+      type: [ActivityInfo],
       nullable: true,
     }),
     awards: t.expose('awards', {
@@ -132,6 +174,42 @@ export const Course = builder.objectType(CourseRef, {
     }),
     owner: t.expose('owner', {
       type: UserRef,
+      nullable: true,
+    }),
+  }),
+})
+
+export interface ICourseOverview extends DB.Course {
+  liveQuizzes?: IReducedActivityInfo[] | null
+  practiceQuizzes?: IReducedActivityInfo[] | null
+  microLearnings?: IReducedActivityInfo[] | null
+  groupActivities?: IReducedActivityInfo[] | null
+}
+
+export const CourseOverviewRef =
+  builder.objectRef<ICourseOverview>('CourseOverview')
+export const CourseOverview = builder.objectType(CourseOverviewRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name', { nullable: true }),
+    displayName: t.exposeString('displayName'),
+    color: t.exposeString('color', { nullable: true }),
+    description: t.exposeString('description', { nullable: true }),
+
+    liveQuizzes: t.expose('liveQuizzes', {
+      type: [ReducedActivityInfo],
+      nullable: true,
+    }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [ReducedActivityInfo],
+      nullable: true,
+    }),
+    microLearnings: t.expose('microLearnings', {
+      type: [ReducedActivityInfo],
+      nullable: true,
+    }),
+    groupActivities: t.expose('groupActivities', {
+      type: [ReducedActivityInfo],
       nullable: true,
     }),
   }),

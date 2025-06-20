@@ -38,10 +38,10 @@ function CourseOverviewPage() {
   const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
     useEarliestLatestCourseDates({
       activities: [
-        ...(data?.course?.groupActivities ?? []),
-        ...(data?.course?.microLearnings ?? []),
-        ...(data?.course?.practiceQuizzes ?? []),
-        ...(data?.course?.liveQuizzes ?? []),
+        ...(data?.course?.groupActivitiesInfo ?? []),
+        ...(data?.course?.microLearningsInfo ?? []),
+        ...(data?.course?.practiceQuizzesInfo ?? []),
+        ...(data?.course?.liveQuizzesInfo ?? []),
       ],
     })
 
@@ -205,7 +205,7 @@ function CourseOverviewPage() {
           >
             <LiveQuizList
               courseId={course.id}
-              liveQuizzes={course.liveQuizzes ?? []}
+              liveQuizzes={course.liveQuizzesInfo ?? []}
             />
           </TabContent>
           <TabContent
@@ -215,7 +215,7 @@ function CourseOverviewPage() {
           >
             <PracticeQuizList
               courseId={course.id}
-              practiceQuizzes={course.practiceQuizzes ?? []}
+              practiceQuizzes={course.practiceQuizzesInfo ?? []}
             />
           </TabContent>
           <TabContent
@@ -225,7 +225,7 @@ function CourseOverviewPage() {
           >
             <MicroLearningList
               courseId={course.id}
-              microLearnings={course.microLearnings ?? []}
+              microLearnings={course.microLearningsInfo ?? []}
             />
           </TabContent>
           <TabContent
@@ -233,7 +233,9 @@ function CourseOverviewPage() {
             value="groupActivities"
             className={{ root: 'px-0 py-1' }}
           >
-            <GroupActivityList groupActivities={course.groupActivities ?? []} />
+            <GroupActivityList
+              groupActivities={course.groupActivitiesInfo ?? []}
+            />
           </TabContent>
         </Tabs>
 
