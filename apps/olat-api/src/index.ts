@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import fs from 'fs/promises'
 import path from 'path'
+import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
 import { validate as validateUUID } from 'uuid'
 
@@ -18,10 +19,27 @@ enum StatusCode {
   BAD_REQUEST = 400, // Malformed request (e.g. missing/invalid parameter, invalid header)
   UNAUTHORIZED = 401, // Invalid or missing API key
   NOT_FOUND = 404, // Resource not found (optional, e.g. courseID not found)
-  UNSUPPORTED_MEDIA_TYPE = 415, // Wrong Content-Type header
+  UNSUPPORTED_MEDIA_TYPE = 415,
+  INTERNAL_SERVER_ERROR = 500,
 }
 
-let activityTypesAvailable: any[] = []
+interface ActivityType {
+  id: string
+  title: string
+  path: string
+  olatConfigurationKey: string
+  isSubselectionRequired: boolean
+  isEmailTransferRequired: boolean
+}
+
+interface ActivityTypeOfCourse {
+  id: string
+  title: string
+  olatConfigurationKey: string
+  isSubselectionRequired: boolean
+}
+
+let activityTypesAvailable: ActivityType[] = []
 const activityKeysSubselection: string[] = [
   'live-quiz',
   'practice-quiz',
@@ -132,34 +150,39 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
       .json({ error: 'Missing providerAccountId' })
   }
 
-  getCourses(provider, providerAccountId).then((courses) => {
-    if (courses?.length === 0) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ error: 'No courses found for this user' })
-    }
+  getCourses(provider, providerAccountId)
+    .then((courses) => {
+      if (courses?.length === 0) {
+        return res
+          .status(StatusCode.NOT_FOUND)
+          .json({ error: 'No courses found for this user' })
+      }
 
-    res.set('Content-Type', 'application/json')
-    res.status(StatusCode.SUCCESS).json({
-      courses: courses,
-      timestamp: new Date().toISOString(),
-      api: API_NAME,
+      res.set('Content-Type', 'application/json')
+      res.status(StatusCode.SUCCESS).json({
+        courses: courses,
+        timestamp: new Date().toISOString(),
+        api: API_NAME,
+      })
     })
-  })
+    .catch((error) => {
+      console.error('Error fetching courses:', error)
+      res
+        .status(StatusCode.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Internal server error' })
+    })
 })
 
 async function getActivityTypes(): Promise<any[] | null> {
   // filter out fields
-  return activityTypesAvailable.map(
-    ({
-      id,
-      title,
-      path,
-      olatConfigurationKey,
-      isSubselectionRequired,
-      isEmailTransferRequired,
-    }) => ({ id, path, olatConfigurationKey, isEmailTransferRequired })
-  )
+  return activityTypesAvailable.map((activityType) => ({
+    ...pick(activityType, [
+      'id',
+      'path',
+      'olatConfigurationKey',
+      'isEmailTransferRequired',
+    ]),
+  }))
 }
 
 app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
@@ -200,8 +223,8 @@ async function getCourseActivityTypes(courseId: string): Promise<any[] | null> {
 
   const isGamificationEnabled = course.isGamificationEnabled
   const liveQuizzes = course.liveQuizzes ?? []
-  const practiceQuizzes = course.liveQuizzes ?? []
-  const microLearnings = course.liveQuizzes ?? []
+  const practiceQuizzes = course.practiceQuizzes ?? []
+  const microLearnings = course.microLearnings ?? []
 
   const mapOverview: Record<string, any[]> = {
     // NOTE: modify if required
@@ -216,43 +239,52 @@ async function getCourseActivityTypes(courseId: string): Promise<any[] | null> {
     'practice-quiz': practiceQuizzes,
     'micro-learning': microLearnings,
   }
-  const activityKeysGamification = ['leaderboard'] // NOTE: modify if required
+  const activityKeysGamification = ['course-leaderboard'] // NOTE: modify if required
 
-  const activityTypes = activityTypesAvailable
-    .map(
-      ({
-        id,
-        title,
-        path,
-        olatConfigurationKey,
-        isSubselectionRequired,
-        isEmailTransferRequired,
-      }) => {
-        if (olatConfigurationKey in mapOverview) {
-          const count = mapOverview[olatConfigurationKey]?.length || 0
-          const newTitle = title + ` (${count})`
-          return { id, newTitle, olatConfigurationKey, isSubselectionRequired }
-        } else if (olatConfigurationKey in mapSubselection) {
-          const count = mapSubselection[olatConfigurationKey]?.length || 0
-          return count > 0
-            ? { id, title, olatConfigurationKey, isSubselectionRequired }
-            : undefined
-        } else if (activityKeysGamification.includes(olatConfigurationKey)) {
-          return isGamificationEnabled
-            ? { id, title, path, olatConfigurationKey, isSubselectionRequired }
-            : undefined
-        } else {
-          return {
+  const activityTypes: ActivityTypeOfCourse[] = activityTypesAvailable.reduce(
+    (
+      accumulator: ActivityTypeOfCourse[],
+      { id, title, olatConfigurationKey, isSubselectionRequired }
+    ) => {
+      if (olatConfigurationKey in mapOverview) {
+        const count = mapOverview[olatConfigurationKey]?.length || 0
+        accumulator.push({
+          id,
+          title: title + ` (${count})`,
+          olatConfigurationKey,
+          isSubselectionRequired,
+        })
+      } else if (olatConfigurationKey in mapSubselection) {
+        const count = mapSubselection[olatConfigurationKey]?.length || 0
+        if (count > 0) {
+          accumulator.push({
             id,
             title,
-            path,
             olatConfigurationKey,
             isSubselectionRequired,
-          }
+          })
         }
+      } else if (activityKeysGamification.includes(olatConfigurationKey)) {
+        if (isGamificationEnabled) {
+          accumulator.push({
+            id,
+            title,
+            olatConfigurationKey,
+            isSubselectionRequired,
+          })
+        }
+      } else {
+        accumulator.push({
+          id,
+          title,
+          olatConfigurationKey,
+          isSubselectionRequired,
+        })
       }
-    )
-    .filter((activityType) => activityType !== undefined)
+      return accumulator
+    },
+    []
+  )
 
   return activityTypes
 }
@@ -398,7 +430,6 @@ readData().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 OLAT API server is running on port ${PORT}`)
     console.log(`📍 Health check: http://localhost:${PORT}/health`)
-    console.log(`👋 Hello endpoint: http://localhost:${PORT}/hello`)
   })
 })
 

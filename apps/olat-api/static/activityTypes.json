@@ -24,10 +24,10 @@
     "isEmailTransferRequired": false
   },
   {
-    "id": "CREATE_ACCOUNT",
-    "title": "Create Account",
+    "id": "MANAGE_ACCOUNT",
+    "title": "Manage Account",
     "path": "/createAccount",
-    "olatConfigurationKey": "create-account",
+    "olatConfigurationKey": "manage-account",
     "isSubselectionRequired": false,
     "isEmailTransferRequired": true
   },
@@ -58,16 +58,16 @@
   {
     "id": "MICRO_LEARNING",
     "title": "Micro Learning",
-    "path": "/microLearning",
+    "path": "/microlearning",
     "olatConfigurationKey": "micro-learning",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
   },
   {
-    "id": "LEADERBOARD",
-    "title": "Leaderboard",
+    "id": "COURSE_LEADERBOARD",
+    "title": "Course Leaderboard",
     "path": "/",
-    "olatConfigurationKey": "leaderboard",
+    "olatConfigurationKey": "course-leaderboard",
     "isSubselectionRequired": false,
     "isEmailTransferRequired": false
   }
