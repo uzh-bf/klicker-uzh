@@ -1,5 +1,6 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import express, { Request, Response } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -42,6 +43,17 @@ async function apiKeyMiddleware(req: Request, res: Response, next: () => void) {
   next()
 }
 
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100,
+  standardHeaders: true, // RateLimit-* headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  message: {
+    error: 'Too many requests, please try again later.',
+  },
+})
+
+app.use(limiter)
 app.use('/api', apiKeyMiddleware)
 app.use(express.json())
 
