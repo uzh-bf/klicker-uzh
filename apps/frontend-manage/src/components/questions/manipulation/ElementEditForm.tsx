@@ -5,6 +5,7 @@ import {
   ElementType,
   GetAnswerCollectionsElementsDocument,
   ObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
@@ -107,6 +108,11 @@ function ElementEditForm({
     fetchPolicy: 'network-only',
   })
   const collections = data?.getAnswerCollectionsElements ?? []
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
 
   return (
     <>
@@ -316,7 +322,7 @@ function ElementEditForm({
                   )}
                 </div>
 
-                {mode === ElementEditMode.EDIT ? (
+                {mode === ElementEditMode.EDIT && user?.privatePreview ? (
                   <Tabs
                     defaultValue="preview"
                     onValueChange={(value) => {

@@ -97,9 +97,7 @@ function CatalogObjectItem({
               !!object.templateId
             ) {
               router.push({
-                pathname: dataUser?.userProfile?.privatePreview
-                  ? '/activities'
-                  : '/quizzes',
+                pathname: '/activities',
                 query: { highlight: object.objectUuid },
               })
             } else if (object.objectType === ObjectType.AnswerCollection) {

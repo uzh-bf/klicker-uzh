@@ -47,7 +47,7 @@ function MicroLearningEndingModal({
         })
 
         const endedMicro = res.data?.endMicroLearning
-        if (!data?.course?.microLearnings || !endedMicro) return
+        if (!data?.course?.microLearningsInfo || !endedMicro) return
 
         cache.writeQuery({
           query: GetSingleCourseDocument,
@@ -55,7 +55,7 @@ function MicroLearningEndingModal({
           data: {
             course: {
               ...data.course,
-              microLearnings: data.course.microLearnings.map((micro) =>
+              microLearningsInfo: data.course.microLearningsInfo.map((micro) =>
                 micro.id === activityId
                   ? {
                       ...micro,
@@ -63,16 +63,6 @@ function MicroLearningEndingModal({
                       status: endedMicro.status,
                     }
                   : micro
-              ),
-              microLearningActivities: data.course.microLearningActivities?.map(
-                (micro) =>
-                  micro.id === activityId
-                    ? {
-                        ...micro,
-                        scheduledEndAt: endedMicro.scheduledEndAt,
-                        status: endedMicro.status,
-                      }
-                    : micro
               ),
             },
           },

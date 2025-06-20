@@ -29,6 +29,7 @@ import {
 import {
   Course,
   CourseLeaderboard,
+  CourseOverview,
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
@@ -741,7 +742,7 @@ export const Query = builder.queryType({
 
       participations: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [Participation],
+        type: [Participation], // TODO: if possible, link student course instead of normal course here
         args: {
           endpoint: t.arg.string({ required: false }),
         },
@@ -851,7 +852,7 @@ export const Query = builder.queryType({
 
       getPracticeQuizList: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [Course],
+        type: [CourseOverview],
         resolve: async (_, __, ctx) => {
           return await ParticipantService.getPracticeQuizList(ctx)
         },
@@ -970,20 +971,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkPublicPreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPublicPreviewAvailable(ctx)
-        },
-      }),
-
-      checkPrivatePreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPrivatePreviewAvailable(ctx)
-        },
-      }),
-
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',
@@ -1086,7 +1073,7 @@ export const Query = builder.queryType({
 
       getCourseActivities: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
+        type: Course, // TODO: define custom return type here
         args: {
           courseId: t.arg.string({ required: true }),
         },

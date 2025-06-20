@@ -717,7 +717,7 @@ type Course {
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
-  groupActivityActivities: [ActivityInfo!]
+  groupActivitiesInfo: [ActivityInfo!]
   groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
@@ -730,11 +730,11 @@ type Course {
   isOwner: Boolean
   isRemovable: Boolean
   isShared: Boolean
-  liveQuizActivities: [ActivityInfo!]
   liveQuizzes: [LiveQuiz!]
+  liveQuizzesInfo: [ActivityInfo!]
   maxGroupSize: Int!
-  microLearningActivities: [ActivityInfo!]
   microLearnings: [MicroLearning!]
+  microLearningsInfo: [ActivityInfo!]
   name: String!
   notificationEmail: String
   numOfParticipantGroups: Int
@@ -744,8 +744,8 @@ type Course {
   participantGroups: [ParticipantGroup!]
   permissionLevel: PermissionLevel
   pinCode: Int
-  practiceQuizActivities: [ActivityInfo!]
   practiceQuizzes: [PracticeQuiz!]
+  practiceQuizzesInfo: [ActivityInfo!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
   startDate: Date!
@@ -767,6 +767,18 @@ type CourseLeaderboard {
   computedAt: Date
   leaderboard: [LeaderboardEntry!]!
   numOfActiveParticipants: Int!
+}
+
+type CourseOverview {
+  color: String
+  description: String
+  displayName: String!
+  groupActivities: [ReducedActivityInfo!]
+  id: ID!
+  liveQuizzes: [ReducedActivityInfo!]
+  microLearnings: [ReducedActivityInfo!]
+  name: String
+  practiceQuizzes: [ReducedActivityInfo!]
 }
 
 type CoursePerformanceAnalytics {
@@ -2034,8 +2046,6 @@ type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
-  checkPrivatePreviewAvailable: Boolean!
-  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
@@ -2091,7 +2101,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
-  getPracticeQuizList: [Course!]
+  getPracticeQuizList: [CourseOverview!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleAnswerCollection(id: Int!): AnswerCollection
@@ -2149,6 +2159,17 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+}
+
+type ReducedActivityInfo {
+  automaticPublicationAt: Date
+  course: Course
+  displayName: String!
+  id: String!
+  name: String!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
+  status: PublicationStatus!
 }
 
 enum ResponseCorrectnessType {

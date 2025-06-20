@@ -50,46 +50,16 @@ describe('Tests the availability of certain functionalities to catalyst users on
       cy.get('[data-cy="course-learning-analytics-link"]').should('not.exist')
     }
 
-    // (public) learning analytics link on microlearnings
-    cy.get('[data-cy="tab-microLearnings"]').click()
-    if (privatePreview) {
-      cy.get(
-        `[data-cy="actions-MICRO_LEARNING-${data.seed.microlearning}"]`
-      ).click()
-    } else {
-      cy.get(
-        `[data-cy="microlearning-actions-${data.seed.microlearning}"]`
-      ).click()
-    }
-    cy.get(`[data-cy="copy-lti-link-${data.seed.microlearning}"]`).click()
-
-    // (public) learning analytics link on practice quizzes
-    cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    if (privatePreview) {
-      cy.get(
-        `[data-cy="actions-PRACTICE_QUIZ-${data.seed.practiceQuiz}"]`
-      ).click()
-    } else {
-      cy.get(
-        `[data-cy="practice-quiz-actions-${data.seed.practiceQuiz}"]`
-      ).click()
-    }
-    cy.get(`[data-cy="copy-lti-link-${data.seed.practiceQuiz}"]`).click()
-
     // private preview features in menubar
     cy.get('[data-cy="library"]').click()
-    if (privatePreview) {
-      cy.get('[data-cy="resources"]').should('exist')
-    } else {
-      cy.get('[data-cy="resources"]').should('not.exist')
-    }
+    cy.get('[data-cy="resources"]').should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
 
     // (private) check that new question type filters are available
-    if (privatePreview) {
-      cy.get('[data-cy="element-type-filter-SELECTION"]').should('exist')
-    } else {
-      cy.get('[data-cy="element-type-filter-SELECTION"]').should('not.exist')
-    }
+    cy.get('[data-cy="element-type-filter-SELECTION"]').should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
 
     // (private) check that new question types are available during element creation
     cy.get('[data-cy="create-question"]').click()
@@ -110,6 +80,73 @@ describe('Tests the availability of certain functionalities to catalyst users on
       ).click()
     }
     cy.get('[data-cy="close-element-modal"]').click()
+
+    // (private) create an element and verify that activity log is only shown with private preview access
+    const elementName = `${data.SC.title} - ${Math.floor(Math.random() * 10000)}`
+    cy.createQuestionSC({
+      name: elementName,
+      content: data.SC.content,
+      choices: data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.get(`[data-cy="edit-element-${elementName}"]`).click()
+    cy.get('[data-cy="element-preview-tab"]').should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get('[data-cy="element-activity-tab"]').should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // (private) sharing and activity log should only be shown to users with private preview access
+    cy.get('[data-cy="courses"]').click()
+    cy.get(`[data-cy="course-list-button-${data.seededCourse}"]`).click()
+
+    cy.get('[data-cy="tab-liveQuizzes"]').click()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.seed.liveQuiz}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${data.seed.liveQuiz}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="share-live-quiz-${data.seed.liveQuiz}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.seed.liveQuiz}"]`).realClick() // close dropdown
+
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${data.seed.microlearning}"]`
+    ).click()
+    cy.get(`[data-cy="view-activity-log-${data.seed.microlearning}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="share-microlearning-${data.seed.microlearning}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.seed.microlearning}"]`).realClick() // close dropdown
+
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${data.seed.practiceQuiz}"]`
+    ).click()
+    cy.get(`[data-cy="view-activity-log-${data.seed.practiceQuiz}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="share-practice-quiz-${data.seed.practiceQuiz}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.seed.practiceQuiz}"]`).realClick() // close dropdown
+
+    cy.get('[data-cy="tab-groupActivities"]').click()
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${data.seed.groupActivity}"]`
+    ).click()
+    cy.get(`[data-cy="view-activity-log-${data.seed.groupActivity}"]`).should(
+      privatePreview ? 'exist' : 'not.exist'
+    )
+    cy.get(
+      `[data-cy="share-group-activity-${data.seed.groupActivity}"]`
+    ).should(privatePreview ? 'exist' : 'not.exist')
+    cy.get(`[data-cy="activity-name-${data.seed.groupActivity}"]`).realClick() // close dropdown
   }
 
   it('Test login for catalyst users and non-catalyst users', function () {

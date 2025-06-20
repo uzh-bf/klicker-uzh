@@ -25,9 +25,13 @@ export default {
     },
     PUBLISHED: {
       statusLabel: 'Published / Running',
+      statusLabel1: 'Published',
+      statusLabel2: 'Running',
     },
     ENDED: {
       statusLabel: 'Ended / Ready for Grading',
+      statusLabel1: 'Ended',
+      statusLabel2: 'Ready for Grading',
     },
     GRADED: {
       statusLabel: 'Graded',

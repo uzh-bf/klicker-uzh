@@ -25,9 +25,13 @@ export default {
     },
     PUBLISHED: {
       statusLabel: 'Öffentlich / Laufend',
+      statusLabel1: 'Öffentlich',
+      statusLabel2: 'Laufend',
     },
     ENDED: {
       statusLabel: 'Abgeschlossen / Bereit zur Bewertung',
+      statusLabel1: 'Abgeschlossen',
+      statusLabel2: 'Bereit zur Bewertung',
     },
     GRADED: {
       statusLabel: 'Bewertet',

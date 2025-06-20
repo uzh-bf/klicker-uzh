@@ -84,7 +84,7 @@ function PracticeQuizActions({
     () => ({
       isManager: [
         'duplicatePracticeQuiz',
-        'sharePracticeQuiz',
+        ...(user?.privatePreview ? ['sharePracticeQuiz'] : []),
         'deletePracticeQuiz',
       ],
       isEditor: ['editPracticeQuiz'],

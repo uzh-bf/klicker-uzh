@@ -1635,6 +1635,35 @@ export default defineConfig({
               },
             })
 
+            const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
+            await prisma.liveQuiz.upsert({
+              where: { id: liveQuizId },
+              create: {
+                id: liveQuizId,
+                name: 'Seed Live Quiz',
+                displayName: 'Seed Live Quiz (Displayname)',
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                liveQuizId_userId: {
+                  liveQuizId: liveQuizId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                liveQuiz: { connect: { id: liveQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
             const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
             await prisma.microLearning.upsert({
               where: {
@@ -1660,12 +1689,8 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                microLearning: {
-                  connect: { id: microlearningId },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+                microLearning: { connect: { id: microlearningId } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,
@@ -1693,12 +1718,39 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                practiceQuiz: {
-                  connect: { id: practiceQuizId },
+                practiceQuiz: { connect: { id: practiceQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
+            await prisma.groupActivity.upsert({
+              where: { id: groupActivityId },
+              create: {
+                id: groupActivityId,
+                name: 'Seed Group Activity',
+                displayName: 'Seed Group Activity (Displayname)',
+                scheduledStartAt: new Date('2020-01-01T00:00'),
+                scheduledEndAt: new Date('2050-01-01T23:59'),
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                groupActivityId_userId: {
+                  groupActivityId: groupActivityId,
+                  userId: USER_ID_TEST,
                 },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                groupActivity: { connect: { id: groupActivityId } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,

@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faFilePen, faPlay, faStamp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityType, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import {
   H3,
   Popover,
@@ -15,7 +15,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function ActivityListLegend() {
+function ActivityListLegend({ type }: { type: ActivityType }) {
   const t = useTranslations()
 
   return (
@@ -44,21 +44,35 @@ function ActivityListLegend() {
             <div className="flex h-4 flex-row items-center gap-2 text-green-700">
               <FontAwesomeIcon icon={faPlay} className="h-4 w-4" />
               <div>
-                {t(`shared.${PublicationStatus.Published}.statusLabel`)}
+                {type === ActivityType.LiveQuiz
+                  ? t(`shared.${PublicationStatus.Published}.statusLabel2`)
+                  : t(`shared.${PublicationStatus.Published}.statusLabel1`)}
               </div>
             </div>
-            <div className="flex h-4 flex-row items-center gap-2 text-gray-500">
-              <FontAwesomeIcon icon={faCheckCircle} className="h-4 w-4" />
-              <div>{t(`shared.${PublicationStatus.Ended}.statusLabel`)}</div>
-            </div>
-            <div className="flex h-4 flex-row items-center gap-2 text-gray-500">
-              <FontAwesomeIcon icon={faStamp} className="h-4 w-4" />
-              <div>{t(`shared.${PublicationStatus.Graded}.statusLabel`)}</div>
-            </div>
-            <div className="flex h-4 flex-row items-center gap-2 text-red-700">
-              <FontAwesomeIcon icon={faFilePen} className="h-4 w-4" />
-              <div>{t(`shared.${PublicationStatus.Template}.statusLabel`)}</div>
-            </div>
+            {type !== ActivityType.PracticeQuiz && (
+              <div className="flex h-4 flex-row items-center gap-2 text-gray-500">
+                <FontAwesomeIcon icon={faCheckCircle} className="h-4 w-4" />
+                <div>
+                  {type === ActivityType.GroupActivity
+                    ? t(`shared.${PublicationStatus.Ended}.statusLabel2`)
+                    : t(`shared.${PublicationStatus.Ended}.statusLabel1`)}
+                </div>
+              </div>
+            )}
+            {type === ActivityType.GroupActivity && (
+              <div className="flex h-4 flex-row items-center gap-2 text-gray-500">
+                <FontAwesomeIcon icon={faStamp} className="h-4 w-4" />
+                <div>{t(`shared.${PublicationStatus.Graded}.statusLabel`)}</div>
+              </div>
+            )}
+            {type === ActivityType.LiveQuiz && (
+              <div className="flex h-4 flex-row items-center gap-2 text-red-700">
+                <FontAwesomeIcon icon={faFilePen} className="h-4 w-4" />
+                <div>
+                  {t(`shared.${PublicationStatus.Template}.statusLabel`)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </PopoverContent>

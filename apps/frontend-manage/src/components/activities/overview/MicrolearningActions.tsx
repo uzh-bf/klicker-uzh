@@ -105,7 +105,7 @@ function MicrolearningActions({
         'duplicateMicroLearning',
         'convertToPracticeQuiz',
         'deleteMicroLearning',
-        'shareMicroLearning',
+        ...(user?.privatePreview ? ['shareMicroLearning'] : []),
       ],
       isEditor: ['editMicroLearning'],
       isExecutor: [

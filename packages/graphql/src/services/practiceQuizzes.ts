@@ -181,7 +181,10 @@ export async function getCoursePublishedPracticeQuizzes(
   return course?.practiceQuizzes
     ? (course.practiceQuizzes.map((quiz) => ({
         ...quiz,
-        course,
+        course: {
+          ...course,
+          practiceQuizzes: undefined, // remove practiceQuizzes to avoid circular reference
+        },
       })) ?? [])
     : []
 }

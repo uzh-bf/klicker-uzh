@@ -537,9 +537,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
                     // redirect to live quiz overview and highlight newly created element
                     router.push({
-                      pathname: dataUser?.userProfile?.privatePreview
-                        ? '/activities'
-                        : '/quizzes',
+                      pathname: '/activities',
                       query: { highlight: quizId },
                     })
                   } else {
