@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.63...v3.3.0-alpha.64) (2025-06-21)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** update activity view to show essential information for every activity type ([#4743](https://github.com/uzh-bf/klicker-uzh/issues/4743)) ([f0e4564](https://github.com/uzh-bf/klicker-uzh/commit/f0e45642699fb41db28fb63951fe263e2c741761))
+* **apps/frontend-pwa:** replace menubar on student course docs with tabs ([#4745](https://github.com/uzh-bf/klicker-uzh/issues/4745)) ([746b866](https://github.com/uzh-bf/klicker-uzh/commit/746b866cd9f6fbceeeab7ba8403090021e7a61e5))
+* make new activity overview available to all users and simplify activity query types across platform ([#4744](https://github.com/uzh-bf/klicker-uzh/issues/4744)) ([d1b2ece](https://github.com/uzh-bf/klicker-uzh/commit/d1b2ece034237c1ffc2dd0c361838ecc50a3c243))
+
 ## [3.3.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.62...v3.3.0-alpha.63) (2025-06-18)
 
 
