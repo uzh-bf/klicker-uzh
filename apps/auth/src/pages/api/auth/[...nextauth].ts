@@ -89,6 +89,8 @@ const EduIDProvider: Provider | null =
                 email: { essential: true },
                 swissEduPersonUniqueID: { essential: true },
                 swissEduIDLinkedAffiliation: { essential: false },
+                swissEduIDLinkedAffiliationMail: { essential: false },
+                swissEduIDLinkedAffiliationUniqueID: { essential: false },
               },
             },
             scope: 'openid email https://login.eduid.ch/authz/User.Read',
