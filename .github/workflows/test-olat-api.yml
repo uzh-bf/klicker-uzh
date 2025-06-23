@@ -5,7 +5,7 @@ on:
     branches: ['v3', 'v3*']
     paths:
       - 'packages/graphql/**'
-      - 'appls/olat-api/**'
+      - 'apps/olat-api/**'
       - '.github/workflows/test-olat-api.yml'
   pull_request:
     branches: ['v3', 'v3*']
@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
