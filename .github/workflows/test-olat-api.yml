@@ -35,11 +35,5 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
           cd ../../apps/olat-api
           pnpm run test
