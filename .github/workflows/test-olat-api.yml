@@ -1,4 +1,4 @@
-name: Test graphql package logic functionalities
+name: Test OLAT-API functionalities
 
 on:
   push:
