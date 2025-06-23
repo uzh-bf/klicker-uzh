@@ -34,7 +34,7 @@
     "build:test": "pnpm run build",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "doppler run --config dev -- vitest run"
+    "test": "bash run-tests.sh"
   },
   "engines": {
     "node": "=20"
