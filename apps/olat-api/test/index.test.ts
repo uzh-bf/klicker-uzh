@@ -292,7 +292,7 @@ function getExpectedResponse(
       },
       {
         id: 'MICRO_LEARNINGS',
-        title: `Micro Learning Overview (${nML + 1})`,
+        title: `Micro Learning Overview (${nML})`,
         olatConfigurationKey: 'micro-learnings',
         isSubselectionRequired: false,
       },
