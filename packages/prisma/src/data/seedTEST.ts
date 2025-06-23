@@ -26,6 +26,7 @@ import {
   prepareQuestion,
   prepareStackVariety,
 } from './helpers.js'
+import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
@@ -110,6 +111,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedLevels(prisma)
   await seedAchievements(prisma)
   await seedUsers(prisma)
+  await seedAccounts(prisma)
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 

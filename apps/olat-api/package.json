@@ -1,0 +1,46 @@
+{
+  "name": "@klicker-uzh/olat-api",
+  "version": "3.3.0-alpha.57",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*",
+    "express": "4.21.1",
+    "express-rate-limit": "7.5.0",
+    "graphql": "16.9.0",
+    "remeda": "2.15.0",
+    "uuid": "10.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.2",
+    "@types/express": "^4.17.17",
+    "@types/express-rate-limit": "^6.0.2",
+    "@types/node": "^20.16.1",
+    "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
+    "rollup": "~4.34.2",
+    "supertest": "~7.1.1",
+    "tsx": "~4.19.1",
+    "typescript": "~5.6.3",
+    "vitest": "~3.2.3"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "build:test": "pnpm run build",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "bash run-tests.sh"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}
