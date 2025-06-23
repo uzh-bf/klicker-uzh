@@ -9,16 +9,14 @@ import {
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesCaseStudy } from '../types'
 import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
 import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
-import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
-import useSolutionsUpdateItemsChange from './useSolutionsUpdateItemsChange'
 
 function CaseStudyCollectionSelection({
   loading,
@@ -73,19 +71,35 @@ function CaseStudyCollectionSelection({
     setSelectedItems,
   })
 
-  // update the selected correct answers if the answer collection changes
-  useAnswerCollectionChangeEffect({
-    field: itemsField,
-    helpers: itemsHelpers,
-    collectionAnswers,
-  })
-
   // update the solutions stored on the cases to be consistent with the selected items
-  useSolutionsUpdateItemsChange({
-    itemIds: itemsField.value ?? [],
-    cases: casesField.value,
-    casesHelpers,
-  })
+  useEffect(() => {
+    // map over the cases and remove any solutions that do not belong to one of the selected items
+    const newCases = casesField.value?.map((caseItem) => {
+      // if no solutions are set, skip this case
+      if (!('solutions' in caseItem) || !caseItem.solutions) {
+        return caseItem
+      }
+
+      // filter out all solution entries that do not belong to one of the selected items
+      const newSolutions = Object.fromEntries(
+        Object.entries(caseItem.solutions).filter(([itemIdString]) =>
+          (itemsField.value ?? []).includes(
+            parseInt(itemIdString.split('-')[1])
+          )
+        )
+      )
+
+      return {
+        ...caseItem,
+        solutions: newSolutions,
+      }
+    })
+
+    // update the cases field with the new cases
+    casesHelpers.setValue(newCases)
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsField.value, casesHelpers])
 
   // locally store the selected answer collection
   const selectedCollection = useMemo(() => {
@@ -252,20 +266,21 @@ function CaseStudyCollectionSelection({
             noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
           />
         </div>
-        <CaseStudyCollectionChangeModal
-          open={changeModalOpen}
-          onClose={() => {
-            setNewValue('')
-            setChangeModalOpen(false)
-          }}
-          onConfirm={() => {
-            // set the selected answer collection to the new value
-            collectionHelpers.setValue(newValue)
+        {changeModalOpen && (
+          <CaseStudyCollectionChangeModal
+            onClose={() => {
+              setNewValue('')
+              setChangeModalOpen(false)
+            }}
+            onConfirm={() => {
+              // set the selected answer collection to the new value
+              collectionHelpers.setValue(newValue)
 
-            // reset the selected items
-            itemsHelpers.setValue([])
-          }}
-        />
+              // reset the selected items
+              itemsHelpers.setValue([])
+            }}
+          />
+        )}
       </div>
     </>
   )

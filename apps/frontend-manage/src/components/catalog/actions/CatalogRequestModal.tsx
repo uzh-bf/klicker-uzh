@@ -10,7 +10,6 @@ import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useRequestCatalogObject from './useRequestCatalogObject'
 
 function CatalogRequestModal({
-  open,
   onSuccess,
   onClose,
   objectType,
@@ -20,7 +19,6 @@ function CatalogRequestModal({
   objectAccess,
   catalogCollectionId,
 }: {
-  open: boolean
   onSuccess: () => void
   onClose: () => void
   objectType: ObjectType
@@ -47,7 +45,7 @@ function CatalogRequestModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={(e) => {
         e?.stopPropagation()
         onClose()

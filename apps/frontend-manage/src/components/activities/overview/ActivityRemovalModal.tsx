@@ -46,8 +46,7 @@ function ActivityRemovalModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.activities.removeActivity')}
       message={t.rich('manage.activities.confirmActivityRemoval', {
         name: title,

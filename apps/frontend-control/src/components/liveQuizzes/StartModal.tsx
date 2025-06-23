@@ -8,19 +8,15 @@ import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
-interface StartModalProps {
-  quizId: string
-  quizName: string
-  startModalOpen: boolean
-  setStartModalOpen: (open: boolean) => void
-}
-
 function StartModal({
   quizId,
   quizName,
-  startModalOpen,
-  setStartModalOpen,
-}: StartModalProps) {
+  onClose,
+}: {
+  quizId: string
+  quizName: string
+  onClose: () => void
+}) {
   const t = useTranslations()
   const router = useRouter()
   const [startLiveQuiz, { loading: startingLiveQuiz }] = useMutation(
@@ -59,8 +55,8 @@ function StartModal({
 
   return (
     <Modal
-      open={startModalOpen}
-      onClose={() => setStartModalOpen(false)}
+      open
+      onClose={onClose}
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
         try {
@@ -69,7 +65,7 @@ function StartModal({
           })
           router.push(`/session/${quizId}`)
         } catch (error) {
-          setStartModalOpen(false)
+          onClose()
           toast({
             type: 'error',
             message: t('control.course.liveQuizStartFailed'),
@@ -80,7 +76,7 @@ function StartModal({
       primaryLoading={startingLiveQuiz}
       dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setStartModalOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
       className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton

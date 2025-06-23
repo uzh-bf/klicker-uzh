@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import { type ILeaderboardEntry } from 'src/schema/course.js'
+import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
@@ -38,7 +38,11 @@ export async function joinCourseWithPin(
     where: { pinCode: pin },
   })
 
-  if (!course || course.pinCode !== pin) {
+  if (
+    !course ||
+    course.pinCode !== pin ||
+    ctx.user.role !== DB.UserRole.PARTICIPANT
+  ) {
     return null
   }
 
@@ -219,7 +223,7 @@ export async function getCourseOverviewData(
   ctx: ContextWithUser
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -333,7 +337,7 @@ export async function getCourseOverviewData(
   if (!course) return null
 
   let participant: DB.Participant | null = null
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
     })
@@ -532,7 +536,11 @@ export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: ContextWithUser
 ) {
-  if (ctx.user?.sub && mode === 'course') {
+  if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'course'
+  ) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -628,7 +636,11 @@ export async function getStudentCourseLeaderboard(
         },
       }
     }
-  } else if (ctx.user?.sub && mode === 'biweekly') {
+  } else if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'biweekly'
+  ) {
     const { leaderboardEntries, count, sum } =
       await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
 
@@ -1280,11 +1292,6 @@ export async function getCourseData(
     },
   })
 
-  // fetch the requesting user to check for private / public preview flags
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
   if (!course) return null
 
   // if no derived permission was found, return null
@@ -1304,302 +1311,263 @@ export async function getCourseData(
     permission: coursePermission,
   })
 
-  const reducedLiveQuizzes = !user?.privatePreview
-    ? course.liveQuizzes.map((session) => {
-        return {
-          ...session,
-          numOfBlocks: session.blocks.length,
-          numOfInstances: session.blocks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-        }
-      })
-    : []
+  const liveQuizzesInfo = course.liveQuizzes.flatMap((liveQuiz) => {
+    const permission = liveQuiz.permissions[0]
 
-  const liveQuizActivities = user?.privatePreview
-    ? course.liveQuizzes.flatMap((liveQuiz) => {
-        const permission = liveQuiz.permissions[0]
+    if (!permission) {
+      return []
+    }
 
-        if (!permission) {
-          return []
-        }
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
+    const stacks = liveQuiz.blocks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      timeLimit: block.timeLimit,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
 
-        const stacks = liveQuiz.blocks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: liveQuiz.id,
-          templateId: liveQuiz.templateInfo?.id ?? null,
-          name: liveQuiz.name,
-          displayName: liveQuiz.displayName,
-          type: ActivityType.LIVE_QUIZ,
-          status: liveQuiz.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: liveQuiz.blocks.length,
-          numOfElements: liveQuiz.blocks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: liveQuiz._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: liveQuiz.updatedAt,
-        }
-      })
-    : []
-
-  const reducedPracticeQuizzes = course.practiceQuizzes.map((quiz) => {
     return {
-      ...quiz,
-      numOfStacks: quiz.stacks.length,
+      id: liveQuiz.id,
+      templateId: liveQuiz.templateInfo?.id ?? null,
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
+      type: ActivityType.LIVE_QUIZ,
+      status: liveQuiz.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: liveQuiz.blocks.length,
+      numOfElements: liveQuiz.blocks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: liveQuiz._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: liveQuiz.updatedAt,
     }
   })
 
-  const practiceQuizActivities = user?.privatePreview
-    ? course.practiceQuizzes.flatMap((practiceQuiz) => {
-        const permission = practiceQuiz.permissions[0]
+  const practiceQuizzesInfo = course.practiceQuizzes.flatMap((practiceQuiz) => {
+    const permission = practiceQuiz.permissions[0]
 
-        if (!permission) {
-          return []
-        }
+    if (!permission) {
+      return []
+    }
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
 
-        const stacks = practiceQuiz.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
+    const stacks = practiceQuiz.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
 
-        return {
-          id: practiceQuiz.id,
-          templateId: practiceQuiz.templateInfo?.id ?? null,
-          name: practiceQuiz.name,
-          displayName: practiceQuiz.displayName,
-          type: ActivityType.PRACTICE_QUIZ,
-          status: practiceQuiz.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: practiceQuiz.stacks.length,
-          numOfElements: practiceQuiz.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: practiceQuiz.availableFrom,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: practiceQuiz._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: practiceQuiz.updatedAt,
-        }
-      })
-    : []
-
-  const reducedMicroLearnings = course.microLearnings.map((microLearning) => {
     return {
-      ...microLearning,
+      id: practiceQuiz.id,
+      templateId: practiceQuiz.templateInfo?.id ?? null,
+      name: practiceQuiz.name,
+      displayName: practiceQuiz.displayName,
+      type: ActivityType.PRACTICE_QUIZ,
+      status: practiceQuiz.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: practiceQuiz.stacks.length,
+      numOfElements: practiceQuiz.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      automaticPublicationAt: practiceQuiz.availableFrom,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: practiceQuiz._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: practiceQuiz.updatedAt,
+    }
+  })
+
+  const microLearningsInfo = course.microLearnings.flatMap((microLearning) => {
+    const permission = microLearning.permissions[0]
+
+    if (!permission) {
+      return []
+    }
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
+
+    const stacks = microLearning.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
+
+    return {
+      id: microLearning.id,
+      templateId: microLearning.templateInfo?.id ?? null,
+      name: microLearning.name,
+      displayName: microLearning.displayName,
+      type: ActivityType.MICRO_LEARNING,
+      status: microLearning.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
       numOfStacks: microLearning.stacks.length,
+      numOfElements: microLearning.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      scheduledStartAt: microLearning.scheduledStartAt,
+      scheduledEndAt: microLearning.scheduledEndAt,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: microLearning._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: microLearning.updatedAt,
     }
   })
 
-  const microLearningActivities = user?.privatePreview
-    ? course.microLearnings.flatMap((microLearning) => {
-        const permission = microLearning.permissions[0]
+  const groupActivitiesInfo = course.groupActivities.flatMap(
+    (groupActivity) => {
+      const permission = groupActivity.permissions[0]
 
-        if (!permission) {
-          return []
-        }
+      if (!permission) {
+        return []
+      }
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
-
-        const stacks = microLearning.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: microLearning.id,
-          templateId: microLearning.templateInfo?.id ?? null,
-          name: microLearning.name,
-          displayName: microLearning.displayName,
-          type: ActivityType.MICRO_LEARNING,
-          status: microLearning.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: microLearning.stacks.length,
-          numOfElements: microLearning.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: microLearning.scheduledStartAt,
-          scheduledEndAt: microLearning.scheduledEndAt,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: microLearning._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: microLearning.updatedAt,
-        }
+      const {
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        sharingType,
+      } = getPermissionBooleans({
+        permission,
       })
-    : []
 
-  const reducedGroupActivities = course.groupActivities.map((groupActivity) => {
-    return {
-      ...groupActivity,
-      numOfQuestions: groupActivity.stacks[0]!.elements.length,
+      const stacks = groupActivity.stacks.map((block) => ({
+        id: block.id,
+        numOfParticipants: block.elements[0]
+          ? block.elements[0].results.total +
+            block.elements[0].anonymousResults.total
+          : 0,
+        elements: block.elements.map((instance) => ({
+          id: instance.id,
+          name: instance.elementData.name,
+          type: instance.elementType,
+        })),
+      }))
+
+      return {
+        id: groupActivity.id,
+        templateId: groupActivity.templateInfo?.id ?? null,
+        name: groupActivity.name,
+        displayName: groupActivity.displayName,
+        type: ActivityType.GROUP_ACTIVITY,
+        status: groupActivity.status,
+        courseId: course.id,
+        courseName: course.name,
+        courseStartDate: course.startDate,
+        numOfStacks: groupActivity.stacks.length,
+        numOfElements: groupActivity.stacks.reduce(
+          (acc, block) => acc + block.elements.length,
+          0
+        ),
+        scheduledStartAt: groupActivity.scheduledStartAt,
+        scheduledEndAt: groupActivity.scheduledEndAt,
+        groupDeadlineDate: course.groupDeadlineDate,
+        numOfParticipantGroups: course._count.participantGroups,
+        stacks,
+        permissionLevel: permission.permissionLevel,
+        derivedAccess: permission.derived,
+        numSharedUsers: groupActivity._count.permissions - 1,
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        sharingType,
+        updatedAt: groupActivity.updatedAt,
+      }
     }
-  })
-
-  const groupActivityActivities = user?.privatePreview
-    ? course.groupActivities.flatMap((groupActivity) => {
-        const permission = groupActivity.permissions[0]
-
-        if (!permission) {
-          return []
-        }
-
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
-
-        const stacks = groupActivity.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: groupActivity.id,
-          templateId: groupActivity.templateInfo?.id ?? null,
-          name: groupActivity.name,
-          displayName: groupActivity.displayName,
-          type: ActivityType.GROUP_ACTIVITY,
-          status: groupActivity.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: groupActivity.stacks.length,
-          numOfElements: groupActivity.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: groupActivity.scheduledStartAt,
-          scheduledEndAt: groupActivity.scheduledEndAt,
-          groupDeadlineDate: course.groupDeadlineDate,
-          numOfParticipantGroups: course._count.participantGroups,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: groupActivity._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: groupActivity.updatedAt,
-        }
-      })
-    : []
+  )
 
   return {
     ...course,
@@ -1612,14 +1580,10 @@ export async function getCourseData(
     isExecutor: courseExecutor,
     isShared: courseShared,
     isRemovable: courseRemovable,
-    liveQuizzes: reducedLiveQuizzes,
-    practiceQuizzes: reducedPracticeQuizzes,
-    groupActivities: reducedGroupActivities,
-    microLearnings: reducedMicroLearnings,
-    liveQuizActivities,
-    practiceQuizActivities,
-    microLearningActivities,
-    groupActivityActivities,
+    liveQuizzesInfo,
+    practiceQuizzesInfo,
+    microLearningsInfo,
+    groupActivitiesInfo,
     numOfParticipants: course.participations.length,
     numOfParticipantGroups: course._count.participantGroups,
   }
@@ -1911,6 +1875,16 @@ export async function getControlCourse(
   })
 
   return course
+    ? ({
+        id: course?.id,
+        name: course?.name,
+        liveQuizzes: course?.liveQuizzes.map((quiz) => ({
+          id: quiz.id,
+          name: quiz.name,
+          status: quiz.status,
+        })),
+      } as ICourse)
+    : null
 }
 
 export async function checkValidCoursePin(

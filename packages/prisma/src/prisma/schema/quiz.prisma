@@ -186,8 +186,9 @@ model LiveQuiz {
   activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
 
-  blocks      ElementBlock[]
-  leaderboard LeaderboardEntry[]
+  blocks               ElementBlock[]
+  leaderboard          LeaderboardEntry[]
+  temporaryLeaderboard TemporaryLeaderboardEntry[]
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]

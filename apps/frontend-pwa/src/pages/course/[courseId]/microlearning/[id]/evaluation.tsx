@@ -6,6 +6,7 @@ import {
   GetParticipationDocument,
   MarkMicroLearningCompletedDocument,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -51,7 +52,6 @@ function MicrolearningEvaluation() {
     <Layout
       displayName={microlearning.displayName}
       course={microlearning.course ?? undefined}
-      previewMode={microlearning.isOwner ?? undefined}
     >
       <div className="flex flex-col gap-3 md:mx-auto md:mb-4 md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
         {microlearning.isOwner ? (
@@ -131,14 +131,16 @@ function MicrolearningEvaluation() {
               })}
             </UserNotification>
           )}
-        {participant?.self && !participation?.getParticipation && (
-          <UserNotification className={{ root: 'mt-5' }} type="info">
-            {t.rich('pwa.microLearning.missingParticipation', {
-              it: (text) => <span className="italic">{text}</span>,
-              name: microlearning.displayName,
-            })}
-          </UserNotification>
-        )}
+        {participant?.self &&
+          participant.self.role === UserRole.Participant &&
+          !participation?.getParticipation && (
+            <UserNotification className={{ root: 'mt-5' }} type="info">
+              {t.rich('pwa.microLearning.missingParticipation', {
+                it: (text) => <span className="italic">{text}</span>,
+                name: microlearning.displayName,
+              })}
+            </UserNotification>
+          )}
         {participation?.getParticipation && (
           <div className="text-right">
             <Button

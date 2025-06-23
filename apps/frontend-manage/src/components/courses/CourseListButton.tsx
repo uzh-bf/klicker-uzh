@@ -212,14 +212,14 @@ function CourseListButton({
         ) : null}
       </Button>
 
-      {course && dataUser?.userProfile?.privatePreview && (
+      {course && activityLogOpen ? (
         <ActivityLogDialog
           objectId={course.id}
           objectType={ObjectType.Course}
           open={activityLogOpen}
-          onOpenChange={setActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
         />
-      )}
+      ) : null}
     </>
   )
 }

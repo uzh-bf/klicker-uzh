@@ -17,12 +17,10 @@ import PropagatedPermissionsTable from '../../sharing/PropagatedPermissionsTable
 
 function SharingRequestApprovalModal({
   request,
-  open,
   onClose,
   onSuccess,
 }: {
   request: ObjectSharingRequest
-  open: boolean
   onClose: () => void
   onSuccess: () => void
 }) {
@@ -37,7 +35,7 @@ function SharingRequestApprovalModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={(e) => {
         e?.stopPropagation()
         onClose()

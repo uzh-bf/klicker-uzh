@@ -4,6 +4,7 @@ import {
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { initializeApollo } from '@lib/apollo'
@@ -86,7 +87,8 @@ function JoinCourse({
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
-        {dataParticipant?.self ? (
+        {dataParticipant?.self &&
+        dataParticipant.self.role === UserRole.Participant ? (
           <div>
             <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}

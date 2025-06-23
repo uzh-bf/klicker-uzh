@@ -8,7 +8,7 @@ function ActivityActionsTrigger() {
   return (
     <Button className={{ root: 'h-7 text-sm' }}>
       <Button.Icon icon={faHandPointer} />
-      <Button.Label>{t('manage.course.otherActions')}</Button.Label>
+      <Button.Label>{t('shared.generic.options')}</Button.Label>
     </Button>
   )
 }

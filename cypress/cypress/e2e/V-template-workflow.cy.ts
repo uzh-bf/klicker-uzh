@@ -503,13 +503,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -525,9 +523,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     // convert a copy of the created live quiz into a template
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -550,9 +546,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-next-step"]').should('not.be.disabled')
     cy.get('[data-cy="close-template-conversion-modal"]').click()
 
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -583,23 +577,18 @@ describe('Test all functionalities related to the creation, management, sharing 
     )
       .should('exist')
       .contains(messages.shared.generic.template)
-    cy.get(
-      `[data-cy="edit-template-${this.data.liveQuiz.template1Orig.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
-    ).should('exist')
-
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(
+      `[data-cy="edit-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -609,15 +598,27 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).realClick() // close dropdown
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
+    ).realClick() // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
     // convert the live quiz into a template
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -658,9 +659,20 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="edit-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template2.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template2.name}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
+    ).realClick() // close dropdown
+
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
     )
@@ -847,6 +859,9 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Open the template in the lecturer account and test all element content actions / verify default content', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
@@ -1124,6 +1139,9 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Use the template in the lecturer account to create an activity with partially new content', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
@@ -2597,19 +2615,32 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Delete all created templates', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="cancel-deletion"]').click()
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+    cy.wait(500)
+
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template2.name}"]`
+    ).click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+    cy.wait(500)
   })
   // #endregion
 })

@@ -207,6 +207,19 @@ export const ElementBlock = ElementBlockRef.implement({
   }),
 })
 
+export interface ILiveQuizStudentSettings {
+  isLiveQAEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+}
+export const LiveQuizStudentSettingsRef =
+  builder.objectRef<ILiveQuizStudentSettings>('LiveQuizStudentSettings')
+export const LiveQuizStudentSettings = LiveQuizStudentSettingsRef.implement({
+  fields: (t) => ({
+    isLiveQAEnabled: t.exposeBoolean('isLiveQAEnabled'),
+    isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
+  }),
+})
+
 export interface ILiveQuizSummary {
   numOfResponses: number
   numOfFeedbacks: number

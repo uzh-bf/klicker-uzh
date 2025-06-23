@@ -1,0 +1,3 @@
+mutation LogoutTemporaryParticipant($liveQuizId: String!) {
+  logoutTemporaryParticipant(liveQuizId: $liveQuizId)
+}

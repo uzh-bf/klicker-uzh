@@ -102,11 +102,12 @@ function GroupsList({
           ))}
         </div>
       </TabContent>
-      <AssignmentConfirmationModal
-        courseId={courseId}
-        open={open}
-        setOpen={setOpen}
-      />
+      {open && (
+        <AssignmentConfirmationModal
+          courseId={courseId}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   )
 }

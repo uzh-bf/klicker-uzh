@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faLink,
   faMessage,
   faPencil,
   faShare,
@@ -25,10 +25,10 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import getLTIAccessLink from './getLTIAccessLink'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
-import { getLTIAccessLink } from './PracticeQuizElement'
 import QRCodePopover from './QRCodePopover'
 
 interface CourseOverviewHeaderProps {
@@ -146,12 +146,13 @@ function CourseOverviewHeader({
             className={{
               item: 'p-1 hover:bg-gray-200',
               viewport: 'z-10 bg-white',
+              trigger: 'h-8',
             }}
             trigger={
-              <Button className={{ root: 'h-8' }}>
-                <Button.Icon icon={faHandPointer} />
-                <Button.Label>{t('manage.course.otherActions')}</Button.Label>
-              </Button>
+              <>
+                <Button.Icon icon={faLink} />
+                <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+              </>
             }
             items={[
               user?.catalyst
@@ -208,7 +209,6 @@ function CourseOverviewHeader({
       {courseSettingsModal && (
         <CourseManipulationModal
           initialValues={course}
-          modalOpen={courseSettingsModal}
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
@@ -264,23 +264,24 @@ function CourseOverviewHeader({
         />
       )}
 
-      {sharingModal && course.isManager && (
+      {sharingModal && course.isManager ? (
         <ObjectSharingModalWrapper
           objectUuid={course.id}
           objectName={course.name}
           objectType={ObjectType.Course}
           isOwner={course.isOwner ?? false}
-          open={sharingModal}
           onClose={() => setSharingModal(false)}
         />
-      )}
+      ) : null}
 
-      <ActivityLogDialog
-        objectId={course.id}
-        objectType={ObjectType.Course}
-        open={isActivityLogOpen}
-        onOpenChange={setIsActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={course.id}
+          objectType={ObjectType.Course}
+          open={isActivityLogOpen}
+          onClose={() => setIsActivityLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

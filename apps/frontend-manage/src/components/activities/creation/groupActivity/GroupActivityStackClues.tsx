@@ -117,7 +117,7 @@ function GroupActivityStackClues({
                             delay={0}
                             className={{
                               tooltip: 'z-30 text-sm',
-                              trigger: 'mt-[0.05rem]',
+                              trigger: 'mt-[0.2rem]',
                             }}
                           >
                             <FontAwesomeIcon

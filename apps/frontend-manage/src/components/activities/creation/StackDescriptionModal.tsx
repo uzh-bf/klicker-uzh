@@ -2,22 +2,18 @@ import { FormikTextField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import EditorField from './EditorField'
 
-interface StackDescriptionModalProps {
-  stackIx: number
-  modalOpen: boolean
-  setModalOpen: (open: boolean) => void
-}
-
 function StackDescriptionModal({
   stackIx,
-  modalOpen,
   setModalOpen,
-}: StackDescriptionModalProps) {
+}: {
+  stackIx: number
+  setModalOpen: (open: boolean) => void
+}) {
   const t = useTranslations()
 
   return (
     <Modal
-      open={modalOpen}
+      open
       onClose={() => setModalOpen(false)}
       title={t('manage.activityWizard.stackDescriptionTitle', {
         stackIx: stackIx + 1,

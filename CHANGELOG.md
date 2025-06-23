@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.65...v3.3.0-alpha.66) (2025-06-23)
+
+## [3.3.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.64...v3.3.0-alpha.65) (2025-06-23)
+
+## [3.3.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.63...v3.3.0-alpha.64) (2025-06-21)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** update activity view to show essential information for every activity type ([#4743](https://github.com/uzh-bf/klicker-uzh/issues/4743)) ([f0e4564](https://github.com/uzh-bf/klicker-uzh/commit/f0e45642699fb41db28fb63951fe263e2c741761))
+* **apps/frontend-pwa:** replace menubar on student course docs with tabs ([#4745](https://github.com/uzh-bf/klicker-uzh/issues/4745)) ([746b866](https://github.com/uzh-bf/klicker-uzh/commit/746b866cd9f6fbceeeab7ba8403090021e7a61e5))
+* make new activity overview available to all users and simplify activity query types across platform ([#4744](https://github.com/uzh-bf/klicker-uzh/issues/4744)) ([d1b2ece](https://github.com/uzh-bf/klicker-uzh/commit/d1b2ece034237c1ffc2dd0c361838ecc50a3c243))
+
+## [3.3.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.62...v3.3.0-alpha.63) (2025-06-18)
+
+
+### Enhancements
+
+* add option to enable / disable demo question seeding on first login dialogue ([76f585e](https://github.com/uzh-bf/klicker-uzh/commit/76f585ef9a60910b2b719d01bf99a29fc5e1e89c))
+* add subscriptions for live quiz q&a channel and confusion feedback setting changes ([#4742](https://github.com/uzh-bf/klicker-uzh/issues/4742)) ([696a43a](https://github.com/uzh-bf/klicker-uzh/commit/696a43a187cdf3df4f3808894c8b96c1d374327e))
+* **apps/frontend-pwa:** add basic animations to gamified live quizzes ([#4741](https://github.com/uzh-bf/klicker-uzh/issues/4741)) ([9c17c58](https://github.com/uzh-bf/klicker-uzh/commit/9c17c580cbcd5d91898d64ce3143b30eb445bee6))
+
+## [3.3.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.61...v3.3.0-alpha.62) (2025-06-17)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure avatars and usernames are returned on live quiz leaderboard query with hmac ([#4739](https://github.com/uzh-bf/klicker-uzh/issues/4739)) ([885321c](https://github.com/uzh-bf/klicker-uzh/commit/885321cc35dce597505a09fd649a8d9e70d123ce))
+
+
+### Refactors
+
+* **apps/frontend-*:** improve rendering efficiency by ensuring that modals are only rendered when required ([#4737](https://github.com/uzh-bf/klicker-uzh/issues/4737)) ([08deed8](https://github.com/uzh-bf/klicker-uzh/commit/08deed839f809b23c3f8a659e4369a5625c2c1a9))
+
+
+### Enhancements
+
+* **packages/shared-components:** add possibility to override lower and upper bounds of histogram within bounds ([#4738](https://github.com/uzh-bf/klicker-uzh/issues/4738)) ([5c82856](https://github.com/uzh-bf/klicker-uzh/commit/5c828566f25bb74fe491111daac6466bae46a2ec))
+
+
+### Other
+
+* **apps/frontend-manage:** resolve datepicker and input styling issues, add countdowns to activity details view ([#4740](https://github.com/uzh-bf/klicker-uzh/issues/4740)) ([9cafe74](https://github.com/uzh-bf/klicker-uzh/commit/9cafe74dfb8fa22fc0ed6680c20dea9b4283878b))
+
+## [3.3.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.60...v3.3.0-alpha.61) (2025-06-13)
+
+
+### Features
+
+* add possibility to create temporary pseudonym for participation in gamified live quiz ([#4726](https://github.com/uzh-bf/klicker-uzh/issues/4726)) ([d9f0746](https://github.com/uzh-bf/klicker-uzh/commit/d9f074676177f1f7ae60b0a4b5b6d46b399cec88))
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** ensure that all responses stored in redis are stringified ([5008128](https://github.com/uzh-bf/klicker-uzh/commit/500812842f859350a4ff47e374a661483e30f4ee))
+* **packages/graphql:** ensure that live quiz leaderboard is not stuck loading when before first block ([ad07caf](https://github.com/uzh-bf/klicker-uzh/commit/ad07cafdad9ad8296eb9c5ee160bc9996ff1e02d))
+
+
+### Enhancements
+
+* add functionality to change password of existing delegated login ([#4731](https://github.com/uzh-bf/klicker-uzh/issues/4731)) ([72532a7](https://github.com/uzh-bf/klicker-uzh/commit/72532a7b6172c674a9b7eb752554392d1f141e54))
+* add possibility to select avatar from selection for temporary accounts without login ([#4730](https://github.com/uzh-bf/klicker-uzh/issues/4730)) ([cf7d558](https://github.com/uzh-bf/klicker-uzh/commit/cf7d5582da8f1fa1e3834b3a1b171fb28c5cf483))
+* **apps/frontend-pwa:** add functionality to log out of created temporary live quiz account ([#4734](https://github.com/uzh-bf/klicker-uzh/issues/4734)) ([53fce36](https://github.com/uzh-bf/klicker-uzh/commit/53fce36ac960d998294d98a22545b16c24846ba0))
+* **apps/frontend-pwa:** hide functionalities not available to temporary participants on live quiz view and update existing pages to correctly handle temporary participant accounts  ([#4729](https://github.com/uzh-bf/klicker-uzh/issues/4729)) ([73719cb](https://github.com/uzh-bf/klicker-uzh/commit/73719cb830105becea4b47a2155ba6a30163d9c8))
+* **apps/frontend-pwa:** improve styling of student application, including sticky live quiz progress and submission ([#4733](https://github.com/uzh-bf/klicker-uzh/issues/4733)) ([5b703c1](https://github.com/uzh-bf/klicker-uzh/commit/5b703c134bde9f23dfbe8f0b22822e565b9809e1))
+* **packages/graphql:** remove untouched temporary leaderboard entries on live quiz end and mark temporary participants on live quiz evaluation ([b4ea8aa](https://github.com/uzh-bf/klicker-uzh/commit/b4ea8aae93fdfc85ecb62c7958cc5de7a54edeee))
+* update live quiz response logic to support temporary participant accounts ([#4727](https://github.com/uzh-bf/klicker-uzh/issues/4727)) ([1e00e8b](https://github.com/uzh-bf/klicker-uzh/commit/1e00e8b48eb9cac4731d5bef1c803e36e36ac395))
+
+## [3.3.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.59...v3.3.0-alpha.60) (2025-06-11)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve rendering loop that blocked creation of case study elements ([#4732](https://github.com/uzh-bf/klicker-uzh/issues/4732)) ([1610ae3](https://github.com/uzh-bf/klicker-uzh/commit/1610ae3dcdf3faadaa61307d9fdc6dafea562434))
+
+## [3.3.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.58...v3.3.0-alpha.59) (2025-06-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** make sure that microlearning list does not throw error when empty ([60513db](https://github.com/uzh-bf/klicker-uzh/commit/60513db92441d69ae5488fbfa8d69e545e27749e))
+* **packages/graphql:** make sure that emails for failed final group assignments are only sent once per course ([#4716](https://github.com/uzh-bf/klicker-uzh/issues/4716)) ([4246c90](https://github.com/uzh-bf/klicker-uzh/commit/4246c9053409d079615bf3723cf89ff079eba821))
+
+
+### Other
+
+* **apps/frontend-manage:** move activity list legend into popover ([c32cc03](https://github.com/uzh-bf/klicker-uzh/commit/c32cc03d35f42a9a89a0b7a66898be747ddd0c4d))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** enhance catalog view and layout ([#4725](https://github.com/uzh-bf/klicker-uzh/issues/4725)) ([0fc67d2](https://github.com/uzh-bf/klicker-uzh/commit/0fc67d20e5144ce228f761908a54910000acaaeb))
+
 ## [3.3.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.57...v3.3.0-alpha.58) (2025-06-04)
 
 

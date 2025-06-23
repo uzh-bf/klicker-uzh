@@ -13,7 +13,6 @@ import ObjectTypeSelection from './ObjectTypeSelection'
 import SelectObjectForCatalog from './SelectObjectForCatalog'
 
 interface AddObjectToCatalogModalProps {
-  open: boolean
   onClose: () => void
   catalogCollectionId?: string
   onSuccess: () => void
@@ -28,7 +27,6 @@ export interface CatalogObjectAdditionFormValues {
 }
 
 function AddObjectToCatalogModal({
-  open,
   onClose,
   catalogCollectionId,
   onSuccess,
@@ -39,8 +37,8 @@ function AddObjectToCatalogModal({
 
   return (
     <Modal
+      open
       title={t('manage.catalog.addObjectToCatalogTitle')}
-      open={open}
       onClose={onClose}
       className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}

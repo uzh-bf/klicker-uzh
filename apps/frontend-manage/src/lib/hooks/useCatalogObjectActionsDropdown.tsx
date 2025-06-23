@@ -51,7 +51,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'import',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faDownload} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.importObjectType', {
               object: t(`shared.types.${object.objectType}`),
@@ -78,7 +78,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'copyToAccount',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.copyObjectType', {
               object: t(`shared.types.${object.objectType}`),
@@ -102,7 +102,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'requestAccess',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faHandPointer} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.requestAccess')}
           </div>
@@ -120,7 +120,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'useTemplate',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faFilePen} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.useTemplate')}
           </div>
@@ -138,7 +138,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'cancelRequest',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.cancelRequest')}
           </div>
@@ -156,7 +156,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'share',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faShare} className="mr-2.5 h-4 w-4" />
             {t(`manage.sharing.share${object.objectType}`)}
           </div>
@@ -174,7 +174,7 @@ function useCatalogObjectActionsDropdown({
       items.push({
         id: 'remove',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
             <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
             {t(`manage.catalog.remove${object.objectType}`)}
           </div>

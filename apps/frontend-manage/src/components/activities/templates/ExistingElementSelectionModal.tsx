@@ -11,14 +11,12 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function ExistingElementSelectionModal({
-  open,
   onClose,
   replaceWithExistingElement,
   requiredElementType,
   hasSampleSolution,
   hasAnswerFeedbacks,
 }: {
-  open: boolean
   onClose: () => void
   replaceWithExistingElement: (elementId: number, elementName: string) => void
   requiredElementType: ElementType
@@ -60,10 +58,10 @@ function ExistingElementSelectionModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       hideCloseButton
       title={t('manage.template.selectExistingElement')}
-      open={open}
       onClose={() => {
         setSelectedElement(null)
         onClose()

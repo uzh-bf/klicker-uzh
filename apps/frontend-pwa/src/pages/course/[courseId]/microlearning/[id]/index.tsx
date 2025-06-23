@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetMicroLearningDocument,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -84,7 +85,6 @@ function MicrolearningIntroduction({
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
-      previewMode={microLearning.isOwner ?? undefined}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
@@ -92,7 +92,7 @@ function MicrolearningIntroduction({
         subscribeToMore={subscribeToMore}
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
-        {!selfData?.self &&
+        {(!selfData?.self || selfData.self.role !== UserRole.Participant) &&
           (microLearning.isOwner ? (
             <PreviewMessage
               activityType={t('shared.generic.microlearning')}

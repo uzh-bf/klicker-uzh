@@ -15,8 +15,9 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
+import { Modal } from '@uzh-bf/design-system'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -56,8 +57,6 @@ function ElementEditModal({
   elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
-  const t = useTranslations()
-
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
@@ -120,7 +119,11 @@ function ElementEditModal({
   }, [isOpen, isDuplication, initialValues])
 
   if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
-    return <div />
+    return (
+      <Modal open onClose={() => null} fullScreen>
+        <Loader />
+      </Modal>
+    )
   }
 
   return (
@@ -131,7 +134,6 @@ function ElementEditModal({
       loading={loadingQuestion}
       initialValues={formikInitialValues}
       initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
-      open={isOpen}
       onClose={() => handleSetIsOpen(false)}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}

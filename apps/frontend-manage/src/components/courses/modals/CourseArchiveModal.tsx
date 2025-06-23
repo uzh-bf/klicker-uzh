@@ -6,19 +6,15 @@ import {
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface CourseArchiveModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  courseId: string | null
-  isArchived: boolean
-}
-
 function CourseArchiveModal({
-  open,
-  setOpen,
+  onClose,
   courseId,
   isArchived,
-}: CourseArchiveModalProps) {
+}: {
+  onClose: () => void
+  courseId: string | null
+  isArchived: boolean
+}) {
   const t = useTranslations()
   const [toggleArchiveCourse, { loading }] = useMutation(
     ToggleArchiveCourseDocument,
@@ -31,10 +27,8 @@ function CourseArchiveModal({
 
   return (
     <Modal
-      open={open}
-      onClose={() => {
-        setOpen(false)
-      }}
+      open
+      onClose={onClose}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
@@ -54,13 +48,11 @@ function CourseArchiveModal({
             },
           },
         })
-        setOpen(false)
+        onClose()
       }}
       dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => {
-        setOpen(false)
-      }}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
       className={{ content: 'max-w-[30rem]' }}
     >

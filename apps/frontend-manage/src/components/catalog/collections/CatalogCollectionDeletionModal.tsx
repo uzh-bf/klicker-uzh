@@ -9,7 +9,6 @@ import { useTranslations } from 'next-intl'
 interface CatalogCollectionDeletionModalProps {
   catalogCollectionId: string
   catalogCollectionName: string
-  open: boolean
   onClose: () => void
   onSuccess: () => void
 }
@@ -17,7 +16,6 @@ interface CatalogCollectionDeletionModalProps {
 function CatalogCollectionDeletionModal({
   catalogCollectionId,
   catalogCollectionName,
-  open,
   onClose,
   onSuccess,
 }: CatalogCollectionDeletionModalProps) {
@@ -28,7 +26,7 @@ function CatalogCollectionDeletionModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.catalog.deleteCatalogCollectionTitle')}
       secondaryLabel={t('shared.generic.cancel')}

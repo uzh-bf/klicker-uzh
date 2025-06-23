@@ -25,9 +25,13 @@ export default {
     },
     PUBLISHED: {
       statusLabel: 'Published / Running',
+      statusLabel1: 'Published',
+      statusLabel2: 'Running',
     },
     ENDED: {
       statusLabel: 'Ended / Ready for Grading',
+      statusLabel1: 'Ended',
+      statusLabel2: 'Ready for Grading',
     },
     GRADED: {
       statusLabel: 'Graded',
@@ -363,6 +367,8 @@ export default {
       legend: 'Legend',
       collections: 'Collections',
       objects: 'Objects',
+      pseudonym: 'Pseudonym',
+      selected: 'Selected',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -788,10 +794,36 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
     liveQuiz: {
-      noActiveQuestion: 'No question active.',
+      noActiveQuestion:
+        'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered: 'You have already answered all active questions.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
+      thisLiveQuizGamified: 'This live quiz is gamified!',
+      loginSelectionHint:
+        'You are about to join a gamified live quiz. Please choose between the following options: <ul><li>Login with <b>KlickerUZH-Account</b>: Collect points and XP</li><li>Create a <b>temporary pseudonym</b>: Collect points in this live quiz only (points not available in course)</li><li>Particiate <b>anonymously</b>: Do not participate in the gamification elements</li></ul>',
+      loginWithAccount: 'Login with Klicker-Account',
+      createTemporaryPseudonym: 'Create temporary pseudonym',
+      participateAnonymously: 'Participate anonymously',
+      changeLoginMode: 'Change login mode',
+      pseudonymExplanation:
+        'By entering a <b>pseudonym</b> here, you can collect points in this gamified live quiz without having to create a KlickerUZH account. Collected points are only stored in connection with this live quiz and will not be visible on the course leaderboard.',
+      pseudonymRequired: 'Please enter a pseudonym.',
+      pseudonymMinLength:
+        'The pseudonym must be at least {length} characters long.',
+      pseudonymMaxLength:
+        'The pseudonym must not be longer than {length} characters.',
+      joinedSuccessfullyWithPseudonym:
+        'You have successfully joined the live quiz with the pseudonym <b>{pseudonym}</b>.',
+      pseudonymAlreadyExists:
+        'The chosen pseudonym is unfortunately already taken. Please choose another one.',
+      pseudonymCreationFailed:
+        'The creation of the pseudonym failed. Please try again.',
+      temporaryParticipantsLeaderboard:
+        'Temporary participants (only collect points in this gamified live quiz)',
+      pseudonymSelection: 'Pseudonym Selection',
+      avatarExplanation:
+        'If you wish, you can select your <b>avatar</b> for the live quiz here.',
     },
     feedbacks: {
       title: 'Feedback Channel',
@@ -802,6 +834,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       feedbackPlaceholder: 'Enter your question / feedback',
       postedAt: 'Posted at {date}',
       solvedAt: 'Resolved at {date}',
+      feedbackSubmitted:
+        'Your feedback / question has been successfully submitted.',
     },
     profile: {
       publicProfile: 'Profile Visibility',
@@ -840,6 +874,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
       forgotPasswordInfo:
         'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
+      errorLogoutTemporaryParticipant:
+        'An error occurred while logging out of your temporary pseudonym. Please try again.',
+      loggedInAs: 'Logged in as',
+      temporaryPseudonym: 'temporary pseudonym',
     },
     avatar: {
       hair: 'Hair',
@@ -1004,6 +1042,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      automaticPublicationAt: 'Automatic publication at {date}',
+      availability: 'Availability: {startDate} - {endDate}',
       removeActivity: 'Remove Activity',
       confirmActivityRemoval:
         'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
@@ -1071,6 +1111,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Make sure you have seen and/or bookmarked the following relevant links:',
       watchVideo:
         'Please consider taking the time to watch the following introductory video, covering all core concepts of KlickerUZH v3.0 and its main features. In case you are in a hurry, directly submit your initial settings with the button below the video.',
+      seedDemoElements: 'Generate Demo Elements',
+      seedDemoElementsExplanation:
+        'Please choose whether demo elements should be generated in your library for demonstration purposes. They can be deleted at any time.',
+      seedDemoElementsDecisionRequired:
+        'Please choose whether demo elements should be generated or not.',
     },
     settings: {
       userSettings: 'User Settings',
@@ -1078,8 +1123,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
-      confirmDelegatedAcces: 'Confirm delegated login creation',
-      confirmDelegatedAccesTooltip:
+      confirmDelegatedAccess: 'Confirm delegated login creation',
+      confirmDelegatedAccessTooltip:
         'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Live Quiz Execution',
@@ -1114,6 +1159,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       emailUpdates: 'Project Updates via E-Mail',
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
+      newPassword: 'New Password',
+      changePassword: 'Change Password',
+      changeDelegatedLoginPassword: 'Change delegated login password',
+      changeDelegatedLoginPasswordMessage:
+        'Here you can change the password of the selected delegated login. Please note that the password will only be displayed once, so please write it down before confirming.',
     },
     token: {
       pageName: 'Token Generation',
@@ -2009,7 +2059,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
       reopenToAnswer: 'Reopen feedback to answer...',
-      insertResponseHere: 'Insert your response here...',
+      enterResponseHere: 'Enter your response here...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Reopen',
@@ -2057,6 +2107,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selection: 'Selection',
       histogramRange: 'Range',
       histogramBins: 'Bins',
+      histogramBinsError: 'Please enter a number of bins between 2 and 100.',
+      histogramLowerLimit: 'Lower Limit',
+      histogramUpperLimit: 'Upper Limit',
+      histogramLowerLimitError:
+        'The lower limit must be greater than {minValue}.',
+      histogramUpperLimitError:
+        'The upper limit must be smaller than {maxValue}.',
+      histogramRangeError:
+        'Please ensure that the lower limit is smaller than the upper limit.',
       correctLabel: 'Correct',
       correctLabelValue: 'Correct: {value}',
       resetSorting: 'Reset sorting',
@@ -2404,7 +2463,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade Group Activity',
       courseElements: 'Course Elements',
-      otherActions: 'Other actions',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Enable gamification',
       enableGamificationWarning:
         'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
