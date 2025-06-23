@@ -51,7 +51,7 @@
     "id": "PRACTICE_QUIZ",
     "title": "Practice Quiz",
     "path": "/quiz",
-    "olatConfigurationKey": "quiz",
+    "olatConfigurationKey": "practice-quiz",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
   },

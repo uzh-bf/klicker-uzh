@@ -210,7 +210,7 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
         {
           id: 'PRACTICE_QUIZ',
           isEmailTransferRequired: false,
-          olatConfigurationKey: 'quiz',
+          olatConfigurationKey: 'practice-quiz',
           path: '/quiz',
         },
         {
@@ -325,7 +325,7 @@ function getExpectedResponse(
     response.activityTypes.push({
       id: 'PRACTICE_QUIZ',
       title: 'Practice Quiz',
-      olatConfigurationKey: 'quiz',
+      olatConfigurationKey: 'practice-quiz',
       isSubselectionRequired: true,
     })
   }

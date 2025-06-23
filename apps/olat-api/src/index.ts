@@ -236,7 +236,7 @@ async function getCourseActivityTypes(courseId: string): Promise<any[] | null> {
   const mapSubselection: Record<string, any[]> = {
     // NOTE: modify if required
     'live-quiz': liveQuizzes,
-    quiz: practiceQuizzes,
+    'practice-quiz': practiceQuizzes,
     'micro-learning': microLearnings,
   }
   const activityKeysGamification = ['course-leaderboard'] // NOTE: modify if required
