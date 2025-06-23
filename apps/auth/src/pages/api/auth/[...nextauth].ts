@@ -16,6 +16,8 @@ export const COOKIE_NAME = 'next-auth.session-token'
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
+  swissEduIDLinkedAffiliationMail?: string[]
+  swissEduIDLinkedAffiliationUniqueID?: string[]
 }
 
 export interface ExtendedUser {
