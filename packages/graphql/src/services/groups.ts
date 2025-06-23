@@ -465,6 +465,14 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
         )
 
+        // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
+        await ctx.prisma.course.update({
+          where: { id: courseId },
+          data: {
+            randomAssignmentFinalized: true,
+          },
+        })
+
         continue
       }
 

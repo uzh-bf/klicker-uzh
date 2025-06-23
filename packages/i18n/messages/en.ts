@@ -360,6 +360,9 @@ export default {
       shared: 'Shared',
       imported: 'Imported',
       dependency: 'Dependency',
+      legend: 'Legend',
+      collections: 'Collections',
+      objects: 'Objects',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1016,6 +1019,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityNameChangeError:
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
+      actionsLegend: 'Actions Legend',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2691,7 +2695,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationSuccess: 'Catalog collection was successfully created.',
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
-      backToCatalogOverview: 'back to Catalog Overview',
+      backToCatalogOverview: 'Back to Catalog Overview',
       deleteCatalogCollection: 'Delete Catalog Collection',
       openCatalogCollection: 'Open Collection',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',

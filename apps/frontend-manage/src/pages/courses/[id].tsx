@@ -241,7 +241,7 @@ function CourseOverviewPage() {
           <TabContent
             key="content-groupActivities"
             value="groupActivities"
-            className={{ root: 'px-0 py-2' }}
+            className={{ root: 'px-0 py-1' }}
           >
             <GroupActivityList
               privatePreview={user?.userProfile?.privatePreview ?? false}

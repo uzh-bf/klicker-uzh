@@ -1,7 +1,12 @@
 import { useQuery } from '@apollo/client'
-import { GetCatalogSharingRequestsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetCatalogSharingRequestsDocument,
+  ObjectSharingRequest,
+  ObjectType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Badge, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import CatalogSeparatorTitle from './CatalogSeparatorTitle'
 import CatalogSharingRequest from './CatalogSharingRequest'
 
 function PendingSharingRequests() {
@@ -12,6 +17,22 @@ function PendingSharingRequests() {
   if (loading || !requests || requests.length === 0) {
     return null
   }
+
+  const groupedRequests = requests.reduce<
+    Record<ObjectType, ObjectSharingRequest[]>
+  >(
+    (acc, request) => {
+      acc[request.objectType].push(request)
+      return acc
+    },
+    Object.values(ObjectType).reduce(
+      (acc, type) => {
+        acc[type] = []
+        return acc
+      },
+      {} as Record<ObjectType, ObjectSharingRequest[]>
+    )
+  )
 
   return (
     <div className="mb-8">
@@ -24,13 +45,26 @@ function PendingSharingRequests() {
       <div className="mb-3 text-sm">
         {t('manage.catalog.sharingRequestsExplanation')}
       </div>
-      <div className="border-t">
-        {requests.map((request) => (
-          <CatalogSharingRequest
-            key={`sharing-request-${request.requestId}`}
-            request={request}
-          />
-        ))}
+      <div>
+        {Object.entries(groupedRequests).map(([type, requests]) => {
+          if (requests.length === 0) {
+            return null
+          }
+
+          return (
+            <div key={type}>
+              <CatalogSeparatorTitle
+                title={t(`shared.types.${type as ObjectType}`)}
+              />
+              {requests.map((request) => (
+                <CatalogSharingRequest
+                  key={`sharing-request-${request.requestId}`}
+                  request={request}
+                />
+              ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
