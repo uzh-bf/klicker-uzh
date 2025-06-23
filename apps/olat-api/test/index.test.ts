@@ -28,6 +28,91 @@ afterAll(async () => {
   await prisma.$disconnect()
 })
 
+function getExpectedResponse(
+  nLQ: number,
+  nPQ: number,
+  nML: number,
+  isGamificationEnabled: boolean
+) {
+  let response = {
+    activityTypes: [
+      {
+        id: 'LIVE_QUIZZES',
+        title: `Live Quiz Overview (${nLQ})`,
+        olatConfigurationKey: 'live-quizzes',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'PRACTICE_QUIZZES',
+        title: `Practice Quiz Overview (${nPQ})`,
+        olatConfigurationKey: 'practice-quizzes',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'MICRO_LEARNINGS',
+        title: `Micro Learning Overview (${nML})`,
+        olatConfigurationKey: 'micro-learnings',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'MANAGE_ACCOUNT',
+        title: 'Manage Account',
+        olatConfigurationKey: 'manage-account',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'DOCS',
+        title: 'Documentation',
+        olatConfigurationKey: 'docs',
+        isSubselectionRequired: false,
+      },
+    ],
+    timestamp: '',
+    api: 'olat-api',
+  }
+
+  if (nLQ !== 0) {
+    response.activityTypes.push({
+      id: 'LIVE_QUIZ',
+      title: 'Live Quiz',
+      olatConfigurationKey: 'live-quiz',
+      isSubselectionRequired: true,
+    })
+  }
+  if (nPQ !== 0) {
+    response.activityTypes.push({
+      id: 'PRACTICE_QUIZ',
+      title: 'Practice Quiz',
+      olatConfigurationKey: 'practice-quiz',
+      isSubselectionRequired: true,
+    })
+  }
+  if (nML !== 0) {
+    response.activityTypes.push({
+      id: 'MICRO_LEARNING',
+      title: 'Micro Learning',
+      olatConfigurationKey: 'micro-learning',
+      isSubselectionRequired: true,
+    })
+  }
+  if (isGamificationEnabled) {
+    response.activityTypes.push({
+      id: 'COURSE_LEADERBOARD',
+      title: 'Course Leaderboard',
+      olatConfigurationKey: 'course-leaderboard',
+      isSubselectionRequired: false,
+    })
+  }
+  return response
+}
+
+function getExpectedTitles(n: number, prefix: string, course: Course) {
+  return Array.from(
+    { length: n },
+    (_, i) => `${prefix} ${i + 1} for ${course.name}`
+  )
+}
+
 describe('OLAT-API general', () => {
   test('/health', async () => {
     const response = await request(app).get('/')
@@ -270,84 +355,6 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
   })
 })
 
-function getExpectedResponse(
-  nLQ: number,
-  nPQ: number,
-  nML: number,
-  isGamificationEnabled: boolean
-) {
-  let response = {
-    activityTypes: [
-      {
-        id: 'LIVE_QUIZZES',
-        title: `Live Quiz Overview (${nLQ})`,
-        olatConfigurationKey: 'live-quizzes',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'PRACTICE_QUIZZES',
-        title: `Practice Quiz Overview (${nPQ})`,
-        olatConfigurationKey: 'practice-quizzes',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'MICRO_LEARNINGS',
-        title: `Micro Learning Overview (${nML})`,
-        olatConfigurationKey: 'micro-learnings',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'MANAGE_ACCOUNT',
-        title: 'Manage Account',
-        olatConfigurationKey: 'manage-account',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'DOCS',
-        title: 'Documentation',
-        olatConfigurationKey: 'docs',
-        isSubselectionRequired: false,
-      },
-    ],
-    timestamp: '',
-    api: 'olat-api',
-  }
-
-  if (nLQ !== 0) {
-    response.activityTypes.push({
-      id: 'LIVE_QUIZ',
-      title: 'Live Quiz',
-      olatConfigurationKey: 'live-quiz',
-      isSubselectionRequired: true,
-    })
-  }
-  if (nPQ !== 0) {
-    response.activityTypes.push({
-      id: 'PRACTICE_QUIZ',
-      title: 'Practice Quiz',
-      olatConfigurationKey: 'practice-quiz',
-      isSubselectionRequired: true,
-    })
-  }
-  if (nML !== 0) {
-    response.activityTypes.push({
-      id: 'MICRO_LEARNING',
-      title: 'Micro Learning',
-      olatConfigurationKey: 'micro-learning',
-      isSubselectionRequired: true,
-    })
-  }
-  if (isGamificationEnabled) {
-    response.activityTypes.push({
-      id: 'COURSE_LEADERBOARD',
-      title: 'Course Leaderboard',
-      olatConfigurationKey: 'course-leaderboard',
-      isSubselectionRequired: false,
-    })
-  }
-  return response
-}
-
 describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
   test('Valid', async () => {
     const courses = [
@@ -471,12 +478,6 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
   })
 })
 
-function getExpectedTitles(n: number, prefix: string, course: Course) {
-  return Array.from(
-    { length: n },
-    (_, i) => `${prefix} ${i + 1} for ${course.name}`
-  )
-}
 describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
   test('Valid', async () => {
     const courses = [
