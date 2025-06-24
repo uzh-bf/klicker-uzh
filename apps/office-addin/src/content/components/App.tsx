@@ -5,12 +5,13 @@ import { URLForm } from './URLForm'
 
 import '../../styles.css'
 
-export interface AppProps {
+export default function App({
+  isOfficeInitialized,
+  newlyInserted,
+}: {
   isOfficeInitialized: boolean
   newlyInserted: boolean
-}
-
-export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
+}) {
   const [slideID, setSlideID] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedURL, setSelectedURL] = useState<string | null>(null)
@@ -99,7 +100,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
           <div className="mb-4 flex flex-row gap-4">
             <div className="flex-1">
               <ol className="list-inside list-decimal">
-                <li>Go to https://manage.klicker.uzh.ch/quizzes</li>
+                <li>Go to https://manage.klicker.uzh.ch/activities</li>
                 <li>
                   For the live quiz you want to embed, open the &ldquo;Embed
                   Evaluation&rdquo; dialog
