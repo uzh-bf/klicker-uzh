@@ -390,6 +390,85 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "chart.fullname" . }}-olat-api
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: olat-api
+spec:
+  {{- with .Values.olat-api.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.olat-api.autoscaling.enabled }}
+  replicas: {{ .Values.olat-api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: olat-api
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-olat-api.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-olat-api.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.olat-api.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: olat-api
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.olat-api.priorityClassName }}
+      {{- with .Values.olat-api.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.olat-api.podSecurityContext | nindent 8 }}
+      containers:
+        - name: olat-api
+          securityContext:
+            {{- toYaml .Values.olat-api.securityContext | nindent 12 }}
+          image: "{{ .Values.olat-api.image.repository }}:{{ .Values.olat-api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.olat-api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-olat-api
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 600
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.olat-api.resources | nindent 12 }}
+      {{- with .Values.olat-api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.olat-api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.olat-api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: {{ include "chart.fullname" . }}-lti
   labels:
     {{- include "chart.labels" . | nindent 4 }}
