@@ -187,4 +187,42 @@ describe('Context Utilities', () => {
       })
     })
   })
+
+  describe('Immutability', () => {
+    it('should not mutate additional context in createOperationContext', () => {
+      const additionalContext = { userId: 'user-456', priority: 10 }
+      const originalContext = { ...additionalContext }
+
+      createOperationContext('op-123', 'PROCESS', additionalContext)
+
+      expect(additionalContext).toEqual(originalContext)
+    })
+
+    it('should not mutate additional context in createUserContext', () => {
+      const additionalContext = { role: 'admin', email: 'test@example.com' }
+      const originalContext = { ...additionalContext }
+
+      createUserContext('user-123', additionalContext)
+
+      expect(additionalContext).toEqual(originalContext)
+    })
+
+    it('should not mutate additional context in createRequestContext', () => {
+      const additionalContext = { ip: '192.168.1.1', userAgent: 'Mozilla' }
+      const originalContext = { ...additionalContext }
+
+      createRequestContext('req-123', 'GET', '/api', additionalContext)
+
+      expect(additionalContext).toEqual(originalContext)
+    })
+
+    it('should not mutate additional context in createPerformanceContext', () => {
+      const additionalContext = { itemCount: 100, success: true }
+      const originalContext = { ...additionalContext }
+
+      createPerformanceContext(Date.now() - 1000, additionalContext)
+
+      expect(additionalContext).toEqual(originalContext)
+    })
+  })
 })

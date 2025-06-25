@@ -43,19 +43,11 @@ export function createOperationContext(
   operationType?: string,
   additionalContext?: LogContext
 ): LogContext {
-  const context: LogContext = {
+  return {
     operationId,
+    ...(operationType && { operationType }),
+    ...(additionalContext || {}),
   }
-
-  if (operationType) {
-    context.operationType = operationType
-  }
-
-  if (additionalContext) {
-    Object.assign(context, additionalContext)
-  }
-
-  return context
 }
 
 /**
@@ -65,15 +57,10 @@ export function createUserContext(
   userId: string,
   additionalContext?: LogContext
 ): LogContext {
-  const context: LogContext = {
+  return {
     userId,
+    ...(additionalContext || {}),
   }
-
-  if (additionalContext) {
-    Object.assign(context, additionalContext)
-  }
-
-  return context
 }
 
 /**
@@ -85,23 +72,12 @@ export function createRequestContext(
   path?: string,
   additionalContext?: LogContext
 ): LogContext {
-  const context: LogContext = {
+  return {
     requestId,
+    ...(method && { method }),
+    ...(path && { path }),
+    ...(additionalContext || {}),
   }
-
-  if (method) {
-    context.method = method
-  }
-
-  if (path) {
-    context.path = path
-  }
-
-  if (additionalContext) {
-    Object.assign(context, additionalContext)
-  }
-
-  return context
 }
 
 /**
@@ -113,16 +89,11 @@ export function createPerformanceContext(
 ): LogContext {
   const duration = Date.now() - startTime
 
-  const context: LogContext = {
+  return {
     duration,
     durationMs: duration,
+    ...(additionalContext || {}),
   }
-
-  if (additionalContext) {
-    Object.assign(context, additionalContext)
-  }
-
-  return context
 }
 
 /**
