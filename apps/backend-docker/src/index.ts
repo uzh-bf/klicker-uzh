@@ -7,6 +7,7 @@ import { withOptimize } from '@prisma/extension-optimize'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import prepareApp from './app.js'
+import { logger } from './logging.js'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
@@ -17,11 +18,46 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-let prisma = new PrismaClient({
-  log:
-    process.env.NODE_ENV === 'development'
-      ? ['query', 'info', 'warn', 'error']
-      : ['warn', 'error'],
+let prisma =
+  process.env.PRISMA_LOG_QUERIES === 'true'
+    ? new PrismaClient({
+        log: [
+          {
+            emit: 'event',
+            level: 'query',
+          },
+          { emit: 'event', level: 'info' },
+          { emit: 'event', level: 'warn' },
+          { emit: 'event', level: 'error' },
+        ],
+      })
+    : new PrismaClient({
+        log: [
+          { emit: 'event', level: 'info' },
+          { emit: 'event', level: 'warn' },
+          { emit: 'event', level: 'error' },
+        ],
+      })
+
+// Set up Prisma logging with our custom logger
+prisma.$on('query' as any, (e: any) => {
+  logger.debug('Prisma query', {
+    query: e.query,
+    params: e.params,
+    duration: e.duration,
+  })
+})
+prisma.$on('info' as any, (e: any) => {
+  logger.info('Prisma info', { message: e.message })
+})
+prisma.$on('warn' as any, (e: any) => {
+  logger.warn('Prisma warning', { message: e.message })
+})
+prisma.$on('error' as any, (e: any) => {
+  logger.error('Prisma error', {
+    message: e.message,
+    target: e.target,
+  })
 })
 
 if (
@@ -83,11 +119,18 @@ let cache: Cache
 if (redisCache) {
   try {
     cache = createRedisCache({ redis: redisCache })
+    logger.info('Redis cache initialized successfully')
   } catch (e) {
-    console.error(e)
+    logger.error(
+      'Failed to initialize Redis cache, falling back to in-memory cache',
+      {
+        error: e instanceof Error ? e.message : String(e),
+      }
+    )
     cache = createInMemoryCache()
   }
 } else {
+  logger.info('Using in-memory cache')
   cache = createInMemoryCache()
 }
 
@@ -103,6 +146,8 @@ emitter.on('invalidate', (resource) => {
 const pubSub = createPubSub({ eventTarget })
 
 migrate(prisma).then(() => {
+  logger.info('Database migrations completed successfully')
+
   const { app, yogaApp } = prepareApp({
     prisma,
     redisCache,
@@ -113,7 +158,10 @@ migrate(prisma).then(() => {
   })
 
   const server = app.listen(3000, () => {
-    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+    logger.info('GraphQL server started', {
+      endpoint: `0.0.0.0:3000${yogaApp.graphqlEndpoint}`,
+      environment: process.env.NODE_ENV,
+    })
 
     const wsServer = new WebSocketServer({
       server,

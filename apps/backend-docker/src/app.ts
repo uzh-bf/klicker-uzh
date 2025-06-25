@@ -11,6 +11,7 @@ import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
+import { logger } from './logging.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -36,7 +37,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     try {
       require('@cypress/code-coverage/middleware/express')(app)
     } catch (e) {
-      console.error(e)
+      logger.error('Failed to load code coverage middleware', {
+        error: e instanceof Error ? e.message : String(e),
+      })
     }
   }
 
