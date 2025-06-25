@@ -1,3 +1,4 @@
+import { createLogger } from '@klicker-uzh/logging'
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityLogModificationFieldType,
@@ -15,6 +16,9 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+
+// Create a default logger for the service
+const defaultLogger = createLogger({ service: 'graphql-sharing' })
 
 // ! Helper functions
 // #region
@@ -763,10 +767,12 @@ export async function requestCatalogCollection(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
-    )
+    const logger = ctx.logger || defaultLogger
+    logger.warn('No admin or owner found on catalog collection', {
+      catalogCollectionId,
+      userId: ctx.user.sub,
+      requestedPermissionLevel,
+    })
     return null
   }
 
@@ -1146,10 +1152,19 @@ export async function requestCatalogObject(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
-    )
+    const logger = ctx.logger || defaultLogger
+    logger.warn('No admin or owner found on object', {
+      catalogCollectionId,
+      userId: ctx.user.sub,
+      requestedPermissionLevel,
+      answerCollectionId,
+      elementId,
+      courseId,
+      liveQuizId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
+    })
     return false
   }
 
