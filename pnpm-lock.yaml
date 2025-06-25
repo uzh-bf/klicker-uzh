@@ -189,6 +189,9 @@ importers:
       '@graphql-yoga/redis-event-target':
         specifier: 1.0.0
         version: 1.0.0(ioredis@5.4.1)
+      '@hatchet-dev/typescript-sdk':
+        specifier: 1.8.2
+        version: 1.8.2
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -1099,7 +1102,7 @@ importers:
         version: 4.1.5
       tsup:
         specifier: ~8.3.0
-        version: 8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.7.0)
+        version: 8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.8.0)
       typescript:
         specifier: ~5.6.3
         version: 5.6.3
@@ -1151,7 +1154,7 @@ importers:
         version: 4.1.5
       tsup:
         specifier: ~8.3.0
-        version: 8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.7.0)
+        version: 8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.8.0)
       typescript:
         specifier: ~5.6.3
         version: 5.6.3
@@ -1431,6 +1434,9 @@ importers:
       '@azure/storage-blob':
         specifier: 12.25.0
         version: 12.25.0
+      '@hatchet-dev/typescript-sdk':
+        specifier: 1.8.2
+        version: 1.8.2
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
@@ -3096,6 +3102,9 @@ packages:
     peerDependencies:
       react: '>=16'
 
+  '@bufbuild/protobuf@2.5.2':
+    resolution: {integrity: sha512-foZ7qr0IsUBjzWIq+SuBLfdQCpJ1j8cTuNNT4owngTHoN5KsJb8L9t65fzz7SCeSWzescoOil/0ldqiL041ABg==}
+
   '@capacitor/android@5.3.0':
     resolution: {integrity: sha512-5rEwD8u0whGXP+dZ0qXRFP3DWHi4WhZdzcxxZ/D4mLh5eVaQCxPpoHBcrS4FpKtl7PAWNDD2n32D9YrEcfERMA==}
     peerDependencies:
@@ -4624,11 +4633,23 @@ packages:
   '@graphql-yoga/typed-event-target@1.0.0':
     resolution: {integrity: sha512-Mqni6AEvl3VbpMtKw+TIjc9qS9a8hKhiAjFtqX488yq5oJtj9TkNlFTIacAVS3vnPiswNsmDiQqvwUOcJgi1DA==}
 
+  '@grpc/grpc-js@1.13.4':
+    resolution: {integrity: sha512-GsFaMXCkMqkKIvwCQjCrwH+GHbPKBjhwo/8ZuUkWHqbI73Kky9I+pQltrlT0+MWpedCoosda53lgjYfyEPgxBg==}
+    engines: {node: '>=12.10.0'}
+
+  '@grpc/proto-loader@0.7.15':
+    resolution: {integrity: sha512-tMXdRCfYVixjuFK+Hk0Q1s38gV9zDiDJfWL3h1rv4Qc39oILCu1TRTDt7+fGUI8K4G1Fj125Hx/ru3azECWTyQ==}
+    engines: {node: '>=6'}
+    hasBin: true
+
   '@hapi/hoek@9.3.0':
     resolution: {integrity: sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==}
 
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
+
+  '@hatchet-dev/typescript-sdk@1.8.2':
+    resolution: {integrity: sha512-hyZSKSaQJMq2ZMb3JL2DICUuv+qnWVVZ4G75ih722/ou5X82v1Vm334sh5/e8dMXiRJsC0mTWyPiW3c2YGxnNg==}
 
   '@hookform/resolvers@3.9.0':
     resolution: {integrity: sha512-bU0Gr4EepJ/EQsH/IwEzYLsT/PEj5C0ynLQ4m+GSHS+xKH4TfSelhluTgOaoc4kA5s7eCsQbM4wvZLzELmWzUg==}
@@ -4978,6 +4999,9 @@ packages:
 
   '@js-joda/core@3.2.0':
     resolution: {integrity: sha512-PMqgJ0sw5B7FKb2d5bWYIoxjri+QlW/Pys7+Rw82jSH0QN3rB05jZ/VrrsUdh1w4+i2kw9JOejXGq/KhDOX7Kg==}
+
+  '@js-sdsl/ordered-map@4.4.2':
+    resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
   '@jsdevtools/ono@7.1.3':
     resolution: {integrity: sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg==}
@@ -8065,6 +8089,9 @@ packages:
     resolution: {integrity: sha512-E+iruNOY8VV9s4JEbe1aNEm6MiszPRr/UfcHMz0TQh1BXSxHK+ASV1R6W4HpjBhSeS+54PIsAMCBmwD06LLsqQ==}
     hasBin: true
 
+  abort-controller-x@0.4.3:
+    resolution: {integrity: sha512-VtUwTNU8fpMwvWGn4xE93ywbogTYsuT+AUxAXOeelbXuQVIwNmC5YLeho9sH4vZ4ITW8414TTAOG1nW6uIVHCA==}
+
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
     engines: {node: '>=6.5'}
@@ -8089,11 +8116,6 @@ packages:
 
   acorn@8.14.0:
     resolution: {integrity: sha512-cl669nCJTZBsL97OF4kUQm5g5hC2uihk0NxY3WENAC0TYdILVkAyHymAntgxGkl7K+t0cXIrH5siy5S4XkFycA==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-
-  acorn@8.8.2:
-    resolution: {integrity: sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -8417,6 +8439,9 @@ packages:
 
   axios@0.21.4:
     resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
+
+  axios@1.10.0:
+    resolution: {integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==}
 
   axios@1.7.7:
     resolution: {integrity: sha512-S4kL7XrjgBmvdGut0sN3yJxqYzrDOnivkBiN0OFs6hLiUam3UPvswUo0kqGyhqUZGEOytHyumEdXsAkgCOUf3Q==}
@@ -12435,6 +12460,9 @@ packages:
   long@5.2.4:
     resolution: {integrity: sha512-qtzLbJE8hq7VabR3mISmVGtoXP8KGc2Z/AT8OuqlYD7JTR3oqrgwdjnk07wpj1twXxYmgDXgoKVWUG/fReSzHg==}
 
+  long@5.3.2:
+    resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
+
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
@@ -13206,6 +13234,12 @@ packages:
         optional: true
       sass:
         optional: true
+
+  nice-grpc-common@2.0.2:
+    resolution: {integrity: sha512-7RNWbls5kAL1QVUOXvBsv1uO0wPQK3lHv+cY1gwkTzirnG1Nop4cBJZubpgziNbaVc/bl9QJcyvsf/NQxa3rjQ==}
+
+  nice-grpc@2.1.12:
+    resolution: {integrity: sha512-J1n4Wg+D3IhRhGQb+iqh2OpiM0GzTve/kf2lnlW4S+xczmIEd0aHUDV1OsJ5a3q8GSTqJf+s4Rgg1M8uJltarw==}
 
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
@@ -14796,10 +14830,6 @@ packages:
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
-    engines: {node: '>=0.6'}
-
-  qs@6.13.1:
-    resolution: {integrity: sha512-EJPeIn0CYrGu+hli1xilKAPXODtJ12T0sP63Ijx2/khC2JtuaN3JyNIpvmnkmaEtha9ocbG4A4cMcr+TvqvwQg==}
     engines: {node: '>=0.6'}
 
   qs@6.14.0:
@@ -16554,6 +16584,9 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
+  ts-error@1.0.6:
+    resolution: {integrity: sha512-tLJxacIQUM82IR7JO1UUkKlYuUTmoY9HBJAmNWFzheSlDS5SPMcNIepejHJa4BpPQLAcbRhRf3GDJzyj6rbKvA==}
+
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
@@ -17463,9 +17496,9 @@ packages:
     engines: {node: '>= 14'}
     hasBin: true
 
-  yaml@2.7.0:
-    resolution: {integrity: sha512-+hSoy/QHluxmC9kCIJyL/uyFmLmc+e5CFR5Wa+bpIhIj85LVb9ZH2nVnqrHoSvKogwODv0ClqZkmiSSaIH5LTA==}
-    engines: {node: '>= 14'}
+  yaml@2.8.0:
+    resolution: {integrity: sha512-4lLa/EcQCB0cJkyts+FpIRx5G/llPxfP6VQU5KByHEhLxY3IJCH0f0Hy1MHI8sClTvsIb8qwRJ6R/ZdlDJ/leQ==}
+    engines: {node: '>= 14.6'}
     hasBin: true
 
   yargs-parser@18.1.3:
@@ -17518,6 +17551,9 @@ packages:
 
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+
+  zod@3.25.67:
+    resolution: {integrity: sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -18002,7 +18038,7 @@ snapshots:
       jws: 4.0.0
       msal: 1.4.18
       open: 7.4.2
-      qs: 6.13.1
+      qs: 6.14.0
       stoppable: 1.1.0
       tslib: 2.8.1
       uuid: 8.3.2
@@ -19035,6 +19071,8 @@ snapshots:
   '@bigheads/core@0.3.3(react@18.3.1)':
     dependencies:
       react: 18.3.1
+
+  '@bufbuild/protobuf@2.5.2': {}
 
   '@capacitor/android@5.3.0(@capacitor/core@5.3.0)':
     dependencies:
@@ -21491,11 +21529,40 @@ snapshots:
       '@repeaterjs/repeater': 3.0.6
       tslib: 2.8.1
 
+  '@grpc/grpc-js@1.13.4':
+    dependencies:
+      '@grpc/proto-loader': 0.7.15
+      '@js-sdsl/ordered-map': 4.4.2
+
+  '@grpc/proto-loader@0.7.15':
+    dependencies:
+      lodash.camelcase: 4.3.0
+      long: 5.3.2
+      protobufjs: 7.4.0
+      yargs: 17.7.2
+
   '@hapi/hoek@9.3.0': {}
 
   '@hapi/topo@5.1.0':
     dependencies:
       '@hapi/hoek': 9.3.0
+
+  '@hatchet-dev/typescript-sdk@1.8.2':
+    dependencies:
+      '@bufbuild/protobuf': 2.5.2
+      '@types/qs': 6.9.18
+      abort-controller-x: 0.4.3
+      axios: 1.10.0
+      long: 5.3.2
+      nice-grpc: 2.1.12
+      nice-grpc-common: 2.0.2
+      protobufjs: 7.4.0
+      qs: 6.14.0
+      semver: 7.7.1
+      yaml: 2.8.0
+      zod: 3.25.67
+    transitivePeerDependencies:
+      - debug
 
   '@hookform/resolvers@3.9.0(react-hook-form@7.52.2(react@18.3.1))':
     dependencies:
@@ -22026,6 +22093,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.0
 
   '@js-joda/core@3.2.0': {}
+
+  '@js-sdsl/ordered-map@4.4.2': {}
 
   '@jsdevtools/ono@7.1.3': {}
 
@@ -25501,6 +25570,8 @@ snapshots:
       jsonparse: 1.3.1
       through: 2.3.8
 
+  abort-controller-x@0.4.3: {}
+
   abort-controller@3.0.0:
     dependencies:
       event-target-shim: 5.0.1
@@ -25523,8 +25594,6 @@ snapshots:
       acorn: 8.14.0
 
   acorn@8.14.0: {}
-
-  acorn@8.8.2: {}
 
   adal-node@0.2.4(debug@4.4.0):
     dependencies:
@@ -25874,6 +25943,14 @@ snapshots:
   axios@0.21.4(debug@4.4.0):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.0)
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.10.0:
+    dependencies:
+      follow-redirects: 1.15.9(debug@4.4.1)
+      form-data: 4.0.1
+      proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
 
@@ -30907,6 +30984,8 @@ snapshots:
 
   long@5.2.4: {}
 
+  long@5.3.2: {}
+
   longest-streak@3.1.0: {}
 
   loose-envify@1.4.0:
@@ -31029,7 +31108,7 @@ snapshots:
       '@types/node': 17.0.45
       denque: 2.1.0
       iconv-lite: 0.6.3
-      long: 5.2.4
+      long: 5.3.2
       moment-timezone: 0.5.46
       please-upgrade-node: 3.2.0
 
@@ -32172,6 +32251,16 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
+  nice-grpc-common@2.0.2:
+    dependencies:
+      ts-error: 1.0.6
+
+  nice-grpc@2.1.12:
+    dependencies:
+      '@grpc/grpc-js': 1.13.4
+      abort-controller-x: 0.4.3
+      nice-grpc-common: 2.0.2
+
   nice-try@1.0.5: {}
 
   no-case@3.0.4:
@@ -33238,14 +33327,14 @@ snapshots:
       postcss: 8.4.49
       ts-node: 10.9.2(@swc/core@1.10.7(@swc/helpers@0.5.15))(@types/node@20.17.12)(typescript@5.6.3)
 
-  postcss-load-config@6.0.1(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.7.0):
+  postcss-load-config@6.0.1(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.8.0):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 2.4.2
       postcss: 8.4.49
       tsx: 4.19.2
-      yaml: 2.7.0
+      yaml: 2.8.0
 
   postcss-loader@7.3.4(postcss@8.4.49)(typescript@5.6.3)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))):
     dependencies:
@@ -33829,7 +33918,7 @@ snapshots:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/node': 20.17.12
-      long: 5.2.4
+      long: 5.3.2
 
   proxy-addr@2.0.7:
     dependencies:
@@ -33868,10 +33957,6 @@ snapshots:
   qrcode-generator@1.4.4: {}
 
   qs@6.13.0:
-    dependencies:
-      side-channel: 1.1.0
-
-  qs@6.13.1:
     dependencies:
       side-channel: 1.1.0
 
@@ -35261,7 +35346,7 @@ snapshots:
 
   simple-update-notifier@2.0.0:
     dependencies:
-      semver: 7.6.3
+      semver: 7.7.1
 
   sirv@2.0.4:
     dependencies:
@@ -36117,6 +36202,8 @@ snapshots:
     dependencies:
       typescript: 5.6.3
 
+  ts-error@1.0.6: {}
+
   ts-interface-checker@0.1.13: {}
 
   ts-invariant@0.10.3:
@@ -36152,7 +36239,7 @@ snapshots:
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
       '@types/node': 20.17.12
-      acorn: 8.8.2
+      acorn: 8.14.0
       acorn-walk: 8.3.4
       arg: 4.1.3
       create-require: 1.1.1
@@ -36179,7 +36266,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.7.0):
+  tsup@8.3.5(@swc/core@1.10.7(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.8.0):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.24.2)
       cac: 6.7.14
@@ -36189,7 +36276,7 @@ snapshots:
       esbuild: 0.24.2
       joycon: 3.1.1
       picocolors: 1.1.1
-      postcss-load-config: 6.0.1(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.7.0)
+      postcss-load-config: 6.0.1(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.8.0)
       resolve-from: 5.0.0
       rollup: 4.34.4
       source-map: 0.8.0-beta.0
@@ -37223,8 +37310,7 @@ snapshots:
 
   yaml@2.6.1: {}
 
-  yaml@2.7.0:
-    optional: true
+  yaml@2.8.0: {}
 
   yargs-parser@18.1.3:
     dependencies:
@@ -37294,5 +37380,7 @@ snapshots:
   zen-observable@0.8.15: {}
 
   zod@3.23.8: {}
+
+  zod@3.25.67: {}
 
   zwitch@2.0.4: {}

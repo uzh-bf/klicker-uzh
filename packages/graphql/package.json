@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/service-bus": "7.9.5",
     "@azure/storage-blob": "12.25.0",
+    "@hatchet-dev/typescript-sdk": "1.8.2",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",

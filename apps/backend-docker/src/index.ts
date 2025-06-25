@@ -10,6 +10,7 @@ import prepareApp from './app.js'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
@@ -17,6 +18,7 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
+// ! Prisma setup
 let prisma = new PrismaClient({
   log:
     process.env.NODE_ENV === 'development'
@@ -42,6 +44,7 @@ if (
 //   })
 // }
 
+// ! Redis setup
 const redisExec = new Redis({
   family: 4,
   host: process.env.REDIS_HOST ?? 'localhost',
@@ -100,11 +103,19 @@ emitter.on('invalidate', (resource) => {
   ])
 })
 
+// ! Initialize Hatchet to pass it to context
+const hatchet = Hatchet.init({
+  token: process.env.HATCHET_CLIENT_TOKEN,
+  log_level: 'DEBUG',
+})
+
+// ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
 
 migrate(prisma).then(() => {
   const { app, yogaApp } = prepareApp({
     prisma,
+    hatchet,
     redisCache,
     redisExec,
     pubSub,
@@ -123,7 +134,13 @@ migrate(prisma).then(() => {
     useServer(
       {
         schema,
-        context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
+        context: enhanceContext({
+          prisma,
+          hatchet,
+          redisExec,
+          pubSub,
+          emitter,
+        }),
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),
         onSubscribe: async (ctx, msg) => {

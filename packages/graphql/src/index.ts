@@ -1,4 +1,5 @@
 export { default as enhanceContext } from './lib/context.js'
+export * from './services/tasks.js'
 
 import builder from './builder.js'
 

@@ -7,8 +7,8 @@ const config = defineConfig([
     // Main build configuration
     input:
       process.env.NODE_ENV === 'test'
-        ? ['instrumented/index.ts']
-        : ['src/index.ts'],
+        ? ['instrumented/index.ts', 'instrumented/worker.ts']
+        : ['src/index.ts', 'src/worker.ts'],
     output: {
       dir: 'dist',
       format: 'esm',
