@@ -2,7 +2,7 @@
  * Context utilities for logging
  */
 
-import { LogContext, CorrelationContext } from './types.js'
+import { CorrelationContext, LogContext } from './types.js'
 
 /**
  * Maximum context size to prevent memory issues
@@ -16,7 +16,7 @@ export function sanitizeContext(context: LogContext): LogContext {
   if (!context || typeof context !== 'object') {
     return {}
   }
-  
+
   // Check size
   try {
     const size = JSON.stringify(context).length
@@ -31,7 +31,7 @@ export function sanitizeContext(context: LogContext): LogContext {
       _warning: 'Context contains circular references',
     }
   }
-  
+
   return context
 }
 
@@ -46,15 +46,15 @@ export function createOperationContext(
   const context: LogContext = {
     operationId,
   }
-  
+
   if (operationType) {
     context.operationType = operationType
   }
-  
+
   if (additionalContext) {
     Object.assign(context, additionalContext)
   }
-  
+
   return context
 }
 
@@ -68,11 +68,11 @@ export function createUserContext(
   const context: LogContext = {
     userId,
   }
-  
+
   if (additionalContext) {
     Object.assign(context, additionalContext)
   }
-  
+
   return context
 }
 
@@ -88,19 +88,19 @@ export function createRequestContext(
   const context: LogContext = {
     requestId,
   }
-  
+
   if (method) {
     context.method = method
   }
-  
+
   if (path) {
     context.path = path
   }
-  
+
   if (additionalContext) {
     Object.assign(context, additionalContext)
   }
-  
+
   return context
 }
 
@@ -112,16 +112,16 @@ export function createPerformanceContext(
   additionalContext?: LogContext
 ): LogContext {
   const duration = Date.now() - startTime
-  
+
   const context: LogContext = {
     duration,
     durationMs: duration,
   }
-  
+
   if (additionalContext) {
     Object.assign(context, additionalContext)
   }
-  
+
   return context
 }
 

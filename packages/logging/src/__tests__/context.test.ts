@@ -3,12 +3,12 @@
  */
 
 import {
-  sanitizeContext,
-  createOperationContext,
-  createUserContext,
-  createRequestContext,
-  createPerformanceContext,
   createCorrelationContext,
+  createOperationContext,
+  createPerformanceContext,
+  createRequestContext,
+  createUserContext,
+  sanitizeContext,
 } from '../context.js'
 
 describe('Context Utilities', () => {
@@ -19,35 +19,36 @@ describe('Context Utilities', () => {
       expect(sanitizeContext('string' as any)).toEqual({})
       expect(sanitizeContext(123 as any)).toEqual({})
     })
-    
+
     it('should pass through valid context', () => {
       const context = { userId: 123, action: 'login' }
       expect(sanitizeContext(context)).toEqual(context)
     })
-    
+
     it('should handle circular references', () => {
       const context: any = { a: 1 }
       context.circular = context
-      
+
       const result = sanitizeContext(context)
       expect(result).toEqual({
         _warning: 'Context contains circular references',
       })
     })
-    
+
     it('should truncate large contexts', () => {
       const largeContext: any = {}
       // Create a context that exceeds 1000 characters when stringified
       for (let i = 0; i < 100; i++) {
-        largeContext[`field${i}`] = 'This is a long value that will contribute to size'
+        largeContext[`field${i}`] =
+          'This is a long value that will contribute to size'
       }
-      
+
       const result = sanitizeContext(largeContext)
       expect(result._warning).toBe('Context too large, truncated')
       expect(result._originalSize).toBeGreaterThan(1000)
     })
   })
-  
+
   describe('createOperationContext', () => {
     it('should create basic operation context', () => {
       const context = createOperationContext('op-123')
@@ -55,7 +56,7 @@ describe('Context Utilities', () => {
         operationId: 'op-123',
       })
     })
-    
+
     it('should include operation type when provided', () => {
       const context = createOperationContext('op-123', 'PROCESS_USER_ACCESS')
       expect(context).toEqual({
@@ -63,7 +64,7 @@ describe('Context Utilities', () => {
         operationType: 'PROCESS_USER_ACCESS',
       })
     })
-    
+
     it('should merge additional context', () => {
       const context = createOperationContext('op-123', 'PROCESS_USER_ACCESS', {
         userId: 'user-456',
@@ -77,7 +78,7 @@ describe('Context Utilities', () => {
       })
     })
   })
-  
+
   describe('createUserContext', () => {
     it('should create basic user context', () => {
       const context = createUserContext('user-123')
@@ -85,7 +86,7 @@ describe('Context Utilities', () => {
         userId: 'user-123',
       })
     })
-    
+
     it('should merge additional context', () => {
       const context = createUserContext('user-123', {
         role: 'admin',
@@ -98,7 +99,7 @@ describe('Context Utilities', () => {
       })
     })
   })
-  
+
   describe('createRequestContext', () => {
     it('should create basic request context', () => {
       const context = createRequestContext('req-123')
@@ -106,7 +107,7 @@ describe('Context Utilities', () => {
         requestId: 'req-123',
       })
     })
-    
+
     it('should include method and path when provided', () => {
       const context = createRequestContext('req-123', 'POST', '/api/users')
       expect(context).toEqual({
@@ -115,7 +116,7 @@ describe('Context Utilities', () => {
         path: '/api/users',
       })
     })
-    
+
     it('should merge additional context', () => {
       const context = createRequestContext('req-123', 'GET', '/api/users', {
         ip: '127.0.0.1',
@@ -130,24 +131,24 @@ describe('Context Utilities', () => {
       })
     })
   })
-  
+
   describe('createPerformanceContext', () => {
     it('should calculate duration', () => {
       const startTime = Date.now() - 150 // 150ms ago
       const context = createPerformanceContext(startTime)
-      
+
       expect(context.duration).toBeGreaterThanOrEqual(150)
       expect(context.duration).toBeLessThan(200) // Allow some wiggle room
       expect(context.durationMs).toBe(context.duration)
     })
-    
+
     it('should merge additional context', () => {
       const startTime = Date.now() - 100
       const context = createPerformanceContext(startTime, {
         operationCount: 50,
         success: true,
       })
-      
+
       expect(context).toMatchObject({
         duration: expect.any(Number),
         durationMs: expect.any(Number),
@@ -156,7 +157,7 @@ describe('Context Utilities', () => {
       })
     })
   })
-  
+
   describe('createCorrelationContext', () => {
     it('should create basic correlation context', () => {
       const context = createCorrelationContext('corr-123')
@@ -164,7 +165,7 @@ describe('Context Utilities', () => {
         correlationId: 'corr-123',
       })
     })
-    
+
     it('should include parent ID when provided', () => {
       const context = createCorrelationContext('corr-123', 'parent-456')
       expect(context).toEqual({
@@ -172,9 +173,13 @@ describe('Context Utilities', () => {
         parentId: 'parent-456',
       })
     })
-    
+
     it('should include all fields when provided', () => {
-      const context = createCorrelationContext('corr-123', 'parent-456', 'span-789')
+      const context = createCorrelationContext(
+        'corr-123',
+        'parent-456',
+        'span-789'
+      )
       expect(context).toEqual({
         correlationId: 'corr-123',
         parentId: 'parent-456',

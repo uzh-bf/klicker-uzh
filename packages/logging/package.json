@@ -1,38 +1,38 @@
 {
   "name": "@klicker-uzh/logging",
-  "version": "3.3.0-alpha.60",
   "description": "Structured logging package for KlickerUZH",
-  "type": "module",
+  "version": "3.3.0-alpha.60",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "files": [
     "dist",
     "README.md"
   ],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "NODE_ENV=test jest",
-    "test:watch": "NODE_ENV=test jest --watch",
-    "test:coverage": "NODE_ENV=test jest --coverage",
-    "clean": "rm -rf dist coverage",
-    "type-check": "tsc --noEmit"
-  },
   "dependencies": {},
   "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.7",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.2.5",
-    "typescript": "^5.7.3"
+    "@types/jest": "^29.5.13",
+    "@types/node": "^20.16.1",
+    "jest": "~29.7.0",
+    "ts-jest": "~29.2.5",
+    "typescript": "~5.6.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist coverage",
+    "dev": "tsc --watch",
+    "test": "NODE_ENV=test jest",
+    "test:coverage": "NODE_ENV=test jest --coverage",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "type-check": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "type": "module"
 }

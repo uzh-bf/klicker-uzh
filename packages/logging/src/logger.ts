@@ -2,25 +2,22 @@
  * Core logger implementation - Functional approach
  */
 
-import {
-  type Logger,
-  type LoggerConfig,
-  type LogContext,
-  type LogEntry,
-  LogLevel,
-  type LogLevelString,
-  type LoggerState,
-} from './types.js'
 import { randomUUID } from 'node:crypto'
-import {
-  getEnvironmentConfig,
-  getLogLevelString,
-} from './environment.js'
+import { getEnvironmentConfig } from './environment.js'
 import {
   formatForDevelopment,
   formatForProduction,
   formatForTest,
 } from './formatter.js'
+import {
+  type LogContext,
+  type LogEntry,
+  LogLevel,
+  type LogLevelString,
+  type Logger,
+  type LoggerConfig,
+  type LoggerState,
+} from './types.js'
 
 /**
  * Generate a new correlation ID
@@ -34,10 +31,14 @@ export function generateCorrelationId(): string {
  */
 function parseLogLevel(level: LogLevelString): LogLevel {
   switch (level) {
-    case 'debug': return LogLevel.DEBUG
-    case 'info': return LogLevel.INFO
-    case 'warn': return LogLevel.WARN
-    case 'error': return LogLevel.ERROR
+    case 'debug':
+      return LogLevel.DEBUG
+    case 'info':
+      return LogLevel.INFO
+    case 'warn':
+      return LogLevel.WARN
+    case 'error':
+      return LogLevel.ERROR
   }
 }
 
@@ -51,22 +52,26 @@ function shouldLog(messageLevel: LogLevel, configuredLevel: LogLevel): boolean {
 /**
  * Merge base context with message context
  */
-function mergeContext(baseContext: LogContext, messageContext?: LogContext): LogContext | undefined {
+function mergeContext(
+  baseContext: LogContext,
+  messageContext?: LogContext
+): LogContext | undefined {
   const hasBaseContext = Object.keys(baseContext).length > 0
-  const hasMessageContext = messageContext && Object.keys(messageContext).length > 0
-  
+  const hasMessageContext =
+    messageContext && Object.keys(messageContext).length > 0
+
   if (!hasBaseContext && !hasMessageContext) {
     return undefined
   }
-  
+
   if (!hasMessageContext) {
     return baseContext
   }
-  
+
   if (!hasBaseContext) {
     return messageContext
   }
-  
+
   return { ...baseContext, ...messageContext }
 }
 
@@ -101,13 +106,20 @@ function logMessage(
   context?: LogContext
 ): void {
   const levelEnum = parseLogLevel(level)
-  
+
   if (!shouldLog(levelEnum, state.logLevel)) {
     return
   }
-  
-  const entry = createLogEntry(level, message, state.service, state.baseContext, state.correlationId, context)
-  
+
+  const entry = createLogEntry(
+    level,
+    message,
+    state.service,
+    state.baseContext,
+    state.correlationId,
+    context
+  )
+
   try {
     const formatted = state.formatter(entry)
     if (formatted) {
@@ -126,14 +138,16 @@ function logMessage(
  */
 function createLoggerState(config: LoggerConfig): LoggerState {
   const envConfig = getEnvironmentConfig(config.environment)
-  
-  const logLevel = config.level ? parseLogLevel(config.level) : envConfig.logLevel
+
+  const logLevel = config.level
+    ? parseLogLevel(config.level)
+    : envConfig.logLevel
   const baseContext = config.context || {}
-  
+
   // Select formatter and output based on environment
   let formatter: (entry: LogEntry) => string
   let output: (message: string) => void
-  
+
   if (envConfig.isTest) {
     formatter = formatForTest
     output = () => {} // No-op for tests
@@ -144,7 +158,7 @@ function createLoggerState(config: LoggerConfig): LoggerState {
     formatter = formatForDevelopment
     output = (message) => console.log(message)
   }
-  
+
   return {
     service: config.service,
     environment: envConfig.environment,
@@ -159,14 +173,17 @@ function createLoggerState(config: LoggerConfig): LoggerState {
 /**
  * Create a child logger with additional context
  */
-function createChildLogger(state: LoggerState, additionalContext: LogContext): Logger {
+function createChildLogger(
+  state: LoggerState,
+  additionalContext: LogContext
+): Logger {
   const childState: LoggerState = {
     ...state,
     baseContext: mergeContext(state.baseContext, additionalContext) || {},
     // Child loggers inherit correlation ID from parent
     correlationId: state.correlationId,
   }
-  
+
   return createLoggerFromState(childState)
 }
 
@@ -175,16 +192,15 @@ function createChildLogger(state: LoggerState, additionalContext: LogContext): L
  */
 function createLoggerFromState(state: LoggerState): Logger {
   return {
-    debug: (message: string, context?: LogContext) => 
+    debug: (message: string, context?: LogContext) =>
       logMessage(state, 'debug', message, context),
-    info: (message: string, context?: LogContext) => 
+    info: (message: string, context?: LogContext) =>
       logMessage(state, 'info', message, context),
-    warn: (message: string, context?: LogContext) => 
+    warn: (message: string, context?: LogContext) =>
       logMessage(state, 'warn', message, context),
-    error: (message: string, context?: LogContext) => 
+    error: (message: string, context?: LogContext) =>
       logMessage(state, 'error', message, context),
-    child: (context: LogContext) => 
-      createChildLogger(state, context),
+    child: (context: LogContext) => createChildLogger(state, context),
   }
 }
 
@@ -198,9 +214,9 @@ export function createLogger(config: LoggerConfig): Logger {
 
 // Export utility functions for testing
 export {
-  parseLogLevel,
-  shouldLog,
-  mergeContext,
   createLogEntry,
   createLoggerState,
+  mergeContext,
+  parseLogLevel,
+  shouldLog,
 }

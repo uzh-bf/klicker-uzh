@@ -55,11 +55,11 @@ The `@klicker-uzh/logging` package provides a lightweight, performant, and type-
 
 ### Environment Behaviors
 
-| Environment | Output Format | Default Level | Behavior |
-|------------|--------------|---------------|----------|
-| Test | None | ERROR | Complete silence |
-| Development | Colored multi-line | DEBUG | Human-readable |
-| Production | Single-line JSON | INFO | Machine-parseable |
+| Environment | Output Format      | Default Level | Behavior          |
+| ----------- | ------------------ | ------------- | ----------------- |
+| Test        | None               | ERROR         | Complete silence  |
+| Development | Colored multi-line | DEBUG         | Human-readable    |
+| Production  | Single-line JSON   | INFO          | Machine-parseable |
 
 ## Installation
 
@@ -112,9 +112,9 @@ logger.info('Request received', { path: '/api/users' })
 
 ```typescript
 // Create child logger with additional context
-const requestLogger = logger.child({ 
+const requestLogger = logger.child({
   requestId: 'req-123',
-  userId: 'user-456' 
+  userId: 'user-456',
 })
 
 // Child inherits correlation ID and adds its own context
@@ -144,11 +144,13 @@ The logging package follows a functional architecture with immutable state manag
 The logger automatically detects and adapts to the runtime environment:
 
 #### Test Environment (`NODE_ENV=test`)
+
 - Complete silence - no output whatsoever
 - Enables clean test runs without log noise
 - No performance overhead
 
 #### Development Environment (`NODE_ENV=development`)
+
 - Human-readable format with ANSI colors
 - Multi-line output with indented context
 - Shows correlation ID first 8 characters
@@ -160,12 +162,20 @@ The logger automatically detects and adapts to the runtime environment:
   ```
 
 #### Production Environment (`NODE_ENV=production`)
+
 - Single-line JSON for log aggregation
 - Includes full correlation ID
 - Machine-parseable format
 - Example output:
   ```json
-  {"timestamp":"2024-01-15T10:30:45.123Z","level":"info","service":"my-service","message":"User login successful","correlationId":"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6","context":{"userId":123,"email":"user@example.com"}}
+  {
+    "timestamp": "2024-01-15T10:30:45.123Z",
+    "level": "info",
+    "service": "my-service",
+    "message": "User login successful",
+    "correlationId": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "context": { "userId": 123, "email": "user@example.com" }
+  }
   ```
 
 ### Context System
@@ -174,17 +184,17 @@ Context provides structured metadata for your logs:
 
 ```typescript
 // Context flows through the logger hierarchy
-const appLogger = createLogger({ 
+const appLogger = createLogger({
   service: 'app',
-  context: { version: '1.0.0' }
+  context: { version: '1.0.0' },
 })
 
-const moduleLogger = appLogger.child({ 
-  module: 'auth' 
+const moduleLogger = appLogger.child({
+  module: 'auth',
 })
 
-const requestLogger = moduleLogger.child({ 
-  requestId: 'req-123' 
+const requestLogger = moduleLogger.child({
+  requestId: 'req-123',
 })
 
 // Final context includes all parent contexts
@@ -198,21 +208,21 @@ Correlation IDs enable request tracing across your distributed system:
 ```typescript
 // At service entry point (e.g., API gateway)
 const correlationId = generateCorrelationId()
-const logger = createLogger({ 
+const logger = createLogger({
   service: 'api-gateway',
-  correlationId 
+  correlationId,
 })
 
 // Pass to downstream services
-await downstreamService.process({ 
+await downstreamService.process({
   correlationId,
-  data: payload 
+  data: payload,
 })
 
 // In downstream service
-const logger = createLogger({ 
+const logger = createLogger({
   service: 'downstream-service',
-  correlationId: request.correlationId 
+  correlationId: request.correlationId,
 })
 ```
 
@@ -224,27 +234,29 @@ Creates a new logger instance.
 
 ```typescript
 interface LoggerConfig {
-  service: string          // Service identifier (required)
+  service: string // Service identifier (required)
   environment?: Environment // Override NODE_ENV
-  level?: LogLevelString   // Override default log level
-  context?: LogContext     // Base context for all logs
-  correlationId?: string   // Correlation ID for distributed tracing
+  level?: LogLevelString // Override default log level
+  context?: LogContext // Base context for all logs
+  correlationId?: string // Correlation ID for distributed tracing
 }
 ```
 
 **Example:**
+
 ```typescript
 const logger = createLogger({
   service: 'user-service',
   level: 'info',
   context: { region: 'eu-west-1' },
-  correlationId: generateCorrelationId()
+  correlationId: generateCorrelationId(),
 })
 ```
 
 ### Logger Methods
 
 #### logger.debug(message: string, context?: LogContext): void
+
 Log debug-level message (only in development by default).
 
 ```typescript
@@ -252,6 +264,7 @@ logger.debug('Cache miss', { key: 'user:123', ttl: 300 })
 ```
 
 #### logger.info(message: string, context?: LogContext): void
+
 Log informational message.
 
 ```typescript
@@ -259,6 +272,7 @@ logger.info('User registered', { userId: 123, email: 'user@example.com' })
 ```
 
 #### logger.warn(message: string, context?: LogContext): void
+
 Log warning message.
 
 ```typescript
@@ -266,29 +280,32 @@ logger.warn('High memory usage', { used: 1800, total: 2048 })
 ```
 
 #### logger.error(message: string, context?: LogContext): void
+
 Log error message.
 
 ```typescript
-logger.error('Database connection failed', { 
+logger.error('Database connection failed', {
   error: error.message,
   host: 'db.example.com',
-  port: 5432 
+  port: 5432,
 })
 ```
 
 #### logger.child(context: LogContext): Logger
+
 Create a child logger with inherited context and correlation ID.
 
 ```typescript
-const childLogger = logger.child({ 
+const childLogger = logger.child({
   requestId: 'req-123',
-  userId: 'user-456' 
+  userId: 'user-456',
 })
 ```
 
 ### Utility Functions
 
 #### generateCorrelationId(): string
+
 Generate a new UUID v4 correlation ID.
 
 ```typescript
@@ -299,17 +316,17 @@ const correlationId = generateCorrelationId()
 ### Context Utilities
 
 #### createOperationContext(operationId, operationType?, additionalContext?)
+
 Create context for operation tracking.
 
 ```typescript
-const context = createOperationContext(
-  'op-123',
-  'USER_REGISTRATION',
-  { priority: 'high' }
-)
+const context = createOperationContext('op-123', 'USER_REGISTRATION', {
+  priority: 'high',
+})
 ```
 
 #### createUserContext(userId, additionalContext?)
+
 Create context for user tracking.
 
 ```typescript
@@ -317,18 +334,17 @@ const context = createUserContext('user-456', { role: 'admin' })
 ```
 
 #### createRequestContext(requestId, method?, path?, additionalContext?)
+
 Create context for request tracking.
 
 ```typescript
-const context = createRequestContext(
-  'req-789',
-  'POST',
-  '/api/users',
-  { ip: '192.168.1.1' }
-)
+const context = createRequestContext('req-789', 'POST', '/api/users', {
+  ip: '192.168.1.1',
+})
 ```
 
 #### createPerformanceContext(startTime, additionalContext?)
+
 Create context with performance metrics.
 
 ```typescript
@@ -339,14 +355,11 @@ const context = createPerformanceContext(startTime, { itemCount: 100 })
 ```
 
 #### createCorrelationContext(correlationId, parentId?, spanId?)
+
 Create correlation context for distributed tracing.
 
 ```typescript
-const context = createCorrelationContext(
-  'corr-123',
-  'parent-456',
-  'span-789'
-)
+const context = createCorrelationContext('corr-123', 'parent-456', 'span-789')
 ```
 
 ## Architecture
@@ -368,6 +381,7 @@ src/
 ### Module Responsibilities
 
 #### `logger.ts` - Core Implementation
+
 - Functional logger creation
 - State management
 - Log level filtering
@@ -375,24 +389,28 @@ src/
 - Correlation ID propagation
 
 #### `formatter.ts` - Output Formatting
+
 - Development: Colored multi-line console output
 - Production: Single-line JSON formatting
 - Test: No-op formatter (returns empty string)
 - Error recovery for serialization issues
 
 #### `environment.ts` - Environment Management
+
 - NODE_ENV detection
 - Default log level configuration
 - Environment-specific behavior flags
 - LOG_LEVEL environment variable support
 
 #### `context.ts` - Context Utilities
+
 - Context validation and sanitization
 - Specialized context creators
 - Size limit enforcement (1000 chars)
 - Circular reference protection
 
 #### `types.ts` - Type Definitions
+
 - TypeScript interfaces
 - Type-safe enums
 - Correlation context types
@@ -416,11 +434,11 @@ Create a standardized logger factory for your service:
 // src/logging.ts
 import { createLogger, type Environment } from '@klicker-uzh/logging'
 
-export const createServiceLogger = (module: string, correlationId?: string) => 
-  createLogger({ 
+export const createServiceLogger = (module: string, correlationId?: string) =>
+  createLogger({
     service: `myapp-${module}`,
     environment: process.env.NODE_ENV as Environment,
-    correlationId
+    correlationId,
   })
 
 // In your modules
@@ -436,35 +454,36 @@ Track complete request lifecycle:
 ```typescript
 // Middleware example
 export const loggingMiddleware = (req, res, next) => {
-  const correlationId = req.headers['x-correlation-id'] || generateCorrelationId()
+  const correlationId =
+    req.headers['x-correlation-id'] || generateCorrelationId()
   const startTime = Date.now()
-  
+
   const logger = createLogger({
     service: 'api',
-    correlationId
+    correlationId,
   })
-  
+
   const requestLogger = logger.child({
     requestId: generateId(),
     method: req.method,
     path: req.path,
-    ip: req.ip
+    ip: req.ip,
   })
-  
+
   // Attach to request for use in handlers
   req.logger = requestLogger
   req.correlationId = correlationId
-  
+
   requestLogger.info('Request started')
-  
+
   // Log response
   res.on('finish', () => {
     requestLogger.info('Request completed', {
       statusCode: res.statusCode,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     })
   })
-  
+
   next()
 }
 ```
@@ -474,15 +493,19 @@ export const loggingMiddleware = (req, res, next) => {
 Consistent error logging pattern:
 
 ```typescript
-export const logError = (logger: Logger, error: Error, context?: LogContext) => {
+export const logError = (
+  logger: Logger,
+  error: Error,
+  context?: LogContext
+) => {
   logger.error(error.message, {
     ...context,
     error: {
       name: error.name,
       message: error.message,
       stack: error.stack,
-      cause: error.cause
-    }
+      cause: error.cause,
+    },
   })
 }
 
@@ -490,9 +513,9 @@ export const logError = (logger: Logger, error: Error, context?: LogContext) => 
 try {
   await riskyOperation()
 } catch (error) {
-  logError(logger, error, { 
+  logError(logger, error, {
     operation: 'riskyOperation',
-    userId: user.id 
+    userId: user.id,
   })
   throw error
 }
@@ -510,21 +533,23 @@ export const withPerformanceLogging = async <T>(
 ): Promise<T> => {
   const startTime = Date.now()
   const opLogger = logger.child({ operation })
-  
+
   try {
     opLogger.debug(`${operation} started`)
     const result = await fn()
-    
-    opLogger.info(`${operation} completed`, 
+
+    opLogger.info(
+      `${operation} completed`,
       createPerformanceContext(startTime, { success: true })
     )
-    
+
     return result
   } catch (error) {
-    opLogger.error(`${operation} failed`, 
-      createPerformanceContext(startTime, { 
+    opLogger.error(
+      `${operation} failed`,
+      createPerformanceContext(startTime, {
         success: false,
-        error: error.message 
+        error: error.message,
       })
     )
     throw error
@@ -538,43 +563,43 @@ Log batch operation progress:
 
 ```typescript
 export const processBatch = async (items: Item[], logger: Logger) => {
-  const batchLogger = logger.child({ 
+  const batchLogger = logger.child({
     batchId: generateId(),
-    totalItems: items.length 
+    totalItems: items.length,
   })
-  
+
   batchLogger.info('Batch processing started')
-  
+
   const startTime = Date.now()
   let processed = 0
   let failed = 0
-  
+
   for (const item of items) {
     try {
       await processItem(item)
       processed++
-      
+
       if (processed % 100 === 0) {
-        batchLogger.info('Batch progress', { 
+        batchLogger.info('Batch progress', {
           processed,
           remaining: items.length - processed,
-          rate: processed / ((Date.now() - startTime) / 1000)
+          rate: processed / ((Date.now() - startTime) / 1000),
         })
       }
     } catch (error) {
       failed++
-      batchLogger.warn('Item processing failed', { 
+      batchLogger.warn('Item processing failed', {
         itemId: item.id,
-        error: error.message 
+        error: error.message,
       })
     }
   }
-  
+
   batchLogger.info('Batch processing completed', {
     duration: Date.now() - startTime,
     processed,
     failed,
-    successRate: (processed / items.length) * 100
+    successRate: (processed / items.length) * 100,
   })
 }
 ```
@@ -589,42 +614,42 @@ import { createLogger, generateCorrelationId } from '@klicker-uzh/logging'
 export const createLoggingMiddleware = (serviceName: string) => {
   return (req, res, next) => {
     // Extract or generate correlation ID
-    const correlationId = 
-      req.headers['x-correlation-id'] || 
-      req.headers['x-request-id'] || 
+    const correlationId =
+      req.headers['x-correlation-id'] ||
+      req.headers['x-request-id'] ||
       generateCorrelationId()
-    
+
     // Create request-scoped logger
     const logger = createLogger({
       service: serviceName,
-      correlationId
+      correlationId,
     })
-    
+
     const requestLogger = logger.child({
       method: req.method,
       path: req.path,
-      requestId: generateId()
+      requestId: generateId(),
     })
-    
+
     // Attach to request
     req.logger = requestLogger
     req.correlationId = correlationId
-    
+
     // Set correlation ID in response headers
     res.setHeader('X-Correlation-ID', correlationId)
-    
+
     // Log request
     requestLogger.info('Incoming request')
-    
+
     // Log response
     const startTime = Date.now()
     res.on('finish', () => {
       requestLogger.info('Request completed', {
         statusCode: res.statusCode,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       })
     })
-    
+
     next()
   }
 }
@@ -643,34 +668,33 @@ const server = new GraphQLServer({
   typeDefs,
   resolvers,
   context: ({ request }) => {
-    const correlationId = 
-      request.headers['x-correlation-id'] || 
-      generateCorrelationId()
-    
+    const correlationId =
+      request.headers['x-correlation-id'] || generateCorrelationId()
+
     const logger = createLogger({
       service: 'graphql-api',
-      correlationId
+      correlationId,
     })
-    
+
     return {
       logger,
       correlationId,
       // ... other context
     }
-  }
+  },
 })
 
 // In resolvers
 const resolvers = {
   Query: {
     user: async (parent, { id }, { logger, prisma }) => {
-      const queryLogger = logger.child({ 
+      const queryLogger = logger.child({
         operation: 'query.user',
-        userId: id 
+        userId: id,
       })
-      
+
       queryLogger.info('Fetching user')
-      
+
       try {
         const user = await prisma.user.findUnique({ where: { id } })
         queryLogger.info('User fetched successfully')
@@ -679,8 +703,8 @@ const resolvers = {
         queryLogger.error('Failed to fetch user', { error: error.message })
         throw error
       }
-    }
-  }
+    },
+  },
 }
 ```
 
@@ -693,35 +717,35 @@ import { createLogger } from '@klicker-uzh/logging'
 export const createMessageHandler = (queueName: string) => {
   return async (message: Message) => {
     // Extract correlation ID from message headers
-    const correlationId = 
-      message.properties.headers['x-correlation-id'] || 
+    const correlationId =
+      message.properties.headers['x-correlation-id'] ||
       message.properties.correlationId ||
       generateCorrelationId()
-    
+
     const logger = createLogger({
       service: `queue-${queueName}`,
-      correlationId
+      correlationId,
     })
-    
+
     const messageLogger = logger.child({
       messageId: message.properties.messageId,
       queue: queueName,
-      redelivered: message.fields.redelivered
+      redelivered: message.fields.redelivered,
     })
-    
+
     try {
       messageLogger.info('Processing message')
-      
+
       const payload = JSON.parse(message.content.toString())
       await processMessage(payload, messageLogger)
-      
+
       messageLogger.info('Message processed successfully')
       channel.ack(message)
     } catch (error) {
-      messageLogger.error('Message processing failed', { 
-        error: error.message 
+      messageLogger.error('Message processing failed', {
+        error: error.message,
       })
-      
+
       // Requeue or dead letter based on your strategy
       channel.nack(message, false, !message.fields.redelivered)
     }
@@ -737,29 +761,29 @@ export const withTransactionLogging = async <T>(
   logger: Logger,
   fn: (tx: PrismaClient) => Promise<T>
 ): Promise<T> => {
-  const txLogger = logger.child({ 
-    transactionId: generateId() 
+  const txLogger = logger.child({
+    transactionId: generateId(),
   })
-  
+
   txLogger.info('Transaction started')
   const startTime = Date.now()
-  
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // Make logger available to transaction
-      (tx as any).logger = txLogger
+      ;(tx as any).logger = txLogger
       return await fn(tx)
     })
-    
+
     txLogger.info('Transaction committed', {
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     })
-    
+
     return result
   } catch (error) {
     txLogger.error('Transaction rolled back', {
       duration: Date.now() - startTime,
-      error: error.message
+      error: error.message,
     })
     throw error
   }
@@ -792,6 +816,7 @@ kubectl logs -l app=backend | jq 'select(.context.userId == "user-123")'
 ### Log Aggregation Queries
 
 #### Elasticsearch/OpenSearch
+
 ```json
 {
   "query": {
@@ -807,6 +832,7 @@ kubectl logs -l app=backend | jq 'select(.context.userId == "user-123")'
 ```
 
 #### CloudWatch Insights
+
 ```sql
 fields @timestamp, level, service, message, correlationId, context
 | filter correlationId = "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
@@ -814,6 +840,7 @@ fields @timestamp, level, service, message, correlationId, context
 ```
 
 #### Datadog
+
 ```
 service:my-app @correlationId:"a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
 ```
@@ -826,13 +853,13 @@ Track performance metrics through logs:
 // Log performance metrics periodically
 setInterval(() => {
   const metrics = collectMetrics()
-  
+
   logger.info('Performance metrics', {
     cpu: metrics.cpu,
     memory: metrics.memory,
     activeConnections: metrics.connections,
     requestRate: metrics.requestRate,
-    errorRate: metrics.errorRate
+    errorRate: metrics.errorRate,
   })
 }, 60000) // Every minute
 ```
@@ -840,27 +867,30 @@ setInterval(() => {
 ### Security Considerations
 
 1. **Never log sensitive data**:
+
    ```typescript
    // Bad
    logger.info('User login', { password: user.password })
-   
+
    // Good
    logger.info('User login', { userId: user.id, email: user.email })
    ```
 
 2. **Sanitize user input**:
+
    ```typescript
-   logger.info('Search query', { 
+   logger.info('Search query', {
      query: sanitizeSearchQuery(userInput),
-     resultsCount: results.length 
+     resultsCount: results.length,
    })
    ```
 
 3. **Use structured context**:
+
    ```typescript
    // Bad - string interpolation can lead to log injection
    logger.info(`User ${userId} performed ${action}`)
-   
+
    // Good - structured context
    logger.info('User action', { userId, action })
    ```
@@ -892,7 +922,7 @@ import winston from 'winston'
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
-  transports: [new winston.transports.Console()]
+  transports: [new winston.transports.Console()],
 })
 
 logger.info('User action', { userId: 123 })
@@ -900,9 +930,9 @@ logger.info('User action', { userId: 123 })
 // After - @klicker-uzh/logging
 import { createLogger } from '@klicker-uzh/logging'
 
-const logger = createLogger({ 
+const logger = createLogger({
   service: 'my-service',
-  level: 'info'
+  level: 'info',
 })
 
 logger.info('User action', { userId: 123 })
@@ -916,7 +946,7 @@ import pino from 'pino'
 
 const logger = pino({
   name: 'my-app',
-  level: 'info'
+  level: 'info',
 })
 
 const child = logger.child({ requestId: 'req-123' })
@@ -925,9 +955,9 @@ child.info('Processing request')
 // After - @klicker-uzh/logging
 import { createLogger } from '@klicker-uzh/logging'
 
-const logger = createLogger({ 
+const logger = createLogger({
   service: 'my-app',
-  level: 'info'
+  level: 'info',
 })
 
 const child = logger.child({ requestId: 'req-123' })
@@ -942,7 +972,7 @@ If you're adding correlation IDs to an existing codebase:
 // 1. Update service initialization
 const logger = createLogger({
   service: 'my-service',
-  correlationId: config.correlationId || generateCorrelationId()
+  correlationId: config.correlationId || generateCorrelationId(),
 })
 
 // 2. Update middleware/interceptors
@@ -950,7 +980,7 @@ app.use((req, res, next) => {
   req.correlationId = req.headers['x-correlation-id'] || generateCorrelationId()
   req.logger = createLogger({
     service: 'api',
-    correlationId: req.correlationId
+    correlationId: req.correlationId,
   })
   next()
 })
@@ -959,9 +989,9 @@ app.use((req, res, next) => {
 await fetch(downstreamUrl, {
   headers: {
     'X-Correlation-ID': correlationId,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
-  body: JSON.stringify(payload)
+  body: JSON.stringify(payload),
 })
 ```
 
@@ -971,13 +1001,13 @@ await fetch(downstreamUrl, {
 
 Performance characteristics measured on Node.js 20:
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Log call overhead | 0.006ms | Per log statement |
-| Context creation | 0.29μs | Creating context objects |
-| Child logger creation | 0.8μs | Including context merge |
-| High-volume logging | 290 ops/sec | Sustained rate |
-| Memory per child logger | 1.73KB | 1000 child loggers = 1.73MB |
+| Operation               | Time        | Notes                       |
+| ----------------------- | ----------- | --------------------------- |
+| Log call overhead       | 0.006ms     | Per log statement           |
+| Context creation        | 0.29μs      | Creating context objects    |
+| Child logger creation   | 0.8μs       | Including context merge     |
+| High-volume logging     | 290 ops/sec | Sustained rate              |
+| Memory per child logger | 1.73KB      | 1000 child loggers = 1.73MB |
 
 ### Optimization Tips
 
@@ -988,7 +1018,7 @@ Performance characteristics measured on Node.js 20:
    ```typescript
    // Consider implementing in future versions
    logger.info('Expensive operation', () => ({
-     metrics: calculateExpensiveMetrics()
+     metrics: calculateExpensiveMetrics(),
    }))
    ```
 
@@ -1010,18 +1040,21 @@ The logger is designed to be memory efficient:
 **Symptoms**: Logger seems to work but no output appears
 
 **Solutions**:
+
 1. Check NODE_ENV is set to 'development':
+
    ```bash
    echo $NODE_ENV
    # Should output: development
    ```
 
 2. Verify log level allows your messages:
+
    ```typescript
    // Debug messages only show in development with DEBUG level
-   const logger = createLogger({ 
+   const logger = createLogger({
      service: 'test',
-     level: 'debug' // Explicitly set level
+     level: 'debug', // Explicitly set level
    })
    ```
 
@@ -1035,13 +1068,15 @@ The logger is designed to be memory efficient:
 **Symptoms**: Log aggregation fails to parse logs
 
 **Solutions**:
+
 1. Check for circular references:
+
    ```typescript
    // Bad - circular reference
    const obj = { name: 'test' }
    obj.self = obj
    logger.info('Data', obj) // Will fail
-   
+
    // Good - sanitize first
    logger.info('Data', { name: obj.name })
    ```
@@ -1057,13 +1092,15 @@ The logger is designed to be memory efficient:
 **Symptoms**: Correlation IDs not propagating between services
 
 **Solutions**:
+
 1. Ensure correlation ID is passed in requests:
+
    ```typescript
    // HTTP headers
    headers: {
      'X-Correlation-ID': correlationId
    }
-   
+
    // Message properties
    properties: {
      correlationId: correlationId
@@ -1072,7 +1109,7 @@ The logger is designed to be memory efficient:
 
 2. Extract from multiple sources:
    ```typescript
-   const correlationId = 
+   const correlationId =
      req.headers['x-correlation-id'] ||
      req.headers['x-request-id'] ||
      req.body?.correlationId ||
@@ -1084,26 +1121,29 @@ The logger is designed to be memory efficient:
 **Symptoms**: Logging causing slowdowns
 
 **Solutions**:
+
 1. Reduce context size:
+
    ```typescript
    // Bad - large objects
    logger.info('Update', { entireUser: user })
-   
+
    // Good - relevant fields only
-   logger.info('Update', { 
+   logger.info('Update', {
      userId: user.id,
-     changedFields: Object.keys(changes)
+     changedFields: Object.keys(changes),
    })
    ```
 
 2. Avoid logging in tight loops:
+
    ```typescript
    // Bad
    for (const item of items) {
      logger.debug('Processing', { item })
      process(item)
    }
-   
+
    // Good
    logger.info('Processing batch', { count: items.length })
    for (const item of items) {
@@ -1113,10 +1153,11 @@ The logger is designed to be memory efficient:
    ```
 
 3. Use appropriate log levels:
+
    ```typescript
    // Use debug for detailed tracing
    logger.debug('Cache check', { key })
-   
+
    // Use info for important events
    logger.info('User login', { userId })
    ```
@@ -1164,17 +1205,20 @@ pnpm dev
 ### Code Style Guidelines
 
 1. **Follow functional programming patterns**:
+
    - No classes - use functions and closures
    - Immutable state - never mutate, always return new
    - Pure functions - no side effects except in designated output functions
    - Explicit dependencies - pass all dependencies as parameters
 
 2. **Maintain zero dependencies**:
+
    - Only use Node.js built-ins
    - No external packages
    - Implement utilities as needed
 
 3. **Ensure type safety**:
+
    - Define all types in types.ts
    - Use strict TypeScript settings
    - Export types for public API

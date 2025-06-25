@@ -2,14 +2,19 @@
  * Environment detection and configuration for logging
  */
 
-import { Environment, EnvironmentConfig, LogLevel, LogLevelString } from './types.js'
+import {
+  Environment,
+  EnvironmentConfig,
+  LogLevel,
+  LogLevelString,
+} from './types.js'
 
 /**
  * Detect current environment from NODE_ENV
  */
 export function detectEnvironment(): Environment {
   const nodeEnv = process.env.NODE_ENV?.toLowerCase()
-  
+
   switch (nodeEnv) {
     case 'test':
       return 'test'
@@ -42,7 +47,7 @@ export function getDefaultLogLevel(environment: Environment): LogLevel {
  */
 export function parseLogLevel(level: string | undefined): LogLevel | undefined {
   if (!level) return undefined
-  
+
   switch (level.toLowerCase()) {
     case 'debug':
       return LogLevel.DEBUG
@@ -92,13 +97,15 @@ export function isProduction(environment: Environment): boolean {
 /**
  * Get complete environment configuration
  */
-export function getEnvironmentConfig(overrideEnv?: Environment): EnvironmentConfig {
+export function getEnvironmentConfig(
+  overrideEnv?: Environment
+): EnvironmentConfig {
   const environment = overrideEnv || detectEnvironment()
-  
+
   // Check for log level override from environment variable
   const envLogLevel = parseLogLevel(process.env.LOG_LEVEL)
   const logLevel = envLogLevel ?? getDefaultLogLevel(environment)
-  
+
   return {
     environment,
     logLevel,
