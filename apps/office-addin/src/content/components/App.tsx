@@ -100,7 +100,17 @@ export default function App({
           <div className="mb-4 flex flex-row gap-4">
             <div className="flex-1">
               <ol className="list-inside list-decimal">
-                <li>Go to https://manage.klicker.uzh.ch/activities</li>
+                <li>
+                  Go to{' '}
+                  <a
+                    href="https://manage.klicker.uzh.ch/activities"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    https://manage.klicker.uzh.ch/activities
+                  </a>
+                </li>
                 <li>
                   For the live quiz you want to embed, open the &ldquo;Embed
                   Evaluation&rdquo; dialog
