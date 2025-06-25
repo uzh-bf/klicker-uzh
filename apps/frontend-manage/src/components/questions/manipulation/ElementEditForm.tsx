@@ -5,7 +5,9 @@ import {
   ElementType,
   GetAnswerCollectionsElementsDocument,
   ObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -38,7 +40,6 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
-  open,
   onClose,
   onSuccess,
   mode,
@@ -59,7 +60,6 @@ function ElementEditForm({
   isTemplate?: boolean
   templateId?: string
   // modal state props
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   // element mode and identification
@@ -109,6 +109,11 @@ function ElementEditForm({
   })
   const collections = data?.getAnswerCollectionsElements ?? []
 
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
   return (
     <>
       <Formik
@@ -147,14 +152,18 @@ function ElementEditForm({
           submitForm,
         }) => {
           if (loading) {
-            return null
+            return (
+              <Modal open onClose={() => onClose()} fullScreen>
+                <Loader />
+              </Modal>
+            )
           }
 
           return (
             <Modal
+              open
               fullScreen
               title={t(`manage.elements.${mode}Title`)}
-              open={open}
               onClose={() => onClose()}
               escapeDisabled={true}
               onPrimaryAction={() => submitForm()}
@@ -171,7 +180,7 @@ function ElementEditForm({
               dataSecondaryAction={{ cy: 'close-element-modal-button' }}
               className={{
                 title: 'text-xl',
-                content: 'text-sm md:text-base 2xl:max-w-[1400px]',
+                content: 'h-max text-sm md:text-base 2xl:max-w-[1400px]',
                 footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
               }}
               dataCloseButton={{ cy: 'close-element-modal' }}
@@ -313,7 +322,7 @@ function ElementEditForm({
                   )}
                 </div>
 
-                {mode === ElementEditMode.EDIT ? (
+                {mode === ElementEditMode.EDIT && user?.privatePreview ? (
                   <Tabs
                     defaultValue="preview"
                     onValueChange={(value) => {
@@ -390,7 +399,6 @@ function ElementEditForm({
         <AnswerCollectionEditModal
           inlineEditing
           collectionId={collectionModal.id}
-          open={collectionModal.open}
           onClose={() => setCollectionModal({ open: false, id: undefined })}
           refetchAnswerCollections={async () => {
             await refetch()

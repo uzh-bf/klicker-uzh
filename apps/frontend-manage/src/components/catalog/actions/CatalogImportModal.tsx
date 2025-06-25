@@ -9,7 +9,6 @@ import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useImportCatalogObject from './useImportCatalogObject'
 
 function CatalogImportModal({
-  open,
   onSuccess,
   onClose,
   objectType,
@@ -18,7 +17,6 @@ function CatalogImportModal({
   objectOwner,
   catalogCollectionId,
 }: {
-  open: boolean
   onSuccess: () => void
   onClose: () => void
   objectType: ObjectType
@@ -44,7 +42,7 @@ function CatalogImportModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={(e) => {
         e?.stopPropagation()
         onClose()

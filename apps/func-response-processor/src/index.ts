@@ -30,6 +30,48 @@ Sentry.init()
 
 const redisExec = getRedis()
 
+function updateLeaderboards({
+  redisMulti,
+  participantId,
+  participantRole,
+  sessionKey,
+  sessionBlockId,
+  pointsAwarded,
+  xpAwarded,
+}: {
+  redisMulti: ChainableCommander
+  participantId: string
+  participantRole: string
+  sessionKey: string
+  sessionBlockId: string
+  pointsAwarded: number
+  xpAwarded: number
+}) {
+  // depending on the participant account type (permanent student account or
+  // temporary pseudonym), set the correct points / experience points
+  if (participantRole === 'PARTICIPANT') {
+    redisMulti.hincrby(
+      `${sessionKey}:b:${sessionBlockId}:lb`,
+      participantId,
+      pointsAwarded
+    )
+    redisMulti.hincrby(`${sessionKey}:lb`, participantId, pointsAwarded)
+    redisMulti.hincrby(`${sessionKey}:xp`, participantId, xpAwarded)
+  } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
+    // temporary participants are only granted points, xp cannot be collected
+    redisMulti.hincrby(
+      `${sessionKey}:b:${sessionBlockId}:lbTemporary`,
+      participantId,
+      pointsAwarded
+    )
+    redisMulti.hincrby(
+      `${sessionKey}:lbTemporary`,
+      participantId,
+      pointsAwarded
+    )
+  }
+}
+
 interface Message {
   messageId: string
   sessionId: string
@@ -101,17 +143,31 @@ const serviceBusTrigger = async function (
           } else {
             context.log("Participant's JWT verified", participantData)
           }
+        } else if (parsedCookies['temporary_participant_token'] !== undefined) {
+          participantData = verify(
+            parsedCookies['temporary_participant_token'],
+            process.env.APP_SECRET
+          ) as { sub: string; role: string }
+
+          if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
+            participantData = null
+          } else {
+            context.log("Temporary Participant's JWT verified", participantData)
+          }
         }
       } catch (e) {
         context.error('JWT verification failed', e, queueItem.cookie)
         Sentry.captureException(e)
       }
+
       // if the participant has already responded to the question instance, return instantly
       if (
         participantData &&
         (await redisExec.hexists(
           `${instanceKey}:responses`,
-          participantData.sub
+          participantData.role === 'TEMPORARY_PARTICIPANT'
+            ? `temporary-${participantData.sub}`
+            : participantData.sub
         ))
       ) {
         context.log(
@@ -120,13 +176,13 @@ const serviceBusTrigger = async function (
         return { status: 200 }
       }
     }
+
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo) {
       context.log('Question instance metadata not found', queueItem)
       return { status: 400 }
     }
-
     context.log('Instance info', instanceInfo)
 
     const {
@@ -156,12 +212,15 @@ const serviceBusTrigger = async function (
       case 'SC':
       case 'MC':
       case 'KPRIM': {
+        // add the vote to the aggregated results
         response.choices.forEach((choiceIndex: number) => {
           redisMulti.hincrby(`${instanceKey}:results`, String(choiceIndex), 1)
         })
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+
+        // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          let pointsPercentage
+          let pointsPercentage: number | null
           if (type === 'SC') {
             pointsPercentage = gradeQuestionSC({
               responseCount: Number(choiceCount),
@@ -219,27 +278,31 @@ const serviceBusTrigger = async function (
               responseTimestamp
             )
           }
+
           redisMulti.hset(
             `${instanceKey}:responses`,
-            participantData.sub,
-            response.choices
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            `[${String(response.choices)}]`
           )
-          redisMulti.hincrby(
-            `${sessionKey}:b:${sessionBlockId}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(
-            `${sessionKey}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+
+          // update both the regular and temporary live quiz leaderboards
+          updateLeaderboards({
+            redisMulti,
+            participantId: participantData.sub,
+            participantRole: participantData.role,
+            sessionKey,
+            sessionBlockId,
+            pointsAwarded,
+            xpAwarded,
+          })
         }
         break
       }
       // TODO: points based on distance to correct range?
       case 'NUMERICAL': {
+        // add the response to the aggregated results
         const MD5 = createHash('md5')
         MD5.update(response.value)
         const responseHash = MD5.digest('hex')
@@ -251,19 +314,20 @@ const serviceBusTrigger = async function (
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
-        const exactSolutionsDefined =
-          typeof parsedSolutions !== 'undefined' &&
-          parsedSolutions.length > 0 &&
-          (typeof parsedSolutions[0] === 'number' ||
-            typeof parsedSolutions[0] === 'string')
-
-        const answerCorrect = gradeQuestionNumerical({
-          response: response.value,
-          solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-          exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
-        })
-
+        // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
+          const exactSolutionsDefined =
+            typeof parsedSolutions !== 'undefined' &&
+            parsedSolutions.length > 0 &&
+            (typeof parsedSolutions[0] === 'number' ||
+              typeof parsedSolutions[0] === 'string')
+
+          const answerCorrect = gradeQuestionNumerical({
+            response: response.value,
+            solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+            exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+          })
+
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
@@ -298,29 +362,32 @@ const serviceBusTrigger = async function (
               responseTimestamp
             )
           }
+
           redisMulti.hset(
             `${instanceKey}:responses`,
-            participantData.sub,
-            response.value
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            String(response.value)
           )
-          redisMulti.hincrby(
-            `${sessionKey}:b:${sessionBlockId}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(
-            `${sessionKey}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+
+          // update both the regular and temporary live quiz leaderboards
+          updateLeaderboards({
+            redisMulti,
+            participantId: participantData.sub,
+            participantRole: participantData.role,
+            sessionKey,
+            sessionBlockId,
+            pointsAwarded,
+            xpAwarded,
+          })
         }
         break
       }
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
+        // add the response to the aggregated results
         const cleanResponseValue = toLowerCase(response.value.trim())
-
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
@@ -331,6 +398,8 @@ const serviceBusTrigger = async function (
           cleanResponseValue
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+
+        // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           const answerCorrect = gradeQuestionFreeText({
             response: cleanResponseValue,
@@ -371,26 +440,30 @@ const serviceBusTrigger = async function (
               responseTimestamp
             )
           }
+
           redisMulti.hset(
             `${instanceKey}:responses`,
-            participantData.sub,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
             cleanResponseValue
           )
-          redisMulti.hincrby(
-            `${sessionKey}:b:${sessionBlockId}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(
-            `${sessionKey}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+
+          // update both the regular and temporary live quiz leaderboards
+          updateLeaderboards({
+            redisMulti,
+            participantId: participantData.sub,
+            participantRole: participantData.role,
+            sessionKey,
+            sessionBlockId,
+            pointsAwarded,
+            xpAwarded,
+          })
         }
         break
       }
       case 'SELECTION': {
+        // add the response to the aggregated results
         response.selection.forEach((answerId: number) => {
           // skipped input fields should not be considered
           if (answerId === -1) {
@@ -401,6 +474,7 @@ const serviceBusTrigger = async function (
         })
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
+        // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           const pointsPercentage = gradeQuestionSelection({
             numberOfInputs: parseInt(instanceInfo.numberOfInputs),
@@ -450,24 +524,27 @@ const serviceBusTrigger = async function (
 
           redisMulti.hset(
             `${instanceKey}:responses`,
-            participantData.sub,
-            response.selection.filter((r: number) => r !== -1) // filter out skipped response fields
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
           )
-          redisMulti.hincrby(
-            `${sessionKey}:b:${sessionBlockId}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(
-            `${sessionKey}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+
+          // update both the regular and temporary live quiz leaderboards
+          updateLeaderboards({
+            redisMulti,
+            participantId: participantData.sub,
+            participantRole: participantData.role,
+            sessionKey,
+            sessionBlockId,
+            pointsAwarded,
+            xpAwarded,
+          })
         }
         break
       }
       case 'CASE_STUDY': {
+        // add the response to the aggregated results
         Object.entries(response.assessment).forEach(([caseId, caseData]) => {
           Object.entries(caseData).forEach(([itemId, itemData]) => {
             Object.entries(itemData).forEach(
@@ -500,6 +577,7 @@ const serviceBusTrigger = async function (
         // increment participant count
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
+        // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           const pointsPercentage = gradeQuestionCaseStudy({
             response: response.assessment,
@@ -546,20 +624,22 @@ const serviceBusTrigger = async function (
           }
           redisMulti.hset(
             `${instanceKey}:responses`,
-            participantData.sub,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
             JSON.stringify(response.assessment)
           )
-          redisMulti.hincrby(
-            `${sessionKey}:b:${sessionBlockId}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(
-            `${sessionKey}:lb`,
-            participantData.sub,
-            pointsAwarded
-          )
-          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+
+          // update both the regular and temporary live quiz leaderboards
+          updateLeaderboards({
+            redisMulti,
+            participantId: participantData.sub,
+            participantRole: participantData.role,
+            sessionKey,
+            sessionBlockId,
+            pointsAwarded,
+            xpAwarded,
+          })
         }
 
         break

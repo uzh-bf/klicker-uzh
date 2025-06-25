@@ -137,17 +137,6 @@ function LecturerView() {
 
       {isLiveQAEnabled && (
         <div className="flex-1">
-          {/* // TODO: readd dropdown to allow lecturer to sort feedbacks according to preferences
-        <Dropdown
-          selection
-          options={[
-            { text: 'Sort by Upvotes', value: 'upvotes' },
-            { text: 'Sort by Recency', value: 'recency' },
-          ]}
-          value={sortBy}
-          onChange={(_, { value }) => setSortBy(value as string)}
-        /> */}
-
           {feedbacks?.length === 0 && (
             <div className="border-primary-100 mt-4 flex items-center rounded border border-solid p-4 text-2xl">
               {t('manage.lecturer.noFeedbacks')}

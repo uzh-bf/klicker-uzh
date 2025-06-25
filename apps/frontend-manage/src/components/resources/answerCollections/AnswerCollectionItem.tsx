@@ -5,7 +5,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, toast } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -137,17 +137,12 @@ function AnswerCollectionItem({
           {dropdownItems.length > 0 && (
             <Dropdown
               items={dropdownItems}
-              trigger={
-                <Button
-                  basic
-                  className={{
-                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                  }}
-                >
-                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
-                </Button>
-              }
-              className={{ item: 'py-0.5 text-sm' }}
+              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+              className={{
+                item: 'py-0.5 text-sm',
+                trigger:
+                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+              }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />
           )}
@@ -155,17 +150,15 @@ function AnswerCollectionItem({
       </div>
 
       {/* editing and viewing modal components */}
-      {collection.isEditor && (
+      {collection.isEditor && editModal && (
         <AnswerCollectionEditModal
           collectionId={collection.id}
-          open={editModal}
           onClose={() => setEditModal(false)}
         />
       )}
       {duplicationModal && (
         <AnswerCollectionDuplicationModal
           collectionId={collection.id}
-          open={duplicationModal}
           onClose={() => setDuplicationModal(false)}
           onSuccess={() =>
             toast({
@@ -177,10 +170,9 @@ function AnswerCollectionItem({
         />
       )}
 
-      {!collection.isEditor && (
+      {!collection.isEditor && viewingModal && (
         <AnswerCollectionViewingModal
           collectionId={collection.id}
-          open={viewingModal}
           onClose={() => setViewingModal(false)}
         />
       )}
@@ -188,38 +180,41 @@ function AnswerCollectionItem({
       {/* sharing functionalities modals to add / revoke / ... access */}
       {collection.isManager && (
         <>
-          <ObjectSharingModalWrapper
-            objectId={collection.id}
-            objectName={collection.name}
-            objectType={ObjectType.AnswerCollection}
-            isOwner={collection.isOwner ?? false}
-            open={sharingModal}
-            onClose={() => setSharingModal(false)}
-          />
-          <CollectionDeletionModal
-            collection={collection}
-            deletionModal={deletionModal}
-            setDeletionModal={setDeletionModal}
-          />
+          {sharingModal && (
+            <ObjectSharingModalWrapper
+              objectId={collection.id}
+              objectName={collection.name}
+              objectType={ObjectType.AnswerCollection}
+              isOwner={collection.isOwner ?? false}
+              onClose={() => setSharingModal(false)}
+            />
+          )}
+          {deletionModal && (
+            <CollectionDeletionModal
+              collection={collection}
+              setDeletionModal={setDeletionModal}
+            />
+          )}
         </>
       )}
 
       {/* removal modal for non-owners */}
-      {!collection.isOwner && (
+      {!collection.isOwner && removalModal ? (
         <AnswerCollectionRemovalModal
           id={collection.id}
           name={collection.name}
-          removalModal={removalModal}
-          setRemovalModal={setRemovalModal}
+          onClose={() => setRemovalModal(false)}
+        />
+      ) : null}
+
+      {activityLogOpen && (
+        <ActivityLogDialog
+          objectId={collection.id}
+          objectType={ObjectType.AnswerCollection}
+          open={activityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
         />
       )}
-
-      <ActivityLogDialog
-        objectId={collection.id}
-        objectType={ObjectType.AnswerCollection}
-        open={activityLogOpen}
-        onOpenChange={setActivityLogOpen}
-      />
     </>
   )
 }

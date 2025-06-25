@@ -126,10 +126,9 @@ function LiveQuizTimeline({
                 {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            {!isFeedbackQuiz && (
+            {!isFeedbackQuiz && embedModalOpen ? (
               <EmbeddingModal
                 key={quizId}
-                open={embedModalOpen}
                 onClose={() => setEmbedModalOpen(false)}
                 quizId={quizId}
                 elements={blocks
@@ -143,11 +142,11 @@ function LiveQuizTimeline({
                     name: instance.elementData.name,
                   }))}
               />
-            )}
+            ) : null}
             <Button
               className={{ root: 'h-8 sm:w-max' }}
               onClick={() => setQRModal(true)}
-              data={{ cy: `qr-modal-${quizId}` }}
+              data={{ cy: 'open-qr-modal' }}
             >
               <Button.Icon icon={faQrcode} />
               <Button.Label> {t('manage.general.qrCode')}</Button.Label>
@@ -297,15 +296,18 @@ function LiveQuizTimeline({
               </Button.Label>
             </Button>
           </div>
-          <CancelLiveQuizModal
-            open={cancelLiveQuizModal}
-            setOpen={setCancelLiveQuizModal}
-            quizId={quizId}
-            title={quizName}
-          />
         </>
       )}
-      <LiveQuizQRModal quizId={quizId} open={qrModal} setOpen={setQRModal} />
+      {cancelLiveQuizModal && (
+        <CancelLiveQuizModal
+          onClose={() => setCancelLiveQuizModal(false)}
+          quizId={quizId}
+          title={quizName}
+        />
+      )}
+      {qrModal && (
+        <LiveQuizQRModal quizId={quizId} onClose={() => setQRModal(false)} />
+      )}
     </div>
   )
 }

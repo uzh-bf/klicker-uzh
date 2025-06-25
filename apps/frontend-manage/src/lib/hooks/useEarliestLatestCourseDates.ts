@@ -1,54 +1,52 @@
-import {
-  GroupActivity,
-  MicroLearning,
-  PracticeQuiz,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
 
-interface UseEarliestLatestCourseDatesProps {
-  groupActivities?: Pick<GroupActivity, 'scheduledStartAt' | 'scheduledEndAt'>[]
-  microLearnings?: Pick<MicroLearning, 'scheduledStartAt' | 'scheduledEndAt'>[]
-  practiceQuizzes?: Pick<PracticeQuiz, 'availableFrom'>[]
-}
-
 function useEarliestLatestCourseDates({
-  groupActivities,
-  microLearnings,
-  practiceQuizzes,
-}: UseEarliestLatestCourseDatesProps) {
+  activities,
+}: {
+  activities?: Pick<
+    ActivityInfo,
+    'type' | 'scheduledStartAt' | 'automaticPublicationAt' | 'scheduledEndAt'
+  >[]
+}) {
   return useMemo(() => {
-    if (groupActivities || microLearnings || practiceQuizzes) {
-      if (
-        (!groupActivities && !microLearnings && !practiceQuizzes) ||
-        (groupActivities?.length === 0 &&
-          microLearnings?.length === 0 &&
-          practiceQuizzes?.length === 0)
-      ) {
-        return {
-          earliestGroupDeadline: undefined,
-          earliestStartDate: undefined,
-          latestEndDate: undefined,
-        }
-      }
-
-      const groupActivityStartDates =
-        groupActivities?.map((ga) => Date.parse(ga.scheduledStartAt)) ?? []
-      const startDates = [
-        ...groupActivityStartDates,
-        ...(microLearnings?.map((ml) => Date.parse(ml.scheduledStartAt)) ?? []),
-        ...(practiceQuizzes
-          ?.filter(
-            (pq) =>
-              pq.availableFrom !== null &&
-              typeof pq.availableFrom !== 'undefined'
+    if (activities && activities.length > 0) {
+      const groupActivityStartDates = [
+        ...activities
+          .filter(
+            (activity) =>
+              activity.type === ActivityType.GroupActivity &&
+              activity.scheduledStartAt !== null &&
+              typeof activity.scheduledStartAt !== 'undefined'
           )
-          .map((pq) => Date.parse(pq.availableFrom)) ?? []),
+          .map((activity) => Date.parse(activity.scheduledStartAt)),
       ]
-      const endDates = [
-        ...(groupActivities?.map((ga) => Date.parse(ga.scheduledEndAt)) ?? []),
-        ...(microLearnings?.map((ml) => Date.parse(ml.scheduledEndAt)) ?? []),
+      const activityStartDates = [
+        ...groupActivityStartDates,
+        ...activities
+          .filter(
+            (activity) =>
+              (activity.type !== ActivityType.GroupActivity &&
+                activity.scheduledStartAt !== null &&
+                typeof activity.scheduledStartAt !== 'undefined') ||
+              (activity.automaticPublicationAt !== null &&
+                typeof activity.automaticPublicationAt !== 'undefined')
+          )
+          .map((activity) => {
+            return Date.parse(
+              activity.scheduledStartAt ?? activity.automaticPublicationAt!
+            )
+          }),
       ]
+
+      const activityEndDates = activities
+        .filter(
+          (activity) =>
+            activity.scheduledEndAt !== null &&
+            typeof activity.scheduledEndAt !== 'undefined'
+        )
+        .map((activity) => Date.parse(activity.scheduledEndAt))
 
       return {
         earliestGroupDeadline:
@@ -56,13 +54,13 @@ function useEarliestLatestCourseDates({
             ? undefined
             : dayjs(Math.min.apply(null, groupActivityStartDates)).toString(),
         earliestStartDate:
-          startDates.length === 0
+          activityStartDates.length === 0
             ? undefined
-            : dayjs(Math.min.apply(null, startDates)).toString(),
+            : dayjs(Math.min.apply(null, activityStartDates)).toString(),
         latestEndDate:
-          endDates.length === 0
+          activityEndDates.length === 0
             ? undefined
-            : dayjs(Math.max.apply(null, endDates)).toString(),
+            : dayjs(Math.max.apply(null, activityEndDates)).toString(),
       }
     }
 
@@ -71,7 +69,7 @@ function useEarliestLatestCourseDates({
       earliestStartDate: undefined,
       latestEndDate: undefined,
     }
-  }, [groupActivities, microLearnings, practiceQuizzes])
+  }, [activities])
 }
 
 export default useEarliestLatestCourseDates

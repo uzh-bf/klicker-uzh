@@ -195,13 +195,14 @@ function LiveQuizCreationBlock({
         isOver={isOver}
         index={blockIx}
       />
-      <LiveQuizBlockSettingsModal
-        openSettings={openSettings}
-        setOpenSettings={setOpenSettings}
-        block={block}
-        index={blockIx}
-        replace={replace}
-      />
+      {openSettings && (
+        <LiveQuizBlockSettingsModal
+          onClose={() => setOpenSettings(false)}
+          block={block}
+          index={blockIx}
+          replace={replace}
+        />
+      )}
     </div>
   )
 }

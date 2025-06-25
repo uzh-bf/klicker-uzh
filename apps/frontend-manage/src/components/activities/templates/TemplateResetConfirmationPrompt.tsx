@@ -3,11 +3,9 @@ import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TemplateResetConfirmationPrompt({
-  open,
   onClose,
   onConfirm,
 }: {
-  open: boolean
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -15,24 +13,24 @@ function TemplateResetConfirmationPrompt({
 
   return (
     <Modal
+      open
       hideCloseButton
       escapeDisabled
-      open={open}
       onClose={() => null}
       title={t('manage.template.resetConfirmation')}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-template-reset' }}
       primaryLabel={
-        <div className="flex flex-row items-center gap-2.5">
+        <div className="flex flex-row items-center">
           <Button.Icon icon={faArrowsRotate} />
-          <span>{t('manage.template.confirmReset')}</span>
+          <Button.Label>{t('manage.template.confirmReset')}</Button.Label>
         </div>
       }
       primaryButtonStyle="destructive"
       onPrimaryAction={onConfirm}
       dataPrimaryAction={{ cy: 'confirm-template-reset' }}
-      // className={{ content: 'max-w-2xl gap-1' }}
+      className={{ content: 'max-w-2xl' }}
     >
       <UserNotification
         type="warning"

@@ -283,18 +283,13 @@ function Element({
                   onClick: action.onClick,
                   data: action.data,
                 }))}
-                trigger={
-                  <Button
-                    className={{ root: 'h-8 w-8 p-0' }}
-                    data={{ cy: `actions-element-${element.name}` }}
-                  >
-                    <Button.Icon withoutLabel icon={faEllipsis} />
-                  </Button>
-                }
+                trigger={<FontAwesomeIcon icon={faEllipsis} />}
                 className={{
                   viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
                   item: 'py-0.5 text-sm',
+                  trigger: 'h-8 w-8 p-0',
                 }}
+                data={{ cy: `actions-element-${element.name}` }}
               />
             )}
           </div>
@@ -304,7 +299,6 @@ function Element({
       {showRecoveryPrompt && (
         <RecoveryPrompt
           editMode
-          open={showRecoveryPrompt}
           onRecovery={() => {
             setShowRecoveryPrompt(false)
             setModificationModalOpen(true)
@@ -353,23 +347,24 @@ function Element({
           unsetDeletedQuestion={unsetDeletedQuestion}
         />
       )}
-      {isSharingModalOpen && element.isManager && (
+      {isSharingModalOpen && element.isManager ? (
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
           objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
-          open={isSharingModalOpen}
           onClose={() => setSharingModalOpen(false)}
         />
-      )}
+      ) : null}
 
-      <ActivityLogDialog
-        objectId={element.id}
-        objectType={ObjectType.Element}
-        open={isActivityLogOpen}
-        onOpenChange={setActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={element.id}
+          objectType={ObjectType.Element}
+          open={isActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

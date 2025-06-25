@@ -94,6 +94,10 @@ const withPermission = SharingService.withPermission
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
+    const asTemporaryParticipant = {
+      authenticated: true,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
+    }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
     const asUserWithCatalyst = { ...asUser, catalyst: true }
@@ -187,6 +191,18 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.loginParticipant(args, ctx)
+        },
+      }),
+
+      loginTemporaryParticipant: t.id({
+        nullable: true,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pseudonym: t.arg.string({ required: true }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginTemporaryParticipant(args, ctx)
         },
       }),
 
@@ -516,8 +532,18 @@ export const Mutation = builder.mutationType({
 
       logoutParticipant: t.withAuth(asParticipant).id({
         nullable: true,
+        resolve: async (_, __, ctx) => {
+          return await AccountService.logoutParticipant(ctx)
+        },
+      }),
+
+      logoutTemporaryParticipant: t.withAuth(asTemporaryParticipant).boolean({
+        nullable: true,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+        },
         resolve: async (_, args, ctx) => {
-          return await AccountService.logoutParticipant(args, ctx)
+          return await AccountService.logoutTemporaryParticipant(args, ctx)
         },
       }),
 
@@ -1528,6 +1554,7 @@ export const Mutation = builder.mutationType({
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
           sendUpdates: t.arg.boolean({ required: true }),
+          seedDemoElements: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
@@ -3408,6 +3435,18 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createUserLogin(args, ctx)
+        },
+      }),
+
+      updateUserLogin: t.withAuth(asUserOwner).field({
+        nullable: true,
+        type: UserLogin,
+        args: {
+          id: t.arg.string({ required: true }),
+          password: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.updateUserLogin(args, ctx)
         },
       }),
 

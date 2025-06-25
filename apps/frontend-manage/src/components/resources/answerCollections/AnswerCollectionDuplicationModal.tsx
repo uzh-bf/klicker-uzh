@@ -11,12 +11,10 @@ import { useTranslations } from 'next-intl'
 
 function AnswerCollectionDuplicationModal({
   collectionId,
-  open,
   onClose,
   onSuccess,
 }: {
   collectionId: number
-  open: boolean
   onClose: () => void
   onSuccess: () => void
 }) {
@@ -34,7 +32,7 @@ function AnswerCollectionDuplicationModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.resources.duplicateCollection')}
       secondaryLabel={

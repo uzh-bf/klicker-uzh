@@ -369,30 +369,31 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
               </SectionCollapsible>
             ))}
 
-            <LiveQuizTemplateTimeLimitModal
-              open={timeLimitModal.open && timeLimitModal.blockIx === blockIx}
-              onClose={() => setTimeLimitModal({ open: false, blockIx: 0 })}
-              blockIx={blockIx}
-              timeLimit={quizData.blocks[blockIx]?.timeLimit}
-              setTimeLimit={(newValue) => {
-                setQuizData((prev) => {
-                  if (!prev) {
-                    return prev
-                  }
+            {timeLimitModal.open && timeLimitModal.blockIx === blockIx ? (
+              <LiveQuizTemplateTimeLimitModal
+                onClose={() => setTimeLimitModal({ open: false, blockIx: 0 })}
+                blockIx={blockIx}
+                timeLimit={quizData.blocks[blockIx]?.timeLimit}
+                setTimeLimit={(newValue) => {
+                  setQuizData((prev) => {
+                    if (!prev) {
+                      return prev
+                    }
 
-                  const blocks = [...prev.blocks]
-                  blocks[blockIx] = {
-                    ...blocks[blockIx],
-                    timeLimit: newValue,
-                  }
+                    const blocks = [...prev.blocks]
+                    blocks[blockIx] = {
+                      ...blocks[blockIx],
+                      timeLimit: newValue,
+                    }
 
-                  return {
-                    ...prev,
-                    blocks,
-                  }
-                })
-              }}
-            />
+                    return {
+                      ...prev,
+                      blocks,
+                    }
+                  })
+                }}
+              />
+            ) : null}
           </div>
         ))}
 
@@ -536,9 +537,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
                     // redirect to live quiz overview and highlight newly created element
                     router.push({
-                      pathname: dataUser?.userProfile?.privatePreview
-                        ? '/activities'
-                        : '/quizzes',
+                      pathname: '/activities',
                       query: { highlight: quizId },
                     })
                   } else {
@@ -556,28 +555,30 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           </div>
         </div>
       </div>
-      <TemplateResetConfirmationPrompt
-        open={resetTemplatePrompt}
-        onClose={() => setResetTemplatePrompt(false)}
-        onConfirm={() => {
-          if (initialTemplateFormData) {
-            // reset the form inputs
-            setQuizData(initialTemplateFormData)
 
-            // reset the progress parameters
-            const progress = loadProgressFromLiveQuizData({
-              quizData: initialTemplateFormData,
-            })
-            setCollapsibles(progress)
+      {resetTemplatePrompt && (
+        <TemplateResetConfirmationPrompt
+          onClose={() => setResetTemplatePrompt(false)}
+          onConfirm={() => {
+            if (initialTemplateFormData) {
+              // reset the form inputs
+              setQuizData(initialTemplateFormData)
 
-            // unset touched state for settings collapsible
-            setClosingSettingsDisabled(false)
+              // reset the progress parameters
+              const progress = loadProgressFromLiveQuizData({
+                quizData: initialTemplateFormData,
+              })
+              setCollapsibles(progress)
 
-            // close the modal
-            setResetTemplatePrompt(false)
-          }
-        }}
-      />
+              // unset touched state for settings collapsible
+              setClosingSettingsDisabled(false)
+
+              // close the modal
+              setResetTemplatePrompt(false)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

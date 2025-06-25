@@ -49,7 +49,7 @@ function ActivityList({
   }
 
   return (
-    <div className="flex flex-col gap-[0.15rem]">
+    <div className="flex flex-col gap-2">
       {activities.map((activity) => (
         <ActivityListEntry
           key={`activity-list-entry-${activity.id}`}

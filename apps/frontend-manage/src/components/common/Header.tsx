@@ -46,27 +46,14 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       active: router.pathname == '/',
       data: { cy: 'library' },
     },
-    ...(user?.privatePreview
-      ? ([
-          {
-            type: 'button',
-            key: 'activities-menubar-item',
-            label: t('shared.generic.activities'),
-            onClick: () => router.push('/activities'),
-            active: router.pathname == '/activities',
-            data: { cy: 'activities' },
-          },
-        ] as NavigationItemProps[])
-      : ([
-          {
-            type: 'button',
-            key: 'live-quizzes-menubar-item',
-            label: t('manage.general.liveQuizzes'),
-            onClick: () => router.push('/quizzes'),
-            active: router.pathname == '/quizzes',
-            data: { cy: 'live-quizzes' },
-          },
-        ] as NavigationItemProps[])),
+    {
+      type: 'button',
+      key: 'activities-menubar-item',
+      label: t('shared.generic.activities'),
+      onClick: () => router.push('/activities'),
+      active: router.pathname == '/activities',
+      data: { cy: 'activities' },
+    },
     {
       type: 'button',
       key: 'courses-menubar-item',
@@ -218,12 +205,14 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           quizzes?.length !== 0 ? 'text-green-600' : 'text-slate-400'
         ),
       },
+      data: { cy: 'running-live-quiz-dropdown' },
       elements:
         quizzes?.map((quiz) => ({
           key: quiz.id,
           type: 'link',
           label: quiz.name,
           onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
+          data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
     {
@@ -300,11 +289,9 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           className={{ root: '-gap-1 flex flex-row' }}
         />
       </div>
-      <SupportModal
-        open={showSupportModal}
-        setOpen={setShowSupportModal}
-        user={user}
-      />
+      {showSupportModal && (
+        <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+      )}
     </>
   )
 }

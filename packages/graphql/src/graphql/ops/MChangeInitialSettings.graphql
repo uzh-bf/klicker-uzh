@@ -2,11 +2,13 @@ mutation ChangeInitialSettings(
   $shortname: String!
   $locale: LocaleType!
   $sendUpdates: Boolean!
+  $seedDemoElements: Boolean!
 ) {
   changeInitialSettings(
     shortname: $shortname
     locale: $locale
     sendUpdates: $sendUpdates
+    seedDemoElements: $seedDemoElements
   ) {
     id
     email

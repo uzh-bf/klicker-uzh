@@ -29,8 +29,7 @@ import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateConversionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   activityId: string
   activityType: ActivityType
   onSuccess: () => void
@@ -38,8 +37,7 @@ interface TemplateConversionModalProps {
 }
 
 function TemplateConversionModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   activityType,
   onSuccess,
@@ -80,7 +78,7 @@ function TemplateConversionModal({
   }, [templateInfo])
 
   const handleModalClose = () => {
-    setOpen(false)
+    onClose()
     setCurrentStep(0)
     setConfirmations({
       activityConversion: false,
@@ -92,11 +90,11 @@ function TemplateConversionModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
-      open={open}
       onClose={handleModalClose}
       className={{ content: 'gap-2 pb-2 lg:w-[55rem]' }}
       dataCloseButton={{ cy: 'close-template-conversion-modal' }}

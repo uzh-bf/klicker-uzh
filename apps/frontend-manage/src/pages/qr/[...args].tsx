@@ -18,6 +18,7 @@ interface Props {
   showLink?: boolean
   showButton?: boolean
   showLogo?: boolean
+  data?: { cy?: string; test?: string }
 }
 
 export function QR({
@@ -27,6 +28,7 @@ export function QR({
   showLink = true,
   showButton = true,
   showLogo = true,
+  data,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
@@ -55,6 +57,8 @@ export function QR({
             )}
             target="_blank"
             rel="noopener noreferrer"
+            data-cy={data?.cy}
+            data-test={data?.test}
           >
             {process.env.NEXT_PUBLIC_PWA_URL}
             {path}

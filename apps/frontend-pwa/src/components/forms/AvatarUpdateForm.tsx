@@ -3,6 +3,7 @@ import { BigHead } from '@bigheads/core'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   Participant,
+  SelfDocument,
   UpdateParticipantAvatarDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { AvatarOptions } from '@klicker-uzh/shared-components/src/constants'
@@ -88,6 +89,7 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
               'facialHair',
             ]),
           },
+          refetchQueries: [{ query: SelfDocument }],
         })
 
         if (result.data?.updateParticipantAvatar && !result.errors) {

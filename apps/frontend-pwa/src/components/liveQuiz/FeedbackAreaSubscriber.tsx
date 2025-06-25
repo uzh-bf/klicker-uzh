@@ -28,8 +28,9 @@ function FeedbackAreaSubscriber({
       ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackAdded
-        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id))
+        if (prev.feedbacks?.map((item) => item.id).includes(newItem.id)) {
           return prev
+        }
         return { ...prev, feedbacks: [newItem, ...prev.feedbacks] }
       },
     })

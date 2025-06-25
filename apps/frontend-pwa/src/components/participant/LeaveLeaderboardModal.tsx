@@ -2,20 +2,19 @@ import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface LeaveLeaderboardModalProps {
-  isModalOpen: boolean
-  setIsModalOpen: (isModalOpen: boolean) => void
+  onClose: () => void
   onConfirm: () => void
 }
 
 function LeaveLeaderboardModal({
-  isModalOpen,
-  setIsModalOpen,
+  onClose,
   onConfirm,
 }: LeaveLeaderboardModalProps) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
       hideCloseButton
       title={t('pwa.courses.leaveLeaderboardTitle')}
       primaryLabel={t('shared.generic.confirm')}
@@ -23,10 +22,9 @@ function LeaveLeaderboardModal({
       onPrimaryAction={() => onConfirm()}
       dataPrimaryAction={{ cy: 'confirm-leave-course-leaderboard' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setIsModalOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-leave-course-leaderboard' }}
-      onClose={() => setIsModalOpen(false)}
-      open={isModalOpen}
+      onClose={onClose}
       className={{ content: 'max-w-xl', title: 'self-start' }}
     >
       <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>

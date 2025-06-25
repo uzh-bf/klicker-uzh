@@ -53,6 +53,8 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 
 // LTI launch callback (token has been verified by ltijs beforehand)
 Provider.onConnect((token, req, res) => {
+  console.log('LTI launch callback:', token)
+
   const jwt = JWT.sign(
     {
       sub: token.user,

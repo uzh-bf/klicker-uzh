@@ -99,17 +99,16 @@ function LiveQuizLists({
         <div>{t('control.course.noPlannedLiveQuizzes')}</div>
       )}
 
-      <EmbeddingModal
-        open={embedOpen}
-        setOpen={(newValue: boolean) => setEmbedOpen(newValue)}
-        quizId={quizId}
-      />
-      <StartModal
-        quizId={startId}
-        quizName={startName}
-        startModalOpen={startModalOpen}
-        setStartModalOpen={setStartModalOpen}
-      />
+      {embedOpen && (
+        <EmbeddingModal onClose={() => setEmbedOpen(false)} quizId={quizId} />
+      )}
+      {startModalOpen && (
+        <StartModal
+          quizId={startId}
+          quizName={startName}
+          onClose={() => setStartModalOpen(false)}
+        />
+      )}
     </>
   )
 }

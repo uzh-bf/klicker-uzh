@@ -19,21 +19,21 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import SupportEntry from './SupportEntry'
 
-interface SupportModalProps {
-  open: boolean
-  setOpen: (newOpen: boolean) => void
+function SupportModal({
+  onClose,
+  user,
+}: {
+  onClose: () => void
   user?: User | null
-}
-
-function SupportModal({ open, setOpen, user }: SupportModalProps) {
+}) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
       fullScreen
       title={t('manage.support.modalTitle')}
-      open={open}
-      onClose={() => setOpen(false)}
+      onClose={onClose}
       className={{
         overlay: 'my-auto text-black',
         title: 'text-left text-xl md:text-2xl',

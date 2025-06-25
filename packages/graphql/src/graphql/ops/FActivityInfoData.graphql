@@ -9,6 +9,7 @@ fragment ActivityInfoData on ActivityInfo {
 
   numOfStacks
   numOfElements
+  automaticPublicationAt
   scheduledStartAt
   scheduledEndAt
   groupDeadlineDate
@@ -17,6 +18,7 @@ fragment ActivityInfoData on ActivityInfo {
   stacks {
     id
     numOfParticipants
+    timeLimit
     elements {
       id
       name

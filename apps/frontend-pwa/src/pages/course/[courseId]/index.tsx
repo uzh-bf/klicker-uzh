@@ -547,23 +547,23 @@ function CourseOverview({
                 </TabContent>
               )}
             </Tabs>
-            {isProfileModalOpen && participantId && (
+            {isProfileModalOpen && participantId ? (
               <ParticipantProfileModal
-                isProfileModalOpen={isProfileModalOpen}
-                closeProfileModal={closeProfileModal}
+                onClose={closeProfileModal}
                 participantId={participantId}
                 top10Participants={top10Participants}
               />
-            )}
+            ) : null}
           </div>
-          <LeaveLeaderboardModal
-            isModalOpen={isLeaveCourseLeaderboardModalOpen}
-            setIsModalOpen={setIsLeaveCourseLeaderboardModalOpen}
-            onConfirm={() => {
-              leaveCourseLeaderboard()
-              setIsLeaveCourseLeaderboardModalOpen(false)
-            }}
-          />
+          {isLeaveCourseLeaderboardModalOpen && (
+            <LeaveLeaderboardModal
+              onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
+              onConfirm={() => {
+                leaveCourseLeaderboard()
+                setIsLeaveCourseLeaderboardModalOpen(false)
+              }}
+            />
+          )}
         </>
       ) : (
         <UserNotification

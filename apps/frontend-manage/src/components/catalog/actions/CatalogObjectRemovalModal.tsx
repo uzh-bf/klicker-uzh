@@ -10,12 +10,10 @@ import { useTranslations } from 'next-intl'
 
 function CatalogObjectRemovalModal({
   object,
-  open,
   catalogCollectionId,
   onClose,
 }: {
   object: CatalogObject
-  open: boolean
   catalogCollectionId?: string
   onClose: () => void
 }) {
@@ -26,7 +24,7 @@ function CatalogObjectRemovalModal({
 
   return (
     <Modal
-      open={open}
+      open
       title={
         (object.objectType === ObjectType.LiveQuiz ||
           object.objectType === ObjectType.PracticeQuiz ||

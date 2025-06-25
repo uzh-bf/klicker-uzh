@@ -35,6 +35,7 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
+  automaticPublicationAt: Date
   courseId: String
   courseName: String
   courseStartDate: Date
@@ -74,6 +75,7 @@ type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  timeLimit: Int
 }
 
 enum ActivityLevel {
@@ -715,7 +717,7 @@ type Course {
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
-  groupActivityActivities: [ActivityInfo!]
+  groupActivitiesInfo: [ActivityInfo!]
   groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
@@ -728,11 +730,11 @@ type Course {
   isOwner: Boolean
   isRemovable: Boolean
   isShared: Boolean
-  liveQuizActivities: [ActivityInfo!]
   liveQuizzes: [LiveQuiz!]
+  liveQuizzesInfo: [ActivityInfo!]
   maxGroupSize: Int!
-  microLearningActivities: [ActivityInfo!]
   microLearnings: [MicroLearning!]
+  microLearningsInfo: [ActivityInfo!]
   name: String!
   notificationEmail: String
   numOfParticipantGroups: Int
@@ -742,8 +744,8 @@ type Course {
   participantGroups: [ParticipantGroup!]
   permissionLevel: PermissionLevel
   pinCode: Int
-  practiceQuizActivities: [ActivityInfo!]
   practiceQuizzes: [PracticeQuiz!]
+  practiceQuizzesInfo: [ActivityInfo!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
   startDate: Date!
@@ -765,6 +767,18 @@ type CourseLeaderboard {
   computedAt: Date
   leaderboard: [LeaderboardEntry!]!
   numOfActiveParticipants: Int!
+}
+
+type CourseOverview {
+  color: String
+  description: String
+  displayName: String!
+  groupActivities: [ReducedActivityInfo!]
+  id: ID!
+  liveQuizzes: [ReducedActivityInfo!]
+  microLearnings: [ReducedActivityInfo!]
+  name: String
+  practiceQuizzes: [ReducedActivityInfo!]
 }
 
 type CoursePerformanceAnalytics {
@@ -1377,6 +1391,7 @@ type LeaderboardEntry {
   email: String
   id: Int!
   isSelf: Boolean
+  isTemporary: Boolean
   lastBlockOrder: Int
   level: Int
   participant: Participant
@@ -1457,6 +1472,11 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizStudentSettings {
+  isConfusionFeedbackEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
+}
+
 type LiveQuizSummary {
   numOfConfusionFeedbacks: Int!
   numOfFeedbacks: Int!
@@ -1513,7 +1533,7 @@ type Mutation {
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
   changeElementStatus(elementId: Int!, status: ElementStatus!): Boolean
   changeEmailSettings(projectUpdates: Boolean!): User
-  changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
+  changeInitialSettings(locale: LocaleType!, seedDemoElements: Boolean!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changePermissionLevel(objectId: String!, objectType: ObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
@@ -1588,8 +1608,10 @@ type Mutation {
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
+  loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
+  logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
@@ -1643,6 +1665,7 @@ type Mutation {
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
+  updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntries: Boolean!
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
@@ -1853,12 +1876,14 @@ type Participant {
   lastLoginAt: Date
   level: Int
   levelData: Level
-  locale: LocaleType!
+  locale: LocaleType
   participantGroups: [ParticipantGroup!]
   rank: Int
+  role: UserRole
+  scopeQuizId: String
   score: Float
   username: String!
-  xp: Int!
+  xp: Int
 }
 
 type ParticipantAchievementInstance {
@@ -2021,8 +2046,6 @@ type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
-  checkPrivatePreviewAvailable: Boolean!
-  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
@@ -2078,7 +2101,7 @@ type Query {
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
-  getPracticeQuizList: [Course!]
+  getPracticeQuizList: [CourseOverview!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleAnswerCollection(id: Int!): AnswerCollection
@@ -2098,7 +2121,7 @@ type Query {
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizHMAC(id: String!): String
-  liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
+  liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -2136,6 +2159,17 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+}
+
+type ReducedActivityInfo {
+  automaticPublicationAt: Date
+  course: Course
+  displayName: String!
+  id: String!
+  name: String!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
+  status: PublicationStatus!
 }
 
 enum ResponseCorrectnessType {
@@ -2394,6 +2428,7 @@ type Subscription {
   feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
+  liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
   runningLiveQuizUpdated(quizId: String!): ElementBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
@@ -2518,6 +2553,7 @@ enum UserLoginScope {
 enum UserRole {
   ADMIN
   PARTICIPANT
+  TEMPORARY_PARTICIPANT
   USER
 }
 

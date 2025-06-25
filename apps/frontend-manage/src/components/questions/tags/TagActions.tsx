@@ -84,14 +84,13 @@ function TagActions({
           <Button.Icon withoutLabel icon={faTrash} />
         </Button>
       )}
-      {setIsDeletionModalOpen && (
+      {isDeletionModalOpen && setIsDeletionModalOpen ? (
         <TagDeletionModal
           id={tag.id}
           name={tag.name}
-          open={isDeletionModalOpen ?? false}
-          setOpen={setIsDeletionModalOpen}
+          onClose={() => setIsDeletionModalOpen(false)}
         />
-      )}
+      ) : null}
     </div>
   )
 }

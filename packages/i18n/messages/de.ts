@@ -25,9 +25,13 @@ export default {
     },
     PUBLISHED: {
       statusLabel: 'Öffentlich / Laufend',
+      statusLabel1: 'Öffentlich',
+      statusLabel2: 'Laufend',
     },
     ENDED: {
       statusLabel: 'Abgeschlossen / Bereit zur Bewertung',
+      statusLabel1: 'Abgeschlossen',
+      statusLabel2: 'Bereit zur Bewertung',
     },
     GRADED: {
       statusLabel: 'Bewertet',
@@ -365,6 +369,8 @@ export default {
       legend: 'Legende',
       collections: 'Sammlungen',
       objects: 'Objekte',
+      pseudonym: 'Pseudonym',
+      selected: 'Ausgewählt',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -790,11 +796,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     liveQuiz: {
-      noActiveQuestion: 'Keine Frage aktiv.',
+      noActiveQuestion:
+        'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
+      thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
+      loginSelectionHint:
+        'Sie sind dabei, an einem gamifizierten Live-Quiz teilzunehmen. Bitte wählen Sie zwischen den folgenden Optionen: <ul><li>Login mit <b>KlickerUZH-Konto</b>: Punkte und XP sammeln</li><li>Erstellen Sie ein <b>temporäres Pseudonym</b>: Sammeln Sie Punkte nur in diesem Live-Quiz (Punkte nicht im Kurs verfügbar)</li><li><b>Anonyme</b> Teilnahme: Nicht an den Gamifizierungselementen teilnehmen</li></ul>',
+      loginWithAccount: 'Login mit KlickerUZH-Konto',
+      createTemporaryPseudonym: 'Temporäres Pseudonym erstellen',
+      participateAnonymously: 'Anonym teilnehmen',
+      changeLoginMode: 'Login-Modus ändern',
+      pseudonymExplanation:
+        'Durch die Eingabe eines <b>Pseudonyms</b> können Sie Punkte in diesem gamifizierten Live-Quiz sammeln, ohne ein KlickerUZH-Konto erstellen zu müssen. Gesammelte Punkte werden nur im Zusammenhang mit diesem Live-Quiz gespeichert und nicht in der Kursrangliste angezeigt.',
+      pseudonymRequired: 'Bitte geben Sie ein Pseudonym ein.',
+      pseudonymMinLength:
+        'Das Pseudonym muss mindestens {length} Zeichen lang sein.',
+      pseudonymMaxLength:
+        'Das Pseudonym darf nicht länger als {length} Zeichen sein.',
+      joinedSuccessfullyWithPseudonym:
+        'Sie sind dem Live Quiz erfolgreich mit dem Pseudonym <b>{pseudonym}</b> beigetreten.',
+      pseudonymAlreadyExists:
+        'Das gewählte Pseudonym ist leider bereits vergeben. Bitte wählen Sie ein anderes.',
+      pseudonymCreationFailed:
+        'Die Erstellung des Pseudonyms ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      temporaryParticipantsLeaderboard:
+        'Temporäre Teilnehmende (sammeln nur in diesem gamifizierten Live-Quiz Punkte)',
+      pseudonymSelection: 'Pseudonym-Auswahl',
+      avatarExplanation:
+        'Falls sie möchten, können Sie hier Ihren <b>Avatar</b> für das Live-Quiz auswählen.',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
@@ -805,6 +837,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       feedbackPlaceholder: 'Feedback / Frage eingeben',
       postedAt: 'Gepostet am {date}',
       solvedAt: 'Gelöst am {date}',
+      feedbackSubmitted:
+        'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',
@@ -839,6 +873,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
       forgotPasswordInfo:
         'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
+      errorLogoutTemporaryParticipant:
+        'Beim Ausloggen aus ihrem temporären Pseudonym ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      loggedInAs: 'Angemeldet als',
+      temporaryPseudonym: 'temporäres Pseudonym',
     },
     avatar: {
       hair: 'Frisur',
@@ -1005,6 +1043,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
       lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
+      availability: 'Verfügbarkeit: {startDate} - {endDate}',
       removeActivity: 'Aktivität entfernen',
       confirmActivityRemoval:
         'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
@@ -1071,6 +1111,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Stellen Sie sicher, dass Sie die folgenden relevanten Links gesehen/gespeichert haben:',
       watchVideo:
         'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
+      seedDemoElements: 'Demo-Elemente generieren',
+      seedDemoElementsExplanation:
+        'Bitte wählen Sie, ob Demo-Elemente zur Demonstration der verfügbaren Element-Typen in Ihrer Bibliothek generiert werden sollen. Diese können jederzeit gelöscht werden.',
+      seedDemoElementsDecisionRequired:
+        'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
       userSettings: 'Benutzereinstellungen',
@@ -1078,8 +1123,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
-      confirmDelegatedAcces: 'Delegierten Login bestätigen',
-      confirmDelegatedAccesTooltip:
+      confirmDelegatedAccess: 'Delegierten Login bestätigen',
+      confirmDelegatedAccessTooltip:
         'Bitte überprüfen Sie die Zugangsdaten für den delegierten Login. Kopieren Sie das Passwort, bevor Sie dieses Pop-Up schliessen, da es nicht erneut angezeigt werden kann.',
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Live Quizzes',
@@ -1115,6 +1160,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
+      changePassword: 'Passwort ändern',
+      changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
+      changeDelegatedLoginPasswordMessage:
+        'Hier können Sie das Passwort des gewählten delegierten Logins ändern. Bitte beachten Sie, dass das Passwort nur einmalig angezeigt wird, bitte notieren Sie es sich daher vor dem Bestätigen.',
+      newPassword: 'Neues Passwort',
     },
     token: {
       pageName: 'Token Generation',
@@ -2042,7 +2092,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortByTime: 'Nach Zeitpunkt sortieren',
       answersGiven: '{number} Antwort(en) gegeben',
       reopenToAnswer: 'Öffnen Sie das Feedback wieder, um zu antworten...',
-      insertResponseHere: 'Formulieren Sie Ihre Antwort hier...',
+      enterResponseHere: 'Geben Sie Ihre Antwort hier ein...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Wieder öffnen',
@@ -2090,6 +2140,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selection: 'Auswahl',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
+      histogramBinsError:
+        'Bitte geben Sie eine Anzahl Unterteilungen zwischen 2 und 100 ein.',
+      histogramLowerLimit: 'Untere Grenze',
+      histogramUpperLimit: 'Obere Grenze',
+      histogramLowerLimitError:
+        'Die untere Grenze muss grösser als {minValue} sein.',
+      histogramUpperLimitError:
+        'Die obere Grenze muss kleiner als {maxValue} sein.',
+      histogramRangeError:
+        'Bitte stellen Sie sicher, dass die untere Grenze kleiner als die obere Grenze ist.',
       correctLabel: 'Korrekt',
       correctLabelValue: 'Korrekt: {value}',
       resetSorting: 'Sortierung zurücksetzen',
@@ -2436,7 +2496,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
-      otherActions: 'Weitere Aktionen',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Gamifizierung aktivieren',
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',

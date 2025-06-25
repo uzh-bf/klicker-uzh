@@ -10,6 +10,49 @@ import { sendTeamsNotifications } from '../lib/util.js'
 
 dayjs.extend(isoWeek)
 
+export async function getSelf(ctx: Context) {
+  if (!ctx.user?.sub) return null
+
+  // if the user is logged in as a participant, return the participant data
+  if (ctx.user.role === DB.UserRole.PARTICIPANT) {
+    const participantData = await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
+
+    if (!participantData) return null
+
+    return { role: DB.UserRole.PARTICIPANT, ...participantData }
+  }
+
+  // if the user is logged in as a temporary quiz participant, return the corresponding pseudonym
+  if (ctx.user.role === DB.UserRole.TEMPORARY_PARTICIPANT) {
+    const temporaryParticipantData =
+      await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+        where: { id: ctx.user.sub },
+      })
+
+    if (!temporaryParticipantData) return null
+
+    return {
+      ...temporaryParticipantData,
+      id: ctx.user.sub,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
+      scopeQuizId: temporaryParticipantData.quizId,
+      lastLoginAt: temporaryParticipantData.createdAt,
+      isActive: true,
+      isProfilePublic: true,
+      isSSOAccount: false,
+      email: null,
+      isEmailValid: false,
+      avatarSettings: null,
+      xp: null,
+      locale: null,
+    }
+  }
+
+  return null
+}
+
 interface UpdateParticipantProfileArgs {
   password?: string | null
   username: string | null
@@ -21,6 +64,10 @@ export async function updateParticipantProfile(
   { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return null
+  }
+
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 15) {
       return null
@@ -148,7 +195,7 @@ export async function getParticipation(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 
@@ -560,7 +607,8 @@ export async function flagElement(
       questionId: elementInstance.elementId,
       questionName: elementInstance.elementData.name,
       content: content,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
         practiceQuiz?.course?.notificationEmail ||

@@ -35,7 +35,7 @@ function useCatalogCollectionActionsDropdown({
       items.push({
         id: 'share',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faShare} className="mr-2.5 h-4 w-4" />
             {t(`manage.sharing.share${ObjectType.CatalogCollection}`)}
           </div>
@@ -55,7 +55,7 @@ function useCatalogCollectionActionsDropdown({
         label: (
           <div
             className={twMerge(
-              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100'
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600'
             )}
           >
             <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
@@ -75,7 +75,7 @@ function useCatalogCollectionActionsDropdown({
       items.push({
         id: 'request',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faPencil} className="mr-2.5 h-4 w-4" />
             {t('manage.catalog.requestAccess')}
           </div>
@@ -94,7 +94,7 @@ function useCatalogCollectionActionsDropdown({
     //   items.push({
     //     id: 'view',
     //     label: (
-    //       <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+    //       <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 ">
     //         <FontAwesomeIcon icon={faEye} className="mr-2.5 h-4 w-4" />
     //         {t('manage.catalog.openCatalogCollection')}
     //       </div>

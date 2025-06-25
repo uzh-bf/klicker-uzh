@@ -6,13 +6,11 @@ import { ActivityTemplateElementFormValues } from './types'
 import useFormValuesFromElementInstance from './useFormValuesFromElementInstance'
 
 function TemplateNewElementModal({
-  open,
   onClose,
   templateId,
   templateElement,
   onSaveNewElement,
 }: {
-  open: boolean
   onClose: () => void
   templateId: string
   templateElement: ActivityTemplateElementFormValues
@@ -30,7 +28,6 @@ function TemplateNewElementModal({
     <ElementEditForm
       isTemplate
       templateId={templateId}
-      open={open}
       onClose={onClose}
       onSuccess={onClose} // success toast is not required -> success immediately visible
       mode={ElementEditMode.CREATE}

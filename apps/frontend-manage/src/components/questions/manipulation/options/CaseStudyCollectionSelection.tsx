@@ -266,20 +266,21 @@ function CaseStudyCollectionSelection({
             noOptionsMessage={() => t('manage.elements.noMatchingOptionFound')}
           />
         </div>
-        <CaseStudyCollectionChangeModal
-          open={changeModalOpen}
-          onClose={() => {
-            setNewValue('')
-            setChangeModalOpen(false)
-          }}
-          onConfirm={() => {
-            // set the selected answer collection to the new value
-            collectionHelpers.setValue(newValue)
+        {changeModalOpen && (
+          <CaseStudyCollectionChangeModal
+            onClose={() => {
+              setNewValue('')
+              setChangeModalOpen(false)
+            }}
+            onConfirm={() => {
+              // set the selected answer collection to the new value
+              collectionHelpers.setValue(newValue)
 
-            // reset the selected items
-            itemsHelpers.setValue([])
-          }}
-        />
+              // reset the selected items
+              itemsHelpers.setValue([])
+            }}
+          />
+        )}
       </div>
     </>
   )

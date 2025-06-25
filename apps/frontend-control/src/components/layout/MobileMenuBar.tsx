@@ -45,13 +45,12 @@ function MobileMenuBar({ quizId }: MobileMenuBarProps) {
         </MenuButton>
       </div>
 
-      {quizId && (
+      {quizId && embedModalOpen ? (
         <EmbeddingModal
-          open={embedModalOpen}
-          setOpen={setEmbedModalOpen}
+          onClose={() => setEmbedModalOpen(false)}
           quizId={quizId}
         />
-      )}
+      ) : null}
     </div>
   )
 }

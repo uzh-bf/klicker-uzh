@@ -4,6 +4,7 @@ import {
   GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -19,17 +20,13 @@ export interface CourseDeletionConfirmationType {
   deleteLeaderboardEntries: boolean
 }
 
-interface CourseDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  courseId: string | null
-}
-
 function CourseDeletionModal({
-  open,
-  setOpen,
+  onClose,
   courseId,
-}: CourseDeletionModalProps) {
+}: {
+  onClose: () => void
+  courseId: string | null
+}) {
   const initialConfirmations: CourseDeletionConfirmationType = {
     deleteParticipations: false,
     disconnectLiveQuizzes: false,
@@ -91,17 +88,16 @@ function CourseDeletionModal({
     })
   }, [courseId, data?.getCourseSummary])
 
-  if (!courseId || !data?.getCourseSummary) {
+  const summary = data?.getCourseSummary
+  if (!courseId) {
     return null
   }
 
-  const summary = data.getCourseSummary
-
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       className={{ content: '!w-full max-w-[60rem]' }}
@@ -125,22 +121,26 @@ function CourseDeletionModal({
             },
           },
         })
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}
       onSecondaryAction={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
-      <CourseDeletionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <CourseDeletionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

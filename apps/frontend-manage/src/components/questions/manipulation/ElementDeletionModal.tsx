@@ -47,8 +47,7 @@ function ElementDeletionModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.questionPool.deleteElement')}
       message={t.rich('manage.questionPool.confirmDeletion', {
         name: title,

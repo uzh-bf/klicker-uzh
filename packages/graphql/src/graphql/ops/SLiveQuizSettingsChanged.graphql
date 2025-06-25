@@ -1,0 +1,6 @@
+subscription LiveQuizSettingsChanged($quizId: String!) {
+  liveQuizSettingsChanged(quizId: $quizId) {
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+  }
+}

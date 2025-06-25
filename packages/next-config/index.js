@@ -1,10 +1,24 @@
 /** @type {import('next').NextConfig} */
-function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
+function getNextBaseConfig({
+  BLOB_STORAGE_ACCOUNT_URL,
+  NODE_ENV,
+  NEXT_PUBLIC_ENV,
+}) {
+  const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
+  const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
+
   return {
     // not supported with turbopack -> do we need it?
     // experimental: {
     //   esmExternals: 'loose',
     // },
+    productionBrowserSourceMaps: isStaging,
+    webpack: (config, { isServer }) => {
+      if (!isServer && isStaging) {
+        config.devtool = 'cheap-module-source-map'
+      }
+      return config
+    },
     compress: true,
     output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,

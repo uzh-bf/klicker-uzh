@@ -1,6 +1,7 @@
 import {
   faCheckCircle,
   faClock,
+  faHourglassHalf,
   faPenToSquare,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -21,11 +22,11 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ActivityNameChangeModal from '../../courses/actions/ActivityNameChangeModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityDetailsModal from './ActivityDetailsModal'
+import ActivityNameChangeModal from './ActivityNameChangeModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
 import MicrolearningActions from './MicrolearningActions'
@@ -94,7 +95,7 @@ function ActivityListEntry({
     <>
       <div
         className={twMerge(
-          'border-uzh-grey-60 flex flex-row items-center justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
+          'border-uzh-grey-60 flex flex-row items-start justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
           highlighted && 'border-primary-100 bg-orange-50'
         )}
         data-cy={`activity-${activity.type}-${activity.name}`}
@@ -144,9 +145,42 @@ function ActivityListEntry({
           </div>
           <div className="flex h-[1.4rem] flex-row items-center gap-4 text-gray-500">
             <div className="ml-[1.65rem] text-sm">
-              {t('manage.activities.lastModifiedAt', {
-                date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
-              })}
+              {activity.automaticPublicationAt &&
+              activity.status === PublicationStatus.Scheduled ? (
+                <div className="flex flex-row items-center gap-1.5">
+                  <FontAwesomeIcon icon={faClock} />
+                  <span>
+                    {t('manage.activities.automaticPublicationAt', {
+                      date: dayjs(activity.automaticPublicationAt).format(
+                        'DD.MM.YYYY HH:mm'
+                      ),
+                    })}
+                  </span>
+                </div>
+              ) : null}
+              {activity.scheduledStartAt && activity.scheduledEndAt ? (
+                <div className="flex flex-row items-center gap-1.5">
+                  <FontAwesomeIcon icon={faHourglassHalf} />
+                  <span>
+                    {t('manage.activities.availability', {
+                      startDate: dayjs(activity.scheduledStartAt).format(
+                        'DD.MM.YYYY HH:mm'
+                      ),
+                      endDate: dayjs(activity.scheduledEndAt).format(
+                        'DD.MM.YYYY HH:mm'
+                      ),
+                    })}
+                  </span>
+                </div>
+              ) : null}
+              {!(
+                activity.automaticPublicationAt &&
+                activity.status === PublicationStatus.Scheduled
+              ) && !activity.scheduledStartAt
+                ? t('manage.activities.lastModifiedAt', {
+                    date: dayjs(activity.updatedAt).format('DD.MM.YYYY HH:mm'),
+                  })
+                : null}
             </div>
             <SharingTypeBadge
               sharingType={activity.sharingType}
@@ -204,34 +238,38 @@ function ActivityListEntry({
           ) : null}
         </div>
       </div>
-      <ActivityDetailsModal
-        activity={activity}
-        open={showDetails}
-        onClose={() => setShowDetails(false)}
-      />
-      <ActivityNameChangeModal
-        id={activity.id}
-        name={activity.name}
-        type={activity.type}
-        displayName={activity.displayName}
-        open={changeName}
-        setOpen={setChangeName}
-      />
+      {showDetails && (
+        <ActivityDetailsModal
+          activity={activity}
+          onClose={() => setShowDetails(false)}
+        />
+      )}
+      {changeName && (
+        <ActivityNameChangeModal
+          id={activity.id}
+          name={activity.name}
+          type={activity.type}
+          displayName={activity.displayName}
+          onClose={() => setChangeName(false)}
+        />
+      )}
 
-      <ActivityLogDialog
-        objectId={String(activity.id)}
-        objectType={
-          activity.type === ActivityType.LiveQuiz
-            ? ObjectType.LiveQuiz
-            : activity.type === ActivityType.PracticeQuiz
-              ? ObjectType.PracticeQuiz
-              : activity.type === ActivityType.MicroLearning
-                ? ObjectType.MicroLearning
-                : ObjectType.GroupActivity
-        }
-        open={isActivityLogOpen}
-        onOpenChange={setActivityLogOpen}
-      />
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={String(activity.id)}
+          objectType={
+            activity.type === ActivityType.LiveQuiz
+              ? ObjectType.LiveQuiz
+              : activity.type === ActivityType.PracticeQuiz
+                ? ObjectType.PracticeQuiz
+                : activity.type === ActivityType.MicroLearning
+                  ? ObjectType.MicroLearning
+                  : ObjectType.GroupActivity
+          }
+          open={isActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
+        />
+      )}
     </>
   )
 }

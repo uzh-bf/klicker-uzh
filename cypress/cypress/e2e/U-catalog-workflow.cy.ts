@@ -1928,6 +1928,9 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()

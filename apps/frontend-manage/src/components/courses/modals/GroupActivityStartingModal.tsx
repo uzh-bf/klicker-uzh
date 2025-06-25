@@ -12,8 +12,7 @@ import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
 interface GroupActivityStartingModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   activityId: string
   activityEndDate: string
   courseId: string
@@ -22,8 +21,7 @@ interface GroupActivityStartingModalProps {
 }
 
 function GroupActivityStartingModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   activityEndDate,
   courseId,
@@ -58,18 +56,15 @@ function GroupActivityStartingModal({
 
   // on open, reset confirmations
   useEffect(() => {
-    if (open) {
-      setConfirmations({
-        participantGroups: false,
-        availableUntil: false,
-      })
-    }
-  }, [open])
+    setConfirmations({
+      participantGroups: false,
+      availableUntil: false,
+    })
+  }, [])
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
       onSubmit={async () => await openGroupActivity()}

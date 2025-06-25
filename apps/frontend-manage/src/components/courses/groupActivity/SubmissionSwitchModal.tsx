@@ -3,7 +3,6 @@ import { useTranslations } from 'next-intl'
 
 interface SubmissionSwitchModalProps {
   nextSubmission: number
-  switchingModal: boolean
   setSelectedSubmission: (submissionId: number) => void
   setCurrentEditing: (editing: boolean) => void
   setSwitchingModal: (switching: boolean) => void
@@ -11,7 +10,6 @@ interface SubmissionSwitchModalProps {
 
 function SubmissionSwitchModal({
   nextSubmission,
-  switchingModal,
   setSelectedSubmission,
   setCurrentEditing,
   setSwitchingModal,
@@ -20,6 +18,7 @@ function SubmissionSwitchModal({
 
   return (
     <Modal
+      open
       title={t('manage.groupActivity.switchSubmission')}
       primaryLabel={t('shared.generic.confirm')}
       onPrimaryAction={() => {
@@ -32,7 +31,6 @@ function SubmissionSwitchModal({
       onSecondaryAction={() => setSwitchingModal(false)}
       dataSecondaryAction={{ cy: 'cancel-submission-switch' }}
       onClose={(): void => setSwitchingModal(false)}
-      open={switchingModal}
       hideCloseButton={true}
       className={{ content: 'max-w-xl' }}
     >

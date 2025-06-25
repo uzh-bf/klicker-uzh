@@ -17,13 +17,12 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface FlagElementModalProps {
   index: number
-  open: boolean
-  setOpen: (newValue: boolean) => void
   instanceId: number
   elementId: number
   feedbackValue?: string
@@ -33,8 +32,6 @@ interface FlagElementModalProps {
 
 function FlagElementModal({
   index,
-  open,
-  setOpen,
   instanceId,
   elementId,
   feedbackValue,
@@ -42,6 +39,7 @@ function FlagElementModal({
   stackInstanceIds,
 }: FlagElementModalProps) {
   const t = useTranslations()
+  const [open, setOpen] = useState(false)
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
   const flagElementSchema = Yup.object().shape({

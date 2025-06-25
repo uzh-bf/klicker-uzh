@@ -1,33 +1,17 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { sort } from 'remeda'
-import { twMerge } from 'tailwind-merge'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
-import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 import QRCodePopover from './QRCodePopover'
-
-const sortingOrderLiveQuizzes: Record<PublicationStatus, number> = {
-  [PublicationStatus.Published]: 0,
-  [PublicationStatus.Scheduled]: 1,
-  [PublicationStatus.Draft]: 2,
-  [PublicationStatus.Template]: 3,
-  [PublicationStatus.Ended]: 4,
-  [PublicationStatus.Graded]: 5,
-}
 
 function LiveQuizList({
   courseId,
   liveQuizzes,
-  liveQuizActivities,
-  privatePreview,
 }: {
   courseId: string
-  liveQuizzes: LiveQuizListElementType[]
-  liveQuizActivities: ActivityInfo[]
-  privatePreview: boolean
+  liveQuizzes: ActivityInfo[]
 }) {
   const t = useTranslations()
 
@@ -58,50 +42,21 @@ function LiveQuizList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.liveQuizList')}`}</Button.Label>
         </Button>
-        <ActivityListLegend />
+        <ActivityListLegend type={ActivityType.LiveQuiz} />
       </div>
 
-      {/* // TODO: remove this old activity overview, once sharing is enabled for all users (& add catalyst notification below) */}
-      {liveQuizzes && liveQuizzes.length > 0 && !privatePreview ? (
-        <div className="flex w-full flex-col gap-2">
-          {sort(liveQuizzes, (a, b) => {
-            if (!a.status || !b.status) return 0
-
-            return (
-              sortingOrderLiveQuizzes[a.status] -
-              sortingOrderLiveQuizzes[b.status]
-            )
-          }).map((quiz) => {
-            return <LiveQuizElement quiz={quiz} key={quiz.id} />
-          })}
-        </div>
-      ) : (
-        <UserNotification
-          type="warning"
-          className={{
-            root: twMerge('w-full text-left', privatePreview && 'hidden'),
-          }}
-        >
-          {t('manage.course.noLiveQuizzes')}
-        </UserNotification>
-      )}
-
-      {liveQuizActivities && liveQuizActivities.length > 0 && privatePreview ? (
+      {liveQuizzes && liveQuizzes.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
-          {privatePreview ? (
-            <ActivityList
-              activities={liveQuizActivities}
-              noActivities={false}
-              hideActivityType
-            />
-          ) : null}
+          <ActivityList
+            activities={liveQuizzes}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
       ) : (
         <UserNotification
           type="warning"
-          className={{
-            root: twMerge('w-full text-left', !privatePreview && 'hidden'),
-          }}
+          className={{ root: 'w-full text-left' }}
         >
           {t('manage.course.noLiveQuizzes')}
         </UserNotification>
