@@ -1,0 +1,31 @@
+name: Test logging package functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'packages/logging/**'
+      - '.github/workflows/test-logging.yml'
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.4
+          run_install: true
+      - name: Test logging package
+        shell: bash
+        run: |
+          cd packages/logging
+          pnpm run test
