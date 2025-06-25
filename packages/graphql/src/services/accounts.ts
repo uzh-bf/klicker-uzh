@@ -1093,8 +1093,6 @@ export async function changeEmailSettings(
     where: { id: ctx.user.sub },
   })
 
-  console.log('CONTEXT', ctx)
-
   const changeEmailSettingsTask = changeUserEmailSettings(ctx.hatchet)
   const { success } = await changeEmailSettingsTask.run({
     userId: ctx.user.sub,
@@ -1104,9 +1102,8 @@ export async function changeEmailSettings(
   if (!success) {
     return user
   }
-  {
-    return { ...user, sendProjectUpdates: projectUpdates }
-  }
+
+  return { ...user, sendProjectUpdates: projectUpdates } as DB.User
 }
 
 export async function changeInitialSettings(

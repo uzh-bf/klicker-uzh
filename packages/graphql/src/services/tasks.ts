@@ -17,8 +17,8 @@ type UserEmailSettingsInput = {
   projectUpdates: boolean
 }
 export function changeUserEmailSettings(hatchet: Hatchet) {
-  const emailChangeTask = hatchet.task({
-    name: 'simple',
+  const changeUserEmailSettingsTask = hatchet.task({
+    name: 'change-user-email-settings',
     retries: 3,
     fn: async ({ userId, projectUpdates }: UserEmailSettingsInput) => {
       const prisma = initializePrisma()
@@ -31,12 +31,13 @@ export function changeUserEmailSettings(hatchet: Hatchet) {
       } catch (error) {
         console.error('Error updating user email settings:', error)
         throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
       }
 
-      prisma.$disconnect()
       return { success: true }
     },
   })
 
-  return emailChangeTask
+  return changeUserEmailSettingsTask
 }
