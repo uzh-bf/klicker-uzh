@@ -1,0 +1,46 @@
+{
+  "name": "@klicker-uzh/hatchet",
+  "version": "3.3.0-alpha.67",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@hatchet-dev/typescript-sdk": "1.8.2",
+    "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.2",
+    "@types/node": "^20.16.1",
+    "dotenv": "~16.4.5",
+    "eslint": "~8.45.0",
+    "nodemon": "~3.1.7",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.2",
+    "tsx": "~4.19.1",
+    "typescript": "~5.6.3"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production run-s build:ts",
+    "build:ts": "rollup -c",
+    "check": "tsc --noEmit",
+    "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:build": "rollup -c --watch",
+    "dev:offline": "pnpm run dev",
+    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node ./dist/index.js'",
+    "dev:test": "cross-env NODE_ENV=test pnpm run dev",
+    "start": "node -r dotenv/config dist/index.js",
+    "start:test": "nyc --silent node -r dotenv/config dist/index.js"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}
