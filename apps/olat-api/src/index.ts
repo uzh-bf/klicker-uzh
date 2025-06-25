@@ -9,7 +9,7 @@ import { validate as validateUUID } from 'uuid'
 
 const app: express.Express = express()
 const prisma = new PrismaClient()
-const PORT = process.env.PORT || 3020
+const PORT = process.env.PORT || 3000
 
 const API_NAME = 'olat-api'
 const API_KEY = process.env.OLAT_API_KEY
@@ -159,7 +159,7 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
       }
 
       res.set('Content-Type', 'application/json')
-      res.status(StatusCode.SUCCESS).json({
+      return res.status(StatusCode.SUCCESS).json({
         courses: courses,
         timestamp: new Date().toISOString(),
         api: API_NAME,
@@ -167,7 +167,7 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
     })
     .catch((error) => {
       console.error('Error fetching courses:', error)
-      res
+      return res
         .status(StatusCode.INTERNAL_SERVER_ERROR)
         .json({ error: 'Internal server error' })
     })
@@ -193,20 +193,27 @@ app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
       .json({ error: 'Invalid request headers' })
   }
 
-  getActivityTypes().then((activityTypes) => {
-    if (activityTypes === null) {
-      return res
-        .status(StatusCode.NOT_FOUND)
-        .json({ error: 'Course not found' })
-    }
+  getActivityTypes()
+    .then((activityTypes) => {
+      if (activityTypes === null) {
+        return res
+          .status(StatusCode.NOT_FOUND)
+          .json({ error: 'Course not found' })
+      }
 
-    res.set('Content-Type', 'application/json')
-    res.status(StatusCode.SUCCESS).json({
-      activityTypes: activityTypes,
-      timestamp: new Date().toISOString(),
-      api: API_NAME,
+      res.set('Content-Type', 'application/json')
+      return res.status(StatusCode.SUCCESS).json({
+        activityTypes: activityTypes,
+        timestamp: new Date().toISOString(),
+        api: API_NAME,
+      })
     })
-  })
+    .catch((error) => {
+      console.error('Error fetching activity types:', error)
+      return res
+        .status(StatusCode.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Internal server error' })
+    })
 })
 
 async function getCourseActivityTypes(courseId: string): Promise<any[] | null> {
@@ -310,20 +317,27 @@ app.get(
         .json({ error: 'Invalid courseID' })
     }
 
-    getCourseActivityTypes(courseID).then((activityTypes) => {
-      if (activityTypes === null) {
-        return res
-          .status(StatusCode.NOT_FOUND)
-          .json({ error: 'Course not found' })
-      }
+    getCourseActivityTypes(courseID)
+      .then((activityTypes) => {
+        if (activityTypes === null) {
+          return res
+            .status(StatusCode.NOT_FOUND)
+            .json({ error: 'Course not found' })
+        }
 
-      res.set('Content-Type', 'application/json')
-      res.status(StatusCode.SUCCESS).json({
-        activityTypes: activityTypes,
-        timestamp: new Date().toISOString(),
-        api: API_NAME,
+        res.set('Content-Type', 'application/json')
+        return res.status(StatusCode.SUCCESS).json({
+          activityTypes: activityTypes,
+          timestamp: new Date().toISOString(),
+          api: API_NAME,
+        })
       })
-    })
+      .catch((error) => {
+        console.error('Error fetching activity types for course:', error)
+        return res
+          .status(StatusCode.INTERNAL_SERVER_ERROR)
+          .json({ error: 'Internal server error' })
+      })
   }
 )
 
@@ -345,7 +359,8 @@ async function getActivities(
   const activityDetails = (
     course.liveQuizzes ??
     course.practiceQuizzes ??
-    course.microLearnings
+    course.microLearnings ??
+    []
   ) // NOTE: modify if required
     .map((activity) => ({
       id: activity.id,
@@ -380,8 +395,8 @@ app.get(
       activityKeysSubselection.indexOf(activityTypeKey) !== -1 &&
       validateUUID(courseID)
     ) {
-      getActivities(courseID, activityTypeKey as ActivityTypeSubselection).then(
-        (activityTypes) => {
+      getActivities(courseID, activityTypeKey as ActivityTypeSubselection)
+        .then((activityTypes) => {
           if (activityTypes === null) {
             return res
               .status(StatusCode.NOT_FOUND)
@@ -394,8 +409,13 @@ app.get(
             timestamp: new Date().toISOString(),
             api: API_NAME,
           })
-        }
-      )
+        })
+        .catch((error) => {
+          console.error('Error fetching activity type for course:', error)
+          return res
+            .status(StatusCode.INTERNAL_SERVER_ERROR)
+            .json({ error: 'Internal server error' })
+        })
     } else if (activityKeysGeneral.indexOf(activityTypeKey) !== -1) {
       return res.status(StatusCode.SUCCESS).json({
         activityTypes: [],
