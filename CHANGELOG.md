@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.66...v3.3.0-alpha.67) (2025-06-25)
+
+
+### Bug Fixes
+
+* **apps/auth:** add new swissEduID attributes to ExtendedProfile type ([c31ee47](https://github.com/uzh-bf/klicker-uzh/commit/c31ee4786a7f79e4a0c37648739dc37fe8b2d100))
+* **apps/office-addin:** update link to live quiz overview in add-in overview ([18bc37d](https://github.com/uzh-bf/klicker-uzh/commit/18bc37d2fc8d7f2133147f54c90c7c940bb1f85c))
+
 ## [3.3.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.65...v3.3.0-alpha.66) (2025-06-23)
 
 ## [3.3.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.64...v3.3.0-alpha.65) (2025-06-23)
