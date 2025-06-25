@@ -5,6 +5,7 @@ import {
   faMagnifyingGlass,
   faPrint,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
   Checkbox,
@@ -117,14 +118,7 @@ function FeedbackSearchAndFilters({
             <div className="order-0 mr-1 block md:order-1 md:mr-0 xl:hidden">
               <Dropdown
                 disabled={disabled?.filters}
-                trigger={
-                  <Button
-                    className={{ root: 'h-9 w-9' }}
-                    data={{ cy: 'feedback-channel-mobile-filter-button' }}
-                  >
-                    <Button.Icon withoutLabel icon={faFilter} />
-                  </Button>
-                }
+                trigger={<FontAwesomeIcon icon={faFilter} />}
                 items={filter.map((filter) => {
                   return {
                     type: 'checkbox',
@@ -134,7 +128,8 @@ function FeedbackSearchAndFilters({
                     data: { cy: `feedback-channel-filter-${filter.label}` },
                   }
                 })}
-                data={{ cy: 'feedback-channel-mobile-filter-dropdown' }}
+                className={{ trigger: 'h-9 w-9' }}
+                data={{ cy: 'feedback-channel-mobile-filter-button' }}
               />
             </div>
 

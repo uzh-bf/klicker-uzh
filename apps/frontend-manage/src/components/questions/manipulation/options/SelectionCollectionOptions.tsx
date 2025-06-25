@@ -10,12 +10,11 @@ import {
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesSelection } from '../types'
 import AnswerCollectionInlineEditButton from './AnswerCollectionInlineEditButton'
-import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
@@ -67,11 +66,34 @@ function SelectionCollectionOptions({
   })
 
   // udpate the selected correct answers if the answer collection changes
-  useAnswerCollectionChangeEffect({
-    field: solutions,
-    helpers: solutionHelpers,
-    collectionAnswers,
-  })
+  useEffect(() => {
+    // if no collection answers are available, reset the solutions field
+    if (
+      !solutions.value ||
+      !collectionAnswers ||
+      collectionAnswers.length === 0
+    ) {
+      if (solutions.value?.length) {
+        solutionHelpers.setValue([])
+      }
+      return
+    }
+
+    const newFieldValues = solutions.value.filter((id) =>
+      collectionAnswers.map((entry) => entry.value).includes(id)
+    )
+
+    // if the existing solutions and the new ones are not the same, update the solutions field
+    if (
+      solutions.value.length !== newFieldValues.length ||
+      solutions.value.some((id) => !newFieldValues.includes(id))
+    ) {
+      solutionHelpers.setValue(newFieldValues)
+    }
+
+    // do not add value as a dependency --> rendering loop! - updates only on collection change desired
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionAnswers])
 
   // locally store the selected answer collection
   const selectedCollection = useMemo(() => {

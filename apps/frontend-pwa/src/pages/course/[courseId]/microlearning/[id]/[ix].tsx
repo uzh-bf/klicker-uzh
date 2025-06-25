@@ -3,6 +3,7 @@ import {
   GetMicroLearningDocument,
   PublicationStatus,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Progress, UserNotification } from '@uzh-bf/design-system'
@@ -70,7 +71,6 @@ function MicrolearningInstance() {
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
-      previewMode={previewMode}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
@@ -112,7 +112,10 @@ function MicrolearningInstance() {
               // TODO: also mark the microlearning as completed with this action already?
               router.push(`/course/${courseId}/microlearning/${id}/evaluation`)
             }}
-            withParticipant={!!selfData?.self}
+            withParticipant={
+              !!selfData?.self &&
+              selfData.self.role !== UserRole.TemporaryParticipant
+            }
             activityExpired={microLearning.status === PublicationStatus.Ended}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
             previewOnly={previewMode}

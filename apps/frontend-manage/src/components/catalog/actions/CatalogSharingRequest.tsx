@@ -17,20 +17,16 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
   const [declineObjectSharingRequest, { loading: declineLoading }] =
     useMutation(DeclineObjectSharingRequestDocument)
 
+  // TODO: add requested permission levels, once UI supports the selection of a specific one during request
   return (
     <div
       key={`sharing-request-${request.requestId}`}
-      className="flex flex-row items-center justify-between border-b py-1 text-sm"
+      className="flex flex-row items-center justify-between border-b px-3 py-2 text-sm hover:bg-slate-100"
       data-cy={`sharing-request-${request.objectName}-${request.userShortname}`}
     >
       <div>
-        <div className="flex flex-row items-center gap-4">
-          <div className="font-bold">{request.objectName}</div>
-          <div className="rounded bg-slate-300 px-1">
-            {t(`shared.types.${request.objectType}`)}
-          </div>
-        </div>
-        <div className="text-sm">{`${t('shared.generic.user')}: ${request.userShortname} (${request.userEmail})`}</div>
+        <div>{request.objectName}</div>
+        <div className="text-xs text-slate-500">{`${t('shared.generic.user')}: ${request.userShortname} (${request.userEmail})`}</div>
       </div>
       <div className="flex flex-row gap-2">
         <Button
@@ -126,18 +122,19 @@ function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
           <Button.Label>{t('shared.generic.decline')}</Button.Label>
         </Button>
       </div>
-      <SharingRequestApprovalModal
-        request={request}
-        open={approvalModal}
-        onClose={() => setApprovalModal(false)}
-        onSuccess={() =>
-          toast({
-            type: 'success',
-            message: t('manage.catalog.approvalSuccessful'),
-            options: { duration: 3000 },
-          })
-        }
-      />
+      {approvalModal && (
+        <SharingRequestApprovalModal
+          request={request}
+          onClose={() => setApprovalModal(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.catalog.approvalSuccessful'),
+              options: { duration: 3000 },
+            })
+          }
+        />
+      )}
     </div>
   )
 }

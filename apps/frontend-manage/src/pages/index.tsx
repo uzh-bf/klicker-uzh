@@ -578,18 +578,19 @@ function Index() {
           mode={ElementEditMode.CREATE}
         />
       )}
-      <RecoveryPrompt
-        open={showRecoveryPrompt}
-        onRecovery={() => {
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-        onDiscard={() => {
-          localStorage.removeItem('autosave-element-creation')
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-      />
+      {showRecoveryPrompt && (
+        <RecoveryPrompt
+          onRecovery={() => {
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+          onDiscard={() => {
+            localStorage.removeItem('autosave-element-creation')
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+        />
+      )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>

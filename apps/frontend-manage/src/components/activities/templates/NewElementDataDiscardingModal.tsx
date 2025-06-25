@@ -5,11 +5,9 @@ import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function NewElementDataDiscardingModal({
-  open,
   onClose,
   onConfirm,
 }: {
-  open: boolean
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -17,7 +15,7 @@ function NewElementDataDiscardingModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.template.discardEnteredElementContent')}
       secondaryLabel={
@@ -37,6 +35,7 @@ function NewElementDataDiscardingModal({
       onPrimaryAction={onConfirm}
       dataPrimaryAction={{ cy: 'confirm-discard-new-edits' }}
       data={{ cy: 'discard-new-edits-modal' }}
+      className={{ content: 'max-w-2xl' }}
     >
       <div className="mb-4">
         {t('manage.template.confirmDiscardEnteredElementContent')}

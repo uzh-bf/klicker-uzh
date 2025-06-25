@@ -18,8 +18,7 @@ import {
   ObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Dropdown, toast } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -89,7 +88,7 @@ function CatalogObjectItem({
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object
@@ -98,9 +97,7 @@ function CatalogObjectItem({
               !!object.templateId
             ) {
               router.push({
-                pathname: dataUser?.userProfile?.privatePreview
-                  ? '/activities'
-                  : '/quizzes',
+                pathname: '/activities',
                 query: { highlight: object.objectUuid },
               })
             } else if (object.objectType === ObjectType.AnswerCollection) {
@@ -194,17 +191,13 @@ function CatalogObjectItem({
           {dropdownItems.length > 0 ? (
             <Dropdown
               items={dropdownItems}
-              trigger={
-                <ForwardRefButton
-                  basic
-                  className={{
-                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                  }}
-                >
-                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
-                </ForwardRefButton>
-              }
-              className={{ viewport: 'z-20', item: 'py-0.5 text-sm' }}
+              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+              className={{
+                viewport: 'z-20',
+                item: 'py-0.5 text-sm',
+                trigger:
+                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+              }}
               data={{ cy: `actions-dropdown-${object.name}` }}
             />
           ) : null}
@@ -212,9 +205,8 @@ function CatalogObjectItem({
       </div>
 
       {/* functionality for users without access to request it for restricted catalog collections */}
-      {!actionsDisabled && !object.isRequested ? (
+      {!actionsDisabled && !object.isRequested && requestModal ? (
         <CatalogRequestModal
-          open={requestModal}
           onSuccess={() => {
             toast({
               type: 'success',
@@ -234,9 +226,10 @@ function CatalogObjectItem({
       ) : null}
 
       {/* functionality for users to copy a publicly available object */}
-      {!actionsDisabled && object.access === ObjectAccess.Public ? (
+      {!actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      copyModal ? (
         <CatalogCopyModal
-          open={copyModal}
           onSuccess={() => {
             toast({
               type: 'success',
@@ -255,9 +248,10 @@ function CatalogObjectItem({
       ) : null}
 
       {/* functionality for users to import a publicly available object */}
-      {!actionsDisabled && object.access === ObjectAccess.Public ? (
+      {!actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      importModal ? (
         <CatalogImportModal
-          open={importModal}
           onSuccess={() => {
             toast({
               type: 'success',
@@ -276,9 +270,8 @@ function CatalogObjectItem({
       ) : null}
 
       {/* functionality to cancel request for requested catalog object */}
-      {object.isRequested ? (
+      {object.isRequested && requestCancellationModal ? (
         <CatalogRequestCancellationModal
-          open={requestCancellationModal}
           onSuccess={() => {
             toast({
               type: 'success',
@@ -298,24 +291,26 @@ function CatalogObjectItem({
 
       {managedAccess ? (
         <>
-          <CatalogChangeAccessModal
-            open={changeAccessModal}
-            onClose={() => setChangeAccessModal(false)}
-            objectType={object.objectType}
-            objectName={object.name}
-            assignmentId={object.id}
-            newAccess={newAccess}
-            catalogCollectionId={catalogCollectionId}
-          />
-          <CatalogObjectRemovalModal
-            object={object}
-            open={removalModal}
-            catalogCollectionId={catalogCollectionId}
-            onClose={() => setRemovalModal(false)}
-          />
+          {changeAccessModal && (
+            <CatalogChangeAccessModal
+              onClose={() => setChangeAccessModal(false)}
+              objectType={object.objectType}
+              objectName={object.name}
+              assignmentId={object.id}
+              newAccess={newAccess}
+              catalogCollectionId={catalogCollectionId}
+            />
+          )}
+          {removalModal && (
+            <CatalogObjectRemovalModal
+              object={object}
+              catalogCollectionId={catalogCollectionId}
+              onClose={() => setRemovalModal(false)}
+            />
+          )}
         </>
       ) : null}
-      {object.isManager ? (
+      {object.isManager && sharingModal ? (
         object.objectUuid ? (
           <ObjectSharingModalWrapper
             objectUuid={object.objectUuid}
@@ -323,7 +318,6 @@ function CatalogObjectItem({
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             isOwner={object.isOwner}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
         ) : (
@@ -333,7 +327,6 @@ function CatalogObjectItem({
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             isOwner={object.isOwner}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
         )

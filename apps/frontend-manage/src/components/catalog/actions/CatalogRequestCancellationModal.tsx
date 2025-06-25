@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl'
 import useRequestCancellationCatalogObject from './useRequestCancellationCatalogObject'
 
 function CatalogRequestCancellationModal({
-  open,
   onSuccess,
   onClose,
   objectType,
@@ -15,7 +14,6 @@ function CatalogRequestCancellationModal({
   objectOwner,
   catalogCollectionId,
 }: {
-  open: boolean
   onSuccess: () => void
   onClose: () => void
   objectType: ObjectType
@@ -41,7 +39,7 @@ function CatalogRequestCancellationModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={(e) => {
         e?.stopPropagation()
         onClose()

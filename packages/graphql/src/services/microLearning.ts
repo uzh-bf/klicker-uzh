@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { ElementStackInput } from '@klicker-uzh/types'
+import { type ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
@@ -137,7 +137,10 @@ export async function getCoursePublishedMicroLearnings(
   return course?.microLearnings
     ? (course.microLearnings.map((quiz) => ({
         ...quiz,
-        course,
+        course: {
+          ...course,
+          microLearnings: undefined, // remove microLearnings to avoid circular reference
+        },
       })) ?? [])
     : []
 }

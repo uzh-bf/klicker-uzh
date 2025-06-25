@@ -12,13 +12,11 @@ import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function LeaveUserGroupModal({
-  open,
   onClose,
   onSuccess,
   groupId,
   groupName,
 }: {
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   groupId: number
@@ -36,7 +34,7 @@ function LeaveUserGroupModal({
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.userGroups.leaveGroup')}
       primaryLabel={

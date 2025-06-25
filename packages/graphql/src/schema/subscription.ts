@@ -2,7 +2,11 @@ import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder.js'
 import { GroupActivityRef } from './groupActivity.js'
-import { ElementBlockRef, FeedbackRef } from './liveQuiz.js'
+import {
+  ElementBlockRef,
+  FeedbackRef,
+  LiveQuizStudentSettingsRef,
+} from './liveQuiz.js'
 import { MicroLearningRef } from './microLearning.js'
 
 export const Subscription = builder.subscriptionType({
@@ -34,6 +38,20 @@ export const Subscription = builder.subscriptionType({
             filter((data) => data.id === args.quizId)
           ),
         resolve: (payload) => payload.activeBlock,
+      }),
+
+      liveQuizSettingsChanged: t.field({
+        nullable: true,
+        type: LiveQuizStudentSettingsRef,
+        args: {
+          quizId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('liveQuizSettingsChanged'),
+            filter((data) => data.liveQuizId === args.quizId)
+          ),
+        resolve: (payload) => payload,
       }),
 
       feedbackCreated: t.field({

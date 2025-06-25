@@ -27,7 +27,7 @@ import {
   type IGroupActivityInstance,
   GroupActivityInstanceRef,
 } from './groupActivity.js'
-import { LocaleType } from './user.js'
+import { LocaleType, UserRole } from './user.js'
 
 export const AvatarSettingsInputRef = builder.inputRef<AvatarSettingsInputType>(
   'AvatarSettingsInput'
@@ -102,7 +102,12 @@ export const AvatarSettings = AvatarSettingsRef.implement({
   }),
 })
 
-export interface IParticipant extends DB.Participant {
+export interface IParticipant
+  extends Omit<DB.Participant, 'password' | 'xp' | 'locale'> {
+  role?: DB.UserRole
+  scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
+  xp?: number | null
+  locale?: DB.Locale | null
   rank?: number
   score?: number
   isSelf?: boolean
@@ -116,8 +121,10 @@ export const Participant = ParticipantRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
-    locale: t.expose('locale', { type: LocaleType }),
+    role: t.expose('role', { type: UserRole, nullable: true }),
+    scopeQuizId: t.exposeString('scopeQuizId', { nullable: true }), //
 
+    locale: t.expose('locale', { type: LocaleType, nullable: true }),
     email: t.exposeString('email', { nullable: true }),
     username: t.exposeString('username', { nullable: false }),
     isActive: t.exposeBoolean('isActive', { nullable: false }),
@@ -128,10 +135,10 @@ export const Participant = ParticipantRef.implement({
       nullable: true,
     }),
 
-    xp: t.exposeInt('xp'),
+    xp: t.exposeInt('xp', { nullable: true }),
     level: t.int({
       nullable: true,
-      resolve: (participant) => levelFromXp(participant.xp),
+      resolve: (participant) => levelFromXp(participant.xp ?? 0),
     }),
     levelData: t.field({
       type: LevelRef,
@@ -139,7 +146,7 @@ export const Participant = ParticipantRef.implement({
       resolve: (participant, _, ctx) => {
         return ctx.prisma.level.findUnique({
           where: {
-            index: levelFromXp(participant.xp),
+            index: levelFromXp(participant.xp ?? 0),
           },
           include: {
             nextLevel: true,

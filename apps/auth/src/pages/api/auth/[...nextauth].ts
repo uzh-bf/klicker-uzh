@@ -16,6 +16,8 @@ export const COOKIE_NAME = 'next-auth.session-token'
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
+  swissEduIDLinkedAffiliationMail?: string[]
+  swissEduIDLinkedAffiliationUniqueID?: string[]
 }
 
 export interface ExtendedUser {
@@ -89,6 +91,8 @@ const EduIDProvider: Provider | null =
                 email: { essential: true },
                 swissEduPersonUniqueID: { essential: true },
                 swissEduIDLinkedAffiliation: { essential: false },
+                swissEduIDLinkedAffiliationMail: { essential: false },
+                swissEduIDLinkedAffiliationUniqueID: { essential: false },
               },
             },
             scope: 'openid email https://login.eduid.ch/authz/User.Read',

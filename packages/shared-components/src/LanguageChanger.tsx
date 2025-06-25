@@ -16,9 +16,7 @@ function LanguageChanger({
         { value: 'en', label: 'EN', data: { cy: 'language-en' } },
       ]}
       onChange={onChange}
-      className={{
-        trigger: 'h-8 w-max',
-      }}
+      className={{ trigger: 'h-8 w-max' }}
       data={{ cy: 'select-value-language-changer' }}
     />
   )

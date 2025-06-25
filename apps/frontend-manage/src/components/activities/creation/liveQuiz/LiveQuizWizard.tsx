@@ -350,9 +350,7 @@ function LiveQuizWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          viewElementHref={
-            dataUser?.userProfile?.privatePreview ? '/activities' : '/quizzes'
-          }
+          viewElementHref="/activities"
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()

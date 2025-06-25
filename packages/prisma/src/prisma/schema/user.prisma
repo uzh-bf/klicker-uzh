@@ -1,7 +1,8 @@
 enum UserRole {
-  PARTICIPANT
-  USER
-  ADMIN
+  PARTICIPANT // regular participants with username / password login for pwa application
+  TEMPORARY_PARTICIPANT // temporary live quiz participants with pseudonym
+  USER // regular users with edu-ID login for manage application
+  ADMIN // users with admin rights for manage application
 }
 
 model Account {

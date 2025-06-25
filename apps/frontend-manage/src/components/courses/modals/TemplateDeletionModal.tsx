@@ -13,8 +13,7 @@ import { useTranslations } from 'next-intl'
 interface TemplateDeletionModalProps {
   activityId: string
   activityType: ActivityType
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   onSuccess: () => void
   onError: () => void
 }
@@ -22,8 +21,7 @@ interface TemplateDeletionModalProps {
 function TemplateDeletionModal({
   activityId,
   activityType,
-  open,
-  setOpen,
+  onClose,
   onSuccess,
   onError,
 }: TemplateDeletionModalProps) {
@@ -45,9 +43,9 @@ function TemplateDeletionModal({
 
   return (
     <Modal
+      open
       title={t('manage.template.deleteTemplate')}
-      open={open}
-      onClose={() => setOpen(false)}
+      onClose={onClose}
       data={{ cy: 'delete-template-modal' }}
       primaryLabel={
         <div className="flex flex-row items-center gap-2.5">
@@ -63,7 +61,7 @@ function TemplateDeletionModal({
 
           if (data?.deleteActivityTemplate) {
             onSuccess()
-            setOpen(false)
+            onClose()
           } else {
             onError()
           }
@@ -74,8 +72,9 @@ function TemplateDeletionModal({
       }}
       dataPrimaryAction={{ cy: 'confirm-template-deletion' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={() => setOpen(false)}
+      onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-deletion' }}
+      className={{ content: 'max-w-xl' }}
     >
       {t('manage.template.deleteTemplateExplanation')}
     </Modal>

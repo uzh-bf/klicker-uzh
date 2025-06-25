@@ -260,11 +260,12 @@ function StackBlockCreation({
         isOver={isOver}
         index={stackIx}
       />
-      <StackDescriptionModal
-        stackIx={stackIx}
-        modalOpen={stackDescriptionModal}
-        setModalOpen={setStackDescriptionModal}
-      />
+      {stackDescriptionModal && (
+        <StackDescriptionModal
+          stackIx={stackIx}
+          setModalOpen={setStackDescriptionModal}
+        />
+      )}
     </div>
   )
 }

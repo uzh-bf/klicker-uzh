@@ -52,8 +52,7 @@ function ElementRemovalModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.questionPool.removeElement')}
       message={t.rich('manage.questionPool.confirmElementRemoval', {
         name: title,

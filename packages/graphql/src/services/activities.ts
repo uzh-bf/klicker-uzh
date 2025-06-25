@@ -115,6 +115,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           ? block.elements[0].results.total +
             block.elements[0].anonymousResults.total
           : 0,
+        timeLimit: block.timeLimit,
         elements: block.elements.map((instance) => ({
           id: instance.id,
           name: instance.elementData.name,
@@ -184,7 +185,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
           (acc, block) => acc + block.elements.length,
           0
         ),
-        scheduledStartAt: object.practiceQuiz.availableFrom,
+        automaticPublicationAt: object.practiceQuiz.availableFrom,
         stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,

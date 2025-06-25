@@ -10,19 +10,15 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface MicroLearningDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function MicroLearningDeletionModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: MicroLearningDeletionModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetMicroLearningSummaryDocument,
@@ -73,8 +69,7 @@ function MicroLearningDeletionModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
       onSubmit={async () => await deleteMicroLearning()}

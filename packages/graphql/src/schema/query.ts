@@ -29,6 +29,7 @@ import {
 import {
   Course,
   CourseLeaderboard,
+  CourseOverview,
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
@@ -105,12 +106,7 @@ export const Query = builder.queryType({
       self: t.field({
         nullable: true,
         type: Participant,
-        resolve: async (_, __, ctx) => {
-          if (!ctx.user?.sub) return null
-          return await ctx.prisma.participant.findUnique({
-            where: { id: ctx.user.sub },
-          })
-        },
+        resolve: async (_, __, ctx) => ParticipantService.getSelf(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -565,6 +561,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      validateAvailableLiveQuiz: t.boolean({
+        nullable: true,
+        args: {
+          quizId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.validateAvailableLiveQuiz(args, ctx)
+        },
+      }),
+
       participantGroups: t.withAuth(asAuthenticated).field({
         nullable: true,
         type: [ParticipantGroup],
@@ -737,6 +744,7 @@ export const Query = builder.queryType({
         type: [LeaderboardEntry],
         args: {
           quizId: t.arg.string({ required: true }),
+          hmac: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getLiveQuizLeaderboard(args, ctx)
@@ -745,7 +753,7 @@ export const Query = builder.queryType({
 
       participations: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [Participation],
+        type: [Participation], // TODO: if possible, link student course instead of normal course here
         args: {
           endpoint: t.arg.string({ required: false }),
         },
@@ -855,7 +863,7 @@ export const Query = builder.queryType({
 
       getPracticeQuizList: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [Course],
+        type: [CourseOverview],
         resolve: async (_, __, ctx) => {
           return await ParticipantService.getPracticeQuizList(ctx)
         },
@@ -974,20 +982,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkPublicPreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPublicPreviewAvailable(ctx)
-        },
-      }),
-
-      checkPrivatePreviewAvailable: t.boolean({
-        nullable: false,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.checkPrivatePreviewAvailable(ctx)
-        },
-      }),
-
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',
@@ -1090,7 +1084,7 @@ export const Query = builder.queryType({
 
       getCourseActivities: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
+        type: Course, // TODO: define custom return type here
         args: {
           courseId: t.arg.string({ required: true }),
         },

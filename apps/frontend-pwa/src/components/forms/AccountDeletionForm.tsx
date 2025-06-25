@@ -3,7 +3,7 @@ import {
   DeleteParticipantAccountDocument,
   LogoutParticipantDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -33,12 +33,11 @@ function AccountDeletionForm() {
         <H3 className={{ root: 'mb-0 border-b' }}>
           {t('pwa.profile.deleteProfile')}
         </H3>
-        <Prose className={{ root: '' }}>
-          {t('pwa.profile.deleteProfileDescription')}
-        </Prose>
+        <div>{t('pwa.profile.deleteProfileDescription')}</div>
         <Button
           destructive
           onClick={(): void => setDeleteModalOpen(true)}
+          className={{ root: 'w-full md:w-max' }}
           data={{ cy: 'confirm-delete-account' }}
         >
           <Button.Label>{t('shared.generic.delete')}</Button.Label>

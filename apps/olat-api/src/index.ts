@@ -9,7 +9,7 @@ import { validate as validateUUID } from 'uuid'
 
 const app: express.Express = express()
 const prisma = new PrismaClient()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3020
 
 const API_NAME = 'olat-api'
 const API_KEY = process.env.OLAT_API_KEY

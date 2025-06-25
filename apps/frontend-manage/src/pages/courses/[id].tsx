@@ -5,10 +5,7 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetSingleCourseDocument,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
@@ -37,13 +34,15 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
-  const { data: user } = useQuery(UserProfileDocument)
 
   const { earliestStartDate, latestEndDate, earliestGroupDeadline } =
     useEarliestLatestCourseDates({
-      groupActivities: data?.course?.groupActivities ?? undefined,
-      microLearnings: data?.course?.microLearnings ?? undefined,
-      practiceQuizzes: data?.course?.practiceQuizzes ?? undefined,
+      activities: [
+        ...(data?.course?.groupActivitiesInfo ?? []),
+        ...(data?.course?.microLearningsInfo ?? []),
+        ...(data?.course?.practiceQuizzesInfo ?? []),
+        ...(data?.course?.liveQuizzesInfo ?? []),
+      ],
     })
 
   useEffect(() => {
@@ -205,10 +204,8 @@ function CourseOverviewPage() {
             className={{ root: 'overflow-y-auto px-0 py-1' }}
           >
             <LiveQuizList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
               courseId={course.id}
-              liveQuizzes={course.liveQuizzes ?? []}
-              liveQuizActivities={course.liveQuizActivities ?? []}
+              liveQuizzes={course.liveQuizzesInfo ?? []}
             />
           </TabContent>
           <TabContent
@@ -217,12 +214,8 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <PracticeQuizList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              practiceQuizzes={course.practiceQuizzes ?? []}
-              practiceQuizActivities={course.practiceQuizActivities ?? []}
               courseId={course.id}
-              courseStartDate={course.startDate}
-              userCatalyst={user?.userProfile?.catalyst}
+              practiceQuizzes={course.practiceQuizzesInfo ?? []}
             />
           </TabContent>
           <TabContent
@@ -231,27 +224,17 @@ function CourseOverviewPage() {
             className={{ root: 'px-0 py-1' }}
           >
             <MicroLearningList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              microLearnings={course.microLearnings ?? []}
-              microLearningActivities={course.microLearningActivities ?? []}
               courseId={course.id}
-              userCatalyst={user?.userProfile?.catalyst}
+              microLearnings={course.microLearningsInfo ?? []}
             />
           </TabContent>
           <TabContent
             key="content-groupActivities"
             value="groupActivities"
-            className={{ root: 'px-0 py-2' }}
+            className={{ root: 'px-0 py-1' }}
           >
             <GroupActivityList
-              privatePreview={user?.userProfile?.privatePreview ?? false}
-              groupActivities={course.groupActivities ?? []}
-              groupActivityActivities={course.groupActivityActivities ?? []}
-              groupDeadlineDate={course.groupDeadlineDate}
-              numOfParticipantGroups={course.numOfParticipantGroups ?? 0}
-              courseId={course.id}
-              courseStartDate={course.startDate}
-              userCatalyst={user?.userProfile?.catalyst}
+              groupActivities={course.groupActivitiesInfo ?? []}
             />
           </TabContent>
         </Tabs>

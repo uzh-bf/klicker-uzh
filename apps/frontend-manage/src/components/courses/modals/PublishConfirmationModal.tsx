@@ -10,8 +10,7 @@ import { H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
   elementType:
     | ElementInstanceType.Microlearning
     | ElementInstanceType.GroupActivity
@@ -22,8 +21,7 @@ interface PublishConfirmationModalProps {
 }
 
 function PublishConfirmationModal({
-  open,
-  setOpen,
+  onClose,
   elementType,
   elementId,
   title,
@@ -57,6 +55,7 @@ function PublishConfirmationModal({
 
   return (
     <Modal
+      open
       title={t(`manage.course.publishItem${elementType}`)}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={mlPublishLoading || gaPublishLoading}
@@ -66,16 +65,15 @@ function PublishConfirmationModal({
         } else if (elementType === ElementInstanceType.GroupActivity) {
           await publishGroupActivity()
         }
-        setOpen(false)
+        onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={() => {
-        setOpen(false)
+        onClose()
       }}
       dataSecondaryAction={{ cy: 'cancel-publish-action' }}
-      onClose={(): void => setOpen(false)}
-      open={open}
+      onClose={onClose}
       hideCloseButton={true}
       className={{
         content: 'w-[40rem]',

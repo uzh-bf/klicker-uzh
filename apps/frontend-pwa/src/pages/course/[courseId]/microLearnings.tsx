@@ -44,7 +44,7 @@ function CourseMicroLearnings({
   }
 
   const microlearnings = data?.getCoursePublishedMicroLearnings
-  const course = microlearnings?.[0].course
+  const course = microlearnings?.[0] ? microlearnings?.[0].course : undefined
   if (
     isInactive ||
     !microlearnings ||
@@ -117,11 +117,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  const course = result.data.getCoursePublishedMicroLearnings?.[0].course
+  const course = result.data.getCoursePublishedMicroLearnings?.[0]?.course
   if (!result?.data?.getCoursePublishedMicroLearnings || !course) {
     return {
       props: {
         isInactive: true,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

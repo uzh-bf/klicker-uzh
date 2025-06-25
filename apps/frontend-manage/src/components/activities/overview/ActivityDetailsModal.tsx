@@ -1,3 +1,4 @@
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpRightFromSquare,
   faUserGroup,
@@ -10,19 +11,17 @@ import Link from 'next/link'
 
 function ActivityDetailsModal({
   activity,
-  open,
   onClose,
 }: {
   activity: ActivityInfo
-  open: boolean
   onClose: () => void
 }) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
       title={t('manage.activities.activityDetails')}
-      open={open}
       onClose={onClose}
       className={{ content: 'w-96 min-w-96 max-w-96' }}
       data={{ cy: 'activity-details-modal' }}
@@ -47,12 +46,20 @@ function ActivityDetailsModal({
                       number: index + 1,
                     })}
               </H4>
-              {stack.numOfParticipants !== null ? (
-                <div className="flex flex-row items-center">
-                  <div>{stack.numOfParticipants}</div>
-                  <FontAwesomeIcon icon={faUserGroup} className="ml-1 w-4" />
-                </div>
-              ) : null}
+              <div className="flex flex-row gap-3">
+                {stack.timeLimit !== null ? (
+                  <div className="flex flex-row items-center gap-1.5 text-orange-500">
+                    <div>{`${stack.timeLimit}s`}</div>
+                    <FontAwesomeIcon icon={faClock} className="w-4" />
+                  </div>
+                ) : null}
+                {stack.numOfParticipants !== null ? (
+                  <div className="flex flex-row items-center gap-1">
+                    <div>{stack.numOfParticipants}</div>
+                    <FontAwesomeIcon icon={faUserGroup} className="w-4" />
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div>
               {stack.elements.map((instance) => (

@@ -694,7 +694,8 @@ async function respondToFlashcard(
     const existingInstance = await getValidateFlashcardInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined,
       response,
     })
 
@@ -758,7 +759,11 @@ async function respondToFlashcard(
     })
 
     // early return: anonymous submissions (no login or login without participation in this course)
-    if (!ctx.user?.sub || !participation) {
+    if (
+      !ctx.user?.sub ||
+      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+      !participation
+    ) {
       return result
     }
 
@@ -1040,7 +1045,8 @@ async function respondToContent(
     const existingInstance = await getValidateContentInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
     })
 
     // check if the instance exists and the response is valid
@@ -1096,7 +1102,11 @@ async function respondToContent(
     })
 
     // early return: anonymous submissions (no login or login without participation in this course)
-    if (!ctx.user?.sub || !participation) {
+    if (
+      !ctx.user?.sub ||
+      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+      !participation
+    ) {
       return result
     }
 
@@ -2616,7 +2626,8 @@ export async function respondToQuestion(
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
     })
 
     // if the instance does not exist or the elementData is not defined, return early
@@ -2904,19 +2915,20 @@ async function respondToElement({
   score: number | null
   evaluation: InstanceEvaluation | null
 }> {
-  const participation = ctx.user?.sub
-    ? await ctx.prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
+  const participation =
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+      ? await ctx.prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
           },
-        },
-        include: {
-          participant: true,
-        },
-      })
-    : null
+          include: {
+            participant: true,
+          },
+        })
+      : null
 
   if (response.type === DB.ElementType.FLASHCARD) {
     const result = await respondToFlashcard(
@@ -3164,7 +3176,7 @@ export async function respondToElementStack(
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const stack = await ctx.prisma.elementStack.findUnique({
       where: { id: stackId },
       include: {
@@ -4179,7 +4191,7 @@ export async function getPreviousStackEvaluation(
   ctx: Context
 ) {
   // previous results only exist for logged in users
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user?.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 

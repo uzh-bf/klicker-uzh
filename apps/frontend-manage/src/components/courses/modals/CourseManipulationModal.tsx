@@ -22,7 +22,6 @@ import GamificationSettingMonitor from './GamificationSettingMonitor'
 
 interface CourseManipulationModalProps {
   initialValues?: Course
-  modalOpen: boolean
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
@@ -50,7 +49,6 @@ export interface CourseManipulationFormData {
 
 function CourseManipulationModal({
   initialValues,
-  modalOpen,
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
@@ -183,13 +181,13 @@ function CourseManipulationModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       title={
         initialValues
           ? t('manage.course.modifyCourse')
           : t('manage.courseList.createNewCourse')
       }
-      open={modalOpen}
       onClose={onModalClose}
       className={{ content: '!w-full' }}
     >

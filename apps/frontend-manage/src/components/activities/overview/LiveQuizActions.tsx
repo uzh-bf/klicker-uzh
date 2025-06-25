@@ -116,8 +116,9 @@ function LiveQuizActions({
     return {
       isManager: [
         'duplicateLiveQuiz',
-        'templateFromLiveQuiz',
-        'shareLiveQuiz',
+        ...(user?.privatePreview
+          ? ['templateFromLiveQuiz', 'shareLiveQuiz']
+          : []),
         'deleteLiveQuiz',
         'deleteTemplate',
       ],
@@ -175,8 +176,7 @@ function LiveQuizActions({
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             onDelete={onDelete}
             deleting={deleting}
           />
@@ -186,8 +186,7 @@ function LiveQuizActions({
           <TemplateDeletionModal
             activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
-            open={templateDeletionModal}
-            setOpen={setTemplateDeletionModal}
+            onClose={() => setTemplateDeletionModal(false)}
             onSuccess={() =>
               toast({
                 type: 'success',
@@ -208,8 +207,7 @@ function LiveQuizActions({
           <TemplateEditModal
             activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
-            open={templateEditingModal}
-            setOpen={setTemplateEditingModal}
+            onClose={() => setTemplateEditingModal(false)}
             onSuccess={() =>
               toast({
                 type: 'success',
@@ -230,15 +228,13 @@ function LiveQuizActions({
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
-            open={qrModal}
-            setOpen={setQRModal}
+            onClose={() => setQRModal(false)}
           />
         )}
 
         {embeddingModal && (
           <EmbeddingModal
             key={liveQuiz.id}
-            open={embeddingModal}
             onClose={() => setEmbeddingModal(false)}
             quizId={liveQuiz.id}
             elements={liveQuiz.stacks.flatMap((stack) =>
@@ -250,17 +246,16 @@ function LiveQuizActions({
           />
         )}
 
-        {sharingModal && liveQuiz.isManager && (
+        {sharingModal && liveQuiz.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={liveQuiz.id}
             objectName={liveQuiz.name}
             objectType={ObjectType.LiveQuiz}
             isTemplate={isTemplate}
             isOwner={liveQuiz.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
 
         {removalModal && liveQuiz.isRemovable && (
           <ActivityRemovalModal
@@ -272,34 +267,37 @@ function LiveQuizActions({
           />
         )}
 
-        <TemplateConversionModal
-          open={conversionModal.open}
-          setOpen={(open) => setConversionModal({ ...conversionModal, open })}
-          activityId={conversionModal.activityId}
-          activityType={conversionModal.activityType}
-          onSuccess={() =>
-            toast({
-              type: 'success',
-              message: t('manage.template.templateCreationSuccess'),
-              options: { duration: 3500 },
-            })
-          }
-          onError={() =>
-            toast({
-              type: 'error',
-              message: t('manage.template.templateCreationError'),
-            })
-          }
-        />
+        {conversionModal.open && (
+          <TemplateConversionModal
+            onClose={() =>
+              setConversionModal((prev) => ({ ...prev, open: false }))
+            }
+            activityId={conversionModal.activityId}
+            activityType={conversionModal.activityType}
+            onSuccess={() =>
+              toast({
+                type: 'success',
+                message: t('manage.template.templateCreationSuccess'),
+                options: { duration: 3500 },
+              })
+            }
+            onError={() =>
+              toast({
+                type: 'error',
+                message: t('manage.template.templateCreationError'),
+              })
+            }
+          />
+        )}
 
-        {liveQuiz && (
+        {liveQuiz && activityLogOpen ? (
           <ActivityLogDialog
             objectId={liveQuiz.id}
             objectType={ObjectType.LiveQuiz}
             open={activityLogOpen}
-            onOpenChange={setActivityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

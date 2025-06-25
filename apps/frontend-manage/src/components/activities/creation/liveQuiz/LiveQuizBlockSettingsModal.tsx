@@ -3,14 +3,12 @@ import { useTranslations } from 'next-intl'
 import { ElementBlockFormValues } from '../WizardLayout'
 
 function LiveQuizBlockSettingsModal({
-  openSettings,
-  setOpenSettings,
+  onClose,
   block,
   index,
   replace,
 }: {
-  openSettings: boolean
-  setOpenSettings: (open: boolean) => void
+  onClose: () => void
   block: ElementBlockFormValues
   index: number
   replace: (index: number, block: ElementBlockFormValues) => void
@@ -19,13 +17,13 @@ function LiveQuizBlockSettingsModal({
 
   return (
     <Modal
-      open={openSettings}
-      onClose={() => setOpenSettings(false)}
+      open
+      onClose={onClose}
       title={t('manage.activityWizard.blockSettingsTitle', {
         blockIx: index + 1,
       })}
       primaryLabel={t('shared.generic.ok')}
-      onPrimaryAction={() => setOpenSettings(false)}
+      onPrimaryAction={onClose}
       dataPrimaryAction={{ cy: 'close-block-settings' }}
       className={{
         content: 'sm:w-3/4 md:w-1/2',
