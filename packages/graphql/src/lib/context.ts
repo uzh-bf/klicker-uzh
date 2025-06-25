@@ -1,3 +1,4 @@
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   Prisma,
   PrismaClient,
@@ -16,6 +17,7 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
+  hatchet: Hatchet
   redisExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter

@@ -1,3 +1,4 @@
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ObjectAccess,
   PermissionLevel,
@@ -12,6 +13,7 @@ import { userFour, userOne, userThree, userTwo } from './userData.js'
 describe('Unit tests covering the creation of derived permissions for catalog collections', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -20,8 +22,13 @@ describe('Unit tests covering the creation of derived permissions for catalog co
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -37,7 +44,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

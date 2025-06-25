@@ -16,6 +16,7 @@
     "@graphql-yoga/plugin-persisted-operations": "1.9.1",
     "@graphql-yoga/plugin-response-cache": "1.9.1",
     "@graphql-yoga/redis-event-target": "1.0.0",
+    "@hatchet-dev/typescript-sdk": "1.8.2",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@opentelemetry/exporter-trace-otlp-http": "0.53.0",

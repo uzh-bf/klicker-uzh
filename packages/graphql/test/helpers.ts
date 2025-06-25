@@ -1,3 +1,4 @@
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AnswerCollection,
   CatalogCollection,
@@ -39,7 +40,11 @@ import {
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-export async function testInitialization(prisma: PrismaClient, emitter) {
+export async function testInitialization(
+  prisma: PrismaClient,
+  hatchet: Hatchet,
+  emitter: EventEmitter
+) {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -93,6 +98,7 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
       catalystIndividual: true,
     },
     prisma,
+    hatchet,
     emitter,
     redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
     pubSub: { publish: jest.fn(), subscribe: jest.fn() },
@@ -190,7 +196,10 @@ export async function initializePrisma() {
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    return { prisma, emitter }
+    // create new instance of Hatchet for test context
+    const hatchet = {} as Hatchet // TODO: once actually required, set up required components and Hatchet
+
+    return { prisma, hatchet, emitter }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)
