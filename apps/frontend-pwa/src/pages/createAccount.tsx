@@ -138,29 +138,42 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
   // LTI 1.1 authentication flow
   else if (req.method === 'POST') {
-    const { request }: any = await new Promise((resolve) => {
-      bodyParser.urlencoded({ extended: true })(req, res, () => {
-        bodyParser.json()(req, res, () => {
-          resolve({ request: req })
+    try {
+      const { request }: any = await new Promise((resolve, reject) => {
+        bodyParser.urlencoded({ extended: true })(req, res, (err: any) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          bodyParser.json()(req, res, (err: any) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve({ request: req })
+          })
         })
       })
-    })
 
-    if (request?.body?.lis_person_sourcedid) {
-      signedLtiData.token = JWT.sign(
-        {
-          sub: request.body.lis_person_sourcedid,
-          email: request.body.lis_person_contact_email_primary,
-          scope: 'LTI1.1',
-        },
-        process.env.APP_SECRET as string,
-        {
-          algorithm: 'HS256',
-          expiresIn: '5m',
-        }
-      )
-      signedLtiData.ssoId = request.body.lis_person_sourcedid
-      signedLtiData.email = request.body.lis_person_contact_email_primary
+      if (request?.body?.lis_person_sourcedid) {
+        signedLtiData.token = JWT.sign(
+          {
+            sub: request.body.lis_person_sourcedid,
+            email: request.body.lis_person_contact_email_primary,
+            scope: 'LTI1.1',
+          },
+          process.env.APP_SECRET as string,
+          {
+            algorithm: 'HS256',
+            expiresIn: '5m',
+          }
+        )
+        signedLtiData.ssoId = request.body.lis_person_sourcedid
+        signedLtiData.email = request.body.lis_person_contact_email_primary
+      }
+    } catch (error) {
+      // continue without LTI data if parsing fails
+      console.error('Error parsing LTI request body:', error)
     }
   }
 
