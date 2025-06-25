@@ -11,6 +11,7 @@ import {
   type LogLevelString,
   type LoggerState,
 } from './types.js'
+import { randomUUID } from 'node:crypto'
 import {
   getEnvironmentConfig,
   getLogLevelString,
@@ -20,6 +21,13 @@ import {
   formatForProduction,
   formatForTest,
 } from './formatter.js'
+
+/**
+ * Generate a new correlation ID
+ */
+export function generateCorrelationId(): string {
+  return randomUUID()
+}
 
 /**
  * Parse log level string to enum value
@@ -70,6 +78,7 @@ function createLogEntry(
   message: string,
   service: string,
   baseContext: LogContext,
+  correlationId?: string,
   messageContext?: LogContext
 ): LogEntry {
   return {
@@ -77,6 +86,7 @@ function createLogEntry(
     level,
     service,
     message,
+    correlationId,
     context: mergeContext(baseContext, messageContext),
   }
 }
@@ -96,7 +106,7 @@ function logMessage(
     return
   }
   
-  const entry = createLogEntry(level, message, state.service, state.baseContext, context)
+  const entry = createLogEntry(level, message, state.service, state.baseContext, state.correlationId, context)
   
   try {
     const formatted = state.formatter(entry)
@@ -140,6 +150,7 @@ function createLoggerState(config: LoggerConfig): LoggerState {
     environment: envConfig.environment,
     logLevel,
     baseContext,
+    correlationId: config.correlationId,
     formatter,
     output,
   }
@@ -152,6 +163,8 @@ function createChildLogger(state: LoggerState, additionalContext: LogContext): L
   const childState: LoggerState = {
     ...state,
     baseContext: mergeContext(state.baseContext, additionalContext) || {},
+    // Child loggers inherit correlation ID from parent
+    correlationId: state.correlationId,
   }
   
   return createLoggerFromState(childState)

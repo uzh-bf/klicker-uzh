@@ -9,6 +9,7 @@ import {
   mergeContext,
   createLogEntry,
   createLoggerState,
+  generateCorrelationId,
 } from '../logger.js'
 import { LogLevel } from '../types.js'
 
@@ -327,6 +328,7 @@ describe('Logger', () => {
           'Test message',
           'test-service',
           { base: 'value' },
+          undefined, // correlationId
           { message: 'context' }
         )
         
@@ -370,6 +372,98 @@ describe('Logger', () => {
         expect(state.logLevel).toBe(LogLevel.WARN)
         expect(state.baseContext).toEqual({ custom: 'context' })
       })
+    })
+  })
+  
+  describe('Correlation ID Support', () => {
+    beforeEach(() => {
+      process.env.NODE_ENV = 'development'
+    })
+    
+    it('should generate valid correlation IDs', () => {
+      const id1 = generateCorrelationId()
+      const id2 = generateCorrelationId()
+      
+      // Should be valid UUIDs
+      expect(id1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      expect(id2).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      
+      // Should be unique
+      expect(id1).not.toBe(id2)
+    })
+    
+    it('should include correlation ID in logger config', () => {
+      const correlationId = generateCorrelationId()
+      const logger = createLogger({ 
+        service: 'test-service',
+        correlationId 
+      })
+      
+      logger.info('Test message')
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(correlationId.substring(0, 8))
+      )
+    })
+    
+    it('should propagate correlation ID to child loggers', () => {
+      const correlationId = generateCorrelationId()
+      const parentLogger = createLogger({ 
+        service: 'parent-service',
+        correlationId 
+      })
+      
+      const childLogger = parentLogger.child({ operation: 'test-op' })
+      
+      childLogger.info('Child message')
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(correlationId.substring(0, 8))
+      )
+    })
+    
+    it('should include correlation ID in production JSON output', () => {
+      process.env.NODE_ENV = 'production'
+      const correlationId = generateCorrelationId()
+      const logger = createLogger({ 
+        service: 'prod-service',
+        correlationId 
+      })
+      
+      logger.info('Test message')
+      
+      expect(consoleLogSpy).toHaveBeenCalled()
+      const logOutput = consoleLogSpy.mock.calls[0][0]
+      const parsed = JSON.parse(logOutput)
+      
+      expect(parsed.correlationId).toBe(correlationId)
+    })
+    
+    it('should not show correlation ID when not provided', () => {
+      const logger = createLogger({ service: 'test-service' })
+      
+      logger.info('Test message')
+      
+      const output = consoleLogSpy.mock.calls[0][0]
+      // Check that there's no correlation ID (8-char UUID segment) in brackets
+      expect(output).not.toMatch(/\[[0-9a-f]{8}\]/)
+    })
+    
+    it('should include correlation ID in log entry creation', () => {
+      const correlationId = generateCorrelationId()
+      const entry = createLogEntry(
+        'info',
+        'Test message',
+        'test-service',
+        {},
+        correlationId,
+        { extra: 'context' }
+      )
+      
+      expect(entry.correlationId).toBe(correlationId)
+      expect(entry.level).toBe('info')
+      expect(entry.message).toBe('Test message')
+      expect(entry.context).toEqual({ extra: 'context' })
     })
   })
 })

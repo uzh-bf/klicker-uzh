@@ -8,6 +8,7 @@ import {
   createUserContext,
   createRequestContext,
   createPerformanceContext,
+  createCorrelationContext,
 } from '../context.js'
 
 describe('Context Utilities', () => {
@@ -152,6 +153,32 @@ describe('Context Utilities', () => {
         durationMs: expect.any(Number),
         operationCount: 50,
         success: true,
+      })
+    })
+  })
+  
+  describe('createCorrelationContext', () => {
+    it('should create basic correlation context', () => {
+      const context = createCorrelationContext('corr-123')
+      expect(context).toEqual({
+        correlationId: 'corr-123',
+      })
+    })
+    
+    it('should include parent ID when provided', () => {
+      const context = createCorrelationContext('corr-123', 'parent-456')
+      expect(context).toEqual({
+        correlationId: 'corr-123',
+        parentId: 'parent-456',
+      })
+    })
+    
+    it('should include all fields when provided', () => {
+      const context = createCorrelationContext('corr-123', 'parent-456', 'span-789')
+      expect(context).toEqual({
+        correlationId: 'corr-123',
+        parentId: 'parent-456',
+        spanId: 'span-789',
       })
     })
   })

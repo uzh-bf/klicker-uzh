@@ -38,13 +38,18 @@ function getLevelColor(level: LogLevelString): string {
  * Format log entry for development (human-readable console output)
  */
 export function formatForDevelopment(entry: LogEntry): string {
-  const { timestamp, level, service, message, context } = entry
+  const { timestamp, level, service, message, correlationId, context } = entry
   const levelColor = getLevelColor(level)
   const time = new Date(timestamp).toLocaleTimeString()
   
   let output = `${COLORS.gray}[${time}]${COLORS.reset} `
   output += `${levelColor}${level.toUpperCase().padEnd(5)}${COLORS.reset} `
   output += `${COLORS.blue}[${service}]${COLORS.reset} `
+  
+  if (correlationId) {
+    output += `${COLORS.cyan}[${correlationId.substring(0, 8)}]${COLORS.reset} `
+  }
+  
   output += message
   
   if (context && Object.keys(context).length > 0) {
@@ -136,6 +141,7 @@ export function formatForProduction(entry: LogEntry): string {
       level: entry.level,
       service: entry.service,
       message: entry.message,
+      correlationId: entry.correlationId,
       context: {
         formatError: 'Failed to serialize log entry',
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -2,7 +2,7 @@
  * Context utilities for logging
  */
 
-import { LogContext } from './types.js'
+import { LogContext, CorrelationContext } from './types.js'
 
 /**
  * Maximum context size to prevent memory issues
@@ -123,4 +123,19 @@ export function createPerformanceContext(
   }
   
   return context
+}
+
+/**
+ * Create correlation context for distributed tracing
+ */
+export function createCorrelationContext(
+  correlationId: string,
+  parentId?: string,
+  spanId?: string
+): CorrelationContext {
+  return {
+    correlationId,
+    parentId,
+    spanId,
+  }
 }

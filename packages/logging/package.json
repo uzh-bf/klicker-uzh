@@ -1,7 +1,7 @@
 {
   "name": "@klicker-uzh/logging",
-  "version": "0.0.1",
-  "description": "Structured logging infrastructure for KlickerUZH",
+  "version": "3.3.0-alpha.60",
+  "description": "Structured logging package for KlickerUZH",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,12 +13,10 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "CLAUDE.md"
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc --watch",
     "dev": "tsc --watch",
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
@@ -36,17 +34,5 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "license": "AGPL-3.0",
-  "author": "KlickerUZH Team",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/uzh-bf/klicker-uzh.git",
-    "directory": "packages/logging"
-  },
-  "keywords": [
-    "klicker",
-    "logging",
-    "structured-logging"
-  ]
+  }
 }

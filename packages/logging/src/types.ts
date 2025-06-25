@@ -17,11 +17,18 @@ export interface LogContext {
   [key: string]: unknown
 }
 
+export interface CorrelationContext {
+  correlationId: string
+  parentId?: string
+  spanId?: string
+}
+
 export interface LogEntry {
   timestamp: string
   level: LogLevelString
   service: string
   message: string
+  correlationId?: string
   context?: LogContext
 }
 
@@ -38,6 +45,7 @@ export interface LoggerConfig {
   environment?: Environment
   level?: LogLevelString
   context?: LogContext
+  correlationId?: string
 }
 
 export interface EnvironmentConfig {
@@ -53,6 +61,7 @@ export interface LoggerState {
   environment: Environment
   logLevel: LogLevel
   baseContext: LogContext
+  correlationId?: string
   formatter: (entry: LogEntry) => string
   output: (message: string) => void
 }
