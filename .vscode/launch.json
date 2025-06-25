@@ -5,28 +5,28 @@
       "name": "Launch Chrome (frontend-control)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://control.klicker.com",
+      "url": "https://control.klicker.com",
       "webRoot": "${workspaceFolder}/apps/frontend-control"
     },
     {
       "name": "Launch Chrome (frontend-manage)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://manage.klicker.com",
+      "url": "https://manage.klicker.com",
       "webRoot": "${workspaceFolder}/apps/frontend-manage"
     },
     {
       "name": "Launch Chrome (frontend-pwa)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://pwa.klicker.com",
+      "url": "https://pwa.klicker.com",
       "webRoot": "${workspaceFolder}/apps/frontend-pwa"
     },
     {
       "name": "Launch Chrome (office-addin)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://office.klicker.com",
+      "url": "https://office.klicker.com",
       "webRoot": "${workspaceFolder}/apps/office-addin"
     },
     {
