@@ -84,8 +84,8 @@ export interface LiveQuizFormValues extends CommonFormValues {
 
 export interface MicroLearningFormValues extends CommonFormValues {
   stacks: ElementStackFormValues[]
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
 }
 
 export interface PracticeQuizFormValues extends CommonFormValues {
@@ -96,8 +96,8 @@ export interface PracticeQuizFormValues extends CommonFormValues {
 
 export interface GroupActivityFormValues extends CommonFormValues {
   stack: ElementStackFormValues
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
   clues: GroupActivityClueFormValues[]
 }
 

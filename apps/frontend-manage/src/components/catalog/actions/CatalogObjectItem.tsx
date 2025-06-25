@@ -15,11 +15,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogObject,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -29,13 +28,11 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from './CatalogChangeAccessModal'
+import CatalogCopyModal from './CatalogCopyModal'
 import CatalogImportModal from './CatalogImportModal'
-import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
 import CatalogObjectRemovalModal from './CatalogObjectRemovalModal'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
-import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
-import CatalogRequestSuccessToast from './CatalogRequestSuccessToast'
 
 function CatalogObjectItem({
   object,
@@ -48,18 +45,16 @@ function CatalogObjectItem({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const objectTypeIcons: Record<SharingObjectType, IconDefinition | undefined> =
-    {
-      [SharingObjectType.AnswerCollection]: faList,
-      [SharingObjectType.CatalogCollection]: faFolder,
-      [SharingObjectType.LiveQuizTemplate]: faFileLines,
-      [SharingObjectType.Course]: undefined,
-      [SharingObjectType.LiveQuiz]: undefined,
-      [SharingObjectType.PracticeQuiz]: undefined,
-      [SharingObjectType.MicroLearning]: undefined,
-      [SharingObjectType.GroupActivity]: undefined,
-      [SharingObjectType.Element]: faQuestion,
-    }
+  const objectTypeIcons: Record<ObjectType, IconDefinition | undefined> = {
+    [ObjectType.AnswerCollection]: faList,
+    [ObjectType.CatalogCollection]: faFolder,
+    [ObjectType.Course]: undefined,
+    [ObjectType.LiveQuiz]: faFileLines, // icon for activities & activity templates
+    [ObjectType.PracticeQuiz]: faFileLines, // icon for activities & activity templates
+    [ObjectType.MicroLearning]: faFileLines, // icon for activities & activity templates
+    [ObjectType.GroupActivity]: faFileLines, // icon for activities & activity templates
+    [ObjectType.Element]: faQuestion,
+  }
   const actionsDisabled = object.isOwner || object.isShared
 
   // TODO: remove, once migration to single activity overwiew has been completed
@@ -71,25 +66,19 @@ function CatalogObjectItem({
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
+  const [copyModal, setCopyModal] = useState(false)
   const [importModal, setImportModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
 
-  // toast states
-  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
-  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
-  const [
-    showRequestCancellationSuccessToast,
-    setShowRequestCancellationSuccessToast,
-  ] = useState(false)
-
   const dropdownItems = useCatalogObjectActionsDropdown({
     object,
     actionsDisabled,
     managedAccess,
     setImportModal,
+    setCopyModal,
     setRequestModal,
     setRequestCancellationModal,
     setSharingModal,
@@ -99,20 +88,19 @@ function CatalogObjectItem({
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (actionsDisabled) {
             // primary action for users with access: go to corresponding list view and highlight object
-            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
+            if (
+              object.objectType === ObjectType.LiveQuiz &&
+              !!object.templateId
+            ) {
               router.push({
-                pathname: dataUser?.userProfile?.privatePreview
-                  ? '/activities'
-                  : '/quizzes',
+                pathname: '/activities',
                 query: { highlight: object.objectUuid },
               })
-            } else if (
-              object.objectType === SharingObjectType.AnswerCollection
-            ) {
+            } else if (object.objectType === ObjectType.AnswerCollection) {
               router.push({
                 pathname: '/resources/answerCollections',
                 query: { highlight: object.objectId },
@@ -125,11 +113,14 @@ function CatalogObjectItem({
             // primary action for restricted objects with pending request: open request withdrawal modal
             setRequestCancellationModal(true)
           } else if (object.access === ObjectAccess.Public) {
-            if (object.objectType === SharingObjectType.LiveQuizTemplate) {
+            if (
+              object.objectType === ObjectType.LiveQuiz &&
+              !!object.templateId
+            ) {
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
             } else {
-              // primary action for public objects: import a copy
+              // primary action for public objects: import the object to the user's account
               setImportModal(true)
             }
           } else {
@@ -184,7 +175,8 @@ function CatalogObjectItem({
               <ObjectAccessSelection
                 compact
                 restrictedDisabled={
-                  object.objectType === SharingObjectType.LiveQuizTemplate
+                  object.objectType === ObjectType.LiveQuiz &&
+                  !!object.templateId
                 }
                 value={object.access}
                 onChange={(access) => {
@@ -199,17 +191,13 @@ function CatalogObjectItem({
           {dropdownItems.length > 0 ? (
             <Dropdown
               items={dropdownItems}
-              trigger={
-                <ForwardRefButton
-                  basic
-                  className={{
-                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                  }}
-                >
-                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
-                </ForwardRefButton>
-              }
-              className={{ viewport: 'z-20' }}
+              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+              className={{
+                viewport: 'z-20',
+                item: 'py-0.5 text-sm',
+                trigger:
+                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+              }}
               data={{ cy: `actions-dropdown-${object.name}` }}
             />
           ) : null}
@@ -217,11 +205,14 @@ function CatalogObjectItem({
       </div>
 
       {/* functionality for users without access to request it for restricted catalog collections */}
-      {!actionsDisabled && !object.isRequested ? (
+      {!actionsDisabled && !object.isRequested && requestModal ? (
         <CatalogRequestModal
-          open={requestModal}
           onSuccess={() => {
-            setShowRequestSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
@@ -233,17 +224,40 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogRequestSuccessToast
-        open={showRequestSuccessToast}
-        onClose={() => setShowRequestSuccessToast(false)}
-      />
 
-      {/* functionality for users to import a copy of a publicly available object */}
-      {!actionsDisabled && object.access === ObjectAccess.Public ? (
-        <CatalogImportModal
-          open={importModal}
+      {/* functionality for users to copy a publicly available object */}
+      {!actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      copyModal ? (
+        <CatalogCopyModal
           onSuccess={() => {
-            setShowImportSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.copyCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
+            setCopyModal(false)
+          }}
+          onClose={() => setCopyModal(false)}
+          objectType={object.objectType}
+          objectId={object.objectId ?? object.objectUuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          catalogCollectionId={catalogCollectionId}
+        />
+      ) : null}
+
+      {/* functionality for users to import a publicly available object */}
+      {!actionsDisabled &&
+      object.access === ObjectAccess.Public &&
+      importModal ? (
+        <CatalogImportModal
+          onSuccess={() => {
+            toast({
+              type: 'success',
+              message: t('manage.catalog.importCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setImportModal(false)
           }}
           onClose={() => setImportModal(false)}
@@ -254,17 +268,16 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectImportSuccessToast
-        open={showImportSuccessToast}
-        onClose={() => setShowImportSuccessToast(false)}
-      />
 
       {/* functionality to cancel request for requested catalog object */}
-      {object.isRequested ? (
+      {object.isRequested && requestCancellationModal ? (
         <CatalogRequestCancellationModal
-          open={requestCancellationModal}
           onSuccess={() => {
-            setShowRequestCancellationSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCancellationSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestCancellationModal(false)
           }}
           onClose={() => setRequestCancellationModal(false)}
@@ -275,31 +288,29 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogRequestCancellationSuccessToast
-        open={showRequestCancellationSuccessToast}
-        onClose={() => setShowRequestCancellationSuccessToast(false)}
-      />
 
       {managedAccess ? (
         <>
-          <CatalogChangeAccessModal
-            open={changeAccessModal}
-            onClose={() => setChangeAccessModal(false)}
-            objectType={object.objectType}
-            objectName={object.name}
-            assignmentId={object.id}
-            newAccess={newAccess}
-            catalogCollectionId={catalogCollectionId}
-          />
-          <CatalogObjectRemovalModal
-            object={object}
-            open={removalModal}
-            catalogCollectionId={catalogCollectionId}
-            onClose={() => setRemovalModal(false)}
-          />
+          {changeAccessModal && (
+            <CatalogChangeAccessModal
+              onClose={() => setChangeAccessModal(false)}
+              objectType={object.objectType}
+              objectName={object.name}
+              assignmentId={object.id}
+              newAccess={newAccess}
+              catalogCollectionId={catalogCollectionId}
+            />
+          )}
+          {removalModal && (
+            <CatalogObjectRemovalModal
+              object={object}
+              catalogCollectionId={catalogCollectionId}
+              onClose={() => setRemovalModal(false)}
+            />
+          )}
         </>
       ) : null}
-      {object.isManager ? (
+      {object.isManager && sharingModal ? (
         object.objectUuid ? (
           <ObjectSharingModalWrapper
             objectUuid={object.objectUuid}
@@ -307,7 +318,6 @@ function CatalogObjectItem({
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             isOwner={object.isOwner}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
         ) : (
@@ -317,7 +327,6 @@ function CatalogObjectItem({
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
             isOwner={object.isOwner}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
         )

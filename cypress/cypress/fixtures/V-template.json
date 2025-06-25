@@ -76,5 +76,11 @@
         "content": "CS Content NEW & MODIFIED"
       }
     }
+  },
+  "activity3": {
+    "name": "Live Quiz Activity 3",
+    "displayName": "Live Quiz Activity 3 (Display)",
+    "SETitle": "SE Title INLINE COLLECTION",
+    "CSTitle": "CS Title INLINE COLLECTION"
   }
 }

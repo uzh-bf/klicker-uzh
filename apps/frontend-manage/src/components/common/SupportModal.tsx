@@ -1,6 +1,6 @@
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import {
-  faComments,
+  faComment,
   faEnvelope,
   faLightbulb,
 } from '@fortawesome/free-regular-svg-icons'
@@ -19,26 +19,26 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import SupportEntry from './SupportEntry'
 
-interface SupportModalProps {
-  open: boolean
-  setOpen: (newOpen: boolean) => void
+function SupportModal({
+  onClose,
+  user,
+}: {
+  onClose: () => void
   user?: User | null
-}
-
-function SupportModal({ open, setOpen, user }: SupportModalProps) {
+}) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
+      fullScreen
       title={t('manage.support.modalTitle')}
-      open={open}
-      onClose={() => setOpen(false)}
+      onClose={onClose}
       className={{
         overlay: 'my-auto text-black',
-        title: 'text-xl md:text-2xl',
-        content: 'h-max max-h-full',
+        title: 'text-left text-xl md:text-2xl',
+        content: 'h-max pb-1',
       }}
-      fullScreen
     >
       <div className="flex flex-col flex-wrap gap-8 md:flex-row md:gap-16">
         <div className="flex flex-1 flex-col justify-between">
@@ -111,7 +111,7 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
               href="https://www.klicker.uzh.ch/community"
               title={t('manage.support.community')}
               subtitle={t('manage.support.communityDesc')}
-              icon={faComments}
+              icon={faComment}
               data={{ cy: 'support-community' }}
             />
             {user?.catalyst ? (

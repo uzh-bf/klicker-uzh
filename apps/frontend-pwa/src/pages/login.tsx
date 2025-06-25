@@ -4,7 +4,7 @@ import {
   SelfDocument,
   SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -22,10 +22,6 @@ function Login() {
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',
   })
-  const [error, setError] = useState<string>('')
-  const [success, setSuccess] = useState<string>('')
-  const [showError, setShowError] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
   const [magicLinkLogin, setMagicLinkLogin] = useState(false)
 
@@ -58,7 +54,6 @@ function Login() {
     values: any,
     { setSubmitting, resetForm }: any
   ) => {
-    setError('')
     try {
       const result: FetchResult = await loginParticipant({
         variables: {
@@ -68,8 +63,11 @@ function Login() {
       })
 
       if (!result.data?.loginParticipant) {
-        setError(t('shared.generic.studentLoginError'))
-        setShowError(true)
+        toast({
+          type: 'error',
+          message: t('shared.generic.studentLoginError'),
+          options: { duration: 6000 },
+        })
         setSubmitting(false)
         resetForm()
       } else {
@@ -80,15 +78,17 @@ function Login() {
       }
     } catch (e) {
       console.error(e)
-      setError(t('shared.generic.systemError'))
-      setShowError(true)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
       setSubmitting(false)
       resetForm()
     }
   }
 
   const sendMagicLinkEmail = async (values: any, { setSubmitting }: any) => {
-    setError('')
     try {
       const result = await sendMagicLink({
         variables: {
@@ -98,14 +98,20 @@ function Login() {
 
       // show success message on success
       if (result.data?.sendMagicLink) {
-        setSuccess(t('pwa.general.magicLinkSent'))
-        setShowSuccess(true)
+        toast({
+          type: 'success',
+          message: t('pwa.general.magicLinkSent'),
+          options: { duration: 8000 },
+        })
         setSubmitting(false)
       }
     } catch (e) {
       console.error(e)
-      setError(t('shared.generic.systemError'))
-      setShowError(true)
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
       setSubmitting(false)
     }
   }
@@ -139,24 +145,6 @@ function Login() {
           />
         )}
       </Formik>
-      <Toast
-        dismissible
-        type="error"
-        duration={6000}
-        openExternal={showError}
-        onCloseExternal={() => setShowError(false)}
-      >
-        {error}
-      </Toast>
-      <Toast
-        dismissible
-        type="success"
-        duration={8000}
-        openExternal={showSuccess}
-        onCloseExternal={() => setShowSuccess(false)}
-      >
-        {success}
-      </Toast>
     </div>
   )
 }

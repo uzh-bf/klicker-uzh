@@ -4,7 +4,8 @@ import {
   GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
@@ -19,17 +20,13 @@ export interface CourseDeletionConfirmationType {
   deleteLeaderboardEntries: boolean
 }
 
-interface CourseDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  courseId: string | null
-}
-
 function CourseDeletionModal({
-  open,
-  setOpen,
+  onClose,
   courseId,
-}: CourseDeletionModalProps) {
+}: {
+  onClose: () => void
+  courseId: string | null
+}) {
   const initialConfirmations: CourseDeletionConfirmationType = {
     deleteParticipations: false,
     disconnectLiveQuizzes: false,
@@ -91,66 +88,59 @@ function CourseDeletionModal({
     })
   }, [courseId, data?.getCourseSummary])
 
-  if (!courseId || !data?.getCourseSummary) {
+  const summary = data?.getCourseSummary
+  if (!courseId) {
     return null
   }
 
-  const summary = data.getCourseSummary
-
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
       className={{ content: '!w-full max-w-[60rem]' }}
       title={t('manage.courseList.deleteCourse')}
-      onPrimaryAction={
-        <Button
-          destructive
-          loading={courseDeleting}
-          disabled={
-            queryLoading ||
-            Object.values(confirmations).some((confirmation) => !confirmation)
-          }
-          onClick={async () => {
-            await deleteCourse({
-              variables: { id: courseId },
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      primaryLoading={courseDeleting}
+      primaryDisabled={
+        queryLoading ||
+        Object.values(confirmations).some((confirmation) => !confirmation)
+      }
+      onPrimaryAction={async () => {
+        await deleteCourse({
+          variables: { id: courseId },
 
-              optimisticResponse: {
-                __typename: 'Mutation',
-                deleteCourse: {
-                  __typename: 'Course',
-                  id: courseId,
-                },
-              },
-            })
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'course-deletion-modal-confirm' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'course-deletion-modal-cancel' }}
-        >
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+          optimisticResponse: {
+            __typename: 'Mutation',
+            deleteCourse: {
+              __typename: 'Course',
+              id: courseId,
+            },
+          },
+        })
+        onClose()
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
+      secondaryLabel={t('shared.generic.close')}
+      onSecondaryAction={() => {
+        onClose()
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
-      <CourseDeletionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <CourseDeletionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
@@ -401,7 +400,7 @@ describe('Create, edit and share answer collections', function () {
     // add collection to catalog as restricted object
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
 
@@ -409,7 +408,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
-    cy.get(`[data-cy="import-object-${this.data.restricted.name}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).should(
@@ -898,7 +897,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
-    cy.get(`[data-cy="import-object-${this.data.restricted.name}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).should(
@@ -943,7 +942,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })
@@ -987,9 +986,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1055,9 +1052,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.ANSWER_COLLECTION}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.findByText(messages.manage.catalog.noObjectsAvailable)
     cy.get('[data-cy="close-add-object-modal"]').click()
 
@@ -1100,7 +1095,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.addObjectToCatalog({
       objectName: this.data.public.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'public',
     })
 
@@ -1109,7 +1104,7 @@ describe('Create, edit and share answer collections', function () {
       'exist'
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).should(
@@ -1264,7 +1259,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
-  it('Import (and copy) the public answer collection (for user pro2)', function () {
+  it('Copy the public answer collection into a users own account (for user pro2)', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
@@ -1273,15 +1268,15 @@ describe('Create, edit and share answer collections', function () {
       'exist'
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="close-object-import-modal"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="close-object-copy-modal"]').click()
 
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="cancel-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="cancel-object-copy"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="confirm-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="confirm-object-copy"]').click()
 
     // check that the collection is visible in resources
     cy.get('[data-cy="resources"]').click()
@@ -1289,6 +1284,87 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
       'exist'
     )
+  })
+
+  it('Import the public answer collection into a users own account (read permissions; for user pro4)', function () {
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
+      'exist'
+    )
+
+    // primary action should be import
+    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).realClick()
+    cy.get('[data-cy="cancel-object-import"]').click()
+
+    // open import functionality through dropdown
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="confirm-object-import"]').click()
+
+    // verify that the collection is visible in resources
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
+      .get(`[data-cy="permission-level-${this.data.public.name}-READ"]`)
+      .should('exist')
+  })
+
+  it('Duplicate the imported answer collection and verify that the user has owner permissions on the duplicate (for user pro4)', function () {
+    cy.loginInstitutionalCatalyst3()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'exist'
+    )
+
+    // open actions dropdown and duplicate
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="duplicate-answer-collection"]').click()
+    cy.get('[data-cy="cancel-duplication"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="duplicate-answer-collection"]').click()
+    cy.get('[data-cy="confirm-duplication"]').click()
+
+    // verify that the collection is visible in resources
+    const duplicateName = `${this.data.public.name} (Copy)`
+    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).should('exist')
+
+    // verify that all owner actions are available (activity log, edit, share, duplicate, delete)
+    cy.get(`[data-cy="answer-collection-actions-${duplicateName}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${duplicateName}"]`).should('exist')
+    cy.get('[data-cy="edit-answer-collection"]').should('exist')
+    cy.get('[data-cy="share-answer-collection"]').should('exist')
+    cy.get('[data-cy="duplicate-answer-collection"]').should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('exist')
+    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).realClick() // close the dropdown
+
+    // verify that the metadata of the collection and all answer option values can be edited
+    cy.get(`[data-cy="answer-collection-actions-${duplicateName}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="answer-collection-name"]').should(
+      'have.value',
+      duplicateName
+    )
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.public.items).each((value: string) => {
+      cy.get(`[data-cy="edit-answer-option-${value}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="delete-answer-option-${value}"]`).should(
+        'not.be.disabled'
+      )
+    })
   })
 
   it('Verify that imported answer collection is visible to user pro2 (copied and with edit permissions)', function () {
@@ -1680,7 +1756,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.private.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })
@@ -1756,9 +1832,7 @@ describe('Create, edit and share answer collections', function () {
       'exist'
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.private.name}"]`).should(
-      'exist'
-    )
+    cy.get(`[data-cy="copy-object-${this.data.private.name}"]`).should('exist')
   })
 
   it('Request access to the public answer collection (for user pro2)', function () {
@@ -1805,7 +1879,7 @@ describe('Create, edit and share answer collections', function () {
       'exist'
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.private.name}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.private.name}"]`).should(
       'not.exist'
     )
   })
@@ -1917,7 +1991,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.direct.name,
-      objectType: SharingObjectType.ANSWER_COLLECTION,
+      objectType: 'ANSWER_COLLECTION',
       permissionLevel: 'restricted',
     })
   })

@@ -6,7 +6,13 @@ import { fontFamily } from 'tailwindcss/defaultTheme'
 
 export default {
   darkMode: ['class', '[data-theme="dark"]'],
-  content: ['./src/**/*.tsx', './docs/**/*.mdx'],
+  content: [
+    './src/**/*.tsx',
+    './docs/**/*.mdx',
+    // import is required for corresponding styles to be included correctly
+    // otherwise, shadcn variable-based styles might be missing (unless used in application and matched by regex above)
+    './node_modules/@uzh-bf/design-system/dist/**/*.{js,ts,jsx,tsx}',
+  ],
   theme: {
     extend: {
       ...TailwindAnimations,

@@ -1,23 +1,20 @@
-import {
-  PermissionLevel,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useObjectPropagatedPermissions({
   objectType,
   propagation = false,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   propagation?: boolean
 }): { object: string; permissions: (PermissionLevel | undefined)[] }[] | null {
   const t = useTranslations()
 
-  if (objectType === SharingObjectType.CatalogCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     return null
-  } else if (objectType === SharingObjectType.AnswerCollection) {
+  } else if (objectType === ObjectType.AnswerCollection) {
     return null
-  } else if (objectType === SharingObjectType.Element) {
+  } else if (objectType === ObjectType.Element) {
     return [
       {
         object: t('shared.types.ANSWER_COLLECTION'),
@@ -31,10 +28,10 @@ function useObjectPropagatedPermissions({
     ]
   } else if (
     propagation === false &&
-    (objectType === SharingObjectType.LiveQuiz ||
-      objectType === SharingObjectType.PracticeQuiz ||
-      objectType === SharingObjectType.MicroLearning ||
-      objectType === SharingObjectType.GroupActivity)
+    (objectType === ObjectType.LiveQuiz ||
+      objectType === ObjectType.PracticeQuiz ||
+      objectType === ObjectType.MicroLearning ||
+      objectType === ObjectType.GroupActivity)
   ) {
     return [
       {
@@ -60,10 +57,10 @@ function useObjectPropagatedPermissions({
     ]
   } else if (
     propagation === true &&
-    (objectType === SharingObjectType.LiveQuiz ||
-      objectType === SharingObjectType.PracticeQuiz ||
-      objectType === SharingObjectType.MicroLearning ||
-      objectType === SharingObjectType.GroupActivity)
+    (objectType === ObjectType.LiveQuiz ||
+      objectType === ObjectType.PracticeQuiz ||
+      objectType === ObjectType.MicroLearning ||
+      objectType === ObjectType.GroupActivity)
   ) {
     return [
       {
@@ -87,7 +84,7 @@ function useObjectPropagatedPermissions({
         ],
       },
     ]
-  } else if (objectType === SharingObjectType.Course && propagation === false) {
+  } else if (objectType === ObjectType.Course && propagation === false) {
     return [
       {
         object: t('shared.types.ACTIVITIES'),
@@ -120,7 +117,7 @@ function useObjectPropagatedPermissions({
         ],
       },
     ]
-  } else if (objectType === SharingObjectType.Course && propagation) {
+  } else if (objectType === ObjectType.Course && propagation) {
     return [
       {
         object: t('shared.types.ACTIVITIES'),

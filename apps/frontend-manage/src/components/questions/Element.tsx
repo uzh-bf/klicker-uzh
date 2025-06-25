@@ -1,30 +1,26 @@
 import { useQuery } from '@apollo/client'
-import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArchive,
   faEllipsis,
-  faPencil,
-  faShare,
   faUserGroup,
-  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type Element as ElementObject,
   ElementStatus,
   type ElementType,
-  SharingObjectType,
+  ObjectType,
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
+import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../sharing/SharingTypeBadge'
@@ -35,6 +31,8 @@ import ElementEditModal, {
 } from './manipulation/ElementEditModal'
 import ElementRemovalModal from './manipulation/ElementRemovalModal'
 import RecoveryPrompt from './manipulation/RecoveryPrompt'
+import useAvailableElementActions from './useAvailableElementActions'
+import useElementActions from './useElementActions'
 
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400 hover:bg-slate-500',
@@ -85,6 +83,7 @@ function Element({
   const [isRemovalModalOpen, setRemovalModalOpen] = useState(false)
   const [isDeletionModalOpen, setDeletionModalOpen] = useState(false)
   const [isSharingModalOpen, setSharingModalOpen] = useState(false)
+  const [isActivityLogOpen, setActivityLogOpen] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   // TODO: once the sharing feature is available for all users, remove this feature flag check
@@ -109,13 +108,46 @@ function Element({
     type: element.type,
   })
 
+  const actions = useElementActions({
+    element,
+    disabled,
+    setShowRecoveryPrompt,
+    setModificationModalOpen,
+    setDuplicationModalOpen,
+    setDeletionModalOpen,
+    setRemovalModalOpen,
+    setActivityLogOpen,
+    setSharingModalOpen,
+  })
+
+  const availableActions = useAvailableElementActions({
+    actions,
+    permissionActionMap: {
+      isManager: [
+        ...(dataUser?.userProfile?.privatePreview ? ['shareElement'] : []),
+        'deleteElement',
+      ],
+      isEditor: ['editElement'],
+      isShared: [
+        'duplicateElement',
+        ...(dataUser?.userProfile?.privatePreview ? ['activityLog'] : []),
+      ],
+      isRemovable: ['removeElement'],
+    },
+    isEditor: element.isEditor ?? false,
+    isManager: element.isManager ?? false,
+    isOwner: element.isOwner ?? false,
+    isRemovable: element.isRemovable ?? false,
+    isShared: element.isShared ?? false,
+  })
+
   return (
     <div className="flex items-center" data-cy={`element-item-${element.name}`}>
       <Checkbox
         disabled={disabled}
         checked={checked}
         onCheck={onCheck}
-        className={{ root: 'mr-1.5' }}
+        className={{ root: 'border-unset mr-1.5' }}
       />
       {drag(
         <div
@@ -141,7 +173,7 @@ function Element({
                       setModificationModalOpen(true)
                     }
                   }}
-                  data-cy="question-title"
+                  data-cy={`element-title-${element.name}`}
                 >
                   {element.name}
                   {element.permissionLevel && (
@@ -155,7 +187,11 @@ function Element({
               </div>
 
               <div className="flex-1 text-sm">
-                <Ellipsis maxLines={2} withMarkdown={false}>
+                <Ellipsis
+                  maxLines={2}
+                  withMarkdown={false}
+                  className={{ root: 'text-left' }}
+                >
                   {element.content}
                 </Ellipsis>
               </div>
@@ -210,127 +246,52 @@ function Element({
             </div>
           ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
-            {element.isEditor ? (
-              <Button
-                disabled={disabled}
-                onClick={() => {
-                  const value = localStorage.getItem(
-                    `autosave-element-${element.id}`
-                  )
-
-                  if (value) {
-                    setShowRecoveryPrompt(true)
-                  } else {
-                    setModificationModalOpen(true)
-                  }
-                }}
-                className={{ root: 'h-8 w-8 p-0' }}
-                data={{ cy: `edit-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faPencil} />
-              </Button>
-            ) : null}
-
-            <Button
-              disabled={disabled}
-              onClick={() => setDuplicationModalOpen(true)}
-              className={{ root: 'h-8 w-8 p-0' }}
-              data={{ cy: `duplicate-element-${element.name}` }}
-            >
-              <Button.Icon withoutLabel icon={faCopy} />
-            </Button>
-
-            {element.isManager && !dataUser?.userProfile?.privatePreview ? (
-              <Button
-                disabled={disabled}
-                onClick={() => setDeletionModalOpen(true)}
-                className={{
-                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
-                }}
-                data={{ cy: `delete-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faTrashCan} />
-              </Button>
-            ) : null}
-
-            {element.isShared &&
-            !element.isManager &&
-            !element.derivedAccess &&
-            element.isRemovable ? (
-              <Button
-                disabled={disabled}
-                onClick={() => setRemovalModalOpen(true)}
-                className={{
-                  root: 'h-8 w-8 border-red-600 p-0 text-red-600 hover:text-red-600',
-                }}
-                data={{ cy: `remove-element-${element.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faX} />
-              </Button>
-            ) : null}
-
-            {element.isManager && dataUser?.userProfile?.privatePreview ? (
-              <Dropdown
-                disabled={disabled}
-                className={{ item: 'text-sm' }}
-                items={[
-                  {
-                    label: (
-                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                        <FontAwesomeIcon
-                          icon={faShare}
-                          className="mr-2.5 h-4 w-4"
-                        />
-                        {t('manage.elements.shareElement')}
-                      </div>
-                    ),
-                    onClick: () => setSharingModalOpen(true),
-                    data: { cy: `share-element-${element.name}` },
-                  },
-                  ...(element.isManager &&
-                  !element.isOwner &&
-                  !element.derivedAccess &&
-                  element.isRemovable
-                    ? [
-                        {
-                          label: (
-                            <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                              <FontAwesomeIcon
-                                icon={faX}
-                                className="mr-2.5 h-4 w-4"
-                              />
-                              {t('manage.questionPool.removeElement')}
-                            </div>
-                          ),
-                          onClick: () => setRemovalModalOpen(true),
-                          data: { cy: `remove-element-${element.name}` },
-                        },
-                      ]
-                    : []),
-                  {
-                    label: (
-                      <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="mr-2.5 h-4 w-4"
-                        />
-                        {t('manage.elements.deleteElement')}
-                      </div>
-                    ),
-                    onClick: () => setDeletionModalOpen(true),
-                    data: { cy: `delete-element-${element.name}` },
-                  },
-                ]}
-                trigger={
+            {availableActions
+              .slice(0, availableActions.length > 3 ? 2 : 3)
+              .map((action) => {
+                return (
                   <Button
-                    className={{ root: 'h-8 w-8 p-0' }}
-                    data={{ cy: `actions-element-${element.name}` }}
+                    key={`action-${element.id}-${action.label}`}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                    className={{
+                      root: twMerge('h-8 w-8 p-0', action.className),
+                    }}
+                    data={action.data}
                   >
-                    <Button.Icon withoutLabel icon={faEllipsis} />
+                    <Button.Icon withoutLabel icon={action.icon} />
                   </Button>
-                }
+                )
+              })}
+
+            {availableActions.length > 3 && (
+              <Dropdown
+                items={availableActions.slice(2).map((action) => ({
+                  label: (
+                    <div
+                      className={`flex cursor-pointer items-center rounded hover:bg-gray-100 ${
+                        action.className ?? ''
+                      }`}
+                    >
+                      <FontAwesomeIcon
+                        icon={action.icon}
+                        className="mr-2.5 h-4 w-4"
+                      />
+                      {action.label}
+                    </div>
+                  ),
+                  onClick: action.onClick,
+                  data: action.data,
+                }))}
+                trigger={<FontAwesomeIcon icon={faEllipsis} />}
+                className={{
+                  viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
+                  item: 'py-0.5 text-sm',
+                  trigger: 'h-8 w-8 p-0',
+                }}
+                data={{ cy: `actions-element-${element.name}` }}
               />
-            ) : null}
+            )}
           </div>
         </div>
       )}
@@ -338,7 +299,6 @@ function Element({
       {showRecoveryPrompt && (
         <RecoveryPrompt
           editMode
-          open={showRecoveryPrompt}
           onRecovery={() => {
             setShowRecoveryPrompt(false)
             setModificationModalOpen(true)
@@ -387,14 +347,22 @@ function Element({
           unsetDeletedQuestion={unsetDeletedQuestion}
         />
       )}
-      {isSharingModalOpen && element.isManager && (
+      {isSharingModalOpen && element.isManager ? (
         <ObjectSharingModalWrapper
           objectId={element.id}
           objectName={element.name}
-          objectType={SharingObjectType.Element}
+          objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
-          open={isSharingModalOpen}
           onClose={() => setSharingModalOpen(false)}
+        />
+      ) : null}
+
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={element.id}
+          objectType={ObjectType.Element}
+          open={isActivityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
         />
       )}
     </div>

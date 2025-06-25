@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge'
 interface ParticipantProps {
   avatar?: string | null
   withAvatar?: boolean
+  isTemporary?: boolean | null
   pseudonym?: string
   points?: number
   rank?: number | string
@@ -20,6 +21,7 @@ interface ParticipantProps {
 function Participant({
   avatar,
   withAvatar = true,
+  isTemporary = false,
   pseudonym,
   isHighlighted,
   onClick,
@@ -40,6 +42,7 @@ function Participant({
         className
       )}
       onClick={onClick}
+      data-cy={`leaderboard-entry-${pseudonym}`}
     >
       <div className="flex flex-1 flex-row items-center gap-2">
         {rank && <div className="ml-1 w-3 text-lg font-bold">{rank}</div>}
@@ -63,7 +66,9 @@ function Participant({
           </div>
         )}
         <div className="text-slate-700 first:ml-2">
-          {pseudonym ?? t('shared.generic.free')}
+          {isTemporary && pseudonym
+            ? `${pseudonym}*`
+            : (pseudonym ?? t('shared.generic.free'))}
         </div>
         <div className="flex-1 text-right">{children}</div>
       </div>

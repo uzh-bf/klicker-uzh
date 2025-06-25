@@ -56,6 +56,7 @@ function TotalStudentPerformancePlot({
                   value: t('manage.analytics.numberOfStudents'),
                   angle: -90,
                   dx: -20,
+                  style: { textAnchor: 'middle' },
                 }}
               />
               <Tooltip

@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetUserCoursesDocument,
+  ObjectType,
   RemoveObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -41,8 +41,7 @@ function CourseRemovalModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.course.removeCourse')}
       message={t.rich('manage.course.confirmCourseRemoval', {
         name: title,
@@ -52,7 +51,7 @@ function CourseRemovalModal({
         await removeObject({
           variables: {
             objectId: courseId,
-            objectType: SharingObjectType.Course,
+            objectType: ObjectType.Course,
           },
           refetchQueries: [{ query: GetUserCoursesDocument }],
         })

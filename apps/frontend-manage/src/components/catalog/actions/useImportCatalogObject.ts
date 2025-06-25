@@ -1,9 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetAnswerCollectionsInfoDocument,
-  GetUserElementsDocument,
   ImportCatalogObjectDocument,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object import, returns success boolean
@@ -13,15 +12,16 @@ function useImportCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: SharingObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [importCatalogObject, { loading: importingCatalogObject }] =
-    useMutation(ImportCatalogObjectDocument)
+  const [importCatalogObject, { loading: importing }] = useMutation(
+    ImportCatalogObjectDocument
+  )
 
-  if (objectType === SharingObjectType.CatalogCollection) {
+  if (objectType !== ObjectType.AnswerCollection) {
     return {
       onImport: async () => {
         console.error('Unsupported object type', objectType)
@@ -40,11 +40,8 @@ function useImportCatalogObject({
           catalogCollectionId,
         },
         refetchQueries: [
-          ...(objectType === SharingObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-          ...(objectType === SharingObjectType.Element
-            ? [{ query: GetUserElementsDocument }]
             : []),
         ],
       })
@@ -62,7 +59,7 @@ function useImportCatalogObject({
 
   return {
     onImport: onImportCatalogObject,
-    importing: importingCatalogObject,
+    importing,
   }
 }
 

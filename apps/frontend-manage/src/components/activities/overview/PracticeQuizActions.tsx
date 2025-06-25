@@ -2,15 +2,15 @@ import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import PracticeQuizDeletionModal from '../../courses/modals/PracticeQuizDeletionModal'
 import PracticeQuizPublishingModal from '../../courses/modals/PracticeQuizPublishingModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import usePracticeQuizActions from '../actions/usePracticeQuizActions'
 import ActivityActions from './ActivityActions'
@@ -25,6 +25,7 @@ const statusActionMap = {
     'copyAccessLink',
     'copyLTIAccessLink',
     'duplicatePracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'removePracticeQuiz',
     'deletePracticeQuiz',
@@ -34,6 +35,7 @@ const statusActionMap = {
     'openPreview',
     'copyLTIAccessLink',
     'duplicatePracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'unpublishPracticeQuiz',
     'removePracticeQuiz',
@@ -46,6 +48,7 @@ const statusActionMap = {
     'copyLTIAccessLink',
     'duplicatePracticeQuiz',
     'analyticsPracticeQuiz',
+    'activityLog',
     'sharePracticeQuiz',
     'removePracticeQuiz',
     'deletePracticeQuiz',
@@ -57,17 +60,19 @@ const statusActionMap = {
 
 function PracticeQuizActions({
   practiceQuiz,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   practiceQuiz: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -79,7 +84,7 @@ function PracticeQuizActions({
     () => ({
       isManager: [
         'duplicatePracticeQuiz',
-        'sharePracticeQuiz',
+        ...(user?.privatePreview ? ['sharePracticeQuiz'] : []),
         'deletePracticeQuiz',
       ],
       isEditor: ['editPracticeQuiz'],
@@ -90,10 +95,11 @@ function PracticeQuizActions({
         'openPreview',
         'openEvaluation',
         ...(user?.publicPreview ? ['analyticsPracticeQuiz'] : []),
+        ...(user?.privatePreview ? ['activityLog'] : []),
       ],
       isRemovable: ['removePracticeQuiz'],
     }),
-    [user?.publicPreview]
+    [user?.publicPreview, user?.privatePreview]
   )
 
   const actions = usePracticeQuizActions({
@@ -102,7 +108,7 @@ function PracticeQuizActions({
     setDeletionModal,
     setSharingModal,
     setRemovalModal,
-    setCopyToast,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -131,30 +137,28 @@ function PracticeQuizActions({
           <PracticeQuizPublishingModal
             elementId={practiceQuiz.id}
             title={practiceQuiz.name}
-            open={publishModal}
-            setOpen={setPublishModal}
+            onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
             courseStartDate={practiceQuiz.courseStartDate}
           />
         )}
         {deletionModal && (
           <PracticeQuizDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={practiceQuiz.id}
             courseId={practiceQuiz.courseId!}
           />
         )}
-        {sharingModal && practiceQuiz.isManager && (
+        {sharingModal && practiceQuiz.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={practiceQuiz.id}
             objectName={practiceQuiz.name}
-            objectType={SharingObjectType.PracticeQuiz}
+            objectType={ObjectType.PracticeQuiz}
+            isTemplate={isTemplate}
             isOwner={practiceQuiz.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {removalModal && practiceQuiz.isRemovable && (
           <ActivityRemovalModal
             activityId={practiceQuiz.id}
@@ -164,7 +168,15 @@ function PracticeQuizActions({
             setModalOpen={setRemovalModal}
           />
         )}
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
+
+        {practiceQuiz && activityLogOpen ? (
+          <ActivityLogDialog
+            objectId={practiceQuiz.id}
+            objectType={ObjectType.PracticeQuiz}
+            open={activityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
+          />
+        ) : null}
       </div>
     </div>
   )

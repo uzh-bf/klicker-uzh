@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { GetCourseGroupsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Tabs, UserNotification } from '@uzh-bf/design-system'
+import { Button, TabContent, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ParticipantListEntry from './ParticipantListEntry'
@@ -37,7 +37,7 @@ function GroupsList({
 
   return (
     <>
-      <Tabs.TabContent
+      <TabContent
         value="groups"
         className={{ root: '@container flex flex-col gap-2 p-2' }}
       >
@@ -101,12 +101,13 @@ function GroupsList({
             </div>
           ))}
         </div>
-      </Tabs.TabContent>
-      <AssignmentConfirmationModal
-        courseId={courseId}
-        open={open}
-        setOpen={setOpen}
-      />
+      </TabContent>
+      {open && (
+        <AssignmentConfirmationModal
+          courseId={courseId}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   )
 }

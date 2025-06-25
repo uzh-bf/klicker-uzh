@@ -1,5 +1,5 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 // global variable for ensured consistency with current dates
 const currentYear = new Date().getFullYear()
@@ -486,8 +486,20 @@ describe('Create different types of elements (with and without sample solution) 
       cy.createMicroLearning({
         name: ml,
         displayName: ml,
-        startDate: `${currentYear - 1}-01-01T02:00`,
-        endDate: `${currentYear + 1}-01-01T02:00`,
+        startDate: {
+          monthDelta: -3,
+          day: 16,
+          hour: 2,
+          minute: 0,
+          validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+        }, // 2 months in the past at 2:00
+        endDate: {
+          monthDelta: 3,
+          day: 14,
+          hour: 18,
+          minute: 0,
+          validation: getDatetimeValidationString(4, '14') + ', 18:00',
+        }, // 4 months in the future at 18:00
         courseName: this.data.update.course,
         stacks: [{ elements: [this.data.update.title1] }],
       })
@@ -505,8 +517,20 @@ describe('Create different types of elements (with and without sample solution) 
         displayName: ga,
         task: 'Task Description',
         courseName: this.data.update.course,
-        scheduledStartDate: `${currentYear - 1}-01-01T02:00`,
-        scheduledEndDate: `${currentYear + 1}-01-01T02:00`,
+        scheduledStartDate: {
+          monthDelta: -2,
+          day: 10,
+          hour: 12,
+          minute: 30,
+          validation: getDatetimeValidationString(-1, '10') + ', 12:30',
+        }, // 1 month in the past at 12:30
+        scheduledEndDate: {
+          monthDelta: 1,
+          day: 20,
+          hour: 14,
+          minute: 0,
+          validation: getDatetimeValidationString(2, '20') + ', 14:00',
+        }, // 2 months in the future at 14:00
         clues: [
           {
             type: 'text',
@@ -959,13 +983,13 @@ describe('Create different types of elements (with and without sample solution) 
     // add question to catalog as restricted object
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
 
     // check that import and request functionalities are not available for owner (but deletion is)
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
@@ -1258,7 +1282,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
 
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should('exist')
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should('exist')
 
     // no owner / admin actions are available
@@ -1297,7 +1321,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'restricted',
     })
   })
@@ -1336,7 +1360,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${SharingObjectType.ELEMENT}"]`).click()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1384,14 +1408,14 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.addObjectToCatalog({
       objectName: this.data.SEML.title,
-      objectType: SharingObjectType.ELEMENT,
+      objectType: 'ELEMENT',
       permissionLevel: 'public',
     })
 
     // question should be visible to owner, but cannot be requested / imported
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).should(
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should(
@@ -1514,15 +1538,15 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="close-object-import-modal"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="close-object-copy-modal"]').click()
 
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="cancel-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="cancel-object-copy"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
-    cy.get(`[data-cy="import-object-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="confirm-object-import"]').click()
+    cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="confirm-object-copy"]').click()
 
     // check that the collection is visible in resources
     cy.get('[data-cy="library"]').click()
@@ -1643,6 +1667,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
       'not.exist'
     )
@@ -1655,9 +1680,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).should(
-      'not.exist'
+    cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
     )
+    cy.get(`[data-cy="remove-element-${this.data.SCML.title}"]`).should('exist')
     cy.logoutUser()
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
@@ -1668,6 +1695,9 @@ describe('Create different types of elements (with and without sample solution) 
       'exist'
     )
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="view-activity-log-${this.data.SCML.title}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="delete-element-${this.data.SCML.title}"]`).should('exist')
   })

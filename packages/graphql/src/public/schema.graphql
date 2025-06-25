@@ -35,6 +35,7 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
+  automaticPublicationAt: Date
   courseId: String
   courseName: String
   courseStartDate: Date
@@ -74,12 +75,46 @@ type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  timeLimit: Int
 }
 
 enum ActivityLevel {
   HIGH
   LOW
   MEDIUM
+}
+
+type ActivityLogEntry {
+  createdAt: Date!
+  id: Int!
+  isEdited: Boolean
+  message: String
+  objectType: ObjectType!
+  options: ActivityLogEntryOptions
+  resolved: Boolean!
+  resolvedAt: Date
+  type: ActivityLogType!
+  updatedAt: Date!
+  username: String!
+}
+
+type ActivityLogEntryOptions {
+  field: ActivityLogModificationFieldType
+  newValue: String
+  oldValue: String
+}
+
+enum ActivityLogModificationFieldType {
+  content
+  status
+  title
+}
+
+enum ActivityLogType {
+  CREATION
+  MESSAGE
+  MODIFICATION
+  SHARING
 }
 
 type ActivityPerformance {
@@ -151,6 +186,7 @@ enum ActivityType {
 }
 
 type AnswerCollection {
+  createdAt: Date
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
@@ -167,6 +203,7 @@ type AnswerCollection {
   ownerShortname: String
   permissionLevel: PermissionLevel
   sharingType: SharingType
+  updatedAt: Date
 }
 
 type AnswerCollectionEntry {
@@ -467,7 +504,7 @@ type CatalogObject {
   isShared: Boolean!
   name: String!
   objectId: Int
-  objectType: SharingObjectType!
+  objectType: ObjectType!
   objectUuid: String
   ownerShortname: String
   templateId: String
@@ -680,7 +717,7 @@ type Course {
   displayName: String!
   endDate: Date!
   groupActivities: [GroupActivity!]
-  groupActivityActivities: [ActivityInfo!]
+  groupActivitiesInfo: [ActivityInfo!]
   groupAssignmentPoolEntries: [GroupAssignmentPoolEntry!]
   groupDeadlineDate: Date
   id: ID!
@@ -693,11 +730,11 @@ type Course {
   isOwner: Boolean
   isRemovable: Boolean
   isShared: Boolean
-  liveQuizActivities: [ActivityInfo!]
   liveQuizzes: [LiveQuiz!]
+  liveQuizzesInfo: [ActivityInfo!]
   maxGroupSize: Int!
-  microLearningActivities: [ActivityInfo!]
   microLearnings: [MicroLearning!]
+  microLearningsInfo: [ActivityInfo!]
   name: String!
   notificationEmail: String
   numOfParticipantGroups: Int
@@ -707,8 +744,8 @@ type Course {
   participantGroups: [ParticipantGroup!]
   permissionLevel: PermissionLevel
   pinCode: Int
-  practiceQuizActivities: [ActivityInfo!]
   practiceQuizzes: [PracticeQuiz!]
+  practiceQuizzesInfo: [ActivityInfo!]
   preferredGroupSize: Int!
   randomAssignmentFinalized: Boolean!
   startDate: Date!
@@ -730,6 +767,18 @@ type CourseLeaderboard {
   computedAt: Date
   leaderboard: [LeaderboardEntry!]!
   numOfActiveParticipants: Int!
+}
+
+type CourseOverview {
+  color: String
+  description: String
+  displayName: String!
+  groupActivities: [ReducedActivityInfo!]
+  id: ID!
+  liveQuizzes: [ReducedActivityInfo!]
+  microLearnings: [ReducedActivityInfo!]
+  name: String
+  practiceQuizzes: [ReducedActivityInfo!]
 }
 
 type CoursePerformanceAnalytics {
@@ -1342,6 +1391,7 @@ type LeaderboardEntry {
   email: String
   id: Int!
   isSelf: Boolean
+  isTemporary: Boolean
   lastBlockOrder: Int
   level: Int
   participant: Participant
@@ -1422,6 +1472,11 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizStudentSettings {
+  isConfusionFeedbackEnabled: Boolean!
+  isLiveQAEnabled: Boolean!
+}
+
 type LiveQuizSummary {
   numOfConfusionFeedbacks: Int!
   numOfFeedbacks: Int!
@@ -1462,28 +1517,30 @@ type MicroLearning {
 type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
+  addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!): CatalogObject
+  addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: ObjectType!): CatalogObject
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
-  cancelObjectSharingRequest(objectId: String!, objectType: SharingObjectType!): Boolean!
+  cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
   changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
   changeElementStatus(elementId: Int!, status: ElementStatus!): Boolean
   changeEmailSettings(projectUpdates: Boolean!): User
-  changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
+  changeInitialSettings(locale: LocaleType!, seedDemoElements: Boolean!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
-  changePermissionLevel(objectId: String!, objectType: SharingObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
+  changePermissionLevel(objectId: String!, objectType: ObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
@@ -1517,6 +1574,7 @@ type Mutation {
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
+  duplicateAnswerCollection(id: Int!): AnswerCollection
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1538,7 +1596,7 @@ type Mutation {
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
-  importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!): Boolean!
+  importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1550,8 +1608,10 @@ type Mutation {
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
+  loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
+  logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
@@ -1573,19 +1633,20 @@ type Mutation {
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
-  removeObject(objectId: String!, objectType: SharingObjectType!): String
+  removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
-  requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: SharingObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
-  revokeObjectAccess(objectId: String!, objectType: SharingObjectType!, permissionId: Int!): Int
+  revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  shareObject(objectId: String!, objectType: SharingObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1593,7 +1654,7 @@ type Mutation {
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(elementIds: [Int!]!, isArchived: Boolean!): [ArchivedElement!]
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
-  transferObjectOwnership(objectId: String!, objectType: SharingObjectType!, shortnameOrEmail: String!): PermissionInfo
+  transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
@@ -1604,6 +1665,7 @@ type Mutation {
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
+  updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntries: Boolean!
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
@@ -1737,7 +1799,7 @@ enum ObjectAccess {
 
 type ObjectSharingRequest {
   objectName: String!
-  objectType: SharingObjectType!
+  objectType: ObjectType!
   requestId: Int!
   userEmail: String!
   userId: String!
@@ -1753,7 +1815,6 @@ enum ObjectType {
   LIVE_QUIZ
   MICRO_LEARNING
   PRACTICE_QUIZ
-  USER_GROUP
 }
 
 input OptionsCaseStudyInput {
@@ -1815,12 +1876,14 @@ type Participant {
   lastLoginAt: Date
   level: Int
   levelData: Level
-  locale: LocaleType!
+  locale: LocaleType
   participantGroups: [ParticipantGroup!]
   rank: Int
+  role: UserRole
+  scopeQuizId: String
   score: Float
   username: String!
-  xp: Int!
+  xp: Int
 }
 
 type ParticipantAchievementInstance {
@@ -1983,8 +2046,6 @@ type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
-  checkPrivatePreviewAvailable: Boolean!
-  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
@@ -2024,7 +2085,7 @@ type Query {
   getCourseStudentTimelines: [CourseStudentTimeline!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
-  getDerivedObjectPermissions(objectId: String!, objectType: SharingObjectType!): [DerivedPermissionInfo!]
+  getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
@@ -2035,11 +2096,12 @@ type Query {
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
-  getObjectPermissions(objectId: String!, objectType: SharingObjectType!): [PermissionInfo!]
+  getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
+  getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
-  getPracticeQuizList: [Course!]
+  getPracticeQuizList: [CourseOverview!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleAnswerCollection(id: Int!): AnswerCollection
@@ -2059,7 +2121,7 @@ type Query {
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizHMAC(id: String!): String
-  liveQuizLeaderboard(quizId: String!): [LeaderboardEntry!]
+  liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -2097,6 +2159,17 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+}
+
+type ReducedActivityInfo {
+  automaticPublicationAt: Date
+  course: Course
+  displayName: String!
+  id: String!
+  name: String!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
+  status: PublicationStatus!
 }
 
 enum ResponseCorrectnessType {
@@ -2202,18 +2275,6 @@ type SelectionInstanceEvaluation {
   selectionResponses: [SingleSelectionResponse!]
   xp: Int
   xpAwarded: Int
-}
-
-enum SharingObjectType {
-  ANSWER_COLLECTION
-  CATALOG_COLLECTION
-  COURSE
-  ELEMENT
-  GROUP_ACTIVITY
-  LIVE_QUIZ
-  LIVE_QUIZ_TEMPLATE
-  MICRO_LEARNING
-  PRACTICE_QUIZ
 }
 
 type SharingRequestResponse {
@@ -2367,6 +2428,7 @@ type Subscription {
   feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
   groupActivityStarted(courseId: String!): GroupActivity!
+  liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
   runningLiveQuizUpdated(quizId: String!): ElementBlock
   singleGroupActivityEnded(activityId: String!): GroupActivity!
@@ -2491,6 +2553,7 @@ enum UserLoginScope {
 enum UserRole {
   ADMIN
   PARTICIPANT
+  TEMPORARY_PARTICIPANT
   USER
 }
 

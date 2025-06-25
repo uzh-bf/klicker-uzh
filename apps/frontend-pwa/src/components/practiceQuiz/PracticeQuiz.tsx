@@ -5,6 +5,7 @@ import {
   PracticeQuiz as PracticeQuizType,
   SelfDocument,
   StackFeedbackStatus,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
@@ -75,7 +76,11 @@ function PracticeQuiz({
       courseId: router.query.courseId as string,
       quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
     },
-    skip: previewOnly || !router.query.courseId || !dataParticipant?.self,
+    skip:
+      previewOnly ||
+      !router.query.courseId ||
+      !dataParticipant?.self ||
+      dataParticipant?.self.role !== UserRole.Participant,
   })
 
   return (
@@ -142,7 +147,10 @@ function PracticeQuiz({
               })
             }}
             handleNextElement={handleNextElement}
-            withParticipant={!!dataParticipant?.self}
+            withParticipant={
+              !!dataParticipant?.self &&
+              dataParticipant.self.role !== UserRole.TemporaryParticipant
+            }
             onAllStacksCompletion={() =>
               // TODO: re-introduce summary page for practice quiz
               router.push(`/`)

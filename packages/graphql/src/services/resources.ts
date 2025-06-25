@@ -45,20 +45,6 @@ export async function createAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  const oldCollection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      ownerId_name: {
-        ownerId: ctx.user.sub,
-        name,
-      },
-    },
-  })
-
-  // if collection already exists for the user, notify him that a new name needs to be chosen
-  if (oldCollection) {
-    return null
-  }
-
   const collection = await ctx.prisma.$transaction(async (prisma) => {
     const newCollection = await prisma.answerCollection.create({
       data: {
@@ -76,11 +62,7 @@ export async function createAnswerCollection(
         },
       },
       include: {
-        _count: {
-          select: {
-            entries: true,
-          },
-        },
+        entries: true,
       },
     })
 
@@ -96,7 +78,65 @@ export async function createAnswerCollection(
   return {
     ...collection,
     numSharedUsers: 0,
-    numOfEntries: collection._count.entries,
+    numOfEntries: collection.entries.length,
+    isOwner: true,
+    isManager: true,
+    isEditor: true,
+    isImported: false,
+    isShared: false,
+    isDeletable: true,
+    isRemovable: false,
+    sharingType: SharingType.OWNED,
+  }
+}
+
+export async function duplicateAnswerCollection(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the existing answer collection, including its entries
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+    include: { entries: true },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // create a new collection with the same entries
+  const duplicatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const newCollection = await prisma.answerCollection.create({
+      data: {
+        name: `${collection.name} (Copy)`,
+        description: collection.description,
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+      include: { entries: true },
+    })
+
+    // trigger recomputation of derived permissions (-> owner should get new one)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
+  })
+
+  return {
+    ...duplicatedCollection,
+    numSharedUsers: 0,
+    numOfEntries: duplicatedCollection.entries.length,
     isOwner: true,
     isManager: true,
     isEditor: true,
@@ -169,19 +209,33 @@ export async function getAnswerCollectionsElements(
     }
   }
 
+  // get the ids of all answer collections that are shared with the user
+  const sharedAnswerCollectionIds = user.objects
+    .filter((object) => object.answerCollection)
+    .map((object) => object.answerCollection!.id)
+
   const combinedAnswerCollections = [
     ...user.objects.flatMap((object) =>
       object.answerCollection
         ? {
             ...object.answerCollection,
             isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+            isEditor:
+              object.permissionLevel === DB.PermissionLevel.WRITE ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN ||
+              object.permissionLevel === DB.PermissionLevel.OWNER,
           }
         : []
     ),
-    ...templateAnswerCollections.map((collection) => ({
-      ...collection,
-      isShared: false,
-    })),
+    ...templateAnswerCollections
+      .filter(
+        (collection) => !sharedAnswerCollectionIds.includes(collection.id)
+      )
+      .map((collection) => ({
+        ...collection,
+        isShared: false,
+        isEditor: false,
+      })),
   ]
 
   // return deduplicated list of answer collections (based on id)
@@ -584,26 +638,29 @@ export async function removeAnswerCollection(
     await ctx.prisma.answerCollection.delete({ where: { id: id } })
   } else {
     // otherwise, delete the sharing permission
-    await ctx.prisma.$transaction(async (prisma) => {
-      await prisma.permission.delete({ where: { id: permission.id } })
+    await ctx.prisma.$transaction(
+      async (prisma) => {
+        await prisma.permission.delete({ where: { id: permission.id } })
 
-      // create an audit log entry for the removal
-      await prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.PERMISSION_REMOVED,
-          objectId: String(id),
-          objectType: DB.ObjectType.ANSWER_COLLECTION,
-          sourceUserId: ctx.user.sub,
-          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
-        },
-      })
+        // create an audit log entry for the removal
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_REMOVED,
+            objectId: String(id),
+            objectType: DB.ObjectType.ANSWER_COLLECTION,
+            sourceUserId: ctx.user.sub,
+            message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
+          },
+        })
 
-      // trigger recomputation of derived permissions
-      await recomputeDerivedPermissions(
-        { answerCollectionId: id, userId: ctx.user.sub },
-        prisma
-      )
-    })
+        // trigger recomputation of derived permissions
+        await recomputeDerivedPermissions(
+          { answerCollectionId: id, userId: ctx.user.sub },
+          prisma
+        )
+      },
+      { timeout: 60000 }
+    )
   }
 
   ctx.emitter.emit('invalidate', {

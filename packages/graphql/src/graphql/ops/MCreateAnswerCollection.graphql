@@ -8,21 +8,6 @@ mutation CreateAnswerCollection(
     description: $description
     answers: $answers
   ) {
-    id
-    name
-    description
-    ownerShortname
-    numSharedUsers
-    numOfEntries
-    permissionLevel
-
-    isOwner
-    isManager
-    isEditor
-    isImported
-    isShared
-    isDeletable
-    isRemovable
-    sharingType
+    ...AnswerCollectionData
   }
 }

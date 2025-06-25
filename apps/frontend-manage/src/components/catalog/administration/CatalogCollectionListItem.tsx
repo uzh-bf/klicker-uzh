@@ -8,10 +8,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogCollection,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
-import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -20,9 +19,7 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
-import CatalogObjectRequestSuccessToast from '../actions/CatalogRequestSuccessToast'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
-import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
@@ -41,11 +38,6 @@ function CatalogCollectionListItem({
   const [changeAccessModal, setChangeAccessModal] = useState(false)
   const [nameChangeModal, setNameChangeModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(collection.access)
-
-  // toast states
-  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
-  const [showDeletionSuccessToast, setShowDeletionSuccessToast] =
-    useState(false)
 
   // access can be requested if not done already, not shared, and not owned
   const isRequestable =
@@ -67,7 +59,7 @@ function CatalogCollectionListItem({
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={(e) => {
           e?.stopPropagation()
           if (
@@ -141,17 +133,13 @@ function CatalogCollectionListItem({
           {dropdownItems.length > 0 ? (
             <Dropdown
               items={dropdownItems}
-              trigger={
-                <ForwardRefButton
-                  basic
-                  className={{
-                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                  }}
-                >
-                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
-                </ForwardRefButton>
-              }
-              className={{ viewport: 'z-20' }}
+              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+              className={{
+                viewport: 'z-20',
+                item: 'py-0.5 text-sm',
+                trigger:
+                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+              }}
               data={{ cy: `catalog-collection-${collection.name}-actions` }}
             />
           ) : null}
@@ -160,65 +148,68 @@ function CatalogCollectionListItem({
 
       {collection.isManager ? (
         <>
-          <ObjectSharingModalWrapper
-            open={sharingModal}
-            onClose={() => setSharingModal(false)}
-            objectUuid={collection.id}
-            objectName={collection.name}
-            objectType={SharingObjectType.CatalogCollection}
-            isOwner={collection.isOwner ?? false}
-          />
-          <CatalogCollectionDeletionModal
-            catalogCollectionId={collection.id}
-            catalogCollectionName={collection.name}
-            open={deletionModal}
-            onClose={() => setDeletionModal(false)}
-            onSuccess={() => setShowDeletionSuccessToast(true)}
-          />
-          <CatalogCollectionDeletionSuccessToast
-            open={showDeletionSuccessToast}
-            onClose={() => setShowDeletionSuccessToast(false)}
-          />
-          <CatalogChangeAccessModal
-            open={changeAccessModal}
-            onClose={() => setChangeAccessModal(false)}
-            objectType={SharingObjectType.CatalogCollection}
-            objectName={collection.name}
-            newAccess={newAccess}
-            catalogCollectionId={collection.id}
-          />
+          {sharingModal && (
+            <ObjectSharingModalWrapper
+              onClose={() => setSharingModal(false)}
+              objectUuid={collection.id}
+              objectName={collection.name}
+              objectType={ObjectType.CatalogCollection}
+              isOwner={collection.isOwner ?? false}
+            />
+          )}
+          {deletionModal && (
+            <CatalogCollectionDeletionModal
+              catalogCollectionId={collection.id}
+              catalogCollectionName={collection.name}
+              onClose={() => setDeletionModal(false)}
+              onSuccess={() =>
+                toast({
+                  type: 'success',
+                  message: t('manage.catalog.deletionSuccessful'),
+                  options: { duration: 3500 },
+                })
+              }
+            />
+          )}
+          {changeAccessModal && (
+            <CatalogChangeAccessModal
+              onClose={() => setChangeAccessModal(false)}
+              objectType={ObjectType.CatalogCollection}
+              objectName={collection.name}
+              newAccess={newAccess}
+              catalogCollectionId={collection.id}
+            />
+          )}
         </>
       ) : null}
 
-      {collection.isEditor ? (
+      {collection.isEditor && nameChangeModal ? (
         <CatalogCollectionNameChangeModal
           catalogCollectionId={collection.id}
           name={collection.name}
-          open={nameChangeModal}
           onClose={() => setNameChangeModal(false)}
         />
       ) : null}
 
       {/* functionality for users without access to request it for restricted catalog collections */}
-      {isRequestable ? (
+      {isRequestable && requestModal ? (
         <CatalogRequestModal
-          open={requestModal}
           onSuccess={() => {
-            setShowRequestSuccessToast(true)
+            toast({
+              type: 'success',
+              message: t('manage.catalog.requestCatalogObjectSuccess'),
+              options: { duration: 3500 },
+            })
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
-          objectType={SharingObjectType.CatalogCollection}
+          objectType={ObjectType.CatalogCollection}
           objectId={collection.id}
           objectName={collection.name}
           objectOwner={collection.ownerShortname}
           objectAccess={collection.access}
         />
       ) : null}
-      <CatalogObjectRequestSuccessToast
-        open={showRequestSuccessToast}
-        onClose={() => setShowRequestSuccessToast(false)}
-      />
     </>
   )
 }

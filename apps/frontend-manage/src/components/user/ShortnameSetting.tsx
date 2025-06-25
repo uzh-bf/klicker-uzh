@@ -96,13 +96,8 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 </Tooltip>
               )}
               <DebouncedUsernameField
-                t={t}
-                className={{
-                  root: 'w-36',
-                  label: 'hidden',
-                  input: 'h-9 bg-white',
-                  icon: 'bg-transparent',
-                }}
+                required
+                hideError
                 name="shortname"
                 labelType="large"
                 valid={isShortnameAvailable}
@@ -119,9 +114,13 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                   return result?.checkShortnameAvailable ?? false
                 }}
                 unavailableMessage={t('shared.generic.usernameAvailability')}
+                className={{
+                  root: 'w-36',
+                  label: 'hidden',
+                  input: 'h-9 bg-white',
+                  icon: 'bg-transparent',
+                }}
                 data={{ cy: 'shortname-update-field' }}
-                required
-                hideError
               />
               <Button
                 primary

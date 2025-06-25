@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
@@ -14,8 +13,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
     })
-    cy.fixture('V-template.json').then((liveQuizData) => {
-      this.data = { ...this.data, ...liveQuizData }
+    cy.fixture('V-template.json').then((questionData) => {
+      this.data = { ...this.data, ...questionData }
     })
   })
 
@@ -124,6 +123,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -266,6 +266,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC2.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE2.title,
       content: this.data.SE2.content,
@@ -408,6 +409,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.SC3.title}"]`).should('exist') // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE3.title,
       content: this.data.SE3.content,
@@ -501,13 +503,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -523,9 +523,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     // convert a copy of the created live quiz into a template
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -548,9 +546,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-next-step"]').should('not.be.disabled')
     cy.get('[data-cy="close-template-conversion-modal"]').click()
 
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -581,23 +577,18 @@ describe('Test all functionalities related to the creation, management, sharing 
     )
       .should('exist')
       .contains(messages.shared.generic.template)
-    cy.get(
-      `[data-cy="edit-template-${this.data.liveQuiz.template1Orig.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
-    ).should('exist')
-
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+
+    cy.get(
+      `[data-cy="edit-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -607,15 +598,27 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).realClick() // close dropdown
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
+    ).realClick() // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
     // convert the live quiz into a template
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
@@ -656,9 +659,20 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="edit-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template2.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template2.name}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
+    ).realClick() // close dropdown
+
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
     )
@@ -753,9 +767,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -800,9 +812,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.catalog.name)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(
-      `[data-cy="object-type-${SharingObjectType.LIVE_QUIZ_TEMPLATE}"]`
-    ).click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
@@ -850,6 +860,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="template-instructions"]').contains(
@@ -867,6 +880,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.displayName
     )
     cy.get('[data-cy="submit-template-settings"]').click()
+    cy.wait(4000) // wait for the success toast to disappear to make the button below accessible
     cy.get(`[data-cy="live-quiz-template-element-0-0"]`).click() // close the automatically opened first element
 
     // test the content and functionalities for all elements
@@ -1126,6 +1140,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="template-instructions"]').contains(
@@ -1202,6 +1219,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
+    cy.wait(5000) // wait for the auto-save notification toast to disappear (blocks submission button)
     cy.get('[data-cy="submit-template-settings"]').click()
     cy.wrap([
       { content: this.data.SC.content, identifier: '0-0' },
@@ -2459,62 +2477,170 @@ describe('Test all functionalities related to the creation, management, sharing 
   })
   // #endregion
 
+  // ! Part 3: Use the live quiz template with inline answer collection definitions
+  // #region
+  it('Open the live quiz template in the catalog and enter new selection and case study elements with inline answer collections', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // open the template and complete the necessary parts of the settings step
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template1.name}"]`
+    ).realClick()
+    cy.get('[data-cy="live-quiz-template-settings"]').click()
+    cy.get('[data-cy="template-live-quiz-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity3.name)
+    cy.get('[data-cy="template-live-quiz-display-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity3.displayName)
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      messages.manage.activityWizard.liveQuizNoCourse
+    )
+    cy.get('[data-cy="submit-template-settings"]').click()
+
+    // accept all elements up to the first selection / case study element
+    cy.wrap(['0-0', '0-1', '0-2', '0-3', '0-4']).each((identifier: string) => {
+      cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
+      cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+    })
+
+    // modify the selection element using an inline answer collection definition
+    cy.get(`[data-cy="create-new-element-template-0-5"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .clear()
+      .type(this.data.activity3.SETitle)
+    cy.get('[data-cy="create-inline-answer-collection"]').click()
+    cy.wrap(this.data.collection.options).each((option: string) => {
+      cy.get('#inline-answer-collection-options').type(`${option}{enter}`)
+    })
+    cy.get('[data-cy="configure-number-of-inputs"]').click().clear().type('2')
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.get(`[data-cy="next-template-element-0-5"]`).click()
+
+    // modify the case study element, defining another inline answer collection
+    cy.get(`[data-cy="create-new-element-template-0-6"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .clear()
+      .type(this.data.activity3.CSTitle)
+    cy.get('[data-cy="create-inline-answer-collection"]').click()
+    cy.wrap(this.data.collection2.options).each((option: string) => {
+      cy.get('#inline-answer-collection-options').type(`${option}{enter}`)
+    })
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.get(`[data-cy="next-template-element-0-6"]`).click()
+
+    // accept all remaining instances as contained in the template
+    cy.wrap([
+      '1-0',
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+      '1-5',
+      '1-6',
+      '2-0',
+      '2-1',
+      '2-2',
+    ]).each((identifier: string) => {
+      cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
+      cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+    })
+
+    // confirm live quiz creation and verify successful redirect
+    cy.get(`[data-cy="live-quiz-template-submit"]`).click()
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity3.name}"]`).should(
+      'exist'
+    )
+  })
+
+  it('Verify that the elements and the answer collection have been created correctly', function () {
+    cy.loginInstitutionalCatalyst()
+
+    // verify that the content of the selection element has been stored correctly
+    cy.get(`[data-cy="edit-element-${this.data.activity3.SETitle}"]`).click()
+    cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
+    cy.get('[id="selection-0-field-0"]').click()
+    cy.wrap(this.data.collection.options).each((value: string) => {
+      cy.findByText(value).should('exist') // verify that correct options are available for selection
+    })
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // verify that the content of the case study element has been stored correctly
+    cy.get(`[data-cy="edit-element-${this.data.activity3.CSTitle}"]`).click()
+    cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
+    cy.wrap(this.data.collection2.options).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').contains(item) // verify that the correct items are available for assessment
+    })
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // verify that the answer collection based on the selection question has been created correctly
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    const SECollection = `AC: ${this.data.activity3.SETitle}`
+    cy.get(`[data-cy="answer-collection-actions-${SECollection}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.collection.options).each((item: string) => {
+      cy.get(`[data-cy="delete-answer-option-${item}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${item}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    // verify that the answer collection based on the case study question has been created correctly
+    const CSCollection = `AC: ${this.data.activity3.CSTitle}`
+    cy.get(`[data-cy="answer-collection-actions-${CSCollection}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.collection2.options).each((item: string) => {
+      cy.get(`[data-cy="delete-answer-option-${item}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${item}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+  // #endregion
+
   // ! Cleanup: Deletion of all created templates, activities and questions
   // #region
   it('Delete all created templates', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="cancel-deletion"]').click()
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+    cy.wait(500)
+
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template2.name}"]`
+    ).click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+    cy.wait(500)
   })
-
-  it('Delete all created activities', function () {
-    cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
-
-    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity1.name}"]`).should(
-      'exist'
-    )
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.activity1.name}"]`
-    ).realClick()
-    cy.get(`[data-cy="delete-live-quiz-${this.data.activity1.name}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
-    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.findByText(this.data.activity1.name).should('not.exist')
-
-    cy.loginIndividualCatalyst()
-    cy.get(`[data-cy="activities"]`).click()
-    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.activity2.name}"]`).should(
-      'exist'
-    )
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.activity2.name}"]`
-    ).realClick()
-    cy.get(`[data-cy="delete-live-quiz-${this.data.activity2.name}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
-    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
-    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.findByText(this.data.activity2.name).should('not.exist')
-  })
-
   // #endregion
 })

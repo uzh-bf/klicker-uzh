@@ -9,19 +9,15 @@ import { useTranslations } from 'next-intl'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface MicroLearningEndingModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function MicroLearningEndingModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: MicroLearningEndingModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetMicroLearningSummaryDocument,
@@ -51,7 +47,7 @@ function MicroLearningEndingModal({
         })
 
         const endedMicro = res.data?.endMicroLearning
-        if (!data?.course?.microLearnings || !endedMicro) return
+        if (!data?.course?.microLearningsInfo || !endedMicro) return
 
         cache.writeQuery({
           query: GetSingleCourseDocument,
@@ -59,7 +55,7 @@ function MicroLearningEndingModal({
           data: {
             course: {
               ...data.course,
-              microLearnings: data.course.microLearnings.map((micro) =>
+              microLearningsInfo: data.course.microLearningsInfo.map((micro) =>
                 micro.id === activityId
                   ? {
                       ...micro,
@@ -67,16 +63,6 @@ function MicroLearningEndingModal({
                       status: endedMicro.status,
                     }
                   : micro
-              ),
-              microLearningActivities: data.course.microLearningActivities?.map(
-                (micro) =>
-                  micro.id === activityId
-                    ? {
-                        ...micro,
-                        scheduledEndAt: endedMicro.scheduledEndAt,
-                        status: endedMicro.status,
-                      }
-                    : micro
               ),
             },
           },
@@ -90,8 +76,7 @@ function MicroLearningEndingModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.endMicroLearning')}
       message={t('manage.course.endMicroLearningMessage')}
       onSubmit={async () => await endMicroLearning()}

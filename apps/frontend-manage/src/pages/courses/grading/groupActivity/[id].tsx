@@ -173,18 +173,20 @@ function GroupActivityGrading() {
           )}
         </div>
       </div>
-      <SubmissionSwitchModal
-        nextSubmission={nextSubmission}
-        switchingModal={switchingModal}
-        setSelectedSubmission={setSelectedSubmission}
-        setCurrentEditing={setCurrentEditing}
-        setSwitchingModal={setSwitchingModal}
-      />
-      <FinalizeGradingModal
-        open={finalizeModal}
-        setOpen={setFinalizeModal}
-        activityId={groupActivity.id}
-      />
+      {switchingModal && (
+        <SubmissionSwitchModal
+          nextSubmission={nextSubmission}
+          setSelectedSubmission={setSelectedSubmission}
+          setCurrentEditing={setCurrentEditing}
+          setSwitchingModal={setSwitchingModal}
+        />
+      )}
+      {finalizeModal && (
+        <FinalizeGradingModal
+          onClose={() => setFinalizeModal(false)}
+          activityId={groupActivity.id}
+        />
+      )}
     </Layout>
   )
 }

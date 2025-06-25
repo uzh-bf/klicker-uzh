@@ -25,9 +25,13 @@ export default {
     },
     PUBLISHED: {
       statusLabel: 'Published / Running',
+      statusLabel1: 'Published',
+      statusLabel2: 'Running',
     },
     ENDED: {
       statusLabel: 'Ended / Ready for Grading',
+      statusLabel1: 'Ended',
+      statusLabel2: 'Ready for Grading',
     },
     GRADED: {
       statusLabel: 'Graded',
@@ -94,6 +98,30 @@ export default {
     },
     login: {
       installButton: 'Install Now',
+    },
+    activity: {
+      title: 'Comments',
+      viewComments: 'View Comments',
+      noActivity: 'No activity yet',
+      noUnresolvedActivity: 'No unresolved messages',
+      addMessage: 'Add a message to start a conversation',
+      messageInputPlaceholder: 'Write a message...',
+      sending: 'Sending...',
+      send: 'Send',
+      tooltip: 'View Comments',
+      markResolved: 'Mark as resolved',
+      markUnresolved: 'Mark as unresolved',
+      resolved: 'Resolved',
+      hideResolved: 'Hide resolved messages',
+      resolvedAt: 'Resolved {time}',
+      messageMESSAGE: '',
+      messageCREATION: '{username} created this object.',
+      messageMODIFICATION:
+        '{username} modified {field} ({oldValue} -> {newValue}).',
+      messageSHARING: '', // TODO: implement once available
+      fieldtitle: 'title',
+      fieldstatus: 'status',
+      fieldcontent: 'content',
     },
     generic: {
       date: 'Date',
@@ -173,6 +201,8 @@ export default {
       activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
+      loading: 'Loading...',
+      tryAgain: 'Try again',
       characters: 'characters',
       precision: 'Precision',
       unit: 'Unit',
@@ -230,6 +260,7 @@ export default {
       settings: 'Settings',
       activitySettings: 'Activity Settings',
       course: 'Course',
+      courses: 'Courses',
       availableFrom: 'Available from',
       startDate: 'Start date',
       endDate: 'End date',
@@ -333,6 +364,11 @@ export default {
       shared: 'Shared',
       imported: 'Imported',
       dependency: 'Dependency',
+      legend: 'Legend',
+      collections: 'Collections',
+      objects: 'Objects',
+      pseudonym: 'Pseudonym',
+      selected: 'Selected',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -357,7 +393,6 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
-      USER_GROUP: 'User Group',
     },
     contentInput: {
       boldStyle:
@@ -495,7 +530,7 @@ Your data will never be shared with other parties beside the above and will neve
         'Your data is being used to provide the functionalities made available to you by KlickerUZH. Further analysis of any of the collected data outside of the KlickerUZH platform may only be performed in anonymized form and only for the purpose of teaching and research. Lecturers are obligated to inform you appropriately about any research that is being performed on your collected data.',
       dataStorageTitle: 'How long do you store my data?',
       dataStorageNotice:
-        'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
+        'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
     },
@@ -545,7 +580,7 @@ Within a group, you can compare your points with those of your fellow students; 
 
 ![Gamification](/img/08_gamification.png)
 
-All activities in the KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
+All activities in KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
 The following activities are part of the challenge:
 
@@ -759,10 +794,36 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
     liveQuiz: {
-      noActiveQuestion: 'No question active.',
+      noActiveQuestion:
+        'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered: 'You have already answered all active questions.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
+      thisLiveQuizGamified: 'This live quiz is gamified!',
+      loginSelectionHint:
+        'You are about to join a gamified live quiz. Please choose between the following options: <ul><li>Login with <b>KlickerUZH-Account</b>: Collect points and XP</li><li>Create a <b>temporary pseudonym</b>: Collect points in this live quiz only (points not available in course)</li><li>Particiate <b>anonymously</b>: Do not participate in the gamification elements</li></ul>',
+      loginWithAccount: 'Login with Klicker-Account',
+      createTemporaryPseudonym: 'Create temporary pseudonym',
+      participateAnonymously: 'Participate anonymously',
+      changeLoginMode: 'Change login mode',
+      pseudonymExplanation:
+        'By entering a <b>pseudonym</b> here, you can collect points in this gamified live quiz without having to create a KlickerUZH account. Collected points are only stored in connection with this live quiz and will not be visible on the course leaderboard.',
+      pseudonymRequired: 'Please enter a pseudonym.',
+      pseudonymMinLength:
+        'The pseudonym must be at least {length} characters long.',
+      pseudonymMaxLength:
+        'The pseudonym must not be longer than {length} characters.',
+      joinedSuccessfullyWithPseudonym:
+        'You have successfully joined the live quiz with the pseudonym <b>{pseudonym}</b>.',
+      pseudonymAlreadyExists:
+        'The chosen pseudonym is unfortunately already taken. Please choose another one.',
+      pseudonymCreationFailed:
+        'The creation of the pseudonym failed. Please try again.',
+      temporaryParticipantsLeaderboard:
+        'Temporary participants (only collect points in this gamified live quiz)',
+      pseudonymSelection: 'Pseudonym Selection',
+      avatarExplanation:
+        'If you wish, you can select your <b>avatar</b> for the live quiz here.',
     },
     feedbacks: {
       title: 'Feedback Channel',
@@ -773,6 +834,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       feedbackPlaceholder: 'Enter your question / feedback',
       postedAt: 'Posted at {date}',
       solvedAt: 'Resolved at {date}',
+      feedbackSubmitted:
+        'Your feedback / question has been successfully submitted.',
     },
     profile: {
       publicProfile: 'Profile Visibility',
@@ -811,6 +874,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
       forgotPasswordInfo:
         'If you forgot your password, use the login with email function to receive a one-time login link and change your password afterwards.',
+      errorLogoutTemporaryParticipant:
+        'An error occurred while logging out of your temporary pseudonym. Please try again.',
+      loggedInAs: 'Logged in as',
+      temporaryPseudonym: 'temporary pseudonym',
     },
     avatar: {
       hair: 'Hair',
@@ -975,6 +1042,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      automaticPublicationAt: 'Automatic publication at {date}',
+      availability: 'Availability: {startDate} - {endDate}',
       removeActivity: 'Remove Activity',
       confirmActivityRemoval:
         'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
@@ -989,18 +1058,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity has been successfully changed.',
       activityNameChangeError:
         'The name of the activity could not be changed. Please try again later.',
+      noCourseAssigned: 'No course assigned',
+      actionsLegend: 'Actions Legend',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
       feedbackText:
-        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+        'Do you have any feedback for us? Are you experiencing issues when using KlickerUZH? Please provide us with your feedback so we can continue to improve KlickerUZH for you.',
       featureRequest: 'Feature Request',
       featureRequestDesc: 'I would like to request a new feature.',
       bugReport: 'Bug Report',
       bugReportDesc: 'I would like to report a bug or issue.',
       selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      selfHostingDesc: 'I have problems when self-hosting KlickerUZH.',
       furtherResources: 'Further Resources',
       documentationDesc: 'Tutorials, feature documentation, and release notes',
       faq: 'FAQ',
@@ -1008,7 +1079,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       connect: 'Connect with Us',
       community: 'Community',
       communityDesc:
-        'A place for discussions and questions regarding the KlickerUZH',
+        'A place for discussions and questions regarding KlickerUZH',
       email: 'E-Mail',
       emailDesc: 'Contact us at klicker@df.uzh.ch',
       aboutProject: 'About the Project',
@@ -1040,6 +1111,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Make sure you have seen and/or bookmarked the following relevant links:',
       watchVideo:
         'Please consider taking the time to watch the following introductory video, covering all core concepts of KlickerUZH v3.0 and its main features. In case you are in a hurry, directly submit your initial settings with the button below the video.',
+      seedDemoElements: 'Generate Demo Elements',
+      seedDemoElementsExplanation:
+        'Please choose whether demo elements should be generated in your library for demonstration purposes. They can be deleted at any time.',
+      seedDemoElementsDecisionRequired:
+        'Please choose whether demo elements should be generated or not.',
     },
     settings: {
       userSettings: 'User Settings',
@@ -1047,8 +1123,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
-      confirmDelegatedAcces: 'Confirm delegated login creation',
-      confirmDelegatedAccesTooltip:
+      confirmDelegatedAccess: 'Confirm delegated login creation',
+      confirmDelegatedAccessTooltip:
         'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Live Quiz Execution',
@@ -1083,6 +1159,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       emailUpdates: 'Project Updates via E-Mail',
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
+      newPassword: 'New Password',
+      changePassword: 'Change Password',
+      changeDelegatedLoginPassword: 'Change delegated login password',
+      changeDelegatedLoginPasswordMessage:
+        'Here you can change the password of the selected delegated login. Please note that the password will only be displayed once, so please write it down before confirming.',
     },
     token: {
       pageName: 'Token Generation',
@@ -1094,23 +1175,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       remainingValidity: 'Remaining validity:',
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
-    },
-    migration: {
-      pageName: 'Migrate Data from KlickerV2',
-      step1Title: 'Step 1: Request Migration Token',
-      step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      requestMigrationToken: 'Request Migration Token',
-      step2Title: 'Step 2: Insert Migration Link',
-      step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      step3Title: 'Step 3: Start Migration',
-      step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
-      startMigration: 'Start Migration',
-      step4Title: 'Step 4: Migration Status Notification',
-      step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@df.uzh.ch.',
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
@@ -1221,27 +1285,50 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
-      SEAnswerCollectionRequired:
-        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
       CSAnswerCollectionRequired:
-        'To create case studies, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users through the catalog.',
+        'To create a case study question, you need access to an answer collection or can choose to <link>enter the case study items manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
+      SEAnswerCollectionRequired:
+        'To create a selection question, you need access to an answer collection or can choose to <link>enter the available options manually</link>. To use an answer collection, you can either create one yourself under <link2>Resources → Answer Collections</link2> or import existing collections from other users through the <link3>Catalog</link3>.',
+      selectCollection: 'Select collection...',
       answerCollection: 'Answer collection',
+      notSufficientPermissionsEditCollection:
+        'Your permissions for this answer collection are not sufficient to edit it.',
+      noAnswerCollectionSelected:
+        'Please select an answer collection with sufficient permissions before you can edit it.',
       caseStudyAnswerCollectionTooltip:
         'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',
-      selectCollection: 'Select collection...',
       numberOfInputs: 'Number of inputs',
       correctAnswerOptions: 'Correct answer options',
       correctAnswerOptionsTooltip:
         'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
-      selectAnswerOptions: 'Select answer options...',
+      selectCorrectAnswerOptions: 'Select correct answer options...',
       noMatchingOptionFound: 'No matching option found',
       changeOfAnswerCollection: 'Change of answer collection',
       confirmCollectionChange:
         'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
       selectedItems: 'Selected items',
+      selectionItems: 'Items for Selection',
+      newSelectionItemsTooltip:
+        'Please enter the items from which the students should select the correct options. They will automatically be combined into a new answer collection when saving the question.',
+      definedItems: 'New case study items',
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
+      newCaseStudyItemsTooltip:
+        'Please enter the case study items that should be evaluated with respect to the specified criteria. They will automatically be combined into an answer collection when saving the question.',
+      enterItemsManually:
+        'Want to enter the case study items manually instead?',
+      enterItemsManuallyExplanation:
+        'This interface allows you to enter your case study items manually. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later. <button>You may also switch back to the selection of case study items from an existing collection.</button>',
+      returnItemsCollectionSelection:
+        'Do you want to switch back to the selection of items from an existing collection?',
+      enterSelectionItemsManually:
+        'Do you want to enter the items to be selected manually?',
+      enterSelectionItemsManuallyExplanation:
+        'This interface allows you to enter the items for your selection question directly in the context of the question. When saving the question, the corresponding items will automatically be <b>combined into a new answer collection</b>, which you can re-use or extend later.',
+      returnSelectionItemsCollection:
+        'Do you want to switch back to the selection of an existing collection?',
       selectCaseStudyItems: 'Select items...',
+      insertNewItems: 'Enter case study items...',
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',
       caseStudyCriteriaDescription:
@@ -1812,6 +1899,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select an answer collection from which the elements to be evaluated in the case study are selected.',
       CSItemsRequired:
         'Please select at least one item from the answer collection that participants should evaluate against the created criteria.',
+      CSNewItemsRequired:
+        'Please define at least one item that should be evaluated by the participants against the created criteria.',
       CSCriteriaNameRequired: 'Please enter a name for the criterion.',
       CSCriteriaMinRequired: 'Please enter a minimum value for the criterion.',
       CSCriteriaMinLessThanMax:
@@ -1970,7 +2059,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
       reopenToAnswer: 'Reopen feedback to answer...',
-      insertResponseHere: 'Insert your response here...',
+      enterResponseHere: 'Enter your response here...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Reopen',
@@ -2018,6 +2107,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selection: 'Selection',
       histogramRange: 'Range',
       histogramBins: 'Bins',
+      histogramBinsError: 'Please enter a number of bins between 2 and 100.',
+      histogramLowerLimit: 'Lower Limit',
+      histogramUpperLimit: 'Upper Limit',
+      histogramLowerLimitError:
+        'The lower limit must be greater than {minValue}.',
+      histogramUpperLimitError:
+        'The upper limit must be smaller than {maxValue}.',
+      histogramRangeError:
+        'Please ensure that the lower limit is smaller than the upper limit.',
       correctLabel: 'Correct',
       correctLabelValue: 'Correct: {value}',
       resetSorting: 'Reset sorting',
@@ -2365,7 +2463,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade Group Activity',
       courseElements: 'Course Elements',
-      otherActions: 'Other actions',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Enable gamification',
       enableGamificationWarning:
         'Are you sure you want to enable gamification for this course? This allows you to assign gamified elements to the course, view leaderboards, etc. Please note that gamification cannot be disabled afterwards!',
@@ -2411,7 +2509,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
       access: 'Access',
       accessTooltip:
-        'Choose whether this object can be imported by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
+        'Choose whether this object can be imported / used by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
       catalogCollection: 'Catalog Collection',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
@@ -2455,6 +2553,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
+      duplicateCollection: 'Duplicate Collection',
       viewUseCollectionContent: 'View Content / Use Collection',
       modifyContent: 'Modify Content',
       modifyCatalogAssignments: 'Modify Catalog Assignments',
@@ -2476,6 +2575,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while deleting the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
       transferOwnershipTitle: 'Transfer Collection Ownership',
+      duplicationNote:
+        'The collection will be duplicated in its current state and can be modified afterwards. Please note that ...',
+      duplicationNote1:
+        '... the new collection is not linked to any of the previously dependent questions / templates.',
+      duplicationNote2:
+        '... the new collection is not shared with any other users.',
+      duplicationNote3:
+        '... the new collection should be renamed to avoid confusion with the original when integrating into questions.',
+      duplicationFailure: 'Collection duplication failed. Please try again.',
+      duplicationSuccess: 'Collection has been duplicated successfully.',
     },
     userGroups: {
       description:
@@ -2544,7 +2653,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
       infoAccessPUBLIC:
-        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
+        'Public objects can be viewed and copied by all users with access to the corresponding catalog collection. Answer collections can additionally be used directly in questions by the corresponding users (with read access).',
       infoAccessRESTRICTED:
         'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       objectType: 'Object Type',
@@ -2555,10 +2664,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       useTemplate: 'Use template',
-      importObject: 'Import Object',
-      importObjectType: 'Import {object}',
+      copyObjectToAccount: 'Copy Object to own Account',
+      copyObjectType: 'Copy {object} to own account',
+      importObjectType: 'Import {object} (reading rights)',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
+      copyPublicResource: 'Copy Public Resource',
       importPublicResource: 'Import Public Resource',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
@@ -2607,6 +2718,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeELEMENTtitle: 'Remove Element from Catalog',
       removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
+      removePRACTICE_QUIZ_TEMPLATE: '',
+      removePRACTICE_QUIZ_TEMPLATEtitle: '',
+      removeMICRO_LEARNING_TEMPLATE: '',
+      removeMICRO_LEARNING_TEMPLATEtitle: '',
+      removeGROUP_ACTIVITY_TEMPLATE: '',
+      removeGROUP_ACTIVITY_TEMPLATEtitle: '',
       removeLIVE_QUIZ: 'Remove Live-Quiz',
       removeLIVE_QUIZtitle: 'Remove Live-Quiz from Catalog',
       removePRACTICE_QUIZ: 'Remove Practice Quiz',
@@ -2637,7 +2754,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationSuccess: 'Catalog collection was successfully created.',
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
-      backToCatalogOverview: 'back to Catalog Overview',
+      backToCatalogOverview: 'Back to Catalog Overview',
       deleteCatalogCollection: 'Delete Catalog Collection',
       openCatalogCollection: 'Open Collection',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',
@@ -2657,11 +2774,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestCatalogObjectAccessDescription:
         'Here you can request access to "{name}" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request.',
       requestSuccessInfoCATALOG_COLLECTION:
-        'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
+        'Once the owner accepts your request, you will have access to the catalog collection and can request/import/copy objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
-      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
-        'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestSuccessInfoLIVE_QUIZ: '',
       requestSuccessInfoPRACTICE_QUIZ: '',
       requestSuccessInfoMICRO_LEARNING: '',
@@ -2673,8 +2788,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
         'An error occurred while requesting the access. Please try again or contact the support.',
+      copyCatalogObjectDescription:
+        'Here you can copy "{name}" (by {owner}) into your own account. After the copying is completed, you can directly use the copied object or modify it as needed. Changes to the original object will not affect your copy.',
       importCatalogObjectDescription:
-        'Here you can import a copy of "{name}" (by {owner}) into your own account. After the import is completed, you can directly use the imported object or modify it as needed. Changes to the original object will not affect your imported copy.',
+        'Here you can import the object "<b>{name}</b>" (by {owner}) with read permissions into your own account. Changes to the original object will automatically be visible to you as well.',
+      copyCatalogObjectSuccess:
+        'The object was successfully copied into your account.',
+      copyCatalogObjectFailed:
+        'An error occurred while copying the object. Please try again or contact the support.',
       importCatalogObjectSuccess:
         'The object was successfully imported into your account.',
       importCatalogObjectFailed:
@@ -2755,6 +2876,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipPRACTICE_QUIZ_TEMPLATE: '',
+      infoTransferOwnershipMICRO_LEARNING_TEMPLATE: '',
+      infoTransferOwnershipGROUP_ACTIVITY_TEMPLATE: '',
       infoTransferOwnershipELEMENT:
         'You are about to transfer all ownership rights of the element <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this element, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipLIVE_QUIZ:
@@ -2769,7 +2893,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the course <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this course and get irrevokable admin access to all contained activities and elements (according to the permission propagation), while you will retain admin access to the course. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
-      shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       shareLIVE_QUIZ: 'Share Live Quiz',
       sharePRACTICE_QUIZ: 'Share Practice Quiz',
       shareMICRO_LEARNING: 'Share Microlearning',
@@ -2780,8 +2903,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
-      infoSharingLIVE_QUIZ_TEMPLATE:
-        'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       infoSharingLIVE_QUIZ:
         'This view allows you to share the live quiz "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the quiz or make other changes.',
       infoSharingPRACTICE_QUIZ:
@@ -2797,7 +2918,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       propagatedPermissions: 'Propagated Permissions',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
-      propagatedPermissionsLIVE_QUIZ_TEMPLATE: '',
       propagatedPermissionsELEMENT:
         'If your element depends on an answer collection, sharing the element will automatically also result in permissions on the dependent objects. Regarding the granted permission level for a specific permission level on the element, please refer to the table below.',
       propagatedPermissionsLIVE_QUIZ:
@@ -3076,6 +3196,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endQuiz: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
+    },
+    activity: {
+      title: '{type} Activity',
+      tooltip: 'View Comments',
+      viewComments: 'View Comments',
+      noActivity: 'No activity yet.',
+      addMessage: 'Use the form below to add the first message.',
+      messageInputPlaceholder: 'Type a message...',
+      send: 'Send',
+      sending: 'Sending...',
+      missingId: 'Object ID is missing. comments cannot be displayed.',
     },
   },
 }

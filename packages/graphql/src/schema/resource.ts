@@ -64,11 +64,11 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       nullable: true,
     }),
     numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
-
     permissionLevel: t.expose('permissionLevel', {
       type: PermissionLevel,
       nullable: true,
     }),
+
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
@@ -79,6 +79,9 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
     isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
     sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
+
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),
 })
 

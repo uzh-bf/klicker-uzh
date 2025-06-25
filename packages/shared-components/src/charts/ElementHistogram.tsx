@@ -1,6 +1,7 @@
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import { ElementType, type Statistics } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_SOLUTION_COLORS } from '@klicker-uzh/shared-components/src/constants'
-import { NumberField, UserNotification } from '@uzh-bf/design-system'
+import { Button, NumberField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import {
@@ -35,7 +36,7 @@ interface ElementHistogramProps {
   }
   textSize: string
   reference?: number
-  hideBins?: boolean
+  hideOptions?: boolean
   basic?: boolean
   className?: { root?: string }
 }
@@ -52,13 +53,15 @@ function ElementHistogram({
   showStatistics,
   textSize,
   reference,
-  hideBins = false,
+  hideOptions = false,
   basic = false,
   className,
 }: ElementHistogramProps) {
   const t = useTranslations()
   const supportedElementTypes = [ElementType.Numerical]
   const [numBins, setNumBins] = useState('20')
+  const [lowerLimit, setLowerLimit] = useState<number | null>(minValue ?? null)
+  const [upperLimit, setUpperLimit] = useState<number | null>(maxValue ?? null)
 
   const showSolutionRanges = showSolution && solutionRanges
   const showExactSolutions =
@@ -72,9 +75,20 @@ function ElementHistogram({
           typeof solution === 'number' ? solution : parseFloat(solution)
         )
       : undefined,
-    minValue,
-    maxValue,
-    binCount: parseInt(numBins),
+    minValue:
+      lowerLimit == null ||
+      (typeof minValue === 'number' && lowerLimit < minValue)
+        ? minValue
+        : lowerLimit,
+    maxValue:
+      upperLimit == null ||
+      (typeof maxValue === 'number' && upperLimit > maxValue)
+        ? maxValue
+        : upperLimit,
+    binCount:
+      parseInt(numBins) > 1 && parseInt(numBins) <= 100
+        ? parseInt(numBins)
+        : 20,
   })
 
   if (!supportedElementTypes.includes(type) || !processedData) {
@@ -271,17 +285,98 @@ function ElementHistogram({
         </BarChart>
       </ResponsiveContainer>
 
-      {hideBins ? null : (
-        <div className="float-right -mt-4 mr-4 flex flex-row items-center gap-2">
+      {!hideOptions ? (
+        <div className="float-right -mt-4 mr-4 flex flex-row items-end gap-2">
+          {/* lower limit of shown histogram data - if invalid, defaults to standard min / max values */}
           <NumberField
+            isTouched
+            id="histogramLowerLimit"
+            label={t('manage.evaluation.histogramLowerLimit')}
+            value={lowerLimit ?? ''}
+            onChange={(value) => {
+              const parsedValue = parseFloat(value)
+
+              // otherwise, set the lower limit to the parsed value
+              setLowerLimit(isNaN(parsedValue) ? null : parsedValue)
+            }}
+            error={
+              lowerLimit === null || lowerLimit < processedData.domain.min
+                ? t('manage.evaluation.histogramLowerLimitError', { minValue })
+                : undefined
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              // if one of the arrow keys is pressed, stop the event from propagating (to prevent instance switching)
+              if (
+                e.key === 'ArrowUp' ||
+                e.key === 'ArrowDown' ||
+                e.key === 'ArrowLeft' ||
+                e.key === 'ArrowRight'
+              ) {
+                e.stopPropagation()
+              }
+            }}
+            className={{ field: 'w-44' }}
+          />
+          {/* upper limit of shown histogram data - if invalid, defaults to standard min / max values */}
+          <NumberField
+            isTouched
+            id="histogramUpperLimit"
+            label={t('manage.evaluation.histogramUpperLimit')}
+            value={upperLimit ?? ''}
+            onChange={(value) => {
+              const parsedValue = parseFloat(value)
+
+              // otherwise, set the upper limit to the parsed value
+              setUpperLimit(isNaN(parsedValue) ? null : parsedValue)
+            }}
+            error={
+              upperLimit === null || upperLimit > processedData.domain.max
+                ? t('manage.evaluation.histogramUpperLimitError', { maxValue })
+                : upperLimit < processedData.domain.min ||
+                    (lowerLimit != null && upperLimit < lowerLimit)
+                  ? t('manage.evaluation.histogramRangeError')
+                  : undefined
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              // if one of the arrow keys is pressed, stop the event from propagating (to prevent instance switching)
+              if (
+                e.key === 'ArrowUp' ||
+                e.key === 'ArrowDown' ||
+                e.key === 'ArrowLeft' ||
+                e.key === 'ArrowRight'
+              ) {
+                e.stopPropagation()
+              }
+            }}
+            className={{ field: 'w-44' }}
+          />
+          {/* number bins that the data should be separated into - limited to 100 to avoid browser overload */}
+          <NumberField
+            isTouched
             precision={0}
             id="histogramBins"
             label={t('manage.evaluation.histogramBins')}
             value={numBins}
             onChange={(value) => setNumBins(value)}
+            error={
+              parseInt(numBins) >= 2 && parseInt(numBins) <= 100
+                ? undefined
+                : t('manage.evaluation.histogramBinsError')
+            }
+            className={{ field: 'w-44' }}
           />
+          <Button
+            className={{ root: 'h-9 w-9' }}
+            onClick={() => {
+              setLowerLimit(minValue ?? null)
+              setUpperLimit(maxValue ?? null)
+              setNumBins('20')
+            }}
+          >
+            <Button.Icon withoutLabel icon={faArrowsRotate} />
+          </Button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

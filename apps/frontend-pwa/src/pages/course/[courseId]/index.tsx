@@ -14,12 +14,16 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import {
-  Label,
+  Button,
+  H3,
   RadioGroup,
   RadioGroupItem,
-} from '@uzh-bf/design-system/dist/future'
+  ShadcnLabel,
+  TabContent,
+  Tabs,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -167,56 +171,62 @@ function CourseOverview({
     >
       {course.isGamificationEnabled || course.description ? (
         <>
-          <div className="md:mx-auto md:w-full md:max-w-6xl md:rounded md:border">
+          <div className="md:mx-auto md:w-full md:max-w-6xl">
             <Tabs
               defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
               value={selectedTab}
+              tabs={[
+                ...(course.isGamificationEnabled
+                  ? [
+                      {
+                        id: 'leaderboard',
+                        value: 'global',
+                        label: t('shared.generic.leaderboard'),
+                        data: { cy: 'student-course-leaderboard-tab' },
+                      },
+                    ]
+                  : []),
+                ...(course.description
+                  ? [
+                      {
+                        id: 'info',
+                        value: 'info',
+                        label: t('pwa.courses.courseInformation'),
+                        data: { cy: 'student-course-information' },
+                      },
+                    ]
+                  : []),
+                ...(course.isGamificationEnabled
+                  ? (data.participantGroups?.map((group, ix) => ({
+                      id: group.id,
+                      value: group.id,
+                      label: `${t('shared.generic.group')} ${group.name}`,
+                      data: { cy: `student-course-existing-group-${ix}` },
+                    })) ?? [])
+                  : []),
+                ...(course.isGamificationEnabled &&
+                course.isGroupCreationEnabled &&
+                !course.isGroupDeadlinePassed &&
+                (data.participantGroups?.length ?? 0) < 1
+                  ? [
+                      {
+                        id: 'create',
+                        value: 'create',
+                        label: t('pwa.courses.createJoinGroup'),
+                        data: { cy: 'student-course-create-group' },
+                      },
+                    ]
+                  : []),
+              ]}
               onValueChange={(tab) => setSelectedTab(tab)}
+              className={{ list: 'mb-4' }}
             >
-              <Tabs.TabList>
-                {course.isGamificationEnabled && (
-                  <Tabs.Tab
-                    key="leaderboard"
-                    value="global"
-                    label={t('shared.generic.leaderboard')}
-                    data={{ cy: 'student-course-leaderboard-tab' }}
-                  />
-                )}
-
-                {course.description && (
-                  <Tabs.Tab
-                    key="info"
-                    value="info"
-                    label={t('pwa.courses.courseInformation')}
-                    data={{ cy: 'student-course-information' }}
-                  />
-                )}
-
-                {course.isGamificationEnabled &&
-                  data.participantGroups?.map((group, ix) => (
-                    <Tabs.Tab
-                      key={group.id}
-                      value={group.id}
-                      label={`${t('shared.generic.group')} ${group.name}`}
-                      data={{ cy: `student-course-existing-group-${ix}` }}
-                    />
-                  ))}
-
-                {course.isGamificationEnabled &&
-                  course.isGroupCreationEnabled &&
-                  !course.isGroupDeadlinePassed &&
-                  (data.participantGroups?.length ?? 0) < 1 && (
-                    <Tabs.Tab
-                      key="create"
-                      value="create"
-                      label={t('pwa.courses.createJoinGroup')}
-                      data={{ cy: 'student-course-create-group' }}
-                    />
-                  )}
-              </Tabs.TabList>
-
               {course.description && (
-                <Tabs.TabContent key="info" value="info" className="md:px-4">
+                <TabContent
+                  key="info"
+                  value="info"
+                  className={{ root: 'md:px-4' }}
+                >
                   <H3 className={{ root: 'mb-4' }}>
                     {t('pwa.courses.courseInformation')}
                   </H3>
@@ -225,14 +235,14 @@ function CourseOverview({
                     className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
                     content={course.description}
                   />
-                </Tabs.TabContent>
+                </TabContent>
               )}
 
               {course.isGamificationEnabled && (
-                <Tabs.TabContent
+                <TabContent
                   key="course"
                   value="global"
-                  className="md:px-4"
+                  className={{ root: 'md:px-4' }}
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
                     <div className="flex flex-1 flex-col justify-between gap-6">
@@ -267,9 +277,9 @@ function CourseOverview({
                                   id="course"
                                   data-cy="select-course-leaderboard"
                                 />
-                                <Label htmlFor="course">
+                                <ShadcnLabel htmlFor="course">
                                   {t('shared.generic.course')}
-                                </Label>
+                                </ShadcnLabel>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem
@@ -277,7 +287,7 @@ function CourseOverview({
                                   id="biweekly"
                                   data-cy="select-biweekly-leaderboard"
                                 />
-                                <Label htmlFor="biweekly">
+                                <ShadcnLabel htmlFor="biweekly">
                                   {`${t('pwa.courses.biWeekly')} (${(() => {
                                     const startDate = dayjs().subtract(
                                       14,
@@ -287,7 +297,7 @@ function CourseOverview({
                                       date.format('DD.MM')
                                     return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
                                   })()})`}
-                                </Label>
+                                </ShadcnLabel>
                               </div>
                             </RadioGroup>
                           )}
@@ -498,7 +508,7 @@ function CourseOverview({
                       </div>
                     </div>
                   )}
-                </Tabs.TabContent>
+                </TabContent>
               )}
 
               {participant &&
@@ -524,32 +534,36 @@ function CourseOverview({
                 ))}
 
               {course.isGamificationEnabled && (
-                <Tabs.TabContent key="create" value="create">
+                <TabContent
+                  key="create"
+                  value="create"
+                  className={{ root: 'md:px-4' }}
+                >
                   <GroupCreationActions
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
                     inRandomGroupPool={inRandomGroupPool ?? false}
                   />
-                </Tabs.TabContent>
+                </TabContent>
               )}
             </Tabs>
-            {isProfileModalOpen && participantId && (
+            {isProfileModalOpen && participantId ? (
               <ParticipantProfileModal
-                isProfileModalOpen={isProfileModalOpen}
-                closeProfileModal={closeProfileModal}
+                onClose={closeProfileModal}
                 participantId={participantId}
                 top10Participants={top10Participants}
               />
-            )}
+            ) : null}
           </div>
-          <LeaveLeaderboardModal
-            isModalOpen={isLeaveCourseLeaderboardModalOpen}
-            setIsModalOpen={setIsLeaveCourseLeaderboardModalOpen}
-            onConfirm={() => {
-              leaveCourseLeaderboard()
-              setIsLeaveCourseLeaderboardModalOpen(false)
-            }}
-          />
+          {isLeaveCourseLeaderboardModalOpen && (
+            <LeaveLeaderboardModal
+              onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
+              onConfirm={() => {
+                leaveCourseLeaderboard()
+                setIsLeaveCourseLeaderboardModalOpen(false)
+              }}
+            />
+          )}
         </>
       ) : (
         <UserNotification

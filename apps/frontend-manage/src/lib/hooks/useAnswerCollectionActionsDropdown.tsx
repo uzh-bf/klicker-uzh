@@ -1,17 +1,19 @@
-import { faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faCopy, faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faInfoCircle,
+  faMessage,
   faPencil,
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Tooltip } from '@uzh-bf/design-system'
+import { DropdownWithItemsProps, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function useAnswerCollectionActionsDropdown({
+  collectionName,
   isOwner,
   isManager,
   isEditor,
@@ -19,10 +21,13 @@ function useAnswerCollectionActionsDropdown({
   isDeletable,
   setSharingModal,
   setEditModal,
+  setDuplicationModal,
   setViewingModal,
   setRemovalModal,
   setDeletionModal,
+  setActivityLogOpen,
 }: {
+  collectionName: string
   isOwner: boolean
   isManager: boolean
   isEditor: boolean
@@ -30,21 +35,35 @@ function useAnswerCollectionActionsDropdown({
   isDeletable: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setEditModal: Dispatch<SetStateAction<boolean>>
+  setDuplicationModal: Dispatch<SetStateAction<boolean>>
   setViewingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
+  setActivityLogOpen: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
   return useMemo(() => {
-    const items = []
+    const items: DropdownWithItemsProps['items'] = [
+      {
+        id: 'activity-log',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
+            <FontAwesomeIcon icon={faMessage} className="mr-2.5 h-4 w-4" />
+            {t('shared.activity.viewComments')}
+          </div>
+        ),
+        onClick: () => setActivityLogOpen(true),
+        data: { cy: `view-activity-log-${collectionName}` },
+      },
+    ]
 
     if (isEditor) {
       // editing permissions on the answer collection
       items.push({
         id: 'edit',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faPencil} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.editCollection')}
           </div>
@@ -57,7 +76,7 @@ function useAnswerCollectionActionsDropdown({
       items.push({
         id: 'view',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faEye} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.viewCollection')}
           </div>
@@ -72,7 +91,7 @@ function useAnswerCollectionActionsDropdown({
       items.push({
         id: 'share',
         label: (
-          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faShare} className="mr-2.5 h-4 w-4" />
             {t('manage.resources.shareCollection')}
           </div>
@@ -82,6 +101,19 @@ function useAnswerCollectionActionsDropdown({
       })
     }
 
+    // duplication functionalities
+    items.push({
+      id: 'duplicate',
+      label: (
+        <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
+          <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
+          {t('manage.resources.duplicateCollection')}
+        </div>
+      ),
+      onClick: () => setDuplicationModal(true),
+      data: { cy: 'duplicate-answer-collection' },
+    })
+
     if (!isOwner) {
       // removal functionalities
       items.push({
@@ -89,7 +121,7 @@ function useAnswerCollectionActionsDropdown({
         label: (
           <div
             className={twMerge(
-              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600',
               !isRemovable && 'text-opactiy-50 hover:cursor-not-allowed'
             )}
           >
@@ -124,7 +156,7 @@ function useAnswerCollectionActionsDropdown({
         label: (
           <div
             className={twMerge(
-              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600',
               !isDeletable && 'text-opactiy-50 hover:cursor-not-allowed'
             )}
           >
@@ -155,6 +187,7 @@ function useAnswerCollectionActionsDropdown({
     return items
   }, [
     t,
+    collectionName,
     isOwner,
     isManager,
     isEditor,
@@ -162,9 +195,11 @@ function useAnswerCollectionActionsDropdown({
     isDeletable,
     setSharingModal,
     setEditModal,
+    setDuplicationModal,
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   ])
 }
 

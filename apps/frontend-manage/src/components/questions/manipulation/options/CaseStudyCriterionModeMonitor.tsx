@@ -13,7 +13,7 @@ function CaseStudyCriterionModeMonitor({
   criteriaField: FieldInputProps<ElementFormTypesCaseStudyCriterion[]>
   criteriaHelpers: FieldHelperProps<ElementFormTypesCaseStudyCriterion[]>
 }) {
-  // if the mode of a criterio is unset, default to "range"
+  // if the mode of a criterion is unset, default to "range"
   useEffect(() => {
     if (typeof criterion.mode === 'undefined') {
       const newCriteria: ElementFormTypesCaseStudyCriterion[] =

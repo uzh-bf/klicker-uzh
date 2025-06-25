@@ -3,22 +3,17 @@ import {
   GetCourseGroupsDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 
 function AssignmentConfirmationModal({
   courseId,
-  open,
-  setOpen,
+  onClose,
 }: {
   courseId: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }) {
   const t = useTranslations()
-  const [showError, setShowError] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
   const [
     manualRandomGroupAssignments,
     { loading: randomGroupCreationLoading },
@@ -52,80 +47,45 @@ function AssignmentConfirmationModal({
   })
 
   return (
-    <>
-      <Modal
-        title={t('manage.course.finalizeRandomGroupAssignment')}
-        onPrimaryAction={
-          <Button
-            primary
-            onClick={async () => {
-              const res = await manualRandomGroupAssignments({
-                variables: { courseId: courseId },
-              })
-              if (res.data?.manualRandomGroupAssignments) {
-                setShowSuccess(true)
-                setOpen(false)
-              } else {
-                console.error('Error while creating random groups')
-                setShowError(true)
-              }
-            }}
-            data={{ cy: 'confirm-random-group-assignment' }}
-            loading={randomGroupCreationLoading}
-          >
-            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-          </Button>
+    <Modal
+      open
+      onClose={onClose}
+      title={t('manage.course.finalizeRandomGroupAssignment')}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={randomGroupCreationLoading}
+      onPrimaryAction={async () => {
+        const res = await manualRandomGroupAssignments({
+          variables: { courseId: courseId },
+        })
+        if (res.data?.manualRandomGroupAssignments) {
+          toast({
+            type: 'success',
+            message: t('manage.course.groupAssignmentSuccessful'),
+            options: { duration: 5000 },
+          })
+          onClose()
+        } else {
+          console.error('Error while creating random groups')
+          toast({
+            type: 'error',
+            message: t('manage.course.groupAssignmentFailed'),
+            options: { duration: 5000 },
+          })
         }
-        onSecondaryAction={
-          <Button
-            onClick={(): void => setOpen(false)}
-            data={{ cy: 'cancel-random-group-assignment' }}
-            className={{ root: 'text-base' }}
-          >
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-        }
-        onClose={(): void => setOpen(false)}
-        open={open}
-        hideCloseButton={true}
-        className={{
-          content: 'h-max min-h-max w-[40rem] self-center pt-0',
-          title: 'text-xl',
-        }}
-      >
-        <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>
-        <UserNotification type="warning">
-          {t.rich('manage.course.confirmRandomGroupAssignment', {
-            ul: (children) => <ul className="list-disc">{children}</ul>,
-            li: (children) => <li>{children}</li>,
-          })}
-        </UserNotification>
-      </Modal>
-      {showError && (
-        <Toast
-          dismissible
-          type="error"
-          openExternal={showError}
-          onCloseExternal={() => setShowError(false)}
-          duration={5000}
-          className={{ root: 'max-w-[30rem]' }}
-        >
-          {t('manage.course.groupAssignmentFailed')}
-        </Toast>
-      )}
-      {showSuccess && (
-        <Toast
-          dismissible
-          type="success"
-          openExternal={showSuccess}
-          onCloseExternal={() => setShowSuccess(false)}
-          duration={5000}
-          className={{ root: 'max-w-[30rem]' }}
-        >
-          {t('manage.course.groupAssignmentSuccessful')}
-        </Toast>
-      )}
-    </>
+      }}
+      dataPrimaryAction={{ cy: 'confirm-random-group-assignment' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-random-group-assignment' }}
+    >
+      <div className="mb-2 font-bold">{t('shared.generic.pleaseReview')}</div>
+      <UserNotification type="warning">
+        {t.rich('manage.course.confirmRandomGroupAssignment', {
+          ul: (children) => <ul className="list-disc">{children}</ul>,
+          li: (children) => <li>{children}</li>,
+        })}
+      </UserNotification>
+    </Modal>
   )
 }
 

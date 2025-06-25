@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
+import { Course, ICourse } from './course.js'
 import { ElementType } from './elementData.js'
 import { PublicationStatus } from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
@@ -30,6 +31,7 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
 interface IActivityInfoStack {
   id: number
   numOfParticipants?: number | null
+  timeLimit?: number | null
   elements: IActivityInfoElement[]
 }
 
@@ -40,13 +42,14 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
   fields: (t) => ({
     id: t.exposeInt('id'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
+    timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     elements: t.expose('elements', { type: [ActivityInfoElement] }),
   }),
 })
 
 export interface IActivityInfo {
   id: string
-  templateId: string | null
+  templateId?: string | null
 
   name: string
   displayName: string
@@ -58,6 +61,7 @@ export interface IActivityInfo {
   courseStartDate?: Date | null
   numOfStacks: number
   numOfElements: number
+  automaticPublicationAt?: Date | null
   scheduledStartAt?: Date | null
   scheduledEndAt?: Date | null
   groupDeadlineDate?: Date | null
@@ -100,6 +104,10 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     numOfStacks: t.exposeInt('numOfStacks'),
     numOfElements: t.exposeInt('numOfElements'),
+    automaticPublicationAt: t.expose('automaticPublicationAt', {
+      type: 'Date',
+      nullable: true,
+    }),
     scheduledStartAt: t.expose('scheduledStartAt', {
       type: 'Date',
       nullable: true,
@@ -130,5 +138,44 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     sharingType: t.expose('sharingType', { type: SharingType }),
 
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
+
+export interface IReducedActivityInfo {
+  id: string
+  name: string
+  displayName: string
+  status: DB.PublicationStatus
+
+  course?: ICourse | null
+  scheduledStartAt?: Date | null
+  scheduledEndAt?: Date | null
+  automaticPublicationAt?: Date | null
+}
+
+export const ReducedActivityInfoRef = builder.objectRef<IReducedActivityInfo>(
+  'ReducedActivityInfo'
+)
+export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
+  name: 'ReducedActivityInfo',
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    status: t.expose('status', { type: PublicationStatus }),
+
+    course: t.expose('course', { type: Course, nullable: true }),
+    scheduledStartAt: t.expose('scheduledStartAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    scheduledEndAt: t.expose('scheduledEndAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    automaticPublicationAt: t.expose('automaticPublicationAt', {
+      type: 'Date',
+      nullable: true,
+    }),
   }),
 })

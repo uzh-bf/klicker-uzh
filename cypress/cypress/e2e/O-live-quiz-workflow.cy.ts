@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 describe('Different live-quiz workflows', function () {
   before(() => {
@@ -444,6 +445,9 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
+    ).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.course1.quiz.name}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
@@ -605,6 +609,9 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
+    ).click()
+    cy.get(
       `[data-cy="edit-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
@@ -682,7 +689,7 @@ describe('Different live-quiz workflows', function () {
     // duplicate the live quiz and verify that the content is the same as for the original live quiz
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="duplicate-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -726,14 +733,14 @@ describe('Different live-quiz workflows', function () {
     ).should('exist')
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameDupl}"]`
     ).click()
@@ -799,7 +806,7 @@ describe('Different live-quiz workflows', function () {
     ).should('exist')
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -1415,7 +1422,7 @@ describe('Different live-quiz workflows', function () {
     ).should('exist')
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1429,7 +1436,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirmation-modal-cancel"]`).click()
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
@@ -1504,6 +1511,7 @@ describe('Different live-quiz workflows', function () {
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1536,6 +1544,7 @@ describe('Different live-quiz workflows', function () {
 
     // edit the live quiz and add the modified SC and the new MC question
     cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1595,6 +1604,7 @@ describe('Different live-quiz workflows', function () {
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-live-display-name"]').should('exist')
@@ -1725,6 +1735,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
     cy.get('[data-cy="insert-live-quiz-name"]')
@@ -1879,15 +1890,13 @@ describe('Different live-quiz workflows', function () {
   it('Delete the created live quizzes', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
@@ -1929,10 +1938,10 @@ describe('Different live-quiz workflows', function () {
   function verifyLiveQuizOwnerPermissions(data: any) {
     // for a draft live quiz the following options should be available: start, edit, qr code, dropdown: embed, duplicate, convert to template, share, delete
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz1}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz1}"]`).should(
       'exist'
     )
@@ -1940,6 +1949,9 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="template-from-live-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz1}"]`).should('exist')
@@ -1950,13 +1962,16 @@ describe('Different live-quiz workflows', function () {
 
     // for a scheduled live quiz the following options should be available: start, duplicate, qr code, dropdown: embed, share, delete
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz2}"]`).should('exist')
@@ -1969,19 +1984,19 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
-      'exist'
-    )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz3}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz3}"]`).should('exist')
@@ -1993,14 +2008,17 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).click()
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz4}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz4}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz4}"]`).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz4}"]`).should('exist')
 
@@ -2039,65 +2057,84 @@ describe('Different live-quiz workflows', function () {
 
     // on draft activities, the following actions should be available: qr code, embed, remove, no dropdown
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz1}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
-      groupPermission ? 'not.exist' : 'exist'
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).should(
-      'not.exist'
-    )
+
+    if (!groupPermission) {
+      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
+        'exist'
+      )
+    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // on scheduled activities, the following actions should be available: qr code, embed, remove, no dropdown
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz2}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
-      groupPermission ? 'not.exist' : 'exist'
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).should(
-      'not.exist'
-    )
+
+    if (!groupPermission) {
+      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
+        'exist'
+      )
+    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // on published activities, the following actions should be available: evaluation, qr code, embed, dropdown: remove
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
+      !groupPermission ? 'exist' : 'not.exist'
+    )
 
-    if (groupPermission) {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).should(
-        'not.exist'
-      )
-    } else {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).realClick()
-      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
-    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // on ended activities, the following actions should be available: evaluation, embed, remove, no dropdown
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).click()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
-      groupPermission ? 'not.exist' : 'exist'
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz4}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).should(
-      'not.exist'
-    )
+
+    if (!groupPermission) {
+      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
+        'exist'
+      )
+    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
@@ -2135,55 +2172,54 @@ describe('Different live-quiz workflows', function () {
 
     // on draft activities, the following actions should be available: start, qr code, embed, dropdown: remove
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
+      !groupPermission ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
 
-    if (groupPermission) {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).should(
-        'not.exist'
-      )
-    } else {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).realClick()
-      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
-    }
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // on scheduled activities, the following actions should be available: start, qr code, embed, dropdown: remove
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz2}"]`).should('exist')
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz2}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
+      !groupPermission ? 'exist' : 'not.exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
 
-    if (groupPermission) {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).should(
-        'not.exist'
-      )
-    } else {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).realClick()
-      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
-    }
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // on published activities, the following actions should be available: cockpit, evaluation, qr code, dropdown: embed, remove
     cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz3}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
@@ -2196,15 +2232,22 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).click()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
-      groupPermission ? 'not.exist' : 'exist'
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz4}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).should(
-      'not.exist'
-    )
+
+    if (!groupPermission) {
+      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
+        'exist'
+      )
+    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
@@ -2242,11 +2285,14 @@ describe('Different live-quiz workflows', function () {
 
     // on draft activities, the following actions should be available: start, edit, qr code, dropdown: embed, remove
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz1}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
@@ -2257,35 +2303,36 @@ describe('Different live-quiz workflows', function () {
 
     // on scheduled activities, the following actions should be available: start, qr code, embed, dropdown: remove
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz2}"]`).should('exist')
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz2}"]`).should(
       'exist'
     )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
 
-    if (groupPermission) {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).should(
-        'not.exist'
-      )
-    } else {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).realClick()
-      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
-    }
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // on published activities, the following actions should be available: cockpit, evaluation, qr code, dropdown: embed, remove
     cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz3}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
@@ -2298,15 +2345,22 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).click()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
-      groupPermission ? 'not.exist' : 'exist'
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz4}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).should(
-      'not.exist'
-    )
+
+    if (!groupPermission) {
+      cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
+        'exist'
+      )
+    }
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
@@ -2344,10 +2398,10 @@ describe('Different live-quiz workflows', function () {
 
     // for a draft live quiz the following options should be available: start, edit, qr code, dropdown: embed, duplicate, convert to template, share, delete
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz1}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-live-quiz-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz1}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz1}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz1}"]`).should(
       'exist'
     )
@@ -2355,6 +2409,9 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="template-from-live-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz1}"]`).should('exist')
@@ -2368,13 +2425,16 @@ describe('Different live-quiz workflows', function () {
 
     // for a scheduled live quiz the following options should be available: start, duplicate, qr code, dropdown: embed, share, delete
     cy.get(`[data-cy="start-live-quiz-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz2}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz2}"]`).should('exist')
@@ -2390,19 +2450,19 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="live-quiz-cockpit-${data.sharing.quiz3}"]`).should(
-      'exist'
-    )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-qr-modal-${data.sharing.quiz3}"]`).should('exist')
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz3}"]`).realClick()
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz3}"]`).should('exist')
@@ -2417,17 +2477,17 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="live-quiz-evaluation-${data.sharing.quiz4}"]`).should(
-      'exist'
-    )
+
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).click()
     cy.get(`[data-cy="duplicate-live-quiz-${data.sharing.quiz4}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="show-embedding-modal-${data.sharing.quiz4}"]`).should(
       'exist'
     )
-
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${data.sharing.quiz4}"]`).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz4}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz4}"]`).should('exist')
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
@@ -2598,7 +2658,7 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant READ permission to user 2
@@ -2699,7 +2759,7 @@ describe('Different live-quiz workflows', function () {
     ]
 
     cy.wrap(quizzes).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // revoke permissions for users 2, 3, 4 and 5
@@ -2792,7 +2852,7 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant READ permission to user group 1
@@ -2884,7 +2944,7 @@ describe('Different live-quiz workflows', function () {
     ]
 
     cy.wrap(quizzes).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // revoke permissions for all user groups
@@ -2924,7 +2984,7 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // share the course with WRITE permissions with user pro1
@@ -2975,7 +3035,7 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant a WRITE permission to the main user (should change the existing permission in this case)
@@ -3022,13 +3082,13 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="remove-live-quiz-${quiz}"]`).click()
       cy.get('[data-cy="confirm-deletion-final"]').click()
       cy.get('[data-cy="confirm-derived-access"]').click()
       cy.get('[data-cy="confirm-dependency-access"]').click()
       cy.get('[data-cy="confirmation-modal-confirm"]').click()
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
       cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
     })
     cy.logoutUser()
@@ -3042,13 +3102,302 @@ describe('Different live-quiz workflows', function () {
       this.data.sharing.quiz3,
       this.data.sharing.quiz4,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
       ).should('not.exist')
       cy.get(`[data-cy="close-share-object"]`).click()
     })
+  })
+  // #endregion
+
+  // ! Part 6: Participation Modes Live Quiz
+  // #region
+  it('Create a gamified live quiz on which the different access modes can be tested and other activity types to validate limitations of live-quiz specific temporary accounts', function () {
+    cy.loginLecturer()
+    cy.createLiveQuiz({
+      name: this.data.modes.name,
+      displayName: this.data.modes.displayName,
+      courseName: this.data.modes.course,
+      blocks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createPracticeQuiz({
+      name: this.data.modes.practiceQuizName,
+      displayName: this.data.modes.practiceQuizDisplayName,
+      courseName: this.data.modes.course,
+      stacks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createMicroLearning({
+      name: this.data.modes.microLearningName,
+      displayName: this.data.modes.microLearningDisplayName,
+      courseName: this.data.modes.course,
+      startDate: {
+        monthDelta: -3,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
+      }, // 2 months in the past at 2:00
+      endDate: {
+        monthDelta: 3,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '14') + ', 18:00',
+      }, // 4 months in the future at 18:00
+      stacks: [
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+      ],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    // start live quiz and open first block
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  })
+
+  it('Choose anonymous participation in live quiz and verify the correct availability of account actions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            messages,
+            data: this.data,
+          },
+        },
+        ({ username, password, messages, data }) => {
+          cy.get('[data-cy="participate-anonymously"]').click()
+          cy.get('[data-cy="participate-anonymously"]').should('not.exist') // wait for temporary account creation to finish
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]').should('not.exist')
+          cy.get('[data-cy="header-setup-profile"]').should('not.exist')
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.login)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('not.exist')
+
+          // reload and verify that the anonymous participation choice persists
+          cy.reload()
+          cy.get('[data-cy="participate-anonymously"]').should('not.exist')
+
+          // log in with a valid account and verify that account mode selection is not shown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="participant-profile-login"]').click()
+          cy.get('[data-cy="username-field"]').type(username)
+          cy.get('[data-cy="password-field"]').type(password)
+          cy.get('[data-cy="submit-login"]').click()
+          cy.get(`[data-cy="live-quiz-${data.modes.displayName}"]`).click()
+          cy.wait(1000)
+
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.profile)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+        }
+      )
+    })
+  })
+
+  it('Choose a temporary pseudonymm and verify the correct availability of account actions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        { args: { data: this.data } },
+        ({ data }) => {
+          // choose a temporary pseudonym
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="cancel-define-pseudonym"]').click()
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym)
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="cancel-choose-avatar"]').click()
+          cy.get('[data-cy="pseudonym-input"]').should(
+            'have.value',
+            data.modes.pseudonym
+          )
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').should(
+            'not.be.disabled'
+          )
+          cy.get('[data-cy="avatar-carousel-next"]').click().click()
+          cy.get('[data-cy="avatar-carousel-prev"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym)
+          cy.get('[data-cy="header-setup-profile"]').should('not.exist')
+          cy.get('[data-cy="participant-profile-login"]').should('not.exist')
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+
+          // reload and verify that the temporary account is still logged in
+          cy.reload()
+          cy.get('[data-cy="create-temporary-pseudonym"]').should('not.exist')
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym)
+
+          // log out of the current pseudonym and create a new one
+          cy.reload()
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="logout"]').click()
+          cy.get('[data-cy="create-temporary-pseudonym"]').click()
+          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
+          cy.get('[data-cy="pseudonym-next-step"]').click()
+          cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+
+          // verify that the correct options are shown in the participant dropdown
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(data.modes.pseudonym2)
+        }
+      )
+    })
+  })
+
+  it('Log in as a regular user and verify that all redirects work correctly', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+
+    // store the direct link to the live quiz
+    cy.get('[data-cy="qr-link-direct"]').invoke('text').as('quizLink')
+
+    // get the direct link to the live quiz and visit it
+    cy.get('@quizLink').then((quizLink) => {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      // open the live quiz link and participate in the live quiz anonymously
+      cy.visit(String(quizLink))
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            quizLink,
+            messages,
+          },
+        },
+        ({ username, password, quizLink, messages }) => {
+          // choose regular login
+          cy.get('[data-cy="login-with-account"]').click()
+          cy.get('[data-cy="username-field"]').type(username)
+          cy.get('[data-cy="password-field"]').type(password)
+          cy.get('[data-cy="submit-login"]').click()
+          cy.wait(1000) // wait for the live quiz to load
+
+          // verify that the participant has been automatically redirected to the live quiz
+          cy.location('href').then((href) => {
+            expect(href).to.include(quizLink)
+          })
+
+          // verify that the correct account actions are available
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+          cy.get('[data-cy="participant-profile-login"]')
+            .should('exist')
+            .contains(messages.shared.generic.profile)
+          cy.get('[data-cy="course-docs"]').should('exist')
+          cy.get('[data-cy="language-switch"]').should('exist')
+          cy.get('[data-cy="logout"]').should('exist')
+
+          // verify that login persists on reload
+          cy.reload()
+          cy.get('[data-cy="header-avatar"]').click()
+          cy.get('[data-cy="header-logged-in-as"]')
+            .should('exist')
+            .contains(username)
+        }
+      )
+    })
+  })
+
+  it('Visit the live quiz leaderboard and check out that valid temporary participants are visible', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.modes.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
+    })
+    cy.get('[data-cy="evaluation-leaderboard"]').click()
+
+    // check that the user with "pseudonym" usename is not available, but the one with "pseudonym2" is
+    cy.get(`[data-cy="leaderboard-entry-${this.data.modes.pseudonym}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="leaderboard-entry-${this.data.modes.pseudonym2}"]`)
+      .should('exist')
+      .contains(this.data.modes.pseudonym2)
   })
   // #endregion
 })

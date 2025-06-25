@@ -5,52 +5,107 @@ import {
   DeleteUserGroupDocument,
   GetUserGroupsUserDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../common/ConfirmationItem'
-import DeleteUserGroupErrorToast from './DeleteUserGroupErrorToast'
 
 function DeleteUserGroupModal({
-  open,
   onClose,
   onSuccess,
   groupId,
   groupName,
 }: {
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   groupId: number
   groupName: string
 }) {
   const t = useTranslations()
-  const [deleteUserGroup] = useMutation(DeleteUserGroupDocument)
+  const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
 
-  const [errorToast, setErrorToast] = useState(false)
   const [confirmations, setConfirmations] = useState({
     resolveGroup: false,
     revokeDirectPermissions: false,
     irreversibleAction: false,
   })
 
+  const onErrorToast = () =>
+    toast({
+      type: 'error',
+      message: t('manage.userGroups.deleteGroupError'),
+      options: { duration: 10000 },
+    })
+
   // on open, reset confirmations
   useEffect(() => {
-    if (open) {
-      setConfirmations({
-        resolveGroup: false,
-        revokeDirectPermissions: false,
-        irreversibleAction: false,
-      })
-    }
-  }, [open])
+    setConfirmations({
+      resolveGroup: false,
+      revokeDirectPermissions: false,
+      irreversibleAction: false,
+    })
+  }, [])
 
   return (
     <Modal
-      open={open}
+      open
       onClose={onClose}
       title={t('manage.userGroups.deleteGroup')}
-      className={{ content: '!max-w-2xl' }}
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!loading && <Button.Icon icon={faTrashCan} />}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
+        </div>
+      }
+      primaryButtonStyle="destructive"
+      primaryLoading={loading}
+      primaryDisabled={Object.values(confirmations).some((value) => !value)}
+      onPrimaryAction={async () => {
+        try {
+          const { data: success } = await deleteUserGroup({
+            variables: {
+              groupId,
+            },
+            update: (cache, { data }) => {
+              // check if request was successful
+              const success = data?.deleteUserGroup
+              if (!success) return
+              // update list of user groups
+              const userGroups = cache.readQuery({
+                query: GetUserGroupsUserDocument,
+              })
+              if (userGroups?.getUserGroupsUser) {
+                cache.writeQuery({
+                  query: GetUserGroupsUserDocument,
+                  data: {
+                    getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+                      (group) => group.id !== groupId
+                    ),
+                  },
+                })
+              }
+            },
+          })
+          if (success?.deleteUserGroup) {
+            onSuccess()
+          } else {
+            onErrorToast()
+          }
+        } catch (error) {
+          console.error('Error deleting user group:', error)
+          onErrorToast()
+        }
+      }}
+      dataPrimaryAction={{ cy: 'confirm-delete-group' }}
+      secondaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          <Button.Icon icon={faBan} />
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
+        </div>
+      }
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-delete-group' }}
+      className={{ content: 'max-w-2xl' }}
     >
       <div className="mb-3">
         {t('manage.userGroups.confirmDeleteGroup', { groupName })}
@@ -97,61 +152,6 @@ function DeleteUserGroupModal({
           data={{ cy: 'delete-group-irrevocable-action-confirm' }}
         />
       </div>
-
-      <div className="flex flex-row justify-between">
-        <Button onClick={onClose} data={{ cy: 'cancel-delete-group' }}>
-          <Button.Icon icon={faBan} />
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          disabled={Object.values(confirmations).some((value) => !value)}
-          onClick={async () => {
-            try {
-              const { data: success } = await deleteUserGroup({
-                variables: {
-                  groupId,
-                },
-                update: (cache, { data }) => {
-                  // check if request was successful
-                  const success = data?.deleteUserGroup
-                  if (!success) return
-                  // update list of user groups
-                  const userGroups = cache.readQuery({
-                    query: GetUserGroupsUserDocument,
-                  })
-                  if (userGroups?.getUserGroupsUser) {
-                    cache.writeQuery({
-                      query: GetUserGroupsUserDocument,
-                      data: {
-                        getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
-                          (group) => group.id !== groupId
-                        ),
-                      },
-                    })
-                  }
-                },
-              })
-              if (success?.deleteUserGroup) {
-                onSuccess()
-              } else {
-                setErrorToast(true)
-              }
-            } catch (error) {
-              console.error('Error deleting user group:', error)
-              setErrorToast(true)
-            }
-          }}
-          data={{ cy: 'confirm-delete-group' }}
-        >
-          <Button.Icon icon={faTrashCan} />
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      </div>
-      <DeleteUserGroupErrorToast
-        open={errorToast}
-        setOpen={() => setErrorToast(false)}
-      />
     </Modal>
   )
 }

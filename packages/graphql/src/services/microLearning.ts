@@ -1,10 +1,5 @@
-import {
-  ElementInstanceType,
-  ElementStackType,
-  PublicationStatus,
-  UserRole,
-} from '@klicker-uzh/prisma'
-import type { ElementStackInput } from '@klicker-uzh/types'
+import * as DB from '@klicker-uzh/prisma'
+import { type ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
@@ -25,7 +20,7 @@ export async function getMicroLearningData(
     where: {
       id,
       OR: [
-        { AND: { status: PublicationStatus.PUBLISHED, isDeleted: false } },
+        { AND: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false } },
         // if user has access to the microlearning, the query should be enabled for loading the preview
         ...(ctx.user?.sub
           ? [{ permissions: { some: { userId: ctx.user.sub } } }]
@@ -54,7 +49,8 @@ export async function getMicroLearningData(
         ...microLearning,
         isOwner:
           ctx.user?.sub &&
-          (ctx.user.role === UserRole.USER || ctx.user.role === UserRole.ADMIN)
+          (ctx.user.role === DB.UserRole.USER ||
+            ctx.user.role === DB.UserRole.ADMIN)
             ? ctx.user.sub === microLearning.ownerId
             : false,
       }
@@ -69,7 +65,7 @@ export async function getMicroLearningEvaluation(
     where: {
       id,
       status: {
-        in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED],
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
     },
@@ -132,7 +128,7 @@ export async function getCoursePublishedMicroLearnings(
     where: { id: courseId },
     include: {
       microLearnings: {
-        where: { status: PublicationStatus.PUBLISHED, isDeleted: false },
+        where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
         orderBy: { createdAt: 'asc' },
       },
     },
@@ -141,7 +137,10 @@ export async function getCoursePublishedMicroLearnings(
   return course?.microLearnings
     ? (course.microLearnings.map((quiz) => ({
         ...quiz,
-        course,
+        course: {
+          ...course,
+          microLearnings: undefined, // remove microLearnings to avoid circular reference
+        },
       })) ?? [])
     : []
 }
@@ -204,8 +203,8 @@ export async function manipulateMicroLearning(
       throw new GraphQLError('Microlearning not found')
     }
     if (
-      existingActivity.status === PublicationStatus.PUBLISHED ||
-      existingActivity.status === PublicationStatus.ENDED
+      existingActivity.status === DB.PublicationStatus.PUBLISHED ||
+      existingActivity.status === DB.PublicationStatus.ENDED
     ) {
       throw new GraphQLError('Cannot edit a published or ended microlearning')
     }
@@ -255,7 +254,7 @@ export async function manipulateMicroLearning(
     stacks: {
       create: stacks.map((stack) => {
         return {
-          type: ElementStackType.MICROLEARNING,
+          type: DB.ElementStackType.MICROLEARNING,
           order: stack.order,
           displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
@@ -263,7 +262,7 @@ export async function manipulateMicroLearning(
             connectOrCreate: stack.elements.map((instance) =>
               getActivityInstanceConnectOrCreate({
                 instance,
-                instanceType: ElementInstanceType.MICROLEARNING,
+                instanceType: DB.ElementInstanceType.MICROLEARNING,
                 activityMultiplier: multiplier,
                 persistentInstances,
                 duplicationInstances,
@@ -278,81 +277,84 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
-    })
-
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
-
-      await prisma.elementInstance.update({
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
         where: {
-          id: instance.id,
+          id: { in: instancesToDelete },
         },
-        data: {
-          elementStackId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
+      })
+
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
+
+        await prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all stacks
+      await prisma.elementStack.deleteMany({
+        where: {
+          id: { in: stacksToDelete },
+        },
+      })
+
+      const upsertedMicrolearning = await prisma.microLearning.upsert({
+        where: { id: id ?? uuidv4() },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: createOrUpdateJSON,
+        include: {
+          course: true,
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
           },
         },
       })
-    }
 
-    // delete all stacks
-    await prisma.elementStack.deleteMany({
-      where: {
-        id: { in: stacksToDelete },
-      },
-    })
-
-    const upsertedMicrolearning = await prisma.microLearning.upsert({
-      where: { id: id ?? uuidv4() },
-      create: {
-        ...createOrUpdateJSON,
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: createOrUpdateJSON,
-      include: {
-        course: true,
-        stacks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    })
-
-    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-    if (unlinkedElementIds.length > 0) {
-      for (const elementId of unlinkedElementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
       }
-    }
 
-    await recomputeDerivedPermissions(
-      { microLearningId: upsertedMicrolearning.id },
-      prisma
-    )
+      await recomputeDerivedPermissions(
+        { microLearningId: upsertedMicrolearning.id },
+        prisma
+      )
 
-    return upsertedMicrolearning
-  })
+      return upsertedMicrolearning
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'MicroLearning',
@@ -367,7 +369,7 @@ export async function publishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, status: PublicationStatus.DRAFT },
+    where: { id, status: DB.PublicationStatus.DRAFT },
   })
 
   if (!microLearning) {
@@ -378,7 +380,7 @@ export async function publishMicroLearning(
   if (microLearning.scheduledStartAt > new Date()) {
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
-      data: { status: PublicationStatus.SCHEDULED },
+      data: { status: DB.PublicationStatus.SCHEDULED },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -388,7 +390,7 @@ export async function publishMicroLearning(
   // if the start date is in the past, directly publish the microlearning
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: { id },
-    data: { status: PublicationStatus.PUBLISHED },
+    data: { status: DB.PublicationStatus.PUBLISHED },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -400,8 +402,8 @@ export async function unpublishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.update({
-    where: { id, status: PublicationStatus.SCHEDULED },
-    data: { status: PublicationStatus.DRAFT },
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: { status: DB.PublicationStatus.DRAFT },
     include: { stacks: { include: { elements: true } } },
   })
 
@@ -437,11 +439,11 @@ export async function endMicroLearning(
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: {
       id,
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       isDeleted: false,
     },
     data: {
-      status: PublicationStatus.ENDED,
+      status: DB.PublicationStatus.ENDED,
       scheduledEndAt: new Date(),
     },
   })
@@ -521,8 +523,8 @@ export async function deleteMicroLearning(
   // if the microlearning is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    microLearning.status === PublicationStatus.DRAFT ||
-    microLearning.status === PublicationStatus.SCHEDULED ||
+    microLearning.status === DB.PublicationStatus.DRAFT ||
+    microLearning.status === DB.PublicationStatus.SCHEDULED ||
     microLearning.responses.length === 0
   ) {
     const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
@@ -555,7 +557,8 @@ export async function deleteMicroLearning(
         )
 
         return updated
-      }
+      },
+      { timeout: 60000 }
     )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -577,17 +580,33 @@ export async function removeMicroLearning(
   }
 
   // remove direct permission and recompute derived permissions for this microlarning and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.microLearning.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission
+      await prisma.microLearning.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    await recomputeDerivedPermissions(
-      { microLearningId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.MICRO_LEARNING,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.MICRO_LEARNING} (ID: ${id})`,
+        },
+      })
+
+      // recompute derived permissions for this microlearning and user
+      await recomputeDerivedPermissions(
+        { microLearningId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'MicroLearning',

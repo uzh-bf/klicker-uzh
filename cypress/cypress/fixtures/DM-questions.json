@@ -507,5 +507,148 @@
   },
   "group1": "Group 1",
   "group2": "Group 2",
-  "group3": "Group 3"
+  "group3": "Group 3",
+  "CS_INLINE": {
+    "title": "Inline Case Study Question Title",
+    "content": "Inline Case Study Question Text",
+    "explanation": "Inline Case Study Question Explanation",
+    "collectionName": "Inline Created Collection",
+    "items": ["Apple", "Samsung", "Google", "Huawei"],
+    "criteria": [
+      {
+        "id": "TtYzFe1iey",
+        "mode": "range",
+        "name": "Market Share",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "unit": "%"
+      },
+      {
+        "id": "KQoyvcABIr",
+        "mode": "steps",
+        "name": "Product Quality",
+        "steps": 5,
+        "labels": {
+          "min": "Low",
+          "mid": "Medium",
+          "max": "High"
+        }
+      }
+    ],
+    "cases": [
+      {
+        "id": "8tgJVCi9o1",
+        "title": "Case A: 2020",
+        "description": "Market data from 2020"
+      },
+      {
+        "id": "Olbf8gzSpZ",
+        "title": "Case B: 2023",
+        "description": "Market data from 2023"
+      }
+    ],
+    "solutions": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 10,
+            "upper": 20
+          },
+          "1": {
+            "lower": 3,
+            "upper": 4
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 25,
+            "upper": 30
+          },
+          "1": {
+            "lower": 4,
+            "upper": 5
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 15,
+            "upper": 25
+          },
+          "1": {
+            "lower": 4,
+            "upper": 5
+          }
+        },
+        "3": {
+          "0": {
+            "lower": 10,
+            "upper": 15
+          },
+          "1": {
+            "lower": 3,
+            "upper": 4
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 15,
+            "upper": 25
+          },
+          "1": {
+            "lower": 4,
+            "upper": 5
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 30,
+            "upper": 40
+          },
+          "1": {
+            "lower": 4,
+            "upper": 5
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 20,
+            "upper": 30
+          },
+          "1": {
+            "lower": 5,
+            "upper": 5
+          }
+        },
+        "3": {
+          "0": {
+            "lower": 5,
+            "upper": 10
+          },
+          "1": {
+            "lower": 3,
+            "upper": 4
+          }
+        }
+      }
+    },
+    "titleEdited": "Inline Case Study Question Title Edited",
+    "contentEdited": "Inline Case Study Question Text Edited",
+    "explanationEdited": "Inline Case Study Question Explanation Edited"
+  },
+  "SE_INLINE": {
+    "title": "Inline Selection Question Title",
+    "collection": "AC: Inline Selection Question Title",
+    "content": "Inline Selection Question Text",
+    "explanation": "Inline Selection Question Explanation",
+    "inputs": 3,
+    "items": ["Apple", "Banana", "Cherry", "Date", "Elderberry"],
+    "solutions": ["Apple", "Cherry", "Elderberry"],
+    "titleEdited": "Inline Selection Question Title Edited",
+    "contentEdited": "Inline Selection Question Text Edited",
+    "explanationEdited": "Inline Selection Question Explanation Edited",
+    "inputsEdited": 2
+  }
 }

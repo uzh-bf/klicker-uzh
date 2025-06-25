@@ -7,8 +7,7 @@ import {
   UpdateWeeklyTimelineEntriesCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
-import { Button } from '@uzh-bf/design-system'
-import { TableCell } from '@uzh-bf/design-system/dist/future'
+import { Button, ShadcnTableCell } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
@@ -112,7 +111,7 @@ function SuspendedCourseLeaderboard({
         tableCell: 'h-7 p-2',
       }}
       footerContent={
-        <TableCell colSpan={3} className="px-2 py-2 text-slate-700">
+        <ShadcnTableCell colSpan={3} className="px-2 py-2 text-slate-700">
           <div
             className={twMerge(
               'flex flex-row justify-end text-right',
@@ -190,7 +189,7 @@ function SuspendedCourseLeaderboard({
               </div>
             </div>
           </div>
-        </TableCell>
+        </ShadcnTableCell>
       }
     />
   )

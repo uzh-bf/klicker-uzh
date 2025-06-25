@@ -3,8 +3,8 @@ import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
@@ -13,8 +13,8 @@ import ExtensionModal from '../../courses/modals/ExtensionModal'
 import MicroLearningDeletionModal from '../../courses/modals/MicroLearningDeletionModal'
 import MicroLearningEndingModal from '../../courses/modals/MicroLearningEndingModal'
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import CopyConfirmationToast from '../../toasts/CopyConfirmationToast'
 import useAvailableActions from '../actions/useAvailableActions'
 import useMicroLearningActions from '../actions/useMicroLearningActions'
 import ActivityActions from './ActivityActions'
@@ -29,6 +29,7 @@ const statusActionMap = {
     'copyAccessLink',
     'copyLTIAccessLink',
     'duplicateMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -38,6 +39,7 @@ const statusActionMap = {
     'openPreview',
     'copyLTIAccessLink',
     'duplicateMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'unpublishMicrolearning',
     'removeMicroLearning',
@@ -52,6 +54,7 @@ const statusActionMap = {
     'copyLTIAccessLink',
     'duplicateMicroLearning',
     'analyticsMicroLearning',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -62,6 +65,7 @@ const statusActionMap = {
     'convertToPracticeQuiz',
     'analyticsMicroLearning',
     'openPreview',
+    'activityLog',
     'shareMicroLearning',
     'removeMicroLearning',
     'deleteMicroLearning',
@@ -72,20 +76,22 @@ const statusActionMap = {
 
 function MicrolearningActions({
   microLearning,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   microLearning: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -99,7 +105,7 @@ function MicrolearningActions({
         'duplicateMicroLearning',
         'convertToPracticeQuiz',
         'deleteMicroLearning',
-        'shareMicroLearning',
+        ...(user?.privatePreview ? ['shareMicroLearning'] : []),
       ],
       isEditor: ['editMicroLearning'],
       isExecutor: [
@@ -113,22 +119,23 @@ function MicrolearningActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
+        ...(user?.privatePreview ? ['activityLog'] : []),
         ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
       isRemovable: ['removeMicroLearning'],
     }),
-    [user?.publicPreview]
+    [user?.publicPreview, user?.privatePreview]
   )
 
   const actions = useMicroLearningActions({
     microLearning,
-    setCopyToast,
     setPublishModal,
     setRemovalModal,
     setDeletionModal,
     setEndingModal,
     setExtensionModal,
     setSharingModal,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -153,20 +160,19 @@ function MicrolearningActions({
         activityType={microLearning.type}
       />
       <div>
-        {sharingModal && microLearning.isManager && (
+        {sharingModal && microLearning.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={microLearning.id}
             objectName={microLearning.name}
-            objectType={SharingObjectType.MicroLearning}
+            objectType={ObjectType.MicroLearning}
+            isTemplate={isTemplate}
             isOwner={microLearning.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {publishModal && (
           <PublishConfirmationModal
-            open={publishModal}
-            setOpen={setPublishModal}
+            onClose={() => setPublishModal(false)}
             elementType={ElementInstanceType.Microlearning}
             elementId={microLearning.id}
             title={microLearning.name}
@@ -186,8 +192,7 @@ function MicrolearningActions({
         )}
         {deletionModal && (
           <MicroLearningDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
           />
@@ -195,8 +200,7 @@ function MicrolearningActions({
 
         {endingModal && (
           <MicroLearningEndingModal
-            open={endingModal}
-            setOpen={setEndingModal}
+            onClose={() => setEndingModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
           />
@@ -209,12 +213,18 @@ function MicrolearningActions({
             courseId={microLearning.courseId!}
             title={t('manage.course.extendMicroLearning')}
             description={t('manage.course.extendMicroLearningDescription')}
-            open={extensionModal}
-            setOpen={setExtensionModal}
+            onClose={() => setExtensionModal(false)}
           />
         )}
 
-        <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
+        {microLearning && activityLogOpen ? (
+          <ActivityLogDialog
+            objectId={microLearning.id}
+            objectType={ObjectType.MicroLearning}
+            open={activityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
+          />
+        ) : null}
       </div>
     </div>
   )

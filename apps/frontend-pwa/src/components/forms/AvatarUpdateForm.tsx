@@ -3,6 +3,7 @@ import { BigHead } from '@bigheads/core'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   Participant,
+  SelfDocument,
   UpdateParticipantAvatarDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { AvatarOptions } from '@klicker-uzh/shared-components/src/constants'
@@ -26,15 +27,11 @@ import { pick } from 'remeda'
 
 interface AvatarUpdateFormProps {
   user: Partial<Participant>
-  setShowError: (showError: boolean) => void
-  setShowSuccess: (showSuccess: boolean) => void
+  onError: () => void
+  onSuccess: () => void
 }
 
-function AvatarUpdateForm({
-  user,
-  setShowError,
-  setShowSuccess,
-}: AvatarUpdateFormProps) {
+function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
   const [updateParticipantAvatar] = useMutation(UpdateParticipantAvatarDocument)
 
@@ -92,12 +89,13 @@ function AvatarUpdateForm({
               'facialHair',
             ]),
           },
+          refetchQueries: [{ query: SelfDocument }],
         })
 
         if (result.data?.updateParticipantAvatar && !result.errors) {
-          setShowSuccess(true)
+          onSuccess()
         } else {
-          setShowError(true)
+          onError()
         }
       }}
     >

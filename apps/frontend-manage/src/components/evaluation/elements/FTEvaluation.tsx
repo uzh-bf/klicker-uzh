@@ -9,7 +9,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+} from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

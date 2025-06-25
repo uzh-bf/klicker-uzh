@@ -2,7 +2,7 @@ import {
   CatalogCollection,
   CatalogObject,
   ObjectAccess,
-  SharingObjectType,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import * as JsSearch from 'js-search'
 import { useMemo } from 'react'
@@ -17,7 +17,7 @@ function useObjectFilters({
   objects: CatalogObject[]
   collections: CatalogCollection[]
   search?: string
-  typeFilter: SharingObjectType | ''
+  typeFilter: ObjectType | ''
   accessTypeFilter: ObjectAccess | ''
 }): {
   filteredObjects: CatalogObject[]
@@ -39,10 +39,7 @@ function useObjectFilters({
 
     // filter catalog collections based on access type
     const filteredCollections = collections.filter((collection) => {
-      if (
-        typeFilter !== '' &&
-        typeFilter !== SharingObjectType.CatalogCollection
-      ) {
+      if (typeFilter !== '' && typeFilter !== ObjectType.CatalogCollection) {
         return false
       }
 

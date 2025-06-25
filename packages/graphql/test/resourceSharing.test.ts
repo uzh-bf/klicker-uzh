@@ -6,7 +6,6 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import { SharingObjectType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -17,6 +16,7 @@ import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
   changeObjectPermissionLevel,
+  copyAnswerCollectionToAccount,
   getAnswerCollectionCatalogInfo,
   getAnswerCollectionPermissions,
   getCatalogAnswerCollections,
@@ -272,23 +272,21 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour).not.toBeNull()
     expect(restrictedRequestUserThree).not.toBeNull()
     expect(publicRequestUserThree?.objectType).toBe(
-      SharingObjectType.ANSWER_COLLECTION
+      ObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
     expect(publicRequestUserThree?.userEmail).toBe(userThree.email)
     expect(publicRequestUserThree?.userShortname).toBe(userThree.shortname)
 
-    expect(publicRequestUserFour?.objectType).toBe(
-      SharingObjectType.ANSWER_COLLECTION
-    )
+    expect(publicRequestUserFour?.objectType).toBe(ObjectType.ANSWER_COLLECTION)
     expect(publicRequestUserFour?.requestId).toBe(request4.id)
     expect(publicRequestUserFour?.userId).toBe(userFour.id)
     expect(publicRequestUserFour?.userEmail).toBe(userFour.email)
     expect(publicRequestUserFour?.userShortname).toBe(userFour.shortname)
 
     expect(restrictedRequestUserThree?.objectType).toBe(
-      SharingObjectType.ANSWER_COLLECTION
+      ObjectType.ANSWER_COLLECTION
     )
     expect(restrictedRequestUserThree?.requestId).toBe(request3.id)
     expect(restrictedRequestUserThree?.userId).toBe(userThree.id)
@@ -309,7 +307,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour2).not.toBeNull()
 
     expect(publicRequestUserThree2?.objectType).toBe(
-      SharingObjectType.ANSWER_COLLECTION
+      ObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
     expect(publicRequestUserThree2?.userId).toBe(userThree.id)
@@ -317,7 +315,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserThree2?.userShortname).toBe(userThree.shortname)
 
     expect(publicRequestUserFour2?.objectType).toBe(
-      SharingObjectType.ANSWER_COLLECTION
+      ObjectType.ANSWER_COLLECTION
     )
     expect(publicRequestUserFour2?.requestId).toBe(request5.id)
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)
@@ -325,7 +323,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(publicRequestUserFour2?.userShortname).toBe(userFour.shortname)
   })
 
-  it('Verify that user 5 can request access and import public answer collections in public catalog', async () => {
+  it('Verify that user 5 can request access and copy the public answer collections in public catalog', async () => {
     // create answer collections and catalog collections for testing
     const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
     await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
@@ -354,7 +352,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(failure1).toBeFalsy()
 
-    const failure2 = await importAnswerCollection(
+    const failure2 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: restrictedCatalog.id,
         collectionId: AC1!.id,
@@ -459,7 +457,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
 
     // import public AC and verify that importing restricted AC does not work
-    const failure3 = await importAnswerCollection(
+    const failure3 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC2!.id, // restricted answer collection
@@ -468,7 +466,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(failure3).toBeFalsy()
 
-    const success3 = await importAnswerCollection(
+    const success3 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC1!.id, // public answer collection
@@ -499,7 +497,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
     expect(accessRequests3.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
 
-    const success4 = await importAnswerCollection(
+    const success4 = await copyAnswerCollectionToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         collectionId: AC1!.id,
@@ -516,6 +514,94 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(importedACs3[0]!.name).toContain(answerCollection1.name)
     expect(importedACs3[1]!.originalId).toBe(AC1!.id)
     expect(importedACs3[1]!.name).toContain(answerCollection1.name)
+  })
+
+  it('Verify that user 5 can import the public answer collections in public catalog', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
+    const { publicCatalog, restrictedCatalog } =
+      await seedCatalogCollections(userOneCtx)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+    await seedAnswerCollectionCatalogAssignments(
+      prisma,
+      AC1!.id,
+      AC2!.id,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
+    // import public AC and verify that importing restricted AC does not work
+    const failure3 = await importAnswerCollection(
+      {
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC2!.id, // restricted answer collection
+      },
+      userFiveCtx
+    )
+    expect(failure3).toBeFalsy()
+
+    const success3 = await importAnswerCollection(
+      {
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC1!.id, // public answer collection
+      },
+      userFiveCtx
+    )
+    expect(success3).toBeTruthy()
+
+    // verify that a correct direct permission has been created
+    const permission = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          userId: userFive.id,
+          answerCollectionId: AC1!.id,
+        },
+      },
+    })
+    expect(permission).not.toBeNull()
+    expect(permission!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // verify that a corresponding derived permission has been created
+    const derivedPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          userId: userFive.id,
+          answerCollectionId: AC1!.id,
+        },
+      },
+    })
+    expect(derivedPermission).not.toBeNull()
+    expect(derivedPermission!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // find assignment for answer collection to public catalog collection
+    const assignment = await prisma.catalogCollectionAssignment.findUnique({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: AC1!.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+      },
+    })
+
+    // verify that a correct audit log entry has been created
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userFive.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Read permission granted on answer collection (ID ${AC1!.id}) through public catalog collection (ID ${publicCatalog.id}) and assignment (ID ${assignment!.id}) for user ${userFive.id}.`
+    )
   })
 
   it('Verify that answer collection sharing requests can be cancelled by the initiator', async () => {
@@ -636,7 +722,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res2).toBeTruthy()
     expect(res2!.objectId).toEqual(AC1!.id)
-    expect(res2!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
+    expect(res2!.objectType).toEqual(ObjectType.ANSWER_COLLECTION)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
     expect(res2!.isOwner).toBe(true)
@@ -682,7 +768,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res3).toBeTruthy()
     expect(res3!.objectId).toEqual(AC2!.id)
-    expect(res3!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
+    expect(res3!.objectType).toEqual(ObjectType.ANSWER_COLLECTION)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
     expect(res3!.isOwner).toBe(false)
@@ -729,7 +815,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(res4).toBeTruthy()
     expect(res4!.objectId).toEqual(AC2!.id)
-    expect(res4!.objectType).toEqual(SharingObjectType.ANSWER_COLLECTION)
+    expect(res4!.objectType).toEqual(ObjectType.ANSWER_COLLECTION)
     expect(res4!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res4!.ownerShortname).toEqual(userOne.shortname)
     expect(res4!.isOwner).toBe(false)

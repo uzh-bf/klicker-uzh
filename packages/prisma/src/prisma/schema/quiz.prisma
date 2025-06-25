@@ -40,6 +40,7 @@ model PracticeQuiz {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
@@ -185,8 +186,9 @@ model LiveQuiz {
   activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
 
-  blocks      ElementBlock[]
-  leaderboard LeaderboardEntry[]
+  blocks               ElementBlock[]
+  leaderboard          LeaderboardEntry[]
+  temporaryLeaderboard TemporaryLeaderboardEntry[]
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
@@ -195,6 +197,7 @@ model LiveQuiz {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   templateInfo ActivityTemplate?
   templateName String? // name of the template the quiz was created from
@@ -240,6 +243,7 @@ model MicroLearning {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // (every instance answered at least once)
@@ -339,6 +343,7 @@ model GroupActivity {
   permissions        DerivedPermission[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   templateInfo ActivityTemplate? // template information set for the corresponding publication status
   templateName String? // name of the template the group activity was created from

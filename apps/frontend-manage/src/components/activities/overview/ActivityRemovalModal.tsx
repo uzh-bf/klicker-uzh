@@ -2,8 +2,8 @@ import { useMutation } from '@apollo/client'
 import {
   ActivityType,
   GetUserActivitiesDocument,
+  ObjectType,
   RemoveObjectDocument,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
@@ -46,8 +46,7 @@ function ActivityRemovalModal({
 
   return (
     <ActivityConfirmationModal
-      open={isModalOpen}
-      setOpen={setModalOpen}
+      onClose={() => setModalOpen(false)}
       title={t('manage.activities.removeActivity')}
       message={t.rich('manage.activities.confirmActivityRemoval', {
         name: title,
@@ -58,7 +57,7 @@ function ActivityRemovalModal({
           await removeObject({
             variables: {
               objectId: activityId,
-              objectType: SharingObjectType.LiveQuiz,
+              objectType: ObjectType.LiveQuiz,
             },
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
@@ -66,7 +65,7 @@ function ActivityRemovalModal({
           await removeObject({
             variables: {
               objectId: activityId,
-              objectType: SharingObjectType.PracticeQuiz,
+              objectType: ObjectType.PracticeQuiz,
             },
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
@@ -74,7 +73,7 @@ function ActivityRemovalModal({
           await removeObject({
             variables: {
               objectId: activityId,
-              objectType: SharingObjectType.MicroLearning,
+              objectType: ObjectType.MicroLearning,
             },
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
@@ -82,7 +81,7 @@ function ActivityRemovalModal({
           await removeObject({
             variables: {
               objectId: activityId,
-              objectType: SharingObjectType.GroupActivity,
+              objectType: ObjectType.GroupActivity,
             },
             refetchQueries: [{ query: GetUserActivitiesDocument }],
           })

@@ -47,7 +47,6 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
                 trigger: 'float-right block sm:hidden lg:block',
                 tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
               }}
-              withIndicator={false}
             >
               <FontAwesomeIcon
                 icon={faQuestion}
@@ -80,7 +79,6 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
                 trigger: 'float-right block sm:hidden lg:block',
                 tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
               }}
-              withIndicator={false}
             >
               <FontAwesomeIcon
                 icon={faQuestion}

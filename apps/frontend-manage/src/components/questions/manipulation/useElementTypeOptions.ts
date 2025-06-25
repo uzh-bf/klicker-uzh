@@ -1,14 +1,11 @@
 import { useQuery } from '@apollo/client'
-import {
-  CheckPrivatePreviewAvailableDocument,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useElementTypeOptions() {
   const t = useTranslations()
-  const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
-    fetchPolicy: 'cache-first',
+  const { data: user } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
   })
 
   const baseElements = [
@@ -73,7 +70,7 @@ function useElementTypeOptions() {
     },
   ]
 
-  if (data?.checkPrivatePreviewAvailable) {
+  if (user?.userProfile?.privatePreview) {
     baseElements.push({
       value: ElementType.Selection,
       label: t(`shared.${ElementType.Selection}.typeLabel`),

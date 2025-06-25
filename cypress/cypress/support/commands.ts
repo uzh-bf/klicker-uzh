@@ -1,4 +1,3 @@
-import { SharingObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -216,7 +215,7 @@ Cypress.Commands.add(
 
 interface AddObjectToCatalogArgs {
   objectName: string
-  objectType: SharingObjectType
+  objectType: string // --> DB.ObjectType
   permissionLevel: 'public' | 'restricted'
 }
 
@@ -651,6 +650,7 @@ Cypress.Commands.add(
     cy.get(`[data-cy="confirm-derived-access"]`).click()
     cy.get(`[data-cy="confirm-dependency-access"]`).click()
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
+    cy.wait(500)
   }
 )
 
@@ -765,6 +765,14 @@ interface StackType {
   elements: string[]
 }
 
+interface DatetimeType {
+  monthDelta: number // month delta to be set relative to the default values
+  day: number // day of the month to be set
+  hour: number // hour of the day to be set
+  minute: number // minute of the hour to be set
+  validation: string // validation string to be used for the date input
+}
+
 function createStacks({
   stacks,
   type = 'stack',
@@ -857,14 +865,46 @@ Cypress.Commands.add(
   }
 )
 
+function setDatetime(
+  cyString: string,
+  deselectorString: string,
+  datetime: DatetimeType
+) {
+  cy.get(`[data-cy="${cyString}"]`).realClick()
+
+  if (datetime.monthDelta > 0) {
+    for (let i = 0; i < datetime.monthDelta; i++) {
+      cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100) // navigate forward one month
+    }
+  } else if (datetime.monthDelta < 0) {
+    for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
+      cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100) // navigate back one month
+    }
+  }
+
+  cy.get(`[data-cy="${cyString}-calendar"]`)
+    .findByText(String(datetime.day))
+    .realClick()
+    .wait(100)
+  cy.get(`[data-cy="${cyString}-hours"]`)
+    .realClick()
+    .type(String(datetime.hour))
+  cy.get(`[data-cy="${cyString}-minutes"]`)
+    .realClick()
+    .type(String(datetime.minute))
+  cy.get(`[data-cy="${deselectorString}"]`).realClick() // deselect calendar
+  cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation) // verify correct date
+}
+Cypress.Commands.add('setDatetime', setDatetime)
+
 interface CreateMicrolearningArgs {
   name: string
   displayName: string
   description?: string
   courseName: string
   multiplier?: string
-  startDate: string
-  endDate: string
+  startDate: DatetimeType
+  endDate: DatetimeType
   stacks: StackType[]
 }
 
@@ -901,8 +941,8 @@ Cypress.Commands.add(
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    cy.get('[data-cy="select-start-date"]').click().type(startDate)
-    cy.get('[data-cy="select-end-date"]').click().type(endDate)
+    setDatetime('select-start-date', 'availability-section-header', startDate)
+    setDatetime('select-end-date', 'availability-section-header', endDate)
 
     if (multiplier) {
       cy.get('[data-cy="select-multiplier"]').click()
@@ -932,8 +972,8 @@ interface CreateGroupActivityArgs {
   task: string
   courseName: string
   multiplier?: string
-  scheduledStartDate: string
-  scheduledEndDate: string
+  scheduledStartDate: DatetimeType
+  scheduledEndDate: DatetimeType
   clues: GroupActivityClueType[]
   stack: StackType
 }
@@ -978,8 +1018,16 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="select-start-date"]').click().type(scheduledStartDate)
-    cy.get('[data-cy="select-end-date"]').click().type(scheduledEndDate)
+    setDatetime(
+      'select-start-date',
+      'availability-section-header',
+      scheduledStartDate
+    )
+    setDatetime(
+      'select-end-date',
+      'availability-section-header',
+      scheduledEndDate
+    )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
@@ -1308,6 +1356,11 @@ declare global {
         stacks: StackType[]
         type?: 'block' | 'stack'
       }): Chainable<void>
+      setDatetime(
+        cyString: string,
+        deselectorString: string,
+        datetime: DatetimeType
+      ): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,

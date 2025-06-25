@@ -2,6 +2,7 @@ import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -113,12 +114,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedEmailTemplates(prisma)
 
   // seed catalog collection for objects that are not assigned to any custom catalog
-  const missingCatalogCollection = await prisma.catalogCollection.upsert({
+  await prisma.catalogCollection.upsert({
     where: {
-      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      id: MISSING_CATALOG_COLLECTION_ID,
     },
     create: {
-      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      id: MISSING_CATALOG_COLLECTION_ID,
       name: '',
       access: Prisma.ObjectAccess.PUBLIC,
     },
@@ -130,14 +131,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     entries: Prisma.AnswerCollectionEntry[]
   })[] = []
   for (const data of DATA_TEST.ANSWER_COLLECTIONS) {
-    const answerCollection = await prisma.answerCollection.upsert({
-      where: {
-        ownerId_name: {
-          ownerId: USER_ID_TEST,
-          name: data.name,
-        },
-      },
-      create: {
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
         name: data.name,
         description: data.description,
         owner: {
@@ -149,7 +144,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           create: data.entries,
         },
       },
-      update: {},
       include: {
         entries: true,
       },
@@ -166,20 +160,62 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     answerCollections.push(answerCollection)
   }
 
+  // seed two different catalog colllections, one public, one restricted
+  const publicCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: DATA_TEST.PUBLIC_CATALOG_COLLECTION_ID,
+    },
+    create: {
+      id: DATA_TEST.PUBLIC_CATALOG_COLLECTION_ID,
+      name: 'Public Catalog Collection',
+      access: Prisma.ObjectAccess.PUBLIC,
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      name: 'Public Catalog Collection',
+      access: Prisma.ObjectAccess.PUBLIC,
+    },
+  })
+  const restrictedCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: DATA_TEST.RESTRICTED_CATALOG_COLLECTION_ID,
+    },
+    create: {
+      id: DATA_TEST.RESTRICTED_CATALOG_COLLECTION_ID,
+      name: 'Restricted Catalog Collection',
+      access: Prisma.ObjectAccess.RESTRICTED,
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      name: 'Restricted Catalog Collection',
+      access: Prisma.ObjectAccess.RESTRICTED,
+    },
+  })
+
+  // recompute derived permissions for the catalog collections
+  await recomputeDerivedPermissions(
+    { catalogCollectionId: publicCatalogCollection.id, userId: USER_ID_TEST },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      catalogCollectionId: restrictedCatalogCollection.id,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+
   // assign answer collections to catalog collections, if defined in relation
   const catalogAnswerCollectionAssignments = await Promise.all(
     DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {
       const collection = answerCollections.find(
         (ac) => ac.name === data.answerCollectionName
       )
-      // TODO: once available, fetch catalog collections here and assign same answer collection to multiple for testing
-      const catalogCollectionId = missingCatalogCollection.id
-
       return prisma.catalogCollectionAssignment.upsert({
         where: {
           answerCollectionId_catalogCollectionId: {
             answerCollectionId: collection!.id,
-            catalogCollectionId,
+            catalogCollectionId: data.catalogCollectionId,
           },
         },
         create: {
@@ -191,7 +227,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
           catalogCollection: {
             connect: {
-              id: catalogCollectionId,
+              id: data.catalogCollectionId,
             },
           },
         },
@@ -200,7 +236,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const courseTest = await prisma.course.upsert(
+  await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST,
       name: 'Testkurs',
@@ -210,17 +246,17 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
-      startDate: new Date('2020-01-01T00:00'),
-      endDate: new Date('2050-01-01T23:59'),
+      startDate: new Date(`2019-01-01T00:00`),
+      endDate: new Date(`2055-01-01T23:59`),
       isGroupCreationEnabled: true,
-      groupDeadlineDate: new Date('2021-01-01T00:01'),
+      groupDeadlineDate: new Date('2019-12-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
 
-  const courseTest2 = await prisma.course.upsert(
+  await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST2,
       name: 'Testkurs 2',
@@ -240,7 +276,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const courseTest3 = await prisma.course.upsert(
+  await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST3,
       name: 'Non-Gamified Course',
@@ -386,9 +422,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       prisma
     )
 
-    // Add the processed question to our array
+    // add the processed question to our array
     questionsTest.push(newElement)
   }
+
+  const answerCollectionItems = answerCollections.reduce<
+    { id: number; name: string }[]
+  >((acc, collection) => {
+    acc.push(
+      ...collection.entries.map((entry) => ({
+        id: entry.id,
+        name: entry.value,
+      }))
+    )
+
+    return acc
+  }, [])
 
   for (const data of DATA_TEST.LIVE_QUIZZES) {
     const liveQuiz = await prismaClient.liveQuiz.upsert({
@@ -461,6 +510,29 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             },
           })),
         },
+        templateInfo: data.template
+          ? {
+              create: {
+                ...data.template,
+                answerCollections: {
+                  connect: data.template.answerCollections.map(
+                    (collection) => ({
+                      id: answerCollections.find(
+                        (ac) => ac.name === collection
+                      )!.id,
+                    })
+                  ),
+                },
+                answerCollectionItems: {
+                  connect: data.template.answerCollectionItems.map((item) => ({
+                    id: answerCollectionItems.find(
+                      (acItem) => acItem.name === item
+                    )!.id,
+                  })),
+                },
+              },
+            }
+          : undefined,
         owner: {
           connect: {
             id: USER_ID_TEST,
@@ -482,6 +554,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
     })
 
+    // recompute derived permissions for the live quiz
     await recomputeDerivedPermissions(
       {
         liveQuizId: liveQuiz.id,
@@ -489,6 +562,24 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       prisma
     )
+
+    // create a catalog collection assignment if the live quiz is in template status
+    if (data.status === Prisma.PublicationStatus.TEMPLATE) {
+      await prisma.catalogCollectionAssignment.upsert({
+        where: {
+          liveQuizId_catalogCollectionId: {
+            liveQuizId: liveQuiz.id,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+        create: {
+          access: Prisma.ObjectAccess.PUBLIC,
+          liveQuiz: { connect: { id: liveQuiz.id } },
+          catalogCollection: { connect: { id: MISSING_CATALOG_COLLECTION_ID } },
+        },
+        update: {},
+      })
+    }
   }
 
   // create participants

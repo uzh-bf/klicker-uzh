@@ -1279,6 +1279,79 @@ export default defineConfig({
         },
         // #endregion
 
+        // ! Control Application
+        // #region
+        async verifyControlToken({ token }: { token: string }) {
+          const prisma = await connect()
+
+          try {
+            const user = await prisma.user.findUnique({
+              where: {
+                shortname: 'lecturer',
+                loginTokenExpiresAt: { gte: new Date() },
+              },
+            })
+
+            if (!user) {
+              console.log(user)
+              throw new Error(
+                'No user with the corresponding shortname and valid login token found.'
+              )
+            }
+
+            // remove any whitespaces from the token passed to the function
+            const sanitizedToken = token.replace(/\s/g, '')
+
+            return user.loginToken === sanitizedToken
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async getControlToken() {
+          const prisma = await connect()
+
+          try {
+            const user = await prisma.user.findUnique({
+              where: {
+                shortname: 'lecturer',
+                loginTokenExpiresAt: { gte: new Date() },
+              },
+            })
+
+            if (!user) {
+              return null
+            }
+
+            return user.loginToken
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
+        // ! Course Management / PINs
+        // #region
+        async getCoursePin({ courseName }: { courseName: string }) {
+          const prisma = await connect()
+
+          try {
+            const course = await prisma.course.findFirst({
+              where: {
+                name: courseName,
+              },
+            })
+
+            if (!course) {
+              throw new Error(`Course with name ${courseName} not found.`)
+            }
+
+            return course.pinCode
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
         // ! Cleanup / Seeding
         // #region
         async seedDatabase() {
@@ -1424,6 +1497,7 @@ export default defineConfig({
             })
 
             // ? Test course seeding
+            const currentYear = new Date().getFullYear()
             await prisma.course.upsert({
               where: {
                 id: COURSE_ID_TEST,
@@ -1437,8 +1511,8 @@ export default defineConfig({
                 isGamificationEnabled: true,
                 color: '#016272',
                 pinCode: 123456789,
-                startDate: new Date('2020-01-01T00:00'),
-                endDate: new Date('2050-01-01T23:59'),
+                startDate: new Date(`${currentYear - 1}-01-01T00:00`),
+                endDate: new Date(`${currentYear + 10}-01-01T23:59`),
                 isGroupCreationEnabled: true,
                 groupDeadlineDate: new Date('2021-01-01T00:01'),
                 maxGroupSize: 5,
@@ -1561,6 +1635,35 @@ export default defineConfig({
               },
             })
 
+            const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
+            await prisma.liveQuiz.upsert({
+              where: { id: liveQuizId },
+              create: {
+                id: liveQuizId,
+                name: 'Seed Live Quiz',
+                displayName: 'Seed Live Quiz (Displayname)',
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                liveQuizId_userId: {
+                  liveQuizId: liveQuizId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                liveQuiz: { connect: { id: liveQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
             const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
             await prisma.microLearning.upsert({
               where: {
@@ -1586,12 +1689,8 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                microLearning: {
-                  connect: { id: microlearningId },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+                microLearning: { connect: { id: microlearningId } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,
@@ -1619,12 +1718,39 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                practiceQuiz: {
-                  connect: { id: practiceQuizId },
+                practiceQuiz: { connect: { id: practiceQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
+            await prisma.groupActivity.upsert({
+              where: { id: groupActivityId },
+              create: {
+                id: groupActivityId,
+                name: 'Seed Group Activity',
+                displayName: 'Seed Group Activity (Displayname)',
+                scheduledStartAt: new Date('2020-01-01T00:00'),
+                scheduledEndAt: new Date('2050-01-01T23:59'),
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                groupActivityId_userId: {
+                  groupActivityId: groupActivityId,
+                  userId: USER_ID_TEST,
                 },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                groupActivity: { connect: { id: groupActivityId } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,

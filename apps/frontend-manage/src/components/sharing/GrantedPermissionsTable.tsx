@@ -1,8 +1,8 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
 import {
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
@@ -24,7 +24,7 @@ function GrantedPermissionsTable({
   onOwnershipTransfer,
   shareObjectCallback,
 }: {
-  type: SharingObjectType
+  type: ObjectType
   permissions: PermissionInfo[]
   permissionsLoading: boolean
   changeLoading: boolean

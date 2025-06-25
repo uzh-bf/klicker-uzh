@@ -1,11 +1,11 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
 import {
+  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@uzh-bf/design-system/dist/future'
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import QR from '~/pages/qr/[...args]'

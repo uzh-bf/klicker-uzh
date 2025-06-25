@@ -26,10 +26,10 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  CheckPrivatePreviewAvailableDocument,
   ElementStatus,
   ElementType,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Switch } from '@uzh-bf/design-system'
@@ -99,8 +99,8 @@ function TagList({
 }: TagListProps): React.ReactElement {
   const t = useTranslations()
 
-  const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
-    fetchPolicy: 'cache-first',
+  const { data: user } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
   })
   const ELEMENT_TYPE_FILTERS: Record<
     ElementType,
@@ -113,10 +113,10 @@ function TagList({
     KPRIM: [faQuestionRegular, faQuestionSolid],
     FREE_TEXT: [faQuestionRegular, faQuestionSolid],
     NUMERICAL: [faQuestionRegular, faQuestionSolid],
-    SELECTION: data?.checkPrivatePreviewAvailable
+    SELECTION: user?.userProfile?.privatePreview
       ? [faSquareCheckRegular, faSquareCheckSolid]
       : undefined,
-    CASE_STUDY: data?.checkPrivatePreviewAvailable
+    CASE_STUDY: user?.userProfile?.privatePreview
       ? [faListCheck, faListCheck]
       : undefined,
   }
@@ -148,14 +148,6 @@ function TagList({
       answerFeedbacks,
       showUntagged,
     ]
-  )
-
-  // TODO: remove as soon as sharing functionalities are available for all users
-  const { data: previewCheck } = useQuery(
-    CheckPrivatePreviewAvailableDocument,
-    {
-      fetchPolicy: 'cache-first',
-    }
   )
 
   return (
@@ -220,7 +212,7 @@ function TagList({
         </ul>
       )}
 
-      {previewCheck?.checkPrivatePreviewAvailable ? (
+      {user?.userProfile?.privatePreview ? (
         <>
           <TagHeader
             text={t('shared.generic.sharing')}

@@ -1,4 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
+import { getDatetimeValidationString } from './helpers'
 
 // timestamps need to be dynamic to ensure full continued functionality
 const currentYear = new Date().getFullYear()
@@ -255,6 +256,9 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.name}"]`
+    ).click()
     cy.get(`[data-cy="edit-practice-quiz-${this.data.running.name}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
@@ -369,6 +373,9 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
+    ).click()
     cy.get(
       `[data-cy="edit-practice-quiz-${this.data.running.nameNew}"]`
     ).click()
@@ -544,7 +551,7 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameDupl}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.nameDupl}"]`
     ).should('not.exist')
   })
   // #endregion
@@ -1009,7 +1016,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.nameNew}"]`
     ).should('not.exist')
   })
 
@@ -1055,17 +1062,33 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear - 10}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: -36,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-36, '15') + ', 12:00',
+      }
+    ) // select publication date 3 years in the past -> course start date is beginning of the previous year
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
 
     // set future publication date
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear + 5}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: 40,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(4, '15') + ', 12:00',
+      }
+    ) // select publication date 4 months in the future
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1133,9 +1156,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.get('[data-cy="practice-quiz-available-from"]')
-      .click()
-      .type(`${currentYear - 1}-01-01T02:00`)
+    cy.setDatetime(
+      'practice-quiz-available-from',
+      'publish-immediately-header',
+      {
+        monthDelta: -1,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-1, '15') + ', 12:00',
+      }
+    ) // set last month as a publication date (within the course runtime, but past)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1167,7 +1198,7 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
     ).should('not.exist')
   })
 
@@ -1229,6 +1260,9 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
@@ -1273,6 +1307,9 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="course-list-button-${this.data.manipulation.course}"]`
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).click()
     cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
@@ -1328,6 +1365,9 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="course-list-button-${this.data.manipulation.course}"]`
     ).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+    ).click()
     cy.get(
       `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
     ).click()
@@ -1478,7 +1518,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.name}"]`
     ).should('not.exist')
 
     cy.get(
@@ -1491,7 +1531,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.manipulation.duplicateName}"]`
     ).should('not.exist')
   })
   // #endregion
@@ -1535,19 +1575,20 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz1}"]`).should(
@@ -1562,16 +1603,16 @@ describe('Different practice quiz workflows', function () {
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
-    ).realClick()
-
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz2}"]`).should(
@@ -1591,16 +1632,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz3}"]`).should(
@@ -1647,51 +1689,52 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
-    }
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, remove
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
+      groupPermission ? 'not.exist' : 'exist'
+    )
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
 
-    if (!groupPermission) {
-      cy.get(
-        `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
-      ).realClick()
-      cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
-        'exist'
-      )
-      cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
-    }
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
     cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -1733,15 +1776,16 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -1751,14 +1795,15 @@ describe('Different practice quiz workflows', function () {
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
-    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
@@ -1773,15 +1818,16 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -1823,18 +1869,19 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -1844,14 +1891,15 @@ describe('Different practice quiz workflows', function () {
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
-    ).realClick()
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="unpublish-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
@@ -1866,15 +1914,16 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
@@ -1916,19 +1965,20 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="publish-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`).click()
     cy.get(`[data-cy="edit-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz1}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz1}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz1}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz1}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz1}"]`).should(
@@ -1946,15 +1996,16 @@ describe('Different practice quiz workflows', function () {
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz2}"]`).should('exist')
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`).click()
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz2}"]`).should('exist')
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz2}"]`
-    ).realClick()
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz2}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz2}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz2}"]`).should(
@@ -1977,16 +2028,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="evaluation-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
+
+    cy.get(`[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`).click()
     cy.get(`[data-cy="copy-access-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="open-practice-quiz-${data.sharing.quiz3}"]`).should(
       'exist'
     )
-
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${data.sharing.quiz3}"]`
-    ).realClick()
     cy.get(`[data-cy="copy-lti-link-${data.sharing.quiz3}"]`).should('exist')
     cy.get(`[data-cy="duplicate-practice-quiz-${data.sharing.quiz3}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="view-activity-log-${data.sharing.quiz3}"]`).should(
       'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.sharing.quiz3}"]`).should(
@@ -2135,7 +2187,7 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // grant READ permission to user 2
@@ -2235,7 +2287,7 @@ describe('Different practice quiz workflows', function () {
     ]
 
     cy.wrap(quizzes).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // revoke permissions for users 2, 3, 4 and 5
@@ -2327,7 +2379,7 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // grant READ permission to user group 1
@@ -2418,7 +2470,7 @@ describe('Different practice quiz workflows', function () {
     ]
 
     cy.wrap(quizzes).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // revoke permissions for all user groups
@@ -2457,7 +2509,7 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // share the course with WRITE permissions with user pro1
@@ -2507,7 +2559,7 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
 
       // grant a WRITE permission to the main user (should change the existing permission in this case)
@@ -2553,13 +2605,13 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="remove-practice-quiz-${quiz}"]`).click()
       cy.get('[data-cy="confirm-deletion-final"]').click()
       cy.get('[data-cy="confirm-derived-access"]').click()
       cy.get('[data-cy="confirm-dependency-access"]').click()
       cy.get('[data-cy="confirmation-modal-confirm"]').click()
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-PRACTICE_QUIZ-${quiz}"]`).should('not.exist')
       cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
     })
     cy.logoutUser()
@@ -2572,7 +2624,7 @@ describe('Different practice quiz workflows', function () {
       this.data.sharing.quiz2,
       this.data.sharing.quiz3,
     ]).each((quiz) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="share-practice-quiz-${quiz}"]`).click()
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`

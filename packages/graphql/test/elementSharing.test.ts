@@ -7,11 +7,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
-import {
-  ChoicesElementData,
-  ElementInstanceResults,
-  SharingObjectType,
-} from '@klicker-uzh/types'
+import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -22,11 +18,11 @@ import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
   changeObjectPermissionLevel,
+  copyElementToAccount,
   getCatalogElements,
   getCatalogSharingRequests,
   getDerivedElementPermissions,
   getElementPermissions,
-  importElement,
   requestCatalogObject,
   revokeObjectAccess,
   shareObject,
@@ -1909,7 +1905,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(res2).toBeTruthy()
     expect(res2!.objectId).toEqual(SC.id)
-    expect(res2!.objectType).toEqual(SharingObjectType.ELEMENT)
+    expect(res2!.objectType).toEqual(ObjectType.ELEMENT)
     expect(res2!.access).toEqual(ObjectAccess.PUBLIC)
     expect(res2!.ownerShortname).toEqual(userOne.shortname)
     expect(res2!.isOwner).toBe(true)
@@ -1955,7 +1951,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(res3).toBeTruthy()
     expect(res3!.objectId).toEqual(MC.id)
-    expect(res3!.objectType).toEqual(SharingObjectType.ELEMENT)
+    expect(res3!.objectType).toEqual(ObjectType.ELEMENT)
     expect(res3!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res3!.ownerShortname).toEqual(userOne.shortname)
     expect(res3!.isOwner).toBe(false)
@@ -2002,7 +1998,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(res4).toBeTruthy()
     expect(res4!.objectId).toEqual(MC.id)
-    expect(res4!.objectType).toEqual(SharingObjectType.ELEMENT)
+    expect(res4!.objectType).toEqual(ObjectType.ELEMENT)
     expect(res4!.access).toEqual(ObjectAccess.RESTRICTED)
     expect(res4!.ownerShortname).toEqual(userOne.shortname)
     expect(res4!.isOwner).toBe(false)
@@ -2139,7 +2135,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(failure1).toBeFalsy()
 
-    const failure2 = await importElement(
+    const failure2 = await copyElementToAccount(
       {
         catalogCollectionId: restrictedCatalog.id,
         elementId: SE.id,
@@ -2244,7 +2240,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
 
     // import the selection element and verify that importing case study element does not work
-    const failure3 = await importElement(
+    const failure3 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: CS.id, // restricted access
@@ -2253,7 +2249,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     )
     expect(failure3).toBeFalsy()
 
-    const success3 = await importElement(
+    const success3 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: SE.id, // public access
@@ -2298,7 +2294,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     })
     expect(accessRequests3.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
 
-    const success4 = await importElement(
+    const success4 = await copyElementToAccount(
       {
         catalogCollectionId: publicCatalog.id,
         elementId: SE.id,
@@ -2437,21 +2433,19 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(publicRequestUserThree).not.toBeNull()
     expect(publicRequestUserFour).not.toBeNull()
     expect(restrictedRequestUserThree).not.toBeNull()
-    expect(publicRequestUserThree?.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(publicRequestUserThree?.objectType).toBe(ObjectType.ELEMENT)
     expect(publicRequestUserThree?.requestId).toBe(request1.id)
     expect(publicRequestUserThree?.userId).toBe(userThree.id)
     expect(publicRequestUserThree?.userEmail).toBe(userThree.email)
     expect(publicRequestUserThree?.userShortname).toBe(userThree.shortname)
 
-    expect(publicRequestUserFour?.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(publicRequestUserFour?.objectType).toBe(ObjectType.ELEMENT)
     expect(publicRequestUserFour?.requestId).toBe(request4.id)
     expect(publicRequestUserFour?.userId).toBe(userFour.id)
     expect(publicRequestUserFour?.userEmail).toBe(userFour.email)
     expect(publicRequestUserFour?.userShortname).toBe(userFour.shortname)
 
-    expect(restrictedRequestUserThree?.objectType).toBe(
-      SharingObjectType.ELEMENT
-    )
+    expect(restrictedRequestUserThree?.objectType).toBe(ObjectType.ELEMENT)
     expect(restrictedRequestUserThree?.requestId).toBe(request3.id)
     expect(restrictedRequestUserThree?.userId).toBe(userThree.id)
     expect(restrictedRequestUserThree?.userEmail).toBe(userThree.email)
@@ -2470,13 +2464,13 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     expect(publicRequestUserThree2).not.toBeNull()
     expect(publicRequestUserFour2).not.toBeNull()
 
-    expect(publicRequestUserThree2?.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(publicRequestUserThree2?.objectType).toBe(ObjectType.ELEMENT)
     expect(publicRequestUserThree2?.requestId).toBe(request2.id)
     expect(publicRequestUserThree2?.userId).toBe(userThree.id)
     expect(publicRequestUserThree2?.userEmail).toBe(userThree.email)
     expect(publicRequestUserThree2?.userShortname).toBe(userThree.shortname)
 
-    expect(publicRequestUserFour2?.objectType).toBe(SharingObjectType.ELEMENT)
+    expect(publicRequestUserFour2?.objectType).toBe(ObjectType.ELEMENT)
     expect(publicRequestUserFour2?.requestId).toBe(request5.id)
     expect(publicRequestUserFour2?.userId).toBe(userFour.id)
     expect(publicRequestUserFour2?.userEmail).toBe(userFour.email)

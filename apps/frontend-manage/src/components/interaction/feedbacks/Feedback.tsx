@@ -3,7 +3,7 @@ import {
   faArrowDown,
   faArrowUp,
   faCheck,
-  faComments,
+  faComment,
   faLock,
   faLockOpen,
   faPaperPlane,
@@ -82,7 +82,7 @@ function Feedback({
                   )}
                 </>
               ) : (
-                <FontAwesomeIcon icon={faComments} className="ml-2" />
+                <FontAwesomeIcon icon={faComment} className="ml-2" />
               )}
             </div>
             <div className="ml-4">
@@ -209,7 +209,7 @@ function Feedback({
                       placeholder={
                         resolved
                           ? t('manage.cockpit.reopenToAnswer')
-                          : t('manage.cockpit.insertResponseHere')
+                          : t('manage.cockpit.enterResponseHere')
                       }
                       disabled={resolved}
                       maxLength={1000}

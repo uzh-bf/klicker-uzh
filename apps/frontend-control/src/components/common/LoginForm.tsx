@@ -82,10 +82,11 @@ function LoginForm({
             />
             <FormikPinField
               required
+              length={9}
               label={labelSecret}
               labelType="small"
               name={fieldSecret}
-              className={{ root: 'mt-1', label: 'text-sm' }}
+              className={{ field: 'mt-1', inputItem: 'w-8', label: 'text-sm' }}
               data={dataSecret}
             />
 

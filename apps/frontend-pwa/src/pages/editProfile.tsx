@@ -4,10 +4,9 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Toast } from '@uzh-bf/design-system'
+import { H3, toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
@@ -20,10 +19,20 @@ interface Props {
 
 function EditProfile({ participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
-  const [showError, setShowError] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-
   const { data, loading, refetch } = useQuery(SelfDocument)
+
+  const onError = () =>
+    toast({
+      type: 'error',
+      message: t('pwa.profile.editProfileFailed'),
+      options: { duration: 6000 },
+    })
+  const onSuccess = () =>
+    toast({
+      type: 'success',
+      message: t('pwa.profile.editProfileSuccess'),
+      options: { duration: 3500 },
+    })
 
   useParticipantToken({
     participantToken,
@@ -52,38 +61,29 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
           <div className="w-full md:w-1/2">
             <UpdateAccountInfoForm
               user={data.self}
-              setShowError={setShowError}
-              setShowSuccess={setShowSuccess}
+              onError={onError}
+              onSuccess={onSuccess}
             />
           </div>
           <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
               user={data.self}
-              setShowError={setShowError}
-              setShowSuccess={setShowSuccess}
+              onError={onError}
+              onSuccess={onSuccess}
             />
           </div>
         </div>
-        <AccountDeletionForm />
+        <div className="flex flex-col gap-4 md:flex-row">
+          <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
+            <div className="flex-initial space-y-2">
+              <H3 className={{ root: 'mb-0 border-b' }}>
+                {t('shared.generic.settings')}
+              </H3>
+            </div>
+          </div>
+          <AccountDeletionForm />
+        </div>
       </div>
-      <Toast
-        dismissible
-        type="error"
-        openExternal={showError}
-        onCloseExternal={() => setShowError(false)}
-        duration={8000}
-      >
-        {t('pwa.profile.editProfileFailed')}
-      </Toast>
-      <Toast
-        dismissible
-        type="success"
-        openExternal={showSuccess}
-        onCloseExternal={() => setShowSuccess(false)}
-        duration={4000}
-      >
-        {t('pwa.profile.editProfileSuccess')}
-      </Toast>
     </Layout>
   )
 }

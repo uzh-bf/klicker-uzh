@@ -1,17 +1,24 @@
+import { useQuery } from '@apollo/client'
 import {
   ElementData,
   ElementStatus,
   ElementType,
+  GetAnswerCollectionsElementsDocument,
+  ObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
+import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
 import ElementExplanationField from './ElementExplanationField'
-import ElementFailureToast from './ElementFailureToast'
 import ElementFormErrors from './ElementFormErrors'
 import ElementformScoringSection from './ElementFormScoringSection'
 import ElementInformationFields from './ElementInformationFields'
@@ -33,7 +40,6 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
-  open,
   onClose,
   onSuccess,
   mode,
@@ -43,8 +49,6 @@ function ElementEditForm({
   initialStatus,
   onSubmitElement,
   setAutoSavedElement,
-  failureToast,
-  setFailureToast,
   updateInstances,
   setUpdateInstances,
   includeTemplateUpdates,
@@ -56,7 +60,6 @@ function ElementEditForm({
   isTemplate?: boolean
   templateId?: string
   // modal state props
-  open: boolean
   onClose: () => void
   onSuccess: () => void
   // element mode and identification
@@ -69,11 +72,8 @@ function ElementEditForm({
   initialStatus: ElementStatus
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
-  ) => Promise<void>
+  ) => Promise<boolean>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
-  // failure handling
-  failureToast: boolean
-  setFailureToast: Dispatch<SetStateAction<boolean>>
   // instance update controls
   updateInstances: boolean
   setUpdateInstances: Dispatch<SetStateAction<boolean>>
@@ -81,6 +81,8 @@ function ElementEditForm({
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+
+  const [activeTab, setActiveTab] = useState('preview')
   const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -88,219 +90,323 @@ function ElementEditForm({
   const [elementDataTypename, setElementDataTypename] = useState<
     ElementData['__typename'] | undefined
   >()
+  const [collectionModal, setCollectionModal] = useState<{
+    open: boolean
+    id?: number
+  }>({ open: false, id: undefined })
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
   })
 
+  const {
+    data,
+    loading: collectionsLoading,
+    refetch,
+  } = useQuery(GetAnswerCollectionsElementsDocument, {
+    variables: { templateId },
+    fetchPolicy: 'network-only',
+  })
+  const collections = data?.getAnswerCollectionsElements ?? []
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
   return (
-    <Formik
-      validateOnMount
-      enableReinitialize={!isTemplate}
-      initialValues={initialValues}
-      validationSchema={questionManipulationSchema}
-      onSubmit={async (values, { setSubmitting }) => {
-        setSubmitting(true)
-        await onSubmitElement({ ...values, status: elementStatus })
+    <>
+      <Formik
+        validateOnMount
+        enableReinitialize={!isTemplate}
+        initialValues={initialValues}
+        validationSchema={questionManipulationSchema}
+        onSubmit={async (values, { setSubmitting }) => {
+          setSubmitting(true)
+          const success = await onSubmitElement({
+            ...values,
+            status: elementStatus,
+          })
 
-        // close modal, set success toast
-        setSubmitting(false)
-        onSuccess()
-      }}
-    >
-      {({
-        values,
-        errors,
-        isSubmitting,
-        isValid,
-        setFieldValue,
-        setFieldTouched,
-        validateForm,
-      }) => {
-        if (loading) {
-          return null
-        }
+          // close modal, set success toast
+          setSubmitting(false)
+          if (!success) {
+            toast({
+              type: 'error',
+              message: t('manage.elements.questionSavedFailed'),
+              options: { duration: 6000 },
+            })
+          } else {
+            onSuccess()
+          }
+        }}
+      >
+        {({
+          values,
+          errors,
+          isSubmitting,
+          isValid,
+          setFieldValue,
+          setFieldTouched,
+          validateForm,
+          submitForm,
+        }) => {
+          if (loading) {
+            return (
+              <Modal open onClose={() => onClose()} fullScreen>
+                <Loader />
+              </Modal>
+            )
+          }
 
-        return (
-          <Modal
-            asPortal
-            fullScreen
-            title={t(`manage.elements.${mode}Title`)}
-            className={{
-              content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
-              title: 'text-xl',
-            }}
-            open={open}
-            onClose={() => onClose()}
-            escapeDisabled={true}
-            onPrimaryAction={
-              !inputsDisabled ? (
-                <Button
-                  primary
-                  type="submit"
-                  loading={isSubmitting}
-                  disabled={!isValid}
-                  className={{ root: 'mt-2' }}
-                  form="question-manipulation-form"
-                  data={{ cy: 'save-new-question' }}
-                >
-                  <Button.Label>{t('shared.generic.save')}</Button.Label>
-                </Button>
-              ) : undefined
-            }
-            onSecondaryAction={
-              !isTemplate && !inputsDisabled ? (
-                <Button
-                  className={{ root: 'mt-2' }}
-                  onClick={() => onClose()}
-                  data={{ cy: 'close-element-modal' }}
-                >
-                  <Button.Label>{t('shared.generic.close')}</Button.Label>
-                </Button>
-              ) : undefined
-            }
-          >
-            {!inputsDisabled && (
-              <AutoSaveMonitor
-                values={values}
-                initialValuesString={JSON.stringify(initialValues)}
-                setAutoSavedElement={setAutoSavedElement}
+          return (
+            <Modal
+              open
+              fullScreen
+              title={t(`manage.elements.${mode}Title`)}
+              onClose={() => onClose()}
+              escapeDisabled={true}
+              onPrimaryAction={() => submitForm()}
+              primaryLabel={
+                !inputsDisabled ? t('shared.generic.save') : undefined
+              }
+              primaryDisabled={!isValid}
+              primaryLoading={isSubmitting}
+              dataPrimaryAction={{ cy: 'save-new-question' }}
+              onSecondaryAction={
+                !isTemplate && !inputsDisabled ? () => onClose() : undefined
+              }
+              secondaryLabel={t('shared.generic.close')}
+              dataSecondaryAction={{ cy: 'close-element-modal-button' }}
+              className={{
+                title: 'text-xl',
+                content: 'h-max text-sm md:text-base 2xl:max-w-[1400px]',
+                footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
+              }}
+              dataCloseButton={{ cy: 'close-element-modal' }}
+            >
+              {!inputsDisabled && (
+                <AutoSaveMonitor
+                  values={values}
+                  initialValuesString={JSON.stringify(initialValues)}
+                  setAutoSavedElement={setAutoSavedElement}
+                />
+              )}
+              <ElementTypeMonitor
+                elementType={values.type ?? ElementType.Sc}
+                setElementDataTypename={setElementDataTypename}
+                validateForm={validateForm}
               />
-            )}
-            <ElementTypeMonitor
-              elementType={values.type ?? ElementType.Sc}
-              setElementDataTypename={setElementDataTypename}
-              validateForm={validateForm}
-            />
-            <div className="flex flex-row gap-12">
-              <div className="max-w-5xl flex-1">
-                <Form className="w-full" id="question-manipulation-form">
-                  <ElementInformationFields
-                    isTemplate={isTemplate}
-                    elementId={elementId}
-                    elementStatus={elementStatus}
-                    setElementStatus={setElementStatus}
-                    inputsDisabled={inputsDisabled}
-                    mode={mode}
-                    values={values}
-                    isSubmitting={isSubmitting}
-                  />
-                  <ElementContentInput
-                    disabled={inputsDisabled}
-                    values={values}
-                    setFieldValue={setFieldValue}
-                  />
-                  <ElementExplanationField
-                    disabled={inputsDisabled}
-                    values={values}
-                    setFieldValue={setFieldValue}
-                  />
+              <div className="flex flex-row gap-12">
+                <div className="flex-1">
+                  <Form className="w-full" id="question-manipulation-form">
+                    <ElementInformationFields
+                      isTemplate={isTemplate}
+                      elementId={elementId}
+                      elementStatus={elementStatus}
+                      setElementStatus={setElementStatus}
+                      inputsDisabled={inputsDisabled}
+                      mode={mode}
+                      values={values}
+                      isSubmitting={isSubmitting}
+                    />
+                    <ElementContentInput
+                      disabled={inputsDisabled}
+                      values={values}
+                      setFieldValue={setFieldValue}
+                    />
+                    <ElementExplanationField
+                      disabled={inputsDisabled}
+                      values={values}
+                      setFieldValue={setFieldValue}
+                    />
 
-                  {/* scoring section */}
-                  {!isTemplate &&
-                    values.type !== ElementType.Content &&
-                    values.type !== ElementType.Flashcard && (
-                      <ElementformScoringSection
-                        isTemplate={isTemplate}
+                    {/* scoring section */}
+                    {!isTemplate &&
+                      values.type !== ElementType.Content &&
+                      values.type !== ElementType.Flashcard && (
+                        <ElementformScoringSection
+                          isTemplate={isTemplate}
+                          disabled={inputsDisabled}
+                          values={values}
+                          setFieldValue={setFieldValue}
+                          isSubmitting={isSubmitting}
+                        />
+                      )}
+
+                    <div className="mt-4 flex flex-row gap-4">
+                      <OptionsLabel type={values.type} />
+                      <AnswerFeedbackSetting
+                        disabled={isTemplate || inputsDisabled}
+                        values={values}
+                      />
+                      <DisplayModeSetting
                         disabled={inputsDisabled}
+                        type={values.type}
+                      />
+                    </div>
+
+                    {values.type === ElementType.Sc ||
+                    values.type === ElementType.Mc ||
+                    values.type === ElementType.Kprim ? (
+                      <ChoicesOptions
+                        inputsDisabled={inputsDisabled}
                         values={values}
                         setFieldValue={setFieldValue}
-                        isSubmitting={isSubmitting}
+                      />
+                    ) : null}
+
+                    {values.type === ElementType.Numerical && (
+                      <NumericalOptions
+                        inputsDisabled={inputsDisabled}
+                        values={values}
                       />
                     )}
 
-                  <div className="mt-4 flex flex-row gap-4">
-                    <OptionsLabel type={values.type} />
-                    <AnswerFeedbackSetting
-                      disabled={isTemplate || inputsDisabled}
+                    {values.type === ElementType.FreeText && (
+                      <FreeTextOptions
+                        inputsDisabled={inputsDisabled}
+                        values={values}
+                      />
+                    )}
+
+                    {values.type === ElementType.Selection && (
+                      <SelectionOptions
+                        creationMode={
+                          mode === ElementEditMode.CREATE ||
+                          mode === ElementEditMode.DUPLICATE
+                        }
+                        inputsDisabled={inputsDisabled}
+                        values={values}
+                        collections={collections}
+                        collectionsLoading={collectionsLoading}
+                        refetchCollections={async () => {
+                          await refetch()
+                        }}
+                        setAnswerCollectionEntries={setAnswerCollectionEntries}
+                        openAnswerCollectionEditModal={(
+                          collectionId: number
+                        ) => {
+                          setCollectionModal({ open: true, id: collectionId })
+                        }}
+                      />
+                    )}
+
+                    {values.type === ElementType.CaseStudy && (
+                      <CaseStudyOptions
+                        creationMode={
+                          mode === ElementEditMode.CREATE ||
+                          mode === ElementEditMode.DUPLICATE
+                        }
+                        inputsDisabled={inputsDisabled}
+                        setFieldValue={setFieldValue}
+                        setFieldTouched={setFieldTouched}
+                        hasSampleSolution={values.options.hasSampleSolution}
+                        collections={collections}
+                        collectionsLoading={collectionsLoading}
+                        refetchCollections={async () => {
+                          await refetch()
+                        }}
+                        setAnswerCollectionEntries={setAnswerCollectionEntries}
+                        openAnswerCollectionEditModal={(
+                          collectionId: number
+                        ) => {
+                          setCollectionModal({ open: true, id: collectionId })
+                        }}
+                      />
+                    )}
+                  </Form>
+
+                  {Object.keys(errors).length !== 0 && (
+                    <ElementFormErrors errors={errors} />
+                  )}
+                </div>
+
+                {mode === ElementEditMode.EDIT && user?.privatePreview ? (
+                  <Tabs
+                    defaultValue="preview"
+                    onValueChange={(value) => {
+                      setActiveTab(value)
+                    }}
+                    tabs={[
+                      {
+                        id: 'preview',
+                        value: 'preview',
+                        label: t('shared.generic.preview'),
+                        data: { cy: 'element-preview-tab' },
+                      },
+                      {
+                        id: 'activity',
+                        value: 'activity',
+                        label: t('shared.generic.activity'),
+                        data: { cy: 'element-activity-tab' },
+                      },
+                    ]}
+                    className={{ root: 'w-full max-w-sm', list: 'w-sm' }}
+                  >
+                    <TabContent value="preview">
+                      <StudentElementPreview
+                        values={values}
+                        elementDataTypename={elementDataTypename}
+                        answerCollectionEntries={answerCollectionEntries}
+                      />
+                    </TabContent>
+                    <TabContent value="activity">
+                      <div className="w-sm w-full flex-1">
+                        <ActivityLog
+                          visible={activeTab === 'activity'}
+                          objectId={elementId || ''}
+                          objectType={ObjectType.Element}
+                        />
+                      </div>
+                    </TabContent>
+                  </Tabs>
+                ) : (
+                  <div className="w-full max-w-sm">
+                    <H3>{t('shared.generic.preview')}</H3>
+                    <StudentElementPreview
                       values={values}
-                    />
-                    <DisplayModeSetting
-                      disabled={inputsDisabled}
-                      type={values.type}
+                      elementDataTypename={elementDataTypename}
+                      answerCollectionEntries={answerCollectionEntries}
                     />
                   </div>
-
-                  {values.type === ElementType.Sc ||
-                  values.type === ElementType.Mc ||
-                  values.type === ElementType.Kprim ? (
-                    <ChoicesOptions
-                      inputsDisabled={inputsDisabled}
-                      values={values}
-                      setFieldValue={setFieldValue}
-                    />
-                  ) : null}
-
-                  {values.type === ElementType.Numerical && (
-                    <NumericalOptions
-                      inputsDisabled={inputsDisabled}
-                      values={values}
-                    />
-                  )}
-
-                  {values.type === ElementType.FreeText && (
-                    <FreeTextOptions
-                      inputsDisabled={inputsDisabled}
-                      values={values}
-                    />
-                  )}
-
-                  {values.type === ElementType.Selection && (
-                    <SelectionOptions
-                      templateId={templateId}
-                      isTemplate={isTemplate}
-                      inputsDisabled={inputsDisabled}
-                      values={values}
-                      setAnswerCollectionEntries={setAnswerCollectionEntries}
-                    />
-                  )}
-
-                  {values.type === ElementType.CaseStudy && (
-                    <CaseStudyOptions
-                      templateId={templateId}
-                      isTemplate={isTemplate}
-                      inputsDisabled={inputsDisabled}
-                      setFieldValue={setFieldValue}
-                      setFieldTouched={setFieldTouched}
-                      hasSampleSolution={values.options.hasSampleSolution}
-                      setAnswerCollectionEntries={setAnswerCollectionEntries}
-                    />
-                  )}
-                </Form>
-
-                {Object.keys(errors).length !== 0 && (
-                  <ElementFormErrors errors={errors} />
                 )}
               </div>
-              <StudentElementPreview
-                values={values}
-                elementDataTypename={elementDataTypename}
-                answerCollectionEntries={answerCollectionEntries}
-              />
-            </div>
 
-            {mode === ElementEditMode.EDIT && elementId && !inputsDisabled && (
-              <InstanceUpdateSwitch
-                elementId={elementId}
-                hasSampleSolution={
-                  'options' in values && 'hasSampleSolution' in values.options
-                    ? values.options.hasSampleSolution
-                    : undefined
-                }
-                updateInstances={updateInstances}
-                setUpdateInstances={setUpdateInstances}
-                includeTemplateUpdates={includeTemplateUpdates}
-                setIncludeTemplateUpdates={setIncludeTemplateUpdates}
-              />
-            )}
-            <ElementFailureToast
-              open={failureToast}
-              onClose={() => setFailureToast(false)}
-            />
-          </Modal>
-        )
-      }}
-    </Formik>
+              {mode === ElementEditMode.EDIT &&
+                elementId &&
+                !inputsDisabled && (
+                  <InstanceUpdateSwitch
+                    elementId={elementId}
+                    hasSampleSolution={
+                      'options' in values &&
+                      'hasSampleSolution' in values.options
+                        ? values.options.hasSampleSolution
+                        : undefined
+                    }
+                    updateInstances={updateInstances}
+                    setUpdateInstances={setUpdateInstances}
+                    includeTemplateUpdates={includeTemplateUpdates}
+                    setIncludeTemplateUpdates={setIncludeTemplateUpdates}
+                  />
+                )}
+            </Modal>
+          )
+        }}
+      </Formik>
+
+      {collectionModal.open && typeof collectionModal.id !== 'undefined' ? (
+        <AnswerCollectionEditModal
+          inlineEditing
+          collectionId={collectionModal.id}
+          onClose={() => setCollectionModal({ open: false, id: undefined })}
+          refetchAnswerCollections={async () => {
+            await refetch()
+          }}
+          className={{ overlay: 'z-30', content: 'z-30' }}
+        />
+      ) : null}
+    </>
   )
 }
 

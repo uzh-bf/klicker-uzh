@@ -27,6 +27,7 @@ function Activities() {
       SharingType.Dependency,
     ],
     type: undefined,
+    course: undefined,
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
@@ -46,6 +47,18 @@ function Activities() {
     search.addIndex('displayName')
     search.addDocuments(dataActivities.userActivities)
     return search
+  }, [dataActivities?.userActivities])
+
+  // extract all available courses from activities
+  const availableCourses = useMemo(() => {
+    if (!dataActivities?.userActivities) return []
+
+    const courses = dataActivities.userActivities
+      .map((activity) => activity.courseName)
+      .filter((courseName): courseName is string => !!courseName) // filter out null/undefined and ensure type safety
+
+    // Remove duplicates and sort alphabetically
+    return Array.from(new Set(courses)).sort()
   }, [dataActivities?.userActivities])
 
   const filteredActivities = useMemo(() => {
@@ -78,6 +91,19 @@ function Activities() {
       filtered = filtered.filter((activity) => activity.type === filters.type)
     }
 
+    // apply course filters (if defined)
+    if (typeof filters.course !== 'undefined') {
+      if (filters.course === null) {
+        // show activities with no course assigned
+        filtered = filtered.filter((activity) => !activity.courseName)
+      } else {
+        // show activities with the selected course
+        filtered = filtered.filter(
+          (activity) => activity.courseName === filters.course
+        )
+      }
+    }
+
     return filtered
   }, [
     dataActivities,
@@ -86,6 +112,7 @@ function Activities() {
     filters.status,
     filters.sharingType,
     filters.type,
+    filters.course,
   ])
 
   return (
@@ -96,7 +123,11 @@ function Activities() {
     >
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
         <div>
-          <ActivityOverviewFilters filters={filters} setFilters={setFilters} />
+          <ActivityOverviewFilters
+            filters={filters}
+            setFilters={setFilters}
+            availableCourses={availableCourses}
+          />
         </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
@@ -110,7 +141,7 @@ function Activities() {
                   }}
                   icon={faMagnifyingGlass}
                   className={{
-                    input: 'h-10 pl-9',
+                    input: 'h-10 !pl-8',
                     field: 'w-80 rounded-md pr-3',
                   }}
                 />

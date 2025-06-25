@@ -1,17 +1,20 @@
+import { useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   ElementInstanceType,
+  ObjectType,
   PublicationStatus,
-  SharingObjectType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import GroupActivityDeletionModal from '../../courses/modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from '../../courses/modals/GroupActivityEndingModal'
 import GroupActivityStartingModal from '../../courses/modals/GroupActivityStartingModal'
 import PublishConfirmationModal from '../../courses/modals/PublishConfirmationModal'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useGroupActivityActions from '../actions/useGroupActivityActions'
@@ -23,12 +26,14 @@ const statusActionMap = {
   [PublicationStatus.Draft]: [
     'publishGroupActivity',
     'editGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Scheduled]: [
     'startGroupActivityNow',
+    'activityLog',
     'shareGroupActivity',
     'unpublishGroupActivity',
     'removeGroupActivity',
@@ -37,18 +42,21 @@ const statusActionMap = {
   [PublicationStatus.Published]: [
     'extendGroupActivity',
     'endGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Ended]: [
     'gradeGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
   ],
   [PublicationStatus.Graded]: [
     'gradeGroupActivity',
+    'activityLog',
     'shareGroupActivity',
     'removeGroupActivity',
     'deleteGroupActivity',
@@ -56,28 +64,14 @@ const statusActionMap = {
   [PublicationStatus.Template]: [],
 }
 
-// limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
-const permissionActionMap = {
-  isManager: ['shareGroupActivity', 'deleteGroupActivity'],
-  isEditor: ['editGroupActivity'],
-  isExecutor: [
-    'publishGroupActivity',
-    'unpublishGroupActivity',
-    'startGroupActivityNow',
-    'extendGroupActivity',
-    'endGroupActivity',
-    'gradeGroupActivity',
-  ],
-  isShared: [],
-  isRemovable: ['removeGroupActivity'],
-}
-
 function GroupActivityActions({
   groupActivity,
+  isTemplate,
   sharingModal,
   setSharingModal,
 }: {
   groupActivity: ActivityInfo
+  isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
 }) {
@@ -88,6 +82,33 @@ function GroupActivityActions({
   const [publishingModal, setPublishingModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
+  // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
+  const permissionActionMap = useMemo(() => {
+    return {
+      isManager: [
+        ...(user?.privatePreview ? ['shareGroupActivity'] : []),
+        'deleteGroupActivity',
+      ],
+      isEditor: ['editGroupActivity'],
+      isExecutor: [
+        'publishGroupActivity',
+        'unpublishGroupActivity',
+        'startGroupActivityNow',
+        'extendGroupActivity',
+        'endGroupActivity',
+        'gradeGroupActivity',
+      ],
+      isShared: [...(user?.privatePreview ? ['activityLog'] : [])],
+      isRemovable: ['removeGroupActivity'],
+    }
+  }, [user?.privatePreview])
 
   const actions = useGroupActivityActions({
     groupActivity,
@@ -98,6 +119,7 @@ function GroupActivityActions({
     setPublishingModal,
     setExtensionModal,
     setSharingModal,
+    setActivityLogOpen,
   })
 
   const availableActions = useAvailableActions({
@@ -122,20 +144,19 @@ function GroupActivityActions({
         activityType={groupActivity.type}
       />
       <div>
-        {sharingModal && groupActivity.isManager && (
+        {sharingModal && groupActivity.isManager ? (
           <ObjectSharingModalWrapper
             objectUuid={groupActivity.id}
             objectName={groupActivity.name}
-            objectType={SharingObjectType.GroupActivity}
+            objectType={ObjectType.GroupActivity}
+            isTemplate={isTemplate}
             isOwner={groupActivity.isOwner ?? false}
-            open={sharingModal}
             onClose={() => setSharingModal(false)}
           />
-        )}
+        ) : null}
         {publishingModal && (
           <PublishConfirmationModal
-            open={publishingModal}
-            setOpen={setPublishingModal}
+            onClose={() => setPublishingModal(false)}
             elementType={ElementInstanceType.GroupActivity}
             elementId={groupActivity.id}
             title={groupActivity.name}
@@ -143,16 +164,17 @@ function GroupActivityActions({
             publicationHint={t('manage.course.groupActivityPublishingHint')}
           />
         )}
-        <ExtensionModal
-          open={extensionModal}
-          setOpen={setExtensionModal}
-          type="groupActivity"
-          id={groupActivity.id}
-          currentEndDate={groupActivity.scheduledEndAt}
-          courseId={groupActivity.courseId!}
-          title={t('manage.course.extendGroupActivity')}
-          description={t('manage.course.extendGroupActivityDescription')}
-        />
+        {extensionModal && (
+          <ExtensionModal
+            onClose={() => setExtensionModal(false)}
+            type="groupActivity"
+            id={groupActivity.id}
+            currentEndDate={groupActivity.scheduledEndAt}
+            courseId={groupActivity.courseId!}
+            title={t('manage.course.extendGroupActivity')}
+            description={t('manage.course.extendGroupActivityDescription')}
+          />
+        )}
 
         {removalModal && groupActivity.isRemovable && (
           <ActivityRemovalModal
@@ -165,8 +187,7 @@ function GroupActivityActions({
         )}
         {deletionModal && (
           <GroupActivityDeletionModal
-            open={deletionModal}
-            setOpen={setDeletionModal}
+            onClose={() => setDeletionModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
           />
@@ -174,16 +195,14 @@ function GroupActivityActions({
 
         {endingModal && (
           <GroupActivityEndingModal
-            open={endingModal}
-            setOpen={setEndingModal}
+            onClose={() => setEndingModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
           />
         )}
         {startingModal && (
           <GroupActivityStartingModal
-            open={startingModal}
-            setOpen={setStartingModal}
+            onClose={() => setStartingModal(false)}
             activityId={groupActivity.id}
             activityEndDate={groupActivity.scheduledEndAt}
             groupDeadlineDate={groupActivity.groupDeadlineDate}
@@ -191,6 +210,15 @@ function GroupActivityActions({
             courseId={groupActivity.courseId!}
           />
         )}
+
+        {groupActivity && activityLogOpen ? (
+          <ActivityLogDialog
+            objectId={groupActivity.id}
+            objectType={ObjectType.GroupActivity}
+            open={activityLogOpen}
+            onClose={() => setActivityLogOpen(false)}
+          />
+        ) : null}
       </div>
     </div>
   )

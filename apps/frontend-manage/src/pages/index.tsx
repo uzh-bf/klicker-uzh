@@ -20,6 +20,7 @@ import {
   Checkbox,
   Select,
   TextField,
+  toast,
   Tooltip,
 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -35,7 +36,6 @@ import ElementList from '../components/questions/ElementList'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
-import ElementSuccessToast from '../components/questions/manipulation/ElementSuccessToast'
 import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
@@ -54,7 +54,6 @@ function Index() {
 
   const [searchInput, setSearchInput] = useState('')
   const [sortBy, setSortBy] = useState('')
-  const [successToast, setSuccessToast] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
@@ -281,7 +280,7 @@ function Index() {
             <>
               <div className="flex flex-none flex-row content-center items-end justify-between pb-3">
                 <div className="flex flex-row items-center gap-1">
-                  <div className="flex flex-col pr-0.5 text-sm">
+                  <div className="flex flex-col pr-0.5 text-xs">
                     <Checkbox
                       checked={
                         Object.values(selectedQuestions).filter(
@@ -323,6 +322,7 @@ function Index() {
                           return { ...prev, ...allQuestions }
                         })
                       }}
+                      className={{ root: 'border-unset' }}
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
@@ -339,8 +339,7 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 pl-9',
-
+                      input: 'h-10 !pl-8',
                       field: 'w-30 rounded-md pr-3',
                     }}
                   />
@@ -526,7 +525,13 @@ function Index() {
                   activityWizardOpen={!!creationMode}
                   elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
-                  triggerSuccessToast={() => setSuccessToast(true)}
+                  triggerSuccessToast={() =>
+                    toast({
+                      type: 'success',
+                      message: t('manage.elements.questionSavedSuccessfully'),
+                      options: { duration: 4000 },
+                    })
+                  }
                   setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }
@@ -562,30 +567,33 @@ function Index() {
       {isQuestionCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
-          triggerSuccessToast={() => setSuccessToast(true)}
+          triggerSuccessToast={() =>
+            toast({
+              type: 'success',
+              message: t('manage.elements.questionSavedSuccessfully'),
+              options: { duration: 4000 },
+            })
+          }
           isOpen={isQuestionCreationModalOpen}
           mode={ElementEditMode.CREATE}
         />
       )}
-      <RecoveryPrompt
-        open={showRecoveryPrompt}
-        onRecovery={() => {
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-        onDiscard={() => {
-          localStorage.removeItem('autosave-element-creation')
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-      />
+      {showRecoveryPrompt && (
+        <RecoveryPrompt
+          onRecovery={() => {
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+          onDiscard={() => {
+            localStorage.removeItem('autosave-element-creation')
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+        />
+      )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>
-      <ElementSuccessToast
-        open={successToast}
-        onClose={() => setSuccessToast(false)}
-      />
     </Layout>
   )
 }

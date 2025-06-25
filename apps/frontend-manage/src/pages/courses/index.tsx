@@ -131,84 +131,79 @@ function CourseSelectionPage() {
               />
             </div>
           )}
-          <CourseArchiveModal
-            open={archiveModal.open}
-            setOpen={(newOpen) =>
-              showArchiveModal((prev) =>
-                newOpen
-                  ? { ...prev, open: newOpen }
-                  : { open: false, courseId: null, isArchived: false }
-              )
-            }
-            courseId={archiveModal.courseId}
-            isArchived={archiveModal.isArchived}
-          />
-          <CourseDeletionModal
-            open={deletionModal.open}
-            setOpen={(newOpen) =>
-              showDeletionModal((prev) =>
-                newOpen
-                  ? { ...prev, open: newOpen }
-                  : { open: false, courseId: null }
-              )
-            }
-            courseId={deletionModal.courseId}
-          />
-          <CourseManipulationModal
-            modalOpen={createCourseModal}
-            onModalClose={() => showCreateCourseModal(false)}
-            onSubmit={async (
-              values: CourseManipulationFormData,
-              setSubmitting,
-              setShowErrorToast
-            ) => {
-              try {
-                // convert dates to UTC
-                const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-                  .utc()
-                  .toISOString()
-                const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-                  .utc()
-                  .toISOString()
-                const groupDeadlineDateUTC = dayjs(
-                  values.groupCreationDeadline + 'T23:59:59.999'
-                )
-                  .utc()
-                  .toISOString()
-
-                const result = await createCourse({
-                  variables: {
-                    name: values.name,
-                    displayName: values.displayName,
-                    description: values.description,
-                    color: values.color,
-                    startDate: startDateUTC,
-                    endDate: endDateUTC,
-                    isGamificationEnabled: values.isGamificationEnabled,
-                    isGroupCreationEnabled: values.isGroupCreationEnabled,
-                    groupDeadlineDate: groupDeadlineDateUTC,
-                    maxGroupSize: parseInt(String(values.maxGroupSize)),
-                    preferredGroupSize: parseInt(
-                      String(values.preferredGroupSize)
-                    ),
-                  },
-                  refetchQueries: [{ query: GetUserCoursesDocument }],
+          {archiveModal.open && (
+            <CourseArchiveModal
+              onClose={() =>
+                showArchiveModal({
+                  open: false,
+                  courseId: null,
+                  isArchived: false,
                 })
-
-                if (result.data?.createCourse) {
-                  showCreateCourseModal(false)
-                  router.push(`/courses/${result.data.createCourse.id}`)
-                } else {
-                  setShowErrorToast(true)
-                  setSubmitting(false)
-                }
-              } catch (error) {
-                setShowErrorToast(true)
-                setSubmitting(false)
-                console.log(error)
               }
-            }}
-          />
+              courseId={archiveModal.courseId}
+              isArchived={archiveModal.isArchived}
+            />
+          )}
+          {deletionModal.open && (
+            <CourseDeletionModal
+              onClose={() => showDeletionModal({ open: false, courseId: null })}
+              courseId={deletionModal.courseId}
+            />
+          )}
+          {createCourseModal && (
+            <CourseManipulationModal
+              onModalClose={() => showCreateCourseModal(false)}
+              onSubmit={async (
+                values: CourseManipulationFormData,
+                setSubmitting,
+                onError
+              ) => {
+                try {
+                  // convert dates to UTC
+                  const startDateUTC = dayjs(values.startDate)
+                    .utc()
+                    .toISOString()
+                  const endDateUTC = dayjs(values.endDate).utc().toISOString()
+                  const groupDeadlineDateUTC = dayjs(
+                    values.groupCreationDeadline
+                  )
+                    .utc()
+                    .toISOString()
+
+                  const result = await createCourse({
+                    variables: {
+                      name: values.name,
+                      displayName: values.displayName,
+                      description: values.description,
+                      color: values.color,
+                      startDate: startDateUTC,
+                      endDate: endDateUTC,
+                      isGamificationEnabled: values.isGamificationEnabled,
+                      isGroupCreationEnabled: values.isGroupCreationEnabled,
+                      groupDeadlineDate: groupDeadlineDateUTC,
+                      maxGroupSize: parseInt(String(values.maxGroupSize)),
+                      preferredGroupSize: parseInt(
+                        String(values.preferredGroupSize)
+                      ),
+                    },
+                    refetchQueries: [{ query: GetUserCoursesDocument }],
+                  })
+
+                  if (result.data?.createCourse) {
+                    showCreateCourseModal(false)
+                    router.push(`/courses/${result.data.createCourse.id}`)
+                  } else {
+                    onError()
+                    setSubmitting(false)
+                  }
+                } catch (error) {
+                  onError()
+                  setSubmitting(false)
+                  console.log(error)
+                }
+              }}
+            />
+          )}
           {removalModal.courseId && removalModal.courseName ? (
             <CourseRemovalModal
               courseId={removalModal.courseId}

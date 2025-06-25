@@ -1,10 +1,4 @@
-import {
-  ElementInstanceType,
-  ElementOrderType,
-  ElementStackType,
-  PublicationStatus,
-  UserRole,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import type { ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
@@ -27,8 +21,8 @@ export async function getPracticeQuizData(
     where: {
       id,
       OR: [
-        { status: PublicationStatus.PUBLISHED, isDeleted: false },
-        { status: PublicationStatus.SCHEDULED },
+        { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+        { status: DB.PublicationStatus.SCHEDULED },
         // if user has access to the microlearning, the query should be enabled for loading the preview
         ...(ctx.user?.sub
           ? [{ permissions: { some: { userId: ctx.user.sub } } }]
@@ -41,7 +35,7 @@ export async function getPracticeQuizData(
         include: {
           elements: {
             include:
-              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
                 ? {
                     responses: {
                       where: {
@@ -65,18 +59,18 @@ export async function getPracticeQuizData(
   if (!quiz) return null
   const isOwner =
     ctx.user?.sub &&
-    (ctx.user.role === UserRole.USER || ctx.user.role === UserRole.ADMIN)
+    (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
       ? ctx.user.sub === quiz.ownerId
       : false
 
   // if the quiz is scheduled, return the quiz without the stacks
-  if (quiz.status === PublicationStatus.SCHEDULED) {
+  if (quiz.status === DB.PublicationStatus.SCHEDULED) {
     return isOwner ? { ...quiz, isOwner } : { ...quiz, isOwner, stacks: [] }
   }
 
-  if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const orderedStacks =
-      quiz.orderType === ElementOrderType.SPACED_REPETITION
+      quiz.orderType === DB.ElementOrderType.SPACED_REPETITION
         ? orderStacks(quiz.stacks)
         : quiz.stacks
 
@@ -98,7 +92,7 @@ export async function getPracticeQuizEvaluation(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       isDeleted: false,
     },
     include: {
@@ -174,7 +168,7 @@ export async function getCoursePublishedPracticeQuizzes(
     include: {
       practiceQuizzes: {
         where: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
           isDeleted: false,
         },
         orderBy: {
@@ -187,7 +181,10 @@ export async function getCoursePublishedPracticeQuizzes(
   return course?.practiceQuizzes
     ? (course.practiceQuizzes.map((quiz) => ({
         ...quiz,
-        course,
+        course: {
+          ...course,
+          practiceQuizzes: undefined, // remove practiceQuizzes to avoid circular reference
+        },
       })) ?? [])
     : []
 }
@@ -200,7 +197,7 @@ interface ManipulatePracticeQuizArgs {
   stacks: ElementStackInput[]
   courseId: string
   multiplier: number
-  order: ElementOrderType
+  order: DB.ElementOrderType
   resetTimeDays: number
 }
 
@@ -227,7 +224,7 @@ export async function manipulatePracticeQuiz(
     if (!existingActivity) {
       throw new GraphQLError('Practice quiz not found')
     }
-    if (existingActivity.status === PublicationStatus.PUBLISHED) {
+    if (existingActivity.status === DB.PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published practice quiz')
     }
   }
@@ -271,7 +268,7 @@ export async function manipulatePracticeQuiz(
     resetTimeDays: resetTimeDays,
     stacks: {
       create: stacks.map((stack) => ({
-        type: ElementStackType.PRACTICE_QUIZ,
+        type: DB.ElementStackType.PRACTICE_QUIZ,
         order: stack.order,
         displayName: stack.displayName?.trim() ?? '',
         description: stack.description ?? '',
@@ -279,7 +276,7 @@ export async function manipulatePracticeQuiz(
           connectOrCreate: stack.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
               instance,
-              instanceType: ElementInstanceType.PRACTICE_QUIZ,
+              instanceType: DB.ElementInstanceType.PRACTICE_QUIZ,
               activityMultiplier: multiplier,
               persistentInstances,
               duplicationInstances,
@@ -294,76 +291,79 @@ export async function manipulatePracticeQuiz(
     course: { connect: { id: courseId } },
   }
 
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: { id: { in: instancesToDelete } },
-    })
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
 
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
 
-      await prisma.elementInstance.update({
-        where: { id: instance.id },
-        data: {
-          elementStackId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            resetTimeDays,
-            pointsMultiplier: multiplier * elementMultiplier,
+        await prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              resetTimeDays,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all stacks
+      await prisma.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
+
+      const upsertedQuiz = await prisma.practiceQuiz.upsert({
+        where: { id: id ?? uuidv4() },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: createOrUpdateJSON,
+        include: {
+          course: true,
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
           },
         },
       })
-    }
 
-    // delete all stacks
-    await prisma.elementStack.deleteMany({
-      where: { id: { in: stacksToDelete } },
-    })
-
-    const upsertedQuiz = await prisma.practiceQuiz.upsert({
-      where: { id: id ?? uuidv4() },
-      create: {
-        ...createOrUpdateJSON,
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: createOrUpdateJSON,
-      include: {
-        course: true,
-        stacks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    })
-
-    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-    if (unlinkedElementIds.length > 0) {
-      for (const elementId of unlinkedElementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
       }
-    }
 
-    await recomputeDerivedPermissions(
-      { practiceQuizId: upsertedQuiz.id },
-      prisma
-    )
+      await recomputeDerivedPermissions(
+        { practiceQuizId: upsertedQuiz.id },
+        prisma
+      )
 
-    return upsertedQuiz
-  })
+      return upsertedQuiz
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'PracticeQuiz',
@@ -382,7 +382,7 @@ export async function getBookmarksPracticeQuiz(
   { quizId, courseId }: GetBookmarksPracticeQuizArgs,
   ctx: Context
 ) {
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 
@@ -412,11 +412,11 @@ export async function unpublishPracticeQuiz(
   const practiceQuiz = await ctx.prisma.practiceQuiz.update({
     where: {
       id,
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
     },
     data: {
       availableFrom: null,
-      status: PublicationStatus.DRAFT,
+      status: DB.PublicationStatus.DRAFT,
     },
     include: {
       stacks: {
@@ -501,8 +501,8 @@ export async function deletePracticeQuiz(
   // if the practice quiz is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    practiceQuiz.status === PublicationStatus.DRAFT ||
-    practiceQuiz.status === PublicationStatus.SCHEDULED ||
+    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
+    practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
     practiceQuiz.responses.length === 0
   ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
@@ -542,7 +542,8 @@ export async function deletePracticeQuiz(
         await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
 
         return quiz
-      }
+      },
+      { timeout: 60000 }
     )
 
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
@@ -564,17 +565,33 @@ export async function removePracticeQuiz(
   }
 
   // remove direct permission and recompute derived permissions for this practice quiz and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.practiceQuiz.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission for the user
+      await prisma.practiceQuiz.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    await recomputeDerivedPermissions(
-      { practiceQuizId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.PRACTICE_QUIZ,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.PRACTICE_QUIZ} (ID: ${id})`,
+        },
+      })
+
+      // recompute derived permissions for the user and the practice quiz
+      await recomputeDerivedPermissions(
+        { practiceQuizId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'PracticeQuiz',
@@ -598,7 +615,7 @@ export async function publishPracticeQuiz(
       },
       data: {
         availableFrom,
-        status: PublicationStatus.SCHEDULED,
+        status: DB.PublicationStatus.SCHEDULED,
       },
     })
 
@@ -616,7 +633,7 @@ export async function publishPracticeQuiz(
         isDeleted: false,
       },
       data: {
-        status: PublicationStatus.PUBLISHED,
+        status: DB.PublicationStatus.PUBLISHED,
       },
       include: {
         stacks: true,

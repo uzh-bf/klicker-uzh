@@ -6,41 +6,27 @@ import {
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { useState } from 'react'
 import SharingRequestApprovalModal from './SharingRequestApprovalModal'
 
-function CatalogSharingRequest({
-  request,
-  setDeclineSuccessful,
-  setDeclineFailure,
-  setApprovalSuccessful,
-}: {
-  request: ObjectSharingRequest
-  setDeclineSuccessful: Dispatch<SetStateAction<boolean>>
-  setDeclineFailure: Dispatch<SetStateAction<boolean>>
-  setApprovalSuccessful: Dispatch<SetStateAction<boolean>>
-}) {
+function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
   const t = useTranslations()
   const [approvalModal, setApprovalModal] = useState(false)
   const [declineObjectSharingRequest, { loading: declineLoading }] =
     useMutation(DeclineObjectSharingRequestDocument)
 
+  // TODO: add requested permission levels, once UI supports the selection of a specific one during request
   return (
     <div
       key={`sharing-request-${request.requestId}`}
-      className="flex flex-row items-center justify-between border-b py-1 text-sm"
+      className="flex flex-row items-center justify-between border-b px-3 py-2 text-sm hover:bg-slate-100"
       data-cy={`sharing-request-${request.objectName}-${request.userShortname}`}
     >
       <div>
-        <div className="flex flex-row items-center gap-4">
-          <div className="font-bold">{request.objectName}</div>
-          <div className="rounded bg-slate-300 px-1">
-            {t(`shared.types.${request.objectType}`)}
-          </div>
-        </div>
-        <div className="text-sm">{`${t('shared.generic.user')}: ${request.userShortname} (${request.userEmail})`}</div>
+        <div>{request.objectName}</div>
+        <div className="text-xs text-slate-500">{`${t('shared.generic.user')}: ${request.userShortname} (${request.userEmail})`}</div>
       </div>
       <div className="flex flex-row gap-2">
         <Button
@@ -118,9 +104,17 @@ function CatalogSharingRequest({
             })
 
             if (result) {
-              setDeclineSuccessful(true)
+              toast({
+                type: 'success',
+                message: t('manage.catalog.declineSuccessful'),
+                options: { duration: 3000 },
+              })
             } else {
-              setDeclineFailure(true)
+              toast({
+                type: 'error',
+                message: t('manage.catalog.declineFailed'),
+                options: { duration: 5000 },
+              })
             }
           }}
         >
@@ -128,12 +122,19 @@ function CatalogSharingRequest({
           <Button.Label>{t('shared.generic.decline')}</Button.Label>
         </Button>
       </div>
-      <SharingRequestApprovalModal
-        request={request}
-        open={approvalModal}
-        onClose={() => setApprovalModal(false)}
-        onSuccess={() => setApprovalSuccessful(true)}
-      />
+      {approvalModal && (
+        <SharingRequestApprovalModal
+          request={request}
+          onClose={() => setApprovalModal(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.catalog.approvalSuccessful'),
+              options: { duration: 3000 },
+            })
+          }
+        />
+      )}
     </div>
   )
 }

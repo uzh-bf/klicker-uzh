@@ -1,5 +1,4 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -63,7 +62,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
-      scope: UserLoginScope.SESSION_EXEC,
+      scope: DB.UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -96,7 +95,22 @@ export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {
       sub: participantId,
-      role: UserRole.PARTICIPANT,
+      role: DB.UserRole.PARTICIPANT,
+    },
+    // TODO: use structured configuration approach
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '2w',
+    }
+  )
+}
+
+export function createTemporaryParticipantToken(participantId: string) {
+  return JWT.sign(
+    {
+      sub: participantId,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -163,6 +177,64 @@ export async function loginParticipant(
   return participant.id
 }
 
+export async function loginTemporaryParticipant(
+  {
+    liveQuizId,
+    pseudonym,
+    avatar,
+  }: { liveQuizId: string; pseudonym: string; avatar?: string | null },
+  ctx: Context
+) {
+  // check if the live quiz exists and is running
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId, status: DB.PublicationStatus.PUBLISHED },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // verify that no other participant or temporary participant in this live quiz exists with the same pseudonym
+  const existingParticipant = await ctx.prisma.participant.findFirst({
+    where: { username: pseudonym.trim() },
+  })
+
+  if (existingParticipant) {
+    return null // error: 'pseudonym already taken'
+  }
+
+  const existingTemporaryParticipant =
+    await ctx.prisma.temporaryLeaderboardEntry.findFirst({
+      where: {
+        username: pseudonym.trim(),
+        quizId: liveQuizId,
+      },
+    })
+
+  if (existingTemporaryParticipant) {
+    return null // error: 'pseudonym already taken'
+  }
+
+  // create a temporary leaderboard entry linked to the mentioned live quiz
+  const temporaryParticipant =
+    await ctx.prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: uuidv4(),
+        username: pseudonym.trim(),
+        avatar: avatar ?? undefined,
+        score: 0,
+        quiz: {
+          connect: { id: liveQuizId },
+        },
+      },
+    })
+
+  // create and return a new valid token for the temporary participant
+  const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
+  ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+  return jwt
+}
+
 const rateLimitStore: Record<string, { count: number; lastRequest: number }> =
   {}
 const RATE_LIMIT = 5 // Maximum number of requests
@@ -220,8 +292,8 @@ export async function sendMagicLink(
   const magicLinkJWT = JWT.sign(
     {
       sub: participantData.id,
-      role: UserRole.PARTICIPANT,
-      scope: UserLoginScope.OTP,
+      role: DB.UserRole.PARTICIPANT,
+      scope: DB.UserLoginScope.OTP,
     },
     process.env.APP_SECRET as string,
     {
@@ -266,10 +338,10 @@ export async function loginParticipantMagicLink(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
-    scope: UserLoginScope
+    scope: DB.UserLoginScope
   }
 
-  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+  if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.OTP) {
     return null
   }
 
@@ -301,10 +373,10 @@ export async function activateParticipantAccount(
   //
   const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
     sub: string
-    scope: UserLoginScope
+    scope: DB.UserLoginScope
   }
 
-  if (!tokenData.sub || tokenData.scope !== UserLoginScope.ACTIVATION) {
+  if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.ACTIVATION) {
     return null
   }
 
@@ -332,13 +404,45 @@ export async function activateParticipantAccount(
   return null
 }
 
-export async function logoutParticipant(_: any, ctx: ContextWithUser) {
+export async function logoutParticipant(ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
   return ctx.user.sub
+}
+
+export async function logoutTemporaryParticipant(
+  { liveQuizId }: { liveQuizId: string },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user is a temporary participant
+  if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
+    return false // not a temporary participant
+  }
+
+  // check if there exists a temporary leaderboard entry for the current user
+  const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+    where: { id: ctx.user.sub, quizId: liveQuizId },
+  })
+
+  if (!lbEntry) {
+    return false // no temporary participant found
+  }
+
+  // delete the temporary leaderboard entry
+  await ctx.prisma.temporaryLeaderboardEntry.delete({
+    where: { id: ctx.user.sub, quizId: liveQuizId },
+  })
+
+  // delete the cookie
+  ctx.res.cookie('temporary_participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  return true
 }
 
 export async function generateLoginToken(ctx: ContextWithUser) {
@@ -373,7 +477,7 @@ export async function getLoginToken(ctx: ContextWithUser) {
 }
 
 export async function changeUserLocale(
-  { locale }: { locale: Locale },
+  { locale }: { locale: DB.Locale },
   ctx: ContextWithUser
 ) {
   const user = await ctx.prisma.user.update({
@@ -394,7 +498,7 @@ export async function getUsersPrivatePreview(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
   })
 
-  if (!user || user.role !== UserRole.ADMIN) {
+  if (!user || user.role !== DB.UserRole.ADMIN) {
     return []
   }
 
@@ -422,7 +526,7 @@ export async function grantPrivatePreviewAccess(
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
-  if (!user || user.role !== UserRole.ADMIN) {
+  if (!user || user.role !== DB.UserRole.ADMIN) {
     return null
   }
 
@@ -453,7 +557,7 @@ export async function grantPrivatePreviewAccess(
 }
 
 export async function changeParticipantLocale(
-  { locale }: { locale: Locale },
+  { locale }: { locale: DB.Locale },
   ctx: Context
 ) {
   ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
@@ -669,8 +773,8 @@ export async function createParticipantAccount(
     const activationJWT = JWT.sign(
       {
         sub: participant.id,
-        role: UserRole.PARTICIPANT,
-        scope: UserLoginScope.ACTIVATION,
+        role: DB.UserRole.PARTICIPANT,
+        scope: DB.UserLoginScope.ACTIVATION,
       },
       process.env.APP_SECRET as string,
       {
@@ -847,7 +951,12 @@ export async function checkParticipantNameAvailable(
     where: { username: username.trim() },
   })
 
-  if (!participant || participant.id === ctx.user?.sub) return true
+  if (
+    !participant ||
+    (ctx.user?.role === DB.UserRole.PARTICIPANT &&
+      participant.id === ctx.user?.sub)
+  )
+    return true
 
   return false
 }
@@ -868,13 +977,18 @@ export async function checkShortnameAvailable(
 interface UserLoginProps {
   password: string
   name: string
-  scope: UserLoginScope
+  scope: DB.UserLoginScope
 }
 
 export async function createUserLogin(
   { password, name, scope }: UserLoginProps,
   ctx: ContextWithUser
 ) {
+  // verify that the user is account owner
+  if (ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER) {
+    return null
+  }
+
   const hashedPassword = await bcrypt.hash(password, 12)
   const login = await ctx.prisma.userLogin.create({
     data: {
@@ -882,7 +996,7 @@ export async function createUserLogin(
       name: name.trim(),
       // scope,
       // TODO: allow creation of other access levels once auth is handled granularly
-      scope: UserLoginScope.FULL_ACCESS,
+      scope: DB.UserLoginScope.FULL_ACCESS,
       user: {
         connect: {
           id: ctx.user.sub,
@@ -895,6 +1009,36 @@ export async function createUserLogin(
   })
 
   return login
+}
+
+export async function updateUserLogin(
+  {
+    id,
+    password,
+  }: {
+    id: string
+    password: string
+  },
+  ctx: ContextWithUser
+) {
+  // check if the user is the owner of the account belonging to the login
+  const login = await ctx.prisma.userLogin.findUnique({
+    where: { id, userId: ctx.user.sub },
+  })
+
+  if (!login || ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER) {
+    return null
+  }
+
+  // update the password
+  const hashedPassword = await bcrypt.hash(password, 12)
+  const updatedLogin = await ctx.prisma.userLogin.update({
+    where: { id },
+    data: { password: hashedPassword },
+    include: { user: true },
+  })
+
+  return updatedLogin
 }
 
 export async function deleteUserLogin(
@@ -957,7 +1101,13 @@ export async function changeInitialSettings(
     shortname,
     locale,
     sendUpdates,
-  }: { shortname: string; locale: Locale; sendUpdates: boolean },
+    seedDemoElements,
+  }: {
+    shortname: string
+    locale: DB.Locale
+    sendUpdates: boolean
+    seedDemoElements: boolean
+  },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
@@ -974,7 +1124,9 @@ export async function changeInitialSettings(
   }
 
   // seed demo questions
-  await seedDemoQuestions(ctx)
+  if (seedDemoElements) {
+    await seedDemoQuestions(ctx)
+  }
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
@@ -987,32 +1139,6 @@ export async function changeInitialSettings(
   })
 
   return user
-}
-
-export async function checkPublicPreviewAvailable(ctx: Context) {
-  // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
-    return false
-  }
-
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  return user?.publicPreview ?? false
-}
-
-export async function checkPrivatePreviewAvailable(ctx: Context) {
-  // check if user is logged in
-  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
-    return false
-  }
-
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  return user?.privatePreview ?? false
 }
 
 async function seedDemoQuestions(ctx: ContextWithUser) {

@@ -4,25 +4,19 @@ import {
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-
-interface StartModalProps {
-  quizId: string
-  quizName: string
-  startModalOpen: boolean
-  setStartModalOpen: (open: boolean) => void
-  setErrorToast: (open: boolean) => void
-}
 
 function StartModal({
   quizId,
   quizName,
-  startModalOpen,
-  setStartModalOpen,
-  setErrorToast,
-}: StartModalProps) {
+  onClose,
+}: {
+  quizId: string
+  quizName: string
+  onClose: () => void
+}) {
   const t = useTranslations()
   const router = useRouter()
   const [startLiveQuiz, { loading: startingLiveQuiz }] = useMutation(
@@ -61,38 +55,29 @@ function StartModal({
 
   return (
     <Modal
-      open={startModalOpen}
-      onClose={() => setStartModalOpen(false)}
-      onPrimaryAction={
-        <Button
-          primary
-          loading={startingLiveQuiz}
-          onClick={async () => {
-            try {
-              await startLiveQuiz({
-                variables: { id: quizId },
-              })
-              router.push(`/session/${quizId}`)
-            } catch (error) {
-              setStartModalOpen(false)
-              setErrorToast(true)
-            }
-          }}
-          data={{
-            cy: 'confirm-start-live-quiz',
-          }}
-        >
-          <Button.Label>{t('shared.generic.start')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={() => setStartModalOpen(false)}
-          data={{ cy: 'cancel-start-live-quiz-modal' }}
-        >
-          {t('shared.generic.cancel')}
-        </Button>
-      }
+      open
+      onClose={onClose}
+      primaryLabel={t('shared.generic.start')}
+      onPrimaryAction={async () => {
+        try {
+          await startLiveQuiz({
+            variables: { id: quizId },
+          })
+          router.push(`/session/${quizId}`)
+        } catch (error) {
+          onClose()
+          toast({
+            type: 'error',
+            message: t('control.course.liveQuizStartFailed'),
+            options: { duration: 5000 },
+          })
+        }
+      }}
+      primaryLoading={startingLiveQuiz}
+      dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
       className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
       hideCloseButton
     >

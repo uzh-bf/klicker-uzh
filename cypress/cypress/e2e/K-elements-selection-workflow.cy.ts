@@ -404,10 +404,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
-  // #endregion
 
-  // ! Cleanup
-  // #region
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
     cy.deleteElement({ elementName: this.data.SE.titleEdited })
 
@@ -452,6 +449,201 @@ describe('Test creation and editing functionalities, validation, etc. for select
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
+  // #endregion
 
+  // ! Selection question with inline answer collection creation
+  // #region
+  it('Create a selection question with inline answer collection', function () {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SELECTION.typeLabel)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // enter question data
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .type(this.data.SE_INLINE.title)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(this.data.SE_INLINE.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(this.data.SE_INLINE.explanation)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // check if button for manual creation is present and click it
+    cy.get('[data-cy="create-inline-answer-collection"]')
+      .should('exist')
+      .click()
+
+    // enter items manually
+    cy.wrap(this.data.SE_INLINE.items).each((item: string) => {
+      cy.get('#inline-answer-collection-options').type(`${item}{enter}`)
+    })
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // configure number of inputs
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(String(this.data.SE_INLINE.inputs))
+
+    // add sample solution
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // select correct answers
+    cy.wrap(this.data.SE_INLINE.solutions).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]')
+        .realClick()
+        .type(`${solution}{enter}`)
+    })
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // add another item
+    const additionalItem = 'Additional Selection Item'
+    cy.get('#inline-answer-collection-options').type(`${additionalItem}{enter}`)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // check that the item was added
+    cy.get('#inline-answer-collection-options').should(
+      'contain',
+      additionalItem
+    )
+
+    // select the additional item as correct answer
+    cy.get('[data-cy="choose-correct-answer-options"]')
+      .realClick()
+      .type(`${additionalItem}{enter}`)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // verify the additional item is selected as a correct answer
+    cy.get('[data-cy="choose-correct-answer-options"]').contains(additionalItem)
+
+    // remove the item again and verify it was automatically removed from the answers too
+    cy.get('#inline-answer-collection-options').type(`{backspace}`)
+
+    // check that the item is removed from correct answers
+    cy.get('[data-cy="choose-correct-answer-options"]').should(
+      'not.contain',
+      additionalItem
+    )
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    cy.get(`[data-cy="element-item-${this.data.SE_INLINE.title}"]`).contains(
+      this.data.SE_INLINE.content
+    )
+  })
+
+  it('Verify that a new answer collection was created when creating the selection question', function () {
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE_INLINE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.SE_INLINE.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        this.data.SE_INLINE.solutions.includes(sol)
+          ? 'be.disabled'
+          : 'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Edit the inline created selection question', function () {
+    cy.get(`[data-cy="edit-element-${this.data.SE_INLINE.title}"]`).click()
+
+    // edit basic information
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.SE_INLINE.titleEdited)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.SE_INLINE.contentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .clear()
+      .type(this.data.SE_INLINE.explanationEdited)
+
+    // ensure that switching to manual item creation is not possible during editing
+    cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')
+
+    // edit number of inputs
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(String(this.data.SE_INLINE.inputsEdited))
+
+    // verify that the correct answers only contain the selected answer options
+    cy.wrap(this.data.SE_INLINE.solutions).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+    cy.wrap(
+      this.data.SE_INLINE.items.filter(
+        (item: string) => !this.data.SE_INLINE.solutions.includes(item)
+      )
+    ).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').should(
+        'not.contain',
+        solution
+      )
+    })
+
+    // save changes
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    // verify the changes were saved
+    cy.get(
+      `[data-cy="element-item-${this.data.SE_INLINE.titleEdited}"]`
+    ).contains(this.data.SE_INLINE.contentEdited)
+  })
+
+  it('Delete the inline created selection question', function () {
+    cy.deleteElement({ elementName: this.data.SE_INLINE.titleEdited })
+
+    // verify the collection can be deleted now
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE_INLINE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.SE_INLINE.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE_INLINE.collection}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'not.have.attr',
+      'data-disabled'
+    )
+  })
   // #endregion
 })

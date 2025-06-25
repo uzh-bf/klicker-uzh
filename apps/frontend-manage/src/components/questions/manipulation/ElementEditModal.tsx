@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  CreateAnswerCollectionDocument,
   ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
@@ -14,11 +15,14 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
+import { Modal } from '@uzh-bf/design-system'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
+  createInlineCaseStudyCollection,
+  createInlineSelectionCollection,
   prepareCaseStudyArgs,
   prepareChoicesArgs,
   prepareContentArgs,
@@ -53,12 +57,9 @@ function ElementEditModal({
   elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
-  const t = useTranslations()
-
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
-  const [failureToast, setFailureToast] = useState(false)
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -98,6 +99,7 @@ function ElementEditModal({
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
+  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
   const initialValues = useElementFormInitialValues({
@@ -117,7 +119,11 @@ function ElementEditModal({
   }, [isOpen, isDuplication, initialValues])
 
   if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
-    return <div />
+    return (
+      <Modal open onClose={() => null} fullScreen>
+        <Loader />
+      </Modal>
+    )
   }
 
   return (
@@ -128,199 +134,236 @@ function ElementEditModal({
       loading={loadingQuestion}
       initialValues={formikInitialValues}
       initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
-      open={isOpen}
       onClose={() => handleSetIsOpen(false)}
-      failureToast={failureToast}
-      setFailureToast={setFailureToast}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
-        switch (values.type) {
-          case ElementType.Content: {
-            const args = prepareContentArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+        try {
+          switch (values.type) {
+            case ElementType.Content: {
+              const args = prepareContentArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
 
-            const result = await manipulateContentElement({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const result = await manipulateContentElement({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
 
-            const data = result.data?.manipulateContentElement
-            if (data?.__typename !== 'ContentElement' || !data.id) {
-              setFailureToast(true)
-              return
+              const data = result.data?.manipulateContentElement
+              if (data?.__typename !== 'ContentElement' || !data.id) {
+                return false
+              }
+
+              break
             }
 
-            break
-          }
+            case ElementType.Flashcard: {
+              const args = prepareFlashcardArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
 
-          case ElementType.Flashcard: {
-            const args = prepareFlashcardArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              const result = await manipulateFlashcardElement({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
 
-            const result = await manipulateFlashcardElement({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const data = result.data?.manipulateFlashcardElement
+              if (data?.__typename !== 'FlashcardElement' || !data.id) {
+                return false
+              }
 
-            const data = result.data?.manipulateFlashcardElement
-            if (data?.__typename !== 'FlashcardElement' || !data.id) {
-              setFailureToast(true)
-              return
+              break
             }
 
-            break
-          }
+            case ElementType.Sc:
+            case ElementType.Mc:
+            case ElementType.Kprim: {
+              const args = prepareChoicesArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
 
-          case ElementType.Sc:
-          case ElementType.Mc:
-          case ElementType.Kprim: {
-            const args = prepareChoicesArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              const result = await manipulateChoicesQuestion({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
 
-            const result = await manipulateChoicesQuestion({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const data = result.data?.manipulateChoicesQuestion
+              if (data?.__typename !== 'ChoicesElement' || !data.id) {
+                return false
+              }
 
-            const data = result.data?.manipulateChoicesQuestion
-            if (data?.__typename !== 'ChoicesElement' || !data.id) {
-              setFailureToast(true)
-              return
+              break
             }
 
-            break
-          }
+            case ElementType.Numerical: {
+              const args = prepareNumericalArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
 
-          case ElementType.Numerical: {
-            const args = prepareNumericalArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              const result = await manipulateNumericalQuestion({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
 
-            const result = await manipulateNumericalQuestion({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const data = result.data?.manipulateNumericalQuestion
+              if (data?.__typename !== 'NumericalElement' || !data.id) {
+                return false
+              }
 
-            const data = result.data?.manipulateNumericalQuestion
-            if (data?.__typename !== 'NumericalElement' || !data.id) {
-              setFailureToast(true)
-              return
+              break
             }
 
-            break
-          }
+            case ElementType.FreeText: {
+              const args = prepareFreeTextArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
 
-          case ElementType.FreeText: {
-            const args = prepareFreeTextArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              const result = await manipulateFreeTextQuestion({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
 
-            const result = await manipulateFreeTextQuestion({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const data = result.data?.manipulateFreeTextQuestion
+              if (data?.__typename !== 'FreeTextElement' || !data.id) {
+                return false
+              }
 
-            const data = result.data?.manipulateFreeTextQuestion
-            if (data?.__typename !== 'FreeTextElement' || !data.id) {
-              setFailureToast(true)
-              return
+              break
             }
 
-            break
-          }
+            case ElementType.Selection: {
+              // if the items for the selection question were defined inline, create a new answer collection from them
+              const innerValues =
+                values.options.itemSelectionMode === 'new'
+                  ? await createInlineSelectionCollection({
+                      values,
+                      createAnswerCollection,
+                    })
+                  : undefined
 
-          case ElementType.Selection: {
-            const args = prepareSelectionArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              // if the creation was not successful, return early
+              if (
+                values.options.itemSelectionMode === 'new' &&
+                (innerValues === null || typeof innerValues === 'undefined')
+              ) {
+                return false
+              }
 
-            const result = await manipulateSelectionQuestion({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const args = prepareSelectionArgs({
+                elementId,
+                isDuplication,
+                values:
+                  values.options.itemSelectionMode === 'new'
+                    ? innerValues!
+                    : values,
+              })
 
-            const data = result.data?.manipulateSelectionQuestion
-            if (data?.__typename !== 'SelectionElement' || !data.id) {
-              setFailureToast(true)
-              return
+              const result = await manipulateSelectionQuestion({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
+
+              const data = result.data?.manipulateSelectionQuestion
+              if (data?.__typename !== 'SelectionElement' || !data.id) {
+                return false
+              }
+
+              break
             }
 
-            break
-          }
+            case ElementType.CaseStudy: {
+              // if the items for the case study question were defined inline, create a new answer collection from them
+              const innerValues =
+                values.options.itemSelectionMode === 'new'
+                  ? await createInlineCaseStudyCollection({
+                      values,
+                      createAnswerCollection,
+                    })
+                  : undefined
 
-          case ElementType.CaseStudy: {
-            const args = prepareCaseStudyArgs({
-              elementId,
-              isDuplication,
-              values,
-            })
+              // if the creation was not successful, return early
+              if (
+                values.options.itemSelectionMode === 'new' &&
+                (innerValues === null || typeof innerValues === 'undefined')
+              ) {
+                return false
+              }
 
-            const result = await manipulateCaseStudyQuestion({
-              variables: args,
-              refetchQueries: [
-                { query: GetUserElementsDocument },
-                { query: GetUserTagsDocument },
-              ],
-            })
+              const args = prepareCaseStudyArgs({
+                elementId,
+                isDuplication,
+                values:
+                  values.options.itemSelectionMode === 'new'
+                    ? innerValues!
+                    : values,
+              })
 
-            const data = result.data?.manipulateCaseStudyQuestion
-            if (data?.__typename !== 'CaseStudyElement' || !data.id) {
-              setFailureToast(true)
-              return
+              const result = await manipulateCaseStudyQuestion({
+                variables: args,
+                refetchQueries: [
+                  { query: GetUserElementsDocument },
+                  { query: GetUserTagsDocument },
+                ],
+              })
+
+              const data = result.data?.manipulateCaseStudyQuestion
+              if (data?.__typename !== 'CaseStudyElement' || !data.id) {
+                return false
+              }
+
+              break
             }
 
-            break
+            default:
+              break
           }
 
-          default:
-            break
-        }
-
-        if (mode === ElementEditMode.EDIT && updateInstances) {
-          if (elementId !== null && typeof elementId !== 'undefined') {
-            await updateElementInstances({
-              variables: {
-                elementId: elementId,
-                includeTemplates: includeTemplateUpdates,
-              },
-            })
+          if (mode === ElementEditMode.EDIT && updateInstances) {
+            if (elementId !== null && typeof elementId !== 'undefined') {
+              await updateElementInstances({
+                variables: {
+                  elementId: elementId,
+                  includeTemplates: includeTemplateUpdates,
+                },
+              })
+            }
           }
+
+          return true
+        } catch (err) {
+          console.error('Error submitting element:', err)
+          return false
         }
       }}
       onSuccess={() => {

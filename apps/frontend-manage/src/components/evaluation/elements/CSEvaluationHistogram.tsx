@@ -8,14 +8,12 @@ import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
-  useArrowNavigation,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+  useArrowNavigation,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

@@ -17,6 +17,7 @@ import {
   createAnswerCollection,
   deleteAnswerCollection,
   deleteAnswerCollectionEntry,
+  duplicateAnswerCollection,
   editAnswerCollectionEntry,
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
@@ -131,19 +132,47 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
     expect(derivedPermission!.derived).toBeFalsy()
   })
 
-  it('Test that the creation of an answer collection fails gracefully if the name uniqueness constraint is violated', async () => {
-    const { AC1: AC } = await seedAnswerCollections(userOneCtx)
-    expect(AC).toBeTruthy()
+  it('Verify that all users with at least READ permissions on an answer collection can duplicate it', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await seedAnswerCollections(userOneCtx)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
-    const res = await createAnswerCollection(
-      {
-        name: answerCollection1.name,
-        description: answerCollection1.description,
-        answers: answerCollection1.entries,
+    // duplicate the answer collection as user 1 (owner)
+    const res1 = await duplicateAnswerCollection({ id: AC1!.id }, userOneCtx)
+    expect(res1).toBeTruthy()
+    expect(res1!.ownerId).toBe(userOne.id)
+
+    // duplicate the answer collection as user 2 (admin)
+    const res2 = await duplicateAnswerCollection({ id: AC1!.id }, userTwoCtx)
+    expect(res2).toBeTruthy()
+    expect(res2!.ownerId).toBe(userTwo.id)
+
+    // duplicate the answer collection as user 3 (editor)
+    const res3 = await duplicateAnswerCollection({ id: AC1!.id }, userThreeCtx)
+    expect(res3).toBeTruthy()
+    expect(res3!.ownerId).toBe(userThree.id)
+
+    // duplicate the answer collection as user 4 (reader)
+    const res4 = await duplicateAnswerCollection({ id: AC1!.id }, userFourCtx)
+    expect(res4).toBeTruthy()
+    expect(res4!.ownerId).toBe(userFour.id)
+
+    // verify that the duplication has been correctly performed for all users
+    const duplicatedCollections = await prisma.answerCollection.findMany({
+      where: {
+        name: `${AC1!.name} (Copy)`,
       },
-      userOneCtx
-    )
-    expect(res).toBeNull()
+      include: {
+        entries: true,
+      },
+    })
+    expect(duplicatedCollections).toHaveLength(4)
+
+    for (const collection of duplicatedCollections) {
+      expect(collection.name).toBe(`${answerCollection1.name} (Copy)`)
+      expect(collection.description).toBe(answerCollection1.description)
+      expect(collection.entries.length).toBe(answerCollection1.entries.length)
+    }
   })
 
   it('Verify that all users with access to the answer collection can use the query to include it in elements', async () => {

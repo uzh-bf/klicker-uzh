@@ -1,23 +1,11 @@
-import {
-  Course,
-  DerivedPermission,
-  ElementOrderType,
-  LeaderboardType,
-  Permission,
-  PermissionLevel,
-  PublicationStatus,
-  TimelineEntryType,
-  UserRole,
-  type Participant,
-  type ParticipantGroup,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import { type ILeaderboardEntry } from 'src/schema/course.js'
+import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
@@ -50,7 +38,11 @@ export async function joinCourseWithPin(
     where: { pinCode: pin },
   })
 
-  if (!course || course.pinCode !== pin) {
+  if (
+    !course ||
+    course.pinCode !== pin ||
+    ctx.user.role !== DB.UserRole.PARTICIPANT
+  ) {
     return null
   }
 
@@ -120,13 +112,13 @@ export async function joinCourseLeaderboard(
   const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
     where: {
       type_participantId_courseId: {
-        type: LeaderboardType.COURSE,
+        type: DB.LeaderboardType.COURSE,
         participantId: ctx.user.sub,
         courseId,
       },
     },
     create: {
-      type: LeaderboardType.COURSE,
+      type: DB.LeaderboardType.COURSE,
       participant: {
         connect: {
           id: ctx.user.sub,
@@ -191,7 +183,7 @@ export async function leaveCourseLeaderboard(
   await ctx.prisma.leaderboardEntry.delete({
     where: {
       type_participantId_courseId: {
-        type: LeaderboardType.COURSE,
+        type: DB.LeaderboardType.COURSE,
         participantId: ctx.user.sub,
         courseId,
       },
@@ -231,7 +223,7 @@ export async function getCourseOverviewData(
   ctx: ContextWithUser
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -264,7 +256,7 @@ export async function getCourseOverviewData(
 
     if (participation) {
       const allGroupEntries = participation.course.participantGroups.reduce<{
-        mapped: (ParticipantGroup & { score: number; isMember: boolean })[]
+        mapped: (DB.ParticipantGroup & { score: number; isMember: boolean })[]
         sum: number
         count: number
       }>(
@@ -344,8 +336,8 @@ export async function getCourseOverviewData(
 
   if (!course) return null
 
-  let participant: Participant | null = null
-  if (ctx.user?.sub) {
+  let participant: DB.Participant | null = null
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     participant = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
     })
@@ -418,7 +410,7 @@ async function computeRollingLeaderboardEntries(
       },
       timelineEntries: {
         where: {
-          type: TimelineEntryType.DAILY,
+          type: DB.TimelineEntryType.DAILY,
           timestamp: {
             gt: dayjs().subtract(days, 'days').toDate(),
           },
@@ -544,7 +536,11 @@ export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: ContextWithUser
 ) {
-  if (ctx.user?.sub && mode === 'course') {
+  if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'course'
+  ) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -640,7 +636,11 @@ export async function getStudentCourseLeaderboard(
         },
       }
     }
-  } else if (ctx.user?.sub && mode === 'biweekly') {
+  } else if (
+    ctx.user?.sub &&
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    mode === 'biweekly'
+  ) {
     const { leaderboardEntries, count, sum } =
       await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
 
@@ -703,40 +703,43 @@ export async function createCourse(
 
   const defaultMaxGroupSize = 5
   const defaultPreferredGroupSize = 3
-  const course = await ctx.prisma.$transaction(async (prisma) => {
-    const newCourse = await prisma.course.create({
-      data: {
-        name: name.trim(),
-        displayName: displayName.trim(),
-        description: description,
-        color: color ?? '#CCD5ED',
-        startDate: startDate,
-        endDate: endDate,
-        isGroupCreationEnabled: isGroupCreationEnabled ?? true,
-        groupDeadlineDate: groupDeadlineDate ?? endDate,
-        maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
-        preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
-        notificationEmail: notificationEmail,
-        isGamificationEnabled: isGamificationEnabled,
-        pinCode: randomPin,
-        owner: {
-          connect: {
-            id: ctx.user.sub,
+  const course = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const newCourse = await prisma.course.create({
+        data: {
+          name: name.trim(),
+          displayName: displayName.trim(),
+          description: description,
+          color: color ?? '#CCD5ED',
+          startDate: startDate,
+          endDate: endDate,
+          isGroupCreationEnabled: isGroupCreationEnabled ?? true,
+          groupDeadlineDate: groupDeadlineDate ?? endDate,
+          maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+          preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
+          notificationEmail: notificationEmail,
+          isGamificationEnabled: isGamificationEnabled,
+          pinCode: randomPin,
+          owner: {
+            connect: {
+              id: ctx.user.sub,
+            },
           },
         },
-      },
-    })
+      })
 
-    await recomputeDerivedPermissions(
-      {
-        courseId: newCourse.id,
-        userId: ctx.user.sub,
-      },
-      prisma
-    )
+      await recomputeDerivedPermissions(
+        {
+          courseId: newCourse.id,
+          userId: ctx.user.sub,
+        },
+        prisma
+      )
 
-    return newCourse
-  })
+      return newCourse
+    },
+    { timeout: 60000 }
+  )
 
   return course
 }
@@ -857,18 +860,18 @@ export async function getUserCourses(ctx: ContextWithUser) {
               permissionLevel: object.permissionLevel,
               derivedAccess: object.derived,
               numSharedUsers: object.course._count.permissions - 1,
-              isOwner: object.permissionLevel === PermissionLevel.OWNER,
+              isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
               isManager:
-                object.permissionLevel === PermissionLevel.OWNER ||
-                object.permissionLevel === PermissionLevel.ADMIN,
+                object.permissionLevel === DB.PermissionLevel.OWNER ||
+                object.permissionLevel === DB.PermissionLevel.ADMIN,
               isEditor:
-                object.permissionLevel === PermissionLevel.OWNER ||
-                object.permissionLevel === PermissionLevel.ADMIN ||
-                object.permissionLevel === PermissionLevel.WRITE,
-              isShared: object.permissionLevel !== PermissionLevel.OWNER,
+                object.permissionLevel === DB.PermissionLevel.OWNER ||
+                object.permissionLevel === DB.PermissionLevel.ADMIN ||
+                object.permissionLevel === DB.PermissionLevel.WRITE,
+              isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
               // object can be removed, if the object is shared and the permission is not derived / granted through a user group
               isRemovable:
-                object.permissionLevel !== PermissionLevel.OWNER &&
+                object.permissionLevel !== DB.PermissionLevel.OWNER &&
                 !object.derived &&
                 object.directPermission?.userGroupId === null,
             }
@@ -918,7 +921,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 liveQuizId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -926,7 +929,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 practiceQuizId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -934,7 +937,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 microLearningId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -942,7 +945,7 @@ export async function getActiveUserCourses(
           ? [
               {
                 groupActivityId: activityId,
-                minimumPermissionLevel: PermissionLevel.WRITE,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
               },
             ]
           : []),
@@ -955,7 +958,7 @@ export async function getActiveUserCourses(
     }
 
     // fetch the course link to the corresponding acitivity
-    let activityCourse: Course | null = null
+    let activityCourse: DB.Course | null = null
     if (activityType === ActivityType.LIVE_QUIZ) {
       const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
         where: { id: activityId },
@@ -1057,45 +1060,48 @@ export async function deleteCourse(
     throw new Error('Course not found or permission denied')
   }
 
-  const deletedCourse = await ctx.prisma.$transaction(async (prisma) => {
-    // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
-    // live quizzes are disconnected from the course on deletion
-    const deleted = await prisma.course.delete({ where: { id } })
+  const deletedCourse = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
+      // live quizzes are disconnected from the course on deletion
+      const deleted = await prisma.course.delete({ where: { id } })
 
-    // trigger a recomputation of all permissions related to the live quizzes of the course
-    // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
-    for (const liveQuiz of course.liveQuizzes) {
-      await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
-    }
+      // trigger a recomputation of all permissions related to the live quizzes of the course
+      // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
+      for (const liveQuiz of course.liveQuizzes) {
+        await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
+      }
 
-    // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
-    // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
-    const elementIds = [
-      ...new Set([
-        ...course.practiceQuizzes.flatMap((quiz) =>
-          quiz.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-        ...course.microLearnings.flatMap((ml) =>
-          ml.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-        ...course.groupActivities.flatMap((ga) =>
-          ga.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-      ]),
-    ]
+      // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
+      // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
+      const elementIds = [
+        ...new Set([
+          ...course.practiceQuizzes.flatMap((quiz) =>
+            quiz.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.microLearnings.flatMap((ml) =>
+            ml.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.groupActivities.flatMap((ga) =>
+            ga.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+        ]),
+      ]
 
-    for (const elementId of elementIds) {
-      await recomputeDerivedPermissions({ elementId }, prisma)
-    }
+      for (const elementId of elementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      }
 
-    return deleted
-  })
+      return deleted
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
@@ -1115,17 +1121,33 @@ export async function removeCourse(
   }
 
   // remove direct permission and recompute derived permissions for this course and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.course.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission of the user on the course
+      await prisma.course.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    await recomputeDerivedPermissions(
-      { courseId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.COURSE,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.COURSE} (ID: ${id})`,
+        },
+      })
+
+      // recompute derived permissions for the user on the course
+      await recomputeDerivedPermissions(
+        { courseId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Course',
@@ -1164,29 +1186,29 @@ export async function getControlCourses(ctx: ContextWithUser) {
 function getPermissionBooleans({
   permission,
 }: {
-  permission: DerivedPermission & { directPermission: Permission | null }
+  permission: DB.DerivedPermission & { directPermission: DB.Permission | null }
 }) {
   return {
-    isOwner: permission.permissionLevel === PermissionLevel.OWNER,
+    isOwner: permission.permissionLevel === DB.PermissionLevel.OWNER,
     isManager:
-      permission.permissionLevel === PermissionLevel.OWNER ||
-      permission.permissionLevel === PermissionLevel.ADMIN,
+      permission.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN,
     isEditor:
-      permission.permissionLevel === PermissionLevel.OWNER ||
-      permission.permissionLevel === PermissionLevel.ADMIN ||
-      permission.permissionLevel === PermissionLevel.WRITE,
+      permission.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.WRITE,
     isExecutor:
-      permission.permissionLevel === PermissionLevel.EXECUTE ||
-      permission.permissionLevel === PermissionLevel.WRITE ||
-      permission.permissionLevel === PermissionLevel.ADMIN ||
-      permission.permissionLevel === PermissionLevel.OWNER,
-    isShared: permission.permissionLevel !== PermissionLevel.OWNER,
+      permission.permissionLevel === DB.PermissionLevel.EXECUTE ||
+      permission.permissionLevel === DB.PermissionLevel.WRITE ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.OWNER,
+    isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     isRemovable:
-      permission.permissionLevel !== PermissionLevel.OWNER &&
+      permission.permissionLevel !== DB.PermissionLevel.OWNER &&
       !permission.derived &&
       permission.directPermission?.userGroupId === null,
     sharingType:
-      permission.permissionLevel === PermissionLevel.OWNER
+      permission.permissionLevel === DB.PermissionLevel.OWNER
         ? SharingType.OWNED
         : permission.derived
           ? SharingType.DEPENDENCY
@@ -1279,11 +1301,6 @@ export async function getCourseData(
     },
   })
 
-  // fetch the requesting user to check for private / public preview flags
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
   if (!course) return null
 
   // if no derived permission was found, return null
@@ -1303,302 +1320,263 @@ export async function getCourseData(
     permission: coursePermission,
   })
 
-  const reducedLiveQuizzes = !user?.privatePreview
-    ? course.liveQuizzes.map((session) => {
-        return {
-          ...session,
-          numOfBlocks: session.blocks.length,
-          numOfInstances: session.blocks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-        }
-      })
-    : []
+  const liveQuizzesInfo = course.liveQuizzes.flatMap((liveQuiz) => {
+    const permission = liveQuiz.permissions[0]
 
-  const liveQuizActivities = user?.privatePreview
-    ? course.liveQuizzes.flatMap((liveQuiz) => {
-        const permission = liveQuiz.permissions[0]
+    if (!permission) {
+      return []
+    }
 
-        if (!permission) {
-          return []
-        }
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
+    const stacks = liveQuiz.blocks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      timeLimit: block.timeLimit,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
 
-        const stacks = liveQuiz.blocks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: liveQuiz.id,
-          templateId: liveQuiz.templateInfo?.id ?? null,
-          name: liveQuiz.name,
-          displayName: liveQuiz.displayName,
-          type: ActivityType.LIVE_QUIZ,
-          status: liveQuiz.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: liveQuiz.blocks.length,
-          numOfElements: liveQuiz.blocks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: liveQuiz._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: liveQuiz.updatedAt,
-        }
-      })
-    : []
-
-  const reducedPracticeQuizzes = course.practiceQuizzes.map((quiz) => {
     return {
-      ...quiz,
-      numOfStacks: quiz.stacks.length,
+      id: liveQuiz.id,
+      templateId: liveQuiz.templateInfo?.id ?? null,
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
+      type: ActivityType.LIVE_QUIZ,
+      status: liveQuiz.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: liveQuiz.blocks.length,
+      numOfElements: liveQuiz.blocks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: liveQuiz._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: liveQuiz.updatedAt,
     }
   })
 
-  const practiceQuizActivities = user?.privatePreview
-    ? course.practiceQuizzes.flatMap((practiceQuiz) => {
-        const permission = practiceQuiz.permissions[0]
+  const practiceQuizzesInfo = course.practiceQuizzes.flatMap((practiceQuiz) => {
+    const permission = practiceQuiz.permissions[0]
 
-        if (!permission) {
-          return []
-        }
+    if (!permission) {
+      return []
+    }
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
 
-        const stacks = practiceQuiz.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
+    const stacks = practiceQuiz.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
 
-        return {
-          id: practiceQuiz.id,
-          templateId: practiceQuiz.templateInfo?.id ?? null,
-          name: practiceQuiz.name,
-          displayName: practiceQuiz.displayName,
-          type: ActivityType.PRACTICE_QUIZ,
-          status: practiceQuiz.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: practiceQuiz.stacks.length,
-          numOfElements: practiceQuiz.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: practiceQuiz.availableFrom,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: practiceQuiz._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: practiceQuiz.updatedAt,
-        }
-      })
-    : []
-
-  const reducedMicroLearnings = course.microLearnings.map((microLearning) => {
     return {
-      ...microLearning,
+      id: practiceQuiz.id,
+      templateId: practiceQuiz.templateInfo?.id ?? null,
+      name: practiceQuiz.name,
+      displayName: practiceQuiz.displayName,
+      type: ActivityType.PRACTICE_QUIZ,
+      status: practiceQuiz.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
+      numOfStacks: practiceQuiz.stacks.length,
+      numOfElements: practiceQuiz.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      automaticPublicationAt: practiceQuiz.availableFrom,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: practiceQuiz._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: practiceQuiz.updatedAt,
+    }
+  })
+
+  const microLearningsInfo = course.microLearnings.flatMap((microLearning) => {
+    const permission = microLearning.permissions[0]
+
+    if (!permission) {
+      return []
+    }
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission,
+    })
+
+    const stacks = microLearning.stacks.map((block) => ({
+      id: block.id,
+      numOfParticipants: block.elements[0]
+        ? block.elements[0].results.total +
+          block.elements[0].anonymousResults.total
+        : 0,
+      elements: block.elements.map((instance) => ({
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+      })),
+    }))
+
+    return {
+      id: microLearning.id,
+      templateId: microLearning.templateInfo?.id ?? null,
+      name: microLearning.name,
+      displayName: microLearning.displayName,
+      type: ActivityType.MICRO_LEARNING,
+      status: microLearning.status,
+      courseId: course.id,
+      courseName: course.name,
+      courseStartDate: course.startDate,
       numOfStacks: microLearning.stacks.length,
+      numOfElements: microLearning.stacks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      scheduledStartAt: microLearning.scheduledStartAt,
+      scheduledEndAt: microLearning.scheduledEndAt,
+      stacks,
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      numSharedUsers: microLearning._count.permissions - 1,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+      updatedAt: microLearning.updatedAt,
     }
   })
 
-  const microLearningActivities = user?.privatePreview
-    ? course.microLearnings.flatMap((microLearning) => {
-        const permission = microLearning.permissions[0]
+  const groupActivitiesInfo = course.groupActivities.flatMap(
+    (groupActivity) => {
+      const permission = groupActivity.permissions[0]
 
-        if (!permission) {
-          return []
-        }
+      if (!permission) {
+        return []
+      }
 
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
-
-        const stacks = microLearning.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: microLearning.id,
-          templateId: microLearning.templateInfo?.id ?? null,
-          name: microLearning.name,
-          displayName: microLearning.displayName,
-          type: ActivityType.MICRO_LEARNING,
-          status: microLearning.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: microLearning.stacks.length,
-          numOfElements: microLearning.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: microLearning.scheduledStartAt,
-          scheduledEndAt: microLearning.scheduledEndAt,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: microLearning._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: microLearning.updatedAt,
-        }
+      const {
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        sharingType,
+      } = getPermissionBooleans({
+        permission,
       })
-    : []
 
-  const reducedGroupActivities = course.groupActivities.map((groupActivity) => {
-    return {
-      ...groupActivity,
-      numOfQuestions: groupActivity.stacks[0]!.elements.length,
+      const stacks = groupActivity.stacks.map((block) => ({
+        id: block.id,
+        numOfParticipants: block.elements[0]
+          ? block.elements[0].results.total +
+            block.elements[0].anonymousResults.total
+          : 0,
+        elements: block.elements.map((instance) => ({
+          id: instance.id,
+          name: instance.elementData.name,
+          type: instance.elementType,
+        })),
+      }))
+
+      return {
+        id: groupActivity.id,
+        templateId: groupActivity.templateInfo?.id ?? null,
+        name: groupActivity.name,
+        displayName: groupActivity.displayName,
+        type: ActivityType.GROUP_ACTIVITY,
+        status: groupActivity.status,
+        courseId: course.id,
+        courseName: course.name,
+        courseStartDate: course.startDate,
+        numOfStacks: groupActivity.stacks.length,
+        numOfElements: groupActivity.stacks.reduce(
+          (acc, block) => acc + block.elements.length,
+          0
+        ),
+        scheduledStartAt: groupActivity.scheduledStartAt,
+        scheduledEndAt: groupActivity.scheduledEndAt,
+        groupDeadlineDate: course.groupDeadlineDate,
+        numOfParticipantGroups: course._count.participantGroups,
+        stacks,
+        permissionLevel: permission.permissionLevel,
+        derivedAccess: permission.derived,
+        numSharedUsers: groupActivity._count.permissions - 1,
+        isOwner,
+        isManager,
+        isEditor,
+        isExecutor,
+        isShared,
+        isRemovable,
+        sharingType,
+        updatedAt: groupActivity.updatedAt,
+      }
     }
-  })
-
-  const groupActivityActivities = user?.privatePreview
-    ? course.groupActivities.flatMap((groupActivity) => {
-        const permission = groupActivity.permissions[0]
-
-        if (!permission) {
-          return []
-        }
-
-        const {
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-        } = getPermissionBooleans({
-          permission,
-        })
-
-        const stacks = groupActivity.stacks.map((block) => ({
-          id: block.id,
-          numOfParticipants: block.elements[0]
-            ? block.elements[0].results.total +
-              block.elements[0].anonymousResults.total
-            : 0,
-          elements: block.elements.map((instance) => ({
-            id: instance.id,
-            name: instance.elementData.name,
-            type: instance.elementType,
-          })),
-        }))
-
-        return {
-          id: groupActivity.id,
-          templateId: groupActivity.templateInfo?.id ?? null,
-          name: groupActivity.name,
-          displayName: groupActivity.displayName,
-          type: ActivityType.GROUP_ACTIVITY,
-          status: groupActivity.status,
-          courseId: course.id,
-          courseName: course.name,
-          courseStartDate: course.startDate,
-          numOfStacks: groupActivity.stacks.length,
-          numOfElements: groupActivity.stacks.reduce(
-            (acc, block) => acc + block.elements.length,
-            0
-          ),
-          scheduledStartAt: groupActivity.scheduledStartAt,
-          scheduledEndAt: groupActivity.scheduledEndAt,
-          groupDeadlineDate: course.groupDeadlineDate,
-          numOfParticipantGroups: course._count.participantGroups,
-          stacks,
-          permissionLevel: permission.permissionLevel,
-          derivedAccess: permission.derived,
-          numSharedUsers: groupActivity._count.permissions - 1,
-          isOwner,
-          isManager,
-          isEditor,
-          isExecutor,
-          isShared,
-          isRemovable,
-          sharingType,
-          updatedAt: groupActivity.updatedAt,
-        }
-      })
-    : []
+  )
 
   return {
     ...course,
@@ -1611,14 +1589,10 @@ export async function getCourseData(
     isExecutor: courseExecutor,
     isShared: courseShared,
     isRemovable: courseRemovable,
-    liveQuizzes: reducedLiveQuizzes,
-    practiceQuizzes: reducedPracticeQuizzes,
-    groupActivities: reducedGroupActivities,
-    microLearnings: reducedMicroLearnings,
-    liveQuizActivities,
-    practiceQuizActivities,
-    microLearningActivities,
-    groupActivityActivities,
+    liveQuizzesInfo,
+    practiceQuizzesInfo,
+    microLearningsInfo,
+    groupActivitiesInfo,
     numOfParticipants: course.participations.length,
     numOfParticipantGroups: course._count.participantGroups,
   }
@@ -1679,7 +1653,7 @@ export async function getCourseLeaderboard(
             username: entry.participation!.participant.username,
             avatar: entry.participation!.participant.avatar,
             participation: entry.participation!,
-            type: LeaderboardType.COURSE,
+            type: DB.LeaderboardType.COURSE,
             participantId: entry.participantId,
             participant: entry.participation!.participant,
             sessionParticipationId: null,
@@ -1729,7 +1703,7 @@ export async function getCourseLeaderboard(
       include: {
         timelineEntries: {
           where: {
-            type: TimelineEntryType.WEEKLY,
+            type: DB.TimelineEntryType.WEEKLY,
             timestamp: weeklySelection
               ? startDateUTC
               : {
@@ -1910,6 +1884,16 @@ export async function getControlCourse(
   })
 
   return course
+    ? ({
+        id: course?.id,
+        name: course?.name,
+        liveQuizzes: course?.liveQuizzes.map((quiz) => ({
+          id: quiz.id,
+          name: quiz.name,
+          status: quiz.status,
+        })),
+      } as ICourse)
+    : null
 }
 
 export async function checkValidCoursePin(
@@ -1938,7 +1922,7 @@ export async function getCoursePracticeQuiz(
         include: {
           elements: {
             include:
-              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
                 ? {
                     responses: {
                       where: {
@@ -1971,8 +1955,8 @@ export async function getCoursePracticeQuiz(
     templateName: null,
     pointsMultiplier: 1,
     resetTimeDays: 6,
-    orderType: ElementOrderType.SPACED_REPETITION,
-    status: PublicationStatus.PUBLISHED,
+    orderType: DB.ElementOrderType.SPACED_REPETITION,
+    status: DB.PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,
     availableFrom: null,
@@ -2001,7 +1985,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled practice quizzes
   const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       availableFrom: {
         lte: new Date(),
       },
@@ -2015,7 +1999,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: quiz.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
         include: {
           stacks: true,
@@ -2056,7 +2040,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled microlearnings
   const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       scheduledStartAt: {
         lte: new Date(),
       },
@@ -2070,7 +2054,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: micro.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
       })
     )
@@ -2093,7 +2077,7 @@ export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled group activities
   const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: PublicationStatus.SCHEDULED,
+      status: DB.PublicationStatus.SCHEDULED,
       scheduledStartAt: {
         lte: new Date(),
       },
@@ -2107,7 +2091,7 @@ export async function publishScheduledActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
       })
     )
@@ -2134,7 +2118,7 @@ export async function endExpiredActivities(ctx: Context) {
   // ! Set microlearning status to ended for all published microlearnings that have ended
   const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
     where: {
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -2148,7 +2132,7 @@ export async function endExpiredActivities(ctx: Context) {
           id: micro.id,
         },
         data: {
-          status: PublicationStatus.ENDED,
+          status: DB.PublicationStatus.ENDED,
         },
       })
     )
@@ -2172,7 +2156,7 @@ export async function endExpiredActivities(ctx: Context) {
   // ! Set group activity status to ended for all published group activities that have ended
   const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
     where: {
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       scheduledEndAt: {
         lte: new Date(),
       },
@@ -2186,7 +2170,7 @@ export async function endExpiredActivities(ctx: Context) {
           id: group.id,
         },
         data: {
-          status: PublicationStatus.ENDED,
+          status: DB.PublicationStatus.ENDED,
         },
       })
     )
@@ -2219,12 +2203,12 @@ export async function getCourseActivities(
     where: { id: courseId },
     include: {
       practiceQuizzes: {
-        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
         include: { _count: { select: { stacks: true } } },
         orderBy: { createdAt: 'desc' },
       },
       microLearnings: {
-        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
         include: { _count: { select: { stacks: true } } },
         orderBy: { scheduledStartAt: 'desc' },
       },

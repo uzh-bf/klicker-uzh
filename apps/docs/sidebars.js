@@ -4,21 +4,32 @@ module.exports = {
       'getting_started/welcome',
       'getting_started/core_concepts',
     ],
-    'Lecturer Application': [
+    'Lecturer - Content': [
       'tutorials/supported_element_types',
       'tutorials/element_management',
       'tutorials/course_management',
       'tutorials/element_stacks',
+      'tutorials/answer_collections',
+    ],
+    'Lecturer - Activities': [
       'tutorials/live_quiz',
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
       'tutorials/group_activity',
+      'tutorials/activity_templates',
+    ],
+    'Lecturer - Sharing': [
+      'tutorials/permissions_groups',
+      'tutorials/direct_sharing',
+      'tutorials/catalog_sharing',
       'tutorials/delegated_access',
+    ],
+    'Lecturer - Integrations': [
       'tutorials/ppt_integration',
       'tutorials/lti_integration',
     ],
-    'Student Application': [
+    'Student - Application': [
       'student_tutorials/student_accounts',
       'student_tutorials/klickeruzh_app',
       'student_tutorials/live_quiz',
@@ -34,6 +45,7 @@ module.exports = {
       // 'gamification/achievements',
       // 'gamification/awards',
     ],
+
     // 'Advanced Topics': [
     //   'advanced/control_app',
     // ],

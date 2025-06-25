@@ -1197,10 +1197,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
-  // #endregion
 
-  // ! Cleanup
-  // #region
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
     cy.deleteElement({ elementName: this.data.CS.titleEdited })
 
@@ -1244,6 +1241,276 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+  // #endregion
+
+  // ! Case Study question with inline answer collection creation
+  // #region
+  it('Create a case study question with inline answer collection', function () {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CASE_STUDY.typeLabel)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // enter question data
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .type(this.data.CS_INLINE.title)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(this.data.CS_INLINE.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(this.data.CS_INLINE.explanation)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // check if button for manual creation is present and click it
+    cy.get('[data-cy="create-inline-answer-collection"]')
+      .should('exist')
+      .click()
+
+    // enter items manually
+    cy.wrap(this.data.CS_INLINE.items).each((item: string) => {
+      cy.get('#inline-answer-collection-options').type(`${item}{enter}`)
+    })
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // add criteria
+    cy.wrap(this.data.CS_INLINE.criteria).each(
+      (criterion: CriterionDataType, ix) => {
+        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`)
+          .click()
+          .clear()
+          .type(criterion.name)
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`)
+            .click()
+            .clear()
+            .type(String(criterion.min))
+          cy.get(`[data-cy="criterion-${ix}-max"]`)
+            .click()
+            .clear()
+            .type(String(criterion.max))
+          cy.get(`[data-cy="criterion-${ix}-step"]`)
+            .click()
+            .clear()
+            .type(String(criterion.step))
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`)
+              .click()
+              .type(criterion.unit)
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.min))
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.max))
+          cy.get(`[data-cy="criterion-${ix}-steps"]`)
+            .click()
+            .clear()
+            .type(String(criterion.steps))
+
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
+              .click()
+              .clear()
+              .type(String(criterion.labels.mid))
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
+        }
+      }
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // add cases
+    cy.wrap(this.data.CS_INLINE.cases).each(
+      (caseItem: { title: string; description: string }, ix) => {
+        cy.get('[data-cy="add-new-case"]').click()
+        cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
+        cy.get(`[data-cy="case-description-${ix}"]`)
+          .realClick()
+          .type(caseItem.description)
+      }
+    )
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // add sample solution
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    cy.caseStudyLoop({
+      object: this.data.CS_INLINE.solutions,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        const value = innerValue as { lower: number; upper: number }
+
+        cy.get('[data-cy="save-new-question"]').should('be.disabled')
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        )
+          .click()
+          .type(String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        )
+          .click()
+          .type(String(value.upper))
+      },
+    })
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // add another item
+    const additionalItem = 'New Item'
+    cy.get('#inline-answer-collection-options').type(`${additionalItem}{enter}`)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // add sample solutions for the new item and verify that the question can be saved
+    cy.get(
+      `[data-cy="case-solution-${0}-${this.data.CS_INLINE.items.length}-${0}-lower"]`
+    )
+      .click()
+      .type(String(0))
+    cy.get(
+      `[data-cy="case-solution-${0}-${this.data.CS_INLINE.items.length}-${0}-upper"]`
+    )
+      .click()
+      .type(String(10))
+    cy.get(
+      `[data-cy="case-solution-${0}-${this.data.CS_INLINE.items.length}-${1}-lower"]`
+    )
+      .click()
+      .type(String(2))
+    cy.get(
+      `[data-cy="case-solution-${0}-${this.data.CS_INLINE.items.length}-${1}-upper"]`
+    )
+      .click()
+      .type(String(3))
+    cy.get(
+      `[data-cy="case-solution-${1}-${this.data.CS_INLINE.items.length}-${0}-lower"]`
+    )
+      .click()
+      .type(String(0))
+    cy.get(
+      `[data-cy="case-solution-${1}-${this.data.CS_INLINE.items.length}-${0}-upper"]`
+    )
+      .click()
+      .type(String(10))
+    cy.get(
+      `[data-cy="case-solution-${1}-${this.data.CS_INLINE.items.length}-${1}-lower"]`
+    )
+      .click()
+      .type(String(2))
+    cy.get(
+      `[data-cy="case-solution-${1}-${this.data.CS_INLINE.items.length}-${1}-upper"]`
+    )
+      .click()
+      .type(String(3))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // remove the item again and save the question
+    cy.get('#inline-answer-collection-options').should(
+      'contain',
+      additionalItem
+    )
+    cy.get('#inline-answer-collection-options').type(`{backspace}`)
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    cy.get(`[data-cy="element-item-${this.data.CS_INLINE.title}"]`).contains(
+      this.data.CS_INLINE.content
+    )
+  })
+
+  it('Verify that a new answer collection was created when creating the case study', function () {
+    const collectionName = `AC: ${this.data.CS_INLINE.title}`
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-actions-${collectionName}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.wrap(this.data.CS_INLINE.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Edit the inline created case study question', function () {
+    cy.get(`[data-cy="edit-element-${this.data.CS_INLINE.title}"]`).click()
+
+    // edit basic information
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.CS_INLINE.titleEdited)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.CS_INLINE.contentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .clear()
+      .type(this.data.CS_INLINE.explanationEdited)
+
+    // ensure that switching to manual item creation is not possible during editing
+    cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')
+
+    // save changes
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    // verify the changes were saved
+    cy.get(
+      `[data-cy="element-item-${this.data.CS_INLINE.titleEdited}"]`
+    ).contains(this.data.CS_INLINE.contentEdited)
+  })
+
+  it('Verify that all changes to the inline created case study have been saved correctly', function () {
+    cy.get(
+      `[data-cy="edit-element-${this.data.CS_INLINE.titleEdited}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS_INLINE.titleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.CS_INLINE.contentEdited
+    )
+    cy.get('[data-cy="insert-question-explanation"]').contains(
+      this.data.CS_INLINE.explanationEdited
+    )
+
+    // verify items from the inline created collection are still selected
+    cy.wrap(this.data.CS_INLINE.items).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    // verify criteria and sample solutions still exist
+    cy.wrap(this.data.CS_INLINE.criteria).each(
+      (criterion: CriterionDataType, ix) => {
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+      }
+    )
+    cy.get('[data-cy="close-element-modal"]').click()
   })
   // #endregion
 })

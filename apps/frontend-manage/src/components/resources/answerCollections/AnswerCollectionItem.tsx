@@ -1,23 +1,22 @@
 import {
   faDownload,
   faEllipsisVertical,
-  faLink,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollection,
-  SharingObjectType,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { AnswerCollection, ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { Dropdown, toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SharingTypeBadge from '~/components/sharing/SharingTypeBadge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
+import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import AnswerCollectionRemovalModal from '../../sharing/AnswerCollectionRemovalModal'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
+import SharingTypeBadge from '../../sharing/SharingTypeBadge'
+import AnswerCollectionDuplicationModal from './AnswerCollectionDuplicationModal'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -25,28 +24,23 @@ import CollectionDeletionModal from './CollectionDeletionModal'
 function AnswerCollectionItem({
   collection,
   highlighted = false,
-  setDeletionSuccess,
-  setDeletionFailure,
-  setRemovalSuccess,
-  setRemovalFailure,
 }: {
   collection: AnswerCollection
   highlighted?: boolean
-  setDeletionSuccess: Dispatch<SetStateAction<boolean>>
-  setDeletionFailure: Dispatch<SetStateAction<boolean>>
-  setRemovalSuccess: Dispatch<SetStateAction<boolean>>
-  setRemovalFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
   // modal states
   const [editModal, setEditModal] = useState(false)
+  const [duplicationModal, setDuplicationModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
+    collectionName: collection.name,
     isOwner: collection.isOwner ?? false,
     isManager: collection.isManager ?? false,
     isEditor: collection.isEditor ?? false,
@@ -54,9 +48,11 @@ function AnswerCollectionItem({
     isDeletable: collection.isDeletable ?? false,
     setSharingModal,
     setEditModal,
+    setDuplicationModal,
     setViewingModal,
     setRemovalModal,
     setDeletionModal,
+    setActivityLogOpen,
   })
 
   return (
@@ -70,13 +66,6 @@ function AnswerCollectionItem({
       >
         <div className="flex flex-col items-start">
           <div className="flex items-center gap-2">
-            {collection.isImported && (
-              <FontAwesomeIcon
-                icon={collection.isImported ? faDownload : faLink}
-                className="text-gray-500"
-                fixedWidth
-              />
-            )}
             <span className="font-medium">{collection.name}</span>
             {collection.permissionLevel && (
               <ObjectPermissionLevel
@@ -115,6 +104,18 @@ function AnswerCollectionItem({
               />
             )}
           </div>
+          <div className="flex flex-row gap-4 text-sm text-gray-500">
+            <div>
+              {t('shared.generic.createdAt', {
+                date: dayjs(collection.createdAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
+            <div>
+              {t('shared.generic.updatedAt', {
+                date: dayjs(collection.updatedAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -136,17 +137,12 @@ function AnswerCollectionItem({
           {dropdownItems.length > 0 && (
             <Dropdown
               items={dropdownItems}
-              trigger={
-                <Button
-                  basic
-                  className={{
-                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                  }}
-                >
-                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
-                </Button>
-              }
-              className={{ item: 'text-sm' }}
+              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+              className={{
+                item: 'py-0.5 text-sm',
+                trigger:
+                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+              }}
               data={{ cy: `answer-collection-actions-${collection.name}` }}
             />
           )}
@@ -154,17 +150,29 @@ function AnswerCollectionItem({
       </div>
 
       {/* editing and viewing modal components */}
-      {collection.isEditor && (
+      {collection.isEditor && editModal && (
         <AnswerCollectionEditModal
           collectionId={collection.id}
-          open={editModal}
           onClose={() => setEditModal(false)}
         />
       )}
-      {!collection.isEditor && (
+      {duplicationModal && (
+        <AnswerCollectionDuplicationModal
+          collectionId={collection.id}
+          onClose={() => setDuplicationModal(false)}
+          onSuccess={() =>
+            toast({
+              type: 'success',
+              message: t('manage.resources.duplicationSuccess'),
+              options: { duration: 3000 },
+            })
+          }
+        />
+      )}
+
+      {!collection.isEditor && viewingModal && (
         <AnswerCollectionViewingModal
           collectionId={collection.id}
-          open={viewingModal}
           onClose={() => setViewingModal(false)}
         />
       )}
@@ -172,33 +180,39 @@ function AnswerCollectionItem({
       {/* sharing functionalities modals to add / revoke / ... access */}
       {collection.isManager && (
         <>
-          <ObjectSharingModalWrapper
-            objectId={collection.id}
-            objectName={collection.name}
-            objectType={SharingObjectType.AnswerCollection}
-            isOwner={collection.isOwner ?? false}
-            open={sharingModal}
-            onClose={() => setSharingModal(false)}
-          />
-          <CollectionDeletionModal
-            collection={collection}
-            deletionModal={deletionModal}
-            setDeletionModal={setDeletionModal}
-            setDeletionSuccess={setDeletionSuccess}
-            setDeletionFailure={setDeletionFailure}
-          />
+          {sharingModal && (
+            <ObjectSharingModalWrapper
+              objectId={collection.id}
+              objectName={collection.name}
+              objectType={ObjectType.AnswerCollection}
+              isOwner={collection.isOwner ?? false}
+              onClose={() => setSharingModal(false)}
+            />
+          )}
+          {deletionModal && (
+            <CollectionDeletionModal
+              collection={collection}
+              setDeletionModal={setDeletionModal}
+            />
+          )}
         </>
       )}
 
       {/* removal modal for non-owners */}
-      {!collection.isOwner && (
+      {!collection.isOwner && removalModal ? (
         <AnswerCollectionRemovalModal
           id={collection.id}
           name={collection.name}
-          removalModal={removalModal}
-          setRemovalModal={setRemovalModal}
-          setRemovalSuccess={setRemovalSuccess}
-          setRemovalFailure={setRemovalFailure}
+          onClose={() => setRemovalModal(false)}
+        />
+      ) : null}
+
+      {activityLogOpen && (
+        <ActivityLogDialog
+          objectId={collection.id}
+          objectType={ObjectType.AnswerCollection}
+          open={activityLogOpen}
+          onClose={() => setActivityLogOpen(false)}
         />
       )}
     </>

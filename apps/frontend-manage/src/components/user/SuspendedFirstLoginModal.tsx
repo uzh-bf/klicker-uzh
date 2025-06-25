@@ -9,6 +9,11 @@ import DebouncedUsernameField from '@klicker-uzh/shared-components/src/Debounced
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 
+import {
+  faBook,
+  faListCheck,
+  faPeopleGroup,
+} from '@fortawesome/free-solid-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
@@ -53,16 +58,24 @@ function SuspendedFirstLoginModal() {
       open={firstLogin}
       onClose={() => null}
       hideCloseButton
-      className={{ content: 'h-max max-h-full' }}
+      className={{ content: 'h-max pb-1' }}
     >
       <H1 className={{ root: 'mb-4 text-4xl' }}>
         {t('manage.firstLogin.welcome')}
       </H1>
-      <div className="prose mb-2 max-w-none">
+      <div className="mb-3 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
       {data.userProfile ? (
         <Formik
+          isInitialValid={false}
+          validateOnMount
+          initialTouched={{
+            shortname: false,
+            locale: false,
+            sendProjectUpdates: false,
+            seedDemoElements: true,
+          }}
           validationSchema={Yup.object().shape({
             shortname: Yup.string()
               .required(t('manage.settings.shortnameRequired'))
@@ -72,11 +85,15 @@ function SuspendedFirstLoginModal() {
                 /^[a-zA-Z0-9]*$/,
                 t('manage.settings.shortnameAlphanumeric')
               ),
+            seedDemoElements: Yup.boolean().required(
+              t('manage.firstLogin.seedDemoElementsDecisionRequired')
+            ),
           })}
           initialValues={{
             shortname: data.userProfile.shortname,
             locale: data.userProfile.locale,
             sendProjectUpdates: data.userProfile.sendProjectUpdates,
+            seedDemoElements: undefined,
           }}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
             setShowGenericError(false)
@@ -89,6 +106,7 @@ function SuspendedFirstLoginModal() {
                 shortname: trimmedUsername,
                 locale: values.locale,
                 sendUpdates: values.sendProjectUpdates,
+                seedDemoElements: values.seedDemoElements ?? false,
               },
               refetchQueries: [{ query: GetUserElementsDocument }],
             })
@@ -109,15 +127,10 @@ function SuspendedFirstLoginModal() {
           }}
         >
           {({ isValid, isSubmitting, validateField }) => (
-            <Form>
+            <Form className="flex flex-col">
               <div className="mb-1 flex flex-col space-y-4 md:mb-5 md:flex-row md:justify-between md:space-y-0">
                 <DebouncedUsernameField
-                  t={t}
-                  className={{
-                    root: 'w-[250px] md:w-max',
-                    input: 'bg-white',
-                    icon: 'bg-transparent',
-                  }}
+                  required
                   name="shortname"
                   label={t('shared.generic.shortname')}
                   labelType="large"
@@ -135,8 +148,12 @@ function SuspendedFirstLoginModal() {
                     return result?.checkShortnameAvailable ?? false
                   }}
                   unavailableMessage={t('shared.generic.usernameAvailability')}
+                  className={{
+                    root: 'w-[250px] md:w-max',
+                    input: 'bg-white !pl-8',
+                    icon: 'bg-transparent',
+                  }}
                   data={{ cy: 'first-login-shortname' }}
-                  required
                 />
                 <FormikSelectField
                   label={t('shared.generic.language')}
@@ -166,16 +183,26 @@ function SuspendedFirstLoginModal() {
                 </UserNotification>
               )}
 
-              <div className="prose mb-2 max-w-none">
+              <div className="mb-1.5">
+                {t('manage.firstLogin.seedDemoElementsExplanation')}
+              </div>
+              <FormikSwitchField
+                name="seedDemoElements"
+                labelLeft
+                label={t('manage.firstLogin.seedDemoElements')}
+                className={{ root: 'mb-5' }}
+              />
+
+              <div className="mb-1.5 max-w-none">
                 {t('manage.firstLogin.relevantLinks')}
               </div>
-
-              <div className="mb-4 grid grid-cols-3 gap-4">
+              <div className="mb-5 grid grid-cols-3 gap-4">
                 <Link
                   href="https://www.klicker.uzh.ch/getting_started/welcome"
                   target="_blank"
                 >
                   <Button data={{ cy: 'first-login-documentation' }} fluid>
+                    <Button.Icon icon={faBook} />
                     <Button.Label>
                       {t('shared.generic.documentation')}
                     </Button.Label>
@@ -183,20 +210,21 @@ function SuspendedFirstLoginModal() {
                 </Link>
                 <Link href="https://community.klicker.uzh.ch" target="_blank">
                   <Button data={{ cy: 'first-login-community' }} fluid>
+                    <Button.Icon icon={faPeopleGroup} />
                     <Button.Label>{t('shared.generic.community')}</Button.Label>
                   </Button>
                 </Link>
                 <Link href="https://klicker-uzh.feedbear.com" target="_blank">
                   <Button data={{ cy: 'first-login-roadmap' }} fluid>
+                    <Button.Icon icon={faListCheck} />
                     <Button.Label>{t('shared.generic.roadmap')}</Button.Label>
                   </Button>
                 </Link>
               </div>
 
-              <div className="prose mb-6 max-w-none">
+              <div className="mb-2 max-w-none">
                 {t('manage.firstLogin.watchVideo')}
               </div>
-
               <iframe
                 id="kmsembed-0_ugtkafd3"
                 width="100%"
@@ -216,7 +244,7 @@ function SuspendedFirstLoginModal() {
                 type="submit"
                 loading={isSubmitting}
                 disabled={!isValid}
-                className={{ root: 'float-right mt-4 w-32' }}
+                className={{ root: 'mt-4 w-32 self-end' }}
                 data={{ cy: 'first-login-save-settings' }}
               >
                 <Button.Label>{t('shared.generic.save')}</Button.Label>

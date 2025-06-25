@@ -1,8 +1,8 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
-  SharingObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -19,7 +19,7 @@ function ExistingPermissionEntries({
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
-  type: SharingObjectType
+  type: ObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
   showPropagationSetting: boolean
@@ -226,25 +226,29 @@ function ExistingPermissionEntries({
           </tr>
         ))}
 
-      <ModifyOwnPermissionsModal
-        open={modifyOwnPermissionsModal.open}
-        onClose={() =>
-          setModifyOwnPermissionsModal({
-            ...modifyOwnPermissionsModal,
-            open: false,
-          })
-        }
-        onConfirm={confirmModifyOwnPermissions}
-        action={modifyOwnPermissionsModal.action}
-        newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
-      />
-      <PermissionRevocationModal
-        open={revocationModal.open}
-        onClose={() => setRevocationModal({ ...revocationModal, open: false })}
-        onRevocation={confirmRevocation}
-        username={revocationModal.username}
-        userGroup={revocationModal.userGroup}
-      />
+      {modifyOwnPermissionsModal.open && (
+        <ModifyOwnPermissionsModal
+          onClose={() =>
+            setModifyOwnPermissionsModal({
+              ...modifyOwnPermissionsModal,
+              open: false,
+            })
+          }
+          onConfirm={confirmModifyOwnPermissions}
+          action={modifyOwnPermissionsModal.action}
+          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+        />
+      )}
+      {revocationModal.open && (
+        <PermissionRevocationModal
+          onClose={() =>
+            setRevocationModal({ ...revocationModal, open: false })
+          }
+          onRevocation={confirmRevocation}
+          username={revocationModal.username}
+          userGroup={revocationModal.userGroup}
+        />
+      )}
     </>
   )
 }

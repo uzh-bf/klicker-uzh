@@ -6,6 +6,8 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationDetails,
+  ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
   SharingType,
@@ -267,16 +269,17 @@ export async function manipulateQuestion(
     return null
   }
 
-  const questionPrev =
-    typeof id !== 'undefined' && id !== null
-      ? await ctx.prisma.element.findUnique({
-          where: { id: id, isDeleted: false },
-          include: {
-            tags: { orderBy: { order: 'asc' } },
-            answerCollectionItems: true,
-          },
-        })
-      : undefined
+  // fetch the existing element to compare before/after state
+  const isNewElement = typeof id === 'undefined' || id === null
+  const questionPrev = !isNewElement
+    ? await ctx.prisma.element.findUnique({
+        where: { id: id, isDeleted: false },
+        include: {
+          tags: { orderBy: { order: 'asc' } },
+          answerCollectionItems: true,
+        },
+      })
+    : undefined
 
   // determine which tags have been deconnected
   if (questionPrev?.tags) {
@@ -459,6 +462,41 @@ export async function manipulateQuestion(
     )
   }
 
+  // track element creation or modification
+  // ? status changes are tracked through the corresponding separate mutation
+  if (isNewElement) {
+    // create an activity log entry for element creation
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.CREATION,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId: question.id,
+        userId: ctx.user.sub,
+        createdAt: question.createdAt,
+        updatedAt: question.updatedAt,
+      },
+    })
+  } else if (questionPrev) {
+    // track title changes
+    if (name && name !== questionPrev.name) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.TITLE,
+        oldValue: questionPrev.name,
+        newValue: name,
+      }
+
+      await ctx.prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      })
+    }
+  }
+
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
     id: question.id,
@@ -496,10 +534,36 @@ export async function changeElementStatus(
   { elementId, status }: { elementId: number; status: DB.ElementStatus },
   ctx: ContextWithUser
 ) {
+  const previousElement = await ctx.prisma.element.findUnique({
+    where: { id: elementId },
+  })
+
+  if (!previousElement) {
+    return false
+  }
+
   const element = await ctx.prisma.element.update({
     where: { id: elementId },
     data: { status },
   })
+
+  if (status && status !== previousElement.status) {
+    const modificationDetails: ActivityLogModificationDetails = {
+      field: ActivityLogModificationFieldType.STATUS,
+      oldValue: previousElement.status,
+      newValue: status,
+    }
+
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.MODIFICATION,
+        modificationDetails,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId,
+        userId: ctx.user.sub,
+      },
+    })
+  }
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
@@ -547,7 +611,8 @@ export async function deleteElement(
       }
 
       return { deletedElement: element, originalElement }
-    }
+    },
+    { timeout: 60000 }
   )
 
   ctx.emitter.emit('invalidate', {
@@ -580,21 +645,37 @@ export async function removeElement(
   }
 
   // remove direct permission and recompute derived permissions for this element and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.element.update({
-      where: { id },
-      data: {
-        directPermissions: {
-          deleteMany: { userId: ctx.user.sub },
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission for the user on the element
+      await prisma.element.update({
+        where: { id },
+        data: {
+          directPermissions: {
+            deleteMany: { userId: ctx.user.sub },
+          },
         },
-      },
-    })
+      })
 
-    await recomputeDerivedPermissions(
-      { elementId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.ELEMENT,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ELEMENT} (ID: ${id})`,
+        },
+      })
+
+      // recompute derived permissions for the element
+      await recomputeDerivedPermissions(
+        { elementId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',

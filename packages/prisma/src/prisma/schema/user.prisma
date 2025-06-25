@@ -1,7 +1,8 @@
 enum UserRole {
-  PARTICIPANT
-  USER
-  ADMIN
+  PARTICIPANT // regular participants with username / password login for pwa application
+  TEMPORARY_PARTICIPANT // temporary live quiz participants with pseudonym
+  USER // regular users with edu-ID login for manage application
+  ADMIN // users with admin rights for manage application
 }
 
 model Account {
@@ -123,6 +124,7 @@ model User {
   sharedObjects    Permission[]        @relation("DirectlySharedObjects") // direct permissions to objects (not derived)
   requestedObjects AccessRequest[]     @relation("RequestedObjects") // objects requested by this user
   pendingRequests  AccessRequest[]     @relation("PendingRequests") // objects requested by other users (this user is OWNER / ADMIN)
+  activityLog      ActivityLogEntry[]
 
   firstLogin Boolean @default(true)
 
