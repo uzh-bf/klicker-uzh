@@ -84,9 +84,25 @@ function CreateAccount({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  console.log('BEFORE CONTEXT')
   const { req, res, query } = ctx
 
+  console.log('BEFORE INITIALIZE APOLLO')
+  try {
+    const apolloClient = initializeApollo()
+  } catch (error) {
+    console.error('Error initializing Apollo Client:', error)
+  }
   const apolloClient = initializeApollo()
+
+  try {
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
+  } catch (error) {
+    console.error('Error getting participant token:', error)
+  }
 
   const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
