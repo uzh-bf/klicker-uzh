@@ -135,7 +135,7 @@ The logging package follows a functional architecture with immutable state manag
        ▼                    ▼                     ▼
 ┌─────────────┐     ┌──────────────┐     ┌────────────┐
 │    APIs     │     │   Context    │     │   Output   │
-│ (log methods)│     │ (immutable)  │     │ (console)  │
+│(log methods)│     │ (immutable)  │     │ (console)  │
 └─────────────┘     └──────────────┘     └────────────┘
 ```
 
@@ -1237,26 +1237,3 @@ pnpm dev
 4. **Update documentation** in this README
 5. **Consider backward compatibility**
 6. **Run performance benchmarks** if applicable
-
-### Pull Request Process
-
-1. Create feature branch from `main`
-2. Implement changes with tests
-3. Update documentation
-4. Ensure all tests pass
-5. Submit PR with clear description
-6. Address review feedback
-
-## License
-
-This package is part of the KlickerUZH project and is licensed under the AGPL-3.0 license.
-
-## Support
-
-- **Documentation**: See this README and CLAUDE.md files
-- **Issues**: Report bugs in the [KlickerUZH repository](https://github.com/uzh-bf/klicker-uzh/issues)
-- **Community**: Join discussions in the [KlickerUZH community](https://community.klicker.uzh.ch/)
-
----
-
-Built with ❤️ by the KlickerUZH team at the University of Zurich
