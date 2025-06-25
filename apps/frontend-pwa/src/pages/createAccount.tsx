@@ -122,22 +122,34 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // LTI 1.3 authentication flow
   if (cookies['lti-token'] || query.jwt) {
-    const token = cookies['lti-token'] ?? query.jwt
+    console.log('RUNNING LTI 1.3 AUTHENTICATION FLOW')
 
-    const parsedToken = JWT.verify(token, process.env.APP_SECRET as string) as {
-      sub: string
-      email: string
-      scope: string
-    }
+    try {
+      const token = cookies['lti-token'] ?? query.jwt
 
-    if (parsedToken.scope === 'LTI1.3') {
-      signedLtiData.token = token
-      signedLtiData.ssoId = parsedToken.sub
-      signedLtiData.email = parsedToken.email
+      const parsedToken = JWT.verify(
+        token,
+        process.env.APP_SECRET as string
+      ) as {
+        sub: string
+        email: string
+        scope: string
+      }
+
+      if (parsedToken.scope === 'LTI1.3') {
+        signedLtiData.token = token
+        signedLtiData.ssoId = parsedToken.sub
+        signedLtiData.email = parsedToken.email
+      }
+    } catch (error) {
+      // continue without LTI data if verification fails
+      console.error('Error verifying LTI token:', error)
     }
   }
   // LTI 1.1 authentication flow
   else if (req.method === 'POST') {
+    console.log('RUNNING LTI 1.1 AUTHENTICATION FLOW')
+
     try {
       const { request }: any = await new Promise((resolve, reject) => {
         bodyParser.urlencoded({ extended: true })(req, res, (err: any) => {
@@ -178,11 +190,34 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   if (!query?.disableLti && signedLtiData.token !== '') {
-    return addApolloState(apolloClient, {
+    console.log('PREPARING LTI PAGE FOR ACCOUNT CREATION')
+
+    try {
+      return addApolloState(apolloClient, {
+        props: {
+          signedLtiData: signedLtiData.token,
+          ssoId: signedLtiData.ssoId,
+          email: signedLtiData.email,
+          username: generatePassword.generate({
+            length: 10,
+            uppercase: true,
+            symbols: false,
+            numbers: true,
+          }),
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      })
+    } catch (error) {
+      console.error('Error preparing LTI props:', error)
+    }
+  }
+
+  console.log('RUNNING FALLBACK FOR ACCOUNT CREATION')
+
+  try {
+    return {
       props: {
-        signedLtiData: signedLtiData.token,
-        ssoId: signedLtiData.ssoId,
-        email: signedLtiData.email,
         username: generatePassword.generate({
           length: 10,
           uppercase: true,
@@ -192,20 +227,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
-  }
-
-  return {
-    props: {
-      username: generatePassword.generate({
-        length: 10,
-        uppercase: true,
-        symbols: false,
-        numbers: true,
-      }),
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
+    }
+  } catch (error) {
+    console.error('Error preparing fallback props:', error)
+    return {
+      props: {
+        username: '',
+        messages: {},
+      },
+    }
   }
 }
 
