@@ -311,14 +311,14 @@ lti:
 
   affinity: {}
 
-olat-api:
+olatApi:
   key: ''
   priorityClassName: production-workload
 
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
+    repository: ghcr.io/uzh-bf/klicker-uzh/olatApi
     pullPolicy: Always
 
   service:

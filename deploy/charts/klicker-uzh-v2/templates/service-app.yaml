@@ -107,9 +107,9 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.olat-api.service.type }}
+  type: {{ .Values.olatApi.service.type }}
   ports:
-    - port: {{ .Values.olat-api.service.port }}
+    - port: {{ .Values.olatApi.service.port }}
       targetPort: http
       protocol: TCP
       name: http

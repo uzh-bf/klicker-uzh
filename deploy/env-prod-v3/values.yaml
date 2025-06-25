@@ -174,7 +174,7 @@ backendGraphql:
       cpu: 1000m
       memory: 1000Mi
 
-olat-api:
+olatApi:
   autoscaling:
     enabled: false
 
@@ -189,10 +189,10 @@ olat-api:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-olat-api-tls-uzh
+      - secretName: klicker-prod-olatApi-tls-uzh
         hosts:
           - olat-api.klicker.uzh.ch
-      - secretName: klicker-prod-olat-api-tls
+      - secretName: klicker-prod-olatApi-tls
         hosts:
           - olat-api.klicker-prod.bf-app.ch
 

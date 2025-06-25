@@ -395,12 +395,12 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: olat-api
 spec:
-  {{- with .Values.olat-api.strategy }}
+  {{- with .Values.olatApi.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.olat-api.autoscaling.enabled }}
-  replicas: {{ .Values.olat-api.replicaCount }}
+  {{- if not .Values.olatApi.autoscaling.enabled }}
+  replicas: {{ .Values.olatApi.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -412,26 +412,26 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/cm-olat-api.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/secret-olat-api.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
-      {{- with .Values.olat-api.podAnnotations }}
+      {{- with .Values.olatApi.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: olat-api
     spec:
-      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.olat-api.priorityClassName }}
-      {{- with .Values.olat-api.imagePullSecrets }}
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.olatApi.priorityClassName }}
+      {{- with .Values.olatApi.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.olat-api.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.olatApi.podSecurityContext | nindent 8 }}
       containers:
         - name: olat-api
           securityContext:
-            {{- toYaml .Values.olat-api.securityContext | nindent 12 }}
-          image: "{{ .Values.olat-api.image.repository }}:{{ .Values.olat-api.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.olat-api.image.pullPolicy }}
+            {{- toYaml .Values.olatApi.securityContext | nindent 12 }}
+          image: "{{ .Values.olatApi.image.repository }}:{{ .Values.olatApi.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.olatApi.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 3000
@@ -452,16 +452,16 @@ spec:
               path: /health
               port: http
           resources:
-            {{- toYaml .Values.olat-api.resources | nindent 12 }}
-      {{- with .Values.olat-api.nodeSelector }}
+            {{- toYaml .Values.olatApi.resources | nindent 12 }}
+      {{- with .Values.olatApi.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.olat-api.affinity }}
+      {{- with .Values.olatApi.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.olat-api.tolerations }}
+      {{- with .Values.olatApi.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -94,7 +94,7 @@ releases:
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
-        olat-api:
+        olatApi:
           key: '{{ requiredEnv "OLAT_API_KEY" }}'
 
         lti:

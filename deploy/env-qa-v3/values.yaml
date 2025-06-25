@@ -146,7 +146,7 @@ backendGraphql:
       cpu: 200m
       memory: 200Mi
 
-olat-api:
+olatApi:
   priorityClassName: staging-workload
 
   autoscaling:
@@ -159,7 +159,7 @@ olat-api:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-qa-olat-api-tls
+      - secretName: klicker-qa-olatApi-tls
         hosts:
           - olat-api.klicker-qa.bf-app.ch
 
