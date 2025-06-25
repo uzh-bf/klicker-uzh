@@ -1565,279 +1565,282 @@ export async function resolveObjectSharingRequest(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    if (approved) {
-      // add a direct permission for the user with approved request
-      await prisma.permission.upsert({
-        where: {
-          catalogCollectionId_userId:
-            pendingRequest.catalogCollectionId !== null
-              ? {
-                  catalogCollectionId: pendingRequest.catalogCollectionId,
-                  userId,
-                }
-              : undefined,
-          answerCollectionId_userId:
-            pendingRequest.answerCollectionId !== null
-              ? {
-                  answerCollectionId: pendingRequest.answerCollectionId,
-                  userId,
-                }
-              : undefined,
-          elementId_userId:
-            pendingRequest.elementId !== null
-              ? {
-                  elementId: pendingRequest.elementId,
-                  userId,
-                }
-              : undefined,
-          courseId_userId:
-            pendingRequest.courseId !== null
-              ? {
-                  courseId: pendingRequest.courseId,
-                  userId,
-                }
-              : undefined,
-          liveQuizId_userId:
-            pendingRequest.liveQuizId !== null
-              ? {
-                  liveQuizId: pendingRequest.liveQuizId,
-                  userId,
-                }
-              : undefined,
-          practiceQuizId_userId:
-            pendingRequest.practiceQuizId !== null
-              ? {
-                  practiceQuizId: pendingRequest.practiceQuizId,
-                  userId,
-                }
-              : undefined,
-          microLearningId_userId:
-            pendingRequest.microLearningId !== null
-              ? {
-                  microLearningId: pendingRequest.microLearningId,
-                  userId,
-                }
-              : undefined,
-          groupActivityId_userId:
-            pendingRequest.groupActivityId !== null
-              ? {
-                  groupActivityId: pendingRequest.groupActivityId,
-                  userId,
-                }
-              : undefined,
-        },
-        create: {
-          permissionLevel,
-          propagation,
-          user: {
-            connect: {
-              id: userId,
-            },
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      if (approved) {
+        // add a direct permission for the user with approved request
+        await prisma.permission.upsert({
+          where: {
+            catalogCollectionId_userId:
+              pendingRequest.catalogCollectionId !== null
+                ? {
+                    catalogCollectionId: pendingRequest.catalogCollectionId,
+                    userId,
+                  }
+                : undefined,
+            answerCollectionId_userId:
+              pendingRequest.answerCollectionId !== null
+                ? {
+                    answerCollectionId: pendingRequest.answerCollectionId,
+                    userId,
+                  }
+                : undefined,
+            elementId_userId:
+              pendingRequest.elementId !== null
+                ? {
+                    elementId: pendingRequest.elementId,
+                    userId,
+                  }
+                : undefined,
+            courseId_userId:
+              pendingRequest.courseId !== null
+                ? {
+                    courseId: pendingRequest.courseId,
+                    userId,
+                  }
+                : undefined,
+            liveQuizId_userId:
+              pendingRequest.liveQuizId !== null
+                ? {
+                    liveQuizId: pendingRequest.liveQuizId,
+                    userId,
+                  }
+                : undefined,
+            practiceQuizId_userId:
+              pendingRequest.practiceQuizId !== null
+                ? {
+                    practiceQuizId: pendingRequest.practiceQuizId,
+                    userId,
+                  }
+                : undefined,
+            microLearningId_userId:
+              pendingRequest.microLearningId !== null
+                ? {
+                    microLearningId: pendingRequest.microLearningId,
+                    userId,
+                  }
+                : undefined,
+            groupActivityId_userId:
+              pendingRequest.groupActivityId !== null
+                ? {
+                    groupActivityId: pendingRequest.groupActivityId,
+                    userId,
+                  }
+                : undefined,
           },
-          catalogCollection:
-            pendingRequest.catalogCollectionId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.catalogCollectionId,
-                  },
-                }
-              : undefined,
-          answerCollection:
-            pendingRequest.answerCollectionId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.answerCollectionId,
-                  },
-                }
-              : undefined,
-          element:
-            pendingRequest.elementId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.elementId,
-                  },
-                }
-              : undefined,
-          course:
-            pendingRequest.courseId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.courseId,
-                  },
-                }
-              : undefined,
-          liveQuiz:
-            pendingRequest.liveQuizId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.liveQuizId,
-                  },
-                }
-              : undefined,
-          practiceQuiz:
-            pendingRequest.practiceQuizId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.practiceQuizId,
-                  },
-                }
-              : undefined,
-          microLearning:
-            pendingRequest.microLearningId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.microLearningId,
-                  },
-                }
-              : undefined,
-          groupActivity:
-            pendingRequest.groupActivityId !== null
-              ? {
-                  connect: {
-                    id: pendingRequest.groupActivityId,
-                  },
-                }
-              : undefined,
-        },
-        update: {},
-      })
-    }
+          create: {
+            permissionLevel,
+            propagation,
+            user: {
+              connect: {
+                id: userId,
+              },
+            },
+            catalogCollection:
+              pendingRequest.catalogCollectionId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.catalogCollectionId,
+                    },
+                  }
+                : undefined,
+            answerCollection:
+              pendingRequest.answerCollectionId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.answerCollectionId,
+                    },
+                  }
+                : undefined,
+            element:
+              pendingRequest.elementId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.elementId,
+                    },
+                  }
+                : undefined,
+            course:
+              pendingRequest.courseId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.courseId,
+                    },
+                  }
+                : undefined,
+            liveQuiz:
+              pendingRequest.liveQuizId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.liveQuizId,
+                    },
+                  }
+                : undefined,
+            practiceQuiz:
+              pendingRequest.practiceQuizId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.practiceQuizId,
+                    },
+                  }
+                : undefined,
+            microLearning:
+              pendingRequest.microLearningId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.microLearningId,
+                    },
+                  }
+                : undefined,
+            groupActivity:
+              pendingRequest.groupActivityId !== null
+                ? {
+                    connect: {
+                      id: pendingRequest.groupActivityId,
+                    },
+                  }
+                : undefined,
+          },
+          update: {},
+        })
+      }
 
-    // remove the access request
-    await prisma.accessRequest.deleteMany({
-      where: {
-        userId,
-        catalogCollectionId: pendingRequest.catalogCollectionId ?? undefined,
-        answerCollectionId: pendingRequest.answerCollectionId ?? undefined,
-        elementId: pendingRequest.elementId ?? undefined,
-        courseId: pendingRequest.courseId ?? undefined,
-        liveQuizId: pendingRequest.liveQuizId ?? undefined,
-        practiceQuizId: pendingRequest.practiceQuizId ?? undefined,
-        microLearningId: pendingRequest.microLearningId ?? undefined,
-        groupActivityId: pendingRequest.groupActivityId ?? undefined,
-      },
-    })
-
-    // create an audit log entry for the resolved access request
-    const { objectType, objectId } = getAuditLogObjectType({
-      catalogCollectionId: pendingRequest.catalogCollectionId,
-      answerCollectionId: pendingRequest.answerCollectionId,
-      elementId: pendingRequest.elementId,
-      courseId: pendingRequest.courseId,
-      liveQuizId: pendingRequest.liveQuizId,
-      practiceQuizId: pendingRequest.practiceQuizId,
-      microLearningId: pendingRequest.microLearningId,
-      groupActivityId: pendingRequest.groupActivityId,
-    })
-    if (objectType && objectId) {
-      await prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.REQUEST_RESOLVED,
-          objectType,
-          objectId,
-          sourceUserId: ctx.user.sub,
-          targetUserId: userId,
-          message: `Access request ${
-            approved
-              ? `approved (with permission level ${permissionLevel})`
-              : 'declined'
-          } for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} for user ${userId}.`,
+      // remove the access request
+      await prisma.accessRequest.deleteMany({
+        where: {
+          userId,
+          catalogCollectionId: pendingRequest.catalogCollectionId ?? undefined,
+          answerCollectionId: pendingRequest.answerCollectionId ?? undefined,
+          elementId: pendingRequest.elementId ?? undefined,
+          courseId: pendingRequest.courseId ?? undefined,
+          liveQuizId: pendingRequest.liveQuizId ?? undefined,
+          practiceQuizId: pendingRequest.practiceQuizId ?? undefined,
+          microLearningId: pendingRequest.microLearningId ?? undefined,
+          groupActivityId: pendingRequest.groupActivityId ?? undefined,
         },
       })
-    } else {
-      throw new Error(
-        `Could not determine object type or ID for audit log entry. Request ID: ${requestId}, Details: ${JSON.stringify(
+
+      // create an audit log entry for the resolved access request
+      const { objectType, objectId } = getAuditLogObjectType({
+        catalogCollectionId: pendingRequest.catalogCollectionId,
+        answerCollectionId: pendingRequest.answerCollectionId,
+        elementId: pendingRequest.elementId,
+        courseId: pendingRequest.courseId,
+        liveQuizId: pendingRequest.liveQuizId,
+        practiceQuizId: pendingRequest.practiceQuizId,
+        microLearningId: pendingRequest.microLearningId,
+        groupActivityId: pendingRequest.groupActivityId,
+      })
+      if (objectType && objectId) {
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.REQUEST_RESOLVED,
+            objectType,
+            objectId,
+            sourceUserId: ctx.user.sub,
+            targetUserId: userId,
+            message: `Access request ${
+              approved
+                ? `approved (with permission level ${permissionLevel})`
+                : 'declined'
+            } for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} for user ${userId}.`,
+          },
+        })
+      } else {
+        throw new Error(
+          `Could not determine object type or ID for audit log entry. Request ID: ${requestId}, Details: ${JSON.stringify(
+            {
+              catalogCollectionId: pendingRequest.catalogCollectionId,
+              answerCollectionId: pendingRequest.answerCollectionId,
+              elementId: pendingRequest.elementId,
+              courseId: pendingRequest.courseId,
+              liveQuizId: pendingRequest.liveQuizId,
+              practiceQuizId: pendingRequest.practiceQuizId,
+              microLearningId: pendingRequest.microLearningId,
+              groupActivityId: pendingRequest.groupActivityId,
+            }
+          )}`
+        )
+      }
+
+      // trigger recomputation of derived permissions within the same transaction
+      const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
+      if (pendingRequest.catalogCollectionId !== null) {
+        await recomputeDerivedPermissions(
           {
+            userId,
+            updateAccessRequests,
             catalogCollectionId: pendingRequest.catalogCollectionId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.answerCollectionId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             answerCollectionId: pendingRequest.answerCollectionId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.elementId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             elementId: pendingRequest.elementId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.courseId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             courseId: pendingRequest.courseId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.liveQuizId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             liveQuizId: pendingRequest.liveQuizId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.practiceQuizId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             practiceQuizId: pendingRequest.practiceQuizId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.microLearningId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             microLearningId: pendingRequest.microLearningId,
+          },
+          prisma
+        )
+      } else if (pendingRequest.groupActivityId !== null) {
+        await recomputeDerivedPermissions(
+          {
+            userId,
+            updateAccessRequests,
             groupActivityId: pendingRequest.groupActivityId,
-          }
-        )}`
-      )
-    }
-
-    // trigger recomputation of derived permissions within the same transaction
-    const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
-    if (pendingRequest.catalogCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          catalogCollectionId: pendingRequest.catalogCollectionId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.answerCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          answerCollectionId: pendingRequest.answerCollectionId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.elementId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          elementId: pendingRequest.elementId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.courseId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          courseId: pendingRequest.courseId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.liveQuizId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          liveQuizId: pendingRequest.liveQuizId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.practiceQuizId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          practiceQuizId: pendingRequest.practiceQuizId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.microLearningId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          microLearningId: pendingRequest.microLearningId,
-        },
-        prisma
-      )
-    } else if (pendingRequest.groupActivityId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          userId,
-          updateAccessRequests,
-          groupActivityId: pendingRequest.groupActivityId,
-        },
-        prisma
-      )
-    }
-  })
+          },
+          prisma
+        )
+      }
+    },
+    { timeout: 60000 }
+  )
 
   // invalidate the related objects
   if (pendingRequest.catalogCollectionId !== null) {
@@ -1944,11 +1947,116 @@ export async function changeObjectPermissionLevel(
       : null
 
   // execute the update and recomputation in a single transaction
-  const permission = await ctx.prisma.$transaction(async (prisma) => {
-    // update the access level of the permission
-    const updatedPermission = await prisma.permission.update({
-      where: {
-        id: permissionId,
+  const permission = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the access level of the permission
+      const updatedPermission = await prisma.permission.update({
+        where: {
+          id: permissionId,
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+        data: {
+          permissionLevel,
+          propagation,
+        },
+      })
+
+      // if the permission does not exist, return early
+      if (!updatedPermission) {
+        return false
+      }
+
+      // if the permission exists, trigger recomputation of derived permissions, potentially update the access requests and log the change
+      const affectedUserIds = updatedPermission.userId
+        ? [updatedPermission.userId]
+        : userGroup
+          ? [
+              userGroup.ownerId,
+              ...userGroup.admins.map((admin) => admin.id),
+              ...userGroup.members.map((member) => member.id),
+            ]
+          : []
+
+      // if an admin permission was granted or revoked, update the access request instances
+      const updateAccessRequests =
+        (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
+          permissionLevel === DB.PermissionLevel.ADMIN) ||
+        (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
+          permissionLevel !== DB.PermissionLevel.ADMIN)
+
+      for (const affectedUserId of affectedUserIds) {
+        if (typeof catalogCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              catalogCollectionId,
+              userId: affectedUserId,
+              updateAccessRequests,
+            },
+            prisma
+          )
+        } else if (typeof answerCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              answerCollectionId,
+              userId: affectedUserId,
+              updateAccessRequests,
+            },
+            prisma
+          )
+        } else if (typeof elementId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { elementId, userId: affectedUserId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof courseId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { courseId, userId: affectedUserId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof liveQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { liveQuizId, userId: affectedUserId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof practiceQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              practiceQuizId,
+              userId: affectedUserId,
+              updateAccessRequests,
+            },
+            prisma
+          )
+        } else if (typeof microLearningId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              microLearningId,
+              userId: affectedUserId,
+              updateAccessRequests,
+            },
+            prisma
+          )
+        } else if (typeof groupActivityId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              groupActivityId,
+              userId: affectedUserId,
+              updateAccessRequests,
+            },
+            prisma
+          )
+        }
+      }
+
+      // create an audit log entry for the updated permission
+      const { objectType, objectId } = getAuditLogObjectType({
         catalogCollectionId,
         answerCollectionId,
         elementId,
@@ -1957,142 +2065,40 @@ export async function changeObjectPermissionLevel(
         practiceQuizId,
         microLearningId,
         groupActivityId,
-      },
-      data: {
-        permissionLevel,
-        propagation,
-      },
-    })
-
-    // if the permission does not exist, return early
-    if (!updatedPermission) {
-      return false
-    }
-
-    // if the permission exists, trigger recomputation of derived permissions, potentially update the access requests and log the change
-    const affectedUserIds = updatedPermission.userId
-      ? [updatedPermission.userId]
-      : userGroup
-        ? [
-            userGroup.ownerId,
-            ...userGroup.admins.map((admin) => admin.id),
-            ...userGroup.members.map((member) => member.id),
-          ]
-        : []
-
-    // if an admin permission was granted or revoked, update the access request instances
-    const updateAccessRequests =
-      (previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
-        permissionLevel === DB.PermissionLevel.ADMIN) ||
-      (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permissionLevel !== DB.PermissionLevel.ADMIN)
-
-    for (const affectedUserId of affectedUserIds) {
-      if (typeof catalogCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            catalogCollectionId,
-            userId: affectedUserId,
-            updateAccessRequests,
+      })
+      if (objectType && objectId) {
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_MODIFIED,
+            objectType,
+            objectId,
+            sourceUserId: ctx.user.sub,
+            targetUserId: updatedPermission.userId ?? undefined,
+            targetUserGroupId: updatedPermission.userGroupId ?? undefined,
+            message: `Permission level changed from ${previousPermission.permissionLevel} to ${permissionLevel} for ${objectType} (ID ${objectId}) through owner / admin ${ctx.user.sub} for ${updatedPermission.userId ? `user ${updatedPermission.userId}` : `user group ${updatedPermission.userGroupId}`}.`,
           },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            answerCollectionId,
-            userId: affectedUserId,
-            updateAccessRequests,
-          },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { elementId, userId: affectedUserId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { courseId, userId: affectedUserId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { liveQuizId, userId: affectedUserId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            practiceQuizId,
-            userId: affectedUserId,
-            updateAccessRequests,
-          },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            microLearningId,
-            userId: affectedUserId,
-            updateAccessRequests,
-          },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            groupActivityId,
-            userId: affectedUserId,
-            updateAccessRequests,
-          },
-          prisma
+        })
+      } else {
+        throw new Error(
+          `Could not determine object type or ID for audit log entry. Permission ID: ${permissionId}, Details: ${JSON.stringify(
+            {
+              catalogCollectionId,
+              answerCollectionId,
+              elementId,
+              courseId,
+              liveQuizId,
+              practiceQuizId,
+              microLearningId,
+              groupActivityId,
+            }
+          )}`
         )
       }
-    }
 
-    // create an audit log entry for the updated permission
-    const { objectType, objectId } = getAuditLogObjectType({
-      catalogCollectionId,
-      answerCollectionId,
-      elementId,
-      courseId,
-      liveQuizId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-    })
-    if (objectType && objectId) {
-      await prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.PERMISSION_MODIFIED,
-          objectType,
-          objectId,
-          sourceUserId: ctx.user.sub,
-          targetUserId: updatedPermission.userId ?? undefined,
-          targetUserGroupId: updatedPermission.userGroupId ?? undefined,
-          message: `Permission level changed from ${previousPermission.permissionLevel} to ${permissionLevel} for ${objectType} (ID ${objectId}) through owner / admin ${ctx.user.sub} for ${updatedPermission.userId ? `user ${updatedPermission.userId}` : `user group ${updatedPermission.userGroupId}`}.`,
-        },
-      })
-    } else {
-      throw new Error(
-        `Could not determine object type or ID for audit log entry. Permission ID: ${permissionId}, Details: ${JSON.stringify(
-          {
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          }
-        )}`
-      )
-    }
-
-    return updatedPermission
-  })
+      return updatedPermission
+    },
+    { timeout: 60000 }
+  )
 
   // if the permission did not exist in the first place, return null
   if (!permission) {
@@ -2168,174 +2174,177 @@ export async function revokeObjectAccess(
   }
 
   // delete the direct permission and recompute derived permissions
-  const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
-    const deleted = await prisma.permission.delete({
-      where: { id: permissionId },
-    })
-
-    // add an audit log entry for the revoked permission
-    const { objectType, objectId } = getAuditLogObjectType({
-      catalogCollectionId,
-      answerCollectionId,
-      elementId,
-      courseId,
-      liveQuizId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-    })
-    if (objectType && objectId) {
-      await prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.PERMISSION_REVOKED,
-          objectType,
-          objectId,
-          sourceUserId: ctx.user.sub,
-          targetUserId: permission.userId ?? undefined,
-          targetUserGroupId: permission.userGroupId ?? undefined,
-          message: `Permission revoked for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} for ${permission.user?.id ? `user ${permission.user?.id}` : `user group ${permission.userGroupId}`}.`,
-        },
+  const deletedPermission = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const deleted = await prisma.permission.delete({
+        where: { id: permissionId },
       })
-    } else {
-      throw new Error(
-        `Could not determine object type or ID for audit log entry. Permission ID: ${permissionId}, Details: ${JSON.stringify(
-          {
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          }
-        )}`
-      )
-    }
 
-    // compute the users affected by this permission revocation
-    const affectedUserIds = permission.userId
-      ? [permission.userId]
-      : userGroup
-        ? [
-            userGroup.ownerId,
-            ...userGroup.admins.map((admin) => admin.id),
-            ...userGroup.members.map((member) => member.id),
-          ]
-        : []
-
-    for (const affectedUserId of affectedUserIds) {
-      // update the derived permissions of all affected users
-      if (typeof catalogCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            catalogCollectionId,
-            userId: affectedUserId,
-            updateAccessRequests: false,
+      // add an audit log entry for the revoked permission
+      const { objectType, objectId } = getAuditLogObjectType({
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      })
+      if (objectType && objectId) {
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_REVOKED,
+            objectType,
+            objectId,
+            sourceUserId: ctx.user.sub,
+            targetUserId: permission.userId ?? undefined,
+            targetUserGroupId: permission.userGroupId ?? undefined,
+            message: `Permission revoked for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} for ${permission.user?.id ? `user ${permission.user?.id}` : `user group ${permission.userGroupId}`}.`,
           },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            answerCollectionId,
-            userId: affectedUserId,
-            updateAccessRequests: false,
-          },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { elementId, userId: affectedUserId, updateAccessRequests: false },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { courseId, userId: affectedUserId, updateAccessRequests: false },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            practiceQuizId,
-            userId: affectedUserId,
-            updateAccessRequests: false,
-          },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            microLearningId,
-            userId: affectedUserId,
-            updateAccessRequests: false,
-          },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          {
-            groupActivityId,
-            userId: affectedUserId,
-            updateAccessRequests: false,
-          },
-          prisma
+        })
+      } else {
+        throw new Error(
+          `Could not determine object type or ID for audit log entry. Permission ID: ${permissionId}, Details: ${JSON.stringify(
+            {
+              catalogCollectionId,
+              answerCollectionId,
+              elementId,
+              courseId,
+              liveQuizId,
+              practiceQuizId,
+              microLearningId,
+              groupActivityId,
+            }
+          )}`
         )
       }
-    }
 
-    // if an admin permission was revoked, update the access request instances
-    if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
-      if (typeof catalogCollectionId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { catalogCollectionId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { answerCollectionId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { elementId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { courseId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { liveQuizId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { practiceQuizId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { microLearningId, userId: permission.userId ?? undefined },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await updateAccessRequestInstances(
-          { groupActivityId, userId: permission.userId ?? undefined },
-          prisma
-        )
+      // compute the users affected by this permission revocation
+      const affectedUserIds = permission.userId
+        ? [permission.userId]
+        : userGroup
+          ? [
+              userGroup.ownerId,
+              ...userGroup.admins.map((admin) => admin.id),
+              ...userGroup.members.map((member) => member.id),
+            ]
+          : []
+
+      for (const affectedUserId of affectedUserIds) {
+        // update the derived permissions of all affected users
+        if (typeof catalogCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              catalogCollectionId,
+              userId: affectedUserId,
+              updateAccessRequests: false,
+            },
+            prisma
+          )
+        } else if (typeof answerCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              answerCollectionId,
+              userId: affectedUserId,
+              updateAccessRequests: false,
+            },
+            prisma
+          )
+        } else if (typeof elementId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { elementId, userId: affectedUserId, updateAccessRequests: false },
+            prisma
+          )
+        } else if (typeof courseId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { courseId, userId: affectedUserId, updateAccessRequests: false },
+            prisma
+          )
+        } else if (typeof liveQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
+            prisma
+          )
+        } else if (typeof practiceQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              practiceQuizId,
+              userId: affectedUserId,
+              updateAccessRequests: false,
+            },
+            prisma
+          )
+        } else if (typeof microLearningId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              microLearningId,
+              userId: affectedUserId,
+              updateAccessRequests: false,
+            },
+            prisma
+          )
+        } else if (typeof groupActivityId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            {
+              groupActivityId,
+              userId: affectedUserId,
+              updateAccessRequests: false,
+            },
+            prisma
+          )
+        }
       }
-    }
 
-    return deleted
-  })
+      // if an admin permission was revoked, update the access request instances
+      if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
+        if (typeof catalogCollectionId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { catalogCollectionId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof answerCollectionId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { answerCollectionId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof elementId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { elementId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof courseId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { courseId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof liveQuizId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { liveQuizId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof practiceQuizId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { practiceQuizId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof microLearningId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { microLearningId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        } else if (typeof groupActivityId !== 'undefined') {
+          await updateAccessRequestInstances(
+            { groupActivityId, userId: permission.userId ?? undefined },
+            prisma
+          )
+        }
+      }
+
+      return deleted
+    },
+    { timeout: 60000 }
+  )
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -3145,74 +3154,77 @@ export async function transferCourseOwnership(
     return null
   }
 
-  const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
-    // update the owner of the course and grant admin permissions to the current user
-    const updated = await prisma.course.update({
-      where: { id },
-      data: {
-        owner: { connect: { id: newOwner.id } },
-        directPermissions: {
-          upsert: {
-            where: {
-              courseId_userId: {
-                courseId: id,
-                userId: ctx.user.sub,
+  const updatedCourse = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the owner of the course and grant admin permissions to the current user
+      const updated = await prisma.course.update({
+        where: { id },
+        data: {
+          owner: { connect: { id: newOwner.id } },
+          directPermissions: {
+            upsert: {
+              where: {
+                courseId_userId: {
+                  courseId: id,
+                  userId: ctx.user.sub,
+                },
               },
+              create: {
+                permissionLevel: DB.PermissionLevel.ADMIN,
+                user: { connect: { id: ctx.user.sub } },
+              },
+              update: { permissionLevel: DB.PermissionLevel.ADMIN },
             },
-            create: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-              user: { connect: { id: ctx.user.sub } },
-            },
-            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
-      },
-      include: {
-        directPermissions: {
-          where: { userId: ctx.user.sub },
-          include: {
-            user: { select: { id: true, shortname: true, email: true } },
-          },
-        },
-      },
-    })
-
-    // if the new owner previously had a permission on the live quiz, delete it
-    if (newOwner.sharedObjects.length > 0) {
-      await prisma.permission.delete({
-        where: {
-          courseId_userId: {
-            courseId: id,
-            userId: newOwner.id,
+        include: {
+          directPermissions: {
+            where: { userId: ctx.user.sub },
+            include: {
+              user: { select: { id: true, shortname: true, email: true } },
+            },
           },
         },
       })
-    }
 
-    // create an audit log entry for the ownership transfer
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.OWNER_TRANSFERRED,
-        objectType: DB.ObjectType.COURSE,
-        objectId: id,
-        sourceUserId: ctx.user.sub,
-        targetUserId: newOwner.id,
-        message: `Ownership of ${DB.ObjectType.COURSE} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
-      },
-    })
+      // if the new owner previously had a permission on the live quiz, delete it
+      if (newOwner.sharedObjects.length > 0) {
+        await prisma.permission.delete({
+          where: {
+            courseId_userId: {
+              courseId: id,
+              userId: newOwner.id,
+            },
+          },
+        })
+      }
 
-    // trigger recomputation of derived permissions for the course for both users
-    await recomputeDerivedPermissions(
-      { courseId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
-    )
-    await recomputeDerivedPermissions(
-      { courseId: id, userId: ctx.user.sub, updateAccessRequests: false },
-      prisma
-    )
+      // create an audit log entry for the ownership transfer
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.OWNER_TRANSFERRED,
+          objectType: DB.ObjectType.COURSE,
+          objectId: id,
+          sourceUserId: ctx.user.sub,
+          targetUserId: newOwner.id,
+          message: `Ownership of ${DB.ObjectType.COURSE} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+        },
+      })
 
-    return updated
-  })
+      // trigger recomputation of derived permissions for the course for both users
+      await recomputeDerivedPermissions(
+        { courseId: id, userId: newOwner.id, updateAccessRequests: true },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: id, userId: ctx.user.sub, updateAccessRequests: false },
+        prisma
+      )
+
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCourse.directPermissions[0]
@@ -3252,74 +3264,77 @@ export async function transferLiveQuizOwnership(
     return null
   }
 
-  const updatedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
-    // update the owner of the live quiz and grant admin permissions to the current user
-    const updated = await prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        owner: { connect: { id: newOwner.id } },
-        directPermissions: {
-          upsert: {
-            where: {
-              liveQuizId_userId: {
-                liveQuizId: id,
-                userId: ctx.user.sub,
+  const updatedLiveQuiz = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the owner of the live quiz and grant admin permissions to the current user
+      const updated = await prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          owner: { connect: { id: newOwner.id } },
+          directPermissions: {
+            upsert: {
+              where: {
+                liveQuizId_userId: {
+                  liveQuizId: id,
+                  userId: ctx.user.sub,
+                },
               },
+              create: {
+                permissionLevel: DB.PermissionLevel.ADMIN,
+                user: { connect: { id: ctx.user.sub } },
+              },
+              update: { permissionLevel: DB.PermissionLevel.ADMIN },
             },
-            create: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-              user: { connect: { id: ctx.user.sub } },
-            },
-            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
-      },
-      include: {
-        directPermissions: {
-          where: { userId: ctx.user.sub },
-          include: {
-            user: { select: { id: true, shortname: true, email: true } },
-          },
-        },
-      },
-    })
-
-    // if the new owner previously had a permission on the live quiz, delete it
-    if (newOwner.sharedObjects.length > 0) {
-      await prisma.permission.delete({
-        where: {
-          liveQuizId_userId: {
-            liveQuizId: id,
-            userId: newOwner.id,
+        include: {
+          directPermissions: {
+            where: { userId: ctx.user.sub },
+            include: {
+              user: { select: { id: true, shortname: true, email: true } },
+            },
           },
         },
       })
-    }
 
-    // create an audit log entry for the ownership transfer
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.OWNER_TRANSFERRED,
-        objectType: DB.ObjectType.LIVE_QUIZ,
-        objectId: String(id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: newOwner.id,
-        message: `Ownership of ${DB.ObjectType.LIVE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
-      },
-    })
+      // if the new owner previously had a permission on the live quiz, delete it
+      if (newOwner.sharedObjects.length > 0) {
+        await prisma.permission.delete({
+          where: {
+            liveQuizId_userId: {
+              liveQuizId: id,
+              userId: newOwner.id,
+            },
+          },
+        })
+      }
 
-    // trigger recomputation of derived permissions for the live quiz for both users
-    await recomputeDerivedPermissions(
-      { liveQuizId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
-    )
-    await recomputeDerivedPermissions(
-      { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
-      prisma
-    )
+      // create an audit log entry for the ownership transfer
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.OWNER_TRANSFERRED,
+          objectType: DB.ObjectType.LIVE_QUIZ,
+          objectId: String(id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: newOwner.id,
+          message: `Ownership of ${DB.ObjectType.LIVE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+        },
+      })
 
-    return updated
-  })
+      // trigger recomputation of derived permissions for the live quiz for both users
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: newOwner.id, updateAccessRequests: true },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
+        prisma
+      )
+
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedLiveQuiz.directPermissions[0]
@@ -3359,74 +3374,81 @@ export async function transferPracticeQuizOwnership(
     return null
   }
 
-  const updatedPracticeQuiz = await ctx.prisma.$transaction(async (prisma) => {
-    // update the owner of the practice quiz and grant admin permissions to the current user
-    const updated = await prisma.practiceQuiz.update({
-      where: { id },
-      data: {
-        owner: { connect: { id: newOwner.id } },
-        directPermissions: {
-          upsert: {
-            where: {
-              practiceQuizId_userId: {
-                practiceQuizId: id,
-                userId: ctx.user.sub,
+  const updatedPracticeQuiz = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the owner of the practice quiz and grant admin permissions to the current user
+      const updated = await prisma.practiceQuiz.update({
+        where: { id },
+        data: {
+          owner: { connect: { id: newOwner.id } },
+          directPermissions: {
+            upsert: {
+              where: {
+                practiceQuizId_userId: {
+                  practiceQuizId: id,
+                  userId: ctx.user.sub,
+                },
               },
+              create: {
+                permissionLevel: DB.PermissionLevel.ADMIN,
+                user: { connect: { id: ctx.user.sub } },
+              },
+              update: { permissionLevel: DB.PermissionLevel.ADMIN },
             },
-            create: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-              user: { connect: { id: ctx.user.sub } },
-            },
-            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
-      },
-      include: {
-        directPermissions: {
-          where: { userId: ctx.user.sub },
-          include: {
-            user: { select: { id: true, shortname: true, email: true } },
-          },
-        },
-      },
-    })
-
-    // if the new owner previously had a permission on the practice quiz, delete it
-    if (newOwner.sharedObjects.length > 0) {
-      await prisma.permission.delete({
-        where: {
-          practiceQuizId_userId: {
-            practiceQuizId: id,
-            userId: newOwner.id,
+        include: {
+          directPermissions: {
+            where: { userId: ctx.user.sub },
+            include: {
+              user: { select: { id: true, shortname: true, email: true } },
+            },
           },
         },
       })
-    }
 
-    // create an audit log entry for the ownership transfer
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.OWNER_TRANSFERRED,
-        objectType: DB.ObjectType.PRACTICE_QUIZ,
-        objectId: String(id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: newOwner.id,
-        message: `Ownership of ${DB.ObjectType.PRACTICE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
-      },
-    })
+      // if the new owner previously had a permission on the practice quiz, delete it
+      if (newOwner.sharedObjects.length > 0) {
+        await prisma.permission.delete({
+          where: {
+            practiceQuizId_userId: {
+              practiceQuizId: id,
+              userId: newOwner.id,
+            },
+          },
+        })
+      }
 
-    // trigger recomputation of derived permissions for the practice quiz for both users
-    await recomputeDerivedPermissions(
-      { practiceQuizId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
-    )
-    await recomputeDerivedPermissions(
-      { practiceQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
-      prisma
-    )
+      // create an audit log entry for the ownership transfer
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.OWNER_TRANSFERRED,
+          objectType: DB.ObjectType.PRACTICE_QUIZ,
+          objectId: String(id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: newOwner.id,
+          message: `Ownership of ${DB.ObjectType.PRACTICE_QUIZ} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+        },
+      })
 
-    return updated
-  })
+      // trigger recomputation of derived permissions for the practice quiz for both users
+      await recomputeDerivedPermissions(
+        { practiceQuizId: id, userId: newOwner.id, updateAccessRequests: true },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        {
+          practiceQuizId: id,
+          userId: ctx.user.sub,
+          updateAccessRequests: false,
+        },
+        prisma
+      )
+
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedPracticeQuiz.directPermissions[0]
@@ -3466,78 +3488,85 @@ export async function transferMicroLearningOwnership(
     return null
   }
 
-  const updatedMicroLearning = await ctx.prisma.$transaction(async (prisma) => {
-    // update the owner of the microlearning and grant admin permissions to the current user
-    const updated = await prisma.microLearning.update({
-      where: { id },
-      data: {
-        owner: { connect: { id: newOwner.id } },
-        directPermissions: {
-          upsert: {
-            where: {
-              microLearningId_userId: {
-                microLearningId: id,
-                userId: ctx.user.sub,
+  const updatedMicroLearning = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the owner of the microlearning and grant admin permissions to the current user
+      const updated = await prisma.microLearning.update({
+        where: { id },
+        data: {
+          owner: { connect: { id: newOwner.id } },
+          directPermissions: {
+            upsert: {
+              where: {
+                microLearningId_userId: {
+                  microLearningId: id,
+                  userId: ctx.user.sub,
+                },
               },
+              create: {
+                permissionLevel: DB.PermissionLevel.ADMIN,
+                user: { connect: { id: ctx.user.sub } },
+              },
+              update: { permissionLevel: DB.PermissionLevel.ADMIN },
             },
-            create: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-              user: { connect: { id: ctx.user.sub } },
-            },
-            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
-      },
-      include: {
-        directPermissions: {
-          where: { userId: ctx.user.sub },
-          include: {
-            user: { select: { id: true, shortname: true, email: true } },
-          },
-        },
-      },
-    })
-
-    // if the new owner previously had a permission on the microlearning, delete it
-    if (newOwner.sharedObjects.length > 0) {
-      await prisma.permission.delete({
-        where: {
-          microLearningId_userId: {
-            microLearningId: id,
-            userId: newOwner.id,
+        include: {
+          directPermissions: {
+            where: { userId: ctx.user.sub },
+            include: {
+              user: { select: { id: true, shortname: true, email: true } },
+            },
           },
         },
       })
-    }
 
-    // create an audit log entry for the ownership transfer
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.OWNER_TRANSFERRED,
-        objectType: DB.ObjectType.MICRO_LEARNING,
-        objectId: String(id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: newOwner.id,
-        message: `Ownership of ${DB.ObjectType.MICRO_LEARNING} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
-      },
-    })
+      // if the new owner previously had a permission on the microlearning, delete it
+      if (newOwner.sharedObjects.length > 0) {
+        await prisma.permission.delete({
+          where: {
+            microLearningId_userId: {
+              microLearningId: id,
+              userId: newOwner.id,
+            },
+          },
+        })
+      }
 
-    // trigger recomputation of derived permissions for the microlearning for both users
-    await recomputeDerivedPermissions(
-      { microLearningId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
-    )
-    await recomputeDerivedPermissions(
-      {
-        microLearningId: id,
-        userId: ctx.user.sub,
-        updateAccessRequests: false,
-      },
-      prisma
-    )
+      // create an audit log entry for the ownership transfer
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.OWNER_TRANSFERRED,
+          objectType: DB.ObjectType.MICRO_LEARNING,
+          objectId: String(id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: newOwner.id,
+          message: `Ownership of ${DB.ObjectType.MICRO_LEARNING} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+        },
+      })
 
-    return updated
-  })
+      // trigger recomputation of derived permissions for the microlearning for both users
+      await recomputeDerivedPermissions(
+        {
+          microLearningId: id,
+          userId: newOwner.id,
+          updateAccessRequests: true,
+        },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        {
+          microLearningId: id,
+          userId: ctx.user.sub,
+          updateAccessRequests: false,
+        },
+        prisma
+      )
+
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedMicroLearning.directPermissions[0]
@@ -3577,78 +3606,85 @@ export async function transferGroupActivityOwnership(
     return null
   }
 
-  const updatedGroupActivity = await ctx.prisma.$transaction(async (prisma) => {
-    // update the owner of the group activity and grant admin permissions to the current user
-    const updated = await prisma.groupActivity.update({
-      where: { id },
-      data: {
-        owner: { connect: { id: newOwner.id } },
-        directPermissions: {
-          upsert: {
-            where: {
-              groupActivityId_userId: {
-                groupActivityId: id,
-                userId: ctx.user.sub,
+  const updatedGroupActivity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // update the owner of the group activity and grant admin permissions to the current user
+      const updated = await prisma.groupActivity.update({
+        where: { id },
+        data: {
+          owner: { connect: { id: newOwner.id } },
+          directPermissions: {
+            upsert: {
+              where: {
+                groupActivityId_userId: {
+                  groupActivityId: id,
+                  userId: ctx.user.sub,
+                },
               },
+              create: {
+                permissionLevel: DB.PermissionLevel.ADMIN,
+                user: { connect: { id: ctx.user.sub } },
+              },
+              update: { permissionLevel: DB.PermissionLevel.ADMIN },
             },
-            create: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-              user: { connect: { id: ctx.user.sub } },
-            },
-            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
-      },
-      include: {
-        directPermissions: {
-          where: { userId: ctx.user.sub },
-          include: {
-            user: { select: { id: true, shortname: true, email: true } },
-          },
-        },
-      },
-    })
-
-    // if the new owner previously had a permission on the group activity, delete it
-    if (newOwner.sharedObjects.length > 0) {
-      await prisma.permission.delete({
-        where: {
-          groupActivityId_userId: {
-            groupActivityId: id,
-            userId: newOwner.id,
+        include: {
+          directPermissions: {
+            where: { userId: ctx.user.sub },
+            include: {
+              user: { select: { id: true, shortname: true, email: true } },
+            },
           },
         },
       })
-    }
 
-    // create an audit log entry for the ownership transfer
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.OWNER_TRANSFERRED,
-        objectType: DB.ObjectType.GROUP_ACTIVITY,
-        objectId: String(id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: newOwner.id,
-        message: `Ownership of ${DB.ObjectType.GROUP_ACTIVITY} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
-      },
-    })
+      // if the new owner previously had a permission on the group activity, delete it
+      if (newOwner.sharedObjects.length > 0) {
+        await prisma.permission.delete({
+          where: {
+            groupActivityId_userId: {
+              groupActivityId: id,
+              userId: newOwner.id,
+            },
+          },
+        })
+      }
 
-    // trigger recomputation of derived permissions for the group activity for both users
-    await recomputeDerivedPermissions(
-      { groupActivityId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
-    )
-    await recomputeDerivedPermissions(
-      {
-        groupActivityId: id,
-        userId: ctx.user.sub,
-        updateAccessRequests: false,
-      },
-      prisma
-    )
+      // create an audit log entry for the ownership transfer
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.OWNER_TRANSFERRED,
+          objectType: DB.ObjectType.GROUP_ACTIVITY,
+          objectId: String(id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: newOwner.id,
+          message: `Ownership of ${DB.ObjectType.GROUP_ACTIVITY} (ID ${id}) transferred from user ${ctx.user.sub} to user ${newOwner.id}.`,
+        },
+      })
 
-    return updated
-  })
+      // trigger recomputation of derived permissions for the group activity for both users
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: id,
+          userId: newOwner.id,
+          updateAccessRequests: true,
+        },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: id,
+          userId: ctx.user.sub,
+          updateAccessRequests: false,
+        },
+        prisma
+      )
+
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedGroupActivity.directPermissions[0]
@@ -3917,150 +3953,209 @@ export async function shareObject(
       return null
     }
 
-    const permission = await ctx.prisma.$transaction(async (prisma) => {
-      // upsert new permission for the answer collection under consideration
-      const newPermission = await prisma.permission.upsert({
-        where: {
-          catalogCollectionId_userId:
-            typeof catalogCollectionId !== 'undefined'
-              ? {
-                  catalogCollectionId,
-                  userId,
-                }
-              : undefined,
-          answerCollectionId_userId:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  answerCollectionId,
-                  userId,
-                }
-              : undefined,
-          elementId_userId:
-            typeof elementId !== 'undefined'
-              ? {
-                  elementId,
-                  userId,
-                }
-              : undefined,
-          courseId_userId:
-            typeof courseId !== 'undefined'
-              ? {
-                  courseId,
-                  userId,
-                }
-              : undefined,
-          liveQuizId_userId:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  liveQuizId,
-                  userId,
-                }
-              : undefined,
-          practiceQuizId_userId:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  practiceQuizId,
-                  userId,
-                }
-              : undefined,
-          microLearningId_userId:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  microLearningId,
-                  userId,
-                }
-              : undefined,
-          groupActivityId_userId:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  groupActivityId,
-                  userId,
-                }
-              : undefined,
-        },
-        create: {
-          permissionLevel,
-          propagation,
-          user: {
-            connect: {
-              id: userId,
-            },
+    const permission = await ctx.prisma.$transaction(
+      async (prisma) => {
+        // upsert new permission for the answer collection under consideration
+        const newPermission = await prisma.permission.upsert({
+          where: {
+            catalogCollectionId_userId:
+              typeof catalogCollectionId !== 'undefined'
+                ? {
+                    catalogCollectionId,
+                    userId,
+                  }
+                : undefined,
+            answerCollectionId_userId:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    answerCollectionId,
+                    userId,
+                  }
+                : undefined,
+            elementId_userId:
+              typeof elementId !== 'undefined'
+                ? {
+                    elementId,
+                    userId,
+                  }
+                : undefined,
+            courseId_userId:
+              typeof courseId !== 'undefined'
+                ? {
+                    courseId,
+                    userId,
+                  }
+                : undefined,
+            liveQuizId_userId:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    liveQuizId,
+                    userId,
+                  }
+                : undefined,
+            practiceQuizId_userId:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    practiceQuizId,
+                    userId,
+                  }
+                : undefined,
+            microLearningId_userId:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    microLearningId,
+                    userId,
+                  }
+                : undefined,
+            groupActivityId_userId:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    groupActivityId,
+                    userId,
+                  }
+                : undefined,
           },
-          catalogCollection:
-            typeof catalogCollectionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: catalogCollectionId,
-                  },
-                }
-              : undefined,
-          answerCollection:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: answerCollectionId,
-                  },
-                }
-              : undefined,
-          element:
-            typeof elementId !== 'undefined'
-              ? {
-                  connect: {
-                    id: elementId,
-                  },
-                }
-              : undefined,
-          course:
-            typeof courseId !== 'undefined'
-              ? {
-                  connect: {
-                    id: courseId,
-                  },
-                }
-              : undefined,
-          liveQuiz:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: liveQuizId,
-                  },
-                }
-              : undefined,
-          practiceQuiz:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: practiceQuizId,
-                  },
-                }
-              : undefined,
-          microLearning:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  connect: {
-                    id: microLearningId,
-                  },
-                }
-              : undefined,
-          groupActivity:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  connect: {
-                    id: groupActivityId,
-                  },
-                }
-              : undefined,
-        },
-        update: {
-          permissionLevel,
-          propagation,
-        },
-      })
+          create: {
+            permissionLevel,
+            propagation,
+            user: {
+              connect: {
+                id: userId,
+              },
+            },
+            catalogCollection:
+              typeof catalogCollectionId !== 'undefined'
+                ? {
+                    connect: {
+                      id: catalogCollectionId,
+                    },
+                  }
+                : undefined,
+            answerCollection:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    connect: {
+                      id: answerCollectionId,
+                    },
+                  }
+                : undefined,
+            element:
+              typeof elementId !== 'undefined'
+                ? {
+                    connect: {
+                      id: elementId,
+                    },
+                  }
+                : undefined,
+            course:
+              typeof courseId !== 'undefined'
+                ? {
+                    connect: {
+                      id: courseId,
+                    },
+                  }
+                : undefined,
+            liveQuiz:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: liveQuizId,
+                    },
+                  }
+                : undefined,
+            practiceQuiz:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: practiceQuizId,
+                    },
+                  }
+                : undefined,
+            microLearning:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    connect: {
+                      id: microLearningId,
+                    },
+                  }
+                : undefined,
+            groupActivity:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    connect: {
+                      id: groupActivityId,
+                    },
+                  }
+                : undefined,
+          },
+          update: {
+            permissionLevel,
+            propagation,
+          },
+        })
 
-      // remove any pending access requests for the user
-      await prisma.accessRequest.deleteMany({
-        where: {
-          userId,
+        // remove any pending access requests for the user
+        await prisma.accessRequest.deleteMany({
+          where: {
+            userId,
+            catalogCollectionId,
+            answerCollectionId,
+            elementId,
+            courseId,
+            liveQuizId,
+            practiceQuizId,
+            microLearningId,
+            groupActivityId,
+          },
+        })
+
+        // trigger recomputation of derived permissions for the object
+        const updateAccessRequests =
+          permissionLevel === DB.PermissionLevel.ADMIN
+        if (typeof catalogCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { catalogCollectionId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof answerCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { answerCollectionId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof elementId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { elementId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof courseId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { courseId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof liveQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { liveQuizId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof practiceQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { practiceQuizId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof microLearningId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { microLearningId, userId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof groupActivityId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { groupActivityId, userId, updateAccessRequests },
+            prisma
+          )
+        }
+
+        // create an audit log entry for the newly created permission
+        const { objectType, objectId } = getAuditLogObjectType({
           catalogCollectionId,
           answerCollectionId,
           elementId,
@@ -4069,94 +4164,39 @@ export async function shareObject(
           practiceQuizId,
           microLearningId,
           groupActivityId,
-        },
-      })
-
-      // trigger recomputation of derived permissions for the object
-      const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
-      if (typeof catalogCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { catalogCollectionId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { answerCollectionId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { elementId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { courseId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { liveQuizId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { practiceQuizId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { microLearningId, userId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { groupActivityId, userId, updateAccessRequests },
-          prisma
-        )
-      }
-
-      // create an audit log entry for the newly created permission
-      const { objectType, objectId } = getAuditLogObjectType({
-        catalogCollectionId,
-        answerCollectionId,
-        elementId,
-        courseId,
-        liveQuizId,
-        practiceQuizId,
-        microLearningId,
-        groupActivityId,
-      })
-      if (objectType && objectId) {
-        await prisma.auditLogEntry.create({
-          data: {
-            type: DB.AuditLogType.PERMISSION_GRANTED,
-            objectType,
-            objectId,
-            sourceUserId: ctx.user.sub,
-            targetUserId: userId,
-            message: `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user ${userId}.`,
-          },
         })
-      } else {
-        throw new Error(
-          `Could not determine object type or ID for audit log entry. Permission ID: ${newPermission.id}, Details: ${JSON.stringify(
-            {
-              catalogCollectionId,
-              answerCollectionId,
-              elementId,
-              courseId,
-              liveQuizId,
-              practiceQuizId,
-              microLearningId,
-              groupActivityId,
-            }
-          )}`
-        )
-      }
+        if (objectType && objectId) {
+          await prisma.auditLogEntry.create({
+            data: {
+              type: DB.AuditLogType.PERMISSION_GRANTED,
+              objectType,
+              objectId,
+              sourceUserId: ctx.user.sub,
+              targetUserId: userId,
+              message: `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user ${userId}.`,
+            },
+          })
+        } else {
+          throw new Error(
+            `Could not determine object type or ID for audit log entry. Permission ID: ${newPermission.id}, Details: ${JSON.stringify(
+              {
+                catalogCollectionId,
+                answerCollectionId,
+                elementId,
+                courseId,
+                liveQuizId,
+                practiceQuizId,
+                microLearningId,
+                groupActivityId,
+              }
+            )}`
+          )
+        }
 
-      return newPermission
-    })
+        return newPermission
+      },
+      { timeout: 60000 }
+    )
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {
@@ -4193,233 +4233,237 @@ export async function shareObject(
       return null
     }
 
-    const permission = await ctx.prisma.$transaction(async (prisma) => {
-      // upsert new permission for the answer collection under consideration
-      const newPermission = await prisma.permission.upsert({
-        where: {
-          catalogCollectionId_userGroupId:
-            typeof catalogCollectionId !== 'undefined'
-              ? {
-                  catalogCollectionId,
-                  userGroupId,
-                }
-              : undefined,
-          answerCollectionId_userGroupId:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  answerCollectionId,
-                  userGroupId,
-                }
-              : undefined,
-          elementId_userGroupId:
-            typeof elementId !== 'undefined'
-              ? {
-                  elementId,
-                  userGroupId,
-                }
-              : undefined,
-          courseId_userGroupId:
-            typeof courseId !== 'undefined'
-              ? {
-                  courseId,
-                  userGroupId,
-                }
-              : undefined,
-          liveQuizId_userGroupId:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  liveQuizId,
-                  userGroupId,
-                }
-              : undefined,
-          practiceQuizId_userGroupId:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  practiceQuizId,
-                  userGroupId,
-                }
-              : undefined,
-          microLearningId_userGroupId:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  microLearningId,
-                  userGroupId,
-                }
-              : undefined,
-          groupActivityId_userGroupId:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  groupActivityId,
-                  userGroupId,
-                }
-              : undefined,
-        },
-        create: {
-          permissionLevel,
-          propagation,
-          userGroup: {
-            connect: {
-              id: userGroupId,
-            },
+    const permission = await ctx.prisma.$transaction(
+      async (prisma) => {
+        // upsert new permission for the answer collection under consideration
+        const newPermission = await prisma.permission.upsert({
+          where: {
+            catalogCollectionId_userGroupId:
+              typeof catalogCollectionId !== 'undefined'
+                ? {
+                    catalogCollectionId,
+                    userGroupId,
+                  }
+                : undefined,
+            answerCollectionId_userGroupId:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    answerCollectionId,
+                    userGroupId,
+                  }
+                : undefined,
+            elementId_userGroupId:
+              typeof elementId !== 'undefined'
+                ? {
+                    elementId,
+                    userGroupId,
+                  }
+                : undefined,
+            courseId_userGroupId:
+              typeof courseId !== 'undefined'
+                ? {
+                    courseId,
+                    userGroupId,
+                  }
+                : undefined,
+            liveQuizId_userGroupId:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    liveQuizId,
+                    userGroupId,
+                  }
+                : undefined,
+            practiceQuizId_userGroupId:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    practiceQuizId,
+                    userGroupId,
+                  }
+                : undefined,
+            microLearningId_userGroupId:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    microLearningId,
+                    userGroupId,
+                  }
+                : undefined,
+            groupActivityId_userGroupId:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    groupActivityId,
+                    userGroupId,
+                  }
+                : undefined,
           },
-          catalogCollection:
-            typeof catalogCollectionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: catalogCollectionId,
-                  },
-                }
-              : undefined,
-          answerCollection:
-            typeof answerCollectionId !== 'undefined'
-              ? {
-                  connect: {
-                    id: answerCollectionId,
-                  },
-                }
-              : undefined,
-          element:
-            typeof elementId !== 'undefined'
-              ? {
-                  connect: {
-                    id: elementId,
-                  },
-                }
-              : undefined,
-          course:
-            typeof courseId !== 'undefined'
-              ? {
-                  connect: {
-                    id: courseId,
-                  },
-                }
-              : undefined,
-          liveQuiz:
-            typeof liveQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: liveQuizId,
-                  },
-                }
-              : undefined,
-          practiceQuiz:
-            typeof practiceQuizId !== 'undefined'
-              ? {
-                  connect: {
-                    id: practiceQuizId,
-                  },
-                }
-              : undefined,
-          microLearning:
-            typeof microLearningId !== 'undefined'
-              ? {
-                  connect: {
-                    id: microLearningId,
-                  },
-                }
-              : undefined,
-          groupActivity:
-            typeof groupActivityId !== 'undefined'
-              ? {
-                  connect: {
-                    id: groupActivityId,
-                  },
-                }
-              : undefined,
-        },
-        update: {
-          permissionLevel,
-          propagation,
-        },
-      })
-
-      // check if admin permissions were granted and the corresponding access requests need to be updated
-      const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
-
-      // trigger recomputation of derived permissions for the object
-      if (typeof catalogCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { catalogCollectionId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof answerCollectionId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { answerCollectionId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof elementId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { elementId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof courseId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { courseId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof liveQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { liveQuizId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof practiceQuizId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { practiceQuizId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof microLearningId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { microLearningId, updateAccessRequests },
-          prisma
-        )
-      } else if (typeof groupActivityId !== 'undefined') {
-        await recomputeDerivedPermissions(
-          { groupActivityId, updateAccessRequests },
-          prisma
-        )
-      }
-
-      // create an audit log entry for the newly created permission
-      const { objectType, objectId } = getAuditLogObjectType({
-        catalogCollectionId,
-        answerCollectionId,
-        elementId,
-        courseId,
-        liveQuizId,
-        practiceQuizId,
-        microLearningId,
-        groupActivityId,
-      })
-      if (objectType && objectId) {
-        await prisma.auditLogEntry.create({
-          data: {
-            type: DB.AuditLogType.PERMISSION_GRANTED,
-            objectType,
-            objectId,
-            sourceUserId: ctx.user.sub,
-            targetUserGroupId: userGroupId,
-            message: `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user group ${userGroupId}.`,
+          create: {
+            permissionLevel,
+            propagation,
+            userGroup: {
+              connect: {
+                id: userGroupId,
+              },
+            },
+            catalogCollection:
+              typeof catalogCollectionId !== 'undefined'
+                ? {
+                    connect: {
+                      id: catalogCollectionId,
+                    },
+                  }
+                : undefined,
+            answerCollection:
+              typeof answerCollectionId !== 'undefined'
+                ? {
+                    connect: {
+                      id: answerCollectionId,
+                    },
+                  }
+                : undefined,
+            element:
+              typeof elementId !== 'undefined'
+                ? {
+                    connect: {
+                      id: elementId,
+                    },
+                  }
+                : undefined,
+            course:
+              typeof courseId !== 'undefined'
+                ? {
+                    connect: {
+                      id: courseId,
+                    },
+                  }
+                : undefined,
+            liveQuiz:
+              typeof liveQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: liveQuizId,
+                    },
+                  }
+                : undefined,
+            practiceQuiz:
+              typeof practiceQuizId !== 'undefined'
+                ? {
+                    connect: {
+                      id: practiceQuizId,
+                    },
+                  }
+                : undefined,
+            microLearning:
+              typeof microLearningId !== 'undefined'
+                ? {
+                    connect: {
+                      id: microLearningId,
+                    },
+                  }
+                : undefined,
+            groupActivity:
+              typeof groupActivityId !== 'undefined'
+                ? {
+                    connect: {
+                      id: groupActivityId,
+                    },
+                  }
+                : undefined,
+          },
+          update: {
+            permissionLevel,
+            propagation,
           },
         })
-      } else {
-        throw new Error(
-          `Could not determine object type or ID for audit log entry. Permission ID: ${newPermission.id}, Details: ${JSON.stringify(
-            {
-              catalogCollectionId,
-              answerCollectionId,
-              elementId,
-              courseId,
-              liveQuizId,
-              practiceQuizId,
-              microLearningId,
-              groupActivityId,
-            }
-          )}`
-        )
-      }
 
-      return newPermission
-    })
+        // check if admin permissions were granted and the corresponding access requests need to be updated
+        const updateAccessRequests =
+          permissionLevel === DB.PermissionLevel.ADMIN
+
+        // trigger recomputation of derived permissions for the object
+        if (typeof catalogCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { catalogCollectionId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof answerCollectionId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { answerCollectionId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof elementId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { elementId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof courseId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { courseId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof liveQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { liveQuizId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof practiceQuizId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { practiceQuizId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof microLearningId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { microLearningId, updateAccessRequests },
+            prisma
+          )
+        } else if (typeof groupActivityId !== 'undefined') {
+          await recomputeDerivedPermissions(
+            { groupActivityId, updateAccessRequests },
+            prisma
+          )
+        }
+
+        // create an audit log entry for the newly created permission
+        const { objectType, objectId } = getAuditLogObjectType({
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        })
+        if (objectType && objectId) {
+          await prisma.auditLogEntry.create({
+            data: {
+              type: DB.AuditLogType.PERMISSION_GRANTED,
+              objectType,
+              objectId,
+              sourceUserId: ctx.user.sub,
+              targetUserGroupId: userGroupId,
+              message: `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user group ${userGroupId}.`,
+            },
+          })
+        } else {
+          throw new Error(
+            `Could not determine object type or ID for audit log entry. Permission ID: ${newPermission.id}, Details: ${JSON.stringify(
+              {
+                catalogCollectionId,
+                answerCollectionId,
+                elementId,
+                courseId,
+                liveQuizId,
+                practiceQuizId,
+                microLearningId,
+                groupActivityId,
+              }
+            )}`
+          )
+        }
+
+        return newPermission
+      },
+      { timeout: 60000 }
+    )
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {
@@ -6142,44 +6186,47 @@ export async function leaveUserGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    const updated = await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        members:
-          userGroup.members.length > 0
-            ? { disconnect: { id: ctx.user.sub } }
-            : undefined,
-        admins:
-          userGroup.admins.length > 0
-            ? { disconnect: { id: ctx.user.sub } }
-            : undefined,
-      },
-      include: {
-        permissions: true,
-      },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      const updated = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members:
+            userGroup.members.length > 0
+              ? { disconnect: { id: ctx.user.sub } }
+              : undefined,
+          admins:
+            userGroup.admins.length > 0
+              ? { disconnect: { id: ctx.user.sub } }
+              : undefined,
+        },
+        include: {
+          permissions: true,
+        },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(updated.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: ctx.user.sub,
-        message: `User left user group.`,
-      },
-    })
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(updated.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: ctx.user.sub,
+          message: `User left user group.`,
+        },
+      })
 
-    // trigger a derived permission recomputation for all objects that were shared with this group and this user
-    await recomputePermissionsUserGroupMember(
-      { permissions: updated.permissions, userId: ctx.user.sub },
-      prisma
-    )
+      // trigger a derived permission recomputation for all objects that were shared with this group and this user
+      await recomputePermissionsUserGroupMember(
+        { permissions: updated.permissions, userId: ctx.user.sub },
+        prisma
+      )
 
-    return updated
-  })
+      return updated
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -6198,68 +6245,71 @@ export async function deleteUserGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // delete the user group
-    await prisma.userGroup.delete({
-      where: { id: groupId },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete the user group
+      await prisma.userGroup.delete({
+        where: { id: groupId },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_DELETED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(userGroup.id),
-        sourceUserId: ctx.user.sub,
-        message: `User group deleted by owner.`,
-      },
-    })
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_DELETED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(userGroup.id),
+          sourceUserId: ctx.user.sub,
+          message: `User group deleted by owner.`,
+        },
+      })
 
-    // recompute the permissions for all objects that were shared with this user gruop
-    for (const permission of userGroup.permissions) {
-      if (permission.catalogCollectionId !== null) {
-        await recomputeDerivedPermissions(
-          { catalogCollectionId: permission.catalogCollectionId },
-          prisma
-        )
-      } else if (permission.answerCollectionId !== null) {
-        await recomputeDerivedPermissions(
-          { answerCollectionId: permission.answerCollectionId },
-          prisma
-        )
-      } else if (permission.elementId !== null) {
-        await recomputeDerivedPermissions(
-          { elementId: permission.elementId },
-          prisma
-        )
-      } else if (permission.courseId !== null) {
-        await recomputeDerivedPermissions(
-          { courseId: permission.courseId },
-          prisma
-        )
-      } else if (permission.liveQuizId !== null) {
-        await recomputeDerivedPermissions(
-          { liveQuizId: permission.liveQuizId },
-          prisma
-        )
-      } else if (permission.practiceQuizId !== null) {
-        await recomputeDerivedPermissions(
-          { practiceQuizId: permission.practiceQuizId },
-          prisma
-        )
-      } else if (permission.microLearningId !== null) {
-        await recomputeDerivedPermissions(
-          { microLearningId: permission.microLearningId },
-          prisma
-        )
-      } else if (permission.groupActivityId !== null) {
-        await recomputeDerivedPermissions(
-          { groupActivityId: permission.groupActivityId },
-          prisma
-        )
+      // recompute the permissions for all objects that were shared with this user gruop
+      for (const permission of userGroup.permissions) {
+        if (permission.catalogCollectionId !== null) {
+          await recomputeDerivedPermissions(
+            { catalogCollectionId: permission.catalogCollectionId },
+            prisma
+          )
+        } else if (permission.answerCollectionId !== null) {
+          await recomputeDerivedPermissions(
+            { answerCollectionId: permission.answerCollectionId },
+            prisma
+          )
+        } else if (permission.elementId !== null) {
+          await recomputeDerivedPermissions(
+            { elementId: permission.elementId },
+            prisma
+          )
+        } else if (permission.courseId !== null) {
+          await recomputeDerivedPermissions(
+            { courseId: permission.courseId },
+            prisma
+          )
+        } else if (permission.liveQuizId !== null) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: permission.liveQuizId },
+            prisma
+          )
+        } else if (permission.practiceQuizId !== null) {
+          await recomputeDerivedPermissions(
+            { practiceQuizId: permission.practiceQuizId },
+            prisma
+          )
+        } else if (permission.microLearningId !== null) {
+          await recomputeDerivedPermissions(
+            { microLearningId: permission.microLearningId },
+            prisma
+          )
+        } else if (permission.groupActivityId !== null) {
+          await recomputeDerivedPermissions(
+            { groupActivityId: permission.groupActivityId },
+            prisma
+          )
+        }
       }
-    }
-  })
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -6388,37 +6438,40 @@ export async function removeUserFromGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // disconnect the member from the members and admins
-    const updatedUserGroup = await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        admins: userIsAdmin ? { disconnect: { id: userId } } : undefined,
-        members: userIsMember ? { disconnect: { id: userId } } : undefined,
-      },
-      include: {
-        permissions: true,
-      },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // disconnect the member from the members and admins
+      const updatedUserGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          admins: userIsAdmin ? { disconnect: { id: userId } } : undefined,
+          members: userIsMember ? { disconnect: { id: userId } } : undefined,
+        },
+        include: {
+          permissions: true,
+        },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(updatedUserGroup.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: userId,
-        message: `User removed from group.`,
-      },
-    })
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(updatedUserGroup.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: userId,
+          message: `User removed from group.`,
+        },
+      })
 
-    // trigger a derived permission recomputation for all objects that were shared with this group and this user
-    await recomputePermissionsUserGroupMember(
-      { permissions: updatedUserGroup.permissions, userId },
-      prisma
-    )
-  })
+      // trigger a derived permission recomputation for all objects that were shared with this group and this user
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedUserGroup.permissions, userId },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -6584,37 +6637,40 @@ export async function addUserToUserGroup(
     return null
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // add the user to the group
-    const updatedUserGroup = await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        members: !asAdmin ? { connect: { id: userId } } : undefined,
-        admins: asAdmin ? { connect: { id: userId } } : undefined,
-      },
-      include: {
-        permissions: true,
-      },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // add the user to the group
+      const updatedUserGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members: !asAdmin ? { connect: { id: userId } } : undefined,
+          admins: asAdmin ? { connect: { id: userId } } : undefined,
+        },
+        include: {
+          permissions: true,
+        },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_ADDED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(updatedUserGroup.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: userId,
-        message: `New user added to group as ${asAdmin ? 'admin' : 'member'}.`,
-      },
-    })
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_ADDED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(updatedUserGroup.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: userId,
+          message: `New user added to group as ${asAdmin ? 'admin' : 'member'}.`,
+        },
+      })
 
-    // recompute all permissions for the newly added user for objects shared with the group
-    await recomputePermissionsUserGroupMember(
-      { permissions: updatedUserGroup.permissions, userId },
-      prisma
-    )
-  })
+      // recompute all permissions for the newly added user for objects shared with the group
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedUserGroup.permissions, userId },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   return {
     id: user.id,

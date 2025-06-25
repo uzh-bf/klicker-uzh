@@ -611,7 +611,8 @@ export async function deleteElement(
       }
 
       return { deletedElement: element, originalElement }
-    }
+    },
+    { timeout: 60000 }
   )
 
   ctx.emitter.emit('invalidate', {
@@ -644,34 +645,37 @@ export async function removeElement(
   }
 
   // remove direct permission and recompute derived permissions for this element and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    // remove the direct permission for the user on the element
-    await prisma.element.update({
-      where: { id },
-      data: {
-        directPermissions: {
-          deleteMany: { userId: ctx.user.sub },
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission for the user on the element
+      await prisma.element.update({
+        where: { id },
+        data: {
+          directPermissions: {
+            deleteMany: { userId: ctx.user.sub },
+          },
         },
-      },
-    })
+      })
 
-    // create an audit log entry for the removal
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.PERMISSION_REMOVED,
-        objectId: String(id),
-        objectType: DB.ObjectType.ELEMENT,
-        sourceUserId: ctx.user.sub,
-        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ELEMENT} (ID: ${id})`,
-      },
-    })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.ELEMENT,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ELEMENT} (ID: ${id})`,
+        },
+      })
 
-    // recompute derived permissions for the element
-    await recomputeDerivedPermissions(
-      { elementId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // recompute derived permissions for the element
+      await recomputeDerivedPermissions(
+        { elementId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
