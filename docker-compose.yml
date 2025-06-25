@@ -4,14 +4,33 @@ services:
       context: ./util/traefik
       dockerfile: Dockerfile
     command:
-      - --api.insecure=true
+      # Rules
       - --providers.file=true
       - --providers.file.filename=/etc/traefik/rules.yaml
       - --providers.file.watch=true
-      - --entrypoints.web.address=:80
+
+      # API and dashboard
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+
+      # Entry points configuration
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+
+      # HTTP/2 configuration (critical for subscriptions)
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
+
+      # HTTP to HTTPS redirect
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
+      - 443:443
       - 8080:8080
+    volumes:
+      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+      - './util/traefik/ssl:/etc/certs:ro'
     networks:
       - klicker
     extra_hosts:
@@ -22,14 +41,33 @@ services:
       context: ./util/traefik
       dockerfile: Dockerfile
     command:
-      - --api.insecure=true
+      # Rules
       - --providers.file=true
       - --providers.file.filename=/etc/traefik/rules.yaml
       - --providers.file.watch=true
-      - --entrypoints.web.address=:80
+
+      # API and dashboard
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+
+      # Entry points configuration
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+
+      # HTTP/2 configuration (critical for subscriptions)
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
+
+      # HTTP to HTTPS redirect
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
+      - 443:443
       - 8080:8080
+    volumes:
+      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+      - './util/traefik/ssl:/etc/certs:ro'
     networks:
       - klicker
 
@@ -38,14 +76,33 @@ services:
       context: ./util/traefik
       dockerfile: Dockerfile.wsl
     command:
-      - --api.insecure=true
+      # Rules
       - --providers.file=true
       - --providers.file.filename=/etc/traefik/rules.yaml
       - --providers.file.watch=true
-      - --entrypoints.web.address=:80
+
+      # API and dashboard
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+
+      # Entry points configuration
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+
+      # HTTP/2 configuration (critical for subscriptions)
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
+
+      # HTTP to HTTPS redirect
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
+      - 443:443
       - 8080:8080
+    volumes:
+      - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
+      - './util/traefik/ssl:/etc/certs:ro'
     networks:
       - klicker
 
