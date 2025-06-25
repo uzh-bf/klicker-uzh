@@ -192,6 +192,9 @@ importers:
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1434,6 +1437,9 @@ importers:
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
