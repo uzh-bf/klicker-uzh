@@ -8,10 +8,10 @@ import {
   createLoggerState,
   generateCorrelationId,
   mergeContext,
-  parseLogLevel,
   shouldLog,
 } from '../logger.js'
 import { LogLevel } from '../types.js'
+import { parseLogLevel } from '../utils.js'
 
 describe('Logger', () => {
   const originalNodeEnv = process.env.NODE_ENV

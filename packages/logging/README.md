@@ -375,7 +375,8 @@ src/
 ├── logger.ts       # Core logger implementation
 ├── formatter.ts    # Environment-specific formatters
 ├── environment.ts  # Environment detection logic
-└── context.ts      # Context utility functions
+├── context.ts      # Context utility functions
+└── utils.ts        # Shared utility functions
 ```
 
 ### Module Responsibilities
@@ -415,6 +416,13 @@ src/
 - Type-safe enums
 - Correlation context types
 - Public API types
+
+#### `utils.ts` - Shared Utilities
+
+- Log level parsing functions
+- String to enum conversions
+- Common helper functions
+- Zero duplication principle
 
 ### Design Patterns
 

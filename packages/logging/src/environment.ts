@@ -2,12 +2,8 @@
  * Environment detection and configuration for logging
  */
 
-import {
-  Environment,
-  EnvironmentConfig,
-  LogLevel,
-  LogLevelString,
-} from './types.js'
+import { Environment, EnvironmentConfig, LogLevel } from './types.js'
+import { parseLogLevel } from './utils.js'
 
 /**
  * Detect current environment from NODE_ENV
@@ -39,43 +35,6 @@ export function getDefaultLogLevel(environment: Environment): LogLevel {
       return LogLevel.INFO
     case 'development':
       return LogLevel.DEBUG
-  }
-}
-
-/**
- * Parse log level from string
- */
-export function parseLogLevel(level: string | undefined): LogLevel | undefined {
-  if (!level) return undefined
-
-  switch (level.toLowerCase()) {
-    case 'debug':
-      return LogLevel.DEBUG
-    case 'info':
-      return LogLevel.INFO
-    case 'warn':
-    case 'warning':
-      return LogLevel.WARN
-    case 'error':
-      return LogLevel.ERROR
-    default:
-      return undefined
-  }
-}
-
-/**
- * Get log level string from enum
- */
-export function getLogLevelString(level: LogLevel): LogLevelString {
-  switch (level) {
-    case LogLevel.DEBUG:
-      return 'debug'
-    case LogLevel.INFO:
-      return 'info'
-    case LogLevel.WARN:
-      return 'warn'
-    case LogLevel.ERROR:
-      return 'error'
   }
 }
 

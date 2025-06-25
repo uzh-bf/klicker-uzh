@@ -6,13 +6,12 @@ import {
   detectEnvironment,
   getDefaultLogLevel,
   getEnvironmentConfig,
-  getLogLevelString,
   isDevelopment,
   isProduction,
   isTest,
-  parseLogLevel,
 } from '../environment.js'
 import { LogLevel } from '../types.js'
+import { getLogLevelString, parseLogLevel } from '../utils.js'
 
 describe('Environment Detection', () => {
   const originalNodeEnv = process.env.NODE_ENV

@@ -29,6 +29,7 @@ The `@klicker-uzh/logging` package provides structured logging infrastructure fo
 - `environment.ts`: Environment detection and configuration
 - `context.ts`: Context propagation utilities for operation and request tracing
 - `types.ts`: TypeScript interfaces and type definitions
+- `utils.ts`: Shared utility functions for log level parsing and conversion
 
 ### Design Philosophy
 
@@ -485,6 +486,13 @@ requestLogger.info('Request complete', {
 2. Implement with tests
 3. Update this documentation
 4. Consider migration guide if breaking
+
+### Code Organization
+
+- Shared utility functions belong in `utils.ts` to avoid duplication
+- Keep module responsibilities focused and clear
+- Functions should be pure and side-effect free
+- Maintain the functional programming approach
 
 ## Summary
 

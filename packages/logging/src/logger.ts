@@ -18,28 +18,13 @@ import {
   type LoggerConfig,
   type LoggerState,
 } from './types.js'
+import { parseLogLevel, parseLogLevelStrict } from './utils.js'
 
 /**
  * Generate a new correlation ID
  */
 export function generateCorrelationId(): string {
   return randomUUID()
-}
-
-/**
- * Parse log level string to enum value
- */
-function parseLogLevel(level: LogLevelString): LogLevel {
-  switch (level) {
-    case 'debug':
-      return LogLevel.DEBUG
-    case 'info':
-      return LogLevel.INFO
-    case 'warn':
-      return LogLevel.WARN
-    case 'error':
-      return LogLevel.ERROR
-  }
 }
 
 /**
@@ -105,7 +90,7 @@ function logMessage(
   message: string,
   context?: LogContext
 ): void {
-  const levelEnum = parseLogLevel(level)
+  const levelEnum = parseLogLevelStrict(level)
 
   if (!shouldLog(levelEnum, state.logLevel)) {
     return
@@ -139,9 +124,8 @@ function logMessage(
 function createLoggerState(config: LoggerConfig): LoggerState {
   const envConfig = getEnvironmentConfig(config.environment)
 
-  const logLevel = config.level
-    ? parseLogLevel(config.level)
-    : envConfig.logLevel
+  const parsedLevel = config.level ? parseLogLevel(config.level) : undefined
+  const logLevel = parsedLevel ?? envConfig.logLevel
   const baseContext = config.context || {}
 
   // Select formatter and output based on environment
@@ -213,10 +197,4 @@ export function createLogger(config: LoggerConfig): Logger {
 }
 
 // Export utility functions for testing
-export {
-  createLogEntry,
-  createLoggerState,
-  mergeContext,
-  parseLogLevel,
-  shouldLog,
-}
+export { createLogEntry, createLoggerState, mergeContext, shouldLog }
