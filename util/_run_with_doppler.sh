@@ -33,8 +33,8 @@
 set -euo pipefail
 
 if [[ -z "${CONFIG:-}" ]]; then
-  echo "CONFIG environment variable not set. Please set CONFIG before calling this script." >&2
-  exit 1
+  CONFIG="dev"
+  echo "ℹ️  CONFIG not set, defaulting to 'dev' environment"
 fi
 
 # Validate parameters – we expect at least one argument (the command to run)
@@ -47,10 +47,10 @@ CMD="$1"
 shift  # Remove the command from positional parameters, leaving only its args
 
 # First, try Doppler normally
-if doppler settings 2>/dev/null; then
-  doppler run --config "$CONFIG" -- "$CMD" "$@"
-  exit 0
-fi
+# if doppler settings 2>/dev/null; then
+#   doppler run --config "$CONFIG" -- "$CMD" "$@"
+#   exit 0
+# fi
 
 # If that failed, resolve current path and check if we're on an external drive
 CURRENT_DIR="$(command -v realpath >/dev/null 2>&1 && realpath "$PWD" || pwd -P)"
