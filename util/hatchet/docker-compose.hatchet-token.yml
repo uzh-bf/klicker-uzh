@@ -1,0 +1,42 @@
+# Docker Compose configuration for automatically generating Hatchet client token
+# This runs as a separate compose command, so it needs to connect to the existing network
+
+services:
+  # Init container to generate Hatchet client token
+  hatchet_token_generator:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
+    command: /scripts/token-generator.sh
+    environment:
+      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+    volumes:
+      - hatchet_config:/hatchet/config:ro
+      - hatchet_token_env:/hatchet/env
+      - ./token-generator.sh:/scripts/token-generator.sh:ro
+    networks:
+      - klicker
+
+  # Helper service to update .env files with the generated token
+  hatchet_env_updater:
+    image: alpine:latest
+    command: sh /scripts/env-updater.sh
+    volumes:
+      - hatchet_token_env:/hatchet/env:ro
+      - ../../apps/backend-docker:/apps/backend-docker
+      - ../../apps/hatchet:/apps/hatchet
+      - ./env-updater.sh:/scripts/env-updater.sh:ro
+    depends_on:
+      hatchet_token_generator:
+        condition: service_completed_successfully
+    networks:
+      - klicker
+
+networks:
+  klicker:
+    external: true
+    name: klicker-uzh_klicker
+
+volumes:
+  hatchet_config:
+    external: true
+    name: klicker-uzh_hatchet_config
+  hatchet_token_env: # Local volume for token exchange
