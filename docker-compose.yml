@@ -243,6 +243,9 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - klicker
+
   hatchet_rabbitmq:
     image: 'rabbitmq:3-management'
     hostname: 'rabbitmq'
@@ -260,6 +263,9 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    networks:
+      - klicker
+
   hatchet_migration:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:latest
     command: /hatchet/hatchet-migrate
@@ -268,6 +274,9 @@ services:
     depends_on:
       hatchet_postgres:
         condition: service_healthy
+    networks:
+      - klicker
+
   hatchet_setup_config:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
@@ -291,6 +300,9 @@ services:
         condition: service_healthy
       hatchet_postgres:
         condition: service_healthy
+    networks:
+      - klicker
+
   hatchet_engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest
     command: /hatchet/hatchet-engine --config /hatchet/config
@@ -309,6 +321,9 @@ services:
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
+    networks:
+      - klicker
+
   hatchet_dashboard:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:latest
     command: sh ./entrypoint.sh --config /hatchet/config
@@ -325,6 +340,8 @@ services:
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
+    networks:
+      - klicker
 
   # redis instance to support live quiz execution
   redis_exec:

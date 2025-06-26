@@ -16,6 +16,66 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 - **Backend Responses**: Service that handles incoming student responses during live quizzes
 - **Backend Response Processor**: Processes queued elements with scoring and experience points calculations
 
+### Hatchet Integration & Token Management
+
+KlickerUZH integrates with **Hatchet** for workflow orchestration and background job processing. The system includes an automated token generation and management setup:
+
+#### Hatchet Services
+
+- **Hatchet Engine**: Core workflow orchestration engine
+- **Hatchet Dashboard**: Web interface for monitoring workflows (http://localhost:8090)
+- **Hatchet Admin**: Administrative tools and CLI for token generation
+- **Hatchet PostgreSQL**: Dedicated database for Hatchet data
+- **Hatchet RabbitMQ**: Message queue for task distribution
+
+#### Automated Token Generation System
+
+The project includes a comprehensive automated system for generating and managing Hatchet client tokens:
+
+**Location**: `util/hatchet/`
+**Main Scripts**:
+
+- `_generate_hatchet_token.sh` - Main token generation orchestrator
+- `token-generator.sh` - Container script that generates JWT tokens using Hatchet CLI
+- `env-updater.sh` - Updates .env files in both backend-docker and hatchet apps
+- `docker-compose.hatchet-token.yml` - Docker services for token generation
+
+**Usage**:
+
+```bash
+# 1. Start services (must be done first)
+./_run_app_dependencies_macos.sh
+
+# 2. Generate and configure tokens automatically
+./_generate_hatchet_token.sh
+```
+
+**Key Features**:
+
+- **Automatic JWT token generation** using official `hatchet-admin` CLI
+- **Service verification** ensures Hatchet services are running before generation
+- **Environment file automation** safely updates both `apps/backend-docker/.env` and `apps/hatchet/.env`
+- **External network connectivity** for separate Docker Compose command execution
+- **Modular bash scripts** mounted into containers for maintainability
+- **Robust error handling** with proper token extraction and validation
+
+**Environment Variables Added**:
+
+- `HATCHET_CLIENT_TOKEN` - JWT token for Hatchet authentication
+- `HATCHET_CLIENT_TLS_STRATEGY=none` - Disables TLS for local development
+- `HATCHET_LOG_LEVEL` - Controls Hatchet logging verbosity
+
+**Network Configuration**:
+All Hatchet services are connected to the `klicker` Docker network, allowing communication between the main KlickerUZH services and Hatchet workflows.
+
+**Development Workflow Integration**:
+
+- Both `apps/backend-docker` and `apps/hatchet` now use `node -r dotenv/config` for automatic environment variable loading in development mode:
+- `.env` files are properly gitignored to prevent token exposure
+- `.env.example` templates document required environment variables
+
+For detailed setup instructions and troubleshooting, see `util/hatchet/README.md`.
+
 ### Shared Packages
 
 - **Prisma**: Database schema, migrations, and client (@packages/prisma/CLAUDE.md)
@@ -43,8 +103,18 @@ pnpm install
 # Start development environment with Doppler environment variables
 pnpm dev
 
-# Start database, Redis, and reverse proxy only
+# Start database, Redis, reverse proxy, and Hatchet services only
 pnpm run dev:prepare-prod
+```
+
+**For Hatchet Integration**:
+
+```bash
+# 1. Start all services including Hatchet
+./_run_app_dependencies_macos.sh
+
+# 2. Generate Hatchet client tokens (run this once or when tokens expire)
+./_generate_hatchet_token.sh
 ```
 
 ### Database Management
@@ -261,6 +331,18 @@ When creating a new React component, follow the existing patterns in the corresp
 - `/apps/frontend-*/src/components/`: React components for frontend applications
 - `/packages/shared-components/src/`: Shared React components
 - `/cypress/`: End-to-end tests
+- `/util/hatchet/`: Hatchet integration and token management
+  - `README.md`: Developer-focused setup and usage guide
+  - `_generate_hatchet_token.sh`: Main token generation script
+  - `docker-compose.hatchet-token.yml`: Docker services for automated token generation
+  - `token-generator.sh`: Container script for JWT token generation using Hatchet CLI
+  - `env-updater.sh`: Container script for automatically updating .env files
+  - `HATCHET-TOKEN-SETUP.md`: Complete documentation for Hatchet token setup and troubleshooting
+- `/apps/hatchet/`: Hatchet workflow application
+  - `src/index.ts`: Main Hatchet workflows and client configuration
+  - `.env.example`: Environment variable template for Hatchet configuration
+- `/_generate_hatchet_token.sh`: Convenience wrapper for Hatchet token generation
+- `/_run_app_dependencies_macos.sh`: Starts all services including Hatchet for development
 
 ## Tips and Best Practices
 
@@ -276,11 +358,18 @@ When creating a new React component, follow the existing patterns in the corresp
    - Use relations and constraints appropriately
    - Document JSON fields with comments (e.g., `/// [PrismaElementOptions]`)
    - Follow the migration workflow when making changes
+9. **Hatchet Integration**:
+   - Always start services with `_run_app_dependencies_macos.sh` before working with Hatchet
+   - Generate tokens using `_generate_hatchet_token.sh` when setting up or when tokens expire
+   - Use environment variables for Hatchet configuration (never hardcode tokens)
+   - Test Hatchet workflows through the dashboard at http://localhost:8090
+   - Keep Hatchet services running during development for background job processing
+   - Check `util/hatchet/HATCHET-TOKEN-SETUP.md` for troubleshooting token issues
 
 ### 🔄 Project Awareness & Context
 
 - Always read PLANNING.md at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
-- Check TASK.md before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
+- Check TASK.md before starting a new task. If the task isn't listed, add it with a brief description and today's date.
 - Use consistent naming conventions, file structure, and architecture patterns as described in PLANNING.md.
 - After you finish working on a task, always review and, if necessary, update TASK.md regarding the task you have worked on and, if applicable, regarding new tasks that might have come up during your work on the current task.
 - Regularly update the "Implementation Status" in PLANNING.md to reflect the current overall summarized state of the project.
@@ -330,7 +419,7 @@ When using Python:
 ### ✅ Task Completion
 
 - URGENT: Mark completed tasks in TASK.md immediately after finishing them. Do not wait until the end of the conversation or until the user tells you to, otherwise it might be forgotten.
-- URGENT: Add new sub-tasks or TODOs discovered during development to TASK.md under a “Discovered During Work” section. If not absolutely necessary, do not deviate from your task to quickly do another task, just add it to the TASK.md for later implementation and let the user know.
+- URGENT: Add new sub-tasks or TODOs discovered during development to TASK.md under a "Discovered During Work" section. If not absolutely necessary, do not deviate from your task to quickly do another task, just add it to the TASK.md for later implementation and let the user know.
 
 ### 📎 Style & Conventions
 
