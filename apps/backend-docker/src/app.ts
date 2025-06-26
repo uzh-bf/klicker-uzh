@@ -18,14 +18,7 @@ declare namespace global {
   let __coverage__: any
 }
 
-function prepareApp({
-  prisma,
-  hatchet,
-  redisExec,
-  pubSub,
-  cache,
-  emitter,
-}: any) {
+function prepareApp({ prisma, redisExec, pubSub, cache, emitter, tasks }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
       enabled: false,
@@ -162,7 +155,7 @@ function prepareApp({
       // useGraphQlJit(),
       ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ prisma, hatchet, redisExec, pubSub, emitter }),
+    context: enhanceContext({ prisma, redisExec, pubSub, emitter, tasks }),
     logging: true,
     cors: false,
     maskedErrors: !process.env.DEBUG,

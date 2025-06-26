@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { changeUserEmailSettings } from './tasks.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1093,8 +1092,7 @@ export async function changeEmailSettings(
     where: { id: ctx.user.sub },
   })
 
-  const changeEmailSettingsTask = changeUserEmailSettings(ctx.hatchet)
-  const { success } = await changeEmailSettingsTask.run({
+  const { success } = await ctx.tasks.changeUserEmailSettingsTask.run({
     userId: ctx.user.sub,
     projectUpdates,
   })

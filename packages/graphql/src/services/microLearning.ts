@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { computeStackEvaluation } from './stacks.js'
-import { publishScheduledMicroLearning } from './tasks.js'
 
 export async function getMicroLearningData(
   { id }: { id: string },
@@ -386,10 +385,7 @@ export async function publishMicroLearning(
     })
 
     // schedule the task to publish the microlearning at the scheduled start date
-    const publishScheduledMicroLearningTask = publishScheduledMicroLearning(
-      ctx.hatchet
-    )
-    await publishScheduledMicroLearningTask.schedule(
+    await ctx.tasks.publishScheduledMicroLearningTask.schedule(
       microLearning.scheduledStartAt,
       {
         microLearningId: updatedMicroLearning.id,

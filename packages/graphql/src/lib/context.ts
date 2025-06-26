@@ -1,4 +1,3 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   Prisma,
   PrismaClient,
@@ -9,6 +8,10 @@ import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'
+import {
+  changeUserEmailSettings,
+  publishScheduledMicroLearning,
+} from 'src/services/tasks.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -17,7 +20,6 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
-  hatchet: Hatchet
   redisExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
@@ -28,6 +30,13 @@ export interface Context extends BaseContext {
     catalystInstitutional: boolean
     catalystIndividual: boolean
     // affiliations?: string[]
+  }
+  // hatchet cronjob tasks
+  tasks: {
+    changeUserEmailSettingsTask: ReturnType<typeof changeUserEmailSettings>
+    publishScheduledMicroLearningTask: ReturnType<
+      typeof publishScheduledMicroLearning
+    >
   }
 }
 
