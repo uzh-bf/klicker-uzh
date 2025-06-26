@@ -27,7 +27,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -64,7 +64,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -99,7 +99,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -283,7 +283,7 @@ services:
     environment:
       DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
       SERVER_TASKQUEUE_RABBITMQ_URL: amqp://user:password@hatchet_rabbitmq:5672/
-      SERVER_AUTH_COOKIE_DOMAIN: localhost:8090
+      SERVER_AUTH_COOKIE_DOMAIN: localhost:8080
       SERVER_AUTH_COOKIE_INSECURE: 't'
       SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
       SERVER_GRPC_INSECURE: 't'
@@ -328,7 +328,7 @@ services:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:latest
     command: sh ./entrypoint.sh --config /hatchet/config
     ports:
-      - 8090:80
+      - 8080:80
     restart: on-failure
     depends_on:
       hatchet_setup_config:
