@@ -1088,20 +1088,12 @@ export async function changeEmailSettings(
   { projectUpdates }: { projectUpdates: boolean },
   ctx: ContextWithUser
 ) {
-  const user = await ctx.prisma.user.findUnique({
+  const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
+    data: { sendProjectUpdates: projectUpdates },
   })
 
-  const { success } = await ctx.tasks.changeUserEmailSettingsTask.run({
-    userId: ctx.user.sub,
-    projectUpdates,
-  })
-
-  if (!success) {
-    return user
-  }
-
-  return { ...user, sendProjectUpdates: projectUpdates } as DB.User
+  return user
 }
 
 export async function changeInitialSettings(

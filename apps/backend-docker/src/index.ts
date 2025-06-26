@@ -1,6 +1,5 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
-  changeUserEmailSettings,
   enhanceContext,
   publishScheduledMicroLearning,
   schema,
@@ -24,6 +23,7 @@ import { migrate } from './migration.js'
 const emitter = new EventEmitter()
 
 // ! Prisma setup
+// #region
 let prisma = new PrismaClient({
   log:
     process.env.NODE_ENV === 'development'
@@ -39,17 +39,10 @@ if (
     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
   ) as PrismaClient
 }
-
-// if (process.env.SENTRY_DSN) {
-//   Sentry.init({
-//     debug: !!process.env.DEBUG,
-//     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
-//       ? Number(process.env.SENTRY_SAMPLE_RATE)
-//       : 1,
-//   })
-// }
+// #endregion
 
 // ! Redis setup
+// #region
 const redisExec = new Redis({
   family: 4,
   host: process.env.REDIS_HOST ?? 'localhost',
@@ -107,8 +100,10 @@ emitter.on('invalidate', (resource) => {
     },
   ])
 })
+// #endregion
 
-// ! Initialize Hatchet
+// ! Initialize Hatchet and tasks
+// #region
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
 const hatchet = Hatchet.init({
   token: process.env.HATCHET_CLIENT_TOKEN,
@@ -128,16 +123,15 @@ const hatchet = Hatchet.init({
 
 // initialize tasks to be able to call / schedule them inside service functions
 // ? for the context to correctly accept them, update the context type in the context.ts file
-const changeUserEmailSettingsTask = changeUserEmailSettings(hatchet)
 const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
-const tasks = {
-  changeUserEmailSettingsTask,
-  publishScheduledMicroLearningTask,
-}
+const tasks = { publishScheduledMicroLearningTask }
+// #endregion
 
 // ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
 
+// ! Server and context setup
+// #region
 migrate(prisma).then(() => {
   const { app, yogaApp } = prepareApp({
     prisma,
@@ -205,3 +199,4 @@ migrate(prisma).then(() => {
     )
   })
 })
+// #endregion

@@ -387,9 +387,7 @@ export async function publishMicroLearning(
     // schedule the task to publish the microlearning at the scheduled start date
     await ctx.tasks.publishScheduledMicroLearningTask.schedule(
       microLearning.scheduledStartAt,
-      {
-        microLearningId: updatedMicroLearning.id,
-      }
+      { microLearningId: updatedMicroLearning.id }
     )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })

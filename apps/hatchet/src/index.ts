@@ -1,8 +1,5 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
-import {
-  changeUserEmailSettings,
-  publishScheduledMicroLearning,
-} from '@klicker-uzh/graphql'
+import { publishScheduledMicroLearning } from '@klicker-uzh/graphql'
 
 // ! Hatchet setup
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
@@ -23,10 +20,7 @@ const hatchet = Hatchet.init({
 })
 
 const worker = await hatchet.worker('activity-publications', {
-  workflows: [
-    changeUserEmailSettings(hatchet),
-    publishScheduledMicroLearning(hatchet),
-  ],
+  workflows: [publishScheduledMicroLearning(hatchet)],
   slots: 100,
 })
 await worker.start()

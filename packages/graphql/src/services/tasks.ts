@@ -1,5 +1,6 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import * as Prisma from '@klicker-uzh/prisma'
+import EventEmitter from 'events'
 import { sendTeamsNotifications } from '../lib/util.js'
 
 function initializePrisma() {
@@ -13,44 +14,13 @@ function initializePrisma() {
   return prisma
 }
 
-export function changeUserEmailSettings(hatchet: Hatchet) {
-  const changeUserEmailSettingsTask = hatchet.task({
-    name: 'change-user-email-settings',
-    retries: 3,
-    fn: async ({
-      userId,
-      projectUpdates,
-    }: {
-      userId: string
-      projectUpdates: boolean
-    }) => {
-      const prisma = initializePrisma()
-
-      try {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { sendProjectUpdates: projectUpdates },
-        })
-      } catch (error) {
-        console.error('Error updating user email settings:', error)
-        throw error // rethrow to allow Hatchet to handle retries
-      } finally {
-        await prisma.$disconnect()
-      }
-
-      return { success: true }
-    },
-  })
-
-  return changeUserEmailSettingsTask
-}
-
 export function publishScheduledMicroLearning(hatchet: Hatchet) {
   const publishScheduledMicroLearningTask = hatchet.task({
     name: 'publish-scheduled-microlearning',
     retries: 3,
     fn: async ({ microLearningId }: { microLearningId: string }) => {
       const prisma = initializePrisma()
+      const emitter = new EventEmitter()
 
       try {
         // check if the microlearning exists and if its start date is in the past
@@ -78,7 +48,17 @@ export function publishScheduledMicroLearning(hatchet: Hatchet) {
           data: { status: Prisma.PublicationStatus.PUBLISHED },
         })
 
-        // TODO: trigger subscription update / cache invalidation
+        // send a teams notification
+        await sendTeamsNotifications(
+          'graphql/publishScheduledMicroLearnings',
+          `Successfully published scheduled microlearning ${microLearning.id}`
+        )
+
+        // invalidate the cache for the microlearning
+        emitter.emit('invalidate', {
+          typename: 'MicroLearning',
+          id: microLearning.id,
+        })
 
         return { success: true }
       } catch (error) {
