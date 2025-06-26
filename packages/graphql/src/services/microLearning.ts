@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { computeStackEvaluation } from './stacks.js'
+import { publishScheduledMicroLearning } from './tasks.js'
 
 export async function getMicroLearningData(
   { id }: { id: string },
@@ -378,10 +379,22 @@ export async function publishMicroLearning(
 
   // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
+    // set the status of the microlearning to scheduled
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
       data: { status: DB.PublicationStatus.SCHEDULED },
     })
+
+    // schedule the task to publish the microlearning at the scheduled start date
+    const publishScheduledMicroLearningTask = publishScheduledMicroLearning(
+      ctx.hatchet
+    )
+    await publishScheduledMicroLearningTask.schedule(
+      microLearning.scheduledStartAt,
+      {
+        microLearningId: updatedMicroLearning.id,
+      }
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
