@@ -7,7 +7,7 @@ import {
   formatForProduction,
   formatForTest,
 } from '../formatter.js'
-import { LogEntry } from '../types.js'
+import type { LogEntry } from '../types.js'
 
 describe('Formatters', () => {
   const baseEntry: LogEntry = {

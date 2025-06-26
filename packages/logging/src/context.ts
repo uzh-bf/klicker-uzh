@@ -2,7 +2,7 @@
  * Context utilities for logging
  */
 
-import { CorrelationContext, LogContext } from './types.js'
+import type { CorrelationContext, LogContext } from './types.js'
 
 /**
  * Maximum context size to prevent memory issues

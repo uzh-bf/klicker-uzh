@@ -1,21 +1,32 @@
 {
+  "include": ["**/**/*"],
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "node",
-    "lib": ["ES2022"],
-    "strict": true,
+    "baseUrl": ".",
+    "jsx": "react",
+    /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "es2022",
+    "allowJs": true,
     "resolveJsonModule": true,
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    /* If transpiling with TypeScript: */
+    "module": "NodeNext",
+    "outDir": "dist",
+    "sourceMap": true,
+    /* AND if you're building for a library: */
     "declaration": true,
+    /* AND if you're building for a library in a monorepo: */
+    "composite": true,
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
-    "composite": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+    /* If your code runs in the DOM: */
+    "lib": ["es2022", "dom", "dom.iterable"]
+  }
 }

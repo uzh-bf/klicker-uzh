@@ -2,7 +2,8 @@
  * Environment detection and configuration for logging
  */
 
-import { Environment, EnvironmentConfig, LogLevel } from './types.js'
+import type { Environment, EnvironmentConfig } from './types.js'
+import { LogLevel } from './types.js'
 import { parseLogLevel } from './utils.js'
 
 /**

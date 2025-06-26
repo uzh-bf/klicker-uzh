@@ -2,7 +2,7 @@
  * Formatters for different environments
  */
 
-import { LogContext, LogEntry, LogLevelString } from './types.js'
+import type { LogContext, LogEntry, LogLevelString } from './types.js'
 
 /**
  * ANSI color codes for console output
