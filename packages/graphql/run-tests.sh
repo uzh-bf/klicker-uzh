@@ -8,12 +8,13 @@ docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null
 echo "Building test containers..."
 docker compose -f test/docker/docker-compose.test.yml build 
 
-# run the test container and capture its exit code directly
-echo "Running test containers..."
-docker compose -f test/docker/docker-compose.test.yml up --abort-on-container-exit
+# use 'docker compose run' instead of 'up' to avoid --abort-on-container-exit issues (returns on first container exit)
+# this runs only the test service and its dependencies, and exits when test completes
+echo "Running test container..."
+docker compose -f test/docker/docker-compose.test.yml run --rm test
 
-# after container runs, find the exit code from docker-compose ps output
-TEST_EXIT_CODE=$(docker compose -f test/docker/docker-compose.test.yml ps -a --format json | grep -o '"ExitCode":[0-9]*' | grep -o '[0-9]*' | head -1)
+# capture the exit code from the run command
+TEST_EXIT_CODE=$?
 echo "Test exit code: ${TEST_EXIT_CODE}"
 
 echo "Cleaning up containers..."

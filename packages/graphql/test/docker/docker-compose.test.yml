@@ -12,6 +12,158 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - klicker
+
+  hatchet_postgres:
+    image: postgres:15.6
+    command: postgres -c 'max_connections=1000'
+    restart: always
+    hostname: 'postgres'
+    environment:
+      - POSTGRES_USER=hatchet
+      - POSTGRES_PASSWORD=hatchet
+      - POSTGRES_DB=hatchet
+    ports:
+      - '5435:5432'
+    volumes:
+      - hatchet_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -d hatchet -U hatchet']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - klicker
+
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    hostname: 'rabbitmq'
+    ports:
+      - '5673:5672' # RabbitMQ
+      - '15673:15672' # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: 'user'
+      RABBITMQ_DEFAULT_PASS: 'password'
+    volumes:
+      - 'hatchet_rabbitmq_data:/var/lib/rabbitmq'
+      - 'hatchet_rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf' # Configuration file mount
+    healthcheck:
+      test: ['CMD', 'rabbitmqctl', 'status']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - klicker
+
+  migration:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:latest
+    command: /hatchet/hatchet-migrate
+    environment:
+      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+    depends_on:
+      hatchet_postgres:
+        condition: service_healthy
+    networks:
+      - klicker
+
+  setup-config:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
+    command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
+    environment:
+      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+      SERVER_TASKQUEUE_RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+      SERVER_AUTH_COOKIE_DOMAIN: localhost:8080
+      SERVER_AUTH_COOKIE_INSECURE: 't'
+      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+      SERVER_GRPC_INSECURE: 't'
+      SERVER_GRPC_BROADCAST_ADDRESS: host.docker.internal:7077
+      SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+      SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet-engine:7077
+    volumes:
+      - hatchet_certs:/hatchet/certs
+      - hatchet_config:/hatchet/config
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      hatchet_postgres:
+        condition: service_healthy
+    networks:
+      - klicker
+
+  hatchet-engine:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest
+    command: /hatchet/hatchet-engine --config /hatchet/config
+    restart: on-failure
+    depends_on:
+      setup-config:
+        condition: service_completed_successfully
+      migration:
+        condition: service_completed_successfully
+    ports:
+      - '7077:7070'
+    environment:
+      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+      SERVER_GRPC_INSECURE: 't'
+    volumes:
+      - hatchet_certs:/hatchet/certs
+      - hatchet_config:/hatchet/config
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'test -S /tmp/.s.PGSQL.7070 || nc -z localhost 7070 || true',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - klicker
+
+  token-generator:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
+    command: >
+      sh -c "
+        echo 'Waiting for Hatchet config to be ready...';
+        while ! test -f /hatchet/config/server.yaml; do
+          echo 'Config not ready yet, waiting...';
+          sleep 2;
+        done;
+        echo 'Config found, waiting for engine to be ready...';
+        sleep 20;
+        echo 'Generating Hatchet client token...';
+        TOKEN=$$(/hatchet/hatchet-admin token create --config /hatchet/config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 --name klicker-test | grep '^eyJ' | head -n1 | xargs);
+        if [ -z \"$$TOKEN\" ]; then
+          echo 'ERROR: Failed to generate token';
+          exit 1;
+        fi;
+        echo 'Token generated successfully';
+        echo \"HATCHET_CLIENT_TOKEN=$$TOKEN\" > /hatchet/env/token.env;
+        echo \"HATCHET_CLIENT_TLS_STRATEGY=none\" >> /hatchet/env/token.env;
+        echo \"$$TOKEN\" > /hatchet/env/token.txt;
+        echo 'Token saved to /hatchet/env/token.env';
+        cat /hatchet/env/token.env;
+      "
+    environment:
+      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+    volumes:
+      - hatchet_certs:/hatchet/certs
+      - hatchet_config:/hatchet/config
+      - hatchet_env:/hatchet/env
+    depends_on:
+      setup-config:
+        condition: service_completed_successfully
+      migration:
+        condition: service_completed_successfully
+      hatchet-engine:
+        condition: service_healthy
+    networks:
+      - klicker
 
   test:
     build:
@@ -21,10 +173,51 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
       NODE_ENV: test
       PNPM_HOME: '/tmp/.pnpm'
+      # Logging configuration for better visibility
+      FORCE_COLOR: '1'
+      # Disable Jest silent mode
+      JEST_SILENT: 'false'
+      # Enable debug logging for Node.js
+      DEBUG: '*'
+      # Ensure console output is not suppressed
+      NODE_NO_WARNINGS: '0'
     volumes:
       - ../../../../:/usr/src/app
+      - hatchet_env:/hatchet/env
     depends_on:
       postgres:
         condition: service_healthy
+      hatchet_postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+      setup-config:
+        condition: service_completed_successfully
+      hatchet-engine:
+        condition: service_healthy
+      token-generator:
+        condition: service_completed_successfully
     # Run as root to avoid permission issues with volume mounts
     user: root
+    # Enable pseudo-TTY for better output formatting
+    tty: true
+    # Keep STDIN open
+    stdin_open: true
+    # Ensure output is not buffered
+    init: true
+    networks:
+      - klicker
+
+networks:
+  klicker:
+    driver: bridge
+
+volumes:
+  hatchet_postgres_data:
+  hatchet_rabbitmq_data:
+  hatchet_rabbitmq.conf:
+  hatchet_config:
+  hatchet_certs:
+  hatchet_env:
