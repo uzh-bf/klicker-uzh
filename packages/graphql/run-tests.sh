@@ -11,7 +11,8 @@ docker compose -f test/docker/docker-compose.test.yml build
 # use 'docker compose run' instead of 'up' to avoid --abort-on-container-exit issues (returns on first container exit)
 # this runs only the test service and its dependencies, and exits when test completes
 echo "Running test container..."
-docker compose -f test/docker/docker-compose.test.yml run --rm test
+# docker compose -f test/docker/docker-compose.test.yml run --rm test
+docker compose -f test/docker/docker-compose.test.yml up
 
 # capture the exit code from the run command
 TEST_EXIT_CODE=$?

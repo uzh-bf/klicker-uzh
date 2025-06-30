@@ -1,20 +1,63 @@
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: klicker_test
+  reverse_proxy_docker:
+    build:
+      context: ../../../../util/traefik
+      dockerfile: Dockerfile
+    command:
+      # Rules
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+
+      # API and dashboard
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+
+      # Entry points configuration
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+
+      # HTTP/2 configuration (critical for subscriptions)
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
+
+      # HTTP to HTTPS redirect
+      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
-      - '5432:5432'
+      - 80:80
+      - 443:443
+      - 8090:8080
+    volumes:
+      - '../../../../util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+      - '../../../../util/traefik/ssl:/etc/certs:ro'
+    networks:
+      - klicker
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  # main database
+  postgres:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod
+    ports:
+      - 5432:5432
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      test: ['CMD', 'pg_isready', '-U', 'klicker', '-d', 'klicker-prod']
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - klicker
+    volumes:
+      - klicker_data:/var/lib/postgresql/data
+      - ../../../../util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # hatchet services and services
   hatchet_postgres:
     image: postgres:15.6
     command: postgres -c 'max_connections=1000'
@@ -37,7 +80,7 @@ services:
     networks:
       - klicker
 
-  rabbitmq:
+  hatchet_rabbitmq:
     image: 'rabbitmq:3-management'
     hostname: 'rabbitmq'
     ports:
@@ -57,7 +100,7 @@ services:
     networks:
       - klicker
 
-  migration:
+  hatchet_migration:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:latest
     command: /hatchet/hatchet-migrate
     environment:
@@ -68,50 +111,47 @@ services:
     networks:
       - klicker
 
-  setup-config:
+  hatchet_setup_config:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
     environment:
       DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
-      SERVER_TASKQUEUE_RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+      SERVER_TASKQUEUE_RABBITMQ_URL: amqp://user:password@hatchet_rabbitmq:5672/
       SERVER_AUTH_COOKIE_DOMAIN: localhost:8080
       SERVER_AUTH_COOKIE_INSECURE: 't'
       SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
       SERVER_GRPC_INSECURE: 't'
-      SERVER_GRPC_BROADCAST_ADDRESS: host.docker.internal:7077
+      SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
       SERVER_DEFAULT_ENGINE_VERSION: 'V1'
-      SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet-engine:7077
+      SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet_engine:7077
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
     depends_on:
-      migration:
+      hatchet_migration:
         condition: service_completed_successfully
-      rabbitmq:
+      hatchet_rabbitmq:
         condition: service_healthy
       hatchet_postgres:
         condition: service_healthy
     networks:
       - klicker
 
-  hatchet-engine:
+  hatchet_engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest
     command: /hatchet/hatchet-engine --config /hatchet/config
     restart: on-failure
     depends_on:
-      setup-config:
+      hatchet_setup_config:
         condition: service_completed_successfully
-      migration:
+      hatchet_migration:
         condition: service_completed_successfully
     ports:
       - '7077:7070'
     environment:
-      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+      DATABASE_URL: postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet
       SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
       SERVER_GRPC_INSECURE: 't'
-    volumes:
-      - hatchet_certs:/hatchet/certs
-      - hatchet_config:/hatchet/config
     healthcheck:
       test:
         [
@@ -121,11 +161,13 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
-      start_period: 30s
+    volumes:
+      - hatchet_certs:/hatchet/certs
+      - hatchet_config:/hatchet/config
     networks:
       - klicker
 
-  token-generator:
+  hatchet_token_generator:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
     command: >
       sh -c "
@@ -150,17 +192,17 @@ services:
         cat /hatchet/env/token.env;
       "
     environment:
-      DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
+      DATABASE_URL: postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
       - hatchet_env:/hatchet/env
     depends_on:
-      setup-config:
+      hatchet_setup_config:
         condition: service_completed_successfully
-      migration:
+      hatchet_migration:
         condition: service_completed_successfully
-      hatchet-engine:
+      hatchet_engine:
         condition: service_healthy
     networks:
       - klicker
@@ -170,17 +212,13 @@ services:
       context: ../..
       dockerfile: test/docker/Dockerfile.test
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
+      DATABASE_URL: postgres://klicker:klicker@postgres:5432/klicker-prod
       NODE_ENV: test
       PNPM_HOME: '/tmp/.pnpm'
-      # Logging configuration for better visibility
-      FORCE_COLOR: '1'
-      # Disable Jest silent mode
-      JEST_SILENT: 'false'
-      # Enable debug logging for Node.js
-      DEBUG: '*'
-      # Ensure console output is not suppressed
-      NODE_NO_WARNINGS: '0'
+      # FORCE_COLOR: '1' # enable color output in logs
+      # JEST_SILENT: 'false' # disable jest silent mode
+      # DEBUG: '*' # enable debugging messages
+      NODE_NO_WARNINGS: '0' # warnings should not be suppressed
     volumes:
       - ../../../../:/usr/src/app
       - hatchet_env:/hatchet/env
@@ -189,24 +227,8 @@ services:
         condition: service_healthy
       hatchet_postgres:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      migration:
+      hatchet_token_generator:
         condition: service_completed_successfully
-      setup-config:
-        condition: service_completed_successfully
-      hatchet-engine:
-        condition: service_healthy
-      token-generator:
-        condition: service_completed_successfully
-    # Run as root to avoid permission issues with volume mounts
-    user: root
-    # Enable pseudo-TTY for better output formatting
-    tty: true
-    # Keep STDIN open
-    stdin_open: true
-    # Ensure output is not buffered
-    init: true
     networks:
       - klicker
 
@@ -215,6 +237,7 @@ networks:
     driver: bridge
 
 volumes:
+  klicker_data:
   hatchet_postgres_data:
   hatchet_rabbitmq_data:
   hatchet_rabbitmq.conf:
