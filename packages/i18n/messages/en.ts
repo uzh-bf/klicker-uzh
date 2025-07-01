@@ -1217,6 +1217,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
+      archivingSuccess:
+        'All selected elements have been successfully archived.',
+      archivingPartialSuccess:
+        'All elements with sufficient permissions have been successfully archived. Please note that at least admin permissions on the corresponding object are required to archive elements.',
+      archivingFailed:
+        'None of the selected elements could be archived. Please check your permissions (admin rights are required for this operation) and try again.',
+      restoreFromArchiveSuccess:
+        'All selected elements have been successfully restored from the archive.',
+      restoreFromArchivePartialSuccess:
+        'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
+      restoreFromArchiveFailed:
+        'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
     },
     tags: {
       deleteTag: 'Delete tag',

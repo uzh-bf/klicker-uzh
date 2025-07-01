@@ -750,9 +750,31 @@ export async function toggleIsArchived(
   { elementIds, isArchived }: { elementIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
 ) {
-  await ctx.prisma.element.updateMany({
+  // find all elements that should be archived
+  const elements = await ctx.prisma.element.findMany({
     where: {
       id: { in: elementIds },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
+      },
+    },
+    select: { id: true },
+  })
+
+  // if no elements are found, return an empty array
+  if (!elements || elements.length === 0) {
+    return { elements: [], failure: true }
+  }
+
+  // update the isArchived status of the elements
+  const updatedElements = await ctx.prisma.element.updateMany({
+    where: {
+      id: { in: elements.map((el) => el.id) },
       permissions: {
         some: {
           userId: ctx.user.sub,
@@ -765,7 +787,13 @@ export async function toggleIsArchived(
     data: { isArchived },
   })
 
-  return elementIds.map((id) => ({ id, isArchived }))
+  return {
+    success: updatedElements.count === elementIds.length,
+    partialSuccess:
+      updatedElements.count > 0 && updatedElements.count < elementIds.length,
+    failure: updatedElements.count === 0,
+    elements: elements.map(({ id }) => ({ id, isArchived })),
+  }
 }
 
 // map mime types of images to file extensions
