@@ -92,6 +92,9 @@ releases:
           sentryEnv: qa
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
+        olatApi:
+          key: '{{ requiredEnv "OLAT_API_KEY" }}'
+
         lti:
           replicaCount: '{{ requiredEnv "APP_REPLICAS" }}'
 

@@ -1,0 +1,46 @@
+{{- if .Values.olatApi.ingress.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+{{- $svcPort := .Values.olatApi.service.port -}}
+{{- if and .Values.olatApi.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.olatApi.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.olatApi.ingress.annotations "kubernetes.io/ingress.class" .Values.olatApi.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-olat-api
+  labels:
+    {{- include "chart.ingressLabels" . | nindent 4 }}
+  {{- with .Values.olatApi.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.olatApi.ingress.className }}
+  {{- if .Values.olatApi.ingress.tls }}
+  tls:
+    {{- range .Values.olatApi.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.olatApi.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-olat-api
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

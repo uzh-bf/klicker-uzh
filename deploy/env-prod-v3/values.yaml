@@ -174,6 +174,40 @@ backendGraphql:
       cpu: 1000m
       memory: 1000Mi
 
+olatApi:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: olat-api.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: olat-api.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-olatApi-tls-uzh
+        hosts:
+          - olat-api.klicker.uzh.ch
+      - secretName: klicker-prod-olatApi-tls
+        hosts:
+          - olat-api.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 lti:
   ingress:
     hosts:
