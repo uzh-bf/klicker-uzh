@@ -1218,6 +1218,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
+      archivingSuccess:
+        'Alle ausgewählten Elemente wurden erfolgreich archiviert.',
+      archivingPartialSuccess:
+        'Alle Elemente mit ausreichenden Berechtigungen wurden erfolgreich archiviert. Bitte beachten Sie, dass zur Archivierung von Elementen mindestens Admin-Berechtigungen auf dem entsprechenden Objekt erforderlich sind.',
+      archivingFailed:
+        'Keines der ausgewählten Elemente konnte archiviert werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      restoreFromArchiveSuccess:
+        'Das Element wurde erfolgreich aus dem Archiv wiederhergestellt.',
+      restoreFromArchivePartialSuccess:
+        'Einige Elemente konnten erfolgreich aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      restoreFromArchiveFailed:
+        'Keine Elemente konnten aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
     },
     tags: {
       deleteTag: 'Tag löschen',
