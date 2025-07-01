@@ -138,16 +138,20 @@ app.get('/api/configuration/courses', (req: Request, res: Response) => {
       .json({ error: 'Invalid request headers' })
   }
 
-  const provider = req.query.provider
-  const providerAccountId = req.query.providerAccountId
-  if (!provider || typeof provider !== 'string') {
-    return res
-      .status(StatusCode.BAD_REQUEST)
-      .json({ error: 'Missing provider' })
-  } else if (!providerAccountId || typeof providerAccountId !== 'string') {
+  // verify that a valid providerAccountId is provided
+  const providerAccountId = req.query.identityMappingIdentifier
+  if (!providerAccountId || typeof providerAccountId !== 'string') {
     return res
       .status(StatusCode.BAD_REQUEST)
       .json({ error: 'Missing providerAccountId' })
+  }
+
+  // extract the provider from the providerAccountId
+  const provider = providerAccountId.split('@')[1]?.split('.')[0]
+  if (!provider || typeof provider !== 'string') {
+    return res
+      .status(StatusCode.BAD_REQUEST)
+      .json({ error: 'Extraction of provider from providerAccountId failed' })
   }
 
   getCourses(provider, providerAccountId)
