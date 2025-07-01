@@ -11,6 +11,7 @@ import {
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
+import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
@@ -85,6 +86,13 @@ function SignInOutButton() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Head>
+        <title>Lecturer Login</title>
+        <meta
+          name="description"
+          content="Log in interface for lecturers to manage their courses and materials."
+        />
+      </Head>
       <p className="rounded border-slate-300 bg-slate-100 px-3 py-2 shadow">
         {t('auth.loginInfo')}
       </p>
