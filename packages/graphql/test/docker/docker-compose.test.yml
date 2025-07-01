@@ -1,5 +1,5 @@
 services:
-  reverse_proxy_docker:
+  reverse_proxy_macos:
     build:
       context: ../../../../util/traefik
       dockerfile: Dockerfile
@@ -33,8 +33,6 @@ services:
       - '../../../../util/traefik/ssl:/etc/certs:ro'
     networks:
       - klicker
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
 
   # main database
   postgres:

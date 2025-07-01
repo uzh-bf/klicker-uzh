@@ -5,14 +5,17 @@ set -e
 echo "Stopping any existing containers..."
 docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null || true
 
+echo "Running dependency containers..."
+docker compose -f test/docker/docker-compose.test.yml up -d reverse_proxy_macos postgres hatchet_postgres hatchet_rabbitmq hatchet_migration hatchet_setup_config hatchet_engine hatchet_token_generator
+
 echo "Building test containers..."
-docker compose -f test/docker/docker-compose.test.yml build 
+docker compose -f test/docker/docker-compose.test.yml build
 
 # use 'docker compose run' instead of 'up' to avoid --abort-on-container-exit issues (returns on first container exit)
 # this runs only the test service and its dependencies, and exits when test completes
 echo "Running test container..."
 # docker compose -f test/docker/docker-compose.test.yml run --rm test
-docker compose -f test/docker/docker-compose.test.yml up
+docker compose -f test/docker/docker-compose.test.yml up test
 
 # capture the exit code from the run command
 TEST_EXIT_CODE=$?
