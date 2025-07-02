@@ -222,6 +222,13 @@ type ArchivedElement {
   isArchived: Boolean!
 }
 
+type ArchivedElementList {
+  elements: [ArchivedElement!]
+  failure: Boolean
+  partialSuccess: Boolean
+  success: Boolean
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -1652,7 +1659,7 @@ type Mutation {
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
-  toggleIsArchived(elementIds: [Int!]!, isArchived: Boolean!): [ArchivedElement!]
+  toggleIsArchived(elementIds: [Int!]!, isArchived: Boolean!): ArchivedElementList
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity

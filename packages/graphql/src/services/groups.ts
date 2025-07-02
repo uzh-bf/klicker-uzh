@@ -1036,63 +1036,66 @@ export async function manipulateGroupActivity(
   }
 
   // Use a transaction to ensure atomicity of all database operations
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: { id: { in: instancesToDelete } },
-    })
-
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
-
-      await prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
-        data: {
-          elementStackId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
-          },
-        },
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
       })
-    }
 
-    // delete all stacks
-    await prisma.elementStack.deleteMany({
-      where: { id: { in: stacksToDelete } },
-    })
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
 
-    const upsertedActivity = await prisma.groupActivity.upsert({
-      where: { id: id ?? newId },
-      create: {
-        ...createOrUpdateJSON,
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: createOrUpdateJSON,
-    })
-
-    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-    if (unlinkedElementIds.length > 0) {
-      for (const elementId of unlinkedElementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+        await prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
       }
-    }
 
-    // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
-    await recomputeDerivedPermissions(
-      { groupActivityId: upsertedActivity.id },
-      prisma
-    )
+      // delete all stacks
+      await prisma.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
 
-    return upsertedActivity
-  })
+      const upsertedActivity = await prisma.groupActivity.upsert({
+        where: { id: id ?? newId },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: createOrUpdateJSON,
+      })
+
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
+      }
+
+      // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
+      await recomputeDerivedPermissions(
+        { groupActivityId: upsertedActivity.id },
+        prisma
+      )
+
+      return upsertedActivity
+    },
+    { timeout: 60000 }
+  )
 
   return activity
 }
@@ -1719,7 +1722,8 @@ export async function deleteGroupActivity(
         )
 
         return updatedActivity
-      }
+      },
+      { timeout: 60000 }
     )
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
@@ -1741,28 +1745,31 @@ export async function removeGroupActivity(
   }
 
   // remove direct permission and recompute derived permissions for this group activity and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.groupActivity.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.groupActivity.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    // create an audit log entry for the removal
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.PERMISSION_REMOVED,
-        objectId: String(id),
-        objectType: DB.ObjectType.GROUP_ACTIVITY,
-        sourceUserId: ctx.user.sub,
-        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.GROUP_ACTIVITY} (ID: ${id})`,
-      },
-    })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.GROUP_ACTIVITY,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.GROUP_ACTIVITY} (ID: ${id})`,
+        },
+      })
 
-    await recomputeDerivedPermissions(
-      { groupActivityId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      await recomputeDerivedPermissions(
+        { groupActivityId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'GroupActivity',

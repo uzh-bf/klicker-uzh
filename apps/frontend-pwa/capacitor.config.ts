@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   webDir: '.next',
   server: {
     // url: 'https://pwa.klicker.uzh.ch',
-    url: 'http://pwa.klicker.com',
+    url: 'https://pwa.klicker.com',
     cleartext: true,
   },
 }

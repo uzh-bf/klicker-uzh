@@ -277,81 +277,84 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
-    })
-
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
-
-      await prisma.elementInstance.update({
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
         where: {
-          id: instance.id,
+          id: { in: instancesToDelete },
         },
-        data: {
-          elementStackId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
+      })
+
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
+
+        await prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all stacks
+      await prisma.elementStack.deleteMany({
+        where: {
+          id: { in: stacksToDelete },
+        },
+      })
+
+      const upsertedMicrolearning = await prisma.microLearning.upsert({
+        where: { id: id ?? uuidv4() },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: createOrUpdateJSON,
+        include: {
+          course: true,
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
           },
         },
       })
-    }
 
-    // delete all stacks
-    await prisma.elementStack.deleteMany({
-      where: {
-        id: { in: stacksToDelete },
-      },
-    })
-
-    const upsertedMicrolearning = await prisma.microLearning.upsert({
-      where: { id: id ?? uuidv4() },
-      create: {
-        ...createOrUpdateJSON,
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: createOrUpdateJSON,
-      include: {
-        course: true,
-        stacks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    })
-
-    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-    if (unlinkedElementIds.length > 0) {
-      for (const elementId of unlinkedElementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
       }
-    }
 
-    await recomputeDerivedPermissions(
-      { microLearningId: upsertedMicrolearning.id },
-      prisma
-    )
+      await recomputeDerivedPermissions(
+        { microLearningId: upsertedMicrolearning.id },
+        prisma
+      )
 
-    return upsertedMicrolearning
-  })
+      return upsertedMicrolearning
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'MicroLearning',
@@ -554,7 +557,8 @@ export async function deleteMicroLearning(
         )
 
         return updated
-      }
+      },
+      { timeout: 60000 }
     )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -576,30 +580,33 @@ export async function removeMicroLearning(
   }
 
   // remove direct permission and recompute derived permissions for this microlarning and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    // remove the direct permission
-    await prisma.microLearning.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission
+      await prisma.microLearning.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    // create an audit log entry for the removal
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.PERMISSION_REMOVED,
-        objectId: String(id),
-        objectType: DB.ObjectType.MICRO_LEARNING,
-        sourceUserId: ctx.user.sub,
-        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.MICRO_LEARNING} (ID: ${id})`,
-      },
-    })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.MICRO_LEARNING,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.MICRO_LEARNING} (ID: ${id})`,
+        },
+      })
 
-    // recompute derived permissions for this microlearning and user
-    await recomputeDerivedPermissions(
-      { microLearningId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // recompute derived permissions for this microlearning and user
+      await recomputeDerivedPermissions(
+        { microLearningId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'MicroLearning',

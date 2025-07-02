@@ -204,9 +204,20 @@ function Index({ id }: { id: string }) {
                 <Markdown content={description} />
                 <UserNotification
                   type="info"
-                  message={t('pwa.liveQuiz.noActiveQuestion')}
                   className={{ root: 'mt-4 text-base' }}
-                />
+                >
+                  {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                    reload: (text) => (
+                      <span
+                        className="cursor-pointer underline"
+                        onClick={() => router.reload()}
+                        data-cy="reload-live-quiz"
+                      >
+                        {text}
+                      </span>
+                    ),
+                  })}
+                </UserNotification>
               </div>
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>

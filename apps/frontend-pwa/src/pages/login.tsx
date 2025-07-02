@@ -8,6 +8,7 @@ import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
@@ -118,6 +119,13 @@ function Login() {
 
   return (
     <div className="flex h-full flex-col items-center md:justify-center">
+      <Head>
+        <title>Student Login</title>
+        <meta
+          name="description"
+          content="Log in interface for students to access all Klicker activities for courses linked to their account."
+        />
+      </Head>
       <Formik
         initialValues={{ usernameOrEmail: '', password: '' }}
         validationSchema={loginSchema(magicLinkLogin)}
