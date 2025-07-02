@@ -703,40 +703,43 @@ export async function createCourse(
 
   const defaultMaxGroupSize = 5
   const defaultPreferredGroupSize = 3
-  const course = await ctx.prisma.$transaction(async (prisma) => {
-    const newCourse = await prisma.course.create({
-      data: {
-        name: name.trim(),
-        displayName: displayName.trim(),
-        description: description,
-        color: color ?? '#CCD5ED',
-        startDate: startDate,
-        endDate: endDate,
-        isGroupCreationEnabled: isGroupCreationEnabled ?? true,
-        groupDeadlineDate: groupDeadlineDate ?? endDate,
-        maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
-        preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
-        notificationEmail: notificationEmail,
-        isGamificationEnabled: isGamificationEnabled,
-        pinCode: randomPin,
-        owner: {
-          connect: {
-            id: ctx.user.sub,
+  const course = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const newCourse = await prisma.course.create({
+        data: {
+          name: name.trim(),
+          displayName: displayName.trim(),
+          description: description,
+          color: color ?? '#CCD5ED',
+          startDate: startDate,
+          endDate: endDate,
+          isGroupCreationEnabled: isGroupCreationEnabled ?? true,
+          groupDeadlineDate: groupDeadlineDate ?? endDate,
+          maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+          preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
+          notificationEmail: notificationEmail,
+          isGamificationEnabled: isGamificationEnabled,
+          pinCode: randomPin,
+          owner: {
+            connect: {
+              id: ctx.user.sub,
+            },
           },
         },
-      },
-    })
+      })
 
-    await recomputeDerivedPermissions(
-      {
-        courseId: newCourse.id,
-        userId: ctx.user.sub,
-      },
-      prisma
-    )
+      await recomputeDerivedPermissions(
+        {
+          courseId: newCourse.id,
+          userId: ctx.user.sub,
+        },
+        prisma
+      )
 
-    return newCourse
-  })
+      return newCourse
+    },
+    { timeout: 60000 }
+  )
 
   return course
 }
@@ -1057,45 +1060,48 @@ export async function deleteCourse(
     throw new Error('Course not found or permission denied')
   }
 
-  const deletedCourse = await ctx.prisma.$transaction(async (prisma) => {
-    // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
-    // live quizzes are disconnected from the course on deletion
-    const deleted = await prisma.course.delete({ where: { id } })
+  const deletedCourse = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
+      // live quizzes are disconnected from the course on deletion
+      const deleted = await prisma.course.delete({ where: { id } })
 
-    // trigger a recomputation of all permissions related to the live quizzes of the course
-    // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
-    for (const liveQuiz of course.liveQuizzes) {
-      await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
-    }
+      // trigger a recomputation of all permissions related to the live quizzes of the course
+      // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
+      for (const liveQuiz of course.liveQuizzes) {
+        await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
+      }
 
-    // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
-    // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
-    const elementIds = [
-      ...new Set([
-        ...course.practiceQuizzes.flatMap((quiz) =>
-          quiz.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-        ...course.microLearnings.flatMap((ml) =>
-          ml.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-        ...course.groupActivities.flatMap((ga) =>
-          ga.stacks.flatMap((stack) =>
-            stack.elements.map((instance) => instance.elementId)
-          )
-        ),
-      ]),
-    ]
+      // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
+      // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
+      const elementIds = [
+        ...new Set([
+          ...course.practiceQuizzes.flatMap((quiz) =>
+            quiz.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.microLearnings.flatMap((ml) =>
+            ml.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+          ...course.groupActivities.flatMap((ga) =>
+            ga.stacks.flatMap((stack) =>
+              stack.elements.map((instance) => instance.elementId)
+            )
+          ),
+        ]),
+      ]
 
-    for (const elementId of elementIds) {
-      await recomputeDerivedPermissions({ elementId }, prisma)
-    }
+      for (const elementId of elementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      }
 
-    return deleted
-  })
+      return deleted
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
@@ -1115,30 +1121,33 @@ export async function removeCourse(
   }
 
   // remove direct permission and recompute derived permissions for this course and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    // remove the direct permission of the user on the course
-    await prisma.course.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission of the user on the course
+      await prisma.course.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    // create an audit log entry for the removal
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.PERMISSION_REMOVED,
-        objectId: String(id),
-        objectType: DB.ObjectType.COURSE,
-        sourceUserId: ctx.user.sub,
-        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.COURSE} (ID: ${id})`,
-      },
-    })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.COURSE,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.COURSE} (ID: ${id})`,
+        },
+      })
 
-    // recompute derived permissions for the user on the course
-    await recomputeDerivedPermissions(
-      { courseId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      // recompute derived permissions for the user on the course
+      await recomputeDerivedPermissions(
+        { courseId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Course',

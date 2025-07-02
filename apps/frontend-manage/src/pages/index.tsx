@@ -396,7 +396,7 @@ function Index() {
                           disabled={toggelingArchive}
                           className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
                                 elementIds: Object.keys(
                                   selectedElementContent
@@ -404,14 +404,22 @@ function Index() {
                                 isArchived: true,
                               },
                               update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
                                 // check if request was successful
-                                const updatedElements = data?.toggleIsArchived
-                                if (!updatedElements) return
+                                const update = data?.toggleIsArchived
+                                if (!update) return
 
                                 // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds = updatedElements.map(
-                                  (element) => element.id
-                                )
+                                const updatedElementIds =
+                                  update.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
 
                                 // fetch the previously returned value for the elements list
                                 const elements = cache.readQuery({
@@ -436,7 +444,34 @@ function Index() {
                                 }
                               },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.archivingSuccess'
+                                ),
+                                options: { duration: 3000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.archivingPartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.archivingFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'move-to-archive' }}
                         >
@@ -450,7 +485,7 @@ function Index() {
                           disabled={toggelingArchive}
                           className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
                                 elementIds: Object.keys(
                                   selectedElementContent
@@ -458,14 +493,22 @@ function Index() {
                                 isArchived: false,
                               },
                               update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
                                 // check if request was successful
                                 const updatedElements = data?.toggleIsArchived
                                 if (!updatedElements) return
 
                                 // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds = updatedElements.map(
-                                  (element) => element.id
-                                )
+                                const updatedElementIds =
+                                  updatedElements.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
 
                                 // fetch the previously returned value for the elements list
                                 const elements = cache.readQuery({
@@ -490,7 +533,34 @@ function Index() {
                                 }
                               },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchivePartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'restore-from-archive' }}
                         >

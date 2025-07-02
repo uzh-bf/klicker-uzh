@@ -610,72 +610,75 @@ export async function manipulateLiveQuiz(
     },
   }
 
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: { id: { in: instancesToDelete } },
-    })
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
 
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
 
-      await prisma.elementInstance.update({
-        where: { id: instance.id },
-        data: {
-          elementBlockId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
+        await prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementBlockId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all blocks
+      await prisma.elementBlock.deleteMany({
+        where: {
+          id: { in: blocksToDelete },
+        },
+      })
+
+      const upsertedQuiz = await prisma.liveQuiz.upsert({
+        where: { id: id ?? uuidv4() },
+        create: {
+          ...createOrUpdateJSON,
+          course: courseId !== null ? { connect: { id: courseId } } : undefined,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: {
+          ...createOrUpdateJSON,
+          course:
+            courseId !== null
+              ? { connect: { id: courseId } }
+              : { disconnect: true },
+        },
+        include: {
+          course: true,
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
           },
         },
       })
-    }
 
-    // delete all blocks
-    await prisma.elementBlock.deleteMany({
-      where: {
-        id: { in: blocksToDelete },
-      },
-    })
-
-    const upsertedQuiz = await prisma.liveQuiz.upsert({
-      where: { id: id ?? uuidv4() },
-      create: {
-        ...createOrUpdateJSON,
-        course: courseId !== null ? { connect: { id: courseId } } : undefined,
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: {
-        ...createOrUpdateJSON,
-        course:
-          courseId !== null
-            ? { connect: { id: courseId } }
-            : { disconnect: true },
-      },
-      include: {
-        course: true,
-        blocks: {
-          include: { elements: { orderBy: { order: 'asc' } } },
-          orderBy: { order: 'asc' },
-        },
-      },
-    })
-
-    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-    if (unlinkedElementIds.length > 0) {
-      for (const elementId of unlinkedElementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
       }
-    }
 
-    await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, prisma)
-    return upsertedQuiz
-  })
+      await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, prisma)
+      return upsertedQuiz
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
@@ -699,28 +702,31 @@ export async function removeLiveQuiz(
   }
 
   // remove direct permission and recompute derived permissions for this live quiz and user
-  await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.liveQuiz.update({
-      where: { id },
-      data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
-    })
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.liveQuiz.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
 
-    // create an audit log entry for the removal
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.PERMISSION_REMOVED,
-        objectId: String(id),
-        objectType: DB.ObjectType.LIVE_QUIZ,
-        sourceUserId: ctx.user.sub,
-        message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.LIVE_QUIZ} (ID: ${id})`,
-      },
-    })
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.LIVE_QUIZ,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.LIVE_QUIZ} (ID: ${id})`,
+        },
+      })
 
-    await recomputeDerivedPermissions(
-      { liveQuizId: id, userId: ctx.user.sub },
-      prisma
-    )
-  })
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
@@ -2135,18 +2141,21 @@ export async function deleteLiveQuiz(
     // running live quizzes cannot be deleted
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
-    const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
-      const quiz = await prisma.liveQuiz.update({
-        where: { id, status: DB.PublicationStatus.ENDED },
-        data: { isDeleted: true },
-      })
+    const deletedLiveQuiz = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const quiz = await prisma.liveQuiz.update({
+          where: { id, status: DB.PublicationStatus.ENDED },
+          data: { isDeleted: true },
+        })
 
-      // update derived permissions for this live quiz (after soft deletion)
-      // this function call automatically includes permission updates for all linked elements
-      await recomputeDerivedPermissions({ liveQuizId: quiz.id }, prisma)
+        // update derived permissions for this live quiz (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
+        await recomputeDerivedPermissions({ liveQuizId: quiz.id }, prisma)
 
-      return quiz
-    })
+        return quiz
+      },
+      { timeout: 60000 }
+    )
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
@@ -2155,26 +2164,29 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
-    const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
-      const quiz = await prisma.liveQuiz.delete({
-        where: {
-          id,
-          status: {
-            in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+    const deletedLiveQuiz = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const quiz = await prisma.liveQuiz.delete({
+          where: {
+            id,
+            status: {
+              in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+            },
           },
-        },
-      })
+        })
 
-      // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
-      // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
-      // access requests need to be updated as well, since the derived permissions on elements might have changed
-      await propagateActivityToElements(
-        { stacks: liveQuiz.blocks, updateAccessRequests: true },
-        prisma
-      )
+        // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+        // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
+        // access requests need to be updated as well, since the derived permissions on elements might have changed
+        await propagateActivityToElements(
+          { stacks: liveQuiz.blocks, updateAccessRequests: true },
+          prisma
+        )
 
-      return quiz
-    })
+        return quiz
+      },
+      { timeout: 60000 }
+    )
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',

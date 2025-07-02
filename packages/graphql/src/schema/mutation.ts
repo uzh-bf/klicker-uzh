@@ -55,7 +55,7 @@ import {
   StackResponseInput,
 } from './practiceQuiz.js'
 import {
-  ArchivedElement,
+  ArchivedElementList,
   Element,
   ElementInstance,
   OptionsCaseStudyInput,
@@ -1402,7 +1402,7 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [ArchivedElement],
+        type: ArchivedElementList,
         args: {
           elementIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),

@@ -638,26 +638,29 @@ export async function removeAnswerCollection(
     await ctx.prisma.answerCollection.delete({ where: { id: id } })
   } else {
     // otherwise, delete the sharing permission
-    await ctx.prisma.$transaction(async (prisma) => {
-      await prisma.permission.delete({ where: { id: permission.id } })
+    await ctx.prisma.$transaction(
+      async (prisma) => {
+        await prisma.permission.delete({ where: { id: permission.id } })
 
-      // create an audit log entry for the removal
-      await prisma.auditLogEntry.create({
-        data: {
-          type: DB.AuditLogType.PERMISSION_REMOVED,
-          objectId: String(id),
-          objectType: DB.ObjectType.ANSWER_COLLECTION,
-          sourceUserId: ctx.user.sub,
-          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
-        },
-      })
+        // create an audit log entry for the removal
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_REMOVED,
+            objectId: String(id),
+            objectType: DB.ObjectType.ANSWER_COLLECTION,
+            sourceUserId: ctx.user.sub,
+            message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
+          },
+        })
 
-      // trigger recomputation of derived permissions
-      await recomputeDerivedPermissions(
-        { answerCollectionId: id, userId: ctx.user.sub },
-        prisma
-      )
-    })
+        // trigger recomputation of derived permissions
+        await recomputeDerivedPermissions(
+          { answerCollectionId: id, userId: ctx.user.sub },
+          prisma
+        )
+      },
+      { timeout: 60000 }
+    )
   }
 
   ctx.emitter.emit('invalidate', {
