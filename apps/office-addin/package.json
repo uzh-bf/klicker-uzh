@@ -3,12 +3,12 @@
   "version": "3.3.0-alpha.68",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@uzh-bf/design-system": "3.0.9",
+    "@uzh-bf/design-system": "4.0.0-alpha.4",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.6",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "yup": "1.4.0"
   },
   "devDependencies": {
@@ -23,8 +23,8 @@
     "@types/node": "^20.16.1",
     "@types/office-js": "^1.0.256",
     "@types/office-runtime": "^1.0.23",
-    "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "@typescript-eslint/eslint-plugin": "~8.23.0",
     "@typescript-eslint/parser": "~8.23.0",
     "autoprefixer": "~10.4.20",

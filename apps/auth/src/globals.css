@@ -3,7 +3,7 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 
-@import '@uzh-bf/design-system/dist/style.css';
+@import '@uzh-bf/design-system/dist/design-system.css';
 
 @import '@klicker-uzh/shared-components/dist/components.css';
 
