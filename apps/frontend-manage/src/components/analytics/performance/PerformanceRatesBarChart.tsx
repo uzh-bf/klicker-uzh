@@ -29,7 +29,7 @@ function PerformanceRatesBarChart({
     <div className="flex h-8 items-center gap-4">
       <div
         className={twMerge(
-          'w-48 overflow-hidden overflow-ellipsis whitespace-nowrap',
+          'w-48 overflow-hidden text-ellipsis whitespace-nowrap',
           className?.title
         )}
       >

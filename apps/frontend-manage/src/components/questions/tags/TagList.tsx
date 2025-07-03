@@ -151,7 +151,7 @@ function TagList({
   )
 
   return (
-    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-[14rem]">
+    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
       <TagHeader
         text={t('manage.questionPool.elementStatus')}
         state={questionStatusVisible}

@@ -145,7 +145,7 @@ function Markdown({
                     return (
                       <a
                         className={twMerge(
-                          'my-1 flex flex-row gap-3 rounded border px-4 py-3 text-sm hover:bg-slate-200'
+                          'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
                         )}
                         href={href}
                       >

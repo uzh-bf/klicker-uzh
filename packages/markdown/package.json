@@ -23,7 +23,8 @@
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.0",
     "@rollup/plugin-typescript": "~12.1.2",
-    "@tailwindcss/typography": "~0.5.15",
+    "@tailwindcss/cli": "~4.1.11",
+    "@tailwindcss/typography": "~0.5.16",
     "@types/node": "^20.16.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -34,8 +35,7 @@
     "postcss-import": "~16.1.0",
     "rollup": "~4.34.2",
     "rollup-plugin-copy": "~3.5.0",
-    "tailwindcss": "~3.4.14",
-    "tailwindcss-radix": "~3.0.5",
+    "tailwindcss": "~4.1.11",
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
@@ -54,16 +54,13 @@
     "build": "run-s build:tw build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "build:tw": "run-p build:tw:*",
-    "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
-    "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
+    "build:tw": "npx @tailwindcss/cli  -i src/tailwind.css -o src/public/styles.css",
     "check": "tsc --noEmit",
-    "dev": "run-p dev:tw:* dev:ts",
+    "dev": "run-p dev:tw dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
-    "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",
-    "dev:tw:utilities": "tailwindcss -w -i src/utilities.css -o src/public/utilities.css"
+    "dev:tw": "npx @tailwindcss/cli  -w -i src/tailwind.css -o src/public/styles.css"
   },
   "engines": {
     "node": "=20"

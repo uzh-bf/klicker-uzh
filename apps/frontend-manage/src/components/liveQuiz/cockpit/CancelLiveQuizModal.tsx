@@ -125,7 +125,7 @@ function CancelLiveQuizModal({
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
-      className={{ content: 'max-w-[60rem]' }}
+      className={{ content: 'max-w-240' }}
     >
       {queryLoading || !summary ? (
         <Loader />

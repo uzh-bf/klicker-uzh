@@ -48,7 +48,7 @@ export function KPAnswerOptions({
               !hideFeedbacks &&
                 feedbacks &&
                 feedbacks[choice.ix] &&
-                '!rounded-b-none'
+                'rounded-b-none!'
             )}
             data-cy="kp-answer-options"
           >

@@ -8,8 +8,10 @@
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@tailwindcss/aspect-ratio": "~0.4.2",
-    "@tailwindcss/forms": "~0.5.9",
-    "@tailwindcss/typography": "~0.5.15",
+    "@tailwindcss/cli": "~4.1.11",
+    "@tailwindcss/forms": "~0.5.10",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/typography": "~0.5.16",
     "@tanstack/react-table": "~8.20.5",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.10",
@@ -17,18 +19,15 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-tagcloud": "^2.3.2",
-    "autoprefixer": "~10.4.20",
     "eslint": "~8.45.0",
     "lodash": "~4.17.21",
     "npm-run-all": "~4.1.5",
-    "postcss-import": "~16.1.0",
     "react-csv-downloader": "~3.1.1",
     "react-tagcloud": "~2.3.3",
     "recharts": "~2.13.0",
     "remark-parse": "~10.0.2",
     "remark-slate": "~1.8.6",
-    "tailwindcss": "~3.4.14",
-    "tailwindcss-radix": "~3.0.5",
+    "tailwindcss": "~4.1.11",
     "typescript": "~5.6.3",
     "unified": "~10.1.2"
   },
@@ -54,15 +53,11 @@
     "yup": "^1.4.0"
   },
   "scripts": {
-    "build": "run-p build:tw:*",
-    "build:tw:components": "tailwindcss -i src/components.css -o dist/components.css",
-    "build:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css",
+    "build": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css",
     "check": "tsc --noEmit",
-    "dev": "run-p dev:tw:*",
+    "dev": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css -w",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:offline": "run-p dev:tw:*",
-    "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
-    "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w"
+    "dev:offline": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css -w"
   },
   "volta": {
     "extends": "../../package.json"

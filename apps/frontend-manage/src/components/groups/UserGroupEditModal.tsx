@@ -96,8 +96,8 @@ function UserGroupEditModal({
       }
       className={{
         content: twMerge(
-          'flex !max-w-xl flex-col pb-0',
-          isGroupEditor && '!max-w-3xl'
+          'max-w-xl! flex flex-col pb-0',
+          isGroupEditor && 'max-w-3xl!'
         ),
       }}
       dataCloseButton={{ cy: 'close-user-group-edit-modal' }}

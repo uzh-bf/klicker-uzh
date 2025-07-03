@@ -45,11 +45,12 @@ function Flashcard({
     <div>
       <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
         <div
-          className={`transform-style-preserve-3d transition-transform-0_6s flex flex-col rounded-lg border border-gray-300 p-4 shadow ${
+          className={twMerge(
+            'transform-3d transition-[transform 0.6s] flex flex-col rounded-lg border border-gray-300 p-4 shadow',
             isFlipped
-              ? 'transform-rotateY-180'
+              ? 'transform-[rotateY(180deg)]'
               : 'cursor-pointer hover:shadow-xl'
-          }`}
+          )}
           onClick={!isFlipped ? handleFlip : () => null}
         >
           <FlashcardFront
@@ -96,7 +97,7 @@ function FlashcardFront({
         root: twMerge(
           'prose prose-p:!m-0 prose-img:!m-0 mx-auto flex-none text-center',
           isFlipped &&
-            'transform-rotateY-180 backface-hidden prose-p:mb-0 mb-4 w-full rounded border bg-slate-100 px-4 py-2'
+            'transform-[rotateY(180deg)] backface-hidden prose-p:mb-0 mb-4 w-full rounded border bg-slate-100 px-4 py-2'
         ),
       }}
     />
@@ -121,11 +122,11 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="transform-rotateY-180 flex w-full flex-1 flex-col">
+    <div className="transform-[rotateY(180deg)] flex w-full flex-1 flex-col">
       <div className="prose prose-p:!m-0 prose-img:!m-0 flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
-      <div className="flex w-full flex-shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">
+      <div className="flex w-full shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">
         <p className="font-bold">
           {t('pwa.practiceQuiz.studentFlashcardResponse')}
         </p>

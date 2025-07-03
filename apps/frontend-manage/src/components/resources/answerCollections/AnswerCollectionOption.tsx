@@ -56,7 +56,7 @@ function AnswerCollectionOption({
     <div
       className={twMerge(
         'flex w-full flex-row items-center gap-1 border-b pb-1',
-        last && '!border-b-0'
+        last && 'border-b-0!'
       )}
     >
       <Button
@@ -186,7 +186,7 @@ function AnswerCollectionOption({
             }}
           >
             {({ isSubmitting, isValid }) => (
-              <Form className="flex flex-row gap-[0.1875rem]">
+              <Form className="gap-0.75 flex flex-row">
                 <Button
                   primary
                   type="submit"

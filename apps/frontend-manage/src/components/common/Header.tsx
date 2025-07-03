@@ -269,7 +269,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
   return (
     <>
       <div
-        className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
+        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">

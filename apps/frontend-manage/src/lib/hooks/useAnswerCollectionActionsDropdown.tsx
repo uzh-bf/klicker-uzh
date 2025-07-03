@@ -131,7 +131,7 @@ function useAnswerCollectionActionsDropdown({
               <Tooltip
                 tooltip={t('manage.resources.removalDisabledInUse')}
                 className={{
-                  tooltip: 'max-w-[30rem] text-sm',
+                  tooltip: 'max-w-120 text-sm',
                   trigger: 'ml-2',
                 }}
               >
@@ -166,7 +166,7 @@ function useAnswerCollectionActionsDropdown({
               <Tooltip
                 tooltip={t('manage.resources.deletionDisabledInUse')}
                 className={{
-                  tooltip: 'max-w-[30rem] text-sm',
+                  tooltip: 'max-w-120 text-sm',
                   trigger: 'ml-2',
                 }}
               >

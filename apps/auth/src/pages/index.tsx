@@ -163,7 +163,7 @@ export function Index() {
   const t = useTranslations()
 
   return (
-    <div className="m-auto flex w-full flex-grow flex-col md:max-w-2xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="md:grow-0! m-auto flex w-full grow flex-col md:max-w-2xl md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
         <div className="w-full border-b px-5 pb-4 text-center sm:px-8">
           <Image
@@ -194,7 +194,7 @@ export function Index() {
         </div>
       </div>
       <div className="w-full flex-none">
-        <Footer className="!text-xs" />
+        <Footer className="text-xs!" />
       </div>
     </div>
   )

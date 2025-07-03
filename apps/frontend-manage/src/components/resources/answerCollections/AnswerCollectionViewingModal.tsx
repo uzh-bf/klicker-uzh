@@ -121,7 +121,7 @@ function AnswerCollectionViewingModal({
                 icon={faSearch}
                 placeholder={t('manage.resources.searchAnswerOptions')}
                 data={{ cy: 'search-viewing-answer-options' }}
-                className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
+                className={{ field: 'mb-2 w-full', input: 'pl-8! h-8 text-sm' }}
               />
 
               <div className="max-h-[calc(100vh-16rem)] overflow-y-auto rounded-md border border-gray-200">

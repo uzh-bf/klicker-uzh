@@ -237,9 +237,7 @@ function ActivityLog({
                       className="flex flex-row items-center py-0.5 text-xs text-slate-500"
                       data-cy={`activity-log-entry-${entryMeesage}`}
                     >
-                      <div className="flex-grow break-words">
-                        {entryMeesage}
-                      </div>
+                      <div className="grow break-words">{entryMeesage}</div>
                       <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
                         {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
                         {entry.isEdited && ' (edited)'}

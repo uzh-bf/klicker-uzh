@@ -1,5 +1,4 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+const tailwindConfig = {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {},
@@ -7,5 +6,6 @@ module.exports = {
   future: {
     hoverOnlyWhenSupported: true,
   },
-  plugins: [require('@tailwindcss/typography')],
 }
+
+export default tailwindConfig

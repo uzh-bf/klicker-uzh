@@ -76,7 +76,7 @@ function PublishConfirmationModal({
       onClose={onClose}
       hideCloseButton={true}
       className={{
-        content: 'w-[40rem]',
+        content: 'w-160',
         title: 'text-xl',
       }}
     >

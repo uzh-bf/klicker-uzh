@@ -102,7 +102,7 @@ function InstanceUpdateSwitch({
           </div>
         )}
 
-      <div className="ml-[4.25rem]">
+      <div className="ml-17">
         {loading && (
           <Loader data={{ cy: 'instance-update-activities-loading' }} />
         )}

@@ -51,7 +51,7 @@ function StackedProgress({
     >
       <div
         className={twMerge(
-          'w-48 overflow-hidden overflow-ellipsis whitespace-nowrap',
+          'w-48 overflow-hidden text-ellipsis whitespace-nowrap',
           showScale && 'mb-8'
         )}
       >

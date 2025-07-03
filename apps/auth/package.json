@@ -24,6 +24,10 @@
     "tailwind-merge": "2.5.4"
   },
   "devDependencies": {
+    "@tailwindcss/aspect-ratio": "~0.4.2",
+    "@tailwindcss/forms": "~0.5.10",
+    "@tailwindcss/postcss": "~4.1.11",
+    "@tailwindcss/typography": "~0.5.16",
     "@types/bcryptjs": "^2.4.6",
     "@types/js-cookie": "^3.0.6",
     "@types/jsonwebtoken": "^9.0.7",
@@ -36,9 +40,10 @@
     "eslint": "~8.45.0",
     "eslint-config-next": "~15.0.0",
     "postcss": "~8.4.47",
-    "postcss-import": "~16.1.0",
     "prisma": "~6.1.0",
-    "tailwindcss": "~3.4.14",
+    "tailwindcss": "~4.1.11",
+    "tailwindcss-animate": "~1.0.7",
+    "tw-animate-css": "~1.3.4",
     "typescript": "~5.6.3"
   },
   "scripts": {

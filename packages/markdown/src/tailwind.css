@@ -6,36 +6,9 @@ Alternative approach to "@import 'tailwindcss';" to disable preflight core plugi
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-@import 'tw-animate-css';
-
-@import '@uzh-bf/design-system/dist/design-system.css';
-@import '@klicker-uzh/shared-components/dist/styles.css';
-@import '@klicker-uzh/markdown/dist/styles.css';
-
 @config '../tailwind.config.mjs';
 
-@plugin 'tailwindcss-animate';
 @plugin '@tailwindcss/typography';
-@plugin '@tailwindcss/aspect-ratio';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/container-queries';
-
-html {
-  font-size: 16px;
-}
-
-:root {
-  --theme-color-primary: #0028a5;
-  --theme-color-primary-80: #3353b7;
-  --theme-color-primary-60: #667ec9;
-  --theme-color-primary-40: #99a9db;
-  --theme-color-primary-20: #ccd4ed;
-  --theme-color-secondary: #dc6027;
-  --theme-color-secondary-80: #e38052;
-  --theme-color-secondary-60: #eaa07d;
-  --theme-color-secondary-40: #f1bfa9;
-  --theme-color-secondary-20: #f8dfd4;
-}
 
 /* override default ring widths and colors to be consistent with previous styling */
 @theme {

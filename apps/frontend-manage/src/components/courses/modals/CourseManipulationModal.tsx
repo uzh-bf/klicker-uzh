@@ -189,7 +189,7 @@ function CourseManipulationModal({
           : t('manage.courseList.createNewCourse')
       }
       onClose={onModalClose}
-      className={{ content: '!w-full' }}
+      className={{ content: 'w-full!' }}
     >
       <Formik
         validateOnMount

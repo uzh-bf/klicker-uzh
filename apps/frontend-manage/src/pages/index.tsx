@@ -339,7 +339,7 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 !pl-8',
+                      input: 'pl-8! h-10',
                       field: 'w-30 rounded-md pr-3',
                     }}
                   />
