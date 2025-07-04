@@ -35,6 +35,13 @@ function ObjectSharingModal({
   const t = useTranslations()
   const [showDerivedPermissions, setShowDerivedPermissions] = useState(false)
 
+  const onSharingSuccess = () =>
+    toast({
+      type: 'success',
+      message: t('manage.sharing.sharingSuccessful'),
+      options: { duration: 3000 },
+    })
+
   const onSharingFailure = () =>
     toast({
       type: 'error',
@@ -90,10 +97,11 @@ function ObjectSharingModal({
     })
 
   // mutation to create new permission entry for answer collection
-  const { onShareObject, objectSharing } = useObjectSharing({
+  const { onShareObject } = useObjectSharing({
     objectId,
     objectType,
     catalogCollectionId,
+    onSuccess: () => onSharingSuccess(),
     onError: () => onSharingFailure(),
   })
 
@@ -157,14 +165,6 @@ function ObjectSharingModal({
             }
           }}
           shareObjectCallback={async (values) => await onShareObject(values)}
-          onSharingSuccess={() =>
-            toast({
-              type: 'success',
-              message: t('manage.sharing.sharingSuccessful'),
-              options: { duration: 3000 },
-            })
-          }
-          onSharingFailure={() => onSharingFailure()}
           onOwnershipTransfer={onOwnershipTransfer}
         />
       </div>
