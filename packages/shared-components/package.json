@@ -7,11 +7,6 @@
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
-    "@tailwindcss/aspect-ratio": "~0.4.2",
-    "@tailwindcss/cli": "~4.1.11",
-    "@tailwindcss/forms": "~0.5.10",
-    "@tailwindcss/postcss": "^4.1.11",
-    "@tailwindcss/typography": "~0.5.16",
     "@tanstack/react-table": "~8.20.5",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.10",
@@ -27,7 +22,6 @@
     "recharts": "~2.13.0",
     "remark-parse": "~10.0.2",
     "remark-slate": "~1.8.6",
-    "tailwindcss": "~4.1.11",
     "typescript": "~5.6.3",
     "unified": "~10.1.2"
   },
@@ -38,7 +32,7 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
-    "@uzh-bf/design-system": "4.0.0-alpha.4",
+    "@uzh-bf/design-system": "4.0.0-alpha.5",
     "dayjs": "^1.11.13",
     "formik": "^2.4.6",
     "js-cookie": "^3.0.5",
@@ -53,11 +47,7 @@
     "yup": "^1.4.0"
   },
   "scripts": {
-    "build": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css",
-    "check": "tsc --noEmit",
-    "dev": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css -w",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:offline": "npx @tailwindcss/cli -i src/tailwind.css -o dist/styles.css -w"
+    "check": "tsc --noEmit"
   },
   "volta": {
     "extends": "../../package.json"

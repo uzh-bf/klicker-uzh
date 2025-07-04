@@ -64,6 +64,7 @@
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:setup:raw": "pnpm run --filter @klicker-uzh/prisma prisma:setup:raw",
     "prisma:setup:yes": "pnpm run --filter @klicker-uzh/prisma prisma:setup:yes",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
     "prisma:sync": "./util/sync-schema.sh",
