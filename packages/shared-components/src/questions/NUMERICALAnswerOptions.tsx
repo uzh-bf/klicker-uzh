@@ -66,7 +66,7 @@ export function NUMERICALAnswerOptions({
               'focus:border-primary-80',
               !valid && 'border-red-600'
             ),
-            unit: 'rounded-r',
+            unit: 'rounded-r-lg',
           }}
           data={{ cy: `input-numerical-${elementIx}` }}
         />

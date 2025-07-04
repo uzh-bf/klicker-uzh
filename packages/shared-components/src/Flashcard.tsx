@@ -46,7 +46,7 @@ function Flashcard({
       <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
         <div
           className={twMerge(
-            'transform-3d flex flex-col rounded-lg border border-gray-300 p-4 shadow [transition:_transform_0.6s]',
+            'transform-3d flex flex-col rounded-lg border border-gray-300 p-4 shadow [transition:transform_0.6s]',
             isFlipped ? 'rotate-y-180' : 'cursor-pointer hover:shadow-xl'
           )}
           onClick={!isFlipped ? handleFlip : () => null}

@@ -78,7 +78,7 @@ function StartModal({
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'cancel-start-live-quiz-modal' }}
-      className={{ content: 'mx-auto my-auto h-max w-max md:min-w-[30rem]' }}
+      className={{ content: 'mx-auto my-auto h-max w-max md:min-w-120' }}
       hideCloseButton
     >
       <H3>{t('control.course.startLiveQuiz')}</H3>
