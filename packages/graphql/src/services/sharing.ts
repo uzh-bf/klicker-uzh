@@ -3949,7 +3949,7 @@ export async function shareObject(
     })
 
     const userId = user?.id
-    if (!userId) {
+    if (!userId || userId === ctx.user.sub) {
       return null
     }
 

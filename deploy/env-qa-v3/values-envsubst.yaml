@@ -1,0 +1,107 @@
+dfDomain: '${DF_DOMAIN}'
+
+teamsWebhookUrl: '${TEAMS_WEBHOOK_URL}'
+
+appSecret: '${APP_SECRET}'
+
+email:
+  type: '${EMAIL_TYPE}'
+  from: '${EMAIL_FROM}'
+  host: '${EMAIL_HOST}'
+  port: '${EMAIL_PORT}'
+  username: '${EMAIL_USER}'
+  password: '${EMAIL_PASS}'
+  secure: '${EMAIL_SECURE}'
+  requireTLS: '${EMAIL_STARTTLS}'
+
+eduId:
+  clientSecret: '${EDUID_CLIENT_SECRET}'
+
+auth:
+  replicaCount: '${APP_REPLICAS}'
+  image:
+    tag: '${APP_VERSION}'
+
+frontendPWA:
+  replicaCount: '${APP_REPLICAS}'
+  image:
+    tag: '${APP_VERSION}'
+
+frontendManage:
+  replicaCount: '${APP_REPLICAS}'
+  image:
+    tag: '${APP_VERSION}'
+
+frontendControl:
+  replicaCount: '${APP_REPLICAS}'
+  image:
+    tag: '${APP_VERSION}'
+
+backendGraphql:
+  replicaCount: '${APP_REPLICAS}'
+
+  image:
+    tag: '${APP_VERSION}'
+
+  apiDomain: '${API_DOMAIN}'
+  cookieDomain: '${COOKIE_DOMAIN}'
+  databaseUrl: '${DATABASE_URL}'
+  debug: true
+
+  appManageSubdomain: '${APP_MANAGE_SUBDOMAIN}'
+  appManageDomain: '${APP_MANAGE_SUBDOMAIN}${COOKIE_DOMAIN}'
+  appStudentSubdomain: '${APP_STUDENT_SUBDOMAIN}'
+  appStudentDomain: '${APP_STUDENT_SUBDOMAIN}${COOKIE_DOMAIN}'
+  appControlSubdomain: '${APP_CONTROL_SUBDOMAIN}'
+  appControlDomain: '${APP_CONTROL_SUBDOMAIN}${COOKIE_DOMAIN}'
+
+  notifications:
+    url: '${NOTIFICATION_URL}'
+    secret: '${NOTIFICATION_SECRET}'
+    supportEmail: '${NOTIFICATION_SUPPORT_EMAIL}'
+
+  vapid:
+    publicKey: '${VAPID_PUBLIC_KEY}'
+    privateKey: '${VAPID_PRIVATE_KEY}'
+
+  redisCache:
+    host: klicker-v2-qa-redis-master
+    port: 6379
+    pass: ''
+
+  redisExec:
+    host: '${REDIS_HOST}'
+    port: '${REDIS_PORT}'
+    tls: '${REDIS_TLS}'
+    pass: '${REDIS_PASS}'
+
+  sentryEnv: qa
+  sentryDSN: '${SENTRY_DSN}'
+
+olatApi:
+  key: '${OLAT_API_KEY}'
+
+lti:
+  replicaCount: '${APP_REPLICAS}'
+
+  image:
+    tag: '${APP_VERSION}'
+
+  appSecret: '${APP_SECRET}'
+  clientId: '${LTI_CLIENT_ID}'
+  redirectURL: '${LTI_REDIRECT_URL}'
+  cookieDomain: '${COOKIE_DOMAIN}'
+  encryptionKey: '${APP_SECRET}'
+  name: '${LTI_NAME}'
+  url: '${LTI_URL}'
+  authEndpoint: '${LTI_AUTH_ENDPOINT}'
+  tokenEndpoint: '${LTI_TOKEN_ENDPOINT}'
+  keysEndpoint: '${LTI_KEYS_ENDPOINT}'
+
+  db:
+    type: '${LTI_DB_TYPE}'
+    host: '${LTI_DB_HOST}'
+    port: '${LTI_DB_PORT}'
+    name: '${LTI_DB_NAME}'
+    username: '${LTI_DB_USER}'
+    password: '${LTI_DB_PASS}'
