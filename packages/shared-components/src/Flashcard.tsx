@@ -46,10 +46,8 @@ function Flashcard({
       <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
         <div
           className={twMerge(
-            'transform-3d transition-[transform 0.6s] flex flex-col rounded-lg border border-gray-300 p-4 shadow',
-            isFlipped
-              ? 'transform-[rotateY(180deg)]'
-              : 'cursor-pointer hover:shadow-xl'
+            'transform-3d flex flex-col rounded-lg border border-gray-300 p-4 shadow [transition:_transform_0.6s]',
+            isFlipped ? 'rotate-y-180' : 'cursor-pointer hover:shadow-xl'
           )}
           onClick={!isFlipped ? handleFlip : () => null}
         >
@@ -95,9 +93,9 @@ function FlashcardFront({
       content={content}
       className={{
         root: twMerge(
-          'prose prose-p:!m-0 prose-img:!m-0 mx-auto flex-none text-center',
+          'prose prose-p:m-0! prose-img:m-0! mx-auto flex-none text-center',
           isFlipped &&
-            'transform-[rotateY(180deg)] backface-hidden prose-p:mb-0 mb-4 w-full rounded border bg-slate-100 px-4 py-2'
+            'rotate-y-180 backface-hidden prose-p:mb-0 mb-4 w-full rounded border bg-slate-100 px-4 py-2'
         ),
       }}
     />
@@ -122,15 +120,15 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="transform-[rotateY(180deg)] flex w-full flex-1 flex-col">
-      <div className="prose prose-p:!m-0 prose-img:!m-0 flex flex-1">
+    <div className="rotate-y-180 flex w-full flex-1 flex-col">
+      <div className="prose prose-p:m-0! prose-img:m-0! flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
       <div className="flex w-full shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">
         <p className="font-bold">
           {t('pwa.practiceQuiz.studentFlashcardResponse')}
         </p>
-        <div className="mt-2 flex w-full flex-row justify-evenly space-x-2">
+        <div className="mt-2 flex w-full flex-row justify-evenly gap-2">
           <FlashcardButton
             active={
               response === FlashcardCorrectness.Incorrect ||
@@ -208,7 +206,7 @@ function FlashcardButton({
       className={{
         root: twMerge(
           color,
-          'w-full hover:bg-transparent hover:brightness-95',
+          'flex-1 hover:bg-transparent hover:brightness-95',
           active
             ? `text-white opacity-100 hover:text-white ${activeColor}`
             : color

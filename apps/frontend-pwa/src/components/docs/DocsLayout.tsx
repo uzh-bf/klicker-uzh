@@ -93,7 +93,7 @@ function DocsLayout({
                 : 'app-setup'
         }
       >
-        <div className="prose prose-img:m-0 max-w-none rounded-b border border-slate-200 p-4">
+        <div className="prose prose-img:m-0 max-w-none rounded-b-lg border border-slate-200 p-4">
           {typeof children === 'function'
             ? children(data.basicCourseInformation!)
             : children}

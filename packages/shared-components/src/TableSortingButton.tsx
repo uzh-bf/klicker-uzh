@@ -18,7 +18,7 @@ function TableSortingButton({
       variant="ghost"
       onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       className={{
-        root: twMerge('h-7 !pl-0 hover:bg-transparent', buttonTextSize),
+        root: twMerge('h-7 pl-0! hover:bg-transparent', buttonTextSize),
       }}
     >
       {title}

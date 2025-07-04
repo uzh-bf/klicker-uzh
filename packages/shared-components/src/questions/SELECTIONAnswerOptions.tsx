@@ -61,7 +61,7 @@ function SELECTIONAnswerOptions({
       <div
         className={twMerge(
           'grid grid-cols-1 gap-y-2',
-          !preview && 'md:grid-cols-2 md:gap-x-6 lg:grid-cols-3'
+          !preview && 'md:grid-cols-2 md:gap-x-6'
         )}
       >
         {Object.entries(responses).map(([inputIndex, selectedValue], ix) => {

@@ -229,13 +229,13 @@ function GroupActivityStack({
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'mb-6 mt-3 rounded !border-l-4 text-base shadow',
+                      'mb-6 mt-3 rounded border-l-4! text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
-                        '!border-l-green-500',
+                        'border-l-green-500!',
                       correctness === ResponseCorrectnessType.Partial &&
-                        '!border-l-yellow-500',
+                        'border-l-yellow-500!',
                       correctness === ResponseCorrectnessType.Incorrect &&
-                        '!border-l-red-700'
+                        'border-l-red-700!'
                     )}
                     data-cy={`group-activity-grading-feedback-${elementIx}`}
                   >
@@ -257,7 +257,7 @@ function GroupActivityStack({
                     </div>
                     {grading.feedback && (
                       <DynamicMarkdown
-                        className={{ root: 'mt-1 p-2 !pt-0' }}
+                        className={{ root: 'mt-1 p-2 pt-0!' }}
                         content={grading.feedback}
                       />
                     )}

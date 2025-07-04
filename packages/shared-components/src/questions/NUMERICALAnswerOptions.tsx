@@ -64,9 +64,9 @@ export function NUMERICALAnswerOptions({
           className={{
             input: twMerge(
               'focus:border-primary-80',
-              unit && 'rounded-r-none',
               !valid && 'border-red-600'
             ),
+            unit: 'rounded-r',
           }}
           data={{ cy: `input-numerical-${elementIx}` }}
         />

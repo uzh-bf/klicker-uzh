@@ -211,8 +211,8 @@ function GroupActivityDetails() {
                   className={twMerge(
                     'mb-6 rounded shadow',
                     instance.results.passed
-                      ? '!border-l-4 !border-l-green-500'
-                      : '!border-l-4 !border-l-red-700'
+                      ? 'border-l-4! border-l-green-500!'
+                      : 'border-l-4! border-l-red-700!'
                   )}
                 >
                   <div
@@ -238,7 +238,7 @@ function GroupActivityDetails() {
                   </div>
                   {instance.results.comment && (
                     <DynamicMarkdown
-                      className={{ root: 'mt-1 p-2 !pt-0' }}
+                      className={{ root: 'mt-1 p-2 pt-0!' }}
                       content={instance.results.comment}
                       data={{ cy: 'group-activity-results-comment' }}
                     />

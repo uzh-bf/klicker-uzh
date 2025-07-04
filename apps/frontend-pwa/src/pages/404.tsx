@@ -20,7 +20,7 @@ function MissingPage() {
         </div>
         {!dataParticipant?.self ||
         dataParticipant.self.role !== UserRole.Participant ? (
-          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-140">
             {t.rich('shared.error.pwaWithoutUser', {
               login: (text) => (
                 <Link
@@ -35,7 +35,7 @@ function MissingPage() {
             })}
           </div>
         ) : (
-          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-140">
             {t.rich('shared.error.pwaWithUser', {
               home: (text) => (
                 <Link

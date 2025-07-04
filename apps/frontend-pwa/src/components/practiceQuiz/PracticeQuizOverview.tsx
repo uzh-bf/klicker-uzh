@@ -54,7 +54,7 @@ function PracticeQuizOverview({
                 <Button
                   basic
                   className={{
-                    root: 'hover:text-primary-100 !p-0 text-sm font-bold hover:bg-transparent',
+                    root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
                   }}
                   onClick={() =>
                     router.push(

@@ -73,7 +73,7 @@ function Participant({
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
-        <div className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r bg-slate-700 px-3 py-1 font-bold text-white">
+        <div className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r-lg bg-slate-700 px-3 py-1 font-bold text-white">
           {points}
         </div>
       )}

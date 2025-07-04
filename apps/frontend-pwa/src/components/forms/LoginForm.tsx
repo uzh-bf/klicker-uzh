@@ -65,7 +65,7 @@ function LoginForm({
   }
 
   return (
-    <div className="flex max-w-full flex-grow flex-col md:max-w-xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="flex max-w-full grow flex-col md:max-w-xl md:grow-0! md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="mb-8 w-full text-center sm:my-12">
           <Image
@@ -171,7 +171,7 @@ function LoginForm({
                     className={{
                       root: 'mt-1',
                       icon: 'bg-transparent',
-                      input: '!pr-10',
+                      input: 'pr-10!',
                     }}
                     type={passwordHidden ? 'password' : 'text'}
                   />
@@ -181,7 +181,7 @@ function LoginForm({
                       basic
                       onClick={() => setMagicLinkLogin(true)}
                       className={{
-                        root: 'text-primary-100 mt-1 !p-0 text-sm hover:bg-transparent hover:underline',
+                        root: 'text-primary-100 mt-1 p-0! text-sm hover:bg-transparent hover:underline',
                       }}
                     >
                       <Button.Label>

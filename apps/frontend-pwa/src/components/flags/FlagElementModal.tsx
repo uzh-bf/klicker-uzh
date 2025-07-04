@@ -137,7 +137,7 @@ function FlagElementModal({
           basic
           onClick={() => setOpen(true)}
           overrideClassName={twMerge(
-            'hover:text-primary-80 text-uzh-grey-100 !px-1',
+            'hover:text-primary-80 text-uzh-grey-100 px-1!',
             !!feedbackValue && 'text-primary-100'
           )}
           data={{ cy: `flag-element-${index}-button` }}
