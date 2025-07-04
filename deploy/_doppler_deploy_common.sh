@@ -38,7 +38,11 @@ fi
 
 # First, try Doppler normally
 if doppler settings 2>/dev/null; then
+  echo "✅ Doppler is configured. Running helmfile with config '$CONFIG'..."
+  doppler run --config "$CONFIG" -- bash -c "cat values-envsubst.yaml | envsubst > .values-SECRET.yaml"
   doppler run --config "$CONFIG" -- helmfile "$@"
+  rm .values-SECRET.yaml
+  echo "✅ Deployment successful."
   exit 0
 fi
 
@@ -52,7 +56,11 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
 
   if [ -f "$TOKEN_FILE" ]; then
     export DOPPLER_TOKEN="$(cat "$TOKEN_FILE")"
+    echo "✅ Found service token in $TOKEN_FILE. Running helmfile with config '$CONFIG'..."
+    doppler run --config "$CONFIG" -- bash -c "cat values-envsubst.yaml | envsubst > .values-SECRET.yaml"
     doppler run --config "$CONFIG" -- helmfile "$@"
+    rm .values-SECRET.yaml
+    echo "✅ Deployment successful."
     exit 0
   fi
 
