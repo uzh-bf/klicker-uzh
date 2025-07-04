@@ -70,7 +70,7 @@ function useMicroLearningActions({
     () => [
       {
         id: 'publishMicroLearning',
-        label: t('manage.course.publishMicrolearning'),
+        label: t('manage.course.publishItemMICROLEARNING'),
         icon: faUserGroup,
         onClick: () => setPublishModal(true),
         data: { cy: `publish-microlearning-${microLearning.name}` },
