@@ -21,7 +21,7 @@ function QuestionContent({
   return (
     <div
       className={twMerge(
-        'prose prose-p:!m-0 prose-img:!m-0 relative mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6',
+        'prose prose-p:!m-0 prose-img:!m-0 relative mb-4 min-h-[6rem] max-w-none flex-initial rounded border p-4 leading-6',
         noPoints && 'mt-4 rounded-tr-none'
       )}
     >

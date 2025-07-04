@@ -41,10 +41,10 @@ function ObjectImport({
   const [search, setSearch] = useState('')
   const [collectionModalOpen, setCollectionModalOpen] = useState(false)
   const [objectAdditionModalOpen, setObjectAdditionModalOpen] = useState(false)
-  const [typeFilter, setTypeFilter] = useState<ObjectType | ''>('')
-  const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
-    ''
-  )
+  const [typeFilter, setTypeFilter] = useState<ObjectType | 'all'>('all')
+  const [accessTypeFilter, setAccessTypeFilter] = useState<
+    ObjectAccess | 'all'
+  >('all')
 
   // fetch all available catalog collections
   const { data: collectionsData, loading: collectionsLoading } = useQuery(

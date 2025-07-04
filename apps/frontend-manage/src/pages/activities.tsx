@@ -149,7 +149,7 @@ function Activities() {
               </div>
             </div>
 
-            <div className="border-uzh-grey-60 h-full overflow-y-auto">
+            <div className="h-full overflow-y-auto">
               {loadingActivities ? (
                 <Loader />
               ) : (

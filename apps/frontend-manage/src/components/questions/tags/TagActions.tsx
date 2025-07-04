@@ -31,7 +31,7 @@ function TagActions({
   const t = useTranslations()
 
   return (
-    <div className="hidden flex-row text-black group-hover:flex">
+    <div className="hidden flex-row items-center text-black group-hover:flex">
       {onMoveUp && (
         <Button
           basic

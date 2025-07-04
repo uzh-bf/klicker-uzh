@@ -2,11 +2,9 @@
 
 @import 'tw-animate-css';
 
-@plugin 'tailwindcss-animate';
 @plugin '@tailwindcss/typography';
 @plugin '@tailwindcss/aspect-ratio';
 @plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/container-queries';
 
 @source "../node_modules/@uzh-bf/design-system/src";
 @source "../../../packages/shared-components/src";
@@ -289,6 +287,24 @@
     }
     100% {
       opacity: 0;
+    }
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
     }
   }
 }

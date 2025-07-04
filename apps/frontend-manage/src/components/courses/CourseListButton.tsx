@@ -87,7 +87,7 @@ function CourseListButton({
       <Button
         className={{
           root: twMerge(
-            'border-uzh-grey-100 flex w-full flex-row justify-between rounded-md border border-solid p-2',
+            'flex w-full flex-row justify-between rounded-md border border-solid px-3 py-2 shadow-sm',
             typeof course?.color !== 'undefined' && 'border-b-4!'
           ),
         }}

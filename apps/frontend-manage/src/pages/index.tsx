@@ -339,8 +339,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'pl-8! h-10',
-                      field: 'w-30 rounded-md pr-3',
+                      input: 'h-10 pl-8',
+                      field: 'min-w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -350,9 +350,7 @@ function Index() {
                       onClick={() => {
                         handleSortOrderToggle()
                       }}
-                      className={{
-                        root: 'h-10 rounded-md shadow-sm',
-                      }}
+                      className={{ root: 'h-10 rounded-md' }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon icon={sortIcon} withoutLabel />

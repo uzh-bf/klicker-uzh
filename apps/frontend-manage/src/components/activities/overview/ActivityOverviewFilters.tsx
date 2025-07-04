@@ -114,7 +114,7 @@ function ActivityOverviewFilters({
   }
 
   return (
-    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
+    <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
       <TagHeader
         text={t('shared.generic.status')}
         state={statusVisible}

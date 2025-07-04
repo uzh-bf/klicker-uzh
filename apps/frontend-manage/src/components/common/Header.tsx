@@ -191,7 +191,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'support-menubar-item',
       icon: faQuestionCircle,
       onClick: () => setShowSupportModal(true),
-      className: { icon: '-mx-1 ' },
+      className: { icon: '-mx-1', root: 'px-3' },
     },
     {
       type: 'dropdown',
@@ -199,6 +199,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       icon: faPlayCircle,
       disabled: !quizzes || quizzes.length === 0,
       className: {
+        trigger: 'px-3',
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
           '-mx-1',
@@ -282,11 +283,14 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          <Navigation items={leftNavigation} />
+          <Navigation
+            items={leftNavigation}
+            className={{ root: 'shadow-none' }}
+          />
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex flex-row' }}
+          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
         />
       </div>
       {showSupportModal && (

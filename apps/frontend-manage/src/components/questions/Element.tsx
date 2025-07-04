@@ -271,9 +271,10 @@ function Element({
                 items={availableActions.slice(2).map((action) => ({
                   label: (
                     <div
-                      className={`flex cursor-pointer items-center rounded hover:bg-gray-100 ${
-                        action.className ?? ''
-                      }`}
+                      className={twMerge(
+                        'flex cursor-pointer items-center rounded hover:bg-gray-100',
+                        action.className
+                      )}
                     >
                       <FontAwesomeIcon
                         icon={action.icon}

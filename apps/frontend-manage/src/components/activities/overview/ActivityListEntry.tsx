@@ -95,7 +95,7 @@ function ActivityListEntry({
     <>
       <div
         className={twMerge(
-          'border-uzh-grey-60 flex flex-row items-start justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
+          'flex flex-row items-start justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
           highlighted && 'border-primary-100 bg-orange-50'
         )}
         data-cy={`activity-${activity.type}-${activity.name}`}
