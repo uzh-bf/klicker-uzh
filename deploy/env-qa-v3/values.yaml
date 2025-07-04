@@ -159,7 +159,7 @@ olatApi:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-qa-olatApi-tls
+      - secretName: klicker-qa-olat-api-tls
         hosts:
           - olat-api.klicker-qa.bf-app.ch
 

@@ -318,7 +318,7 @@ olatApi:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/olatApi
+    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
     pullPolicy: Always
 
   service:
@@ -351,6 +351,6 @@ olatApi:
   tolerations: []
 
   affinity: {}
-  
+
 heartbeats:
   dailyGroupScores:

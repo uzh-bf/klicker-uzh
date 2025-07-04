@@ -409,7 +409,6 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/cm-olat-api.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/secret-olat-api.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.olatApi.podAnnotations }}

@@ -189,10 +189,10 @@ olatApi:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-olatApi-tls-uzh
+      - secretName: klicker-prod-olat-api-tls-uzh
         hosts:
           - olat-api.klicker.uzh.ch
-      - secretName: klicker-prod-olatApi-tls
+      - secretName: klicker-prod-olat-api-tls
         hosts:
           - olat-api.klicker-prod.bf-app.ch
 
