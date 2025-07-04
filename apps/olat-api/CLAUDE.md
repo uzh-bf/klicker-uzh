@@ -45,6 +45,7 @@ GET /
 Returns a simple message indicating the API server is running. No authentication required.
 
 **Response:**
+
 ```json
 {
   "message": "OLAT API server"
