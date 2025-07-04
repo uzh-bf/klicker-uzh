@@ -67,7 +67,7 @@ function useGroupActivityActions({
     () => [
       {
         id: 'publishGroupActivity',
-        label: t('manage.course.publishGroupActivity'),
+        label: t('manage.course.publishItemGROUP_ACTIVITY'),
         icon: faUserGroup,
         onClick: () => setPublishingModal(true),
         data: { cy: `publish-group-activity-${groupActivity.name}` },

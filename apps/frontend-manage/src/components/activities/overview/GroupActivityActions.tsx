@@ -157,11 +157,12 @@ function GroupActivityActions({
         {publishingModal && (
           <PublishConfirmationModal
             onClose={() => setPublishingModal(false)}
-            elementType={ElementInstanceType.GroupActivity}
-            elementId={groupActivity.id}
+            activityType={ElementInstanceType.GroupActivity}
+            activityId={groupActivity.id}
+            startAt={groupActivity.scheduledStartAt}
+            endAt={groupActivity.scheduledEndAt}
             title={groupActivity.name}
             courseId={groupActivity.courseId!}
-            publicationHint={t('manage.course.groupActivityPublishingHint')}
           />
         )}
         {extensionModal && (

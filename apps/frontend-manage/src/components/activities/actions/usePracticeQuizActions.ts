@@ -62,7 +62,7 @@ function usePracticeQuizActions({
     () => [
       {
         id: 'publishPracticeQuiz',
-        label: t('manage.course.publishPracticeQuiz'),
+        label: t('manage.course.publishItemPRACTICE_QUIZ'),
         icon: faUserGroup,
         onClick: () => setPublishModal(true),
         data: { cy: `publish-practice-quiz-${practiceQuiz.name}` },
