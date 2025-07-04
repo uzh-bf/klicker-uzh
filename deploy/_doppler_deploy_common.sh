@@ -31,6 +31,17 @@
 
 set -euo pipefail
 
+# Cleanup function to ensure .values-SECRET.yaml is always deleted
+cleanup() {
+  if [[ -f ".values-SECRET.yaml" ]]; then
+    rm -f .values-SECRET.yaml
+    echo "🧹 Cleaned up .values-SECRET.yaml"
+  fi
+}
+
+# Set trap to run cleanup on script exit (success, failure, or interruption)
+trap cleanup EXIT
+
 if [[ -z "${CONFIG:-}" ]]; then
   echo "CONFIG environment variable not set. Please set CONFIG before calling this script." >&2
   exit 1
@@ -41,7 +52,6 @@ if doppler settings 2>/dev/null; then
   echo "✅ Doppler is configured. Running helmfile with config '$CONFIG'..."
   doppler run --config "$CONFIG" -- bash -c "cat values-envsubst.yaml | envsubst > .values-SECRET.yaml"
   doppler run --config "$CONFIG" -- helmfile "$@"
-  rm .values-SECRET.yaml
   echo "✅ Deployment successful."
   exit 0
 fi
@@ -59,7 +69,6 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
     echo "✅ Found service token in $TOKEN_FILE. Running helmfile with config '$CONFIG'..."
     doppler run --config "$CONFIG" -- bash -c "cat values-envsubst.yaml | envsubst > .values-SECRET.yaml"
     doppler run --config "$CONFIG" -- helmfile "$@"
-    rm .values-SECRET.yaml
     echo "✅ Deployment successful."
     exit 0
   fi
