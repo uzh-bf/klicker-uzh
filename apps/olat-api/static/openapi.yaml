@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: OLAT API
   description: REST API service that provides integration between KlickerUZH and the OLAT Learning Management System (LMS)
-  version: 3.3.0-alpha.57
+  version: 3.3.0-alpha.68
   contact:
     name: KlickerUZH Team
     url: https://www.klicker.uzh.ch

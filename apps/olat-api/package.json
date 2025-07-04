@@ -17,7 +17,7 @@
     "uuid": "10.0.0"
   },
   "devDependencies": {
-    "@apidevtools/swagger-cli": "^4.0.4",
+    "@apidevtools/swagger-cli": "~4.0.4",
     "@rollup/plugin-node-resolve": "~15.3.0",
     "@rollup/plugin-typescript": "~12.1.2",
     "@types/express": "^4.17.17",
@@ -34,7 +34,7 @@
   "scripts": {
     "build": "rollup -c",
     "build:test": "pnpm run build",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx --watch src/index.ts",
     "start": "node dist/index.js",
     "test": "bash run-tests.sh",
     "validate:openapi": "swagger-cli validate static/openapi.yaml"
