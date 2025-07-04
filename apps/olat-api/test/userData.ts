@@ -18,7 +18,7 @@ export const userOne: User = {
   email: 'first@example.com',
   shortname: 'firstuser',
   provider: 'firstprovider',
-  providerAccountId: '1234567890',
+  providerAccountId: '1234567890@firstprovider.ch',
 }
 
 export const userTwo: User = {
@@ -26,7 +26,7 @@ export const userTwo: User = {
   email: 'second@example.com',
   shortname: 'seconduser',
   provider: 'secondprovider',
-  providerAccountId: '2345678901',
+  providerAccountId: '2345678901@secondprovider.ch',
 }
 
 export const courseOne: Course = {

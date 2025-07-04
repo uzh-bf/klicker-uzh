@@ -172,9 +172,11 @@ describe('OLAT-API /api/configuration/courses', () => {
       .set('Content-Type', 'application/json')
       .query({ identityMappingIdentifier: 'non-existing-provider-account-id' })
 
-    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('No courses found for this user')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
   })
 
   test('Missing requestParameters', async () => {
