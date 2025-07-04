@@ -148,17 +148,13 @@ describe('OLAT-API /api/configuration/courses', () => {
       },
     ]
     users.forEach(async (user) => {
-      const provider = user.user.provider
       const providerAccountId = user.user.providerAccountId
 
       const response = await request(app)
         .get('/api/configuration/courses')
         .set('X-API-Key', API_KEY)
         .set('Content-Type', 'application/json')
-        .query({
-          provider: provider,
-          providerAccountId: providerAccountId,
-        })
+        .query({ identityMappingIdentifier: providerAccountId })
       const response_body_expected = user.response
       expect(response.status).toBe(StatusCode.SUCCESS)
       expect(response.body).toHaveProperty('courses')
@@ -174,10 +170,7 @@ describe('OLAT-API /api/configuration/courses', () => {
       .get('/api/configuration/courses')
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
-      .query({
-        provider: 'non-existing-provider',
-        providerAccountId: 'non-existing-provider-account-id',
-      })
+      .query({ identityMappingIdentifier: 'non-existing-provider-account-id' })
 
     expect(response.status).toBe(StatusCode.NOT_FOUND)
     expect(response.body).toHaveProperty('error')
@@ -189,20 +182,7 @@ describe('OLAT-API /api/configuration/courses', () => {
       .get('/api/configuration/courses')
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
-      .query({
-        providerAccountId: userOne.providerAccountId,
-      })
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
-    expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Missing provider')
-
-    response = await request(app)
-      .get('/api/configuration/courses')
-      .set('X-API-Key', API_KEY)
-      .set('Content-Type', 'application/json')
-      .query({
-        provider: userOne.provider,
-      })
+      .query({})
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Missing providerAccountId')
@@ -213,10 +193,7 @@ describe('OLAT-API /api/configuration/courses', () => {
       .get('/api/configuration/courses')
       .set('X-API-Key', 'invalid-api-key')
       .set('Content-Type', 'application/json')
-      .query({
-        provider: userOne.provider,
-        providerAccountId: userOne.providerAccountId,
-      })
+      .query({ identityMappingIdentifier: userOne.providerAccountId })
     expect(response.status).toBe(StatusCode.UNAUTHORIZED)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid API key')
@@ -224,10 +201,7 @@ describe('OLAT-API /api/configuration/courses', () => {
     response = await request(app)
       .get('/api/configuration/courses')
       .set('Content-Type', 'application/json')
-      .query({
-        provider: userOne.provider,
-        providerAccountId: userOne.providerAccountId,
-      })
+      .query({ identityMappingIdentifier: userOne.providerAccountId })
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Missing API key')
@@ -237,10 +211,7 @@ describe('OLAT-API /api/configuration/courses', () => {
     const response = await request(app)
       .get('/api/configuration/courses')
       .set('X-API-Key', API_KEY)
-      .query({
-        provider: userOne.provider,
-        providerAccountId: userOne.providerAccountId,
-      })
+      .query({ identityMappingIdentifier: userOne.providerAccountId })
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid request headers')
