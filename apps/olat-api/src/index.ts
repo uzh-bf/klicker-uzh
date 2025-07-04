@@ -1,4 +1,5 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
+import { apiReference } from '@scalar/express-api-reference'
 import express, { Request, Response } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import fs from 'fs/promises'
@@ -85,6 +86,32 @@ app.get('/health', (req: Request, res: Response) => {
 app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'OLAT API server' })
 })
+
+// Serve OpenAPI specification
+app.get('/openapi.yaml', async (req: Request, res: Response) => {
+  try {
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const specPath = path.join(__dirname, '../static/openapi.yaml')
+    const yamlContent = await fs.readFile(specPath, 'utf-8')
+    res.set('Content-Type', 'application/yaml')
+    res.send(yamlContent)
+  } catch (error) {
+    console.error('Error serving OpenAPI specification:', error)
+    res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
+      error: 'Failed to load OpenAPI specification',
+    })
+  }
+})
+
+// Serve Scalar API documentation
+app.use(
+  '/api-docs',
+  apiReference({
+    url: '/openapi.yaml',
+    theme: 'default',
+  })
+)
 
 function checkHeader(req: Request): StatusCode {
   const contentType = req.headers['content-type']

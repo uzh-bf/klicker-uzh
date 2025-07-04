@@ -6,6 +6,8 @@ This file provides guidance to Claude Code for working specifically with the OLA
 
 The OLAT API is a REST API service that provides integration between KlickerUZH and the OLAT Learning Management System (LMS). It enables OLAT users to access KlickerUZH activities directly from their LMS interface through LTI (Learning Tools Interoperability) integration.
 
+The API provides machine-readable documentation via OpenAPI specification at `/openapi.yaml` and interactive documentation at `/api-docs`.
+
 ### Key Responsibilities
 
 - Provide RESTful endpoints for OLAT to query KlickerUZH data
@@ -68,6 +70,32 @@ Returns the service health status. No authentication required.
   "timestamp": "2024-01-01T12:00:00.000Z"
 }
 ```
+
+### OpenAPI Specification
+
+```http
+GET /openapi.yaml
+```
+
+Returns the OpenAPI v3.1 specification for the API in YAML format. No authentication required.
+
+**Response:**
+
+- Content-Type: `application/yaml`
+- Body: OpenAPI specification in YAML format
+
+### API Documentation
+
+```http
+GET /api-docs
+```
+
+Serves an interactive API documentation interface using Scalar. No authentication required.
+
+**Response:**
+
+- Content-Type: `text/html`
+- Body: Interactive API documentation HTML page
 
 ### Get User Courses
 
@@ -401,8 +429,8 @@ Potential improvements to consider:
 - Support for additional activity types
 - Webhook notifications for activity changes
 - Metrics endpoint for Prometheus monitoring
-- OpenAPI/Swagger documentation
 - Support for batch operations
+- Performance optimization for OpenAPI file serving (caching)
 
 ## Related Documentation
 
