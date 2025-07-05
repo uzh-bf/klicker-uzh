@@ -55,7 +55,7 @@
     "slate-history": "0.109.0",
     "slate-react": "0.110.2",
     "tailwind-merge": "3.3.1",
-    "yup": "1.4.0"
+    "yup": "1.6.1"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "~0.4.2",

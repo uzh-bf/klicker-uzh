@@ -9,7 +9,7 @@
     "formik": "2.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "yup": "1.4.0"
+    "yup": "1.6.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "~28.0.2",

@@ -36,7 +36,7 @@
     "remeda": "2.15.0",
     "sharp": "0.33.5",
     "tailwind-merge": "3.3.1",
-    "yup": "1.4.0"
+    "yup": "1.6.1"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "~0.4.2",
