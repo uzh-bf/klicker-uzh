@@ -1152,9 +1152,6 @@ importers:
       '@types/node':
         specifier: ^20.16.1
         version: 20.17.12
-      '@uzh-bf/design-system':
-        specifier: 4.0.0-alpha.8
-        version: 4.0.0-alpha.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.0))(@tailwindcss/postcss@4.1.11)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@19.1.0))(lucide-react@0.424.0(react@19.1.0))(postcss@8.5.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.1.11))(tailwindcss-radix@4.0.2(tailwindcss@4.1.11))(tailwindcss@4.1.11)(tw-animate-css@1.3.4)(yup@1.4.0)
       azure-functions-core-tools:
         specifier: ~4.0.6610
         version: 4.0.6610

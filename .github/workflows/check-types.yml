@@ -44,8 +44,6 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
-          cd ../shared-components
-          pnpm run build
           cd ../../apps/backend-docker
           pnpm run build
 
