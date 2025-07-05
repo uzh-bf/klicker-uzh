@@ -151,7 +151,6 @@ function ElementHistogram({
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
           {reference && (
             <ReferenceLine
-              isFront
               className={textSize}
               key="reference"
               stroke="red"
@@ -161,7 +160,6 @@ function ElementHistogram({
 
           {statistics && showStatistics?.mean && (
             <ReferenceLine
-              isFront
               label={{
                 fill: 'blue',
                 position: 'top',
@@ -175,7 +173,6 @@ function ElementHistogram({
           )}
           {statistics && showStatistics?.median && (
             <ReferenceLine
-              isFront
               label={{
                 fill: 'red',
                 position: 'top',
@@ -189,7 +186,6 @@ function ElementHistogram({
           )}
           {statistics && showStatistics?.q1 && (
             <ReferenceLine
-              isFront
               label={{
                 fill: 'black',
                 position: 'top',
@@ -203,7 +199,6 @@ function ElementHistogram({
           )}
           {statistics && showStatistics?.q3 && (
             <ReferenceLine
-              isFront
               label={{
                 fill: 'black',
                 position: 'top',
@@ -269,7 +264,6 @@ function ElementHistogram({
             exactSolutions.map((solution, idx) => (
               <ReferenceLine
                 key={`exact-solution-${idx}`}
-                isFront
                 x={parseFloat(String(solution))}
                 stroke={CHART_SOLUTION_COLORS.correct}
                 label={{

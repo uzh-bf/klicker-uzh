@@ -47,7 +47,7 @@ function ActivityAnalyticsCharts({
       </div>
       <hr className="my-2 w-full border-t border-solid border-gray-300" />
       <div>
-        <div className="relative">
+        <div className="relative flex flex-row flex-wrap justify-between">
           <H3>{t('manage.analytics.successRates')}</H3>
           <ErrorRatesLegend colors={colors} />
         </div>
