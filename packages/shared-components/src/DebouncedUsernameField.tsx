@@ -55,7 +55,7 @@ function DebouncedUsernameField({
     check()
   }, [])
 
-  const usernameValidationTimeout = useRef<any>()
+  const usernameValidationTimeout = useRef<any>(null)
   const debouncedUsernameCheck = useCallback(
     ({ username }: { username: string }) => {
       clearTimeout(usernameValidationTimeout.current)

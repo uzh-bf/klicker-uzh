@@ -44,7 +44,7 @@
     "react": "19.1.0",
     "react-confetti-explosion": "3.0.3",
     "react-dom": "19.1.0",
-    "react-select": "5.8.1",
+    "react-select": "5.10.1",
     "recharts": "2.13.0",
     "remeda": "2.15.0",
     "sharp": "0.33.5",

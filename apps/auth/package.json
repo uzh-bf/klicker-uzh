@@ -19,7 +19,7 @@
     "next-intl": "3.21.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-select": "5.8.1",
+    "react-select": "5.10.1",
     "sharp": "0.33.5",
     "tailwind-merge": "3.3.1"
   },
