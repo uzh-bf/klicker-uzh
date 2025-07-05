@@ -32,7 +32,7 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
-    "@tailwindcss/postcss": "~4.1.11",
+    "@tailwindcss/postcss": "^4.1.11",
     "@uzh-bf/design-system": "4.0.0-alpha.8",
     "dayjs": "^1.11.13",
     "formik": "^2.4.6",
@@ -44,8 +44,8 @@
     "react-dom": "^19.1.0",
     "react-select": "^5.8.1",
     "remeda": "^2.15.0",
-    "tailwindcss": "~4.1.11",
     "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^4.1.11",
     "yup": "^1.4.0"
   },
   "scripts": {
