@@ -18,7 +18,7 @@ export function TitleImage() {
             <div className="relative px-6 py-12 sm:py-40 md:py-32 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
                 <div className="hidden sm:mb-10 sm:flex">
-                  <div className="text-md relative rounded-full px-3 py-1 leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                  <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
                     KlickerUZH v3.2 has been released with brand new features
                     <a
                       href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
@@ -64,7 +64,7 @@ export function TitleImage() {
         </div>
         <div className="hidden bg-gray-50 md:block lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
-            className="aspect-[3/2] object-cover lg:aspect-auto lg:h-full lg:w-full"
+            className="aspect-3/2 object-cover lg:aspect-auto lg:h-full lg:w-full"
             src="/img/landing/hero.jpg"
             alt=""
           />

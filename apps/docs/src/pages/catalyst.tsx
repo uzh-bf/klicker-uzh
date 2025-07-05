@@ -64,7 +64,7 @@ function Catalyst() {
             </p>
           </Prose>
 
-          <div className="mx-auto mt-12 flow-root max-w-[45rem]">
+          <div className="max-w-180 mx-auto mt-12 flow-root">
             <div className="cards isolate -mt-8 grid grid-cols-1 gap-6 sm:mx-auto sm:max-w-sm md:max-w-none md:grid-cols-2 lg:-mx-8 lg:mt-0 xl:-mx-4">
               <div className="space-y-4 rounded-lg bg-slate-100 p-6 sm:rounded-xl sm:p-8">
                 <div className="text-4xl font-semibold tracking-tight md:text-5xl">

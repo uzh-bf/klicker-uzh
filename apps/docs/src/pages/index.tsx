@@ -142,7 +142,6 @@ function Home() {
       /> */}
       <div className="mx-auto max-w-7xl space-y-8 p-4">
         <UseCaseOverview />
-
         <CTA />
       </div>
     </Layout>
