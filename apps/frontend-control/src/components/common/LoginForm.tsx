@@ -57,7 +57,7 @@ function LoginForm({
   }
 
   return (
-    <div className="flex max-w-xl grow flex-col md:grow-0! md:rounded-lg md:border md:shadow">
+    <div className="md:grow-0! flex max-w-xl grow flex-col md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center md:p-12">
         <div className="mb-8 w-full text-center sm:mb-12">
           <Image

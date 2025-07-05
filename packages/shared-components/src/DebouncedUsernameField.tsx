@@ -82,7 +82,7 @@ function DebouncedUsernameField({
         label: twMerge('text-md font-bold text-black', className?.label),
         icon: twMerge(
           typeof valid === 'undefined'
-            ? 'animate-spin bg-transparent py-0!'
+            ? 'py-0! animate-spin bg-transparent'
             : !valid || typeof meta.error !== 'undefined'
               ? 'bg-red-50 text-red-600'
               : 'text-green-600',

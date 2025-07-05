@@ -45,7 +45,7 @@ function Layout({ title, children, quizId, className }: LayoutProps) {
           <Header title={title} />
         </div>
 
-        <div className="mb-12 mt-11 flex flex-col overflow-y-auto p-4 h-[calc(100%-5.75rem)] md:mb-0 md:h-[calc(100%-2.75rem)]">
+        <div className="mb-12 mt-11 flex h-[calc(100%-5.75rem)] flex-col overflow-y-auto p-4 md:mb-0 md:h-[calc(100%-2.75rem)]">
           {children}
         </div>
 

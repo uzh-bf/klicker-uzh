@@ -238,7 +238,7 @@ function GroupActivityDetails() {
                   </div>
                   {instance.results.comment && (
                     <DynamicMarkdown
-                      className={{ root: 'mt-1 p-2 pt-0!' }}
+                      className={{ root: 'pt-0! mt-1 p-2' }}
                       content={instance.results.comment}
                       data={{ cy: 'group-activity-results-comment' }}
                     />

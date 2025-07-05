@@ -229,7 +229,7 @@ function GroupActivityStack({
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'mb-6 mt-3 rounded border-l-4! text-base shadow',
+                      'border-l-4! mb-6 mt-3 rounded text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
                         'border-l-green-500!',
                       correctness === ResponseCorrectnessType.Partial &&
@@ -257,7 +257,7 @@ function GroupActivityStack({
                     </div>
                     {grading.feedback && (
                       <DynamicMarkdown
-                        className={{ root: 'mt-1 p-2 pt-0!' }}
+                        className={{ root: 'pt-0! mt-1 p-2' }}
                         content={grading.feedback}
                       />
                     )}
