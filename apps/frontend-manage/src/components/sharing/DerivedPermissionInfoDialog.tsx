@@ -62,7 +62,7 @@ function DerivedPermissionInfoDialog({
               <>
                 <span className="mb-2">
                   {t('manage.sharing.derivedAccessFor', {
-                    user: info?.permissionUser,
+                    user: info?.permissionUser ?? t('shared.generic.unknown'),
                   })}
                 </span>
                 <ul className="list-inside list-disc">

@@ -31,7 +31,7 @@ function ActivityAnalyticsCharts({
       <div>
         {t.rich('manage.analytics.totalAnsweredElements', {
           activityName: activityName,
-          number: analytics?.numberOfAnswers,
+          number: analytics?.numberOfAnswers ?? 0,
           b: (children) => <span className="font-bold">{children}</span>,
         })}
       </div>

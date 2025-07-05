@@ -71,7 +71,7 @@ function AnswerCollectionViewingModal({
           {loading || !collection ? null : (
             <div className="mb-0.5 hidden text-base font-normal text-gray-500 md:block">
               {t('manage.resources.byOwner', {
-                owner: collection.ownerShortname,
+                owner: collection.ownerShortname ?? t('shared.generic.unknown'),
               })}
             </div>
           )}

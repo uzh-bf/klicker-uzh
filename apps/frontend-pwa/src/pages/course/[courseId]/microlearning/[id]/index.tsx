@@ -148,7 +148,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
-                number: microLearning.stacks?.length,
+                number: microLearning.stacks?.length ?? 0,
               })}
             </div>
           </div>

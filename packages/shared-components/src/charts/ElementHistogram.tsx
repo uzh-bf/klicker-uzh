@@ -301,7 +301,9 @@ function ElementHistogram({
             }}
             error={
               lowerLimit === null || lowerLimit < processedData.domain.min
-                ? t('manage.evaluation.histogramLowerLimitError', { minValue })
+                ? t('manage.evaluation.histogramLowerLimitError', {
+                    minValue: minValue ?? 0,
+                  })
                 : undefined
             }
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -331,7 +333,9 @@ function ElementHistogram({
             }}
             error={
               upperLimit === null || upperLimit > processedData.domain.max
-                ? t('manage.evaluation.histogramUpperLimitError', { maxValue })
+                ? t('manage.evaluation.histogramUpperLimitError', {
+                    maxValue: maxValue ?? 0,
+                  })
                 : upperLimit < processedData.domain.min ||
                     (lowerLimit != null && upperLimit < lowerLimit)
                   ? t('manage.evaluation.histogramRangeError')

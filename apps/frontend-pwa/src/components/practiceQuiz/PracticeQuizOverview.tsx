@@ -87,7 +87,7 @@ function PracticeQuizOverview({
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
-                number: numOfStacks,
+                number: numOfStacks ?? 0,
               })}
             </div>
           </div>

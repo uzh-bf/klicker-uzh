@@ -326,7 +326,7 @@ function Index() {
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length,
+                      total: processedQuestions?.length ?? 0,
                     })}
                   </div>
 

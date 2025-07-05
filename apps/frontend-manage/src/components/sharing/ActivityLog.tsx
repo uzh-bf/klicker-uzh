@@ -225,10 +225,11 @@ function ActivityLog({
                     entry.message ??
                     t(`shared.activity.message${entry.type}`, {
                       username: entry.username,
-                      ...entry.options,
                       field: entry.options?.field
                         ? t(`shared.activity.field${entry.options.field}`)
-                        : undefined,
+                        : '',
+                      oldValue: entry.options?.oldValue ?? '',
+                      newValue: entry.options?.newValue ?? '',
                     })
 
                   return (

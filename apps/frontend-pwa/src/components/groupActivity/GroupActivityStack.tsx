@@ -394,7 +394,7 @@ function GroupActivityStack({
           <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
       ) : null}
-      {!!decisions ? (
+      {!!decisions && submittedAt ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,

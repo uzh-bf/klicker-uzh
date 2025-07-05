@@ -54,7 +54,7 @@ function SELECTIONAnswerOptions({
     <div className="text-base">
       <div className="mb-3">
         {t.rich('shared.questions.seSelectNCorrectOptions', {
-          number: options.numberOfInputs,
+          number: options.numberOfInputs ?? 1,
           b: (text) => <b>{text}</b>,
         })}
       </div>
