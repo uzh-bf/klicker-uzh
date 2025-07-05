@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import { Prose } from '@uzh-bf/design-system'
 import { useEffect, useState } from 'react'
-import TextTransition, { presets } from 'react-text-transition'
+import { animated, useTransition } from 'react-spring'
 
 const TEXTS = ['Standard', 'Catalyst']
 
@@ -17,27 +17,46 @@ function Catalyst() {
 
   useEffect(() => {
     const intervalId = setInterval(
-      () => setIndex((index) => index + 1),
+      () => setIndex((index) => (index + 1) % TEXTS.length),
       3000 // every 3 seconds
     )
     return () => clearTimeout(intervalId)
   }, [])
 
+  // Use useTransition to handle the cycling of texts
+  const transitions = useTransition(index, {
+    from: { opacity: 0, transform: 'translateY(20px)' },
+    enter: { opacity: 1, transform: 'translateY(0px)' },
+    leave: { opacity: 0, transform: 'translateY(-20px)' },
+    config: {
+      tension: 280,
+      friction: 60,
+    },
+  })
+
   return (
     <Layout>
       <div className="px-8 py-24">
         <div className="flex max-w-7xl flex-col items-center text-center md:mx-auto lg:px-8">
-          <h1 className="mt-2 flex w-max flex-row gap-4 md:text-5xl">
+          <h1 className="md:text-5xl! mt-2 flex w-max flex-row gap-4">
             <div>KlickerUZH</div>
-            <div className="flex justify-center">
-              <TextTransition springConfig={presets.wobbly}>
-                <u className="decoration-[#3353b7]">
-                  {TEXTS[index % TEXTS.length]}
-                </u>
-              </TextTransition>
+            <div className="relative flex h-12 items-center justify-center pr-48">
+              {transitions((style, currentIndex) => (
+                <animated.u
+                  style={{
+                    ...style,
+                    left: 0,
+                    position: 'absolute',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="decoration-[#3353b7]"
+                >
+                  {TEXTS[currentIndex]}
+                </animated.u>
+              ))}
             </div>
           </h1>
-          <Prose className={{ root: 'prose-xl w-full max-w-3xl' }}>
+          <Prose className={{ root: 'prose w-full max-w-3xl' }}>
             <p>
               The core components of our KlickerUZH instance are free to use for
               everyone. Advanced functionalities are restricted to users at UZH
