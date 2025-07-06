@@ -99,10 +99,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collection}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collection
     )
@@ -861,15 +861,15 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS.contentEdited)
 
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="cancel-change-collection"]').click()
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="confirm-change-collection"]').click()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collectionEdited

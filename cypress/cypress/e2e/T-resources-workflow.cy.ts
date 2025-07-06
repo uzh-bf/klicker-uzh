@@ -274,7 +274,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
 
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.public.nameNew}"]`
     ).should('exist')
@@ -737,10 +737,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
-    ).click()
+    ).realClick()
   })
 
   it('Verify that restricted answer collection is not visible in resources for user pro2', function () {
@@ -1233,10 +1233,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.public.name}"]`
-    ).click()
+    ).realClick()
   })
 
   it("Verify that the public answer collection is not visible in resources for user 'pro2'", function () {
@@ -2096,10 +2096,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.direct.name}"]`
-    ).click()
+    ).realClick()
   })
 
   it("Cleanup: Remove the shared answer collection from user 'pro1'", function () {

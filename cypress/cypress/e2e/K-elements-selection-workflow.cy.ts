@@ -82,10 +82,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.SE.collection}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collection
     )
@@ -298,10 +298,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
       .clear()
       .type(this.data.SE.explanationEdited)
 
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.SE.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collectionEdited
     )

@@ -165,8 +165,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)

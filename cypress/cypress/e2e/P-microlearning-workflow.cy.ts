@@ -181,8 +181,8 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
@@ -542,8 +542,8 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
     cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-start-date"]').should('contain', startDate2)
     cy.get('[data-cy="select-end-date"]').should('contain', endDate2)
@@ -1459,8 +1459,8 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // continue to the next step and change the default settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
@@ -1841,8 +1841,10 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.manipulation.course}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(
+      `[data-cy="select-course-${this.data.manipulation.course}"]`
+    ).realClick()
     cy.get('[data-cy="select-course"]').contains(this.data.manipulation.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-stack-0"]').contains(

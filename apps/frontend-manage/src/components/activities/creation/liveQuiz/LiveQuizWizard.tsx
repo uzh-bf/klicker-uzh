@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateLiveQuizDocument,
@@ -8,7 +8,6 @@ import {
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
   StartLiveQuizDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -102,11 +101,6 @@ function LiveQuizWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
@@ -183,7 +177,7 @@ function LiveQuizWizard({
     displayName: '',
     description: '',
     blocks: [{ timeLimit: undefined, elements: [] }],
-    courseId: '',
+    courseId: 'no-course-selected',
     multiplier: '1',
     defaultPoints: LQ_DEFAULT_POINTS,
     defaultCorrectPoints: LQ_DEFAULT_CORRECT_POINTS,

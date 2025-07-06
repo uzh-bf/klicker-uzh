@@ -690,8 +690,8 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-course"]')
         .should('exist')
         .contains(messages.manage.activityWizard.liveQuizNoCourse)
-      cy.get('[data-cy="select-course"]').click()
-      cy.get(`[data-cy="select-course-${courseName}"]`).click()
+      cy.get('[data-cy="select-course"]').realClick()
+      cy.get(`[data-cy="select-course-${courseName}"]`).realClick()
       cy.get('[data-cy="select-course"]').contains(courseName)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -853,8 +853,8 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${courseName}"]`).realClick()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -938,8 +938,8 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${courseName}"]`).realClick()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     setDatetime('select-start-date', 'availability-section-header', startDate)
     setDatetime('select-end-date', 'availability-section-header', endDate)
@@ -1008,8 +1008,8 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').realClick()
+    cy.get(`[data-cy="select-course-${courseName}"]`).realClick()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
 
     if (multiplier) {
