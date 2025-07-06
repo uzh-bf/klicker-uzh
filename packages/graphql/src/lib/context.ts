@@ -1,3 +1,4 @@
+import type { Logger } from '@klicker-uzh/logging'
 import {
   Prisma,
   PrismaClient,
@@ -19,6 +20,8 @@ export interface Context extends BaseContext {
   redisExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
+  logger?: Logger
+  correlationId?: string
   user?: {
     sub: string
     role: UserRole

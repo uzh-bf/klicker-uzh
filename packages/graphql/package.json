@@ -78,6 +78,9 @@
     "typescript": "~5.6.3",
     "web-push": "~3.6.7"
   },
+  "peerDependencies": {
+    "@klicker-uzh/logging": "workspace:*"
+  },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s generate build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",

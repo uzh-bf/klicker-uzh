@@ -27,6 +27,38 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 - **i18n**: Internationalization messages (@packages/i18n/CLAUDE.md)
 - **shared-components**: Common React components shared between frontends (@packages/shared-components/CLAUDE.md)
 - **markdown**: React component for rendering markdown strings (@packages/markdown/CLAUDE.md)
+- **logging**: Structured logging infrastructure with environment-aware behavior (@packages/logging/CLAUDE.md)
+
+### Logging Package
+
+The `@klicker-uzh/logging` package provides zero-dependency, high-performance structured logging for the entire platform:
+
+#### Key Features
+
+- **Environment-aware behavior**: Silent in tests, colored output in development, JSON in production
+- **Zero external dependencies**: Only uses Node.js built-ins for security and performance
+- **Correlation ID support**: Built-in distributed tracing across services
+- **Performance**: 0.006ms per log call with 98% test coverage
+- **Child loggers**: Context inheritance for request/operation tracking
+
+#### Usage Example
+
+```typescript
+import { createLogger, generateCorrelationId } from '@klicker-uzh/logging'
+
+// Create logger with correlation ID for distributed tracing
+const logger = createLogger({
+  service: 'my-service',
+  correlationId: generateCorrelationId(),
+})
+
+// Log with structured context
+logger.info('Processing request', { userId: 123, path: '/api/users' })
+
+// Create child logger with additional context
+const requestLogger = logger.child({ requestId: 'req-123' })
+requestLogger.error('Operation failed', { error: error.message })
+```
 
 ### Testing
 
@@ -334,7 +366,31 @@ When using Python:
 
 ### 📎 Style & Conventions
 
-- Prefer functional programming - avoid classes and use pure functions when possible.
+**KlickerUZH Code Style Preferences**:
+
+- **Functional Programming First**: Strongly prefer functional programming over object-oriented approaches
+- **No Classes**: Avoid class-based implementations - use pure functions and functional composition
+- **Immutable State**: State should be created once and passed to functions, not mutated
+- **Explicit Dependencies**: Functions should receive all dependencies as parameters
+- **Pure Functions**: Functions should be side-effect free when possible
+- **Type Safety**: Use comprehensive TypeScript interfaces and strong typing
+- **Modular Design**: Small, focused functions and modules over large, complex files
+
+**Code Organization**:
+
+- Functions over classes in all scenarios
+- State management through functional patterns
+- Dependency injection via function parameters
+- Clear separation of concerns through module boundaries
+
+**Refactoring Guidelines**:
+
+- When encountering class-based code, refactor to functional approach
+- Convert class methods to pure functions
+- Replace instance state with functional state management
+- Extract utility functions that can be independently tested
+- Maintain public API compatibility during refactoring
+
 - Ignore lint errors in Markdown files when it comes to newlines and file structuring.
 
 #### TypeScript

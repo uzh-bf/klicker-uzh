@@ -12,6 +12,7 @@ import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { getLogger } from '../lib/logging.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 
@@ -723,7 +724,18 @@ export async function createParticipantAccount(
         participantToken: jwt,
       }
     } catch (e) {
-      console.error(e)
+      const logger = getLogger(ctx)
+      logger.error(
+        'Failed to perform participant login after LTI account creation',
+        {
+          error:
+            e instanceof Error
+              ? { name: e.name, message: e.message, stack: e.stack }
+              : e,
+          participantId: account.participant.id,
+          hasSignedLtiData: true,
+        }
+      )
       return null
     }
   }
@@ -813,7 +825,17 @@ export async function createParticipantAccount(
       participant,
     }
   } catch (e) {
-    console.error(e)
+    const logger = getLogger(ctx)
+    logger.error('Failed to create participant account', {
+      error:
+        e instanceof Error
+          ? { name: e.name, message: e.message, stack: e.stack }
+          : e,
+      email: email.trim().toLowerCase(),
+      username: username.trim(),
+      hasSignedLtiData: !!signedLtiData,
+      courseId,
+    })
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
       `Failed to create participant account: ${email} with error: ${
@@ -843,7 +865,12 @@ export async function loginParticipantWithLti(
     scope: string
   }
 
-  console.log('ltiData', ltiData)
+  const logger = getLogger(ctx)
+  logger.debug('LTI data decoded', {
+    sub: ltiData.sub,
+    hasEmail: !!ltiData.email,
+    scope: ltiData.scope,
+  })
 
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
@@ -852,7 +879,11 @@ export async function loginParticipantWithLti(
     },
   })
 
-  console.log('account', account)
+  logger.debug('LTI account lookup result', {
+    accountFound: !!account,
+    participantId: account?.participant?.id,
+    ssoId: ltiData.sub,
+  })
 
   // check if there is a participant account already given the email address
   // if so, create a new participant account with the LTI data and new sub
@@ -861,7 +892,11 @@ export async function loginParticipantWithLti(
       where: { email: ltiData.email },
     })
 
-    console.log('existingParticipant', existingParticipant)
+    logger.debug('Existing participant check', {
+      participantFound: !!existingParticipant,
+      email: ltiData.email,
+      participantId: existingParticipant?.id,
+    })
 
     if (!existingParticipant) {
       return null
@@ -908,7 +943,11 @@ export async function loginParticipantWithLti(
       update: {},
     })
 
-    console.log('participation', participation)
+    logger.debug('Course participation created or updated', {
+      courseId,
+      participantId: account.participant.id,
+      participationId: participation.id,
+    })
   }
 
   const jwt = await doParticipantLogin(
