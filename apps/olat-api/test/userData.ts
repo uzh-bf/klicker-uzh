@@ -10,6 +10,7 @@ export interface User {
 
 export interface Course {
   id: string
+  owner: User
   name: string
 }
 
@@ -31,25 +32,30 @@ export const userTwo: User = {
 
 export const courseOne: Course = {
   id: uuidv4(),
+  owner: userOne,
   name: 'Test Course One',
 }
 
 export const courseTwo: Course = {
   id: uuidv4(),
+  owner: userOne,
   name: 'Test Course Two',
 }
 
 export const courseThree: Course = {
   id: uuidv4(),
+  owner: userTwo,
   name: 'Test Course Three',
 }
 
 export const courseFour: Course = {
   id: uuidv4(),
+  owner: userTwo,
   name: 'Test Course Four',
 }
 
 export const courseFive: Course = {
   id: uuidv4(),
+  owner: userTwo,
   name: 'Test Course Five',
 }

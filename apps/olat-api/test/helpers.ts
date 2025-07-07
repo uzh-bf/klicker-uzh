@@ -86,7 +86,6 @@ export async function createElements(
 
 export async function createCourse(
   prisma: PrismaClient,
-  user: User,
   course: Course,
   isGamificationEnabled: boolean
 ) {
@@ -103,7 +102,7 @@ export async function createCourse(
       startDate: defaultStartDate,
       endDate: defaultEndDate,
       groupDeadlineDate: defaultEndDate,
-      ownerId: user.id,
+      ownerId: course.owner.id,
       isGamificationEnabled: isGamificationEnabled,
     },
   })
@@ -111,7 +110,6 @@ export async function createCourse(
 
 export async function createLiveQuiz(
   prisma: PrismaClient,
-  user: User,
   course: Course,
   i: number,
   elements: { id: number; type: ElementType }[]
@@ -122,7 +120,7 @@ export async function createLiveQuiz(
       displayName: `Live Quiz ${i} for ${course.name}`,
       description: '',
       courseId: course.id,
-      ownerId: user.id,
+      ownerId: course.owner.id,
       blocks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -138,7 +136,7 @@ export async function createLiveQuiz(
                 elementData: {} as ElementData,
                 results: {} as ElementInstanceResults,
                 anonymousResults: {} as ElementInstanceResults,
-                ownerId: user.id,
+                ownerId: course.owner.id,
               },
             ],
           },
@@ -150,7 +148,6 @@ export async function createLiveQuiz(
 
 export async function createPracticeQuiz(
   prisma: PrismaClient,
-  user: User,
   course: Course,
   i: number,
   elements: { id: number; type: ElementType }[]
@@ -161,7 +158,7 @@ export async function createPracticeQuiz(
       displayName: `Practice Quiz ${i} for ${course.name}`,
       description: '',
       courseId: course.id,
-      ownerId: user.id,
+      ownerId: course.owner.id,
       stacks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -178,7 +175,7 @@ export async function createPracticeQuiz(
                 elementData: {} as ElementData,
                 results: {} as ElementInstanceResults,
                 anonymousResults: {} as ElementInstanceResults,
-                ownerId: user.id,
+                ownerId: course.owner.id,
               },
             ],
           },
@@ -190,7 +187,6 @@ export async function createPracticeQuiz(
 
 export async function createMicroLearning(
   prisma: PrismaClient,
-  user: User,
   course: Course,
   i: number,
   elements: { id: number; type: ElementType }[]
@@ -203,7 +199,7 @@ export async function createMicroLearning(
       courseId: course.id,
       scheduledStartAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // one week ago
       scheduledEndAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // two weeks in future
-      ownerId: user.id,
+      ownerId: course.owner.id,
       stacks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -220,7 +216,7 @@ export async function createMicroLearning(
                 elementData: {} as ElementData,
                 results: {} as ElementInstanceResults,
                 anonymousResults: {} as ElementInstanceResults,
-                ownerId: user.id,
+                ownerId: course.owner.id,
               },
             ],
           },
@@ -306,29 +302,29 @@ export async function testInitialization(prisma: PrismaClient) {
   const e1 = await createElements(prisma, 2, userOne)
   const e2 = await createElements(prisma, 3, userTwo)
 
-  const c1 = await createCourse(prisma, userOne, courseOne, true)
-  const c2 = await createCourse(prisma, userOne, courseTwo, false)
-  const c3 = await createCourse(prisma, userTwo, courseThree, true)
-  const c4 = await createCourse(prisma, userTwo, courseFour, true)
-  const c5 = await createCourse(prisma, userTwo, courseFive, false)
+  const c1 = await createCourse(prisma, courseOne, true)
+  const c2 = await createCourse(prisma, courseTwo, false)
+  const c3 = await createCourse(prisma, courseThree, true)
+  const c4 = await createCourse(prisma, courseFour, true)
+  const c5 = await createCourse(prisma, courseFive, false)
 
-  const l1 = await createLiveQuiz(prisma, userOne, courseOne, 1, e1)
-  const l2 = await createLiveQuiz(prisma, userOne, courseOne, 2, e1)
-  const l3 = await createLiveQuiz(prisma, userOne, courseOne, 3, e1)
-  const p1 = await createPracticeQuiz(prisma, userOne, courseOne, 1, e1)
-  const p2 = await createPracticeQuiz(prisma, userOne, courseOne, 2, e1)
-  const m1 = await createMicroLearning(prisma, userOne, courseOne, 1, e1)
+  const l1 = await createLiveQuiz(prisma, courseOne, 1, e1)
+  const l2 = await createLiveQuiz(prisma, courseOne, 2, e1)
+  const l3 = await createLiveQuiz(prisma, courseOne, 3, e1)
+  const p1 = await createPracticeQuiz(prisma, courseOne, 1, e1)
+  const p2 = await createPracticeQuiz(prisma, courseOne, 2, e1)
+  const m1 = await createMicroLearning(prisma, courseOne, 1, e1)
 
-  const p3 = await createPracticeQuiz(prisma, userOne, courseTwo, 1, e1)
-  const m2 = await createMicroLearning(prisma, userOne, courseTwo, 1, e1)
-  const m3 = await createMicroLearning(prisma, userOne, courseTwo, 2, e1)
+  const p3 = await createPracticeQuiz(prisma, courseTwo, 1, e1)
+  const m2 = await createMicroLearning(prisma, courseTwo, 1, e1)
+  const m3 = await createMicroLearning(prisma, courseTwo, 2, e1)
 
-  const l4 = await createLiveQuiz(prisma, userTwo, courseThree, 1, e2)
-  const l5 = await createLiveQuiz(prisma, userTwo, courseThree, 2, e2)
-  const p4 = await createPracticeQuiz(prisma, userTwo, courseThree, 1, e2)
-  const m4 = await createMicroLearning(prisma, userTwo, courseThree, 1, e2)
+  const l4 = await createLiveQuiz(prisma, courseThree, 1, e2)
+  const l5 = await createLiveQuiz(prisma, courseThree, 2, e2)
+  const p4 = await createPracticeQuiz(prisma, courseThree, 1, e2)
+  const m4 = await createMicroLearning(prisma, courseThree, 1, e2)
 
-  const l7 = await createLiveQuiz(prisma, userTwo, courseFive, 1, e2)
+  const l7 = await createLiveQuiz(prisma, courseFive, 1, e2)
 }
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data

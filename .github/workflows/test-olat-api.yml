@@ -4,7 +4,7 @@ on:
   push:
     branches: ['v3', 'v3*']
     paths:
-      - 'packages/graphql/**'
+      - 'packages/prisma/**'
       - 'apps/olat-api/**'
       - '.github/workflows/test-olat-api.yml'
   pull_request:

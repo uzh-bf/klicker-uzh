@@ -1,7 +1,8 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import app, { StatusCode } from '../src/index.js'
+import app from '../src/index.js'
+import { StatusCode } from '../src/types.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import {
   Course,
@@ -13,7 +14,12 @@ import {
   userOne,
   userTwo,
 } from './userData.js'
-const API_KEY = process.env.OLAT_API_KEY || '1234567890abcdef'
+
+const API_KEY = process.env.OLAT_API_KEY
+if (!API_KEY) {
+  console.error('Undefined API Key')
+  process.exit(1)
+}
 
 let prisma: PrismaClient
 
@@ -29,28 +35,28 @@ afterAll(async () => {
 })
 
 function getExpectedResponse(
-  nLQ: number,
-  nPQ: number,
-  nML: number,
+  numberLiveQuizzes: number,
+  numberPracticeQuizzes: number,
+  numberMicroLearnings: number,
   isGamificationEnabled: boolean
 ) {
   let response = {
     activityTypes: [
       {
         id: 'LIVE_QUIZZES',
-        title: `Live Quiz Overview (${nLQ})`,
+        title: `Live Quiz Overview (${numberLiveQuizzes})`,
         olatConfigurationKey: 'live-quizzes',
         isSubselectionRequired: false,
       },
       {
         id: 'PRACTICE_QUIZZES',
-        title: `Practice Quiz Overview (${nPQ})`,
+        title: `Practice Quiz Overview (${numberPracticeQuizzes})`,
         olatConfigurationKey: 'practice-quizzes',
         isSubselectionRequired: false,
       },
       {
         id: 'MICRO_LEARNINGS',
-        title: `Micro Learning Overview (${nML})`,
+        title: `Micro Learning Overview (${numberMicroLearnings})`,
         olatConfigurationKey: 'micro-learnings',
         isSubselectionRequired: false,
       },
@@ -68,10 +74,9 @@ function getExpectedResponse(
       },
     ],
     timestamp: '',
-    api: 'olat-api',
   }
 
-  if (nLQ !== 0) {
+  if (numberLiveQuizzes !== 0) {
     response.activityTypes.push({
       id: 'LIVE_QUIZ',
       title: 'Live Quiz',
@@ -79,7 +84,7 @@ function getExpectedResponse(
       isSubselectionRequired: true,
     })
   }
-  if (nPQ !== 0) {
+  if (numberPracticeQuizzes !== 0) {
     response.activityTypes.push({
       id: 'PRACTICE_QUIZ',
       title: 'Practice Quiz',
@@ -87,7 +92,7 @@ function getExpectedResponse(
       isSubselectionRequired: true,
     })
   }
-  if (nML !== 0) {
+  if (numberMicroLearnings !== 0) {
     response.activityTypes.push({
       id: 'MICRO_LEARNING',
       title: 'Micro Learning',
@@ -113,13 +118,6 @@ function getExpectedTitles(n: number, prefix: string, course: Course) {
   )
 }
 
-describe('OLAT-API general', () => {
-  test('/health', async () => {
-    const response = await request(app).get('/')
-    expect(response.status).toBe(StatusCode.SUCCESS)
-  })
-})
-
 describe('OLAT-API /api/configuration/courses', () => {
   test('Valid', async () => {
     const users = [
@@ -131,7 +129,6 @@ describe('OLAT-API /api/configuration/courses', () => {
             { id: courseTwo.id, title: courseTwo.name },
           ],
           timestamp: '',
-          api: 'olat-api',
         },
       },
       {
@@ -143,7 +140,6 @@ describe('OLAT-API /api/configuration/courses', () => {
             { id: courseFive.id, title: courseFive.name },
           ],
           timestamp: '',
-          api: 'olat-api',
         },
       },
     ]
@@ -151,26 +147,35 @@ describe('OLAT-API /api/configuration/courses', () => {
       const providerAccountId = user.user.providerAccountId
 
       const response = await request(app)
-        .get('/api/configuration/courses')
+        .post('/api/configuration/courses')
         .set('X-API-Key', API_KEY)
         .set('Content-Type', 'application/json')
-        .query({ identityMappingIdentifier: providerAccountId })
+        .send({ identityMappingIdentifier: providerAccountId })
       const response_body_expected = user.response
+
       expect(response.status).toBe(StatusCode.SUCCESS)
       expect(response.body).toHaveProperty('courses')
       expect(response.body).toHaveProperty('timestamp')
-      expect(response.body).toHaveProperty('api')
-      expect(response.body.api).toBe(response_body_expected.api)
       expect(response.body.courses).toEqual(response_body_expected.courses)
     })
   })
 
-  test('No courses found', async () => {
-    const response = await request(app)
-      .get('/api/configuration/courses')
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post('/api/configuration/courses')
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
-      .query({ identityMappingIdentifier: 'non-existing-provider-account-id' })
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post('/api/configuration/courses')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
@@ -179,44 +184,36 @@ describe('OLAT-API /api/configuration/courses', () => {
     )
   })
 
-  test('Missing requestParameters', async () => {
-    let response = await request(app)
-      .get('/api/configuration/courses')
-      .set('X-API-Key', API_KEY)
-      .set('Content-Type', 'application/json')
-      .query({})
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
-    expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Missing providerAccountId')
-  })
-
   test('Missing/Invalid API key', async () => {
     let response = await request(app)
-      .get('/api/configuration/courses')
+      .post('/api/configuration/courses')
       .set('X-API-Key', 'invalid-api-key')
       .set('Content-Type', 'application/json')
-      .query({ identityMappingIdentifier: userOne.providerAccountId })
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
     expect(response.status).toBe(StatusCode.UNAUTHORIZED)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid API key')
 
     response = await request(app)
-      .get('/api/configuration/courses')
+      .post('/api/configuration/courses')
       .set('Content-Type', 'application/json')
-      .query({ identityMappingIdentifier: userOne.providerAccountId })
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Missing API key')
   })
 
-  test('Missing Content-Type', async () => {
+  test('Unsupported Content-Type', async () => {
     const response = await request(app)
-      .get('/api/configuration/courses')
+      .post('/api/configuration/courses')
       .set('X-API-Key', API_KEY)
-      .query({ identityMappingIdentifier: userOne.providerAccountId })
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Invalid request headers')
+    expect(response.body.error).toBe('Unsupported content type')
   })
 })
 
@@ -285,14 +282,11 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
         },
       ],
       timestamp: '',
-      api: 'olat-api',
     }
 
     expect(response.status).toBe(StatusCode.SUCCESS)
     expect(response.body).toHaveProperty('activityTypes')
     expect(response.body).toHaveProperty('timestamp')
-    expect(response.body).toHaveProperty('api')
-    expect(response.body.api).toBe(response_body_expected.api)
     expect(response.body.activityTypes).toEqual(
       response_body_expected.activityTypes
     )
@@ -317,14 +311,15 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
     expect(response.body.error).toBe('Missing API key')
   })
 
-  test('Missing Content-Type', async () => {
+  test('Unsupported Content-Type', async () => {
     const response = await request(app)
       .get('/api/configuration/activityTypes')
       .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
 
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Invalid request headers')
+    expect(response.body.error).toBe('Unsupported content type')
   })
 })
 
@@ -333,64 +328,66 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
     const courses = [
       {
         course: courseOne,
-        nLQ: 3,
-        nPQ: 2,
-        nML: 1,
+        numberLiveQuizzes: 3,
+        numberPracticeQuizzes: 2,
+        numberMicroLearnings: 1,
         isGamificationEnabled: true,
       },
       {
         course: courseTwo,
-        nLQ: 0,
-        nPQ: 1,
-        nML: 2,
+        numberLiveQuizzes: 0,
+        numberPracticeQuizzes: 1,
+        numberMicroLearnings: 2,
         isGamificationEnabled: false,
       },
       {
         course: courseThree,
-        nLQ: 2,
-        nPQ: 1,
-        nML: 1,
+        numberLiveQuizzes: 2,
+        numberPracticeQuizzes: 1,
+        numberMicroLearnings: 1,
         isGamificationEnabled: true,
       },
       {
         course: courseFour,
-        nLQ: 0,
-        nPQ: 0,
-        nML: 0,
+        numberLiveQuizzes: 0,
+        numberPracticeQuizzes: 0,
+        numberMicroLearnings: 0,
         isGamificationEnabled: true,
       },
       {
         course: courseFive,
-        nLQ: 1,
-        nPQ: 0,
-        nML: 0,
+        numberLiveQuizzes: 1,
+        numberPracticeQuizzes: 0,
+        numberMicroLearnings: 0,
         isGamificationEnabled: false,
       },
     ]
+
     courses.forEach(async (course) => {
       const courseId = course.course.id
-      const nLQ = course.nLQ
-      const nPQ = course.nPQ
-      const nML = course.nML
+      const numberLiveQuizzes = course.numberLiveQuizzes
+      const numberPracticeQuizzes = course.numberPracticeQuizzes
+      const numberMicroLearnings = course.numberMicroLearnings
       const isGamificationEnabled = course.isGamificationEnabled
 
       let response = await request(app)
-        .get(`/api/configuration/course/${courseId}/activityTypes`)
+        .post(`/api/configuration/course/${courseId}/activityTypes`)
         .set('X-API-Key', API_KEY)
         .set('Content-Type', 'application/json')
+        .send({
+          identityMappingIdentifier: course.course.owner.providerAccountId,
+        })
 
       let response_body_expected = getExpectedResponse(
-        nLQ,
-        nPQ,
-        nML,
+        numberLiveQuizzes,
+        numberPracticeQuizzes,
+        numberMicroLearnings,
         isGamificationEnabled
       )
 
       expect(response.status).toBe(StatusCode.SUCCESS)
       expect(response.body).toHaveProperty('activityTypes')
       expect(response.body).toHaveProperty('timestamp')
-      expect(response.body).toHaveProperty('api')
-      expect(response.body.api).toBe(response_body_expected.api)
       expect(response.body.activityTypes).toEqual(
         response_body_expected.activityTypes
       )
@@ -399,55 +396,97 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
 
   test('Invalid courseId', async () => {
     let response = await request(app)
-      .get('/api/configuration/course/invalid-course-id/activityTypes')
+      .post('/api/configuration/course/invalid-course-id/activityTypes')
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid courseID')
   })
 
-  test('Course not found', async () => {
-    const response = await request(app)
-      .get(
+  test('Course/Account not found', async () => {
+    let response = await request(app)
+      .post(
         '/api/configuration/course/00000000-0000-0000-0000-000000000000/activityTypes'
       )
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
 
     expect(response.status).toBe(StatusCode.NOT_FOUND)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Course not found')
+    expect(response.body.error).toBe('Course or account not found')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: '1234567890@thirdprovider.ch' })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+  })
+
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
   })
 
   test('Missing/Invalid API key', async () => {
     let response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
       .set('X-API-Key', 'invalid-api-key')
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
 
     expect(response.status).toBe(StatusCode.UNAUTHORIZED)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid API key')
 
     response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Missing API key')
   })
 
-  test('Missing Content-Type', async () => {
+  test('Unsupported Content-Type', async () => {
     const response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
       .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
 
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Invalid request headers')
+    expect(response.body.error).toBe('Unsupported content type')
   })
 })
 
@@ -456,21 +495,25 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
     const courses = [
       {
         course: courseOne,
+        owner: userOne,
         activityTypeId: 'live-quiz',
         titles: getExpectedTitles(3, 'Live Quiz', courseOne),
       },
       {
         course: courseOne,
+        owner: userOne,
         activityTypeId: 'practice-quiz',
         titles: getExpectedTitles(2, 'Practice Quiz', courseOne),
       },
       {
         course: courseOne,
+        owner: userOne,
         activityTypeId: 'micro-learning',
         titles: getExpectedTitles(1, 'Micro Learning', courseOne),
       },
       {
         course: courseTwo,
+        owner: userOne,
         activityTypeId: 'live-quiz',
         titles: getExpectedTitles(0, 'Live Quiz', courseTwo),
       },
@@ -534,15 +577,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
       const courseId = course.course.id
       const activityTypeId = course.activityTypeId
       let response = await request(app)
-        .get(`/api/configuration/course/${courseId}/${activityTypeId}`)
+        .post(`/api/configuration/course/${courseId}/${activityTypeId}`)
         .set('X-API-Key', API_KEY)
         .set('Content-Type', 'application/json')
+        .send({
+          identityMappingIdentifier: course.course.owner.providerAccountId,
+        })
 
       expect(response.status).toBe(StatusCode.SUCCESS)
       expect(response.body).toHaveProperty('activityTypes')
       expect(response.body).toHaveProperty('timestamp')
-      expect(response.body).toHaveProperty('api')
-      expect(response.body.api).toBe('olat-api')
       expect(
         response.body.activityTypes.map((activity: any) => activity.title)
       ).toEqual(course.titles)
@@ -565,15 +609,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
       ]
       for (const activityTypeGeneral of activityTypesGeneral) {
         let response = await request(app)
-          .get(`/api/configuration/course/${courseId}/${activityTypeGeneral}`)
+          .post(`/api/configuration/course/${courseId}/${activityTypeGeneral}`)
           .set('X-API-Key', API_KEY)
           .set('Content-Type', 'application/json')
+          .send({
+            identityMappingIdentifier: course.owner.providerAccountId,
+          })
 
         expect(response.status).toBe(StatusCode.SUCCESS)
         expect(response.body).toHaveProperty('activityTypes')
         expect(response.body).toHaveProperty('timestamp')
-        expect(response.body).toHaveProperty('api')
-        expect(response.body.api).toBe('olat-api')
         expect(response.body.activityTypes).toEqual([])
       }
     }
@@ -581,9 +626,10 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
 
   test('Invalid courseId', async () => {
     const response = await request(app)
-      .get('/api/configuration/course/invalid-course-id/live-quiz')
+      .post('/api/configuration/course/invalid-course-id/live-quiz')
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
@@ -592,54 +638,128 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
 
   test('Invalid activityTypeKey', async () => {
     let response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/invalid-activity-type`)
+      .post(`/api/configuration/course/${courseOne.id}/invalid-activity-type`)
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid activityTypeKey')
   })
 
-  test('Course not found', async () => {
-    const response = await request(app)
-      .get(
+  test('Course/Account not found', async () => {
+    let response = await request(app)
+      .post(
         '/api/configuration/course/00000000-0000-0000-0000-000000000000/live-quiz'
       )
       .set('X-API-Key', API_KEY)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
 
     expect(response.status).toBe(StatusCode.NOT_FOUND)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Course not found')
+    expect(response.body.error).toBe('Course or account not found')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: '1234567890@thirdprovider.ch' })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+  })
+
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/invalid-activity-type`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
   })
 
   test('Missing/Invalid API key', async () => {
     let response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
       .set('X-API-Key', 'invalid-api-key')
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
 
     expect(response.status).toBe(StatusCode.UNAUTHORIZED)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Invalid API key')
 
     response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
       .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
 
     expect(response.status).toBe(StatusCode.BAD_REQUEST)
     expect(response.body).toHaveProperty('error')
     expect(response.body.error).toBe('Missing API key')
   })
 
-  test('Missing Content-Type', async () => {
+  test('Unsupported Content-Type', async () => {
     const response = await request(app)
-      .get(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
       .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
 
-    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
     expect(response.body).toHaveProperty('error')
-    expect(response.body.error).toBe('Invalid request headers')
+    expect(response.body.error).toBe('Unsupported content type')
+  })
+
+  describe('OLAT-API general', () => {
+    test('/health', async () => {
+      const response = await request(app).get('/health')
+
+      expect(response.status).toBe(StatusCode.SUCCESS)
+      expect(response.body).toHaveProperty('status')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(response.body.status).toBe('OK')
+    })
+
+    test('Rate Limit', async () => {
+      const requests = []
+
+      for (let i = 0; i < 200; i++) {
+        requests.push(request(app).get('/health'))
+      }
+
+      const responses = await Promise.all(requests)
+
+      const rateLimitedResponses = responses.filter(
+        (r) => r.status === StatusCode.TOO_MANY_REQUESTS
+      )
+
+      // Check rate limit response
+      const rateLimitedResponse = rateLimitedResponses[0]!
+      expect(rateLimitedResponse.body).toHaveProperty('error')
+      expect(rateLimitedResponse.body.error).toBe(
+        'Too many requests, please try again later'
+      )
+    })
   })
 })
