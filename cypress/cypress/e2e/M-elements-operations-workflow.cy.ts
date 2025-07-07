@@ -37,10 +37,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-title"]').type(
       this.data.duplication.title
     )
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.duplication.content)
@@ -1022,16 +1022,16 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog-access-type-filter"]').contains(
       messages.manage.catalog.all
     )
-    cy.get('[data-cy="catalog-access-type-filter"]').click()
-    cy.get('[data-cy="catalog-access-public"]').click()
+    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
+    cy.get('[data-cy="catalog-access-public"]').realClick()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
-    cy.get('[data-cy="catalog-access-type-filter"]').click()
-    cy.get('[data-cy="catalog-access-restricted"]').click()
+    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
+    cy.get('[data-cy="catalog-access-restricted"]').realClick()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get('[data-cy="catalog-access-type-filter"]').click()
-    cy.get('[data-cy="catalog-access-all"]').click()
+    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
+    cy.get('[data-cy="catalog-access-all"]').realClick()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
   })
 
@@ -1100,11 +1100,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST2_SHORTNAME')
-    )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1220,8 +1220,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="permission-level-select"]').realClick()
+    cy.get('[data-cy="permission-level-READ"]').realClick()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1331,18 +1331,18 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_EMAIL')
-    )
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
     cy.get('[data-cy="new-permission-username-or-email"]').clear()
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_EMAIL')
-    )
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1359,8 +1359,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1495,8 +1495,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="permission-level-select"]').realClick()
+    cy.get('[data-cy="permission-level-READ"]').realClick()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1617,11 +1617,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).click()
 
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
-    )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-READ"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1630,11 +1630,11 @@ describe('Create different types of elements (with and without sample solution) 
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
 
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_SHORTNAME')
-    )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1643,11 +1643,11 @@ describe('Create different types of elements (with and without sample solution) 
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
 
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST2_SHORTNAME')
-    )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1847,11 +1847,11 @@ describe('Create different types of elements (with and without sample solution) 
     // grant direct READ permissions to group 1
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
     cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.get(`[data-cy="user-group-${this.data.group1}"]`).realClick()
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-READ"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1865,11 +1865,11 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.noUserGroupSelected
     )
     cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group2}"]`).click()
+    cy.get(`[data-cy="user-group-${this.data.group2}"]`).realClick()
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1883,11 +1883,11 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.noUserGroupSelected
     )
     cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group3}"]`).click()
+    cy.get(`[data-cy="user-group-${this.data.group3}"]`).realClick()
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )

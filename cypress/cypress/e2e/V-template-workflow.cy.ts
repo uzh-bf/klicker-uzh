@@ -766,10 +766,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -800,8 +800,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.catalog.name)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -811,10 +811,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.catalog.name)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -842,8 +842,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').realClick()
+    cy.get('[data-cy="permission-level-READ"]').realClick()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1166,8 +1166,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').realClick()
+    cy.get(
+      `[data-cy="select-course-${this.data.activity1.course}"]`
+    ).realClick()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
@@ -1214,8 +1216,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').realClick()
+    cy.get(
+      `[data-cy="select-course-${this.data.activity1.course}"]`
+    ).realClick()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )

@@ -224,8 +224,8 @@ Cypress.Commands.add(
   ({ objectName, objectType, permissionLevel }: AddObjectToCatalogArgs) => {
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
 
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${objectType}"]`).click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-${objectType}"]`).realClick()
     cy.get('[data-cy="object-type-selection"]').contains(
       messages.shared.types[objectType]
     )
@@ -233,10 +233,10 @@ Cypress.Commands.add(
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
     cy.get('[data-cy="object-access-public"]').should('exist')
-    cy.get(`[data-cy="object-access-${permissionLevel}"]`).click()
+    cy.get(`[data-cy="object-access-${permissionLevel}"]`).realClick()
 
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.findByText(objectName).click()
@@ -893,6 +893,7 @@ function setDatetime(
     .realClick()
     .type(String(datetime.minute))
   cy.get(`[data-cy="${deselectorString}"]`).realClick() // deselect calendar
+  cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
   cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation) // verify correct date
 }
 Cypress.Commands.add('setDatetime', setDatetime)
@@ -945,8 +946,8 @@ Cypress.Commands.add(
     setDatetime('select-end-date', 'availability-section-header', endDate)
 
     if (multiplier) {
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -1013,8 +1014,8 @@ Cypress.Commands.add(
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
 
     if (multiplier) {
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
@@ -1033,10 +1034,10 @@ Cypress.Commands.add(
     // Step 4: Clues
     cy.wrap(clues).each((clue: GroupActivityClueType) => {
       cy.get('[data-cy="add-group-activity-clue"]').click()
-      cy.get('[data-cy="group-activity-clue-type"]').click()
+      cy.get('[data-cy="group-activity-clue-type"]').realClick()
       cy.get(
         `[data-cy="group-activity-clue-type-${clue.type === 'text' ? 'string' : 'number'}"]`
-      ).click()
+      ).realClick()
       cy.get('[data-cy="group-activity-clue-name"]').click().type(clue.name)
       cy.get('[data-cy="group-activity-clue-display-name"]')
         .click()
