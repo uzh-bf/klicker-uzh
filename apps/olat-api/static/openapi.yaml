@@ -22,28 +22,6 @@ security:
   - apiKey: []
 
 paths:
-  /:
-    get:
-      summary: Root endpoint
-      description: Returns a message indicating the API server is running.
-      tags:
-        - General
-      security: []
-      responses:
-        '200':
-          description: Server is running.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: OLAT API server
-                    description: Message indicating the server is running.
-                required:
-                  - message
-
   /health:
     get:
       summary: Health check
@@ -60,7 +38,7 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
 
   /api/configuration/courses:
-    get:
+    post:
       summary: Get user courses
       description: Retrieves all courses associated with a user based on their provider account.
       tags:
@@ -91,10 +69,6 @@ paths:
                     format: date-time
                     example: '2024-01-01T12:00:00.000Z'
                     description: Timestamp of the response (as defined by RFC 3339, section 5.6).
-                  api:
-                    type: string
-                    example: olat-api
-                    description: API name.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -132,10 +106,7 @@ paths:
                     format: date-time
                     example: '2024-01-01T12:00:00.000Z'
                     description: Timestamp of the response (as defined by RFC 3339, section 5.6).
-                  api:
-                    type: string
-                    example: olat-api
-                    description: API name.
+
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -148,7 +119,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   /api/configuration/course/{courseID}/activityTypes:
-    get:
+    post:
       summary: Get course activity types
       description: Returns activity types available for a specific course, including counts and availability based on course settings.
       tags:
@@ -173,10 +144,7 @@ paths:
                     format: date-time
                     example: '2024-01-01T12:00:00.000Z'
                     description: Timestamp of the response (as defined by RFC 3339, section 5.6).
-                  api:
-                    type: string
-                    example: olat-api
-                    description: API name.
+
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -191,7 +159,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   /api/configuration/course/{courseID}/{activityTypeKey}:
-    get:
+    post:
       summary: Get activities of type
       description: Returns specific activities of a given type within a course. For activity types that require subselection, it returns a list of available activities. For general activity types, it returns an empty array.
       tags:
@@ -217,10 +185,7 @@ paths:
                     format: date-time
                     example: '2024-01-01T12:00:00.000Z'
                     description: Timestamp of the response (as defined by RFC 3339, section 5.6).
-                  api:
-                    type: string
-                    example: olat-api
-                    description: API name.
+
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -381,18 +346,33 @@ components:
 
   responses:
     BadRequest:
-      description: Malformed request (missing/invalid parameters or missing API key)
+      description: Malformed request
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
             missingApiKey:
-              value: Missing API key
-            missingParameter:
-              value: Missing providerAccountId
-            invalidHeaders:
-              value: Invalid request headers
+              value: 
+                error: Missing API key
+            missingProviderAccountId:
+              value: 
+                error: Missing providerAccountId
+            missingCourseID:
+              value: 
+                error: Missing courseID
+            missingActivityTypeKey:
+              value: 
+                error: Missing activityTypeKey
+            invalidCourseID:
+              value: 
+                error: Invalid courseID
+            invalidActivityTypeKey:
+              value: 
+                error: Invalid activityTypeKey
+            failedToExtractProvider:
+              value: 
+                error: Extraction of provider from providerAccountId failed
 
     Unauthorized:
       description: Invalid API key
@@ -402,7 +382,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           examples: 
             invalidApiKey:
-              value: Invalid API key
+              value: 
+                error: Invalid API key
 
     NotFound:
       description: Not Found
@@ -412,19 +393,22 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           examples: 
             CoursesOfUserNotFound:
-              value: No courses found for this user
+              value: 
+                error:  No courses found for this user
             CourseNotFound:
-              value: Course not found
+              value: 
+                error: Course not found
     
     UnsupportedMediaType:
-      description: Invalid Content-Type header
+      description: Unsupported Content-Type
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
             unsupportedMediaType:
-              value: Invalid request headers
+              value: 
+                error: Unsupported content type
 
     TooManyRequests:
       description: Rate limit exceeded
@@ -434,7 +418,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
             tooManyRequests:
-              value: Too many requests, please try again later
+              value: 
+                error: Too many requests, please try again later
 
     InternalServerError:
       description: Internal server error
@@ -444,7 +429,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           examples:
             internalServerError:
-              value: Internal server error
+              value: 
+                error: Internal server error
 
 tags:
   - name: General
