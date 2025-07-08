@@ -20,11 +20,11 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -3291,7 +3291,9 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="create-temporary-pseudonym"]').click()
           cy.get('[data-cy="cancel-define-pseudonym"]').click()
           cy.get('[data-cy="create-temporary-pseudonym"]').click()
-          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym)
+          cy.get('[data-cy="pseudonym-input"]')
+            .click()
+            .type(data.modes.pseudonym)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="cancel-choose-avatar"]').click()
           cy.get('[data-cy="pseudonym-input"]').should(
@@ -3305,6 +3307,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-next"]').click().click()
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+          cy.wait(2000) // wait for toast to disappear
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3333,6 +3336,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+          cy.wait(2000) // wait for toast to disappear
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
