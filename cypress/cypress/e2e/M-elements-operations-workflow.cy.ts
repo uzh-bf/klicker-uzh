@@ -1022,13 +1022,22 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog-access-type-filter"]').contains(
       messages.manage.catalog.all
     )
-    cy.selectOption('[data-cy="catalog-access-type-filter"]', 'public')
+    cy.selectOption(
+      '[data-cy="catalog-access-type-filter"]',
+      messages.manage.catalog.accessPUBLIC
+    )
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
-    cy.selectOption('[data-cy="catalog-access-type-filter"]', 'restricted')
+    cy.selectOption(
+      '[data-cy="catalog-access-type-filter"]',
+      messages.manage.catalog.accessRESTRICTED
+    )
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.selectOption('[data-cy="catalog-access-type-filter"]', 'all')
+    cy.selectOption(
+      '[data-cy="catalog-access-type-filter"]',
+      messages.manage.catalog.all
+    )
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
   })
 
