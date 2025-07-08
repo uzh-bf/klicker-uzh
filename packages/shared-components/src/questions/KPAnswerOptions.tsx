@@ -48,7 +48,7 @@ export function KPAnswerOptions({
               !hideFeedbacks &&
                 feedbacks &&
                 feedbacks[choice.ix] &&
-                '!rounded-b-none'
+                'rounded-b-none!'
             )}
             data-cy="kp-answer-options"
           >
@@ -57,7 +57,7 @@ export function KPAnswerOptions({
                 withProse
                 content={choice.value}
                 className={{
-                  root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
+                  root: 'prose-p:m-0! prose-img:m-0! max-w-none p-1 pt-2',
                 }}
               />
             </div>
@@ -65,7 +65,7 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'h-9 w-9 border-slate-400 !p-0',
+                    'p-0! h-9 w-9 border-slate-400',
                     disabled && 'bg-accent disabled:opacity-90',
                     value?.[choice.ix] === true &&
                       'bg-primary-20 border-primary-100 hover:bg-primary-20'

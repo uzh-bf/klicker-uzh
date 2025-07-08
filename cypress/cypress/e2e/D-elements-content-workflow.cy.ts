@@ -30,18 +30,18 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CONTENT.typeLabel)
     cy.get('[data-cy="insert-question-title"]').type(this.data.CT.title)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.DRAFT.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.CT.content)
@@ -82,10 +82,10 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.CT.titleEdited)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()

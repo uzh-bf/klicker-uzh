@@ -141,8 +141,8 @@ function PerformanceRates({
 
       {entries.length > 0 ? (
         <div className="relative">
-          <ErrorRatesLegend colors={chartColors} />
-          <div className="flex flex-col pt-6">
+          <div className="flex flex-col">
+            <ErrorRatesLegend colors={chartColors} />
             {entries.length > 0
               ? entries.map((progress) => (
                   <PerformanceRatesBarChart

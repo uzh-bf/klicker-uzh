@@ -54,7 +54,7 @@ function CourseArchiveModal({
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}
       dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
-      className={{ content: 'max-w-[30rem]' }}
+      className={{ content: 'max-w-120' }}
     >
       <UserNotification
         type="warning"

@@ -57,7 +57,7 @@ function TokenGeneration() {
                 </a>
               </Link>
             ),
-            displayLink: process.env.NEXT_PUBLIC_CONTROL_URL,
+            displayLink: process.env.NEXT_PUBLIC_CONTROL_URL!,
           })}
         </div>
         <Button

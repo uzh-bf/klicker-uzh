@@ -225,10 +225,11 @@ function ActivityLog({
                     entry.message ??
                     t(`shared.activity.message${entry.type}`, {
                       username: entry.username,
-                      ...entry.options,
                       field: entry.options?.field
                         ? t(`shared.activity.field${entry.options.field}`)
-                        : undefined,
+                        : '',
+                      oldValue: entry.options?.oldValue ?? '',
+                      newValue: entry.options?.newValue ?? '',
                     })
 
                   return (
@@ -237,9 +238,7 @@ function ActivityLog({
                       className="flex flex-row items-center py-0.5 text-xs text-slate-500"
                       data-cy={`activity-log-entry-${entryMeesage}`}
                     >
-                      <div className="flex-grow break-words">
-                        {entryMeesage}
-                      </div>
+                      <div className="grow break-words">{entryMeesage}</div>
                       <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
                         {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
                         {entry.isEdited && ' (edited)'}

@@ -65,7 +65,7 @@ function StudentElementPreview({
           <H3>{t('shared.generic.explanation')}</H3>
           <Markdown
             className={{
-              root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+              root: 'prose prose-p:m-0! prose-img:m-0! leading-6',
             }}
             content={values.explanation}
           />
@@ -85,7 +85,7 @@ function StudentElementPreview({
                 {choice.feedback ? (
                   <Markdown
                     className={{
-                      root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                      root: 'prose prose-p:m-0! prose-img:m-0! leading-6',
                     }}
                     content={choice.feedback}
                   />

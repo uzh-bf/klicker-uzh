@@ -24,7 +24,7 @@ function DelegatedAccessCreationModal({
       open
       title={t('manage.settings.confirmDelegatedAccess')}
       onClose={onClose}
-      className={{ content: 'h-max !min-h-[10rem] max-w-[35rem] !pb-1' }}
+      className={{ content: 'min-h-40! max-w-140 pb-1! h-max' }}
     >
       <div>{t('manage.settings.confirmDelegatedAccessTooltip')}</div>
       <div className="my-2 w-max rounded-lg border px-3 py-2 shadow-sm">

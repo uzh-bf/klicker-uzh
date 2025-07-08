@@ -34,7 +34,7 @@ function ActivityConfirmationModal({
     <Modal
       open
       onClose={onClose}
-      className={{ content: '!w-full max-w-[50rem]' }}
+      className={{ content: 'w-full! max-w-200' }}
       title={title}
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={submitting}

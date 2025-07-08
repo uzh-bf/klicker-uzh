@@ -114,7 +114,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                     tooltip={t('manage.elements.caseStudyCriteriaNameTooltip')}
                     className={{
                       root: 'mb-2 w-full',
-                      tooltip: 'max-w-[30rem]',
+                      tooltip: 'max-w-120',
                     }}
                     maxLength={100}
                     data={{ cy: `criterion-${index}-name` }}
@@ -134,7 +134,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         )}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-min` }}
                       />
@@ -149,7 +149,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         )}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-max` }}
                       />
@@ -164,7 +164,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         )}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-step` }}
                       />
@@ -178,7 +178,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         )}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         maxLength={10}
                         data={{ cy: `criterion-${index}-unit` }}
@@ -201,7 +201,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         maxLength={100}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-min-label` }}
                       />
@@ -217,7 +217,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         maxLength={100}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-mid-label` }}
                       />
@@ -234,7 +234,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         maxLength={100}
                         className={{
                           root: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-max-label` }}
                       />
@@ -256,7 +256,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         )}
                         className={{
                           field: 'w-full',
-                          tooltip: 'max-w-[30rem]',
+                          tooltip: 'max-w-120',
                         }}
                         data={{ cy: `criterion-${index}-steps` }}
                         onChange={(newValue) => {

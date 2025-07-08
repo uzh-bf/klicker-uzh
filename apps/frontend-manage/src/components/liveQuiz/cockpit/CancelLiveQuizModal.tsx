@@ -5,7 +5,6 @@ import {
   GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
@@ -32,11 +31,6 @@ function CancelLiveQuizModal({
 }) {
   const router = useRouter()
   const t = useTranslations()
-
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
 
   const initialConfirmations: LiveQuizAbortionConfirmationType = {
     deleteResponses: false,
@@ -125,7 +119,7 @@ function CancelLiveQuizModal({
         setConfirmations({ ...initialConfirmations })
       }}
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
-      className={{ content: 'max-w-[60rem]' }}
+      className={{ content: 'max-w-240' }}
     >
       {queryLoading || !summary ? (
         <Loader />

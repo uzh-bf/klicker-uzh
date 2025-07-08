@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic'
 import React from 'react'
+import { CustomSegmentLabelPosition } from 'react-d3-speedometer'
 
 // HACK: ensure that the react-d3-speedometer is not loaded on SSR
 const ReactSpeedometer = dynamic(() => import('react-d3-speedometer'), {
@@ -26,7 +27,7 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
             {
               text: labels.min,
               // @ts-ignore
-              position: 'OUTSIDE',
+              position: CustomSegmentLabelPosition.Outside,
               color: '#000000',
             },
             {
@@ -36,7 +37,7 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
             {
               text: labels.mid,
               // @ts-ignore
-              position: 'OUTSIDE',
+              position: CustomSegmentLabelPosition.Outside,
               color: '#000000',
             },
             {
@@ -46,7 +47,7 @@ function ConfusionSection({ runningValue, labels }: Props): React.ReactElement {
             {
               text: labels.max,
               // @ts-ignore
-              position: 'OUTSIDE',
+              position: CustomSegmentLabelPosition.Outside,
               color: '#000000',
             },
           ]}

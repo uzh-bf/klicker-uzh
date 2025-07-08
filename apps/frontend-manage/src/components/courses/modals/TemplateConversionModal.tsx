@@ -96,7 +96,7 @@ function TemplateConversionModal({
         activityType: t(`shared.types.${activityType}`),
       })}
       onClose={handleModalClose}
-      className={{ content: 'gap-2 pb-2 lg:w-[55rem]' }}
+      className={{ content: 'lg:w-220 gap-2 pb-2' }}
       dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik

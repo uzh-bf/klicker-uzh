@@ -33,7 +33,7 @@ function ChoicesOptions({
   inputsDisabled,
   values,
   setFieldValue,
-}: ChoicesOptionsProps): JSX.Element {
+}: ChoicesOptionsProps) {
   const t = useTranslations()
 
   return (

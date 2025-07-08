@@ -75,7 +75,7 @@ function EditorField({
             ...className?.input,
             root: twMerge('w-full', className?.input?.root),
             editor: twMerge(
-              'h-16 overflow-y-auto !leading-5',
+              'leading-5! h-16 overflow-y-auto',
               className?.input?.editor
             ),
             content: twMerge('pb-1', className?.input?.content),

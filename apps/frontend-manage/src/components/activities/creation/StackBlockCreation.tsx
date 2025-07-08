@@ -121,7 +121,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={t('manage.activityWizard.stackFTQuestionsNoSL')}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faWarning}
@@ -137,7 +137,7 @@ function StackBlockCreation({
               <Tooltip
                 tooltip={<StackCreationErrors errors={error[stackIx]} />}
                 delay={0}
-                className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+                className={{ tooltip: 'max-w-120 z-20 text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -149,7 +149,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faCircleExclamation}

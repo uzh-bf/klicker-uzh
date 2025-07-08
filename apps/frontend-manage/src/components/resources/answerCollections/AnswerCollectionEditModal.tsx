@@ -178,7 +178,7 @@ function AnswerCollectionEditModal({
                 icon={faSearch}
                 placeholder={t('manage.resources.searchAnswerOptions')}
                 data={{ cy: 'search-answer-options' }}
-                className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
+                className={{ field: 'mb-2 w-full', input: 'pl-8! h-8 text-sm' }}
               />
               <div className="my-2 flex max-h-[calc(100vh-35rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-29rem)] lg:max-h-[calc(100vh-26rem)]">
                 {filteredEntries.length === 0 ? (

@@ -94,7 +94,7 @@ function AudienceInteraction({
           'flex w-full flex-col gap-2 md:flex-row md:items-start md:gap-8'
         )}
       >
-        <div className="flex flex-grow flex-col gap-4 md:w-2/3">
+        <div className="flex grow flex-col gap-4 md:w-2/3">
           <div className="flex flex-row flex-wrap items-end justify-between print:hidden">
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
@@ -356,9 +356,9 @@ function AudienceInteraction({
               }}
             />
           </div>
-          <div className="flex-1 flex-shrink rounded border p-4 md:max-h-[31rem] print:hidden">
+          <div className="md:max-h-124 flex-1 shrink rounded border p-4 print:hidden">
             {isConfusionFeedbackEnabled ? (
-              // <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-[31rem]">
+              // <div className="flex-initial mx-auto md:mt-4 p-4 w-[300px] sm:w-[600px] lg:w-[300px] bg-primary-bg rounded shadow print:hidden border-primary border-solid border md:max-h-124">
               <ConfusionCharts confusionValues={confusionValues} />
             ) : (
               // </div>

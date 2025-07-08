@@ -122,7 +122,7 @@ function UserGroupCreationForm({
                 <div className="space-y-2">
                   {values.members.map((_, index) => (
                     <div key={index} className="flex space-x-2">
-                      <div className="flex-grow">
+                      <div className="grow">
                         <FormikTextField
                           required={index === 0}
                           name={`members.${index}.shortnameOrEmail`}

@@ -150,7 +150,7 @@ function SuspendedFirstLoginModal() {
                   unavailableMessage={t('shared.generic.usernameAvailability')}
                   className={{
                     root: 'w-[250px] md:w-max',
-                    input: 'bg-white !pl-8',
+                    input: 'pl-8! bg-white',
                     icon: 'bg-transparent',
                   }}
                   data={{ cy: 'first-login-shortname' }}
@@ -174,7 +174,7 @@ function SuspendedFirstLoginModal() {
                   labelLeft
                   label={t('manage.settings.emailUpdates')}
                   tooltip={t('manage.settings.emailUpdatesTooltip')}
-                  className={{ tooltip: 'max-w-[20rem] md:max-w-[35rem]' }}
+                  className={{ tooltip: 'md:max-w-140 max-w-80' }}
                 />
               </div>
               {showGenericError && (

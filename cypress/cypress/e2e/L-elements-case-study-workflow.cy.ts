@@ -71,10 +71,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CASE_STUDY.typeLabel)
@@ -83,10 +83,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     // enter question data
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.CS.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.CS.content)
@@ -99,10 +99,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collection}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collection
     )
@@ -861,15 +861,15 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS.contentEdited)
 
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="cancel-change-collection"]').click()
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="confirm-change-collection"]').click()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collectionEdited
@@ -1248,10 +1248,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   // #region
   it('Create a case study question with inline answer collection', function () {
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CASE_STUDY.typeLabel)
@@ -1262,10 +1262,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .click()
       .type(this.data.CS_INLINE.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.CS_INLINE.content)

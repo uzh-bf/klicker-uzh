@@ -1,10 +1,10 @@
 import {
   QueryRef,
+  SubscribeToMoreFunction,
   useMutation,
   useReadQuery,
   useSuspenseQuery,
 } from '@apollo/client'
-import { SubscribeToMoreFunction } from '@apollo/client/react/hooks/useSuspenseQuery'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
   AddMessageToGroupDocument,

@@ -54,14 +54,14 @@ function SELECTIONAnswerOptions({
     <div className="text-base">
       <div className="mb-3">
         {t.rich('shared.questions.seSelectNCorrectOptions', {
-          number: options.numberOfInputs,
+          number: options.numberOfInputs ?? 1,
           b: (text) => <b>{text}</b>,
         })}
       </div>
       <div
         className={twMerge(
           'grid grid-cols-1 gap-y-2',
-          !preview && 'md:grid-cols-2 md:gap-x-6 lg:grid-cols-3'
+          !preview && 'md:grid-cols-2 md:gap-x-6'
         )}
       >
         {Object.entries(responses).map(([inputIndex, selectedValue], ix) => {

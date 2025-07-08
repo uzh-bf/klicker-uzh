@@ -100,7 +100,7 @@ function CourseDeletionModal({
         onClose()
         setConfirmations({ ...initialConfirmations })
       }}
-      className={{ content: '!w-full max-w-[60rem]' }}
+      className={{ content: 'w-full! max-w-240' }}
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"

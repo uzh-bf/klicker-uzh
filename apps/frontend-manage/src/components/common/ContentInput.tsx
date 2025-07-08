@@ -158,7 +158,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'prose prose-sm prose-blockquote:text-gray-500 max-w-none leading-6 focus:!outline-none',
+              'prose prose-sm prose-blockquote:text-gray-500 focus:outline-none! max-w-none leading-6',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -390,7 +390,7 @@ function ContentInput({
       {isImageDropzoneOpen && (
         <div
           className={twMerge(
-            'absolute z-10 flex w-full flex-col rounded-b-md border-2 !border-t-0 border-solid bg-white md:flex-row',
+            'border-t-0! absolute z-10 flex w-full flex-col rounded-b-md border-2 border-solid bg-white md:flex-row',
             showToolbarOnFocus && 'hidden group-focus-within:flex'
           )}
         >

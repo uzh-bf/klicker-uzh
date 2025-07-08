@@ -1,7 +1,6 @@
 import { ActivityProgress, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { H2, H4, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Legend } from 'recharts'
 import StackedProgress from './StackedProgress'
 
 function ActivityProgressPlot({
@@ -26,26 +25,44 @@ function ActivityProgressPlot({
   }
 
   const ProgressLegend = () => (
-    <Legend
-      payload={[
-        {
-          value: t('manage.analytics.started'),
-          color: chartColors.started,
-          type: 'rect',
-        },
-        {
-          value: t('manage.analytics.completed'),
-          color: chartColors.completed,
-          type: 'rect',
-        },
-        {
-          value: t('manage.analytics.repeated'),
-          color: chartColors.repeated,
-          type: 'rect',
-        },
-      ]}
-      wrapperStyle={{ bottom: 0, right: 0 }}
-    />
+    <div className="ml-auto flex flex-row gap-4 pt-1">
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: chartColors.started,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.started')}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: chartColors.completed,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.completed')}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: chartColors.repeated,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.repeated')}</span>
+      </div>
+    </div>
   )
 
   return (

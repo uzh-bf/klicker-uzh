@@ -79,7 +79,7 @@ function EmbeddingModal({
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
         />
-        <div className="mb-3 pl-[3.75rem] text-sm">
+        <div className="pl-15 mb-3 text-sm">
           {t('manage.evaluation.showSolutionInfo')}
         </div>
         <Switch
@@ -88,7 +88,7 @@ function EmbeddingModal({
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
         />
-        <div className="pl-[3.75rem] text-sm">
+        <div className="pl-15 text-sm">
           {t('manage.evaluation.showExplanationInfo')}
         </div>
       </div>

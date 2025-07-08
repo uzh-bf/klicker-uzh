@@ -49,7 +49,7 @@ function LiveQuizTemplateSubmissionButton({
     return (
       <Tooltip
         tooltip={t('manage.template.templateInputsIncomplete')}
-        className={{ tooltip: 'z-20 max-w-[30rem]' }}
+        className={{ tooltip: 'max-w-120 z-20' }}
       >
         <SubmissionButton disabled loading={loading} onSubmit={onSubmit} />
       </Tooltip>

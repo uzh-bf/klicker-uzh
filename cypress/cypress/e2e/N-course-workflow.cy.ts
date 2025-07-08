@@ -1558,11 +1558,13 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-share-button"]').click()
 
     // share the course with READ permissions with user pro1
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1571,7 +1573,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
@@ -1581,11 +1583,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
 
     // share the course with EXECUTE permissions with user pro2
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsEXECUTE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-EXECUTE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsEXECUTE
     )
@@ -1594,7 +1598,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
@@ -1604,11 +1608,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
 
     // share the course with WRITE permissions with user pro3
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST2_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1617,7 +1623,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
@@ -1627,11 +1633,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
 
     // share the course with WRITE permissions with user pro4 (with propagation)
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST3_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST3_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1641,7 +1649,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`)
       .should('exist')
@@ -1651,11 +1659,13 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'checked')
 
     // share the course with ADMIN permissions with user pro5
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST4_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST4_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1664,7 +1674,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`)
       .should('exist')
@@ -1710,8 +1720,8 @@ describe('Test course creation and editing functionalities', function () {
     ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
-    ).click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    ).realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsWRITE)
@@ -1875,14 +1885,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).click()
+    cy.selectOption(
+      '[data-cy="new-permission-user-group"]',
+      this.data.sharing.group1
+    )
     cy.get('[data-cy="new-permission-user-group"]').contains(
       this.data.sharing.group1
     )
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1891,7 +1905,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -1903,14 +1917,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).click()
+    cy.selectOption(
+      '[data-cy="new-permission-user-group"]',
+      this.data.sharing.group2
+    )
     cy.get('[data-cy="new-permission-user-group"]').contains(
       this.data.sharing.group2
     )
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-EXECUTE"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsEXECUTE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsEXECUTE
     )
@@ -1919,7 +1937,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsEXECUTE)
@@ -1931,14 +1949,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).click()
+    cy.selectOption(
+      '[data-cy="new-permission-user-group"]',
+      this.data.sharing.group3
+    )
     cy.get('[data-cy="new-permission-user-group"]').contains(
       this.data.sharing.group3
     )
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1947,7 +1969,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -1959,14 +1981,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).click()
+    cy.selectOption(
+      '[data-cy="new-permission-user-group"]',
+      this.data.sharing.group4
+    )
     cy.get('[data-cy="new-permission-user-group"]').contains(
       this.data.sharing.group4
     )
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1976,7 +2002,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -1988,14 +2014,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.sharing.group5}"]`).click()
+    cy.selectOption(
+      '[data-cy="new-permission-user-group"]',
+      this.data.sharing.group5
+    )
     cy.get('[data-cy="new-permission-user-group"]').contains(
       this.data.sharing.group5
     )
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -2004,7 +2034,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -2047,8 +2077,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`).contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get(`[data-cy="permission-level-${this.data.sharing.group5}"]`).click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get(
+      `[data-cy="permission-level-${this.data.sharing.group5}"]`
+    ).realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`).contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -2141,11 +2173,13 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-share-button"]').click()
 
     // share the course with ADMIN permissions with user pro1
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -2154,7 +2188,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)

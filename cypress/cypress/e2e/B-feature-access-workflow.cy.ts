@@ -66,18 +66,18 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     if (privatePreview) {
       cy.get(
         `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-      ).click()
+      ).realClick()
     } else {
       cy.get(
         `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
       ).should('not.exist')
       cy.get(
         `[data-cy="select-question-type-${messages.shared.SC.typeLabel}"]`
-      ).click()
+      ).realClick()
     }
     cy.get('[data-cy="close-element-modal"]').click()
 
