@@ -6,22 +6,46 @@ import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
 
-// Command for reliable select interactions
+// Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
-  // Use realClick from cypress-real-events for better reliability
-  cy.get(selector).realClick()
+  // Use cypress-real-events which handles pointer events properly
+  cy.get(selector).should('be.visible').should('not.be.disabled').realClick()
 
-  // Wait for portal content if using RadixUI
+  // Wait for dropdown to open - check multiple possible selectors
   cy.get('body').then(($body) => {
-    if ($body.find('[data-radix-portal]').length > 0) {
-      cy.get('[data-radix-portal]').should('be.visible')
+    const portalSelectors = [
+      '[data-radix-portal]',
+      '[data-radix-popper-content-wrapper]',
+      '[role="listbox"]',
+      '.select-content', // Add your app's specific classes
+      '[data-cy*="select-"][data-cy*="content"]',
+    ]
+
+    // Find which portal selector exists
+    let foundPortal = false
+    for (const selector of portalSelectors) {
+      if ($body.find(selector).length > 0) {
+        cy.get(selector).should('be.visible')
+        foundPortal = true
+        break
+      }
+    }
+
+    // If no portal found, just continue (might be a native select)
+    if (!foundPortal) {
+      cy.log('No portal element found, continuing...')
     }
   })
 
-  // Select the option
-  cy.contains('[role="option"], [data-radix-select-item]', optionText)
-    .should('be.visible')
-    .click()
+  // Find and click the option with multiple possible selectors
+  const optionSelectors = [
+    `[data-cy*="select-"][data-cy*="${optionText}"]`,
+    `[data-cy*="select-"] :contains("${optionText}")`,
+    `[role="option"]:contains("${optionText}")`,
+    `[data-radix-select-item]:contains("${optionText}")`,
+  ]
+
+  cy.get(optionSelectors.join(', ')).filter(':visible').first().click()
 })
 
 Cypress.Commands.add('seed', () => {
