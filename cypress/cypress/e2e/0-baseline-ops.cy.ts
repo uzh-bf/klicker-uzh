@@ -13,11 +13,11 @@ describe('Test fundamental UI interactions and baseline operations', function ()
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ========================================================================
   // BASIC UI INTERACTION TESTS
