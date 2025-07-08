@@ -80,6 +80,9 @@ backendGraphql:
   sentryEnv: production
   sentryDSN: '${SENTRY_DSN}'
 
+olatApi:
+  key: '${OLAT_API_KEY}'
+
 lti:
   replicaCount: 4
 
