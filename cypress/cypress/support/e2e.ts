@@ -33,31 +33,50 @@ Cypress.on('window:before:load', (win) => {
     }
   `
   win.document.head.appendChild(style)
-})
 
-// Mock PointerEvent for RadixUI compatibility
-export class MockPointerEvent extends Event {
-  button: number | undefined
-  ctrlKey: boolean | undefined
-  pointerType: string = 'mouse'
-  pointerId: number = 1
+  // Only polyfill PointerEvent if it's being used by RadixUI
+  // This implementation avoids the constructor issue
+  if (
+    !win.PointerEvent ||
+    win.PointerEvent.toString().includes('[native code]')
+  ) {
+    // Create a proper PointerEvent polyfill
+    class PointerEventPolyfill extends win.MouseEvent {
+      public pointerId: number
+      public width: number
+      public height: number
+      public pressure: number
+      public tangentialPressure: number
+      public tiltX: number
+      public tiltY: number
+      public twist: number
+      public pointerType: string
+      public isPrimary: boolean
 
-  constructor(type: string, props: PointerEventInit | undefined) {
-    super(type, props)
-    if (props) {
-      if (props.button != null) this.button = props.button
-      if (props.ctrlKey != null) this.ctrlKey = props.ctrlKey
-      if (props.pointerId != null) this.pointerId = props.pointerId
-      if (props.pointerType != null) this.pointerType = props.pointerType
+      constructor(type: string, params: PointerEventInit = {}) {
+        super(type, params)
+        this.pointerId = params.pointerId || 0
+        this.width = params.width || 1
+        this.height = params.height || 1
+        this.pressure = params.pressure || 0
+        this.tangentialPressure = params.tangentialPressure || 0
+        this.tiltX = params.tiltX || 0
+        this.tiltY = params.tiltY || 0
+        this.twist = params.twist || 0
+        this.pointerType = params.pointerType || 'mouse'
+        this.isPrimary = params.isPrimary || false
+      }
     }
-  }
-}
 
-// Apply before each test
-Cypress.on('window:before:load', (win) => {
-  // Polyfill PointerEvent
-  win.PointerEvent = MockPointerEvent as any
-  win.HTMLElement.prototype.scrollIntoView = () => {}
-  win.HTMLElement.prototype.hasPointerCapture = () => false
-  win.HTMLElement.prototype.releasePointerCapture = () => {}
+    // Apply the polyfill
+    win.PointerEvent = PointerEventPolyfill as any
+  }
+
+  // Additional polyfills for RadixUI compatibility
+  if (win.HTMLElement && win.HTMLElement.prototype) {
+    win.HTMLElement.prototype.scrollIntoView = () => {}
+    win.HTMLElement.prototype.hasPointerCapture = () => false
+    win.HTMLElement.prototype.releasePointerCapture = () => {}
+    win.HTMLElement.prototype.setPointerCapture = () => {}
+  }
 })
