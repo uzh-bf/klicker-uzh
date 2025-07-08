@@ -2151,6 +2151,7 @@ type Query {
   userRunningLiveQuizzes: [LiveQuizInfo!]
   userScope: UserLoginScope
   userTags: [Tag!]
+  validateAvailableLiveQuiz(courseId: String!, quizId: String!): Boolean
 }
 
 type QuestionFeedback {

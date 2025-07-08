@@ -78,6 +78,12 @@ backendGraphql:
   sentryEnv: qa
   sentryDSN: '${SENTRY_DSN}'
 
+olatApi:
+  key: '${OLAT_API_KEY}'
+
+  image:
+    tag: '${APP_VERSION}'
+
 lti:
   replicaCount: '${APP_REPLICAS}'
 

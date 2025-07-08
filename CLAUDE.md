@@ -15,6 +15,7 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 - **Backend Docker**: Main backend service
 - **Backend Responses**: Service that handles incoming student responses during live quizzes
 - **Backend Response Processor**: Processes queued elements with scoring and experience points calculations
+- **OLAT API**: REST API for OLAT LMS integration via LTI (@apps/olat-api/CLAUDE.md)
 
 ### Shared Packages
 
