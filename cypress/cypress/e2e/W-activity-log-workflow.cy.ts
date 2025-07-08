@@ -109,7 +109,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -125,7 +125,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -141,7 +141,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -159,7 +159,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -175,7 +175,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsEXECUTE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsEXECUTE)
@@ -191,7 +191,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -207,7 +207,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)

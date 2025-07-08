@@ -51,7 +51,7 @@ describe('Create, edit and share answer collections', function () {
       .type(username)
     cy.selectOption('[data-cy="new-permission-access-level"]', permissionLevel)
     cy.get('[data-cy="new-permission-access-level"]').contains(permissionLevel)
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${username}"]`)
@@ -556,7 +556,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -975,7 +975,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -1638,7 +1638,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group1}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -1657,7 +1657,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group2}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -1676,7 +1676,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group3}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -2057,7 +2057,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
@@ -2268,7 +2268,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
@@ -2298,7 +2298,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
@@ -2328,7 +2328,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
@@ -2749,7 +2749,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)

@@ -1116,7 +1116,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -1359,7 +1359,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -1644,7 +1644,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -1659,7 +1659,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -1674,7 +1674,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -1879,7 +1879,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group1}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -1898,7 +1898,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group2}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -1917,7 +1917,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.group3}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)

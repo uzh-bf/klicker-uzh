@@ -1573,7 +1573,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
@@ -1598,7 +1598,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
@@ -1623,7 +1623,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
@@ -1649,7 +1649,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`)
       .should('exist')
@@ -1674,7 +1674,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`)
       .should('exist')
@@ -1905,7 +1905,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
@@ -1937,7 +1937,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsEXECUTE)
@@ -1969,7 +1969,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -2002,7 +2002,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
@@ -2034,7 +2034,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -2188,7 +2188,7 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'unchecked'
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)

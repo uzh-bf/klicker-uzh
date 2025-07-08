@@ -181,8 +181,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').realClick()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
+    cy.selectOption('[data-cy="select-course"]', this.data.course)
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
@@ -542,8 +541,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the settings have been copied correctly
-    cy.get('[data-cy="select-course"]').realClick()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
+    cy.selectOption('[data-cy="select-course"]', this.data.course)
     cy.get('[data-cy="select-course"]').contains(this.data.course)
     cy.get('[data-cy="select-start-date"]').should('contain', startDate2)
     cy.get('[data-cy="select-end-date"]').should('contain', endDate2)
@@ -1459,8 +1457,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // continue to the next step and change the default settings
-    cy.get('[data-cy="select-course"]').realClick()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).realClick()
+    cy.selectOption('[data-cy="select-course"]', this.data.course)
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
@@ -1841,10 +1838,7 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.duplicateDisplayName)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="select-course"]').realClick()
-    cy.get(
-      `[data-cy="select-course-${this.data.manipulation.course}"]`
-    ).realClick()
+    cy.selectOption('[data-cy="select-course"]', this.data.manipulation.course)
     cy.get('[data-cy="select-course"]').contains(this.data.manipulation.course)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-stack-0"]').contains(
@@ -2864,7 +2858,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsREAD)
@@ -2880,7 +2874,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsEXECUTE)
@@ -2896,7 +2890,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
       )
@@ -2914,7 +2908,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`
       )
@@ -3067,7 +3061,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsREAD)
@@ -3084,7 +3078,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsEXECUTE)
@@ -3101,7 +3095,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)
@@ -3118,7 +3112,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsADMIN)
@@ -3214,7 +3208,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)
@@ -3267,7 +3261,7 @@ describe('Different microlearning workflows', function () {
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)
