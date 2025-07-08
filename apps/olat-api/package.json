@@ -17,11 +17,10 @@
     "uuid": "10.0.0"
   },
   "devDependencies": {
-    "@apidevtools/swagger-cli": "~4.0.4",
+    "@redocly/cli": "~1.34.4",
     "@rollup/plugin-node-resolve": "~15.3.0",
     "@rollup/plugin-typescript": "~12.1.2",
     "@types/express": "^4.17.17",
-    "@types/express-rate-limit": "^6.0.2",
     "@types/node": "^20.16.1",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
@@ -34,10 +33,11 @@
   "scripts": {
     "build": "rollup -c",
     "build:test": "pnpm run build",
+    "check": "tsc --noEmit",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/index.js",
     "test": "bash run-tests.sh",
-    "validate:openapi": "swagger-cli validate static/openapi.yaml"
+    "validate:openapi": "redocly lint static/openapi.yaml"
   },
   "engines": {
     "node": "=20"
