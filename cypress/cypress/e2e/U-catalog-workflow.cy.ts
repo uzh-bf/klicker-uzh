@@ -298,8 +298,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -313,8 +315,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -328,8 +332,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -363,8 +369,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.CCRestricted)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -409,10 +415,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -434,10 +440,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -521,8 +527,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-select"]').realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -536,8 +542,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -551,8 +559,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -574,8 +584,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -595,10 +607,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -619,10 +631,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -649,10 +661,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -674,10 +686,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -702,10 +714,10 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // add the two selection questions to the top level of the catalog collection
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -722,10 +734,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -745,10 +757,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -765,10 +777,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -789,10 +801,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -809,10 +821,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -918,8 +930,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.CCRestricted2)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -1049,8 +1061,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
     cy.get('[data-cy="new-permission-username-or-email"]').should(
       'have.value',
@@ -1072,13 +1083,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
 
     // select the user group again
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).click()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
 
     // choose permission level for group 1 and grant direct group permission
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1091,12 +1103,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group2}"]`).click()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group2)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1109,12 +1122,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group3}"]`).click()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group3)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )

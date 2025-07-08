@@ -20,3 +20,24 @@ import '@cypress/code-coverage/support'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
+
+// Disable all animations and transitions during tests
+Cypress.on('window:before:load', (win) => {
+  // Method 1: Inject CSS to disable animations
+  const disableAnimationsCSS = `
+    *, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-property: none !important;
+      transform: none !important;
+    }
+  `
+
+  const style = win.document.createElement('style')
+  style.id = 'cypress-disable-animations'
+  style.innerHTML = disableAnimationsCSS
+  win.document.head.appendChild(style)
+})

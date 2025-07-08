@@ -30,18 +30,18 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.FLASHCARD.typeLabel)
     cy.get('[data-cy="insert-question-title"]').type(this.data.FC.title)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.FC.content)
@@ -88,10 +88,10 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.FC.titleEdited)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()

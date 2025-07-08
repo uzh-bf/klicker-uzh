@@ -20,11 +20,11 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -291,10 +291,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -531,10 +531,10 @@ describe('Different live-quiz workflows', function () {
       'disabled'
     )
 
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -882,10 +882,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -1304,15 +1304,15 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-question-select"]')
       .should('exist')
       .contains(this.data.SC.title)
-    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
       `[data-cy="evaluation-select-instance-${this.data.KP.title}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="evaluate-question-select"]').contains(this.data.KP.title)
-    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
       `[data-cy="evaluation-select-instance-${this.data.SC.title}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="evaluate-question-select"]').contains(this.data.SC.title)
 
     // navigate forwards and backwards through all questions
@@ -2662,11 +2662,13 @@ describe('Different live-quiz workflows', function () {
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant READ permission to user 2
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_IND_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-READ"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
@@ -2676,11 +2678,13 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsREAD)
 
       // grant EXECUTE permission to user 3
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-EXECUTE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
@@ -2690,11 +2694,13 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsEXECUTE)
 
       // grand WRITE permissions to user 4
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST2_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
@@ -2706,11 +2712,13 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsWRITE)
 
       // grant ADMIN permissions to user 5
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST3_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST3_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-ADMIN"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
@@ -2856,10 +2864,14 @@ describe('Different live-quiz workflows', function () {
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant READ permission to user group 1
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group1
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsREAD
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
@@ -2869,10 +2881,14 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsREAD)
 
       // grant EXECUTE permission to user group 2
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group2
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsEXECUTE
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
@@ -2882,10 +2898,14 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsEXECUTE)
 
       // grand WRITE permissions to user group 3
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group3
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
@@ -2895,10 +2915,14 @@ describe('Different live-quiz workflows', function () {
         .contains(messages.manage.sharing.permissionsWRITE)
 
       // grant ADMIN permissions to user group 4
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group4
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsADMIN
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
@@ -2988,11 +3012,13 @@ describe('Different live-quiz workflows', function () {
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // share the course with WRITE permissions with user pro1
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_IND_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
@@ -3039,11 +3065,13 @@ describe('Different live-quiz workflows', function () {
       cy.get(`[data-cy="share-live-quiz-${quiz}"]`).click()
 
       // grant a WRITE permission to the main user (should change the existing permission in this case)
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
@@ -3263,7 +3291,9 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="create-temporary-pseudonym"]').click()
           cy.get('[data-cy="cancel-define-pseudonym"]').click()
           cy.get('[data-cy="create-temporary-pseudonym"]').click()
-          cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym)
+          cy.get('[data-cy="pseudonym-input"]')
+            .click()
+            .type(data.modes.pseudonym)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="cancel-choose-avatar"]').click()
           cy.get('[data-cy="pseudonym-input"]').should(
@@ -3277,6 +3307,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="avatar-carousel-next"]').click().click()
           cy.get('[data-cy="avatar-carousel-prev"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+          cy.wait(2000) // wait for toast to disappear
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
@@ -3305,6 +3336,7 @@ describe('Different live-quiz workflows', function () {
           cy.get('[data-cy="pseudonym-input"]').type(data.modes.pseudonym2)
           cy.get('[data-cy="pseudonym-next-step"]').click()
           cy.get('[data-cy="submit-pseudonym-and-avatar"]').click()
+          cy.wait(2000) // wait for toast to disappear
 
           // verify that the correct options are shown in the participant dropdown
           cy.get('[data-cy="header-avatar"]').click()
