@@ -253,6 +253,7 @@ export default {
       createdAt: 'Created at {date}',
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
+      endAt: 'End at {time}',
       finishedAt: 'Finished at {time}',
       introduction: 'Introduction',
       information: 'Information',
@@ -1217,6 +1218,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
+      archivingSuccess:
+        'All selected elements have been successfully archived.',
+      archivingPartialSuccess:
+        'All elements with sufficient permissions have been successfully archived. Please note that at least admin permissions on the corresponding object are required to archive elements.',
+      archivingFailed:
+        'None of the selected elements could be archived. Please check your permissions (admin rights are required for this operation) and try again.',
+      restoreFromArchiveSuccess:
+        'All selected elements have been successfully restored from the archive.',
+      restoreFromArchivePartialSuccess:
+        'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
+      restoreFromArchiveFailed:
+        'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
     },
     tags: {
       deleteTag: 'Delete tag',
@@ -2372,7 +2385,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newEndDate: 'New end date',
       futureEndDateRequired:
         'Please enter an end date that lies in the future.',
-      publishMicrolearning: 'Publish Microlearning',
       unpublishMicrolearning: 'Unpublish Microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       shareMicroLearning: 'Share Microlearning',
@@ -2380,19 +2392,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteMicroLearning: 'Delete Microlearning',
       deleteMicroLearningMessage:
         'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
-      publishItemPRACTICE_QUIZ: 'Publish practice quiz',
+      publishItemPRACTICE_QUIZ: 'Publish Practice Quiz',
       publishItemMICROLEARNING: 'Publish Microlearning',
-      publishItemGROUP_ACTIVITY: 'Publish group activity',
-      confirmPublishing: 'Are you sure you want to publish the following item?',
+      publishItemGROUP_ACTIVITY: 'Publish Group Activity',
+      confirmPublishingMicrolearning:
+        'Please confirm that you want to publish the microlearning <b>{name}</b>. This action will make it available to all participants in the following time window:',
+      microlearningPublishingHint:
+        'This process can only be undone if the start time is in the future. Changes to the content of contained elements are no longer possible after publishing.',
+      confirmPublishingGroupActivity:
+        'Please confirm that you want to publish the group activity <b>{name}</b>. This action will make it available to all groups in the following time window:',
+      groupActivityPublishingHint:
+        'This process can only be undone if the start time lies in the future. Changes to the content of contained elements are no longer possible after publishing.',
       practicePublishingHint:
         'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
       practiceSchedulingHint:
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
-      microPublishingHint:
-        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
       editPracticeQuiz: 'Edit Practice Quiz',
       duplicatePracticeQuiz: 'Duplicate Practice Quiz',
-      publishPracticeQuiz: 'Publish Practice Quiz',
       sharePracticeQuiz: 'Share Practice Quiz',
       removePracticeQuiz: 'Remove Practice Quiz',
       deletePracticeQuiz: 'Delete Practice Quiz',
@@ -2407,9 +2423,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteAnonymousResponses:
         '{number} anonymous response(s) for this activity will be deleted.',
       unpublishPracticeQuiz: 'Unpublish Practice Quiz',
-      publishGroupActivity: 'Publish group activity',
-      groupActivityPublishingHint:
-        'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit Group Activity',
       endGroupActivity: 'End Group Activity',
       endGroupActivityMessage:
@@ -2870,6 +2883,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noUserGroupsAvailable: 'No user groups available',
       shortnameEmailOrGroupRequired:
         'Please enter a shortname / email address or select a user group.',
+      noSelfSharing: 'You cannot share objects with yourself.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:

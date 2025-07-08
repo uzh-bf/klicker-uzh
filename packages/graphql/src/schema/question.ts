@@ -842,6 +842,27 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+interface IArchivedElementList {
+  success?: boolean
+  partialSuccess?: boolean
+  failure?: boolean
+  elements: IArchivedElement[]
+}
+export const ArchivedElementListRef = builder.objectRef<IArchivedElementList>(
+  'ArchivedElementList'
+)
+export const ArchivedElementList = ArchivedElementListRef.implement({
+  fields: (t) => ({
+    success: t.exposeBoolean('success', { nullable: true }),
+    partialSuccess: t.exposeBoolean('partialSuccess', { nullable: true }),
+    failure: t.exposeBoolean('failure', { nullable: true }),
+    elements: t.expose('elements', {
+      type: [ArchivedElement],
+      nullable: true,
+    }),
+  }),
+})
+
 interface IArchivedElement {
   id: number
   isArchived: boolean
