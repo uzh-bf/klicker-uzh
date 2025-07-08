@@ -1,0 +1,3 @@
+query ValidateAvailableLiveQuiz($quizId: String!, $courseId: String!) {
+  validateAvailableLiveQuiz(quizId: $quizId, courseId: $courseId)
+}

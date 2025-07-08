@@ -1,0 +1,439 @@
+openapi: 3.1.0
+info:
+  title: OLAT API
+  description: REST API service that provides integration between KlickerUZH and the OLAT Learning Management System (LMS).
+  version: 3.3.0-alpha.68
+  contact:
+    name: KlickerUZH Team
+    url: https://www.klicker.uzh.ch
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://olat-api.klicker-qa.bf-app.ch
+    description: QA server
+  - url: https://olat-api.klicker.uzh.ch
+    description: Production server
+
+security:
+  - apiKey: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the service health status. Used for liveness and readiness probes.
+      tags:
+        - General
+      security: []
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/configuration/courses:
+    post:
+      summary: Get user courses
+      description: Retrieves all courses associated with a user based on their provider account.
+      tags:
+        - Configuration
+      parameters:
+        - name: identityMappingIdentifier
+          in: query
+          required: true
+          description: The provider account ID.
+          schema:
+            type: string
+            example: user@olat.uzh.ch
+      responses:
+        '200':
+          description: List of courses for the user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  courses:
+                    type: array
+                    description: List of courses for the user.
+                    items:
+                      $ref: '#/components/schemas/Course'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2024-01-01T12:00:00.000Z'
+                    description: Timestamp of the response (as defined by RFC 3339, section 5.6).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/configuration/activityTypes:
+    get:
+      summary: Get all activity types
+      description: Returns all available activity types that can be integrated into OLAT.
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: List of all available activity types.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activityTypes:
+                    description: List of all available activity types.
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityType'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2024-01-01T12:00:00.000Z'
+                    description: Timestamp of the response (as defined by RFC 3339, section 5.6).
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/configuration/course/{courseID}/activityTypes:
+    post:
+      summary: Get course activity types
+      description: Returns activity types available for a specific course, including counts and availability based on course settings.
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/courseID'
+      responses:
+        '200':
+          description: List of activity types for the course.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activityTypes:
+                    type: array
+                    description: List of activity types for the course.
+                    items:
+                      $ref: '#/components/schemas/ActivityTypeOfCourse'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2024-01-01T12:00:00.000Z'
+                    description: Timestamp of the response (as defined by RFC 3339, section 5.6).
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/configuration/course/{courseID}/{activityTypeKey}:
+    post:
+      summary: Get activities of type
+      description: Returns specific activities of a given type within a course. For activity types that require subselection, it returns a list of available activities. For general activity types, it returns an empty array.
+      tags:
+        - Configuration
+      parameters:
+        - $ref: '#/components/parameters/courseID'
+        - $ref: '#/components/parameters/activityTypeKey'
+      responses:
+        '200':
+          description: List of activities of the specified type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activityTypes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Activity'
+                    description: List of activities of the specified type. Empty for general activity types. Populated for subselection types (e.g. Live Quizzes).
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2024-01-01T12:00:00.000Z'
+                    description: Timestamp of the response (as defined by RFC 3339, section 5.6).
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication.
+
+  parameters:
+    courseID:
+      name: courseID
+      in: path
+      required: true
+      description: Course UUID.
+      schema:
+        type: string
+        format: uuid
+        example: 123e4567-e89b-12d3-a456-426614174000
+
+    activityTypeKey:
+      name: activityTypeKey
+      in: path
+      required: true
+      description: Activity type configuration key used in OLAT.
+      schema:
+        type: string
+        enum:
+          - live-quiz
+          - practice-quiz
+          - micro-learning
+          - live-quizzes
+          - practice-quizzes
+          - micro-learnings
+          - course-leaderboard
+          - manage-account
+          - docs
+        example: live-quiz
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Health status of the service.
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-01-01T12:00:00.000Z'
+          description: Timestamp of the response (as defined by RFC 3339, section 5.6).
+      required:
+        - status
+        - timestamp
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+          description: Course UUID.
+        title:
+          type: string
+          example: Introduction to Computer Science
+          description: Course title.
+      required:
+        - id
+        - title
+
+    ActivityType:
+      type: object
+      properties:
+        id:
+          type: string
+          example: LIVE_QUIZZES
+          description: Unique identifier for the activity type.
+        path:
+          type: string
+          example: /liveQuizzes
+          description: Path to the activity type for the LTI-URL.
+        olatConfigurationKey:
+          type: string
+          example: live-quizzes
+          description: Configuration key used in OLAT for this activity type.
+        isEmailTransferRequired:
+          type: boolean
+          example: false
+          description: Indicates if email transfer is required for this activity type.
+      required:
+        - id
+        - path
+        - olatConfigurationKey
+        - isEmailTransferRequired
+
+    ActivityTypeOfCourse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: LIVE_QUIZZES
+          description: Unique identifier for the activity type.
+        title:
+          type: string
+          example: Live Quiz Overview (5)
+          description: Title of activity (may include count in parentheses for overview types).
+        olatConfigurationKey:
+          type: string
+          example: live-quizzes
+          description: Configuration key used in OLAT for this activity type.
+        isSubselectionRequired:
+          type: boolean
+          example: false
+          description: Indicates if an additional sub-selection is required for this activity type.
+      required:
+        - id
+        - title
+        - olatConfigurationKey
+        - isSubselectionRequired
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+          description: Activity UUID.
+        title:
+          type: string
+          example: Week 1 Quiz
+          description: Title of the activity.
+      required:
+        - id
+        - title
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing the issue.
+      required:
+        - error
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingApiKey:
+              value: 
+                error: Missing API key
+            missingProviderAccountId:
+              value: 
+                error: Missing providerAccountId
+            missingCourseID:
+              value: 
+                error: Missing courseID
+            missingActivityTypeKey:
+              value: 
+                error: Missing activityTypeKey
+            invalidCourseID:
+              value: 
+                error: Invalid courseID
+            invalidActivityTypeKey:
+              value: 
+                error: Invalid activityTypeKey
+            failedToExtractProvider:
+              value: 
+                error: Extraction of provider from providerAccountId failed
+
+    Unauthorized:
+      description: Invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples: 
+            invalidApiKey:
+              value: 
+                error: Invalid API key
+
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples: 
+            CoursesOfUserNotFound:
+              value: 
+                error:  No courses found for this user
+            CourseNotFound:
+              value: 
+                error: Course not found
+    
+    UnsupportedMediaType:
+      description: Unsupported Content-Type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unsupportedMediaType:
+              value: 
+                error: Unsupported content type
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            tooManyRequests:
+              value: 
+                error: Too many requests, please try again later
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            internalServerError:
+              value: 
+                error: Internal server error
+
+tags:
+  - name: General
+    description: General endpoints that don't require authentication.
+  - name: Configuration
+    description: Configuration endpoints for OLAT integration.

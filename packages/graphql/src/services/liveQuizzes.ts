@@ -2328,6 +2328,21 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   return null
 }
 
+export async function validateAvailableLiveQuiz(
+  { quizId, courseId }: { quizId: string; courseId: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      courseId,
+    },
+  })
+
+  return !!quiz
+}
+
 export async function getCourseRunningLiveQuizzes(
   { courseId }: { courseId: string },
   ctx: Context
