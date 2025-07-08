@@ -1372,7 +1372,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.selectOption('[data-cy="object-type-selection"]', 'ELEMENT')
+    cy.selectOption(
+      '[data-cy="object-type-selection"]',
+      messages.shared.types.ELEMENT
+    )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1507,7 +1510,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.selectOption('[data-cy="permission-level-select"]', 'READ')
+    cy.selectOption(
+      '[data-cy="permission-level-select"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1631,7 +1637,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'READ')
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1643,7 +1652,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST_SHORTNAME'))
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'WRITE')
+    cy.selectOption('[data-cy="new-permission-access-level"]', messages.manage.sharing.permissionsWRITE)
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1655,7 +1664,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'ADMIN')
+    cy.selectOption('[data-cy="new-permission-access-level"]', messages.manage.sharing.permissionsADMIN)
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1857,7 +1866,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'READ')
+    cy.selectOption('[data-cy="new-permission-access-level"]', messages.manage.sharing.permissionsREAD)
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1873,7 +1882,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group2)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'WRITE')
+    cy.selectOption('[data-cy="new-permission-access-level"]', messages.manage.sharing.permissionsWRITE)
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1889,7 +1898,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group3)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'ADMIN')
+    cy.selectOption('[data-cy="new-permission-access-level"]', messages.manage.sharing.permissionsADMIN)
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
