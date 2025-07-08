@@ -1109,7 +1109,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'ADMIN')
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1225,7 +1228,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.selectOption('[data-cy="permission-level-select"]', 'READ')
+    cy.selectOption(
+      '[data-cy="permission-level-select"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1271,7 +1277,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
     cy.selectOption(
       `[data-cy="${this.data.SEML.title}-object-access"]`,
-      'public'
+      messages.manage.catalog.accessPUBLIC
     )
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.SEML.title}-object-access"]`).contains(
@@ -1346,7 +1352,10 @@ describe('Create different types of elements (with and without sample solution) 
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.selectOption('[data-cy="new-permission-access-level"]', 'ADMIN')
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
