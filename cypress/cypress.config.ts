@@ -1962,6 +1962,6 @@ export default defineConfig({
   },
 
   retries: {
-    runMode: 5,
+    runMode: 3,
   },
 })
