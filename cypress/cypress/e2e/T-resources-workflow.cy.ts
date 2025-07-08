@@ -33,12 +33,10 @@ describe('Create, edit and share answer collections', function () {
   function grantCollectionAccess({
     collectionName,
     permissionLevel,
-    permissionLevelCy,
     username,
   }: {
     collectionName: string
     permissionLevel: string
-    permissionLevelCy: string
     username: string
   }) {
     cy.get('[data-cy="resources"]').click()
@@ -51,8 +49,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(username)
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get(`[data-cy="permission-level-${permissionLevelCy}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-access-level"]', permissionLevel)
     cy.get('[data-cy="new-permission-access-level"]').contains(permissionLevel)
     cy.get('[data-cy="new-permission-submit"]').click()
 
@@ -552,8 +549,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -969,8 +968,10 @@ describe('Create, edit and share answer collections', function () {
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1628,11 +1629,12 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1645,12 +1647,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group2}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group2)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-WRITE"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1663,12 +1666,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group3}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group3)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1982,7 +1986,6 @@ describe('Create, edit and share answer collections', function () {
       collectionName: this.data.direct.name,
       username: Cypress.env('LECTURER_IND_SHORTNAME'),
       permissionLevel: messages.manage.sharing.permissionsREAD,
-      permissionLevelCy: 'READ',
     })
   })
 
@@ -2288,8 +2291,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-WRITE"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -2316,8 +2321,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )

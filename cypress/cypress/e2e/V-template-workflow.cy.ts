@@ -842,8 +842,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )

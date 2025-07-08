@@ -298,8 +298,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -313,8 +315,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-WRITE"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -328,8 +332,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -536,8 +542,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -551,8 +559,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -574,8 +584,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
@@ -1049,8 +1061,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
     cy.get('[data-cy="new-permission-username-or-email"]').should(
       'have.value',
@@ -1072,13 +1083,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
 
     // select the user group again
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group1}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group1)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group1)
 
     // choose permission level for group 1 and grant direct group permission
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
@@ -1091,12 +1103,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group2}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group2)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group2)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-WRITE"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -1109,12 +1122,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-user-group"]').contains(
       messages.manage.sharing.noUserGroupSelected
     )
-    cy.get('[data-cy="new-permission-user-group"]').realClick()
-    cy.get(`[data-cy="user-group-${this.data.group3}"]`).realClick()
+    cy.selectOption('[data-cy="new-permission-user-group"]', this.data.group3)
     cy.get('[data-cy="new-permission-user-group"]').contains(this.data.group3)
     cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="new-permission-access-level"]').realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
+    )
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
