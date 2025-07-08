@@ -20,3 +20,44 @@ import '@cypress/code-coverage/support'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
+
+// Disable all animations and transitions during tests
+Cypress.on('window:before:load', (win) => {
+  const style = win.document.createElement('style')
+  style.innerHTML = `
+    *, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }
+  `
+  win.document.head.appendChild(style)
+})
+
+// Mock PointerEvent for RadixUI compatibility
+export class MockPointerEvent extends Event {
+  button: number | undefined
+  ctrlKey: boolean | undefined
+  pointerType: string = 'mouse'
+  pointerId: number = 1
+
+  constructor(type: string, props: PointerEventInit | undefined) {
+    super(type, props)
+    if (props) {
+      if (props.button != null) this.button = props.button
+      if (props.ctrlKey != null) this.ctrlKey = props.ctrlKey
+      if (props.pointerId != null) this.pointerId = props.pointerId
+      if (props.pointerType != null) this.pointerType = props.pointerType
+    }
+  }
+}
+
+// Apply before each test
+Cypress.on('window:before:load', (win) => {
+  // Polyfill PointerEvent
+  win.PointerEvent = MockPointerEvent as any
+  win.HTMLElement.prototype.scrollIntoView = () => {}
+  win.HTMLElement.prototype.hasPointerCapture = () => false
+  win.HTMLElement.prototype.releasePointerCapture = () => {}
+})
