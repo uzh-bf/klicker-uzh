@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.68...v3.3.0-alpha.69) (2025-07-08)
+
+
+### Features
+
+* **apps/olat-api:** define API for OLAT user activity queries ([#4747](https://github.com/uzh-bf/klicker-uzh/issues/4747)) ([395cd41](https://github.com/uzh-bf/klicker-uzh/commit/395cd41c14b8d16a5c0b0750c3d4e90737bdf573))
+
+
+### Bug Fixes
+
+* ensure that users cannot share objects with themselves ([#4764](https://github.com/uzh-bf/klicker-uzh/issues/4764)) ([0dfaef8](https://github.com/uzh-bf/klicker-uzh/commit/0dfaef8825068dda0f157f83ffc9ddfdf338339d))
+
+
+### Other
+
+* **apps/frontend-manage:** improve styling of activity publishing modals for consistency ([79149e7](https://github.com/uzh-bf/klicker-uzh/commit/79149e754d6590603e681fb91e73391555781b04))
+
+
+### Deployment
+
+* update deployment scripts with new secret injection approach ([#4765](https://github.com/uzh-bf/klicker-uzh/issues/4765)) ([eb99082](https://github.com/uzh-bf/klicker-uzh/commit/eb99082e5b9b7bc6ca6464d8d2247267cf1c8a47))
+
+
+### Enhancements
+
+* upgrade design-system to v4, react 19, nextjs and other dependencies ([#4761](https://github.com/uzh-bf/klicker-uzh/issues/4761)) ([400d020](https://github.com/uzh-bf/klicker-uzh/commit/400d0208ac7c99c3e0e06cca4cefa1314c95e023))
+
 ## [3.3.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.67...v3.3.0-alpha.68) (2025-07-01)
 
 
