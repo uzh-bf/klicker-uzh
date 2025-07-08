@@ -8,44 +8,40 @@ import messages from '../../../packages/i18n/messages/en'
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
-  // Use cypress-real-events which handles pointer events properly
-  cy.get(selector).should('be.visible').should('not.be.disabled').realClick()
+  // Wait for element to be ready
+  cy.get(selector).should('be.visible').should('not.be.disabled')
 
-  // Wait for dropdown to open - check multiple possible selectors
-  cy.get('body').then(($body) => {
-    const portalSelectors = [
-      '[data-radix-portal]',
-      '[data-radix-popper-content-wrapper]',
-      '[role="listbox"]',
-      '.select-content', // Add your app's specific classes
-      '[data-cy*="select-"][data-cy*="content"]',
-    ]
+  // Use realClick from cypress-real-events (handles pointer events properly)
+  cy.get(selector).realClick()
 
-    // Find which portal selector exists
-    let foundPortal = false
-    for (const selector of portalSelectors) {
-      if ($body.find(selector).length > 0) {
-        cy.get(selector).should('be.visible')
-        foundPortal = true
+  // Small wait for dropdown animation (since we disabled CSS animations)
+  cy.wait(50)
+
+  // Look for the option with various possible selectors
+  const optionSelectors = [
+    `[data-cy="${selector.replace('[data-cy="', '').replace('"]', '')}-${optionText}"]`,
+    `[data-cy*="select-"]:contains("${optionText}")`,
+    `[role="option"]:contains("${optionText}")`,
+    `[data-value="${optionText}"]`,
+  ]
+
+  // Try each selector until we find the option
+  cy.document().then((doc) => {
+    let found = false
+    for (const optionSelector of optionSelectors) {
+      const element = doc.querySelector(optionSelector)
+      if (element) {
+        cy.get(optionSelector).first().click()
+        found = true
         break
       }
     }
 
-    // If no portal found, just continue (might be a native select)
-    if (!foundPortal) {
-      cy.log('No portal element found, continuing...')
+    // Fallback: just look for text
+    if (!found) {
+      cy.contains(optionText).click()
     }
   })
-
-  // Find and click the option with multiple possible selectors
-  const optionSelectors = [
-    `[data-cy*="select-"][data-cy*="${optionText}"]`,
-    `[data-cy*="select-"] :contains("${optionText}")`,
-    `[role="option"]:contains("${optionText}")`,
-    `[data-radix-select-item]:contains("${optionText}")`,
-  ]
-
-  cy.get(optionSelectors.join(', ')).filter(':visible').first().click()
 })
 
 Cypress.Commands.add('seed', () => {
