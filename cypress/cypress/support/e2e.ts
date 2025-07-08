@@ -13,15 +13,11 @@
 // https://on.cypress.io/configuration
 // ***********************************************************
 
-// Import commands.js using ES2015 syntax:
+// import commands
+import '@cypress/code-coverage/support'
 import './commands'
 
-import '@cypress/code-coverage/support'
-
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
-
-// Disable all animations and transitions during tests
+// disable all animations and transitions during tests
 Cypress.on('window:before:load', (win) => {
   // Method 1: Inject CSS to disable animations
   const disableAnimationsCSS = `
@@ -32,7 +28,6 @@ Cypress.on('window:before:load', (win) => {
       transition-delay: 0s !important;
       animation-iteration-count: 1 !important;
       transition-property: none !important;
-      transform: none !important;
     }
   `
 
