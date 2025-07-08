@@ -7,22 +7,22 @@ import messages from '../../../packages/i18n/messages/en'
 /// <reference types="cypress" />
 
 // Command for reliable select interactions
-// Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
-//   // Use realClick from cypress-real-events for better reliability
-//   cy.get(selector).realClick()
+Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
+  // Use realClick from cypress-real-events for better reliability
+  cy.get(selector).realClick()
 
-//   // Wait for portal content if using RadixUI
-//   cy.get('body').then(($body) => {
-//     if ($body.find('[data-radix-portal]').length > 0) {
-//       cy.get('[data-radix-portal]').should('be.visible')
-//     }
-//   })
+  // Wait for portal content if using RadixUI
+  cy.get('body').then(($body) => {
+    if ($body.find('[data-radix-portal]').length > 0) {
+      cy.get('[data-radix-portal]').should('be.visible')
+    }
+  })
 
-//   // Select the option
-//   cy.contains('[role="option"], [data-radix-select-item]', optionText)
-//     .should('be.visible')
-//     .click()
-// })
+  // Select the option
+  cy.contains('[role="option"], [data-radix-select-item]', optionText)
+    .should('be.visible')
+    .click()
+})
 
 Cypress.Commands.add('seed', () => {
   // seed all required initial data directly into the database
@@ -1423,6 +1423,7 @@ declare global {
         criteria,
         verifyDisabled,
       }: VerifyCaseStudyInputsArgs): Chainable<void>
+      selectOption(selector: string, optionText: string): Chainable<void>
     }
   }
 }
