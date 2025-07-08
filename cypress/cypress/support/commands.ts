@@ -8,39 +8,62 @@ import messages from '../../../packages/i18n/messages/en'
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
-  // Wait for element to be ready
-  cy.get(selector).should('be.visible').should('not.be.disabled')
+  cy.log(
+    `selectOption: Looking for option "${optionText}" in selector "${selector}"`
+  )
+
+  // Wait for element to be ready and scroll it into view
+  cy.get(selector)
+    .scrollIntoView() // Scroll first to ensure element is in viewport
+    .should('be.visible') // Then verify visibility
+    .should('not.be.disabled')
 
   // Use realClick from cypress-real-events (handles pointer events properly)
   cy.get(selector).realClick()
 
   // Small wait for dropdown animation (since we disabled CSS animations)
-  cy.wait(50)
+  cy.wait(100)
 
-  // Look for the option with various possible selectors
-  const optionSelectors = [
-    `[data-cy="${selector.replace('[data-cy="', '').replace('"]', '')}-${optionText}"]`,
-    `[data-cy*="select-"]:contains("${optionText}")`,
-    `[role="option"]:contains("${optionText}")`,
-    `[data-value="${optionText}"]`,
-  ]
+  // Try different approaches to find and click the option
+  const baseSelectorKey = selector.replace('[data-cy="', '').replace('"]', '')
+  cy.log(`selectOption: Base selector key is "${baseSelectorKey}"`)
 
-  // Try each selector until we find the option
-  cy.document().then((doc) => {
-    let found = false
-    for (const optionSelector of optionSelectors) {
-      const element = doc.querySelector(optionSelector)
-      if (element) {
-        cy.get(optionSelector).first().click()
-        found = true
-        break
-      }
+  // Try multiple strategies in order of preference
+  cy.get('body').then(($body) => {
+    // Strategy 1: Direct data-cy pattern match
+    const directSelector = `[data-cy="${baseSelectorKey}-${optionText}"]`
+    if ($body.find(directSelector).length > 0) {
+      cy.log(`selectOption: Found using direct selector: ${directSelector}`)
+      cy.get(directSelector).first().scrollIntoView().click()
+      return
     }
 
-    // Fallback: just look for text
-    if (!found) {
-      cy.contains(optionText).click()
+    // Strategy 2: Partial match with base selector and option text
+    const partialSelector = `[data-cy*="${baseSelectorKey}"][data-cy*="${optionText}"]`
+    if ($body.find(partialSelector).length > 0) {
+      cy.log(`selectOption: Found using partial selector: ${partialSelector}`)
+      cy.get(partialSelector).first().scrollIntoView().click()
+      return
     }
+
+    // Strategy 3: Data-value attribute
+    const valueSelector = `[data-value="${optionText}"]`
+    if ($body.find(valueSelector).length > 0) {
+      cy.log(`selectOption: Found using data-value selector: ${valueSelector}`)
+      cy.get(valueSelector).first().scrollIntoView().click()
+      return
+    }
+
+    // Strategy 4: Role-based options (common in RadixUI/ShadCN)
+    if ($body.find(`[role="option"]`).length > 0) {
+      cy.log(`selectOption: Found role="option" elements, using contains`)
+      cy.get(`[role="option"]`).contains(optionText).scrollIntoView().click()
+      return
+    }
+
+    // Strategy 5: Final fallback - any element containing the text
+    cy.log(`selectOption: Using fallback contains strategy`)
+    cy.contains(optionText).scrollIntoView().click()
   })
 })
 
