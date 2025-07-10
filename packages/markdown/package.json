@@ -8,17 +8,17 @@
     "dist"
   ],
   "dependencies": {
-    "rehype-external-links": "2.1.0",
+    "rehype-external-links": "3.0.0",
     "rehype-katex": "7.0.1",
-    "rehype-prism-plus": "1.5.1",
-    "rehype-react": "7.2.0",
-    "rehype-sanitize": "5.0.1",
+    "rehype-prism-plus": "2.0.1",
+    "rehype-react": "8.0.0",
+    "rehype-sanitize": "6.0.0",
     "remark-directive": "4.0.0",
     "remark-gfm": "4.0.1",
-    "remark-math": "5.1.1",
-    "remark-parse": "10.0.2",
-    "remark-rehype": "10.1.0",
-    "unified": "10.1.2"
+    "remark-math": "6.0.0",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.0.0",
+    "unified": "11.0.5"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.0",
