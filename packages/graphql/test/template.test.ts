@@ -867,7 +867,6 @@ describe('Unit tests for template service', () => {
               elements: {
                 create: [
                   {
-                    migrationId: '0fbd0e21-f5d7-4e60-8f4a-a7f3e7703cab',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementData: SEElementData,
                     elementType: ElementType.SELECTION,
@@ -890,7 +889,6 @@ describe('Unit tests for template service', () => {
               elements: {
                 create: [
                   {
-                    migrationId: '3c0f2df0-62fa-4e42-a028-2b95f4355a18',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementData: CSElementData,
                     elementType: ElementType.CASE_STUDY,
