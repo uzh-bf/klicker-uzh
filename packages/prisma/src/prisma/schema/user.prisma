@@ -105,8 +105,6 @@ model User {
   questions         Element[]
   mediaFiles        MediaFile[]
   tags              Tag[]
-  questionInstances QuestionInstance[]
-  sessions          LiveSession[]
   groupActivities   GroupActivity[]
   elementInstances  ElementInstance[]
   practiceQuizzes   PracticeQuiz[]
