@@ -131,7 +131,7 @@ function AnswerCollectionEditModal({
         >
           <AccordionItem value="metadata">
             <AccordionTrigger
-              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              className="hover:bg-accent px-1 py-2 text-base font-semibold hover:no-underline"
               data-cy="open-answer-collection-metadata"
             >
               {t('manage.resources.nameAndDescription')}
@@ -153,7 +153,7 @@ function AnswerCollectionEditModal({
 
           <AccordionItem value="options">
             <AccordionTrigger
-              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              className="hover:bg-accent px-1 py-2 text-base font-semibold hover:no-underline"
               data-cy="open-answer-collection-options"
             >
               {t('manage.resources.answerOptions')}
