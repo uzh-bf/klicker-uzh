@@ -2,15 +2,16 @@ import { faFileExcel, faFilePdf } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
-import katex from 'rehype-katex'
+import rehypeKatex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
-import rehype2react from 'rehype-react'
+import rehypeReact from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 // import remarkDirective from 'remark-directive'
 // import remarkGfm from 'remark-gfm'
-import math from 'remark-math'
-import markdown from 'remark-parse'
-import remark2rehype from 'remark-rehype'
+import * as runtime from 'react/jsx-runtime'
+import remarkMath from 'remark-math'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
@@ -74,11 +75,11 @@ function Markdown({
 
       return (
         unified()
-          .use(markdown)
-          .use(math, { singleDollarTextMath: false })
+          .use(remarkParse)
+          .use(remarkMath, { singleDollarTextMath: false })
           // .use(remarkGfm)
           // .use(remarkDirective)
-          .use(remark2rehype, { allowDangerousHtml: false })
+          .use(remarkRehype, { allowDangerousHtml: false })
           .use(rehypeSanitize, {
             ...defaultSchema,
             attributes: {
@@ -106,9 +107,9 @@ function Markdown({
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
           })
-          .use(katex)
-          .use(rehype2react, {
-            createElement: React.createElement,
+          .use(rehypeKatex)
+          .use(rehypeReact, {
+            ...runtime,
             components: {
               img: ({
                 src,
