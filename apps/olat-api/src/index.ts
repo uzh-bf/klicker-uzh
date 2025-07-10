@@ -23,7 +23,7 @@ import {
 } from './types.js'
 
 const app: express.Express = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.NODE_ENV === 'development' ? 3030 : 3000
 
 const API_KEY = process.env.OLAT_API_KEY
 if (!API_KEY) {
