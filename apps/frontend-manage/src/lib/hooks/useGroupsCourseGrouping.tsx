@@ -16,12 +16,10 @@ function useGroupsCourseGrouping({
   return [
     {
       items: coursesWithGroups,
-      showSeparator: true,
       label: t('shared.generic.withGroups'),
     },
     {
       items: coursesWithoutGroups,
-      showSeparator: true,
       label: t('shared.generic.withoutGroups'),
     },
   ]
