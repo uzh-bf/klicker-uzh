@@ -4,8 +4,12 @@ import {
   faChevronUp,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import * as RadixCollapsible from '@radix-ui/react-collapsible'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import {
+  ShadcnCollapsible,
+  ShadcnCollapsibleContent,
+  ShadcnCollapsibleTrigger,
+} from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../common/LinkButton'
@@ -30,14 +34,14 @@ function CourseCollapsible({
 
   return (
     <div>
-      <RadixCollapsible.Root
+      <ShadcnCollapsible
         open={open}
         onOpenChange={() => {
           setOpen((prev) => !prev)
           setStackStorage((prev) => !prev)
         }}
       >
-        <RadixCollapsible.Trigger
+        <ShadcnCollapsibleTrigger
           className={twMerge(
             'flex w-full flex-row items-center justify-between border-b-2 text-lg font-bold text-slate-700',
             open && 'mb-2'
@@ -48,8 +52,8 @@ function CourseCollapsible({
             icon={open ? faChevronUp : faChevronDown}
             size="sm"
           />
-        </RadixCollapsible.Trigger>
-        <RadixCollapsible.Content>
+        </ShadcnCollapsibleTrigger>
+        <ShadcnCollapsibleContent>
           <div className="flex flex-col gap-2">
             {elements.map((element) => (
               <LinkButton
@@ -65,8 +69,8 @@ function CourseCollapsible({
               </LinkButton>
             ))}
           </div>
-        </RadixCollapsible.Content>
-      </RadixCollapsible.Root>
+        </ShadcnCollapsibleContent>
+      </ShadcnCollapsible>
     </div>
   )
 }

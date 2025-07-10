@@ -20,6 +20,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       catalystInstitutional: true,
       publicPreview: true,
       privatePreview: true,
+      role: 'ADMIN',
     })
   )
 

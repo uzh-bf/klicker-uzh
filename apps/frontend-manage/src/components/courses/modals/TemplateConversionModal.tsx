@@ -10,6 +10,7 @@ import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
   CreateActivityTemplateDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -28,8 +29,7 @@ import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateConversionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   activityId: string
   activityType: ActivityType
   onSuccess: () => void
@@ -37,8 +37,7 @@ interface TemplateConversionModalProps {
 }
 
 function TemplateConversionModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   activityType,
   onSuccess,
@@ -60,6 +59,7 @@ function TemplateConversionModal({
       activityType,
     },
     skip: !open,
+    fetchPolicy: 'cache-and-network',
   })
   const templateInfo = data?.checkTemplateInfoAvailable
 
@@ -78,7 +78,7 @@ function TemplateConversionModal({
   }, [templateInfo])
 
   const handleModalClose = () => {
-    setOpen(false)
+    onClose()
     setCurrentStep(0)
     setConfirmations({
       activityConversion: false,
@@ -90,13 +90,13 @@ function TemplateConversionModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
-      open={open}
       onClose={handleModalClose}
-      className={{ content: 'gap-2 lg:w-[55rem]' }}
+      className={{ content: 'lg:w-220 gap-2 pb-2' }}
       dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik
@@ -136,7 +136,10 @@ function TemplateConversionModal({
                 templateInstructions: values.instructions,
                 copyBeforeConversion: values.conversionType === 'copy',
               },
-              refetchQueries: [GetUserLiveQuizzesDocument],
+              refetchQueries: [
+                { query: GetUserLiveQuizzesDocument },
+                { query: GetUserActivitiesDocument },
+              ],
             })
 
             if (result.data?.createActivityTemplate) {

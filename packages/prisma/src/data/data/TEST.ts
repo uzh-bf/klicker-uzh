@@ -1,6 +1,12 @@
+import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import Prisma from '../../../dist/index.js'
 import { AchievementType } from '../../prisma/client/index.js'
 const { ElementType, PublicationStatus } = Prisma
+
+export const PUBLIC_CATALOG_COLLECTION_ID =
+  '64b6eb55-e76d-42bf-b382-5cff2f5bee74'
+export const RESTRICTED_CATALOG_COLLECTION_ID =
+  'a622e2fb-7e4c-4dca-83d1-f2f3e618029c'
 
 export const ANSWER_COLLECTIONS = [
   {
@@ -8,75 +14,29 @@ export const ANSWER_COLLECTIONS = [
     description:
       'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [
-      {
-        value: 'Apple',
-      },
-      {
-        value: 'Banana',
-      },
-      {
-        value: 'Cherry',
-      },
-      {
-        value: 'Date',
-      },
-      {
-        value: 'Elderberry',
-      },
-      {
-        value: 'Fig',
-      },
-      {
-        value: 'Grape',
-      },
-      {
-        value: 'Honeydew',
-      },
-      {
-        value: 'Kiwi',
-      },
-      {
-        value: 'Lemon',
-      },
-      {
-        value: 'Mango',
-      },
-      {
-        value: 'Nectarine',
-      },
-      {
-        value: 'Orange',
-      },
-      {
-        value: 'Peach',
-      },
-      {
-        value: 'Quince',
-      },
-      {
-        value: 'Raspberry',
-      },
-      {
-        value: 'Strawberry',
-      },
-      {
-        value: 'Tangerine',
-      },
-      {
-        value: 'Ugli',
-      },
-      {
-        value: 'Vanilla',
-      },
-      {
-        value: 'Watermelon',
-      },
-      {
-        value: 'Ximenia',
-      },
-      {
-        value: 'Yuzu',
-      },
+      { value: 'Apple' },
+      { value: 'Banana' },
+      { value: 'Cherry' },
+      { value: 'Date' },
+      { value: 'Elderberry' },
+      { value: 'Fig' },
+      { value: 'Grape' },
+      { value: 'Honeydew' },
+      { value: 'Kiwi' },
+      { value: 'Lemon' },
+      { value: 'Mango' },
+      { value: 'Nectarine' },
+      { value: 'Orange' },
+      { value: 'Peach' },
+      { value: 'Quince' },
+      { value: 'Raspberry' },
+      { value: 'Strawberry' },
+      { value: 'Tangerine' },
+      { value: 'Ugli' },
+      { value: 'Vanilla' },
+      { value: 'Watermelon' },
+      { value: 'Ximenia' },
+      { value: 'Yuzu' },
     ],
   },
   {
@@ -84,24 +44,12 @@ export const ANSWER_COLLECTIONS = [
     description:
       'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [
-      {
-        value: 'Artichoke',
-      },
-      {
-        value: 'Broccoli',
-      },
-      {
-        value: 'Cabbage',
-      },
-      {
-        value: 'Dill',
-      },
-      {
-        value: 'Cucumber',
-      },
-      {
-        value: 'Carrot',
-      },
+      { value: 'Artichoke' },
+      { value: 'Broccoli' },
+      { value: 'Cabbage' },
+      { value: 'Dill' },
+      { value: 'Cucumber' },
+      { value: 'Carrot' },
     ],
   },
   {
@@ -109,24 +57,12 @@ export const ANSWER_COLLECTIONS = [
     description:
       'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [
-      {
-        value: 'Antelope',
-      },
-      {
-        value: 'Bear',
-      },
-      {
-        value: 'Cat',
-      },
-      {
-        value: 'Dog',
-      },
-      {
-        value: 'Elephant',
-      },
-      {
-        value: 'Fox',
-      },
+      { value: 'Antelope' },
+      { value: 'Bear' },
+      { value: 'Cat' },
+      { value: 'Dog' },
+      { value: 'Elephant' },
+      { value: 'Fox' },
     ],
   },
 ]
@@ -134,12 +70,32 @@ export const ANSWER_COLLECTIONS = [
 export const CATALOG_ASSIGNMENTS = [
   {
     answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
-    catalogCollectionName: undefined,
+    catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
     access: Prisma.ObjectAccess.PUBLIC,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
-    catalogCollectionName: undefined,
+    catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+    access: Prisma.ObjectAccess.RESTRICTED,
+  },
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
+    catalogCollectionId: RESTRICTED_CATALOG_COLLECTION_ID,
+    access: Prisma.ObjectAccess.PUBLIC,
+  },
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
+    catalogCollectionId: RESTRICTED_CATALOG_COLLECTION_ID,
+    access: Prisma.ObjectAccess.RESTRICTED,
+  },
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
+    catalogCollectionId: PUBLIC_CATALOG_COLLECTION_ID,
+    access: Prisma.ObjectAccess.PUBLIC,
+  },
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
+    catalogCollectionId: PUBLIC_CATALOG_COLLECTION_ID,
     access: Prisma.ObjectAccess.RESTRICTED,
   },
 ]
@@ -840,6 +796,52 @@ export const LIVE_QUIZZES = [
         timeLimit: undefined,
       },
     ],
+  },
+  {
+    id: 'ef1b2304-6b61-4eb0-98e0-b3fb8105ba2a',
+    name: 'Live Quiz Template',
+    displayName: 'Live Quiz Template',
+    isModerationEnabled: false,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
+    isGamificationEnabled: true,
+    status: PublicationStatus.TEMPLATE,
+    defaultPoints: 50,
+    defaultCorrectPoints: 100,
+    maxBonusPoints: 100,
+    timeToZeroBonus: 200,
+    blocks: [
+      {
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        timeLimit: undefined,
+      },
+      {
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        timeLimit: 200,
+      },
+    ],
+    template: {
+      description:
+        'General description of the template, that can be shown as an information to the user.',
+      instructions:
+        'General instructions of the template, how to use it and what reasoning is behind the composition.',
+      answerCollections: QUESTIONS.reduce<string[]>((acc, question) => {
+        if (question.collectionName && !acc.includes(question.collectionName)) {
+          acc.push(question.collectionName)
+        }
+        return acc
+      }, []),
+      answerCollectionItems: QUESTIONS.reduce<string[]>((acc, question) => {
+        if (question.answerCollectionItems) {
+          question.answerCollectionItems.forEach((item) => {
+            if (!acc.includes(item)) {
+              acc.push(item)
+            }
+          })
+        }
+        return acc
+      }, []),
+    },
   },
   {
     id: '20325ec6-0ce7-4e24-bd79-5c1a46f64c47',

@@ -15,16 +15,16 @@ function MissingPage() {
           <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
           <div>{t('shared.error.404')}</div>
         </div>
-        <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+        <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
           {t.rich('manage.general.404Message', {
             link: (linkText) => (
-              <Link
-                href="/"
-                className="text-uzh-blue-60 hover:text-uzh-blue-100"
-                legacyBehavior
-                passHref
-              >
-                <a data-cy="404-home-link">{linkText}</a>
+              <Link href="/" legacyBehavior passHref>
+                <a
+                  data-cy="404-home-link"
+                  className="text-uzh-blue-80 hover:text-uzh-blue-100 hover:underline"
+                >
+                  {linkText}
+                </a>
               </Link>
             ),
           })}

@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  ObjectType,
   PermissionLevel,
   ShareObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,21 +15,25 @@ function useObjectSharing({
   objectId,
   objectType,
   catalogCollectionId,
+  onSuccess,
   onError,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: ObjectType
   catalogCollectionId?: string
+  onSuccess?: () => void
   onError: () => void
 }): {
   onShareObject: ({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => Promise<boolean>
   objectSharing: boolean
 } {
@@ -40,20 +44,26 @@ function useObjectSharing({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => {
     try {
       const res = await shareObject({
         variables: {
           objectId: String(objectId),
           objectType,
-          shortnameOrEmail,
+          shortnameOrEmail:
+            typeof shortnameOrEmail !== 'undefined' && shortnameOrEmail !== ''
+              ? shortnameOrEmail
+              : undefined,
           userGroupId:
             typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
-          permissionLevel: permissionLevel,
+          permissionLevel,
+          propagation,
         },
         update: (cache, { data }) => {
           if (!data?.shareObject) return
@@ -83,12 +93,12 @@ function useObjectSharing({
           })
         },
         refetchQueries: [
-          GetCatalogSharingRequestsDocument,
+          { query: GetCatalogSharingRequestsDocument },
           {
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          ...(objectType === CatalogObjectType.CatalogCollection
+          ...(objectType === ObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -96,13 +106,14 @@ function useObjectSharing({
                 },
               ]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+          ...(objectType === ObjectType.AnswerCollection
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],
       })
 
       if (typeof res?.data?.shareObject?.permissionId !== 'undefined') {
+        onSuccess?.()
         return true
       } else {
         onError()

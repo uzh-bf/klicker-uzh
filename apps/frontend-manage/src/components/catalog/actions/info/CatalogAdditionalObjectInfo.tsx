@@ -1,4 +1,4 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import CatalogInfoAnswerCollection from './CatalogInfoAnswerCollection'
 
 function CatalogAdditionalObjectInfo({
@@ -6,9 +6,9 @@ function CatalogAdditionalObjectInfo({
   objectType,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: ObjectType
 }) {
-  if (objectType === CatalogObjectType.AnswerCollection) {
+  if (objectType === ObjectType.AnswerCollection) {
     return <CatalogInfoAnswerCollection id={objectId as number} />
   }
 

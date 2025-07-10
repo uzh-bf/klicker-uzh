@@ -1,0 +1,19 @@
+fragment ActivityEntryData on ActivityLogEntry {
+  id
+  type
+  objectType
+  message
+  resolved
+  resolvedAt
+  username
+
+  options {
+    field
+    oldValue
+    newValue
+  }
+
+  isEdited
+  createdAt
+  updatedAt
+}

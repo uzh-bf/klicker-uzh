@@ -1,20 +1,14 @@
-import {
-  type Course,
-  ElementInstanceType,
-  ElementStackType,
-  ElementType,
-  LeaderboardType,
-  ParameterType,
-  type Participant,
-  type ParticipantGroup,
-  PublicationStatus,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
   type ElementStackInput,
   ResponseCorrectness,
 } from '@klicker-uzh/types'
-import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
+import {
+  getActivityInstanceConnectOrCreate,
+  propagateActivityToElements,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
@@ -46,13 +40,14 @@ import {
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
-interface CreateParticipantGroupArgs {
-  courseId: string
-  name: string
-}
-
 export async function createParticipantGroup(
-  { courseId, name }: CreateParticipantGroupArgs,
+  {
+    courseId,
+    name,
+  }: {
+    courseId: string
+    name: string
+  },
   ctx: ContextWithUser
 ) {
   // check if group creation is enabled on course
@@ -322,9 +317,9 @@ async function resolveSingleParticipantGroups(
   {
     course,
   }: {
-    course: Course & {
-      participantGroups: (Pick<ParticipantGroup, 'id'> & {
-        participants: Pick<Participant, 'id'>[]
+    course: DB.Course & {
+      participantGroups: (Pick<DB.ParticipantGroup, 'id'> & {
+        participants: Pick<DB.Participant, 'id'>[]
       })[]
     }
   },
@@ -470,6 +465,14 @@ export async function finalRandomGroupAssignments(ctx: Context) {
           `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
         )
 
+        // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
+        await ctx.prisma.course.update({
+          where: { id: courseId },
+          data: {
+            randomAssignmentFinalized: true,
+          },
+        })
+
         continue
       }
 
@@ -526,20 +529,9 @@ export async function manualRandomGroupAssignments(
       isGroupCreationEnabled: true,
     },
     include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
+      groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } },
       participantGroups: {
-        select: {
-          id: true,
-          participants: {
-            select: {
-              id: true,
-            },
-          },
-        },
+        select: { id: true, participants: { select: { id: true } } },
       },
     },
   })
@@ -566,9 +558,7 @@ export async function manualRandomGroupAssignments(
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
       const courseUpdated = await ctx.prisma.course.update({
         where: { id: courseId },
-        data: {
-          randomAssignmentFinalized: true,
-        },
+        data: { randomAssignmentFinalized: true },
       })
 
       return courseUpdated
@@ -597,9 +587,7 @@ export async function manualRandomGroupAssignments(
           style: 'capital',
         }) + 's',
       code: 100000 + Math.floor(Math.random() * 900000),
-      participants: {
-        connect: group.map((id) => ({ id })),
-      },
+      participants: { connect: group.map((id) => ({ id })) },
     }))
 
     // update the course
@@ -608,23 +596,14 @@ export async function manualRandomGroupAssignments(
       data: {
         groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
         randomAssignmentFinalized: true,
-        participantGroups: {
-          create: newGroups,
-        },
-        groupAssignmentPoolEntries: {
-          deleteMany: {},
-        },
+        participantGroups: { create: newGroups },
+        groupAssignmentPoolEntries: { deleteMany: {} },
       },
-      include: {
-        participantGroups: true,
-      },
+      include: { participantGroups: true },
     })
 
     // invalidate the cache of the course and the group assignment pool entries
-    ctx.emitter.emit('invalidate', {
-      typename: 'Course',
-      id: courseId,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
     courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
       ctx.emitter.emit('invalidate', {
         typename: 'GroupAssignmentPoolEntry',
@@ -651,13 +630,14 @@ export async function manualRandomGroupAssignments(
   }
 }
 
-interface JoinParticipantGroupArgs {
-  courseId: string
-  code: number
-}
-
 export async function joinParticipantGroup(
-  { courseId, code }: JoinParticipantGroupArgs,
+  {
+    courseId,
+    code,
+  }: {
+    courseId: string
+    code: number
+  },
   ctx: ContextWithUser
 ) {
   // find participantgroup with code
@@ -695,7 +675,7 @@ export async function joinParticipantGroup(
     where: {
       participantId: ctx.user.sub,
       courseId: courseId,
-      type: LeaderboardType.COURSE,
+      type: DB.LeaderboardType.COURSE,
     },
   })
 
@@ -731,13 +711,14 @@ export async function joinParticipantGroup(
   return updatedParticipantGroup.id
 }
 
-interface LeaveParticipantGroupArgs {
-  groupId: string
-  courseId: string
-}
-
 export async function leaveParticipantGroup(
-  { groupId, courseId }: LeaveParticipantGroupArgs,
+  {
+    groupId,
+    courseId,
+  }: {
+    groupId: string
+    courseId: string
+  },
   ctx: ContextWithUser
 ) {
   // find participantgroup with corresponding id
@@ -781,7 +762,8 @@ export async function leaveParticipantGroup(
       if (participant.id === ctx.user.sub) return acc
 
       const matchingLeaderboard = participant.leaderboards.find(
-        (lb) => lb.courseId === courseId && lb.type === LeaderboardType.COURSE
+        (lb) =>
+          lb.courseId === courseId && lb.type === DB.LeaderboardType.COURSE
       )
       return {
         sum: acc.sum + (matchingLeaderboard?.score ?? 0),
@@ -853,12 +835,8 @@ export async function renameParticipantGroup(
   return updatedGroup
 }
 
-interface GetParticipantGroupsArgs {
-  courseId: string
-}
-
 export async function getParticipantGroups(
-  { courseId }: GetParticipantGroupsArgs,
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   // find participant with correspoinding id ctx.user.sub and return all his participant groups with correct id
@@ -887,7 +865,7 @@ export async function getParticipantGroups(
               leaderboards: {
                 where: {
                   courseId,
-                  type: LeaderboardType.COURSE,
+                  type: DB.LeaderboardType.COURSE,
                 },
               },
             },
@@ -917,7 +895,7 @@ export async function getParticipantGroups(
 interface ClueInput {
   name: string
   displayName: string
-  type: ParameterType
+  type: DB.ParameterType
   value: string
   unit?: string | null
 }
@@ -953,20 +931,16 @@ export async function manipulateGroupActivity(
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   if (id) {
     const existingActiity = await ctx.prisma.groupActivity.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActiity) {
       throw new GraphQLError('Group Activity not found')
     }
     if (
-      existingActiity.status === PublicationStatus.SCHEDULED ||
-      existingActiity.status === PublicationStatus.PUBLISHED ||
-      existingActiity.status === PublicationStatus.GRADED
+      existingActiity.status === DB.PublicationStatus.SCHEDULED ||
+      existingActiity.status === DB.PublicationStatus.PUBLISHED ||
+      existingActiity.status === DB.PublicationStatus.GRADED
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
@@ -974,11 +948,7 @@ export async function manipulateGroupActivity(
     // remove old clues as they will be replaced through new values
     await ctx.prisma.groupActivity.update({
       where: { id },
-      data: {
-        clues: {
-          deleteMany: {},
-        },
-      },
+      data: { clues: { deleteMany: {} } },
     })
   }
 
@@ -993,24 +963,22 @@ export async function manipulateGroupActivity(
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementStack: {
-          groupActivityId: id,
-        },
+        elementStack: { groupActivityId: id },
       },
     })
 
     const stacks = await ctx.prisma.elementStack.findMany({
-      where: {
-        groupActivityId: id,
-      },
+      where: { groupActivityId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
@@ -1020,7 +988,7 @@ export async function manipulateGroupActivity(
     name: name,
     displayName: displayName,
     description: description,
-    status: PublicationStatus.DRAFT,
+    status: DB.PublicationStatus.DRAFT,
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
     pointsMultiplier: multiplier,
@@ -1045,7 +1013,7 @@ export async function manipulateGroupActivity(
     },
     stacks: {
       create: {
-        type: ElementStackType.GROUP_ACTIVITY,
+        type: DB.ElementStackType.GROUP_ACTIVITY,
         order: 0,
         displayName: stack.displayName,
         description: stack.description,
@@ -1053,7 +1021,7 @@ export async function manipulateGroupActivity(
           connectOrCreate: stack.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
               instance,
-              instanceType: ElementInstanceType.GROUP_ACTIVITY,
+              instanceType: DB.ElementInstanceType.GROUP_ACTIVITY,
               activityMultiplier: multiplier,
               persistentInstances,
               duplicationInstances,
@@ -1064,64 +1032,70 @@ export async function manipulateGroupActivity(
         },
       },
     },
-    owner: {
-      connect: {
-        id: ctx.user.sub,
-      },
-    },
-    course: {
-      connect: {
-        id: courseId,
-      },
-    },
+    course: { connect: { id: courseId } },
   }
 
   // Use a transaction to ensure atomicity of all database operations
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
-    })
-
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
-
-      await prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
-        data: {
-          elementStackId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
-          },
-        },
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
       })
-    }
 
-    // delete all stacks
-    await prisma.elementStack.deleteMany({
-      where: {
-        id: { in: stacksToDelete },
-      },
-    })
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
 
-    return prisma.groupActivity.upsert({
-      where: {
-        id: id ?? newId,
-      },
-      create: createOrUpdateJSON,
-      update: createOrUpdateJSON,
-    })
-  })
+        await prisma.elementInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            elementStackId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all stacks
+      await prisma.elementStack.deleteMany({
+        where: { id: { in: stacksToDelete } },
+      })
+
+      const upsertedActivity = await prisma.groupActivity.upsert({
+        where: { id: id ?? newId },
+        create: {
+          ...createOrUpdateJSON,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: createOrUpdateJSON,
+      })
+
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
+      }
+
+      // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
+      await recomputeDerivedPermissions(
+        { groupActivityId: upsertedActivity.id },
+        prisma
+      )
+
+      return upsertedActivity
+    },
+    { timeout: 60000 }
+  )
 
   return activity
 }
@@ -1132,7 +1106,7 @@ export async function updateGroupAverageScores(ctx: Context) {
       participants: {
         include: {
           leaderboards: {
-            where: { type: LeaderboardType.COURSE },
+            where: { type: DB.LeaderboardType.COURSE },
           },
         },
       },
@@ -1192,13 +1166,8 @@ export async function updateGroupAverageScores(ctx: Context) {
   return true
 }
 
-interface GetGroupActivityDetailsArgs {
-  activityId: string
-  groupId: string
-}
-
 export async function getGroupActivityDetails(
-  { activityId, groupId }: GetGroupActivityDetailsArgs,
+  { activityId, groupId }: { activityId: string; groupId: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
@@ -1206,9 +1175,9 @@ export async function getGroupActivityDetails(
       id: activityId,
       status: {
         in: [
-          PublicationStatus.PUBLISHED,
-          PublicationStatus.ENDED,
-          PublicationStatus.GRADED,
+          DB.PublicationStatus.PUBLISHED,
+          DB.PublicationStatus.ENDED,
+          DB.PublicationStatus.GRADED,
         ],
       },
       isDeleted: false,
@@ -1291,7 +1260,7 @@ export async function getGroupActivityDetails(
               }
 
               return {
-                ...(groupActivity.status === PublicationStatus.GRADED
+                ...(groupActivity.status === DB.PublicationStatus.GRADED
                   ? clueAssignment.groupActivityClueInstance
                   : omitBy(
                       clueAssignment.groupActivityClueInstance,
@@ -1310,11 +1279,11 @@ export async function getGroupActivityDetails(
 }
 
 export async function startGroupActivity(
-  { activityId, groupId }: GetGroupActivityDetailsArgs,
+  { activityId, groupId }: { activityId: string; groupId: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId, status: PublicationStatus.PUBLISHED },
+    where: { id: activityId, status: DB.PublicationStatus.PUBLISHED },
     include: {
       course: true,
       clues: {
@@ -1490,10 +1459,10 @@ export async function submitGroupActivityDecisions(
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
     !!groupActivityInstance.decisionsSubmittedAt ||
-    groupActivityInstance.groupActivity.status === PublicationStatus.DRAFT ||
+    groupActivityInstance.groupActivity.status === DB.PublicationStatus.DRAFT ||
     groupActivityInstance.groupActivity.status ===
-      PublicationStatus.SCHEDULED ||
-    groupActivityInstance.groupActivity.status === PublicationStatus.ENDED
+      DB.PublicationStatus.SCHEDULED ||
+    groupActivityInstance.groupActivity.status === DB.PublicationStatus.ENDED
   ) {
     return null
   }
@@ -1511,7 +1480,7 @@ export async function submitGroupActivityDecisions(
   await Promise.all(
     responses!.flatMap((inputResponse) => {
       return ctx.prisma.$transaction(async (prisma) => {
-        if (inputResponse.type === ElementType.CONTENT) return []
+        if (inputResponse.type === DB.ElementType.CONTENT) return []
         const instanceId = inputResponse.instanceId
 
         // fetch the existing instance
@@ -1527,9 +1496,9 @@ export async function submitGroupActivityDecisions(
           modified: boolean
         }
         if (
-          (inputResponse.type === ElementType.SC ||
-            inputResponse.type === ElementType.MC ||
-            inputResponse.type === ElementType.KPRIM) &&
+          (inputResponse.type === DB.ElementType.SC ||
+            inputResponse.type === DB.ElementType.MC ||
+            inputResponse.type === DB.ElementType.KPRIM) &&
           'choices' in instance.results
         ) {
           response = { choices: inputResponse.choicesResponse }
@@ -1538,7 +1507,7 @@ export async function submitGroupActivityDecisions(
             response: response,
           })
         } else if (
-          inputResponse.type === ElementType.NUMERICAL &&
+          inputResponse.type === DB.ElementType.NUMERICAL &&
           'responses' in instance.results
         ) {
           response = { value: String(inputResponse.numericalResponse) }
@@ -1548,7 +1517,7 @@ export async function submitGroupActivityDecisions(
             response: response,
           })
         } else if (
-          inputResponse.type === ElementType.FREE_TEXT &&
+          inputResponse.type === DB.ElementType.FREE_TEXT &&
           'responses' in instance.results
         ) {
           response = { value: inputResponse.freeTextResponse }
@@ -1558,7 +1527,7 @@ export async function submitGroupActivityDecisions(
             response: response,
           })
         } else if (
-          inputResponse.type === ElementType.SELECTION &&
+          inputResponse.type === DB.ElementType.SELECTION &&
           'selections' in instance.results
         ) {
           updatedResults = updateSelectionResults({
@@ -1566,7 +1535,7 @@ export async function submitGroupActivityDecisions(
             response: { selection: inputResponse.selectionResponse },
           })
         } else if (
-          inputResponse.type === ElementType.CASE_STUDY &&
+          inputResponse.type === DB.ElementType.CASE_STUDY &&
           'assessments' in instance.results
         ) {
           updatedResults = updateCaseStudyResults({
@@ -1605,33 +1574,17 @@ export async function submitGroupActivityDecisions(
   return updatedActivityInstance.id
 }
 
-interface GetGroupActivityArgs {
-  id: string
-}
-
 export async function getGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub, isDeleted: false },
+    where: { id, isDeleted: false },
     include: {
       course: true,
       clues: true,
-      activityInstances: {
-        include: {
-          group: true,
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      activityInstances: { include: { group: true } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
     },
   })
 
@@ -1639,11 +1592,11 @@ export async function getGroupActivity(
 }
 
 export async function publishGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
   })
 
   if (!groupActivity) return null
@@ -1654,10 +1607,10 @@ export async function publishGroupActivity(
     data: {
       status:
         now < groupActivity.scheduledStartAt
-          ? PublicationStatus.SCHEDULED
+          ? DB.PublicationStatus.SCHEDULED
           : now > groupActivity.scheduledEndAt
-            ? PublicationStatus.ENDED
-            : PublicationStatus.PUBLISHED,
+            ? DB.PublicationStatus.ENDED
+            : DB.PublicationStatus.PUBLISHED,
     },
   })
 
@@ -1665,49 +1618,25 @@ export async function publishGroupActivity(
 }
 
 export async function unpublishGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.SCHEDULED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
-    data: {
-      status: PublicationStatus.DRAFT,
-    },
+    data: { status: DB.PublicationStatus.DRAFT },
   })
 
   return updatedGroupActivity
 }
 
 export async function openGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.SCHEDULED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
       scheduledStartAt: new Date(),
     },
   })
@@ -1719,24 +1648,13 @@ export async function openGroupActivity(
 }
 
 export async function endGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.PUBLISHED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: PublicationStatus.ENDED,
+      status: DB.PublicationStatus.ENDED,
       scheduledEndAt: new Date(),
     },
   })
@@ -1749,13 +1667,18 @@ export async function endGroupActivity(
 }
 
 export async function deleteGroupActivity(
-  { id }: GetGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       activityInstances: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
@@ -1766,42 +1689,98 @@ export async function deleteGroupActivity(
   // if the the group activity is not yet published / has not started or has no instances -> hard deletion
   // as soon as an instance exists (independent of results) -> soft deletion
   if (
-    groupActivity.status === PublicationStatus.DRAFT ||
-    groupActivity.status === PublicationStatus.SCHEDULED ||
+    groupActivity.status === DB.PublicationStatus.DRAFT ||
+    groupActivity.status === DB.PublicationStatus.SCHEDULED ||
     groupActivity.activityInstances.length === 0
   ) {
-    const deletedItem = await ctx.prisma.groupActivity.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-    })
+    const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
+
+    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+    // this case cannot be handled by the permissions module, since the group activity is already hard deleted
+    // access requests need to be updated as well, since the derived permissions on elements might have changed
+    await propagateActivityToElements(
+      { stacks: groupActivity.stacks, updateAccessRequests: true },
+      ctx.prisma
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
     return deletedItem
   } else {
-    // if the group activity already has active instance, only soft delete it
-    const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
+    // if the group activity already has active instances, only soft delete it
+    const updatedGroupActivity = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const updatedActivity = await prisma.groupActivity.update({
+          where: { id },
+          data: { isDeleted: true },
+        })
+
+        // update derived permissions for this group activity (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
+        await recomputeDerivedPermissions(
+          { groupActivityId: updatedActivity.id },
+          prisma
+        )
+
+        return updatedActivity
       },
-      data: {
-        isDeleted: true,
-      },
-    })
+      { timeout: 60000 }
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
     return updatedGroupActivity
   }
 }
 
+export async function removeGroupActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified group activity
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this group activity and user
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.groupActivity.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
+
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.GROUP_ACTIVITY,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.GROUP_ACTIVITY} (ID: ${id})`,
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        { groupActivityId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'GroupActivity',
+    id,
+  })
+
+  return id
+}
+
 export async function getCourseGroupActivities(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
@@ -1811,10 +1790,10 @@ export async function getCourseGroupActivities(
         where: {
           status: {
             in: [
-              PublicationStatus.SCHEDULED,
-              PublicationStatus.PUBLISHED,
-              PublicationStatus.ENDED,
-              PublicationStatus.GRADED,
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.PUBLISHED,
+              DB.PublicationStatus.ENDED,
+              DB.PublicationStatus.GRADED,
             ],
           },
           isDeleted: false,
@@ -1849,18 +1828,31 @@ export async function getGroupActivityInstances(
   return instances
 }
 
+export async function changeGroupActivityName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: { name, displayName },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    return true
+  } catch (error) {
+    console.error('Error changing group activity name:', error)
+    return false
+  }
+}
+
 export async function getGroupActivitySummary(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activityInstances: true,
-    },
+    where: { id },
+    include: { activityInstances: true },
   })
 
   if (!groupActivity) {
@@ -1879,33 +1871,17 @@ export async function getGroupActivitySummary(
   }
 }
 
-interface GetGradingGroupActivityArgs {
-  id: string
-}
-
 export async function getGradingGroupActivity(
-  { id }: GetGradingGroupActivityArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       activityInstances: {
-        include: {
-          group: true,
-        },
-        orderBy: {
-          decisionsSubmittedAt: 'asc',
-        },
+        include: { group: true },
+        orderBy: { decisionsSubmittedAt: 'asc' },
       },
     },
   })
@@ -1921,13 +1897,7 @@ export async function getGradingGroupActivity(
 }
 
 export async function extendGroupActivity(
-  {
-    id,
-    endDate,
-  }: {
-    id: string
-    endDate: Date
-  },
+  { id, endDate }: { id: string; endDate: Date },
   ctx: ContextWithUser
 ) {
   // check that the new end date lies in the future
@@ -1938,9 +1908,8 @@ export async function extendGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: {
-        in: [PublicationStatus.SCHEDULED, PublicationStatus.PUBLISHED],
+        in: [DB.PublicationStatus.SCHEDULED, DB.PublicationStatus.PUBLISHED],
       },
       scheduledEndAt: { gt: new Date() },
     },
@@ -1973,10 +1942,7 @@ export async function gradeGroupActivitySubmission(
 
   // fetch all elementInstances
   const elementInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      owner: { id: ctx.user.sub },
-      id: { in: instanceIds },
-    },
+    where: { id: { in: instanceIds } },
   })
   const elementInstanceMap = elementInstances.reduce<
     Record<number, ElementInstanceOptions>
@@ -2024,9 +1990,7 @@ export async function finalizeGroupActivityGrading(
   // find the group activity and all instances
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
-    include: {
-      activityInstances: true,
-    },
+    include: { activityInstances: true },
   })
 
   if (!groupActivity) return null
@@ -2044,7 +2008,7 @@ export async function finalizeGroupActivityGrading(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status: PublicationStatus.GRADED,
+      status: DB.PublicationStatus.GRADED,
       activityInstances: {
         updateMany: {
           where: {
@@ -2067,7 +2031,7 @@ export async function finalizeGroupActivityGrading(
                 include: {
                   leaderboards: {
                     where: {
-                      type: LeaderboardType.COURSE,
+                      type: DB.LeaderboardType.COURSE,
                       courseId: groupActivity.courseId,
                     },
                   },
@@ -2115,14 +2079,8 @@ export async function finalizeGroupActivityGrading(
     // increment groupActivityScore on participantGroup
     for (const instance of gradedInstances) {
       await prisma.participantGroup.update({
-        where: {
-          id: instance.groupId,
-        },
-        data: {
-          groupActivityScore: {
-            increment: instance.results!.points,
-          },
-        },
+        where: { id: instance.groupId },
+        data: { groupActivityScore: { increment: instance.results!.points } },
       })
     }
 
@@ -2159,14 +2117,8 @@ export async function finalizeGroupActivityGrading(
         // participants with achievement id 9 should get 250 xp
         if (id === 9) {
           await prisma.participant.update({
-            where: {
-              id: participantId,
-            },
-            data: {
-              xp: {
-                increment: 250,
-              },
-            },
+            where: { id: participantId },
+            data: { xp: { increment: 250 } },
           })
 
           xpAwarded = (xpAwarded ?? 0) + 250
@@ -2175,14 +2127,8 @@ export async function finalizeGroupActivityGrading(
         // participants with achievement id 8 should get 1000 xp and 500 points in the leaderboard
         if (id === 8) {
           await prisma.participant.update({
-            where: {
-              id: participantId,
-            },
-            data: {
-              xp: {
-                increment: 1000,
-              },
-            },
+            where: { id: participantId },
+            data: { xp: { increment: 1000 } },
           })
 
           // update total number of XP awarded

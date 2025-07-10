@@ -72,6 +72,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           ) {
             token =
               req.cookies?.['participant_token'] ??
+              req.cookies?.['temporary_participant_token'] ??
               req.cookies?.['next-auth.session-token']
           }
 

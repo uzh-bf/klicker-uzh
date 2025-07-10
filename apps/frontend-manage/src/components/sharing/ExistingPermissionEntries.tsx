@@ -1,32 +1,36 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  CatalogObjectType,
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Select, Tooltip } from '@uzh-bf/design-system'
+import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
+import PermissionRevocationModal from './PermissionRevocationModal'
 
 function ExistingPermissionEntries({
   type,
   permissions,
   changeLoading,
+  showPropagationSetting,
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
-  type: CatalogObjectType
+  type: ObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
+  showPropagationSetting: boolean
   onPermissionLevelChange: ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
 }) {
@@ -38,16 +42,28 @@ function ExistingPermissionEntries({
     open: boolean
     permissionId?: number
     newPermissionLevel?: PermissionLevel
+    newPropagation?: boolean
     action: 'change' | 'remove'
   }>({
     open: false,
     action: 'change',
   })
 
+  // state for managing the permission revocation modal
+  const [revocationModal, setRevocationModal] = useState<{
+    open: boolean
+    permissionId?: number
+    username?: string
+    userGroup?: string
+  }>({
+    open: false,
+  })
+
   // handle access level change with confirmation for own permissions
   const handlePermissionLevelChange = async (
     permissionId: number,
     newPermissionLevel: PermissionLevel,
+    newPropagation: boolean,
     isOwn: boolean
   ) => {
     if (isOwn) {
@@ -55,12 +71,14 @@ function ExistingPermissionEntries({
         open: true,
         permissionId,
         newPermissionLevel,
+        newPropagation,
         action: 'change',
       })
     } else {
       await onPermissionLevelChange({
         permissionId,
         newPermissionLevel,
+        newPropagation,
       })
     }
   }
@@ -68,7 +86,9 @@ function ExistingPermissionEntries({
   // handle permission removal with confirmation for own permissions
   const handleRemovePermission = async (
     permissionId: number,
-    isOwn: boolean
+    isOwn: boolean,
+    username?: string,
+    userGroup?: string
   ) => {
     if (isOwn) {
       setModifyOwnPermissionsModal({
@@ -77,7 +97,12 @@ function ExistingPermissionEntries({
         action: 'remove',
       })
     } else {
-      await onPermissionRemoval(permissionId)
+      setRevocationModal({
+        open: true,
+        permissionId,
+        username,
+        userGroup,
+      })
     }
   }
 
@@ -87,6 +112,7 @@ function ExistingPermissionEntries({
       await onPermissionLevelChange({
         permissionId: modifyOwnPermissionsModal.permissionId!,
         newPermissionLevel: modifyOwnPermissionsModal.newPermissionLevel!,
+        newPropagation: modifyOwnPermissionsModal.newPropagation!,
       })
     } else {
       await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!)
@@ -94,39 +120,10 @@ function ExistingPermissionEntries({
     setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
   }
 
-  const AccessRevokationButton = ({
-    permission,
-    disabled,
-    className,
-  }: {
-    permission: PermissionInfo
-    disabled?: boolean
-    className?: string
-  }) => (
-    <Button
-      basic
-      disabled={disabled}
-      className={{
-        root: twMerge(
-          'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
-          className
-        ),
-      }}
-      onClick={async () => {
-        await handleRemovePermission(
-          permission.permissionId,
-          permission.isOwn ?? false
-        )
-      }}
-      data={{
-        cy: permission.username
-          ? `revoke-permission-${permission.username}`
-          : `revoke-permission-${permission.userGroupName}`,
-      }}
-    >
-      <Button.Icon withoutLabel icon={faTrashCan} />
-    </Button>
-  )
+  // confirm permission revocation
+  const confirmRevocation = async () => {
+    await onPermissionRemoval(revocationModal.permissionId!)
+  }
 
   return (
     <>
@@ -165,11 +162,13 @@ function ExistingPermissionEntries({
                   await handlePermissionLevelChange(
                     permission.permissionId,
                     value as PermissionLevel,
+                    permission.propagation ?? false,
                     permission.isOwn ?? false
                   )
                 }}
                 className={{
                   trigger: 'h-7 text-sm text-gray-900',
+                  item: 'text-sm',
                 }}
                 data={{
                   cy: permission.username
@@ -178,37 +177,78 @@ function ExistingPermissionEntries({
                 }}
               />
             </td>
+            {showPropagationSetting ? (
+              <td className="w-24">
+                <Switch
+                  size="sm"
+                  checked={permission.propagation ?? false}
+                  onCheckedChange={async (newValue) => {
+                    await handlePermissionLevelChange(
+                      permission.permissionId,
+                      permission.permissionLevel,
+                      newValue,
+                      permission.isOwn ?? false
+                    )
+                  }}
+                  disabled={changeLoading}
+                  data={{
+                    cy: permission.username
+                      ? `permission-propagation-${permission.username}`
+                      : `permission-propagation-${permission.userGroupName}`,
+                  }}
+                  className={{ root: 'justify-center' }}
+                />
+              </td>
+            ) : null}
             <td className="w-10 text-center">
-              {permission.isRevokable ? (
-                <AccessRevokationButton permission={permission} />
-              ) : (
-                <Tooltip
-                  tooltip={t('manage.sharing.revokeAccessDisabledTooltip')}
-                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
-                >
-                  <AccessRevokationButton
-                    disabled
-                    permission={permission}
-                    className="text-gray-400 hover:text-gray-400"
-                  />
-                </Tooltip>
-              )}
+              <Button
+                basic
+                className={{
+                  root: 'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
+                }}
+                onClick={async () => {
+                  await handleRemovePermission(
+                    permission.permissionId,
+                    permission.isOwn ?? false,
+                    permission.username ?? undefined,
+                    permission.userGroupName ?? undefined
+                  )
+                }}
+                data={{
+                  cy: permission.username
+                    ? `revoke-permission-${permission.username}`
+                    : `revoke-permission-${permission.userGroupName}`,
+                }}
+              >
+                <Button.Icon withoutLabel icon={faTrashCan} />
+              </Button>
             </td>
           </tr>
         ))}
 
-      <ModifyOwnPermissionsModal
-        open={modifyOwnPermissionsModal.open}
-        onClose={() =>
-          setModifyOwnPermissionsModal({
-            ...modifyOwnPermissionsModal,
-            open: false,
-          })
-        }
-        onConfirm={confirmModifyOwnPermissions}
-        action={modifyOwnPermissionsModal.action}
-        newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
-      />
+      {modifyOwnPermissionsModal.open && (
+        <ModifyOwnPermissionsModal
+          onClose={() =>
+            setModifyOwnPermissionsModal({
+              ...modifyOwnPermissionsModal,
+              open: false,
+            })
+          }
+          onConfirm={confirmModifyOwnPermissions}
+          action={modifyOwnPermissionsModal.action}
+          newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+        />
+      )}
+      {revocationModal.open && (
+        <PermissionRevocationModal
+          onClose={() =>
+            setRevocationModal({ ...revocationModal, open: false })
+          }
+          onRevocation={confirmRevocation}
+          username={revocationModal.username}
+          userGroup={revocationModal.userGroup}
+        />
+      )}
     </>
   )
 }

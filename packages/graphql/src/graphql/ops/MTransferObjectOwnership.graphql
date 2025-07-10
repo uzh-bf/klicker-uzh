@@ -1,6 +1,6 @@
 mutation TransferObjectOwnership(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: ObjectType!
   $shortnameOrEmail: String!
 ) {
   transferObjectOwnership(

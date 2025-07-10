@@ -1,9 +1,15 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import { faChartPie, faPencil } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChartPie,
+  faLink,
+  faMessage,
+  faPencil,
+  faShare,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   Course,
   GetSingleCourseDocument,
+  ObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,17 +17,18 @@ import {
   Button,
   Dropdown,
   H1,
-  Toast,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
+import ActivityLogDialog from '../sharing/ActivityLogDialog'
+import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import getLTIAccessLink from './getLTIAccessLink'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
-import { getLTIAccessLink } from './PracticeQuizElement'
 import QRCodePopover from './QRCodePopover'
 
 interface CourseOverviewHeaderProps {
@@ -47,16 +54,22 @@ function CourseOverviewHeader({
   latestEndDate,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
-  const router = useRouter()
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
-  const [copyToast, setCopyToast] = useState(false)
+  const [sharingModal, setSharingModal] = useState(false)
+  const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
   const user = dataUser?.userProfile
+
+  const onSuccessToast = () =>
+    toast({
+      type: 'success',
+      message: t('manage.course.linkLTICopied'),
+    })
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -72,14 +85,36 @@ function CourseOverviewHeader({
             number: numOfParticipants,
           })}
         </div>
-        <Button
-          onClick={() => setCourseSettingsModal(true)}
-          className={{ root: 'h-8' }}
-          data={{ cy: 'course-settings-button' }}
-        >
-          <Button.Icon icon={faPencil} />
-          <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
-        </Button>
+        {course.isEditor ? (
+          <Button
+            onClick={() => setCourseSettingsModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-settings-button' }}
+          >
+            <Button.Icon icon={faPencil} />
+            <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
+          </Button>
+        ) : null}
+        {course.isManager && user?.privatePreview ? (
+          <Button
+            onClick={() => setSharingModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-share-button' }}
+          >
+            <Button.Icon icon={faShare} />
+            <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
+          </Button>
+        ) : null}
+        {user?.privatePreview ? (
+          <Button
+            onClick={() => setIsActivityLogOpen(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'course-activity-log-button' }}
+          >
+            <Button.Icon icon={faMessage} />
+            <Button.Label>{t('shared.activity.tooltip')}</Button.Label>
+          </Button>
+        ) : null}
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}
@@ -109,52 +144,57 @@ function CourseOverviewHeader({
           <Dropdown
             data={{ cy: `course-actions-${name}` }}
             className={{
-              trigger: 'px-2 py-4',
               item: 'p-1 hover:bg-gray-200',
               viewport: 'z-10 bg-white',
+              trigger: 'h-8',
             }}
-            trigger={t('manage.course.otherActions')}
+            trigger={
+              <>
+                <Button.Icon icon={faLink} />
+                <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+              </>
+            }
             items={[
               user?.catalyst
                 ? [
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIPracticeQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIMicroLearningsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
-                      setCopyToast,
+                      onSuccess: onSuccessToast,
                       t,
                       name,
                       label: t('manage.course.linkLTIAccountManagement'),
@@ -162,81 +202,86 @@ function CourseOverviewHeader({
                   ]
                 : [],
             ].flat()}
-            triggerIcon={faHandPointer}
           />
         )}
       </div>
-      <CourseManipulationModal
-        initialValues={course}
-        modalOpen={courseSettingsModal}
-        earliestGroupDeadline={earliestGroupDeadline}
-        earliestStartDate={earliestStartDate}
-        latestEndDate={latestEndDate}
-        onModalClose={() => setCourseSettingsModal(false)}
-        onSubmit={async (
-          values: CourseManipulationFormData,
-          setSubmitting,
-          setShowErrorToast
-        ) => {
-          try {
-            // convert dates to UTC
-            const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-              .utc()
-              .toISOString()
-            const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-              .utc()
-              .toISOString()
-            const groupDeadlineDateUTC = dayjs(
-              values.groupCreationDeadline + 'T23:59:59.999'
-            )
-              .utc()
-              .toISOString()
 
-            const result = await updateCourseSettings({
-              variables: {
-                id: course.id,
-                name: values.name,
-                displayName: values.displayName,
-                description: values.description,
-                color: values.color,
-                startDate: startDateUTC,
-                endDate: endDateUTC,
-                isGamificationEnabled: values.isGamificationEnabled,
-                isGroupCreationEnabled: values.isGroupCreationEnabled,
-                groupDeadlineDate: groupDeadlineDateUTC,
-              },
-              refetchQueries: [
-                {
-                  query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: course.id,
-                  },
+      {courseSettingsModal && (
+        <CourseManipulationModal
+          initialValues={course}
+          earliestGroupDeadline={earliestGroupDeadline}
+          earliestStartDate={earliestStartDate}
+          latestEndDate={latestEndDate}
+          onModalClose={() => setCourseSettingsModal(false)}
+          onSubmit={async (
+            values: CourseManipulationFormData,
+            setSubmitting,
+            onError
+          ) => {
+            try {
+              // convert dates to UTC
+              const startDateUTC = dayjs(values.startDate).utc().toISOString()
+              const endDateUTC = dayjs(values.endDate).utc().toISOString()
+              const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
+                .utc()
+                .toISOString()
+
+              const result = await updateCourseSettings({
+                variables: {
+                  id: course.id,
+                  name: values.name,
+                  displayName: values.displayName,
+                  description: values.description,
+                  color: values.color,
+                  startDate: startDateUTC,
+                  endDate: endDateUTC,
+                  isGamificationEnabled: values.isGamificationEnabled,
+                  isGroupCreationEnabled: values.isGroupCreationEnabled,
+                  groupDeadlineDate: groupDeadlineDateUTC,
                 },
-              ],
-            })
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: {
+                      courseId: course.id,
+                    },
+                  },
+                ],
+              })
 
-            if (result.data?.updateCourseSettings) {
-              setCourseSettingsModal(false)
-            } else {
-              setShowErrorToast(true)
+              if (result.data?.updateCourseSettings) {
+                setCourseSettingsModal(false)
+              } else {
+                onError()
+                setSubmitting(false)
+              }
+            } catch (error) {
+              onError()
               setSubmitting(false)
+              console.log(error)
             }
-          } catch (error) {
-            setShowErrorToast(true)
-            setSubmitting(false)
-            console.log(error)
-          }
-        }}
-      />
+          }}
+        />
+      )}
 
-      <Toast
-        type="success"
-        openExternal={copyToast}
-        onCloseExternal={() => setCopyToast(false)}
-        className={{ root: 'w-[24rem]' }}
-      >
-        {t('manage.course.linkLTICopied')}
-      </Toast>
+      {sharingModal && course.isManager ? (
+        <ObjectSharingModalWrapper
+          objectUuid={course.id}
+          objectName={course.name}
+          objectType={ObjectType.Course}
+          isOwner={course.isOwner ?? false}
+          onClose={() => setSharingModal(false)}
+        />
+      ) : null}
+
+      {isActivityLogOpen && (
+        <ActivityLogDialog
+          objectId={course.id}
+          objectType={ObjectType.Course}
+          open={isActivityLogOpen}
+          onClose={() => setIsActivityLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -5,7 +5,9 @@ import {
   Tag,
   UpdateTagOrderingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import useSortingAndFiltering from '@lib/hooks/useSortingAndFiltering'
+import useSortingAndFiltering, {
+  SORTING_FILTERING_INITIAL,
+} from '@lib/hooks/useSortingAndFiltering'
 import { TextField, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
@@ -19,11 +21,13 @@ interface Props {
     tagName,
     isTypeTag,
     isStatusTag,
+    isSharingTypeTag,
     isUntagged,
   }: {
     tagName: string
     isTypeTag: boolean
     isStatusTag: boolean
+    isSharingTypeTag: boolean
     isUntagged: boolean
   }) => void
 }
@@ -38,7 +42,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
     refetchQueries: [{ query: GetUserTagsDocument }],
   })
 
-  const { handleSearch } = useSortingAndFiltering()
+  const { handleSearch } = useSortingAndFiltering(SORTING_FILTERING_INITIAL)
 
   const filteredTags = useMemo(() => {
     if (data?.userTags) {
@@ -82,7 +86,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
         }}
         icon={faMagnifyingGlass}
         className={{
-          input: 'h-8 pl-8 text-sm',
+          input: 'pl-8! h-8 text-sm',
           field: 'rounded-md',
         }}
       />
@@ -97,6 +101,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
                   tagName: tag,
                   isTypeTag: false,
                   isStatusTag: false,
+                  isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
@@ -128,6 +133,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               tagName: tag,
               isTypeTag: false,
               isStatusTag: false,
+              isSharingTypeTag: false,
               isUntagged: true,
             })
           }

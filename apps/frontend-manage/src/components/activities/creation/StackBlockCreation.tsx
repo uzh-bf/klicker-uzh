@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { QuestionDragDropTypes } from '../../questions/Question'
+import { ElementDragDropTypes } from '../../questions/Element'
 import DropElementsStack from './DropElementsStack'
 import PasteSelectionButton from './PasteSelectionButton'
 import StackCreationErrors from './StackCreationErrors'
@@ -72,7 +72,7 @@ function StackBlockCreation({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
-      drop: (item: QuestionDragDropTypes) => {
+      drop: (item: ElementDragDropTypes) => {
         replace(stackIx, {
           ...stack,
           elements: [
@@ -121,7 +121,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={t('manage.activityWizard.stackFTQuestionsNoSL')}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faWarning}
@@ -137,7 +137,7 @@ function StackBlockCreation({
               <Tooltip
                 tooltip={<StackCreationErrors errors={error[stackIx]} />}
                 delay={0}
-                className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+                className={{ tooltip: 'max-w-120 z-20 text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -149,7 +149,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faCircleExclamation}
@@ -260,11 +260,12 @@ function StackBlockCreation({
         isOver={isOver}
         index={stackIx}
       />
-      <StackDescriptionModal
-        stackIx={stackIx}
-        modalOpen={stackDescriptionModal}
-        setModalOpen={setStackDescriptionModal}
-      />
+      {stackDescriptionModal && (
+        <StackDescriptionModal
+          stackIx={stackIx}
+          setModalOpen={setStackDescriptionModal}
+        />
+      )}
     </div>
   )
 }

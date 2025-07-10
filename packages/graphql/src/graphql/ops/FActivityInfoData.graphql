@@ -1,0 +1,44 @@
+fragment ActivityInfoData on ActivityInfo {
+  id
+  templateId
+  type
+  status
+  courseId
+  courseName
+  courseStartDate
+
+  numOfStacks
+  numOfElements
+  automaticPublicationAt
+  scheduledStartAt
+  scheduledEndAt
+  groupDeadlineDate
+  numOfParticipantGroups
+
+  stacks {
+    id
+    numOfParticipants
+    timeLimit
+    elements {
+      id
+      name
+      type
+    }
+  }
+
+  name
+  displayName
+
+  permissionLevel
+  derivedAccess
+  numSharedUsers
+  isOwner
+  isManager
+  isEditor
+  isExecutor
+  isShared
+  isRemovable
+  sharingType
+
+  updatedAt
+}

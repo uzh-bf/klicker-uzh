@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import {
   LogoutParticipantDocument,
   SelfWithAchievementsDocument,
@@ -38,43 +39,28 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-2 rounded border p-4 md:mx-auto md:w-max">
+      <div className="flex flex-col items-center gap-2 rounded border p-2 md:mx-auto md:w-max md:p-4">
+        <Button
+          basic
+          onClick={() => router.push('/editProfile')}
+          className={{ root: 'self-end hover:bg-white hover:underline' }}
+          data={{ cy: 'edit-profile' }}
+        >
+          <Button.Icon icon={faPencil} />
+          <Button.Label>{t('pwa.profile.editProfile')}</Button.Label>
+        </Button>
         <ProfileData
           isSelf={true}
           username={participant.username}
           avatar={participant.avatar}
-          xp={participant.xp}
+          xp={participant.xp ?? 0}
           level={participant.levelData}
           achievements={participant.achievements}
           possibleAchievements={achievements}
           showProfileDetails={true}
         />
 
-        <div className="flex w-full flex-row justify-between space-x-2 px-4">
-          <Button
-            onClick={() => router.push('/editProfile')}
-            className={{ root: 'mt-2' }}
-            data={{ cy: 'edit-profile' }}
-          >
-            <Button.Label>{t('pwa.profile.editProfile')}</Button.Label>
-          </Button>
-
-          {!pageInFrame && (
-            <Button
-              loading={loggingOut}
-              onClick={async () => {
-                await logoutParticipant()
-                router.push('/login')
-              }}
-              className={{ root: 'mt-2' }}
-              data={{ cy: 'logout' }}
-            >
-              <Button.Label>{t('shared.generic.logout')}</Button.Label>
-            </Button>
-          )}
-        </div>
-
-        <div className="mt-8 self-center">
+        <div className="mt-4 self-center">
           <Image
             src="/KlickerLogo.png"
             width={200}

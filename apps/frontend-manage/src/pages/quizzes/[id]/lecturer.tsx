@@ -127,7 +127,7 @@ function LecturerView() {
   return (
     <div
       className={twMerge(
-        'border-t-only flex flex-col gap-8 border-t-[30px] border-solid p-4 md:flex-row',
+        'border-t-only border-t-30 flex flex-col gap-8 border-solid p-4 md:flex-row',
         borderColor
       )}
     >
@@ -137,17 +137,6 @@ function LecturerView() {
 
       {isLiveQAEnabled && (
         <div className="flex-1">
-          {/* // TODO: readd dropdown to allow lecturer to sort feedbacks according to preferences
-        <Dropdown
-          selection
-          options={[
-            { text: 'Sort by Upvotes', value: 'upvotes' },
-            { text: 'Sort by Recency', value: 'recency' },
-          ]}
-          value={sortBy}
-          onChange={(_, { value }) => setSortBy(value as string)}
-        /> */}
-
           {feedbacks?.length === 0 && (
             <div className="border-primary-100 mt-4 flex items-center rounded border border-solid p-4 text-2xl">
               {t('manage.lecturer.noFeedbacks')}

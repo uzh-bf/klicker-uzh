@@ -1,5 +1,9 @@
-mutation ResolveFeedback($id: Int!, $isResolved: Boolean!) {
-  resolveFeedback(id: $id, isResolved: $isResolved) {
+mutation ResolveFeedback(
+  $id: Int!
+  $isResolved: Boolean!
+  $liveQuizId: String!
+) {
+  resolveFeedback(id: $id, isResolved: $isResolved, liveQuizId: $liveQuizId) {
     id
     isPublished
     isPinned

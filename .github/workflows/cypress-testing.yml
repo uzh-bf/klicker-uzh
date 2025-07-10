@@ -121,7 +121,6 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run prisma:reset:raw -f
-          pnpm run seed:test
         env:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
 
@@ -148,7 +147,7 @@ jobs:
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
-        timeout-minutes: 60
+        timeout-minutes: 120
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'

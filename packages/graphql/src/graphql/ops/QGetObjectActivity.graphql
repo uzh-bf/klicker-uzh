@@ -1,0 +1,5 @@
+query GetObjectActivity($objectId: String!, $objectType: ObjectType!) {
+  getObjectActivity(objectId: $objectId, objectType: $objectType) {
+    ...ActivityEntryData
+  }
+}

@@ -3,6 +3,7 @@ export { default as enhanceContext } from './lib/context.js'
 import builder from './builder.js'
 
 import './schema/achievement.js'
+import './schema/activities.js'
 import './schema/course.js'
 import './schema/elementData.js'
 import './schema/evaluation.js'

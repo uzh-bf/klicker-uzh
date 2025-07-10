@@ -2,7 +2,7 @@ import { faHome } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, NotificationBadgeWrapper } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Router from 'next/router'
+import Router, { useRouter } from 'next/router'
 import React from 'react'
 
 interface MobileMenuBarProps {
@@ -27,6 +27,7 @@ function MobileMenuBar({
   participantMissing,
 }: MobileMenuBarProps): React.ReactElement {
   const t = useTranslations()
+  const router = useRouter()
   const homeMenuItem = {
     label: t('shared.generic.home'),
     icon: <FontAwesomeIcon icon={faHome} size="lg" />,
@@ -36,18 +37,14 @@ function MobileMenuBar({
   }
   const items = participantMissing
     ? menuItems
-      ? menuItems
-      : undefined
-    : menuItems
-      ? [homeMenuItem, ...menuItems]
-      : [homeMenuItem]
+    : [...(router.pathname !== '/' ? [homeMenuItem] : []), ...(menuItems ?? [])]
 
   if (!items) {
     return <></>
   }
 
   return (
-    <div className="flex w-full flex-row justify-between gap-1 bg-slate-800 text-white">
+    <div className="flex w-full flex-row justify-between gap-1 border-t-2 bg-slate-50 pb-1">
       {items.map((item: any) => (
         <NotificationBadgeWrapper
           count={item.unseenItems}
@@ -58,7 +55,7 @@ function MobileMenuBar({
         >
           <Button
             className={{
-              root: 'bg-grey-60 flex flex-1 flex-col justify-center rounded-none border-0 hover:bg-transparent hover:text-white',
+              root: 'flex flex-1 flex-col justify-center border-0 bg-transparent hover:bg-transparent',
             }}
             key={item.value}
             onClick={() => {

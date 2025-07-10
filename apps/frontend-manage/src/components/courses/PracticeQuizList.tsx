@@ -1,27 +1,18 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import CatalystNotification from './CatalystNotification'
-import PracticeQuizElement from './PracticeQuizElement'
+import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import QRCodePopover from './QRCodePopover'
 
-interface PracticeQuizTileProps {
-  practiceQuizzes: Pick<
-    PracticeQuiz,
-    'id' | 'name' | 'status' | 'availableFrom' | 'numOfStacks'
-  >[]
-  courseId: string
-  courseStartDate: string
-  userCatalyst?: boolean
-}
-
 function PracticeQuizList({
-  practiceQuizzes,
   courseId,
-  courseStartDate,
-  userCatalyst,
-}: PracticeQuizTileProps) {
+  practiceQuizzes,
+}: {
+  courseId: string
+  practiceQuizzes: ActivityInfo[]
+}) {
   const t = useTranslations()
 
   return (
@@ -51,23 +42,24 @@ function PracticeQuizList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.practiceQuizList')}`}</Button.Label>
         </Button>
+        <ActivityListLegend type={ActivityType.PracticeQuiz} />
       </div>
 
       {practiceQuizzes && practiceQuizzes.length > 0 ? (
-        <div className="flex w-full flex-col gap-2">
-          {practiceQuizzes.map((quiz) => (
-            <PracticeQuizElement
-              key={quiz.id}
-              practiceQuiz={quiz}
-              courseId={courseId}
-              courseStartDate={courseStartDate}
-            />
-          ))}
+        <div className="mt-0.5 flex w-full flex-col">
+          <ActivityList
+            activities={practiceQuizzes}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
-      ) : userCatalyst ? (
-        <div>{t('manage.course.noPracticeQuizzes')}</div>
       ) : (
-        <CatalystNotification />
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noPracticeQuizzes')}
+        </UserNotification>
       )}
     </div>
   )

@@ -7,7 +7,6 @@ import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ListButton from '../common/ListButton'
-import ErrorStartToast from '../toasts/ErrorStartToast'
 import EmbeddingModal from './EmbeddingModal'
 import StartModal from './StartModal'
 
@@ -22,7 +21,6 @@ function LiveQuizLists({
 }: LiveQuizListsProps) {
   const t = useTranslations()
   const [startModalOpen, setStartModalOpen] = useState(false)
-  const [errorToast, setErrorToast] = useState(false)
   const [startId, setStartId] = useState('')
   const [startName, setStartName] = useState('')
   const [embedOpen, setEmbedOpen] = useState(false)
@@ -49,6 +47,7 @@ function LiveQuizLists({
                   setQuizId(quiz.id)
                 }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
+                className={{ root: 'w-24' }}
               >
                 <Button.Icon
                   className={{ root: 'mr-2' }}
@@ -88,6 +87,7 @@ function LiveQuizLists({
                   setQuizId(quiz.id)
                 }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
+                className={{ root: 'w-24' }}
               >
                 <Button.Icon icon={faPersonChalkboard} />
                 <Button.Label>PPT</Button.Label>
@@ -99,19 +99,16 @@ function LiveQuizLists({
         <div>{t('control.course.noPlannedLiveQuizzes')}</div>
       )}
 
-      <EmbeddingModal
-        open={embedOpen}
-        setOpen={(newValue: boolean) => setEmbedOpen(newValue)}
-        quizId={quizId}
-      />
-      <StartModal
-        quizId={startId}
-        quizName={startName}
-        startModalOpen={startModalOpen}
-        setStartModalOpen={setStartModalOpen}
-        setErrorToast={setErrorToast}
-      />
-      <ErrorStartToast open={errorToast} setOpen={setErrorToast} />
+      {embedOpen && (
+        <EmbeddingModal onClose={() => setEmbedOpen(false)} quizId={quizId} />
+      )}
+      {startModalOpen && (
+        <StartModal
+          quizId={startId}
+          quizName={startName}
+          onClose={() => setStartModalOpen(false)}
+        />
+      )}
     </>
   )
 }

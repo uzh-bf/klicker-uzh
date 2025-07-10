@@ -9,8 +9,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   Element,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -19,6 +20,7 @@ import {
   Checkbox,
   Select,
   TextField,
+  toast,
   Tooltip,
 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -28,19 +30,17 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import ElementCreation, {
-  WizardMode,
-} from '../components/activities/ElementCreation'
+import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
+import ElementList from '../components/questions/ElementList'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
-import ElementSuccessToast from '../components/questions/manipulation/ElementSuccessToast'
 import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
-import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
+  SORTING_FILTERING_INITIAL,
   SortyByType,
 } from '../lib/hooks/useSortingAndFiltering'
 
@@ -54,9 +54,8 @@ function Index() {
 
   const [searchInput, setSearchInput] = useState('')
   const [sortBy, setSortBy] = useState('')
-  const [successToast, setSuccessToast] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
-  const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
+  const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
   )
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
@@ -79,7 +78,23 @@ function Index() {
     loading: loadingQuestions,
     error: errorQuestions,
     data: dataQuestions,
-  } = useQuery(GetUserQuestionsDocument)
+  } = useQuery(GetUserElementsDocument)
+
+  // initialize the sorting and filtering state from local storage (if available)
+  const [storedFiltering, _] = useState(() => {
+    // only try to access localStorage if we're on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFilters = localStorage.getItem('library-sorting-filters')
+        if (savedFilters) {
+          return JSON.parse(savedFilters)
+        }
+      } catch (error) {
+        console.error('Error loading stored filters from localStorage', error)
+      }
+    }
+    return SORTING_FILTERING_INITIAL
+  })
 
   const {
     filters,
@@ -92,24 +107,59 @@ function Index() {
     handleToggleArchive,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
-  } = useSortingAndFiltering()
+  } = useSortingAndFiltering(storedFiltering)
 
+  // if the filters or sorting state changes, save it to local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const newState = { filters, sort }
+        // only save if there are actual changes
+        const currentStored = localStorage.getItem('library-sorting-filters')
+        if (!currentStored || JSON.stringify(newState) !== currentStored) {
+          localStorage.setItem(
+            'library-sorting-filters',
+            JSON.stringify(newState)
+          )
+        }
+      } catch (error) {
+        console.error('Error saving filters to localStorage', error)
+      }
+    }
+  }, [filters, sort])
+
+  // on initial render, preload the pages that might be visited next
   useEffect((): void => {
     router.prefetch('/quizzes/running')
     router.prefetch('/quizzes')
+    router.prefetch('/activities')
 
     if (router.query.elementId && router.query.editMode) {
-      setCreationMode(router.query.editMode as WizardMode)
+      setCreationMode(router.query.editMode as ActivityType)
     } else if (router.query.elementId && router.query.duplicationMode) {
-      setCreationMode(router.query.duplicationMode as WizardMode)
+      setCreationMode(router.query.duplicationMode as ActivityType)
     } else if (router.query.elementId && router.query.conversionMode) {
-      setCreationMode(router.query.conversionMode as WizardMode)
+      setCreationMode(router.query.conversionMode as ActivityType)
     }
   }, [router])
 
+  // once the activity wizard is opened, deselect all invalid questions
+  useEffect(() => {
+    setSelectedQuestions((selection) => {
+      if (!!creationMode) {
+        return Object.fromEntries(
+          Object.entries(selection).filter(
+            ([, question]) => question?.isManager ?? false
+          )
+        )
+      }
+      return selection
+    })
+  }, [creationMode])
+
   const index = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
-      const dataQuestionsFlatTags = dataQuestions.userQuestions.map(
+    if (dataQuestions?.userElements) {
+      const dataQuestionsFlatTags = dataQuestions.userElements.map(
         (question) => ({
           ...question,
           tagsString: (question.tags ?? []).map((tag) => tag.name).join(' '),
@@ -124,19 +174,19 @@ function Index() {
       ])
     }
     return null
-  }, [dataQuestions?.userQuestions])
+  }, [dataQuestions?.userElements])
 
   const processedQuestions = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
+    if (dataQuestions?.userElements) {
       const items = processItems(
-        dataQuestions?.userQuestions,
+        dataQuestions?.userElements,
         filters,
         sort,
         index
       )
       return items
     }
-  }, [dataQuestions?.userQuestions, filters, index, sort])
+  }, [dataQuestions?.userElements, filters, index, sort])
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {
@@ -171,9 +221,9 @@ function Index() {
               setCreationMode(() => undefined)
             }}
             activityId={router.query.elementId as string}
-            editMode={router.query.editMode as string}
+            editMode={router.query.editMode as ActivityType}
             conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as WizardMode}
+            duplicationMode={router.query.duplicationMode as ActivityType}
             selection={selectedElementContent}
             resetSelection={() => setSelectedQuestions({})}
           />
@@ -181,7 +231,7 @@ function Index() {
       )}
 
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        {dataQuestions && dataQuestions.userQuestions && (
+        {dataQuestions && dataQuestions.userElements && (
           <div>
             <div className="hidden h-full md:block">
               <TagList
@@ -189,6 +239,7 @@ function Index() {
                 compact={!!creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -207,6 +258,7 @@ function Index() {
                 key={creationMode}
                 activeTags={filters.tags}
                 activeType={filters.type}
+                activeSharingTypes={filters.sharingType}
                 activeStatus={filters.status}
                 showUntagged={filters.untagged}
                 sampleSolution={filters.sampleSolution}
@@ -228,7 +280,7 @@ function Index() {
             <>
               <div className="flex flex-none flex-row content-center items-end justify-between pb-3">
                 <div className="flex flex-row items-center gap-1">
-                  <div className="flex flex-col pr-0.5 text-sm">
+                  <div className="flex flex-col pr-0.5 text-xs">
                     <Checkbox
                       checked={
                         Object.values(selectedQuestions).filter(
@@ -270,10 +322,11 @@ function Index() {
                           return { ...prev, ...allQuestions }
                         })
                       }}
+                      className={{ root: 'border-unset' }}
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length,
+                      total: processedQuestions?.length ?? 0,
                     })}
                   </div>
 
@@ -286,9 +339,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 pl-9',
-
-                      field: 'w-30 rounded-md pr-3',
+                      input: 'h-10 pl-8',
+                      field: 'min-w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -298,9 +350,7 @@ function Index() {
                       onClick={() => {
                         handleSortOrderToggle()
                       }}
-                      className={{
-                        root: 'h-10 rounded-md shadow-sm',
-                      }}
+                      className={{ root: 'h-10 rounded-md' }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon icon={sortIcon} withoutLabel />
@@ -342,19 +392,84 @@ function Index() {
                       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
                         <Button
                           disabled={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: true,
                               },
+                              update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
+                                // check if request was successful
+                                const update = data?.toggleIsArchived
+                                if (!update) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds =
+                                  update.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: true,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
+                              },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.archivingSuccess'
+                                ),
+                                options: { duration: 3000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.archivingPartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.archivingFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'move-to-archive' }}
                         >
@@ -365,20 +480,85 @@ function Index() {
                         tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
                         <Button
-                          loading={toggelingArchive}
-                          className={{
-                            root: 'ml-1 h-10',
-                          }}
+                          disabled={toggelingArchive}
+                          className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
-                                questionIds: Object.keys(
+                                elementIds: Object.keys(
                                   selectedElementContent
                                 ).map(Number),
                                 isArchived: false,
                               },
+                              update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
+                                // check if request was successful
+                                const updatedElements = data?.toggleIsArchived
+                                if (!updatedElements) return
+
+                                // extract the ids of all elements that should now be marked as archived
+                                const updatedElementIds =
+                                  updatedElements.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
+
+                                // fetch the previously returned value for the elements list
+                                const elements = cache.readQuery({
+                                  query: GetUserElementsDocument,
+                                })
+
+                                if (elements?.userElements) {
+                                  cache.writeQuery({
+                                    query: GetUserElementsDocument,
+                                    data: {
+                                      userElements: elements.userElements.map(
+                                        (obj) =>
+                                          updatedElementIds.includes(obj.id)
+                                            ? {
+                                                ...obj,
+                                                isArchived: false,
+                                              }
+                                            : obj
+                                      ),
+                                    },
+                                  })
+                                }
+                              },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchivePartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'restore-from-archive' }}
                         >
@@ -409,10 +589,17 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                <QuestionList
-                  questions={processedQuestions}
+                <ElementList
+                  activityWizardOpen={!!creationMode}
+                  elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
-                  triggerSuccessToast={() => setSuccessToast(true)}
+                  triggerSuccessToast={() =>
+                    toast({
+                      type: 'success',
+                      message: t('manage.elements.questionSavedSuccessfully'),
+                      options: { duration: 4000 },
+                    })
+                  }
                   setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }
@@ -424,6 +611,7 @@ function Index() {
                       tagName: tag,
                       isTypeTag: false,
                       isStatusTag: false,
+                      isSharingTypeTag: false,
                       isUntagged: false,
                     })
                   }
@@ -447,30 +635,33 @@ function Index() {
       {isQuestionCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
-          triggerSuccessToast={() => setSuccessToast(true)}
+          triggerSuccessToast={() =>
+            toast({
+              type: 'success',
+              message: t('manage.elements.questionSavedSuccessfully'),
+              options: { duration: 4000 },
+            })
+          }
           isOpen={isQuestionCreationModalOpen}
           mode={ElementEditMode.CREATE}
         />
       )}
-      <RecoveryPrompt
-        open={showRecoveryPrompt}
-        onRecovery={() => {
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-        onDiscard={() => {
-          localStorage.removeItem('autosave-element-creation')
-          setShowRecoveryPrompt(false)
-          setIsQuestionCreationModalOpen(true)
-        }}
-      />
+      {showRecoveryPrompt && (
+        <RecoveryPrompt
+          onRecovery={() => {
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+          onDiscard={() => {
+            localStorage.removeItem('autosave-element-creation')
+            setShowRecoveryPrompt(false)
+            setIsQuestionCreationModalOpen(true)
+          }}
+        />
+      )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>
-      <ElementSuccessToast
-        open={successToast}
-        onClose={() => setSuccessToast(false)}
-      />
     </Layout>
   )
 }

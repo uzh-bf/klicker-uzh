@@ -4,6 +4,7 @@ import {
   ActivityType,
   EditActivityTemplateDocument,
   GetTemplateInformationDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -16,8 +17,7 @@ import TemplateFormFields from './TemplateFormFields'
 interface TemplateEditModalProps {
   activityId: string
   activityType: ActivityType
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   onSuccess: () => void
   onError: () => void
 }
@@ -25,8 +25,7 @@ interface TemplateEditModalProps {
 function TemplateEditModal({
   activityId,
   activityType,
-  open,
-  setOpen,
+  onClose,
   onSuccess,
   onError,
 }: TemplateEditModalProps) {
@@ -45,10 +44,10 @@ function TemplateEditModal({
 
   return (
     <Modal
+      open
       title={t('manage.template.editTemplate')}
-      open={open}
-      onClose={() => setOpen(false)}
-      className={{ content: 'gap-2' }}
+      onClose={onClose}
+      className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
@@ -91,12 +90,15 @@ function TemplateEditModal({
                   instructions: values.instructions,
                 },
                 // TODO: update cache instead of triggering refetch query once combined activity overview is available
-                refetchQueries: [GetUserLiveQuizzesDocument],
+                refetchQueries: [
+                  { query: GetUserLiveQuizzesDocument },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
 
               if (result.data?.editActivityTemplate) {
                 onSuccess()
-                setOpen(false)
+                onClose()
               } else {
                 onError()
               }

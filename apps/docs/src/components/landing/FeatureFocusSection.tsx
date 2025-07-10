@@ -31,7 +31,7 @@ export function FeatureFocusSection({
             />
           )}
           <div className="relative" aria-hidden="true">
-            <div className="absolute -inset-x-20 bottom-0 bg-gradient-to-t from-white pt-[7%]" />
+            <div className="bg-linear-to-t absolute -inset-x-20 bottom-0 from-white pt-[7%]" />
           </div>
         </div>
       </div>

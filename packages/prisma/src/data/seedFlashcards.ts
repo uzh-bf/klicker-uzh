@@ -1,3 +1,4 @@
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 import Prisma, {
   ElementInstanceType,
@@ -80,6 +81,14 @@ async function seedFlashcardSet(
       },
     },
   })
+
+  await recomputeDerivedPermissions(
+    {
+      practiceQuizId: quizId,
+      userId,
+    },
+    prismaClient
+  )
 
   return practiceQuiz
 }

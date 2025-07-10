@@ -1,0 +1,11 @@
+mutation CopyCatalogObjectToAccount(
+  $objectId: String!
+  $objectType: ObjectType!
+  $catalogCollectionId: String
+) {
+  copyCatalogObjectToAccount(
+    objectId: $objectId
+    objectType: $objectType
+    catalogCollectionId: $catalogCollectionId
+  )
+}

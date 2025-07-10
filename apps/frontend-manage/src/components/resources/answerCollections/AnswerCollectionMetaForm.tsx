@@ -17,11 +17,15 @@ function AnswerCollectionMetaForm({
   onSuccess,
   metadataTouched,
   setMetadataTouched,
+  inlineEditing,
+  refetchAnswerCollections,
 }: {
   collection: AnswerCollection
   onSuccess: () => void
   metadataTouched: boolean
   setMetadataTouched: Dispatch<SetStateAction<boolean>>
+  inlineEditing: boolean
+  refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
   const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument)
@@ -45,6 +49,11 @@ function AnswerCollectionMetaForm({
         })
 
         if (data?.modifyAnswerCollection?.id) {
+          // if the answer collection is edited inline (in a question context), refetch the selection
+          if (inlineEditing) {
+            await refetchAnswerCollections?.()
+          }
+
           onSuccess()
           resetForm()
         }

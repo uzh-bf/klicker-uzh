@@ -3,6 +3,7 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
@@ -29,6 +30,7 @@ export async function prepareUser({
   catalystInstitutional?: boolean
   publicPreview?: boolean
   privatePreview?: boolean
+  role?: Prisma.UserRole
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -36,6 +38,7 @@ export async function prepareUser({
     ...args,
     catalystIndividual,
     catalystInstitutional,
+    role: args.role ?? Prisma.UserRole.USER,
     firstLogin: false,
     logins: {
       create: {
@@ -189,23 +192,12 @@ export function prepareQuestion({
       correct: choice.correct ?? false,
     }))
 
-    const data = {
+    return {
       ...args,
       options: {
         ...options,
         choices: preparedChoices,
       },
-    }
-
-    return {
-      where: {
-        ownerId_originalId: {
-          ownerId: ownerId,
-          originalId: originalId,
-        },
-      },
-      create: data,
-      update: data,
     }
   }
 
@@ -213,7 +205,7 @@ export function prepareQuestion({
     typeof collectionId !== 'undefined' &&
     typeof usedCollectionEntries !== 'undefined'
   ) {
-    const data = {
+    return {
       ...args,
       options,
       answerCollection: {
@@ -227,33 +219,11 @@ export function prepareQuestion({
         })),
       },
     }
-
-    return {
-      where: {
-        ownerId_originalId: {
-          ownerId: ownerId,
-          originalId: originalId,
-        },
-      },
-      create: data,
-      update: data,
-    }
-  }
-
-  const data = {
-    ...args,
-    options: options ?? {},
   }
 
   return {
-    where: {
-      ownerId_originalId: {
-        ownerId: ownerId,
-        originalId: originalId,
-      },
-    },
-    create: data,
-    update: data,
+    ...args,
+    options: options ?? {},
   }
 }
 
@@ -1040,22 +1010,20 @@ export async function prepareFlashcardsFromFile(
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data: any) => {
-      const flashcard = await prismaClient.element.upsert({
+      // check if an element with the same originalId already exists
+      const existingElement = await prismaClient.element.findFirst({
         where: {
-          ownerId_originalId: {
-            ownerId: userId,
-            originalId: data.originalId,
-          },
+          originalId: data.originalId,
+          ownerId: userId,
         },
-        create: {
-          ...data,
-          owner: {
-            connect: {
-              id: userId,
-            },
-          },
-        },
-        update: {
+      })
+
+      if (existingElement) {
+        return existingElement
+      }
+
+      const flashcard = await prismaClient.element.create({
+        data: {
           ...data,
           owner: {
             connect: {
@@ -1064,6 +1032,15 @@ export async function prepareFlashcardsFromFile(
           },
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          elementId: flashcard.id,
+          userId: flashcard.ownerId,
+        },
+        prismaClient
+      )
+
       return flashcard
     })
   )
@@ -1099,6 +1076,15 @@ export async function prepareContentElements(
           },
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          elementId: contentElement.id,
+          userId: contentElement.ownerId,
+        },
+        prismaClient
+      )
+
       return contentElement
     })
   )

@@ -1,131 +1,224 @@
 ---
-title: Supported Element Types
+title: Element Types
 ---
+
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+import PrivatePreviewTag from '../../src/components/PrivatePreviewTag'
 
 Based on learning settings or learning goals, you can choose from seven different element types in KlickerUZH (i.e., five types of questions, content elements, and flashcards). Questions support the definition of a sample solution, which is used for automated grading processes in asynchronous KlickerUZH activities, such as practice quizzes and microlearnings. To use a question in a live quiz setting, you do not have to provide information on the answer correctness.
 
-:::info
+KlickerUZH supports the following element types:
+
+- **Questions**: [Single Choice (SC)](#single-choice-sc), [Multiple Choice (MC)](#multiple-choice-mc), [Kprime (KP)](#kprime-kp), [Free Text (FT)](#free-text-ft), [Numerical Response (NR)](#numerical-response-nr), [Selection (SE)](#selection-se), and [Case Study (CS)](#case-study-cs)
+- **Content**: [Content Element (CT)](#content-element-ct), [Flashcard (FC)](#flashcard-fc)
+
 For a more detailed description on how to create the listed elements in the KlickerUZH lecturer interface, please refer to the documentation on [element management](/tutorials/element_management/) or check out the tooltips for the corresponding fields in the editor directly.
-:::
-
-## Content Element (CT)
-
-Content elements are a great way to provide additional information to students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in asynchronous KlickerUZH elements before asking a series of questions or even in between them to build coherent case studies. A preview on the right allows you to see how the question will appear to students.
-
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Content Element - Lecturer View](/img/supported_element_types/CT_lecturer.png)
-
-### Student View
-
-For **students**, content elements are viewed as follows, with the option of marking them as “read” (in asynchronous activities).
-
-![Content Element - Student View](/img/supported_element_types/CT_student.png)
-
-## Flashcards (FC)
-
-Flashcards enable students to practice content, like definitions, by heart using a much simpler modality. Students then provide a grading response for each flashcard themselves, indicating whether or not they already remember the corresponding content correctly based on the provided explanation. In this way, flashcards in practice quizzes can also be ordered in a spaced-repetition manner. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images. A preview on the right allows you to see how the question will appear to students.
-
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Flashcard - Lecturer View](/img/supported_element_types/FT_lecturer.png)
-
-### Student View
-
-For **students**, flashcards are viewed as follows, with the solution and grading option appearing after turning the card.
-
-![Flashcard - Student View](/img/supported_element_types/FC_student.png)
-
-![Flashcard - Student View with Feedbacks](/img/supported_element_types/FC_student_sol.png)
 
 ## Single Choice (SC)
 
+:::info
 For single choice questions, students select one of the available answer options. You should specify the correct answer and may also provide feedback (per answer option) and an explanation if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. A preview on the right allows you to see how the question will appear to students.
+:::
 
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Single Choice Question - Lecturer View](/img/supported_element_types/SC_lecturer.png)
-
-### Student View
-
+<Tabs>
+  <TabItem value="student" label="Student View" default>
 For **students**, single choice questions are viewed as follows, with the solution (and feedback) appearing in asynchronous activities after submitting their answer.
 
 ![Single Choice Question - Student View](/img/supported_element_types/SC_student.png)
 
 ![Single Choice Question - Student View with Feedbacks](/img/supported_element_types/SC_student_sol.png)
 
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Single Choice Question - Lecturer View](/img/supported_element_types/SC_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
 ## Multiple Choice (MC)
 
+:::info
 With multiple choice questions one or more of the provided answers may be correct. You should mark correct answers and can offer feedback (per answer option) and an explanation if you wish. You can format these elements using the editor, Markdown, or LaTeX syntax, and include images if needed. A preview on the right allows you to see how the question will appear to students.
+:::
 
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Multiple Choice Question - Lecturer View](/img/supported_element_types/MC_lecturer.png)
-
-### Student View
-
+<Tabs>
+  <TabItem value="student" label="Student View" default>
 For **students**, multiple choice questions are viewed as follows, with the solution (and feedback) appearing in asynchronous activities after submitting their answer.
 
 ![Multiple Choice Question - Student View](/img/supported_element_types/MC_student.png)
 
 ![Multiple Choice Question - Student View with Feedbacks](/img/supported_element_types/MC_student_sol.png)
 
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Multiple Choice Question - Lecturer View](/img/supported_element_types/MC_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
 ## Kprime (KP)
 
+:::info
 Kprime questions always present four possible answers, each of which must be marked as correct or incorrect. This format has proven effective for theoretical assessments due to its good selectivity and low likelihood of success when guessing. You can mark each answer option as correct or incorrect and offer feedback (per answer option) and an explanation if you wish. You can format these elements using the editor, Markdown, or LaTeX syntax, and include images if needed. A preview on the right allows you to see how the question will appear to students.
+:::
 
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Kprime Question - Lecturer View](/img/supported_element_types/KP_lecturer.png)
-
-### Student View
-
+<Tabs>
+  <TabItem value="student" label="Student View" default>
 For **students**, Kprime questions are viewed as follows, with the solution (and feedback) appear-ing after submitting their answer in asynchronous activities.
 
 ![Kprime Question - Student View](/img/supported_element_types/KP_student.png)
 
 ![Kprime Question - Student View with Feedbacks](/img/supported_element_types/KP_student_sol.png)
 
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Kprime Question - Lecturer View](/img/supported_element_types/KP_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
 ## Numerical Response (NR)
 
+:::info
 Numerical response questions enable students to respond to the question by typing in their numerical answer. You can specify additional restrictions, like minimum and maximum values as well as display units. It is also possible to specify solution ranges, which are considered to be correct for graded and gamified settings, as well as a general explanation. All of these texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+:::
 
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Numerical Response Question - Lecturer View](/img/supported_element_types/NR_lecturer.png)
-
-### Student View
-
+<Tabs>
+  <TabItem value="student" label="Student View" default>
 For **students**, numerical response questions are viewed as follows, with the solution appearing after submitting their answer in asynchronous activities.
 
 ![Numerical Response Question - Student View](/img/supported_element_types/NR_student.png)
 
 ![Numerical Response Question - Student View with Feedbacks](/img/supported_element_types/NR_student_sol.png)
 
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Numerical Response Question - Lecturer View](/img/supported_element_types/NR_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
 ## Free Text (FT)
 
+:::info
 Free text questions enable students to respond to the question by typing in their answer. Free text questions can be integrated into live quizzes and group activities (not practice quizzes and microlearnings). You can specify additional restrictions, like a maximum length, as well as sample solutions for graded and gamified settings (note that the student response must match one of the sample solutions exactly to be counted as correct). All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+:::
 
-### Lecturer View
-
-This is how it looks from the **lecturer’s** perspective.
-
-![Free Text Question - Lecturer View](/img/supported_element_types/FT_lecturer.png)
-
-### Student View
-
+<Tabs>
+  <TabItem value="student" label="Student View" default>
 For **students**, free text questions are viewed as follows. This is the view from a live quiz. For students to view the solution, you can choose to share it on the lecturer evaluation view.
 
 ![Free Text Question - Student View](/img/supported_element_types/FT_student.png)
+
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Free Text Question - Lecturer View](/img/supported_element_types/FT_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
+## Selection (SE) <PrivatePreviewTag />
+
+:::info
+Selection questions require students to choose a specific number of items from a predefined list, known as an **[Answer Collection](/tutorials/answer_collections)**. You present a question or scenario, define the **maximum number of items** the student can select (they must select at least one), specify which items from the linked Answer Collection are the correct solutions, and optionally provide a general explanation. When answering, students can search through the items in the collection. This type is useful for scenarios where students need to identify multiple correct elements from a larger set (e.g., identifying indicated medications, relevant symptoms, or applicable concepts). All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
+:::
+
+<Tabs>
+  <TabItem value="student" label="Student View" default>
+For **students**, selection questions are viewed as follows. This is the view from a live quiz. For students to view the solution, you can choose to share it on the lecturer evaluation view.
+
+![Selection Question - Student View](/img/supported_element_types/SE_student.png)
+
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Selection Question - Lecturer View](/img/supported_element_types/SE_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
+## Case Study (CS) <PrivatePreviewTag />
+
+:::info
+Case Study questions allow for complex, multi-faceted evaluations. They enable students to assess multiple **Items** (e.g., potential diagnoses, treatment options, investment strategies) based on predefined **Criteria** (e.g., probability, cost, risk level, effectiveness) within the context of one or more specific **Cases** (scenarios).
+
+Here's how it works:
+
+1.  **Define Items:** You specify the set of items students will evaluate, typically by linking an **Answer Collection**.
+2.  **Define Criteria:** You establish the dimensions for evaluation (e.g., "Probability", "Treatment Cost"). Each criterion has a defined range (Min/Max), step size, and optional unit (e.g., %, €).
+3.  **Create Cases:** You write one or more detailed scenarios or case descriptions.
+4.  **Set Solutions:** For _each_ Case, you define the "correct" range (Lower and Upper Bounds) for _each_ Item against _each_ Criterion.
+
+Students are presented with a case and must provide a value for each criterion for every listed item (the items themselves are drawn from a linked **[Answer Collection](/tutorials/answer_collections)** and are searchable by students), usually via sliders or input fields constrained by the defined ranges. This type is ideal for simulating complex decision-making processes where multiple factors must be weighed across different scenarios. All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
+:::
+
+<Tabs>
+  <TabItem value="student" label="Student View" default>
+For **students**, case study questions are viewed as follows. This is the view from a live quiz. For students to view the solution, you can choose to share it on the lecturer evaluation view.
+
+![Case Study Question - Student View](/img/supported_element_types/CS_student.png)
+
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+This is how it looks from the **lecturer's** perspective.
+
+![Case Study Question - Lecturer View](/img/supported_element_types/CS_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
+## Content Element (CT)
+
+:::info
+Content elements are a great way to provide additional information to students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in asynchronous KlickerUZH elements before asking a series of questions or even in between them to build coherent case studies. A preview on the right allows you to see how the question will appear to students.
+:::
+
+<Tabs>
+  <TabItem value="student" label="Student View" default>
+    This is how it looks from the **student's** perspective.
+
+![Content Element - Student View](/img/supported_element_types/CT_student.png)
+
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+    This is how it looks from the **lecturer's** perspective.
+
+![Content Element - Lecturer View](/img/supported_element_types/CT_lecturer.png)
+
+  </TabItem>
+</Tabs>
+
+## Flashcard (FC)
+
+:::info
+Flashcards enable students to practice content, like definitions, by heart using a much simpler modality. Students then provide a grading response for each flashcard themselves, indicating whether or not they already remember the corresponding content correctly based on the provided explanation. In this way, flashcards in practice quizzes can also be ordered in a spaced-repetition manner. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images. A preview on the right allows you to see how the question will appear to students.
+:::
+
+<Tabs>
+  <TabItem value="student" label="Student View" default>
+For **students**, flashcards are viewed as follows, with the solution and grading option appearing after turning the card.
+
+![Flashcard - Student View](/img/supported_element_types/FC_student.png)
+
+![Flashcard - Student View with Feedbacks](/img/supported_element_types/FC_student_sol.png)
+
+  </TabItem>
+  <TabItem value="lecturer" label="Edit View">
+    This is how it looks from the **lecturer's** perspective.
+
+![Flashcard - Lecturer View](/img/supported_element_types/FC_lecturer.png)
+
+  </TabItem>
+</Tabs>

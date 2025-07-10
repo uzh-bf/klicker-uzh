@@ -3,30 +3,36 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  CatalogObjectType,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import useObjectActionPermissions from './useObjectActionPermissions'
 
 function PermissionsTable({
   objectType,
   activePermissionLevel,
 }: {
-  objectType: CatalogObjectType
+  objectType: ObjectType
   activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()
-
   const actionPermissions = useObjectActionPermissions({ objectType })
+
+  // execution rights are only available for activities and courses
+  const showExecution =
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {
-    [PermissionLevel.Read]: 1, // Read is the second column (index 1)
-    [PermissionLevel.Write]: 2, // Write is the third column (index 2)
-    [PermissionLevel.Admin]: 3, // Admin is the fourth column (index 3)
-    [PermissionLevel.Execute]: -1, // Execution rights are not present in this table
+    [PermissionLevel.Read]: 1, // Read is the first column (index 1)
+    [PermissionLevel.Execute]: showExecution ? 2 : -1, // if shown, Execution is the second column (index 2)
+    [PermissionLevel.Write]: showExecution ? 3 : 2, // Write is the third column (index 3)
+    [PermissionLevel.Admin]: showExecution ? 4 : 3, // Admin is the fourth column (index 4)
+    [PermissionLevel.Owner]: -1, // Owner rights are not present in this table
   }
 
   // get the active column index based on the corresponding access level
@@ -41,15 +47,17 @@ function PermissionsTable({
           {[
             t('shared.generic.actions'),
             t('shared.generic.read'),
+            ...(showExecution ? [t('shared.generic.execute')] : []),
             t('shared.generic.write'),
             t('shared.generic.admin'),
             t('shared.generic.owner'),
           ].map((title, index) => (
             <th
               key={title}
-              className={`px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left ${
+              className={twMerge(
+                'px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left',
                 index === activeColumnIndex ? 'bg-blue-50' : ''
-              }`}
+              )}
             >
               {title}
             </th>
@@ -64,12 +72,7 @@ function PermissionsTable({
           >
             <td className="px-4 py-3 text-sm text-gray-900">{action}</td>
             {permissions.map((hasPermission, index) => (
-              <td
-                key={index}
-                className={`px-4 py-3 text-center ${
-                  index + 1 === activeColumnIndex ? 'bg-blue-50' : ''
-                }`}
-              >
+              <td key={index} className="px-4 py-3 text-center">
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}
                   className={`text-lg ${

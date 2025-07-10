@@ -117,7 +117,7 @@ function GroupActivityStackClues({
                             delay={0}
                             className={{
                               tooltip: 'z-30 text-sm',
-                              trigger: 'mt-[0.05rem]',
+                              trigger: 'mt-[0.2rem]',
                             }}
                           >
                             <FontAwesomeIcon
@@ -165,7 +165,7 @@ function GroupActivityStackClues({
                               <Button
                                 destructive
                                 className={{
-                                  root: 'h-1/2 rounded-none !rounded-br-sm px-1.5',
+                                  root: 'rounded-br-sm! h-1/2 rounded-none px-1.5',
                                 }}
                                 data={{ cy: `remove-clue-${clue.name}` }}
                                 onClick={() => remove(ix)}

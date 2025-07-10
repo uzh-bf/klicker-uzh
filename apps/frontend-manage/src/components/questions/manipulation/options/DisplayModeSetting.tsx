@@ -2,22 +2,25 @@ import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface DisplayModeSettingProps {
+function DisplayModeSetting({
+  type,
+  disabled,
+}: {
   type: ElementType
-}
-
-function DisplayModeSetting({ type }: DisplayModeSettingProps) {
+  disabled: boolean
+}) {
   const t = useTranslations()
 
   return [ElementType.Sc, ElementType.Mc].includes(type) ? (
     <FormikSelectField
+      disabled={disabled}
       contentPosition="popper"
       name="options.displayMode"
       items={Object.values(ElementDisplayMode).map((mode) => ({
         value: mode,
-        label: t(`manage.questionForms.${mode}Display`),
+        label: t(`manage.elements.${mode}Display`),
         data: {
-          cy: `select-display-mode-${t(`manage.questionForms.${mode}Display`)}`,
+          cy: `select-display-mode-${t(`manage.elements.${mode}Display`)}`,
         },
       }))}
       data={{ cy: 'select-display-mode' }}

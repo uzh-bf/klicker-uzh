@@ -2,8 +2,12 @@ import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PublishPracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, FormikDateField, H3, Modal } from '@uzh-bf/design-system'
+import {
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
+  PublishPracticeQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -12,17 +16,17 @@ import * as yup from 'yup'
 interface PracticeQuizPublishingModalProps {
   elementId: string
   title: string
+  courseId: string
   courseStartDate: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }
 
 function PracticeQuizPublishingModal({
   elementId,
   title,
+  courseId,
   courseStartDate,
-  open,
-  setOpen,
+  onClose,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
@@ -30,17 +34,20 @@ function PracticeQuizPublishingModal({
 
   return (
     <Modal
+      open
       title={`${t('shared.generic.practiceQuiz')}: ${title}`}
-      onClose={(): void => setOpen(false)}
-      open={open}
-      className={{ content: '!w-full max-w-4xl text-base' }}
+      onClose={onClose}
+      className={{ content: 'pb-2 text-base' }}
       dataCloseButton={{ cy: 'cancel-practice-quiz-publication' }}
     >
       <div className="flex w-full flex-col gap-4 md:flex-row">
         <div className="border-uzh-grey-80 w-full border-b border-solid pb-3 md:w-1/2 md:border-b-0 md:border-r md:pr-5">
           <div className="mb-2 flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faUserGroup} />
-            <H3 className={{ root: 'mb-0' }}>
+            <H3
+              className={{ root: 'mb-0' }}
+              data={{ cy: 'publish-immediately-header' }}
+            >
               {t('manage.course.practiceQuizPublishImmediately')}
             </H3>
           </div>
@@ -52,8 +59,16 @@ function PracticeQuizPublishingModal({
                 variables: {
                   id: elementId,
                 },
+                // TODO: replace with cache update
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { id: courseId },
+                  },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
-              setOpen(false)
+              onClose()
             }}
             loading={practiceQuizPublishing}
             data={{ cy: 'publish-practice-quiz-immediately' }}
@@ -83,8 +98,16 @@ function PracticeQuizPublishingModal({
                   id: elementId,
                   availableFrom: dayjs(values.availableFrom).utc().format(),
                 },
+                // TODO: replace with cache update
+                refetchQueries: [
+                  {
+                    query: GetSingleCourseDocument,
+                    variables: { id: courseId },
+                  },
+                  { query: GetUserActivitiesDocument },
+                ],
               })
-              setOpen(false)
+              onClose()
             }}
             validationSchema={yup.object().shape({
               availableFrom: yup
@@ -100,16 +123,25 @@ function PracticeQuizPublishingModal({
             {({ isValid }) => {
               return (
                 <Form>
-                  <FormikDateField
+                  <FormikDatetimePicker
                     required
-                    label={t('shared.generic.availableFrom')}
                     name="availableFrom"
-                    className={{
-                      root: 'w-full',
-                      field: 'w-full',
-                      error: 'z-20',
+                    label={t('shared.generic.availableFrom')}
+                    placeholder={t('shared.generic.startDate')}
+                    granularity="minute"
+                    className={{ tooltip: 'z-20' }}
+                    dataTrigger={{ cy: 'practice-quiz-available-from' }}
+                    dataCalendar={{
+                      cy: 'practice-quiz-available-from-calendar',
                     }}
-                    data={{ cy: 'practice-quiz-available-from' }}
+                    dataPreviousMonth={{
+                      cy: 'practice-quiz-available-from-previous-month',
+                    }}
+                    dataNextMonth={{
+                      cy: 'practice-quiz-available-from-next-month',
+                    }}
+                    dataHours={{ cy: 'practice-quiz-available-from-hours' }}
+                    dataMinutes={{ cy: 'practice-quiz-available-from-minutes' }}
                   />
                   <Button
                     primary

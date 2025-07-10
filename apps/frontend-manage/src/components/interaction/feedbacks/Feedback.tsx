@@ -3,7 +3,7 @@ import {
   faArrowDown,
   faArrowUp,
   faCheck,
-  faComments,
+  faComment,
   faLock,
   faLockOpen,
   faPaperPlane,
@@ -60,7 +60,7 @@ function Feedback({
     <div>
       <Button
         className={{
-          root: 'border-primary-100 flex w-full border border-solid p-2 !pl-4 text-left',
+          root: 'border-primary-100 pl-4! flex w-full border border-solid p-2 text-left',
         }}
         onClick={() => setIsEditingActive((prev) => !prev)}
         data={{ cy: `open-feedback-${content}` }}
@@ -82,7 +82,7 @@ function Feedback({
                   )}
                 </>
               ) : (
-                <FontAwesomeIcon icon={faComments} className="ml-2" />
+                <FontAwesomeIcon icon={faComment} className="ml-2" />
               )}
             </div>
             <div className="ml-4">
@@ -143,7 +143,7 @@ function Feedback({
           {responses &&
             responses.map((response) => (
               <div
-                className="no-page-break-inside mt-2 flex flex-row items-start rounded border border-l-[5px] border-solid bg-gray-50 py-1 pl-4 shadow-sm first:mt-0 last:mb-4 print:border-l-[10px] print:pr-0"
+                className="no-page-break-inside print:border-l-10 mt-2 flex flex-row items-start rounded border border-l-[5px] border-solid bg-gray-50 py-1 pl-4 shadow-sm first:mt-0 last:mb-4 print:pr-0"
                 key={response.createdAt}
               >
                 <div className="flex-1">
@@ -209,7 +209,7 @@ function Feedback({
                       placeholder={
                         resolved
                           ? t('manage.cockpit.reopenToAnswer')
-                          : t('manage.cockpit.insertResponseHere')
+                          : t('manage.cockpit.enterResponseHere')
                       }
                       disabled={resolved}
                       maxLength={1000}

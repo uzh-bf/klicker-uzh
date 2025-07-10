@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Navigation } from '@uzh-bf/design-system'
+import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import Layout from '../Layout'
@@ -45,56 +45,60 @@ function DocsLayout({
       course={data.basicCourseInformation}
       displayName={t('shared.generic.documentation')}
     >
-      <div className="mx-auto w-full max-w-4xl">
-        <Navigation
-          className={{ root: 'w-full !rounded-b-none bg-slate-200' }}
-          items={[
-            {
-              type: 'button',
-              key: 'course-information',
-              label: t('pwa.courses.courseInformation'),
-              onClick: () =>
-                router.push(`/course/${data.basicCourseInformation!.id}/docs`),
-              active: router.pathname === '/course/[courseId]/docs',
-            },
-            {
-              type: 'button',
-              key: 'features-overview',
-              label: t('pwa.studentDocs.featuresTitle'),
-              onClick: () =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/features`
-                ),
-              active: router.pathname === '/course/[courseId]/docs/features',
-            },
-            {
-              type: 'button',
-              key: 'first-login-account',
-              label: t('pwa.studentDocs.firstLoginTitle'),
-              onClick: () =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/login`
-                ),
-              active: router.pathname === '/course/[courseId]/docs/login',
-            },
-            {
-              type: 'button',
-              key: 'app-setup',
-              label: t('pwa.studentDocs.appSetupTitle'),
-              onClick: () =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/appSetup`
-                ),
-              active: router.pathname === '/course/[courseId]/docs/appSetup',
-            },
-          ]}
-        />
-        <div className="prose prose-img:m-0 max-w-none rounded-b border border-slate-200 p-4">
+      <Tabs
+        defaultValue="course-information"
+        tabs={[
+          {
+            id: 'tab-course-information',
+            value: 'course-information',
+            label: t('pwa.courses.courseInformation'),
+            data: { cy: 'tab-course-information' },
+          },
+          {
+            id: 'tab-features-overview',
+            value: 'features-overview',
+            label: t('pwa.studentDocs.featuresTitle'),
+            data: { cy: 'tab-features-overview' },
+          },
+          {
+            id: 'tab-first-login-account',
+            value: 'first-login-account',
+            label: t('pwa.studentDocs.firstLoginTitle'),
+            data: { cy: 'tab-first-login-account' },
+          },
+          {
+            id: 'tab-app-setup',
+            value: 'app-setup',
+            label: t('pwa.studentDocs.appSetupTitle'),
+            data: { cy: 'tab-app-setup' },
+          },
+        ]}
+        className={{ root: 'mx-auto w-full max-w-5xl' }}
+        onValueChange={(value) => {
+          const routes = {
+            'course-information': `/course/${data.basicCourseInformation!.id}/docs`,
+            'features-overview': `/course/${data.basicCourseInformation!.id}/docs/features`,
+            'first-login-account': `/course/${data.basicCourseInformation!.id}/docs/login`,
+            'app-setup': `/course/${data.basicCourseInformation!.id}/docs/appSetup`,
+          }
+          router.push(routes[value as keyof typeof routes] || '/404')
+        }}
+        value={
+          router.pathname === '/course/[courseId]/docs'
+            ? 'course-information'
+            : router.pathname === '/course/[courseId]/docs/features'
+              ? 'features-overview'
+              : router.pathname === '/course/[courseId]/docs/login'
+                ? 'first-login-account'
+                : 'app-setup'
+        }
+      >
+        <div className="prose prose-img:m-0 max-w-none rounded-b-lg border border-slate-200 p-4">
           {typeof children === 'function'
             ? children(data.basicCourseInformation!)
             : children}
         </div>
-      </div>
+      </Tabs>
     </Layout>
   )
 }

@@ -1,0 +1,5 @@
+mutation DuplicateAnswerCollection($id: Int!) {
+  duplicateAnswerCollection(id: $id) {
+    ...AnswerCollectionData
+  }
+}

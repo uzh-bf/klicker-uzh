@@ -3,7 +3,7 @@ import {
   DeleteParticipantAccountDocument,
   LogoutParticipantDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -30,52 +30,43 @@ function AccountDeletionForm() {
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
       <div className="flex-initial space-y-2">
-        <H3 className={{ root: 'mb-0 border-b' }}>
+        <H3 className={{ root: 'mb-1.5 border-b' }}>
           {t('pwa.profile.deleteProfile')}
         </H3>
-        <Prose className={{ root: '' }}>
-          {t('pwa.profile.deleteProfileDescription')}
-        </Prose>
+        <div>{t('pwa.profile.deleteProfileDescription')}</div>
         <Button
           destructive
           onClick={(): void => setDeleteModalOpen(true)}
+          className={{ root: 'w-full md:w-max' }}
           data={{ cy: 'confirm-delete-account' }}
         >
           <Button.Label>{t('shared.generic.delete')}</Button.Label>
         </Button>
 
         <Modal
+          hideCloseButton
           title={t('pwa.profile.deleteProfile')}
           open={deleteModalOpen}
           onClose={(): void => setDeleteModalOpen(false)}
-          hideCloseButton={true}
+          primaryLabel={t('shared.generic.confirm')}
+          primaryButtonStyle="destructive"
+          primaryLoading={deletingAccount || loggingOut}
+          onPrimaryAction={async () => {
+            await deleteParticipantAccount()
+            try {
+              await logoutParticipant()
+            } catch (e) {}
+            window?.location.reload()
+          }}
+          dataPrimaryAction={{ cy: 'delete-account-command' }}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setDeleteModalOpen(false)}
+          dataSecondaryAction={{ cy: 'cancel-delete-account' }}
           className={{ content: 'max-w-md' }}
-          onPrimaryAction={
-            <Button
-              destructive
-              loading={deletingAccount || loggingOut}
-              onClick={async () => {
-                await deleteParticipantAccount()
-                try {
-                  await logoutParticipant()
-                } catch (e) {}
-                window?.location.reload()
-              }}
-              data={{ cy: 'delete-account-command' }}
-            >
-              <Button.Label> {t('shared.generic.confirm')}</Button.Label>
-            </Button>
-          }
-          onSecondaryAction={
-            <Button
-              onClick={() => setDeleteModalOpen(false)}
-              data={{ cy: 'cancel-delete-account' }}
-            >
-              <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-            </Button>
-          }
         >
-          {t('pwa.profile.deleteProfileConfirmation')}
+          <div className="mt-2 text-sm">
+            {t('pwa.profile.deleteProfileConfirmation')}
+          </div>
         </Modal>
       </div>
     </div>

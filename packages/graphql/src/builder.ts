@@ -62,7 +62,20 @@ const builder = new SchemaBuilder<{
     unauthorizedError: () => new GraphQLError('Unauthorized'),
     authScopes: async (ctx) => ({
       authenticated: !!ctx.user?.sub && ctx.user.scope !== UserLoginScope.OTP,
-      role: (role) => ctx.user?.role === role,
+      role: (role) => {
+        if (role === UserRole.PARTICIPANT) {
+          return ctx.user?.role === UserRole.PARTICIPANT
+        } else if (role === UserRole.USER) {
+          return (
+            ctx.user?.role === UserRole.USER ||
+            ctx.user?.role === UserRole.ADMIN
+          )
+        } else if (role === UserRole.ADMIN) {
+          return ctx.user?.role === UserRole.ADMIN
+        }
+
+        return ctx.user?.role === role
+      },
       scope: (requiredScope) => {
         switch (requiredScope) {
           case UserLoginScope.ACCOUNT_OWNER:

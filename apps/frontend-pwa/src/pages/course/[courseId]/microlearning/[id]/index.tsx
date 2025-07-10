@@ -8,25 +8,19 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetMicroLearningDocument,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import {
-  Button,
-  H3,
-  Prose,
-  Toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
@@ -42,7 +36,6 @@ function MicrolearningIntroduction({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
   useParticipantToken({
     participantToken,
@@ -92,15 +85,14 @@ function MicrolearningIntroduction({
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
-      previewMode={microLearning.isOwner ?? undefined}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
+        microLearningName={microLearning.displayName}
         subscribeToMore={subscribeToMore}
-        setEndedMicroLearning={setEndedMicroLearning}
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
-        {!selfData?.self &&
+        {(!selfData?.self || selfData.self.role !== UserRole.Participant) &&
           (microLearning.isOwner ? (
             <PreviewMessage
               activityType={t('shared.generic.microlearning')}
@@ -115,7 +107,7 @@ function MicrolearningIntroduction({
                   <Button
                     basic
                     className={{
-                      root: 'hover:text-primary-100 !p-0 font-bold hover:bg-transparent',
+                      root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
                     }}
                     onClick={() =>
                       router.push(
@@ -156,7 +148,7 @@ function MicrolearningIntroduction({
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
-                number: microLearning.stacks?.length,
+                number: microLearning.stacks?.length ?? 0,
               })}
             </div>
           </div>
@@ -206,18 +198,6 @@ function MicrolearningIntroduction({
           </Button>
         </Link>
       </div>
-      <Toast
-        type="warning"
-        openExternal={endedMicroLearning}
-        onCloseExternal={() => setEndedMicroLearning(false)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.courses.microLearningEndedToast', {
-          activityName: microLearning.displayName,
-        })}
-      </Toast>
     </Layout>
   )
 }

@@ -1,8 +1,5 @@
-import { createRequire } from 'module'
 import nodemailer from 'nodemailer'
 import type { Context } from 'src/lib/context.js'
-
-const require = createRequire(import.meta.url)
 
 type AVAILABLE_EMAIL_TEMPLATES =
   | 'MagicLinkRequested'

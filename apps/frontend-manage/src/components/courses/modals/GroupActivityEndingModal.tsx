@@ -10,19 +10,15 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface GroupActivityEndingModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function GroupActivityEndingModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: GroupActivityEndingModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetGroupActivitySummaryDocument,
@@ -72,8 +68,7 @@ function GroupActivityEndingModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
       onSubmit={async () => await endGroupActivity()}

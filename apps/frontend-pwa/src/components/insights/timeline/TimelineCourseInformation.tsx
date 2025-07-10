@@ -6,8 +6,7 @@ import {
   faHourglassHalf,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { H3 } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function TimelineCourseInformation({

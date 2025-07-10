@@ -31,7 +31,7 @@ function TagActions({
   const t = useTranslations()
 
   return (
-    <div className="hidden flex-row text-black group-hover:flex">
+    <div className="hidden flex-row items-center text-black group-hover:flex">
       {onMoveUp && (
         <Button
           basic
@@ -84,14 +84,13 @@ function TagActions({
           <Button.Icon withoutLabel icon={faTrash} />
         </Button>
       )}
-      {setIsDeletionModalOpen && (
+      {isDeletionModalOpen && setIsDeletionModalOpen ? (
         <TagDeletionModal
           id={tag.id}
           name={tag.name}
-          open={isDeletionModalOpen ?? false}
-          setOpen={setIsDeletionModalOpen}
+          onClose={() => setIsDeletionModalOpen(false)}
         />
-      )}
+      ) : null}
     </div>
   )
 }

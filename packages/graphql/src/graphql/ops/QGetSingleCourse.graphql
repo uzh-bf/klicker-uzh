@@ -20,51 +20,26 @@ query GetSingleCourse($courseId: String!) {
     preferredGroupSize
     randomAssignmentFinalized
 
-    liveQuizzes {
-      id
-      name
-      displayName
-      isGamificationEnabled
-      isLiveQAEnabled
-      isConfusionFeedbackEnabled
-      isModerationEnabled
-      pinCode
-      accessMode
-      status
-      pointsMultiplier
-      createdAt
-      numOfBlocks
-      numOfInstances
+    derivedAccess
+    numSharedUsers
+    permissionLevel
+    isOwner
+    isManager
+    isEditor
+    isShared
+    isRemovable
+
+    liveQuizzesInfo {
+      ...ActivityInfoData
     }
-    practiceQuizzes {
-      id
-      name
-      displayName
-      status
-      availableFrom
-      orderType
-      pointsMultiplier
-      resetTimeDays
-      numOfStacks
+    practiceQuizzesInfo {
+      ...ActivityInfoData
     }
-    groupActivities {
-      id
-      name
-      displayName
-      status
-      scheduledStartAt
-      scheduledEndAt
-      numOfQuestions
+    microLearningsInfo {
+      ...ActivityInfoData
     }
-    microLearnings {
-      id
-      name
-      displayName
-      status
-      scheduledStartAt
-      scheduledEndAt
-      pointsMultiplier
-      numOfStacks
+    groupActivitiesInfo {
+      ...ActivityInfoData
     }
   }
 }

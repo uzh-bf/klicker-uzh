@@ -179,6 +179,7 @@ function CSEvaluationHistogramChart({
               angle: -90,
               position: 'left',
               offset: -10,
+              style: { textAnchor: 'middle' },
             }}
             className={textSize.textXl}
           />

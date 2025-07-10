@@ -83,7 +83,7 @@ function TemplateElementContent({
               {!(blockIx === 0 && elementIx === 0) ? (
                 <Tooltip
                   tooltip={t('manage.template.elementActionsTemplate')}
-                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
+                  className={{ tooltip: 'max-w-120 text-sm' }}
                 >
                   <FontAwesomeIcon
                     icon={faQuestion}
@@ -223,42 +223,45 @@ function TemplateElementContent({
         </Button>
       </div>
 
-      <ExistingElementSelectionModal
-        open={existingElementModal}
-        onClose={() => setExistingElementModal(false)}
-        replaceWithExistingElement={replaceWithExistingElement}
-        requiredElementType={templateElement.instance.elementType}
-        hasSampleSolution={
-          'options' in templateElement.instance.elementData
-            ? templateElement.instance.elementData.options.hasSampleSolution
-            : null
-        }
-        hasAnswerFeedbacks={
-          'options' in templateElement.instance.elementData &&
-          'hasAnswerFeedbacks' in templateElement.instance.elementData.options
-            ? templateElement.instance.elementData.options.hasAnswerFeedbacks
-            : null
-        }
-      />
+      {existingElementModal && (
+        <ExistingElementSelectionModal
+          onClose={() => setExistingElementModal(false)}
+          replaceWithExistingElement={replaceWithExistingElement}
+          requiredElementType={templateElement.instance.elementType}
+          hasSampleSolution={
+            'options' in templateElement.instance.elementData
+              ? templateElement.instance.elementData.options.hasSampleSolution
+              : null
+          }
+          hasAnswerFeedbacks={
+            'options' in templateElement.instance.elementData &&
+            'hasAnswerFeedbacks' in templateElement.instance.elementData.options
+              ? templateElement.instance.elementData.options.hasAnswerFeedbacks
+              : null
+          }
+        />
+      )}
 
-      <TemplateNewElementModal
-        templateId={templateId}
-        open={newElementModal}
-        onClose={() => setNewElementModal(false)}
-        templateElement={templateElement}
-        onSaveNewElement={saveNewElement}
-      />
+      {newElementModal && (
+        <TemplateNewElementModal
+          templateId={templateId}
+          onClose={() => setNewElementModal(false)}
+          templateElement={templateElement}
+          onSaveNewElement={saveNewElement}
+        />
+      )}
 
-      <NewElementDataDiscardingModal
-        open={comfirmDiscardCustom.open}
-        onClose={() =>
-          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
-        }
-        onConfirm={() => {
-          comfirmDiscardCustom.onConfirm()
-          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
-        }}
-      />
+      {comfirmDiscardCustom.open && (
+        <NewElementDataDiscardingModal
+          onClose={() =>
+            setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+          }
+          onConfirm={() => {
+            comfirmDiscardCustom.onConfirm()
+            setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+          }}
+        />
+      )}
     </>
   )
 }

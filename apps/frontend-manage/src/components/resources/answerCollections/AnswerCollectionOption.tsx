@@ -26,6 +26,8 @@ function AnswerCollectionOption({
   setEditDisabled,
   onTouched,
   onSuccess,
+  inlineEditing,
+  refetchAnswerCollections,
 }: {
   entry: AnswerCollectionEntry
   otherEntries: string[]
@@ -36,6 +38,8 @@ function AnswerCollectionOption({
   setEditDisabled: Dispatch<SetStateAction<boolean>>
   onTouched: () => void
   onSuccess: () => void
+  inlineEditing: boolean
+  refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
@@ -52,7 +56,7 @@ function AnswerCollectionOption({
     <div
       className={twMerge(
         'flex w-full flex-row items-center gap-1 border-b pb-1',
-        last && '!border-b-0'
+        last && 'border-b-0!'
       )}
     >
       <Button
@@ -89,8 +93,13 @@ function AnswerCollectionOption({
                 },
               })
             },
-            refetchQueries: [GetAnswerCollectionsInfoDocument],
+            refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
           })
+
+          // if the answer collection is edited inline (in a question context), refetch the selection
+          if (inlineEditing) {
+            await refetchAnswerCollections?.()
+          }
 
           onSuccess()
         }}
@@ -177,7 +186,7 @@ function AnswerCollectionOption({
             }}
           >
             {({ isSubmitting, isValid }) => (
-              <Form className="flex flex-row gap-[0.1875rem]">
+              <Form className="gap-0.75 flex flex-row">
                 <Button
                   primary
                   type="submit"

@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks(
@@ -60,7 +60,7 @@ export async function createFeedback(
   ctx: Context
 ) {
   const isLoggedInParticipant =
-    ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
@@ -97,17 +97,18 @@ export async function createFeedback(
 
 // add response to an existing feedback
 export async function respondToFeedback(
-  { id, responseContent }: { id: number; responseContent: string },
+  {
+    id,
+    responseContent,
+    liveQuizId,
+  }: { id: number; responseContent: string; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.findUnique({
-    where: { id },
-    include: {
-      liveQuiz: true,
-    },
+    where: { id, liveQuizId },
   })
 
-  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
+  if (!feedback) return null
 
   const feedbackPublished = feedback.isPublished
   const updatedFeedback = await ctx.prisma.feedback.update({
@@ -117,15 +118,9 @@ export async function respondToFeedback(
       isResolved: true,
       isPinned: false,
       resolvedAt: new Date(),
-      responses: {
-        create: {
-          content: responseContent,
-        },
-      },
+      responses: { create: { content: responseContent } },
     },
-    include: {
-      responses: true,
-    },
+    include: { responses: true },
   })
 
   if (!feedbackPublished) {
@@ -177,28 +172,23 @@ export async function addConfusionTimestep(
 
 // publish / unpublish a feedback to be visible to students
 export async function publishFeedback(
-  { id, isPublished }: { id: number; isPublished: boolean },
+  {
+    id,
+    isPublished,
+    liveQuizId,
+  }: { id: number; isPublished: boolean; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.findUnique({
-    where: { id },
-    include: {
-      liveQuiz: true,
-    },
+    where: { id, liveQuizId },
   })
 
-  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
+  if (!feedback) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
-    where: {
-      id,
-    },
-    data: {
-      isPublished: isPublished,
-    },
-    include: {
-      responses: true,
-    },
+    where: { id },
+    data: { isPublished: isPublished },
+    include: { responses: true },
   })
 
   if (isPublished) {
@@ -217,28 +207,23 @@ export async function publishFeedback(
 
 // pin / unpin a feedback on the lecturers running live quiz screen
 export async function pinFeedback(
-  { id, isPinned }: { id: number; isPinned: boolean },
+  {
+    id,
+    isPinned,
+    liveQuizId,
+  }: { id: number; isPinned: boolean; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.findUnique({
-    where: { id },
-    include: {
-      liveQuiz: true,
-    },
+    where: { id, liveQuizId },
   })
 
-  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
+  if (!feedback) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
-    where: {
-      id,
-    },
-    data: {
-      isPinned: isPinned,
-    },
-    include: {
-      responses: true,
-    },
+    where: { id },
+    data: { isPinned: isPinned },
+    include: { responses: true },
   })
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
@@ -253,17 +238,18 @@ export async function pinFeedback(
 
 // resolve / unresolve a feedback
 export async function resolveFeedback(
-  { id, isResolved }: { id: number; isResolved: boolean },
+  {
+    id,
+    isResolved,
+    liveQuizId,
+  }: { id: number; isResolved: boolean; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.findUnique({
-    where: { id },
-    include: {
-      liveQuiz: true,
-    },
+    where: { id, liveQuizId },
   })
 
-  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
+  if (!feedback) return null
 
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
@@ -271,9 +257,7 @@ export async function resolveFeedback(
       isResolved: isResolved,
       resolvedAt: isResolved ? new Date() : null,
     },
-    include: {
-      responses: true,
-    },
+    include: { responses: true },
   })
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
@@ -287,17 +271,14 @@ export async function resolveFeedback(
 
 // deletes a feedback (and all its responses through cascade)
 export async function deleteFeedback(
-  { id }: { id: number },
+  { id, liveQuizId }: { id: number; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.findUnique({
-    where: { id },
-    include: {
-      liveQuiz: true,
-    },
+    where: { id, liveQuizId },
   })
 
-  if (!feedback || feedback.liveQuiz!.ownerId !== ctx.user.sub) return null
+  if (!feedback) return null
 
   const deletedFeedback = await ctx.prisma.feedback.delete({
     where: { id },
@@ -314,24 +295,14 @@ export async function deleteFeedback(
 
 // deletes a feedback response
 export async function deleteFeedbackResponse(
-  { id }: { id: number },
+  { id, liveQuizId }: { id: number; liveQuizId: string },
   ctx: ContextWithUser
 ) {
   const feedbackResponse = await ctx.prisma.feedbackResponse.findUnique({
-    where: { id },
-    include: {
-      feedback: {
-        include: {
-          liveQuiz: true,
-        },
-      },
-    },
+    where: { id, feedback: { liveQuizId } },
   })
 
-  if (
-    !feedbackResponse ||
-    feedbackResponse.feedback.liveQuiz!.ownerId !== ctx.user.sub
-  ) {
+  if (!feedbackResponse) {
     return null
   }
 

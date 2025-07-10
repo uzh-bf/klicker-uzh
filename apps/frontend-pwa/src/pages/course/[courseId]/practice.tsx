@@ -67,7 +67,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
         quiz={{
           ...data?.coursePracticeQuiz,
           description: t('pwa.courses.coursePracticeArea', {
-            courseName: data?.coursePracticeQuiz.course?.displayName,
+            courseName: data?.coursePracticeQuiz.course?.displayName ?? 0,
           }),
           course: data?.coursePracticeQuiz.course!,
         }}

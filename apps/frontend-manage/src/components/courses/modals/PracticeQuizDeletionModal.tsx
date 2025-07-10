@@ -3,25 +3,22 @@ import {
   DeletePracticeQuizDocument,
   GetPracticeQuizSummaryDocument,
   GetSingleCourseDocument,
+  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface PracticeQuizDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
 function PracticeQuizDeletionModal({
-  open,
-  setOpen,
+  onClose,
   activityId,
   courseId,
-}: PracticeQuizDeletionModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetPracticeQuizSummaryDocument,
@@ -42,8 +39,10 @@ function PracticeQuizDeletionModal({
           __typename: 'PracticeQuiz',
         },
       },
+      // TODO: replace this with a more efficient cache update
       refetchQueries: [
         { query: GetSingleCourseDocument, variables: { courseId } },
+        { query: GetUserActivitiesDocument },
       ],
     }
   )
@@ -70,8 +69,7 @@ function PracticeQuizDeletionModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
       onSubmit={async () => await deletePracticeQuiz()}

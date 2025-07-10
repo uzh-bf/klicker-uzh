@@ -3,9 +3,25 @@ import type {
   ElementStatus,
   ElementType,
   ObjectAccess,
+  ObjectType,
   ParameterType,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
+
+// ----- ACTIVITY LOG TYPES -----
+// #region
+export enum ActivityLogModificationFieldType {
+  TITLE = 'title',
+  STATUS = 'status',
+  CONTENT = 'content',
+}
+
+export interface ActivityLogModificationDetails {
+  field: ActivityLogModificationFieldType | string
+  oldValue: string
+  newValue: string
+}
+// #endregion
 
 export type ElementKeys = keyof Element
 
@@ -15,29 +31,17 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum CatalogObjectType {
-  ANSWER_COLLECTION = 'ANSWER_COLLECTION',
-  CATALOG_COLLECTION = 'CATALOG_COLLECTION',
-  LIVE_QUIZ_TEMPLATE = 'LIVE_QUIZ_TEMPLATE',
-
-  // TODO: add more object types once they are supported
-  // PRACTICE_QUIZ_TEMPLATE = 'PRACTICE_QUIZ_TEMPLATE',
-  // MICRO_LEARNING_TEMPLATE = 'MICRO_LEARNING_TEMPLATE',
-  // GROUP_ACTIVITY_TEMPLATE = 'GROUP_ACTIVITY_TEMPLATE',
-
-  // ELEMENT = 'ELEMENT',
-  // COURSE = 'COURSE
-  // LIVE_QUIZ = 'LIVE_QUIZ',
-  // PRACTICE_QUIZ = 'PRACTICE_QUIZ',
-  // MICRO_LEARNING = 'MICRO_LEARNING',
-  // GROUP_ACTIVITY = 'GROUP_ACTIVITY',
-}
-
 export enum ActivityType {
   LIVE_QUIZ = 'LIVE_QUIZ',
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',
   MICRO_LEARNING = 'MICRO_LEARNING',
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
+}
+
+export enum SharingType {
+  OWNED = 'OWNED', // owned objects
+  SHARED = 'SHARED', // objects shared directly with the user (potentially through user group)
+  DEPENDENCY = 'DEPENDENCY', // objects shared with the user indirectly (through the object being a dependency of another object)
 }
 
 export type ElementBlockInput = {
@@ -205,6 +209,8 @@ export type ElementManipulationInput = {
   basePoints?: boolean | null
   pointsMultiplier?: number | null
   tags?: string[] | null
+  // boolean to signal that the element is created in template mode (modified check for permissions on answer collections)
+  templateId?: string | null
 }
 
 export type TemplateBlockElementInput = {
@@ -337,9 +343,9 @@ export type AvatarSettings = {
 // ----- RESOURCES -----
 // #region
 export type ObjectSharingRequest = {
-  permissionId: number
+  requestId: number
   objectName: string
-  objectType: CatalogObjectType
+  objectType: ObjectType
   userId: string
   userShortname: string
   userEmail: string
@@ -349,11 +355,11 @@ export type ObjectSharingRequest = {
 // ----- CATALOG -----
 // #region
 export type CatalogObject = {
-  id?: number
-  uuid?: string
+  id: number // assignment id
+  objectId?: number // object id
+  objectUuid?: string // object uuid
   name: string
-  objectType: CatalogObjectType
-  assignmentId: number
+  objectType: ObjectType
   templateId?: string
   access: ObjectAccess
   ownerShortname?: string

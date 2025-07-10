@@ -203,7 +203,7 @@ export const USE_CASES = {
         <p>
           You are a lecturer and want to increase the interaction between you
           and your students in a lecture or seminar in-person or online by using
-          the KlickerUZH. To achieve this, it is essential to carefully plan and
+          KlickerUZH. To achieve this, it is essential to carefully plan and
           prepare questions in advance that you can ask your students during the
           session. In order for lecturers to organize their questions, they can
           group the questions into activities for sequential or stacked
@@ -256,17 +256,17 @@ export const USE_CASES = {
     learnings: (
       <>
         <p>
-          Since the KlickerUZH's initial release and first implementation in
-          2011, the increasing number of user registrations confirms the need
-          for such a tool in teaching.
+          Since KlickerUZH's initial release and first implementation in 2011,
+          the increasing number of user registrations confirms the need for such
+          a tool in teaching.
         </p>
         <p>
-          At the University of Zurich, the KlickerUZH has been used in small,
-          large (200-400 students), and very large (800-1500 students) lectures
-          since its inception. Here are the combined learnings from
-          end-of-semester student evaluations, internal surveys with KlickerUZH
-          users in the spring semester 2023 (n=63) as well as input from
-          lecturers and content creators:
+          At the University of Zurich, KlickerUZH has been used in small, large
+          (200-400 students), and very large (800-1500 students) lectures since
+          its inception. Here are the combined learnings from end-of-semester
+          student evaluations, internal surveys with KlickerUZH users in the
+          spring semester 2023 (n=63) as well as input from lecturers and
+          content creators:
         </p>
         <ul>
           <li>
@@ -467,7 +467,7 @@ export const USE_CASES = {
         </p>
         <p>
           You can prepare and implement various questions and survey questions
-          into the KlickerUZH. These can be activated during the lecture for
+          into KlickerUZH. These can be activated during the lecture for
           students to answer, enabling them to apply their previously acquired
           knowledge. Additionally, this allows you as the lecturer to identify
           any open questions or areas of confusion based on the results.
@@ -488,8 +488,8 @@ export const USE_CASES = {
           KlickerUZH questions which were used to evaluate the comprehension of
           self-learning materials, as well as to explain and discuss the studied
           topics more in-depth. Some of the most important learnings regarding
-          the setup of Flipped Classroom sessions with the KlickerUZH based on
-          this evaluation are the following:
+          the setup of Flipped Classroom sessions with KlickerUZH based on this
+          evaluation are the following:
         </p>
         <ul>
           <li>
@@ -822,13 +822,13 @@ export const USE_CASES = {
         <p>
           You are a lecturer and would like to provide your students with an
           opportunity to revisit the lecture content after the lecture.
-          Therefore, you decide to provide practice quizzes via the KlickerUZH,
+          Therefore, you decide to provide practice quizzes via KlickerUZH,
           thanks to which your students can review and study online, using the
           KlickerUZH app, webpage or even the integration into the LMS. These
           learning activities have no restrictions on when or how often they can
           be completed. Furthermore, the questions within each set can be shown
           in sequence, shuffled, or ordered based on the date of the last
-          response, providing varied experiences for students. The KlickerUZH
+          response, providing varied experiences for students. KlickerUZH
           supports the following question types – many of which are used in an
           exam setting: Single Choice (SC), Multiple Choice (MC), Kprim (KPRIM),
           Free Text (FT), and Numerical Response (NR). Additionally, the
@@ -968,8 +968,8 @@ export const USE_CASES = {
           tasks that extend over a lecture or spread over a longer period of
           time. It supports various aspects such as group formation,
           distributing the initial situation, and implementing the corresponding
-          questions. Within the KlickerUZH, students have the freedom to form
-          their own groups, enabling them to collaboratively tackle the assigned
+          questions. Within KlickerUZH, students have the freedom to form their
+          own groups, enabling them to collaboratively tackle the assigned
           tasks. This ensures that teamwork is no longer neglected, even in
           large study courses.
         </p>
@@ -985,7 +985,7 @@ export const USE_CASES = {
           relationships among learners (Johnson & Johnson, 2009).
         </p>
         <p>
-          Through the KlickerUZH, students are encouraged to tackle a challenge
+          Through KlickerUZH, students are encouraged to tackle a challenge
           together and work out solutions as a team. This not only enhances
           students' problem-solving skills, but also provides an opportunity to
           develop creative skills (Hämäläinen & Vähäsantanen, 2011). Students
@@ -1021,10 +1021,10 @@ export const USE_CASES = {
         <p>
           As a lecturer you would like to strengthen group collaborations and
           see value in having your students work together. Therefore, you decide
-          to use the KlickerUZH to provide Group Activities where students can
-          sign up as groups (of at least two people) and work on the provided
-          tasks together. This can be done during the lecture for smaller tasks
-          or alternatively for a longer period of time during which students can
+          to use KlickerUZH to provide Group Activities where students can sign
+          up as groups (of at least two people) and work on the provided tasks
+          together. This can be done during the lecture for smaller tasks or
+          alternatively for a longer period of time during which students can
           work on a more complex assignment. The following question types can be
           implemented: Single Choice (SC), Multiple Choice (MC), Kprim (KPRIM),
           Free Text (FT), and Numerical Response (NR). This is a great
@@ -1034,7 +1034,7 @@ export const USE_CASES = {
         </p>
         <p>
           The teamwork is further encouraged thanks to distributed information.
-          When providing group activities via the KlickerUZH the necessary
+          When providing group activities via KlickerUZH, the necessary
           information needed to solve the task can be distributed between the
           team members so that they are required to work together and exchange
           information and ideas.
@@ -1149,21 +1149,19 @@ export const USE_CASES = {
           trivial.
         </p>
         <p>
-          With the KlickerUZH, students can ask their questions anonymously
-          during the lecture. They can discuss their issues in a secure
-          environment and express their uncertainties unashamedly. For the
-          lecturers, the KlickerUZH serves as a helpful tool to keep an overview
-          of the knowledge of their students and to see where there are any
-          comprehension problems. It is up to the lecturers whether they make
-          the questions visible to all and promote interaction among the
-          students or whether they answer the questions in a pre-selected
-          manner.
+          With KlickerUZH, students can ask their questions anonymously during
+          the lecture. They can discuss their issues in a secure environment and
+          express their uncertainties unashamedly. For lecturers, KlickerUZH
+          serves as a helpful tool to keep an overview of the knowledge of their
+          students and to see where there are any comprehension problems. It is
+          up to the lecturers whether they make the questions visible to all and
+          promote interaction among the students or whether they answer the
+          questions in a pre-selected manner.
         </p>
         <p>
-          With this approach, the KlickerUZH creates a connection between
-          lecturers and students and promotes an open and inclusive learning
-          environment in which questions and discussions are actively
-          encouraged.
+          With this approach, KlickerUZH creates a connection between lecturers
+          and students and promotes an open and inclusive learning environment
+          in which questions and discussions are actively encouraged.
         </p>
       </>
     ),
@@ -1175,7 +1173,7 @@ export const USE_CASES = {
           effective and successful?
         </p>
         <p>
-          In an anonymous setting, such as the KlickerUZH provides, a safe
+          In an anonymous setting, such as the one KlickerUZH provides, a safe
           environment is created for students which has been shown to encourage
           student participation (Roberts & Rajah-Kanagasabai, 2013).
         </p>
@@ -1204,7 +1202,7 @@ export const USE_CASES = {
           You are a lecturer delivering large-class lectures with limited
           opportunities for personal interaction. To enable students to interact
           with you in a more approachable way even if they participate online,
-          you start a session in the KlickerUZH and enable the anonymous Q&A
+          you start a session in KlickerUZH and enable the anonymous Q&A
           channel. Throughout the lecture, students access the Q&A channel on
           their own devices to post new questions or upvote existing ones.
           Depending on your preference, you can choose either the unmoderated
@@ -1482,8 +1480,8 @@ export const USE_CASES = {
           increases their motivation to engage in the course.
         </p>
         <p>
-          In addition to the challenge system, the KlickerUZH offers a design
-          for a storyline and visual aspects that can be integrated optionally.
+          In addition to the challenge system, KlickerUZH offers a design for a
+          storyline and visual aspects that can be integrated optionally.
         </p>
         <p>
           Lecturers have the freedom to further personalize the implementation
@@ -1536,8 +1534,8 @@ export const USE_CASES = {
             interacting with other students. In a multiple-choice question,
             51.7% found the concept useful and more than 20% deem the workload
             and difficulty appropriate. These results indicate the majority of
-            participants find added value in the KlickerUZH and would like to
-            engage in the concept in the future.
+            participants find added value in KlickerUZH and would like to engage
+            in the concept in the future.
           </li>
           <li>
             <strong>BF Challenge:</strong> Even though 89.6% of the students
@@ -2196,7 +2194,7 @@ export const USE_CASES = {
             address these considerations it is important to obtain informed
             consent from students regarding how their data is collected,
             processed, stored, and used (see the implemented privacy policy of
-            the KlickerUZH ). The provider for AI services has to be carefully
+            KlickerUZH). The provider for AI services has to be carefully
             selected and it should be ensured that the data provided by students
             is not used for further training by the provider. Locally hosted
             models might provide a suitable alternative for small-scale use

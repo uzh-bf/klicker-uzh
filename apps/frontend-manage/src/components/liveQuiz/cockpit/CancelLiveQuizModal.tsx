@@ -2,10 +2,12 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CancelLiveQuizDocument,
   GetLiveQuizSummaryDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -21,13 +23,11 @@ export interface LiveQuizAbortionConfirmationType {
 function CancelLiveQuizModal({
   quizId,
   title,
-  open,
-  setOpen,
+  onClose,
 }: {
   quizId: string
   title: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  onClose: () => void
 }) {
   const router = useRouter()
   const t = useTranslations()
@@ -68,7 +68,10 @@ function CancelLiveQuizModal({
           },
         })
       },
-      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
+      refetchQueries: [
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
+      ],
     }
   )
 
@@ -86,58 +89,47 @@ function CancelLiveQuizModal({
         data.getLiveQuizSummary.numOfLeaderboardEntries === 0,
     })
   }, [data?.getLiveQuizSummary])
-
-  if (!data?.getLiveQuizSummary) {
-    return null
-  }
-
-  const summary = data.getLiveQuizSummary
+  const summary = data?.getLiveQuizSummary
 
   return (
     <Modal
-      open={open}
+      open
       onClose={() => {
-        setOpen(false)
+        onClose()
         setConfirmations({ ...initialConfirmations })
       }}
-      className={{ content: '!w-full max-w-[60rem]' }}
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
-      onPrimaryAction={
-        <Button
-          destructive
-          loading={quizDeleting}
-          disabled={
-            queryLoading ||
-            Object.values(confirmations).some((confirmation) => !confirmation)
-          }
-          onClick={async () => {
-            await cancelLiveQuiz()
-            router.push('/quizzes')
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'confirm-cancel-live-quiz' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      primaryLoading={quizDeleting}
+      primaryDisabled={
+        queryLoading ||
+        Object.values(confirmations).some((confirmation) => !confirmation)
       }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-            setConfirmations({ ...initialConfirmations })
-          }}
-          data={{ cy: 'abort-cancel-live-quiz' }}
-        >
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      onPrimaryAction={async () => {
+        await cancelLiveQuiz()
+        router.push('/activities')
+        onClose()
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataPrimaryAction={{ cy: 'confirm-cancel-live-quiz' }}
+      secondaryLabel={t('shared.generic.close')}
+      onSecondaryAction={() => {
+        onClose()
+        setConfirmations({ ...initialConfirmations })
+      }}
+      dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
+      className={{ content: 'max-w-240' }}
     >
-      <LiveQuizAbortionConfirmations
-        summary={summary}
-        confirmations={confirmations}
-        setConfirmations={setConfirmations}
-      />
+      {queryLoading || !summary ? (
+        <Loader />
+      ) : (
+        <LiveQuizAbortionConfirmations
+          summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
+        />
+      )}
     </Modal>
   )
 }

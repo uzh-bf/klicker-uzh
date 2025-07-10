@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { ContextWithUser } from '../lib/context.js'
+import { SharingType } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import type {
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
@@ -28,51 +33,6 @@ async function incrementCollectionVersion(
   return collection
 }
 
-export async function validateAnswerCollectionPermissions(
-  {
-    collectionId,
-    acceptedPermissionLevels,
-  }: {
-    collectionId: number
-    acceptedPermissionLevels: DB.PermissionLevel[]
-  },
-  // type modification required for method to be usable inside transaction without type errors
-  ctx: Omit<ContextWithUser, 'prisma'> & {
-    prisma: Omit<
-      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-    >
-  }
-) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: {
-                in: acceptedPermissionLevels,
-              },
-            },
-          },
-        },
-      ],
-    },
-  })
-
-  if (!collection) {
-    return { valid: false, collection: null }
-  }
-
-  return { valid: true, collection }
-}
-
 export async function createAnswerCollection(
   {
     name,
@@ -85,104 +45,124 @@ export async function createAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      ownerId_name: {
-        ownerId: ctx.user.sub,
+  const collection = await ctx.prisma.$transaction(async (prisma) => {
+    const newCollection = await prisma.answerCollection.create({
+      data: {
         name,
-      },
-    },
-  })
-
-  // if collection already exists for the user, notify him that a new name needs to be chosen
-  if (collection) {
-    return null
-  }
-
-  const newCollection = await ctx.prisma.answerCollection.create({
-    data: {
-      name,
-      description,
-      entries: {
-        create: answers.map((answer) => ({
-          value: answer,
-        })),
-      },
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+        description,
+        entries: {
+          create: answers.map((answer) => ({
+            value: answer,
+          })),
         },
-      },
-    },
-    include: {
-      _count: {
-        select: {
-          entries: true,
-          permissions: {
-            where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
           },
         },
       },
-    },
+      include: {
+        entries: true,
+      },
+    })
+
+    // trigger recomputation of derived permissions (-> owner should get new one)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
   })
 
   return {
-    ...newCollection,
-    numSharedUsers: newCollection._count?.permissions,
-    numOfEntries: newCollection._count.entries,
+    ...collection,
+    numSharedUsers: 0,
+    numOfEntries: collection.entries.length,
     isOwner: true,
     isManager: true,
     isEditor: true,
     isImported: false,
     isShared: false,
-    isRemovable: true,
+    isDeletable: true,
+    isRemovable: false,
+    sharingType: SharingType.OWNED,
+  }
+}
+
+export async function duplicateAnswerCollection(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the existing answer collection, including its entries
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+    include: { entries: true },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // create a new collection with the same entries
+  const duplicatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const newCollection = await prisma.answerCollection.create({
+      data: {
+        name: `${collection.name} (Copy)`,
+        description: collection.description,
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+      include: { entries: true },
+    })
+
+    // trigger recomputation of derived permissions (-> owner should get new one)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
+  })
+
+  return {
+    ...duplicatedCollection,
+    numSharedUsers: 0,
+    numOfEntries: duplicatedCollection.entries.length,
+    isOwner: true,
+    isManager: true,
+    isEditor: true,
+    isImported: false,
+    isShared: false,
+    isDeletable: true,
+    isRemovable: false,
+    sharingType: SharingType.OWNED,
   }
 }
 
 export async function getAnswerCollectionsElements(
   { templateId }: { templateId?: string | null },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   // fetch all answer collections, which are available to be included in elements
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
-      answerCollections: {
-        include: {
-          entries: {
-            orderBy: {
-              value: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      },
-      sharedObjects: {
-        where: {
-          permissionStatus: DB.PermissionStatus.GRANTED,
-          answerCollectionId: {
-            not: null,
-          },
-        },
+      objects: {
+        where: { answerCollectionId: { not: null } },
         include: {
           answerCollection: {
             include: {
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
-              entries: {
-                orderBy: {
-                  value: 'asc',
-                },
-              },
+              owner: { select: { shortname: true } },
+              entries: { orderBy: { value: 'asc' } },
             },
           },
         },
@@ -229,23 +209,33 @@ export async function getAnswerCollectionsElements(
     }
   }
 
+  // get the ids of all answer collections that are shared with the user
+  const sharedAnswerCollectionIds = user.objects
+    .filter((object) => object.answerCollection)
+    .map((object) => object.answerCollection!.id)
+
   const combinedAnswerCollections = [
-    ...user.answerCollections.map((collection) => ({
-      ...collection,
-      isShared: false,
-    })),
-    ...user.sharedObjects.flatMap((object) =>
+    ...user.objects.flatMap((object) =>
       object.answerCollection
         ? {
             ...object.answerCollection,
-            isShared: true,
+            isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+            isEditor:
+              object.permissionLevel === DB.PermissionLevel.WRITE ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN ||
+              object.permissionLevel === DB.PermissionLevel.OWNER,
           }
         : []
     ),
-    ...templateAnswerCollections.map((collection) => ({
-      ...collection,
-      isShared: false,
-    })),
+    ...templateAnswerCollections
+      .filter(
+        (collection) => !sharedAnswerCollectionIds.includes(collection.id)
+      )
+      .map((collection) => ({
+        ...collection,
+        isShared: false,
+        isEditor: false,
+      })),
   ]
 
   // return deduplicated list of answer collections (based on id)
@@ -265,308 +255,88 @@ export async function getSingleAnswerCollection(
   ctx: ContextWithUser
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      ],
-    },
+    where: { id },
     include: {
       entries: {
         include: {
-          _count: {
-            select: {
-              itemUsages: true,
-            },
-          },
+          _count: { select: { itemUsages: true, templateUsages: true } },
         },
-        orderBy: {
-          value: 'asc',
-        },
+        orderBy: { value: 'asc' },
       },
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-      _count: {
-        select: {
-          permissions: {
-            where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      },
+      permissions: { where: { userId: ctx.user.sub } },
+      owner: { select: { shortname: true } },
+      _count: { select: { permissions: true } },
     },
   })
 
-  if (!collection) {
+  if (!collection || collection.permissions.length === 0) {
     return null
   }
 
   // return owned collection (editable, etc. if the ownerId is the user's id)
-  if (collection.ownerId === ctx.user.sub) {
-    return {
-      ...collection,
-      entries: collection.entries.map((entry) => ({
-        ...entry,
-        numSolutionUsages: entry._count?.itemUsages,
-      })),
-      numSharedUsers: collection._count?.permissions,
-      isOwner: true,
-      isManager: true,
-      isEditor: true,
-      isShared: false,
-    }
-  } else {
-    const permissionLevel = collection.permissions[0]?.permissionLevel
-    return {
-      ...collection,
-      permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
-      ownerShortname: collection.owner?.shortname,
-      isOwner: false,
-      isManager: permissionLevel === DB.PermissionLevel.ADMIN,
-      isEditor:
-        permissionLevel === DB.PermissionLevel.WRITE ||
-        permissionLevel === DB.PermissionLevel.ADMIN,
-      isShared: true,
-    }
+  const permissionLevel = collection.permissions[0]?.permissionLevel
+  const isOwner = permissionLevel === DB.PermissionLevel.OWNER
+  const isManager =
+    permissionLevel === DB.PermissionLevel.ADMIN ||
+    permissionLevel === DB.PermissionLevel.OWNER
+  const isEditor =
+    permissionLevel === DB.PermissionLevel.WRITE ||
+    permissionLevel === DB.PermissionLevel.ADMIN ||
+    permissionLevel === DB.PermissionLevel.OWNER
+  return {
+    ...collection,
+    entries: collection.entries.map((entry) => ({
+      ...entry,
+      numSolutionUsages: entry._count.itemUsages + entry._count.templateUsages,
+    })),
+    numSharedUsers: isManager ? collection._count.permissions - 1 : undefined,
+    permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
+    ownerShortname: collection.owner?.shortname,
+    isOwner,
+    isManager,
+    isEditor,
+    isShared: permissionLevel !== DB.PermissionLevel.OWNER,
   }
 }
 
 export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
-      answerCollections: {
+      objects: {
+        where: { answerCollectionId: { not: null } },
         include: {
-          _count: {
-            select: {
-              entries: true,
-              linkedElements: {
-                where: {
-                  OR: [
-                    {
-                      ownerId: ctx.user.sub,
-                    },
-                    {
-                      permissions: {
-                        some: {
-                          userId: ctx.user.sub,
-                          permissionStatus: DB.PermissionStatus.GRANTED,
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-              linkedTemplates: {
-                where: {
-                  OR: [
-                    {
-                      liveQuiz: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      practiceQuiz: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      microLearning: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      groupActivity: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      },
-      sharedObjects: {
-        where: {
-          answerCollectionId: {
-            not: null,
-          },
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
-        include: {
+          directPermission: true,
           answerCollection: {
             include: {
               _count: {
                 select: {
                   entries: true,
+                  permissions: true,
                   linkedElements: {
-                    where: {
-                      OR: [
-                        {
-                          ownerId: ctx.user.sub,
-                        },
-                        {
-                          permissions: {
-                            some: {
-                              userId: ctx.user.sub,
-                              permissionStatus: DB.PermissionStatus.GRANTED,
-                            },
-                          },
-                        },
-                      ],
-                    },
+                    where: { permissions: { some: { userId: ctx.user.sub } } },
                   },
                   linkedTemplates: {
                     where: {
                       OR: [
                         {
                           liveQuiz: {
-                            OR: [
-                              {
-                                ownerId: ctx.user.sub,
-                              },
-                              {
-                                permissions: {
-                                  some: {
-                                    userId: ctx.user.sub,
-                                    permissionStatus:
-                                      DB.PermissionStatus.GRANTED,
-                                  },
-                                },
-                              },
-                            ],
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           practiceQuiz: {
-                            OR: [
-                              {
-                                ownerId: ctx.user.sub,
-                              },
-                              {
-                                permissions: {
-                                  some: {
-                                    userId: ctx.user.sub,
-                                    permissionStatus:
-                                      DB.PermissionStatus.GRANTED,
-                                  },
-                                },
-                              },
-                            ],
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           microLearning: {
-                            OR: [
-                              {
-                                ownerId: ctx.user.sub,
-                              },
-                              {
-                                permissions: {
-                                  some: {
-                                    userId: ctx.user.sub,
-                                    permissionStatus:
-                                      DB.PermissionStatus.GRANTED,
-                                  },
-                                },
-                              },
-                            ],
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           groupActivity: {
-                            OR: [
-                              {
-                                ownerId: ctx.user.sub,
-                              },
-                              {
-                                permissions: {
-                                  some: {
-                                    userId: ctx.user.sub,
-                                    permissionStatus:
-                                      DB.PermissionStatus.GRANTED,
-                                  },
-                                },
-                              },
-                            ],
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                       ],
@@ -574,11 +344,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
                   },
                 },
               },
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
+              owner: { select: { shortname: true } },
             },
           },
         },
@@ -590,46 +356,51 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     return []
   }
 
-  const ownedCollections = user.answerCollections.map((collection) => ({
-    ...collection,
-    numSharedUsers: collection._count?.permissions,
-    numOfEntries: collection._count.entries,
-    isOwner: true,
-    isManager: true,
-    isEditor: true,
-    isImported: collection.originalId !== null,
-    isShared: false,
-    isRemovable:
-      collection._count.linkedElements === 0 &&
-      collection._count.linkedTemplates === 0,
-  }))
-
-  const sharedCollections = user.sharedObjects.flatMap((object) => {
+  // owned answer collections are included in shared ones through derived permissions with OWNER level
+  const collections = user.objects.flatMap((object) => {
     const collection = object.answerCollection
 
-    if (!collection) {
+    if (!collection || (object.derived && collection.isDeleted)) {
       return []
     }
 
     return {
       ...collection,
       numOfEntries: collection._count.entries,
+      numSharedUsers: collection._count.permissions - 1,
       permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
-      isOwner: false,
-      isManager: object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+      isManager:
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.OWNER,
       isEditor:
         object.permissionLevel === DB.PermissionLevel.WRITE ||
-        object.permissionLevel === DB.PermissionLevel.ADMIN,
-      isImported: false, // shared objects cannot be imported
-      isShared: true,
-      isRemovable:
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.OWNER,
+      isImported:
+        object.permissionLevel === DB.PermissionLevel.OWNER &&
+        object.answerCollection?.originalId !== null,
+      isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+      isDeletable:
         collection._count.linkedElements === 0 &&
         collection._count.linkedTemplates === 0,
+      isRemovable:
+        collection._count.linkedElements === 0 &&
+        collection._count.linkedTemplates === 0 &&
+        object.permissionLevel !== DB.PermissionLevel.OWNER &&
+        !object.derived &&
+        object.directPermission?.userGroupId === null,
+      sharingType:
+        object.permissionLevel === DB.PermissionLevel.OWNER
+          ? SharingType.OWNED
+          : object.derived
+            ? SharingType.DEPENDENCY
+            : SharingType.SHARED,
     }
   })
 
-  return [...ownedCollections, ...sharedCollections]
+  return collections
 }
 
 export async function modifyAnswerCollection(
@@ -637,50 +408,13 @@ export async function modifyAnswerCollection(
     id,
     name,
     description,
-  }: {
-    id: number
-    name?: string | null
-    description?: string | null
-  },
+  }: { id: number; name?: string | null; description?: string | null },
   ctx: ContextWithUser
 ) {
   // fetch the existing answer collection
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: {
-                in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
-              },
-            },
-          },
-        },
-      ],
-    },
-    include: {
-      _count: {
-        select: {
-          permissions: {
-            where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      },
-      permissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-        },
-      },
-    },
+    where: { id },
+    include: { _count: { select: { permissions: true } } },
   })
 
   if (!collection) {
@@ -690,19 +424,13 @@ export async function modifyAnswerCollection(
   const updatedCollection = await ctx.prisma.$transaction(async (tx) => {
     // update changes in the database
     const updateResult = await tx.answerCollection.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         name: name ?? undefined,
         description: description ?? undefined,
-        version: {
-          increment: 1,
-        },
+        version: { increment: 1 },
       },
-      include: {
-        entries: true,
-      },
+      include: { entries: true },
     })
 
     // invalidate the answer collection
@@ -714,7 +442,6 @@ export async function modifyAnswerCollection(
     return {
       ...updateResult,
       numSharedUsers: collection._count.permissions,
-      isShared: false,
     }
   })
 
@@ -722,133 +449,43 @@ export async function modifyAnswerCollection(
 }
 
 export async function deleteAnswerCollection(
-  {
-    collectionId,
-  }: {
-    collectionId: number
-  },
+  { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
-  // fetch answer collection as owner
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: {
-                in: [DB.PermissionLevel.ADMIN],
-              },
-            },
-          },
-        },
-      ],
-    },
+  // fetch answer collection as owner or admin
+  const collectionUser = await ctx.prisma.answerCollection.findUnique({
+    where: { id: collectionId },
     include: {
       _count: {
         select: {
           linkedElements: {
-            where: {
-              OR: [
-                {
-                  ownerId: ctx.user.sub,
-                },
-                {
-                  permissions: {
-                    some: {
-                      userId: ctx.user.sub,
-                      permissionStatus: DB.PermissionStatus.GRANTED,
-                    },
-                  },
-                },
-              ],
-            },
+            where: { permissions: { some: { userId: ctx.user.sub } } },
           },
           linkedTemplates: {
             where: {
               OR: [
                 {
-                  liveQuiz: {
-                    OR: [
-                      {
-                        ownerId: ctx.user.sub,
-                      },
-                      {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                            permissionStatus: DB.PermissionStatus.GRANTED,
-                          },
-                        },
-                      },
-                    ],
-                  },
+                  liveQuiz: { permissions: { some: { userId: ctx.user.sub } } },
                 },
                 {
                   practiceQuiz: {
-                    OR: [
-                      {
-                        ownerId: ctx.user.sub,
-                      },
-                      {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                            permissionStatus: DB.PermissionStatus.GRANTED,
-                          },
-                        },
-                      },
-                    ],
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
                 {
                   microLearning: {
-                    OR: [
-                      {
-                        ownerId: ctx.user.sub,
-                      },
-                      {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                            permissionStatus: DB.PermissionStatus.GRANTED,
-                          },
-                        },
-                      },
-                    ],
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
                 {
                   groupActivity: {
-                    OR: [
-                      {
-                        ownerId: ctx.user.sub,
-                      },
-                      {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                            permissionStatus: DB.PermissionStatus.GRANTED,
-                          },
-                        },
-                      },
-                    ],
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
               ],
             },
           },
-          permissions: {
-            where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
+          permissions: true,
         },
       },
     },
@@ -856,216 +493,67 @@ export async function deleteAnswerCollection(
 
   // if collection does not exist or is still linked to own elements, do not allow deletion
   if (
-    !collection ||
-    collection._count.linkedElements > 0 ||
-    collection._count.linkedTemplates > 0
+    !collectionUser ||
+    collectionUser._count.linkedElements > 0 ||
+    collectionUser._count.linkedTemplates > 0
   ) {
     return null
   }
 
-  let remainingPermissions = collection._count.permissions
+  // check if any elements or templates are still linked to the collection (--> soft delete)
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: { id: collectionId },
+    include: {
+      _count: { select: { linkedElements: true, linkedTemplates: true } },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  const remainingLinkedElements = collection._count.linkedElements
+  const remainingLinkedTemplates = collection._count.linkedTemplates
+
+  // if there are any elements or templates still linked to the collection, revoke all unused permissions and then soft-delete the collection
   let updatedCollection: DB.AnswerCollection
-  if (remainingPermissions > 0) {
-    // only disconnect answer collection, since other users have access
-    updatedCollection = await ctx.prisma.$transaction(async (tx) => {
-      // remove all access requests
-      await tx.permission.deleteMany({
-        where: {
-          answerCollectionId: collectionId,
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-        },
+  if (remainingLinkedElements > 0 || remainingLinkedTemplates > 0) {
+    updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+      // ? Remove all access requests
+      await prisma.accessRequest.deleteMany({
+        where: { answerCollectionId: collectionId },
       })
 
-      // TODO: make this more efficient by using derived permissions
-      // revoke access for all users that have not used it
-      const grantedPermissions = await tx.permission.findMany({
-        where: {
-          answerCollectionId: collectionId,
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
+      // ? Revoke all direct permissions on the answer collection
+      // only users with linked elements or templates should retain valid access --> stored in derived permissions
+      await prisma.permission.deleteMany({
+        where: { answerCollectionId: collectionId },
       })
 
-      await Promise.all(
-        grantedPermissions.map(async (permission) => {
-          if (permission.answerCollectionId && permission.userId) {
-            // check if the user has used the collection
-            const permissionUsage = await tx.permission.findUnique({
-              where: {
-                id: permission.id,
-              },
-              include: {
-                answerCollection: {
-                  include: {
-                    linkedElements: {
-                      where: {
-                        OR: [
-                          {
-                            ownerId: permission.userId,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: permission.userId,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    linkedTemplates: {
-                      where: {
-                        OR: [
-                          {
-                            liveQuiz: {
-                              OR: [
-                                {
-                                  ownerId: permission.userId,
-                                },
-                                {
-                                  permissions: {
-                                    some: {
-                                      userId: permission.userId,
-                                      permissionStatus:
-                                        DB.PermissionStatus.GRANTED,
-                                    },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            practiceQuiz: {
-                              OR: [
-                                {
-                                  ownerId: permission.userId,
-                                },
-                                {
-                                  permissions: {
-                                    some: {
-                                      userId: permission.userId,
-                                      permissionStatus:
-                                        DB.PermissionStatus.GRANTED,
-                                    },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            microLearning: {
-                              OR: [
-                                {
-                                  ownerId: permission.userId,
-                                },
-                                {
-                                  permissions: {
-                                    some: {
-                                      userId: permission.userId,
-                                      permissionStatus:
-                                        DB.PermissionStatus.GRANTED,
-                                    },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            groupActivity: {
-                              OR: [
-                                {
-                                  ownerId: permission.userId,
-                                },
-                                {
-                                  permissions: {
-                                    some: {
-                                      userId: permission.userId,
-                                      permissionStatus:
-                                        DB.PermissionStatus.GRANTED,
-                                    },
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            })
+      // ? Remove all catalog assignments
+      await prisma.catalogCollectionAssignment.deleteMany({
+        where: { answerCollectionId: collectionId },
+      })
 
-            if (
-              !permissionUsage ||
-              (permissionUsage.answerCollection?.linkedElements.length === 0 &&
-                permissionUsage.answerCollection?.linkedTemplates.length === 0)
-            ) {
-              // delete the permission
-              await tx.permission.delete({
-                where: {
-                  id: permission.id,
-                },
-              })
+      // ? Soft-delete the answer collection
+      const updatedAnswerCollection = await prisma.answerCollection.update({
+        where: { id: collectionId },
+        data: { isDeleted: true },
+      })
 
-              // decrease the number of remaining permissions
-              remainingPermissions--
-
-              // invalidate permission
-              ctx.emitter.emit('invalidate', {
-                typename: 'Permission',
-                id: permission.id,
-              })
-            }
-          }
-        })
+      // trigger recomputation of all derived permissions for this answer collection object
+      // (required, since some users will retain derived access through linked elements)
+      await recomputeDerivedPermissions(
+        { answerCollectionId: updatedAnswerCollection.id },
+        prisma
       )
 
-      // disconnect granted permissions for remaining users
-      await tx.permission.updateMany({
-        where: {
-          answerCollectionId: collectionId,
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
-        data: {
-          objectOwnerId: null,
-        },
-      })
-
-      // remove all catalog assignments
-      await tx.catalogCollectionAssignment.deleteMany({
-        where: {
-          answerCollectionId: collectionId,
-        },
-      })
-
-      // depending on the number of remaining permissions, update or delete the answer collection
-      const mutationResult =
-        remainingPermissions > 0
-          ? await tx.answerCollection.update({
-              where: {
-                id: collectionId,
-              },
-              data: {
-                owner: {
-                  disconnect: true,
-                },
-              },
-            })
-          : await tx.answerCollection.delete({
-              where: {
-                id: collectionId,
-              },
-            })
-
-      return mutationResult
+      return updatedAnswerCollection
     })
   } else {
     // otherwise delete the collection
     updatedCollection = await ctx.prisma.answerCollection.delete({
-      where: {
-        id: collectionId,
-      },
+      where: { id: collectionId },
     })
   }
 
@@ -1078,21 +566,16 @@ export async function deleteAnswerCollection(
 }
 
 export async function removeAnswerCollection(
-  {
-    collectionId,
-  }: {
-    collectionId: number
-  },
+  { id }: { id: number },
   ctx: ContextWithUser
 ) {
   // fetch existing permission and collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       answerCollectionId_userId: {
-        answerCollectionId: collectionId,
+        answerCollectionId: id,
         userId: ctx.user.sub,
       },
-      permissionStatus: DB.PermissionStatus.GRANTED,
     },
     include: {
       answerCollection: {
@@ -1100,101 +583,37 @@ export async function removeAnswerCollection(
           _count: {
             select: {
               linkedElements: {
-                where: {
-                  OR: [
-                    {
-                      ownerId: ctx.user.sub,
-                    },
-                    {
-                      permissions: {
-                        some: {
-                          userId: ctx.user.sub,
-                          permissionStatus: DB.PermissionStatus.GRANTED,
-                        },
-                      },
-                    },
-                  ],
-                },
+                where: { permissions: { some: { userId: ctx.user.sub } } },
               },
               linkedTemplates: {
                 where: {
                   OR: [
                     {
                       liveQuiz: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       practiceQuiz: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       microLearning: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       groupActivity: {
-                        OR: [
-                          {
-                            ownerId: ctx.user.sub,
-                          },
-                          {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                                permissionStatus: DB.PermissionStatus.GRANTED,
-                              },
-                            },
-                          },
-                        ],
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                   ],
                 },
               },
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-              },
+              // count derived permissions to determine if the collection can be deleted
+              // (i.e. if other users still have access to it or not)
+              permissions: true,
             },
           },
         },
@@ -1209,25 +628,39 @@ export async function removeAnswerCollection(
     !collection ||
     collection._count.linkedElements > 0 ||
     collection._count.linkedTemplates > 0 ||
-    permission.objectOwnerId === ctx.user.sub
+    collection.ownerId === ctx.user.sub // users cannot "remove" an answer collection from their account, but only delete it
   ) {
     return null
   }
 
-  // if no other users have access to this collection and the owner is already disconnected, delete it
-  if (collection._count.permissions === 1 && collection.ownerId === null) {
-    await ctx.prisma.answerCollection.delete({
-      where: {
-        id: collectionId,
-      },
-    })
+  // if no other users have access to this collection and the owner is already soft-deleted, fully delete it
+  if (collection._count.permissions === 1 && collection.isDeleted === true) {
+    await ctx.prisma.answerCollection.delete({ where: { id: id } })
   } else {
     // otherwise, delete the sharing permission
-    await ctx.prisma.permission.delete({
-      where: {
-        id: permission.id,
+    await ctx.prisma.$transaction(
+      async (prisma) => {
+        await prisma.permission.delete({ where: { id: permission.id } })
+
+        // create an audit log entry for the removal
+        await prisma.auditLogEntry.create({
+          data: {
+            type: DB.AuditLogType.PERMISSION_REMOVED,
+            objectId: String(id),
+            objectType: DB.ObjectType.ANSWER_COLLECTION,
+            sourceUserId: ctx.user.sub,
+            message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${id})`,
+          },
+        })
+
+        // trigger recomputation of derived permissions
+        await recomputeDerivedPermissions(
+          { answerCollectionId: id, userId: ctx.user.sub },
+          prisma
+        )
       },
-    })
+      { timeout: 60000 }
+    )
   }
 
   ctx.emitter.emit('invalidate', {
@@ -1235,7 +668,7 @@ export async function removeAnswerCollection(
     id: collection.id,
   })
 
-  return collection.id
+  return String(collection.id)
 }
 
 export async function editAnswerCollectionEntry(
@@ -1243,37 +676,13 @@ export async function editAnswerCollectionEntry(
     id,
     value,
     collectionId,
-  }: {
-    id: number
-    value: string
-    collectionId: number
-  },
+  }: { id: number; value: string; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // update entry in the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
-    where: {
-      id,
-    },
-    data: {
-      value,
-    },
+    where: { id, collectionId },
+    data: { value },
   })
 
   // increment version of the collection to keep track of changes
@@ -1289,27 +698,23 @@ export async function deleteAnswerCollectionEntry(
   { id, collectionId }: { id: number; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
+  // verify that the answer collection entry is not linked to any elements
+  const entry = await ctx.prisma.answerCollectionEntry.findUnique({
+    where: { id, collectionId },
+    include: { _count: { select: { itemUsages: true, templateUsages: true } } },
+  })
 
-  if (!valid) {
+  if (
+    !entry ||
+    entry._count.itemUsages > 0 ||
+    entry._count.templateUsages > 0
+  ) {
     return null
   }
 
   // delete answer option from the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
-    where: {
-      id,
-    },
+    where: { id },
   })
 
   // increment version of the collection to keep track of changes
@@ -1322,40 +727,14 @@ export async function deleteAnswerCollectionEntry(
 }
 
 export async function addAnswerCollectionOption(
-  {
-    collectionId,
-    value,
-  }: {
-    collectionId: number
-    value: string
-  },
+  { collectionId, value }: { collectionId: number; value: string },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // add new answer option to the database
   const newEntry = await ctx.prisma.answerCollectionEntry.create({
     data: {
       value,
-      collection: {
-        connect: {
-          id: collectionId,
-        },
-      },
+      collection: { connect: { id: collectionId } },
     },
   })
 

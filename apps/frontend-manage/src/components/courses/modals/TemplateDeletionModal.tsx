@@ -1,18 +1,19 @@
 import { useMutation } from '@apollo/client'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   DeleteActivityTemplateDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface TemplateDeletionModalProps {
   activityId: string
   activityType: ActivityType
-  open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
   onSuccess: () => void
   onError: () => void
 }
@@ -20,8 +21,7 @@ interface TemplateDeletionModalProps {
 function TemplateDeletionModal({
   activityId,
   activityType,
-  open,
-  setOpen,
+  onClose,
   onSuccess,
   onError,
 }: TemplateDeletionModalProps) {
@@ -34,47 +34,49 @@ function TemplateDeletionModal({
         activityType: activityType,
       },
       // TODO: update cache instead of triggering refetch query once combined activity overview is available
-      refetchQueries: [GetUserLiveQuizzesDocument],
+      refetchQueries: [
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
+      ],
     }
   )
 
   return (
     <Modal
+      open
       title={t('manage.template.deleteTemplate')}
-      open={open}
-      onClose={() => setOpen(false)}
+      onClose={onClose}
       data={{ cy: 'delete-template-modal' }}
-    >
-      <div>{t('manage.template.deleteTemplateExplanation')}</div>
-      <div className="mt-4 flex justify-between">
-        <Button onClick={() => setOpen(false)} data={{ cy: 'cancel-deletion' }}>
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          destructive
-          onClick={async () => {
-            try {
-              const { data } = await deleteActivityTemplate()
+      primaryLabel={
+        <div className="flex flex-row items-center gap-2.5">
+          {!deleting && <FontAwesomeIcon icon={faTrashCan} />}
+          <span>{t('manage.template.deleteTemplate')}</span>
+        </div>
+      }
+      primaryButtonStyle="destructive"
+      primaryLoading={deleting}
+      onPrimaryAction={async () => {
+        try {
+          const { data } = await deleteActivityTemplate()
 
-              if (data?.deleteActivityTemplate) {
-                onSuccess()
-                setOpen(false)
-              } else {
-                onError()
-              }
-            } catch (e) {
-              console.error(e)
-              onError()
-            }
-          }}
-          disabled={deleting}
-          loading={deleting}
-          data={{ cy: 'confirm-template-deletion' }}
-        >
-          <Button.Icon icon={faTrash} loading={deleting} />
-          <Button.Label>{t('manage.template.deleteTemplate')}</Button.Label>
-        </Button>
-      </div>
+          if (data?.deleteActivityTemplate) {
+            onSuccess()
+            onClose()
+          } else {
+            onError()
+          }
+        } catch (e) {
+          console.error(e)
+          onError()
+        }
+      }}
+      dataPrimaryAction={{ cy: 'confirm-template-deletion' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-deletion' }}
+      className={{ content: 'max-w-xl' }}
+    >
+      {t('manage.template.deleteTemplateExplanation')}
     </Modal>
   )
 }

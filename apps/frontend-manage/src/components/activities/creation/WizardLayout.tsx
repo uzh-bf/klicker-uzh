@@ -84,8 +84,8 @@ export interface LiveQuizFormValues extends CommonFormValues {
 
 export interface MicroLearningFormValues extends CommonFormValues {
   stacks: ElementStackFormValues[]
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
 }
 
 export interface PracticeQuizFormValues extends CommonFormValues {
@@ -96,8 +96,8 @@ export interface PracticeQuizFormValues extends CommonFormValues {
 
 export interface GroupActivityFormValues extends CommonFormValues {
   stack: ElementStackFormValues
-  startDate: string
-  endDate: string
+  startDate: Date
+  endDate: Date
   clues: GroupActivityClueFormValues[]
 }
 
@@ -143,8 +143,8 @@ function WizardLayout({
       <div className="flex h-6 flex-row items-end gap-8">
         <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
           {editMode
-            ? t('manage.questionForms.editElement', { element: title })
-            : t('manage.questionForms.createElement', { element: title })}
+            ? t('manage.elements.editElement', { element: title })
+            : t('manage.elements.createElement', { element: title })}
         </H2>
         <Workflow
           minimal

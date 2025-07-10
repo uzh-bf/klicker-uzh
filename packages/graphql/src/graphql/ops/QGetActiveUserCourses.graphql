@@ -1,5 +1,5 @@
-query GetActiveUserCourses {
-  getActiveUserCourses {
+query GetActiveUserCourses($activityId: String, $activityType: ActivityType) {
+  getActiveUserCourses(activityId: $activityId, activityType: $activityType) {
     id
     name
     displayName

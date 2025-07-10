@@ -1,0 +1,28 @@
+query GetUserGroupsUser {
+  getUserGroupsUser {
+    id
+    name
+    members {
+      id
+      shortname
+      email
+      isSelf
+    }
+    admins {
+      id
+      shortname
+      email
+      isSelf
+    }
+    owner {
+      id
+      shortname
+      email
+      isSelf
+    }
+    numOfMembers
+    isMember
+    isAdmin
+    isOwner
+  }
+}

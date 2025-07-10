@@ -4,21 +4,21 @@ import {
   GroupActivityEndedDocument,
   GroupActivityStartedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 
 interface GroupActivityListSubscriberProps {
   courseId: string
   subscribeToMore: (doc: SubscribeToMoreOptions) => any
-  setEndedGroupActivity: Dispatch<SetStateAction<string | undefined>>
-  setStartedGroupActivity: Dispatch<SetStateAction<string | undefined>>
 }
 
 function GroupActivityListSubscriber({
   courseId,
   subscribeToMore,
-  setEndedGroupActivity,
-  setStartedGroupActivity,
 }: GroupActivityListSubscriberProps) {
+  const t = useTranslations()
+
   useEffect(() => {
     subscribeToMore({
       document: GroupActivityEndedDocument,
@@ -35,7 +35,13 @@ function GroupActivityListSubscriber({
 
         // trigger toast for ended group activity
         const updatedActivity = subscriptionData.data.groupActivityEnded
-        setEndedGroupActivity(updatedActivity.displayName)
+        toast({
+          type: 'warning',
+          message: t('pwa.courses.groupActivityEndedToast', {
+            activityName: updatedActivity.displayName,
+          }),
+          options: { duration: 10000 },
+        })
 
         // update the values returned by the course group activity data query
         const updatedQueryContent = prev.groupActivities.map((activity) =>
@@ -71,7 +77,13 @@ function GroupActivityListSubscriber({
 
         // trigger toast for ended group activity
         const newActivity = subscriptionData.data.groupActivityStarted
-        setStartedGroupActivity(newActivity.displayName)
+        toast({
+          type: 'success',
+          message: t('pwa.courses.groupActivityStartedToast', {
+            activityName: newActivity.displayName,
+          }),
+          options: { duration: 10000 },
+        })
 
         // update the values returned by the course overview data query
         const updatedQueryContent = [newActivity, ...prev.groupActivities]

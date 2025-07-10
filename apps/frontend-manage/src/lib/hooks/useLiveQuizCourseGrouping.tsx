@@ -18,7 +18,7 @@ function useLiveQuizCourseGrouping({
       items: [
         {
           label: t('manage.activityWizard.liveQuizNoCourse'),
-          value: '',
+          value: 'no-course-selected',
           data: {
             cy: `select-course-${t('manage.activityWizard.liveQuizNoCourse')}`,
           },

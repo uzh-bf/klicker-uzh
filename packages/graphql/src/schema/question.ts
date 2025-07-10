@@ -64,6 +64,7 @@ import {
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -376,6 +377,7 @@ export const SingleQuestionResponseContent = builder
 // #endregion
 
 // ----- INSTANCE EVALUATION INTERFACE -----
+// #region
 export const QuestionFeedback = builder
   .objectRef<IQuestionFeedback>('QuestionFeedback')
   .implement({
@@ -679,6 +681,19 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+  tags?: ITag[] | null
+  permissionLevel?: DB.PermissionLevel
+  derivedAccess?: boolean // = derived from other object => removal disabled
+  numSharedUsers?: number
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
+  isImported?: boolean // imported flag for UI icon
+  isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
+}
+
 const sharedElementProps = (t: any) => ({
   id: t.exposeInt('id'),
 
@@ -697,15 +712,26 @@ const sharedElementProps = (t: any) => ({
   createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
   updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
+  permissionLevel: t.expose('permissionLevel', {
+    type: PermissionLevel,
+    nullable: true,
+  }),
+  derivedAccess: t.exposeBoolean('derivedAccess', { nullable: true }),
+  numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+  isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+  isManager: t.exposeBoolean('isManager', { nullable: true }),
+  isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+  isImported: t.exposeBoolean('isImported', { nullable: true }),
+  isShared: t.exposeBoolean('isShared', { nullable: true }),
+  isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+  sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
+
   tags: t.expose('tags', {
     type: [TagRef],
     nullable: true,
   }),
 })
 
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
-  tags?: ITag[] | null
-}
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType
 }
@@ -814,6 +840,27 @@ export const Element = builder.unionType('Element', {
         return CaseStudyElement
     }
   },
+})
+
+interface IArchivedElementList {
+  success?: boolean
+  partialSuccess?: boolean
+  failure?: boolean
+  elements: IArchivedElement[]
+}
+export const ArchivedElementListRef = builder.objectRef<IArchivedElementList>(
+  'ArchivedElementList'
+)
+export const ArchivedElementList = ArchivedElementListRef.implement({
+  fields: (t) => ({
+    success: t.exposeBoolean('success', { nullable: true }),
+    partialSuccess: t.exposeBoolean('partialSuccess', { nullable: true }),
+    failure: t.exposeBoolean('failure', { nullable: true }),
+    elements: t.expose('elements', {
+      type: [ArchivedElement],
+      nullable: true,
+    }),
+  }),
 })
 
 interface IArchivedElement {

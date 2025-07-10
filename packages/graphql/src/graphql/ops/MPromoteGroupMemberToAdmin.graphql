@@ -1,0 +1,3 @@
+mutation PromoteGroupMemberToAdmin($groupId: Int!, $memberId: String!) {
+  promoteGroupMemberToAdmin(groupId: $groupId, memberId: $memberId)
+}

@@ -1,4 +1,3 @@
-import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -6,19 +5,91 @@ import * as localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
+
+// Custom command for reliable select interactions
+Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
+  cy.log(
+    `selectOption: Looking for option "${optionText}" in selector "${selector}"`
+  )
+
+  // Wait for element to be ready and scroll it into view
+  cy.get(selector)
+    .scrollIntoView() // Scroll first to ensure element is in viewport
+    .should('be.visible') // Then verify visibility
+    .should('not.be.disabled')
+
+  // Use realClick from cypress-real-events (handles pointer events properly)
+  cy.get(selector).realClick()
+
+  // Small wait for dropdown animation (since we disabled CSS animations)
+  cy.wait(100)
+
+  // Try different approaches to find and click the option
+  const baseSelectorKey = selector.replace('[data-cy="', '').replace('"]', '')
+  cy.log(`selectOption: Base selector key is "${baseSelectorKey}"`)
+
+  // Try multiple strategies in order of preference
+  cy.get('body').then(($body) => {
+    // Strategy 1: Direct data-cy pattern match
+    const directSelector = `[data-cy="${baseSelectorKey}-${optionText}"]`
+    if ($body.find(directSelector).length > 0) {
+      cy.log(`selectOption: Found using direct selector: ${directSelector}`)
+      cy.get(directSelector).first().scrollIntoView().click()
+      return
+    }
+
+    // Strategy 2: Partial match with base selector and option text
+    const partialSelector = `[data-cy*="${baseSelectorKey}"][data-cy*="${optionText}"]`
+    if ($body.find(partialSelector).length > 0) {
+      cy.log(`selectOption: Found using partial selector: ${partialSelector}`)
+      cy.get(partialSelector).first().scrollIntoView().click()
+      return
+    }
+
+    // Strategy 3: Data-value attribute
+    const valueSelector = `[data-value="${optionText}"]`
+    if ($body.find(valueSelector).length > 0) {
+      cy.log(`selectOption: Found using data-value selector: ${valueSelector}`)
+      cy.get(valueSelector).first().scrollIntoView().click()
+      return
+    }
+
+    // Strategy 4: Role-based options (common in RadixUI/ShadCN)
+    if ($body.find(`[role="option"]`).length > 0) {
+      cy.log(`selectOption: Found role="option" elements, using contains`)
+      cy.get(`[role="option"]`).contains(optionText).scrollIntoView().click()
+      return
+    }
+
+    // Strategy 5: Final fallback - any element containing the text
+    cy.log(`selectOption: Using fallback contains strategy`)
+    cy.contains(optionText).scrollIntoView().click()
+  })
+})
+
+Cypress.Commands.add('seed', () => {
+  // seed all required initial data directly into the database
+  cy.task('seedDatabase').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error(
+        'Seeding of required data into database was not successful!'
+      )
+    }
+  })
+  cy.reload()
+})
+
+Cypress.Commands.add('cleanup', () => {
+  // delete all objects and clear entire database
+  cy.task('cleanupDatabase').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error('An error occurred while resetting the database!')
+    }
+  })
+  cy.reload()
+})
 
 const loginFactory = (tokenData) => {
   return () => {
@@ -57,7 +128,7 @@ Cypress.Commands.add(
   loginFactory({
     email: 'lecturer@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8821',
-    role: 'USER',
+    role: 'ADMIN',
     scope: 'ACCOUNT_OWNER',
     catalystInstitutional: true,
     catalystIndividual: true,
@@ -112,7 +183,31 @@ Cypress.Commands.add(
   })
 )
 
-Cypress.Commands.add('logoutLecturer', () => {
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst3',
+  loginFactory({
+    email: 'pro4@df.uzh.ch',
+    sub: '8509238a-cb2e-4d50-832e-971cdf2f9e55',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst4',
+  loginFactory({
+    email: 'pro5@df.uzh.ch',
+    sub: '2437de71-b552-48c8-865a-1d9c12fb7975',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
+Cypress.Commands.add('logoutUser', () => {
   cy.clearCookie('next-auth.session-token')
 })
 
@@ -181,7 +276,7 @@ Cypress.Commands.add(
 
 interface AddObjectToCatalogArgs {
   objectName: string
-  objectType: CatalogObjectType
+  objectType: string // --> DB.ObjectType
   permissionLevel: 'public' | 'restricted'
 }
 
@@ -190,8 +285,8 @@ Cypress.Commands.add(
   ({ objectName, objectType, permissionLevel }: AddObjectToCatalogArgs) => {
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
 
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-${objectType}"]`).click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-${objectType}"]`).realClick()
     cy.get('[data-cy="object-type-selection"]').contains(
       messages.shared.types[objectType]
     )
@@ -199,10 +294,10 @@ Cypress.Commands.add(
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
     cy.get('[data-cy="object-access-public"]').should('exist')
-    cy.get(`[data-cy="object-access-${permissionLevel}"]`).click()
+    cy.get(`[data-cy="object-access-${permissionLevel}"]`).realClick()
 
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.findByText(objectName).click()
@@ -600,11 +695,35 @@ Cypress.Commands.add(
 
 interface DeleteElementArgs {
   elementName: string
+  privatePreview?: boolean
 }
 
-Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
-  cy.get(`[data-cy="delete-question-${elementName}"]`).first().click()
-  cy.get('[data-cy="confirm-question-deletion"]').click()
+Cypress.Commands.add(
+  'deleteElement',
+  ({ elementName, privatePreview = true }: DeleteElementArgs) => {
+    if (privatePreview) {
+      cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+    }
+
+    cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
+    cy.get(`[data-cy="confirm-deletion-final"]`).click()
+    cy.get(`[data-cy="confirm-other-users-access"]`).click()
+    cy.get(`[data-cy="confirm-derived-access"]`).click()
+    cy.get(`[data-cy="confirm-dependency-access"]`).click()
+    cy.get('[data-cy="confirmation-modal-confirm"]').click()
+    cy.wait(500)
+  }
+)
+
+Cypress.Commands.add('deleteAllElements', () => {
+  // trigger the deletion of all elements
+  cy.task('deleteElements').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error('Deletion of elements in the database failed!')
+    }
+  })
+  cy.reload()
 })
 
 interface CreateLiveQuizArgs {
@@ -632,8 +751,7 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-course"]')
         .should('exist')
         .contains(messages.manage.activityWizard.liveQuizNoCourse)
-      cy.get('[data-cy="select-course"]').click()
-      cy.get(`[data-cy="select-course-${courseName}"]`).click()
+      cy.selectOption('[data-cy="select-course"]', courseName)
       cy.get('[data-cy="select-course"]').contains(courseName)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -667,6 +785,7 @@ Cypress.Commands.add(
     resourceAccessRequired,
   }: ConvertLiveQuizToTemplateArgs) => {
     // depending on the setting, choose between conversion and copy & conversion of activity
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${liveQuiz}"]`).realClick()
     cy.get(`[data-cy="template-from-live-quiz-${liveQuiz}"]`).click()
 
     if (copyBeforeConversion) {
@@ -704,6 +823,14 @@ Cypress.Commands.add(
 
 interface StackType {
   elements: string[]
+}
+
+interface DatetimeType {
+  monthDelta: number // month delta to be set relative to the default values
+  day: number // day of the month to be set
+  hour: number // hour of the day to be set
+  minute: number // minute of the hour to be set
+  validation: string // validation string to be used for the date input
 }
 
 function createStacks({
@@ -786,8 +913,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -798,14 +924,47 @@ Cypress.Commands.add(
   }
 )
 
+function setDatetime(
+  cyString: string,
+  deselectorString: string,
+  datetime: DatetimeType
+) {
+  cy.get(`[data-cy="${cyString}"]`).realClick()
+
+  if (datetime.monthDelta > 0) {
+    for (let i = 0; i < datetime.monthDelta; i++) {
+      cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100) // navigate forward one month
+    }
+  } else if (datetime.monthDelta < 0) {
+    for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
+      cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100) // navigate back one month
+    }
+  }
+
+  cy.get(`[data-cy="${cyString}-calendar"]`)
+    .findByText(String(datetime.day))
+    .realClick()
+    .wait(100)
+  cy.get(`[data-cy="${cyString}-hours"]`)
+    .realClick()
+    .type(String(datetime.hour))
+  cy.get(`[data-cy="${cyString}-minutes"]`)
+    .realClick()
+    .type(String(datetime.minute))
+  cy.get(`[data-cy="${deselectorString}"]`).realClick() // deselect calendar
+  cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
+  cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation) // verify correct date
+}
+Cypress.Commands.add('setDatetime', setDatetime)
+
 interface CreateMicrolearningArgs {
   name: string
   displayName: string
   description?: string
   courseName: string
   multiplier?: string
-  startDate: string
-  endDate: string
+  startDate: DatetimeType
+  endDate: DatetimeType
   stacks: StackType[]
 }
 
@@ -839,15 +998,14 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    cy.get('[data-cy="select-start-date"]').click().type(startDate)
-    cy.get('[data-cy="select-end-date"]').click().type(endDate)
+    setDatetime('select-start-date', 'availability-section-header', startDate)
+    setDatetime('select-end-date', 'availability-section-header', endDate)
 
     if (multiplier) {
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
     cy.get('[data-cy="next-or-submit"]').click()
@@ -873,8 +1031,8 @@ interface CreateGroupActivityArgs {
   task: string
   courseName: string
   multiplier?: string
-  scheduledStartDate: string
-  scheduledEndDate: string
+  scheduledStartDate: DatetimeType
+  scheduledEndDate: DatetimeType
   clues: GroupActivityClueType[]
   stack: StackType
 }
@@ -909,27 +1067,34 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
 
     if (multiplier) {
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    cy.get('[data-cy="select-start-date"]').click().type(scheduledStartDate)
-    cy.get('[data-cy="select-end-date"]').click().type(scheduledEndDate)
+    setDatetime(
+      'select-start-date',
+      'availability-section-header',
+      scheduledStartDate
+    )
+    setDatetime(
+      'select-end-date',
+      'availability-section-header',
+      scheduledEndDate
+    )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
     cy.wrap(clues).each((clue: GroupActivityClueType) => {
       cy.get('[data-cy="add-group-activity-clue"]').click()
-      cy.get('[data-cy="group-activity-clue-type"]').click()
+      cy.get('[data-cy="group-activity-clue-type"]').realClick()
       cy.get(
         `[data-cy="group-activity-clue-type-${clue.type === 'text' ? 'string' : 'number'}"]`
-      ).click()
+      ).realClick()
       cy.get('[data-cy="group-activity-clue-name"]').click().type(clue.name)
       cy.get('[data-cy="group-activity-clue-display-name"]')
         .click()
@@ -1119,12 +1284,16 @@ Cypress.Commands.add(
 declare global {
   namespace Cypress {
     interface Chainable {
+      seed(): Chainable<void>
+      cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
       loginInstitutionalCatalyst2(): Chainable<void>
-      logoutLecturer(): Chainable<void>
+      loginInstitutionalCatalyst3(): Chainable<void>
+      loginInstitutionalCatalyst4(): Chainable<void>
+      logoutUser(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
@@ -1219,7 +1388,11 @@ declare global {
         content,
         userId,
       }: CreateContentArgs): Chainable<void>
-      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
+      deleteElement({
+        elementName,
+        privatePreview,
+      }: DeleteElementArgs): Chainable<void>
+      deleteAllElements(): Chainable<void>
       createLiveQuiz({
         name,
         displayName,
@@ -1241,6 +1414,11 @@ declare global {
         stacks: StackType[]
         type?: 'block' | 'stack'
       }): Chainable<void>
+      setDatetime(
+        cyString: string,
+        deselectorString: string,
+        datetime: DatetimeType
+      ): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,
@@ -1284,6 +1462,7 @@ declare global {
         criteria,
         verifyDisabled,
       }: VerifyCaseStudyInputsArgs): Chainable<void>
+      selectOption(selector: string, optionText: string): Chainable<void>
     }
   }
 }

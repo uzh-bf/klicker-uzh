@@ -1,22 +1,29 @@
 import { FieldInputProps } from 'formik'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import { ElementFormTypesSelection } from '../types'
 
 function useSelectedAnswerEntry({
   field,
   collectionAnswers,
+  itemSelectionMode,
   setSelectedItems,
 }: {
-  field: FieldInputProps<number[]>
+  field: FieldInputProps<ElementFormTypesSelection['options']['correctAnswers']>
   collectionAnswers: { label: string; value: number }[]
+  itemSelectionMode: 'existing' | 'new'
   setSelectedItems?: Dispatch<SetStateAction<{ id: number; name: string }[]>>
 }) {
   return useMemo(() => {
-    if (!field.value) {
+    if (
+      field.value === null ||
+      typeof field.value === 'undefined' ||
+      itemSelectionMode === 'new'
+    ) {
       return []
     }
 
     const selectedAnswers = collectionAnswers.filter((entry) =>
-      field.value.includes(entry.value)
+      field.value!.includes(entry.value)
     )
 
     if (setSelectedItems) {
@@ -26,7 +33,7 @@ function useSelectedAnswerEntry({
     }
 
     return selectedAnswers
-  }, [collectionAnswers, field.value, setSelectedItems])
+  }, [collectionAnswers, field.value, itemSelectionMode, setSelectedItems])
 }
 
 export default useSelectedAnswerEntry

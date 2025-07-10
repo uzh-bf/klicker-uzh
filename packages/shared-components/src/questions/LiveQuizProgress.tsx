@@ -28,7 +28,7 @@ export function LiveQuizProgress({
   const t = useTranslations()
 
   return (
-    <div className="mb-1 flex flex-row items-center gap-2">
+    <div className="sticky top-0 z-10 -mx-4 mb-1.5 flex flex-row items-center gap-2 border-b border-slate-300 bg-white px-4 pb-2 pt-2 md:mx-0 md:mb-0 md:border-b-0 md:px-0">
       {expiresAt && timeLimit && (
         <div className="flex-initial">
           <CycleCountdown
@@ -42,8 +42,9 @@ export function LiveQuizProgress({
 
       <Progress
         className={{
-          root: 'my-auto h-10 w-full bg-gray-100',
-          indicator: 'h-10',
+          root: 'my-auto h-9 w-full rounded-md bg-gray-100',
+          indicator: 'h-9 rounded-md',
+          background: 'h-9 rounded-md',
         }}
         value={activeIndex}
         max={numItems}
@@ -61,7 +62,7 @@ export function LiveQuizProgress({
             fluid
             primary
             className={{
-              root: 'h-10 w-32',
+              root: 'h-9 w-max px-5',
             }}
             disabled={isSubmitDisabled}
             onClick={onSubmit}

@@ -3,6 +3,7 @@ import {
   Course,
   SelfDocument,
   StudentCourse,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
@@ -26,8 +27,8 @@ interface LayoutProps {
     data?: { cy?: string; test?: string }
   }[]
   setActiveMobilePage?: (value: string) => void
-  previewMode?: boolean
-  className?: string
+  liveQuizId?: string
+  className?: { header?: string; body?: string }
 }
 
 function Layout({
@@ -36,7 +37,7 @@ function Layout({
   course,
   mobileMenuItems,
   setActiveMobilePage,
-  previewMode = false,
+  liveQuizId,
   className,
 }: LayoutProps) {
   const { data: dataParticipant } = useQuery(SelfDocument)
@@ -64,19 +65,25 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className={twMerge('flex-none', className)}>
+      <div className={twMerge('flex-none', className?.header)}>
         <Header
-          participant={dataParticipant?.self || undefined}
+          participant={
+            dataParticipant?.self &&
+            (dataParticipant.self.role === UserRole.Participant || liveQuizId)
+              ? dataParticipant.self
+              : undefined
+          }
           title={displayName}
           course={course}
-          previewMode={previewMode}
+          liveQuizId={liveQuizId}
         />
       </div>
 
       <div
         className={twMerge(
           'flex min-h-0 flex-1 flex-col overflow-y-auto p-4',
-          pageInFrame && 'px-0'
+          pageInFrame && 'px-0',
+          className?.body
         )}
       >
         {children}
@@ -86,7 +93,10 @@ function Layout({
         <MobileMenuBar
           menuItems={mobileMenuItems}
           onClick={setActiveMobilePage}
-          participantMissing={!dataParticipant?.self}
+          participantMissing={
+            !dataParticipant?.self ||
+            dataParticipant.self.role === UserRole.TemporaryParticipant
+          }
         />
       </div>
     </>

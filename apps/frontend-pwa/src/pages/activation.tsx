@@ -4,25 +4,24 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, Toast } from '@uzh-bf/design-system'
+import { H2, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 function Activation() {
   const router = useRouter()
   const t = useTranslations()
-  const loginTimeout = useRef<any>()
-  const redirectionTimeout = useRef<any>()
+  const loginTimeout = useRef<any>(null)
+  const redirectionTimeout = useRef<any>(null)
   const { token } = router.query
 
   const [activateAccount] = useMutation(ActivateParticipantAccountDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',
   })
-  const [showError, setShowError] = useState(false)
 
   // set timeout of 2 seconds to show the loader and then login in timeout callback
   useEffect(() => {
@@ -42,7 +41,11 @@ function Activation() {
           await fetchSelf()
           router.push('/')
         } else {
-          setShowError(true)
+          toast({
+            type: 'error',
+            message: t('pwa.general.accountActivationFailed'),
+            options: { duration: 8000 },
+          })
           redirectionTimeout.current = setTimeout(() => {
             router.push('/login')
           }, 5000)
@@ -70,15 +73,6 @@ function Activation() {
         {t('pwa.general.processingActivation')}
       </H2>
       <Loader />
-      <Toast
-        dismissible
-        type="error"
-        duration={8000}
-        openExternal={showError}
-        onCloseExternal={() => setShowError(false)}
-      >
-        {t('pwa.general.accountActivationFailed')}
-      </Toast>
     </div>
   )
 }

@@ -33,7 +33,7 @@ function CircularPerformancePlot({
               innerRadius="45%"
               outerRadius="60%"
               dataKey="value"
-              label={({ value }) => `${(value * 100).toFixed(1)}%`}
+              label={({ value }) => `${(value! * 100).toFixed(1)}%`}
               labelLine={true}
               onMouseEnter={(_, index) => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(undefined)}

@@ -50,8 +50,7 @@ function StudentElementPreview({
   }
 
   return (
-    <div className="max-w-sm flex-1" data-cy="student-element-preview">
-      <H3>{t('shared.generic.preview')}</H3>
+    <div className="max-w-sm" data-cy="student-element-preview">
       <div className="rounded border p-4">
         <StudentElement
           preview
@@ -66,7 +65,7 @@ function StudentElementPreview({
           <H3>{t('shared.generic.explanation')}</H3>
           <Markdown
             className={{
-              root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+              root: 'prose prose-p:m-0! prose-img:m-0! leading-6',
             }}
             content={values.explanation}
           />
@@ -86,12 +85,12 @@ function StudentElementPreview({
                 {choice.feedback ? (
                   <Markdown
                     className={{
-                      root: 'prose prose-p:!m-0 prose-img:!m-0 leading-6',
+                      root: 'prose prose-p:m-0! prose-img:m-0! leading-6',
                     }}
                     content={choice.feedback}
                   />
                 ) : (
-                  t('manage.questionForms.noFeedbackDefined')
+                  t('manage.elements.noFeedbackDefined')
                 )}
               </div>
             ))}

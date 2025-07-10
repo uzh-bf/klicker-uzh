@@ -1,49 +1,39 @@
-import { GroupActivity } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import CatalystNotification from './CatalystNotification'
-import GroupActivityElement from './GroupActivityElement'
-
-interface GroupActivityListProps {
-  groupActivities: (Partial<GroupActivity> &
-    Pick<GroupActivity, 'id' | 'name'>)[]
-  groupDeadlineDate: string
-  numOfParticipantGroups: number
-  courseId: string
-  courseStartDate: string
-  userCatalyst?: boolean
-}
+import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 
 function GroupActivityList({
   groupActivities,
-  groupDeadlineDate,
-  numOfParticipantGroups,
-  courseId,
-  courseStartDate,
-  userCatalyst,
-}: GroupActivityListProps) {
+}: {
+  groupActivities: ActivityInfo[]
+}) {
   const t = useTranslations()
 
   return (
-    <>
+    <div className="flex w-full flex-col items-end">
+      <div className="flex flex-row gap-2">
+        <ActivityListLegend type={ActivityType.GroupActivity} />
+      </div>
+
       {groupActivities && groupActivities.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {groupActivities.map((groupActivity) => (
-            <GroupActivityElement
-              groupActivity={groupActivity}
-              groupDeadlineDate={groupDeadlineDate}
-              numOfParticipantGroups={numOfParticipantGroups}
-              courseId={courseId}
-              courseStartDate={courseStartDate}
-              key={groupActivity.id}
-            />
-          ))}
+        <div className="mt-0.5 flex w-full flex-col">
+          <ActivityList
+            activities={groupActivities}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
-      ) : userCatalyst ? (
-        <div>{t('manage.course.noGroupActivities')}</div>
       ) : (
-        <CatalystNotification />
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noGroupActivities')}
+        </UserNotification>
       )}
-    </>
+    </div>
   )
 }
 

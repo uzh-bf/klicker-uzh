@@ -3,24 +3,22 @@ import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikPinField,
-  Toast,
+  toast,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import * as yup from 'yup'
 
 function CreateAccountJoinForm() {
   const t = useTranslations()
   const router = useRouter()
 
-  const [errorToast, setErrorToast] = useState(false)
   const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
 
   return (
-    <div className="mx-auto w-full p-4">
+    <div className="mx-auto w-full py-4">
       <UserNotification type="info">
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>
@@ -46,7 +44,11 @@ function CreateAccountJoinForm() {
               }/join?pin=${values.pin.replace(/\s/g, '')}`
             )
           } else {
-            setErrorToast(true)
+            toast({
+              type: 'error',
+              message: t('pwa.login.coursePinInvalid'),
+              options: { duration: 6000 },
+            })
             resetForm()
           }
 
@@ -54,24 +56,22 @@ function CreateAccountJoinForm() {
         }}
       >
         {({ isSubmitting }) => (
-          <Form>
+          <Form className="flex flex-col">
             <FormikPinField
               required
+              length={9}
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}
               name="pin"
-              className={{
-                root: 'my-2',
-                tooltip: 'max-w-[20rem] md:max-w-[30rem]',
-              }}
+              className={{ field: 'mb-3 mt-2', inputItem: 'w-8' }}
               data={{ cy: 'pin-field' }}
             />
             <Button
               primary
               type="submit"
-              // TODO: improve state that field is disabled for invalid pins
+              // TODO: add validation and disable button for invalid / incomplete pints
               disabled={isSubmitting}
-              className={{ root: 'float-right' }}
+              className={{ root: 'self-end' }}
               data={{ cy: 'signup-course' }}
             >
               <Button.Label>{t('pwa.login.signup')}</Button.Label>
@@ -79,15 +79,6 @@ function CreateAccountJoinForm() {
           </Form>
         )}
       </Formik>
-      <Toast
-        dismissible
-        openExternal={errorToast}
-        onCloseExternal={() => setErrorToast(false)}
-        type="error"
-        duration={6000}
-      >
-        {t('pwa.login.coursePinInvalid')}
-      </Toast>
     </div>
   )
 }

@@ -1,13 +1,15 @@
 mutation ChangePermissionLevel(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: ObjectType!
   $permissionId: Int!
   $permissionLevel: PermissionLevel!
+  $propagation: Boolean!
 ) {
   changePermissionLevel(
     objectId: $objectId
     objectType: $objectType
     permissionId: $permissionId
     permissionLevel: $permissionLevel
+    propagation: $propagation
   )
 }

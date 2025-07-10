@@ -16,6 +16,8 @@ export const COOKIE_NAME = 'next-auth.session-token'
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
+  swissEduIDLinkedAffiliationMail?: string[]
+  swissEduIDLinkedAffiliationUniqueID?: string[]
 }
 
 export interface ExtendedUser {
@@ -89,6 +91,8 @@ const EduIDProvider: Provider | null =
                 email: { essential: true },
                 swissEduPersonUniqueID: { essential: true },
                 swissEduIDLinkedAffiliation: { essential: false },
+                swissEduIDLinkedAffiliationMail: { essential: false },
+                swissEduIDLinkedAffiliationUniqueID: { essential: false },
               },
             },
             scope: 'openid email https://login.eduid.ch/authz/User.Read',
@@ -246,6 +250,34 @@ export const authOptions: NextAuthOptions = {
             },
           })
 
+          // if affiliations are present, add corresponding accounts for the user
+          if (
+            profileData.swissEduIDLinkedAffiliationUniqueID &&
+            profileData.swissEduIDLinkedAffiliationUniqueID.length > 0
+          ) {
+            for (const affiliationId of profileData.swissEduIDLinkedAffiliationUniqueID) {
+              // get provider as the string between @ and .ch
+              const provider = affiliationId.split('@')[1].split('.')[0]
+
+              // upsert accounts for every affiliation
+              await prisma.account.upsert({
+                where: {
+                  provider_providerAccountId: {
+                    provider,
+                    providerAccountId: affiliationId,
+                  },
+                },
+                create: {
+                  provider,
+                  providerAccountId: affiliationId,
+                  user: { connect: { id: user.id } },
+                  type: 'affiliation',
+                },
+                update: {},
+              })
+            }
+          }
+
           if (user.firstLogin) {
             await sendTeamsNotifications(
               'eduId/signUp',
@@ -273,8 +305,7 @@ export const authOptions: NextAuthOptions = {
 
         token.catalystInstitutional = userData.catalystInstitutional
         token.catalystIndividual = userData.catalystIndividual
-
-        token.role = UserRole.USER
+        token.role = userData.role
       }
 
       return token

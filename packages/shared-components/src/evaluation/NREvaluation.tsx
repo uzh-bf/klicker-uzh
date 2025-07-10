@@ -20,6 +20,9 @@ function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
     <div className="h-40 space-y-2">
       <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
       <ElementHistogram
+        basic
+        hideOptions
+        showSolution
         type={ElementType.Numerical}
         responses={evaluation.responses ?? []}
         solutionRanges={options.solutionRanges ?? undefined}
@@ -29,9 +32,6 @@ function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
         textSize="md"
         className={{ root: 'h-40' }}
         reference={reference ? parseFloat(reference) : undefined}
-        showSolution
-        hideBins
-        basic
       />
     </div>
   )

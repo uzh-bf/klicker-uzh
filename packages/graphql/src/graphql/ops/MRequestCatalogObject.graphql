@@ -1,11 +1,13 @@
 mutation RequestCatalogObject(
   $objectId: String!
-  $objectType: CatalogObjectType!
+  $objectType: ObjectType!
   $catalogCollectionId: String
+  $requestedPermissionLevel: PermissionLevel
 ) {
   requestCatalogObject(
     objectId: $objectId
     objectType: $objectType
     catalogCollectionId: $catalogCollectionId
+    requestedPermissionLevel: $requestedPermissionLevel
   )
 }

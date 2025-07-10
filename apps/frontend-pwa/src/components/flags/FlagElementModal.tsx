@@ -12,9 +12,8 @@ import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButto
 import {
   Button,
   FormikTextareaField,
-  H4,
   Modal,
-  Toast,
+  toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -22,55 +21,8 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
-interface FlagErrorToastProps {
-  open: boolean
-  setOpen: (newValue: boolean) => void
-  content: string
-}
-
-function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
-  const t = useTranslations()
-
-  return (
-    <Toast
-      dismissible
-      duration={5000}
-      type="error"
-      openExternal={open}
-      onCloseExternal={() => setOpen(false)}
-    >
-      <H4>{t('shared.generic.error')}</H4>
-      <div>{content}</div>
-    </Toast>
-  )
-}
-
-interface FlagSuccessToastProps {
-  open: boolean
-  setOpen: (newValue: boolean) => void
-}
-
-function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
-  const t = useTranslations()
-
-  return (
-    <Toast
-      dismissible
-      duration={5000}
-      type="success"
-      openExternal={open}
-      onCloseExternal={() => setOpen(false)}
-    >
-      <H4>{t('shared.generic.thanks')}</H4>
-      <div>{t('pwa.practiceQuiz.feedbackTransmitted')}</div>
-    </Toast>
-  )
-}
-
 interface FlagElementModalProps {
   index: number
-  open: boolean
-  setOpen: (newValue: boolean) => void
   instanceId: number
   elementId: number
   feedbackValue?: string
@@ -80,8 +32,6 @@ interface FlagElementModalProps {
 
 function FlagElementModal({
   index,
-  open,
-  setOpen,
   instanceId,
   elementId,
   feedbackValue,
@@ -89,10 +39,7 @@ function FlagElementModal({
   stackInstanceIds,
 }: FlagElementModalProps) {
   const t = useTranslations()
-
-  const [successToastOpen, setSuccessToastOpen] = useState(false)
-  const [errorToastOpen, setErrorToastOpen] = useState(false)
-
+  const [open, setOpen] = useState(false)
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
   const flagElementSchema = Yup.object().shape({
@@ -162,104 +109,100 @@ function FlagElementModal({
         },
       })
       if (result.data?.flagElement?.id) {
-        setSuccessToastOpen(true)
+        toast({
+          type: 'success',
+          message: t('pwa.practiceQuiz.feedbackTransmitted'),
+          options: { duration: 5000 },
+        })
         setFeedbackValue(content)
         setOpen(false)
       } else {
-        setErrorToastOpen(true)
+        toast({
+          type: 'error',
+          message: error?.message ?? t('shared.generic.systemError'),
+          options: { duration: 5000 },
+        })
       }
     }
     setSubmitting(false)
   }
 
   return (
-    <div>
-      <Modal
-        title={t('pwa.practiceQuiz.flagElement')}
-        className={{
-          content: 'z-20 max-w-lg',
-          overlay: 'z-10',
-        }}
-        open={open}
-        trigger={
-          <ForwardRefButton
-            basic
-            onClick={() => setOpen(true)}
-            overrideClassName={twMerge(
-              'hover:text-primary-80 text-uzh-grey-100 !px-1',
-              !!feedbackValue && 'text-primary-100'
-            )}
-            data={{ cy: `flag-element-${index}-button` }}
-          >
-            <Button.Icon
-              withoutLabel
-              icon={!!feedbackValue ? faMessageSolid : faMessage}
-            />
-          </ForwardRefButton>
-        }
-        onClose={() => setOpen(false)}
-        hideCloseButton
-        escapeDisabled
-      >
-        <div className="prose mb-4 max-w-none">
-          {t('pwa.practiceQuiz.flagElementText')}
-        </div>
-        <Formik
-          initialValues={{ feedback: feedbackValue ?? '' }}
-          isInitialValid={!!feedbackValue}
-          onSubmit={(values, { setSubmitting }) =>
-            flagElementFeedback(values.feedback, setSubmitting)
-          }
-          validationSchema={flagElementSchema}
-        >
-          {({ isSubmitting, isValid }) => (
-            <div className="">
-              <Form>
-                <FormikTextareaField
-                  name="feedback"
-                  placeholder={t('pwa.practiceQuiz.addFeedback')}
-                  className={{
-                    input: 'h-24 w-full text-base',
-                  }}
-                  data={{ cy: 'flag-element-textarea' }}
-                />
-                <div className="mt-4 flex flex-col justify-between gap-2 md:flex-row md:gap-0">
-                  <Button
-                    onClick={() => setOpen(false)}
-                    className={{ root: 'order-2 text-base md:order-1' }}
-                    data={{ cy: 'cancel-flag-element' }}
-                  >
-                    <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-                  </Button>
-                  <Button
-                    primary
-                    className={{ root: 'order-1 float-right' }}
-                    type="submit"
-                    disabled={!isValid}
-                    loading={isSubmitting}
-                    data={{ cy: 'submit-flag-element' }}
-                  >
-                    <Button.Icon icon={faEnvelope} loading={isSubmitting} />
-                    <Button.Label>
-                      {!!feedbackValue
-                        ? t('pwa.practiceQuiz.updateFeedback')
-                        : t('pwa.practiceQuiz.submitFeedback')}
-                    </Button.Label>
-                  </Button>
-                </div>
-              </Form>
-            </div>
+    <Modal
+      title={t('pwa.practiceQuiz.flagElement')}
+      className={{ content: 'max-w-lg pb-2' }}
+      open={open}
+      trigger={
+        <ForwardRefButton
+          basic
+          onClick={() => setOpen(true)}
+          overrideClassName={twMerge(
+            'hover:text-primary-80 text-uzh-grey-100 px-1!',
+            !!feedbackValue && 'text-primary-100'
           )}
-        </Formik>
-      </Modal>
-
-      <FlagSuccessToast open={successToastOpen} setOpen={setSuccessToastOpen} />
-      <FlagErrorToast
-        open={errorToastOpen}
-        setOpen={setErrorToastOpen}
-        content={error?.message ?? t('shared.generic.systemError')}
-      />
-    </div>
+          data={{ cy: `flag-element-${index}-button` }}
+        >
+          <Button.Icon
+            withoutLabel
+            icon={!!feedbackValue ? faMessageSolid : faMessage}
+          />
+        </ForwardRefButton>
+      }
+      onClose={() => setOpen(false)}
+      hideCloseButton
+      escapeDisabled
+    >
+      <div className="mb-4 mt-2 max-w-none text-sm">
+        {t('pwa.practiceQuiz.flagElementText')}
+      </div>
+      <Formik
+        initialValues={{ feedback: feedbackValue ?? '' }}
+        isInitialValid={!!feedbackValue}
+        onSubmit={(values, { setSubmitting }) =>
+          flagElementFeedback(values.feedback, setSubmitting)
+        }
+        validationSchema={flagElementSchema}
+      >
+        {({ isSubmitting, isValid }) => (
+          <div className="">
+            <Form>
+              <FormikTextareaField
+                name="feedback"
+                placeholder={t('pwa.practiceQuiz.addFeedback')}
+                className={{
+                  input: 'h-24 w-full text-base',
+                }}
+                data={{ cy: 'flag-element-textarea' }}
+              />
+              <div className="mt-4 flex flex-col justify-between gap-2 md:flex-row md:gap-0">
+                <Button
+                  onClick={() => setOpen(false)}
+                  className={{ root: 'order-2 text-base md:order-1' }}
+                  data={{ cy: 'cancel-flag-element' }}
+                >
+                  <Button.Label>{t('shared.generic.cancel')}</Button.Label>
+                </Button>
+                <Button
+                  primary
+                  className={{ root: 'order-1 float-right' }}
+                  type="submit"
+                  disabled={!isValid}
+                  loading={isSubmitting}
+                  data={{ cy: 'submit-flag-element' }}
+                >
+                  <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                  <Button.Label>
+                    {!!feedbackValue
+                      ? t('pwa.practiceQuiz.updateFeedback')
+                      : t('pwa.practiceQuiz.submitFeedback')}
+                  </Button.Label>
+                </Button>
+              </div>
+            </Form>
+          </div>
+        )}
+      </Formik>
+    </Modal>
   )
 }
 

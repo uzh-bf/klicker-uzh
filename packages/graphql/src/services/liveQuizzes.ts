@@ -2,18 +2,7 @@ import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
-import {
-  AccessMode,
-  ConfusionTimestep,
-  type Element,
-  ElementBlock,
-  ElementBlockStatus,
-  ElementInstance,
-  ElementInstanceType,
-  ElementType,
-  LeaderboardType,
-  PublicationStatus,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import type {
   CaseStudyCaseSolution,
   ElementBlockInput,
@@ -28,8 +17,10 @@ import type {
 import {
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
+  levelFromXp,
+  propagateActivityToElements,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { min } from 'mathjs'
@@ -56,14 +47,18 @@ async function getCachedBlockResults({
   activeBlock,
 }: {
   ctx: Context
-  activeBlock: ElementBlock & { elements: ElementInstance[] }
+  activeBlock: DB.ElementBlock & { elements: DB.ElementInstance[] }
 }) {
-  const redisMulti = ctx.redisExec.multi()
+  const redisMultiLb = ctx.redisExec.multi()
 
-  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
-  redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
+  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lbTemporary`)
+  redisMultiLb.hgetall(
+    `lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lbTemporary`
+  )
 
-  const cacheData = await redisMulti.exec()
+  const cacheData = await redisMultiLb.exec()
 
   if (!cacheData) {
     return null
@@ -73,13 +68,14 @@ async function getCachedBlockResults({
 
   const liveQuizLeaderboard: Record<string, string> = mappedResults[0]
   const blockLeaderboard: Record<string, string> = mappedResults[1]
+  const liveQuizLeaderboardTemporary: Record<string, string> = mappedResults[2]
+  const blockLeaderboardTemporary: Record<string, string> = mappedResults[3]
 
   const instanceResults: Record<
     string,
     {
       info: Record<string, string>
       responseHashes: Record<string, string>
-      responses: Record<string, string>
       anonymousResults:
         | ElementResultsChoices
         | ElementResultsOpen
@@ -107,7 +103,7 @@ async function getCachedBlockResults({
 
     const mappedResults: any[] = cacheData.map(([_, result]) => result)
 
-    const [info, responseHashes, responses, results] = mappedResults
+    const [info, responseHashes, _, results] = mappedResults
 
     // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
     let anonymousResults:
@@ -119,9 +115,9 @@ async function getCachedBlockResults({
       | undefined
 
     if (
-      instance.elementType === ElementType.SC ||
-      instance.elementType === ElementType.MC ||
-      instance.elementType === ElementType.KPRIM
+      instance.elementType === DB.ElementType.SC ||
+      instance.elementType === DB.ElementType.MC ||
+      instance.elementType === DB.ElementType.KPRIM
     ) {
       const choices = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
@@ -140,8 +136,8 @@ async function getCachedBlockResults({
         total: parseInt(results.participants),
       } as ElementResultsChoices
     } else if (
-      instance.elementType === ElementType.NUMERICAL ||
-      instance.elementType === ElementType.FREE_TEXT
+      instance.elementType === DB.ElementType.NUMERICAL ||
+      instance.elementType === DB.ElementType.FREE_TEXT
     ) {
       const responses = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
@@ -164,7 +160,7 @@ async function getCachedBlockResults({
           const response = responseHashes[responseHash] ?? responseHash
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
-            if (instance.elementType === ElementType.NUMERICAL) {
+            if (instance.elementType === DB.ElementType.NUMERICAL) {
               const exactSolutionsDefined =
                 typeof solutions[0] === 'number' ||
                 typeof solutions[0] === 'string'
@@ -174,7 +170,7 @@ async function getCachedBlockResults({
                   solutionRanges: exactSolutionsDefined ? undefined : solutions,
                   exactSolutions: exactSolutionsDefined ? solutions : undefined,
                 }) ?? undefined
-            } else if (instance.elementType === ElementType.FREE_TEXT) {
+            } else if (instance.elementType === DB.ElementType.FREE_TEXT) {
               grading =
                 gradeQuestionFreeText({
                   response,
@@ -206,7 +202,7 @@ async function getCachedBlockResults({
         responses,
         total: parseInt(results.participants),
       } as ElementResultsOpen
-    } else if (instance.elementType === ElementType.SELECTION) {
+    } else if (instance.elementType === DB.ElementType.SELECTION) {
       const selections = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<Record<string, number>>(
@@ -221,7 +217,7 @@ async function getCachedBlockResults({
         selections,
         total: parseInt(results.participants),
       } as ElementResultsSelection
-    } else if (instance.elementType === ElementType.CASE_STUDY) {
+    } else if (instance.elementType === DB.ElementType.CASE_STUDY) {
       const assessments = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<ElementResultsCaseStudy['assessments']>(
@@ -335,7 +331,7 @@ async function getCachedBlockResults({
         assessments,
         total: parseInt(results.participants),
       } as ElementResultsCaseStudy
-    } else if (instance.elementType === ElementType.CONTENT) {
+    } else if (instance.elementType === DB.ElementType.CONTENT) {
       anonymousResults = {
         total: parseInt(results.participants),
       } as ElementResultsChoices
@@ -344,14 +340,15 @@ async function getCachedBlockResults({
     instanceResults[instance.id] = {
       info,
       responseHashes,
-      responses,
       anonymousResults: anonymousResults ?? { total: 0 },
     }
   }
 
   return {
     liveQuizLeaderboard,
+    liveQuizLeaderboardTemporary,
     blockLeaderboard,
+    blockLeaderboardTemporary,
     instanceResults,
     activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
   }
@@ -371,6 +368,7 @@ async function unlinkCachedBlockResults({
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
   unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
+  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
   activeInstanceIds.forEach((instanceId) => {
     unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
     unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
@@ -383,7 +381,6 @@ async function unlinkCachedBlockResults({
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
-
 export async function splitActivityInstances(
   {
     stacksOrBlocks,
@@ -414,7 +411,6 @@ export async function splitActivityInstances(
   const persistentInstances = await ctx.prisma.elementInstance.findMany({
     where: {
       id: { in: persistentInstanceIds },
-      owner: { id: ctx.user.sub },
     },
   })
 
@@ -433,7 +429,18 @@ export async function splitActivityInstances(
   const duplicationInstances = await ctx.prisma.elementInstance.findMany({
     where: {
       id: { in: duplicateInstanceIds },
-      owner: { id: ctx.user.sub },
+      // for duplication of an activity, ADMIN permissions on the activity are required -> propagates to element
+      // verify that user has at least ADMIN permissions on the element linked to this instance
+      element: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
     },
   })
 
@@ -448,14 +455,18 @@ export async function splitActivityInstances(
     where: {
       id: { in: requiredElementsIds },
       isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
+      // only admins and owners are allowed to re-use elements
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+          },
         },
       },
+    },
+    include: {
+      answerCollection: { include: { entries: true } },
       answerCollectionItems: true,
     },
   })
@@ -465,10 +476,13 @@ export async function splitActivityInstances(
   if (dbElements.length !== uniqueElements.size) {
     throw new GraphQLError('Not all elements could be found')
   }
-  const elementMap = dbElements.reduce<Record<number, Element>>((acc, elem) => {
-    acc[elem.id] = elem
-    return acc
-  }, {})
+  const elementMap = dbElements.reduce<Record<number, DB.Element>>(
+    (acc, elem) => {
+      acc[elem.id] = elem
+      return acc
+    },
+    {}
+  )
 
   return {
     persistentInstanceIds,
@@ -520,17 +534,13 @@ export async function manipulateLiveQuiz(
   // in EDIT mode - validate that the live quiz exists and is not published
   if (id) {
     const existingActivity = await ctx.prisma.liveQuiz.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActivity) {
       throw new GraphQLError('Live quiz not found')
     }
-    if (existingActivity.status === PublicationStatus.PUBLISHED) {
+    if (existingActivity.status === DB.PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published live quiz')
     }
   }
@@ -546,24 +556,22 @@ export async function manipulateLiveQuiz(
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let blocksToDelete: number[] = []
   if (id) {
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementBlock: {
-          liveQuizId: id,
-        },
+        elementBlock: { liveQuizId: id },
       },
     })
 
     const blocks = await ctx.prisma.elementBlock.findMany({
-      where: {
-        liveQuizId: id,
-      },
+      where: { liveQuizId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
     blocksToDelete = blocks.map((block) => block.id)
   }
 
@@ -589,7 +597,7 @@ export async function manipulateLiveQuiz(
           connectOrCreate: block.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
               instance,
-              instanceType: ElementInstanceType.LIVE_QUIZ,
+              instanceType: DB.ElementInstanceType.LIVE_QUIZ,
               activityMultiplier: multiplier,
               persistentInstances,
               duplicationInstances,
@@ -600,87 +608,77 @@ export async function manipulateLiveQuiz(
         },
       })),
     },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
   }
 
-  const activity = await ctx.prisma.$transaction(async (prisma) => {
-    // delete all instances that are not used anymore
-    await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
-    })
+  const activity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // delete all instances that are not used anymore
+      await prisma.elementInstance.deleteMany({
+        where: { id: { in: instancesToDelete } },
+      })
 
-    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instance of persistentInstances) {
-      const elementMultiplier =
-        'pointsMultiplier' in instance.elementData
-          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-          : 1
+      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+      for (const instance of persistentInstances) {
+        const elementMultiplier =
+          'pointsMultiplier' in instance.elementData
+            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+            : 1
 
-      await prisma.elementInstance.update({
+        await prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            elementBlockId: null,
+            order: persistentInstanceOrderMap[instance.id],
+            options: {
+              ...instance.options,
+              pointsMultiplier: multiplier * elementMultiplier,
+            },
+          },
+        })
+      }
+
+      // delete all blocks
+      await prisma.elementBlock.deleteMany({
         where: {
-          id: instance.id,
+          id: { in: blocksToDelete },
         },
-        data: {
-          elementBlockId: null,
-          order: persistentInstanceOrderMap[instance.id],
-          options: {
-            ...instance.options,
-            pointsMultiplier: multiplier * elementMultiplier,
+      })
+
+      const upsertedQuiz = await prisma.liveQuiz.upsert({
+        where: { id: id ?? uuidv4() },
+        create: {
+          ...createOrUpdateJSON,
+          course: courseId !== null ? { connect: { id: courseId } } : undefined,
+          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+        },
+        update: {
+          ...createOrUpdateJSON,
+          course:
+            courseId !== null
+              ? { connect: { id: courseId } }
+              : { disconnect: true },
+        },
+        include: {
+          course: true,
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
           },
         },
       })
-    }
 
-    // delete all blocks
-    await prisma.elementBlock.deleteMany({
-      where: {
-        id: { in: blocksToDelete },
-      },
-    })
+      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      if (unlinkedElementIds.length > 0) {
+        for (const elementId of unlinkedElementIds) {
+          await recomputeDerivedPermissions({ elementId }, prisma)
+        }
+      }
 
-    return await prisma.liveQuiz.upsert({
-      where: { id: id ?? uuidv4() },
-      create: {
-        ...createOrUpdateJSON,
-        course:
-          courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : undefined,
-      },
-      update: {
-        ...createOrUpdateJSON,
-        course:
-          courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : {
-                disconnect: true,
-              },
-      },
-      include: {
-        course: true,
-        blocks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
-    })
-  })
+      await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, prisma)
+      return upsertedQuiz
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
@@ -689,16 +687,60 @@ export async function manipulateLiveQuiz(
 
   return activity
 }
+
+export async function removeLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified live quiz
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this live quiz and user
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.liveQuiz.update({
+        where: { id },
+        data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
+      })
+
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.LIVE_QUIZ,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.LIVE_QUIZ} (ID: ${id})`,
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LiveQuiz',
+    id,
+  })
+
+  return id
+}
 // #endregion
 
 // ------ LIVE QUIZ GETTER FUNCTIONS (LECTURER) ------
 // #region
 export async function getLiveQuizData(
-  {
-    id,
-  }: {
-    id: string
-  },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   if (!id) {
@@ -706,7 +748,7 @@ export async function getLiveQuizData(
   }
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       blocks: {
         include: {
@@ -787,22 +829,27 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
 
 export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
-      liveQuizzes: {
+      objects: {
         where: {
-          status: PublicationStatus.PUBLISHED,
+          liveQuizId: { not: null },
+          permissionLevel: {
+            in: [
+              DB.PermissionLevel.EXECUTE,
+              DB.PermissionLevel.WRITE,
+              DB.PermissionLevel.ADMIN,
+              DB.PermissionLevel.OWNER,
+            ],
+          },
+          liveQuiz: { status: DB.PublicationStatus.PUBLISHED },
         },
-        include: {
-          course: true,
-        },
+        include: { liveQuiz: { include: { course: true } } },
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return user?.objects.map((object) => object.liveQuiz!) ?? []
 }
 
 export async function getLecturerViewLiveQuiz(
@@ -810,18 +857,14 @@ export async function getLecturerViewLiveQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       confusionFeedbacks: true,
-      feedbacks: {
-        where: {
-          isPinned: true,
-        },
-      },
+      feedbacks: { where: { isPinned: true } },
     },
   })
 
-  if (liveQuiz?.status !== PublicationStatus.PUBLISHED || !liveQuiz) {
+  if (liveQuiz?.status !== DB.PublicationStatus.PUBLISHED || !liveQuiz) {
     return null
   }
 
@@ -839,7 +882,7 @@ export async function getControlLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, status: DB.PublicationStatus.PUBLISHED },
     include: {
       activeBlock: true,
       course: true,
@@ -858,7 +901,7 @@ export async function getControlLiveQuiz(
     },
   })
 
-  if (!quiz || quiz?.status !== PublicationStatus.PUBLISHED) {
+  if (!quiz) {
     return null
   }
 
@@ -876,8 +919,8 @@ export async function getShortnameQuizzes(
     include: {
       liveQuizzes: {
         where: {
-          accessMode: AccessMode.PUBLIC,
-          status: PublicationStatus.PUBLISHED,
+          accessMode: DB.AccessMode.PUBLIC,
+          status: DB.PublicationStatus.PUBLISHED,
         },
         include: {
           course: true,
@@ -900,9 +943,9 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
           courseId: null,
           status: {
             in: [
-              PublicationStatus.PUBLISHED,
-              PublicationStatus.SCHEDULED,
-              PublicationStatus.DRAFT,
+              DB.PublicationStatus.PUBLISHED,
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.DRAFT,
             ],
           },
         },
@@ -925,22 +968,15 @@ export async function startLiveQuiz(
     const quiz = await ctx.prisma.liveQuiz.findFirst({
       where: {
         id,
-        ownerId: ctx.user.sub,
         status: {
           in: [
-            PublicationStatus.DRAFT,
-            PublicationStatus.SCHEDULED,
-            PublicationStatus.PUBLISHED,
+            DB.PublicationStatus.DRAFT,
+            DB.PublicationStatus.SCHEDULED,
+            DB.PublicationStatus.PUBLISHED,
           ],
         },
       },
-      include: {
-        blocks: {
-          orderBy: {
-            id: 'asc',
-          },
-        },
-      },
+      include: { blocks: { orderBy: { id: 'asc' } } },
     })
 
     // if there is no live quiz matching the current user and quiz id, exit early
@@ -949,11 +985,11 @@ export async function startLiveQuiz(
     }
 
     switch (quiz.status) {
-      case PublicationStatus.PUBLISHED:
+      case DB.PublicationStatus.PUBLISHED:
         return quiz
 
-      case PublicationStatus.DRAFT:
-      case PublicationStatus.SCHEDULED: {
+      case DB.PublicationStatus.DRAFT:
+      case DB.PublicationStatus.SCHEDULED: {
         try {
           await ctx.redisExec
             .pipeline()
@@ -973,9 +1009,10 @@ export async function startLiveQuiz(
             id,
           },
           data: {
-            status: PublicationStatus.PUBLISHED,
+            status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
-            pinCode: quiz.accessMode === AccessMode.RESTRICTED ? pinCode : null,
+            pinCode:
+              quiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
           },
         })
 
@@ -1001,40 +1038,20 @@ export async function getCockpitQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, status: DB.PublicationStatus.PUBLISHED },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        orderBy: { order: 'asc' },
+        include: { elements: { orderBy: { order: 'asc' } } },
       },
       course: true,
       confusionFeedbacks: true,
-      feedbacks: {
-        include: {
-          responses: true,
-        },
-      },
+      feedbacks: { include: { responses: true } },
     },
   })
 
-  if (!liveQuiz || liveQuiz?.status !== PublicationStatus.PUBLISHED) {
+  if (!liveQuiz) {
     return null
   }
 
@@ -1118,20 +1135,11 @@ export async function activateLiveQuizBlock(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      blocks: {
-        orderBy: {
-          id: 'asc',
-        },
-      },
-    },
+    where: { id: quizId },
+    include: { blocks: { orderBy: { id: 'asc' } } },
   })
 
-  if (!quiz || quiz.ownerId !== ctx.user.sub) return null
+  if (!quiz) return null
 
   const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
@@ -1142,14 +1150,12 @@ export async function activateLiveQuizBlock(
   const updatedQuiz = await ctx.prisma.liveQuiz.update({
     where: { id: quizId },
     data: {
-      activeBlock: {
-        connect: { id: blockId },
-      },
+      activeBlock: { connect: { id: blockId } },
       blocks: {
         update: {
           where: { id: blockId },
           data: {
-            status: ElementBlockStatus.ACTIVE,
+            status: DB.ElementBlockStatus.ACTIVE,
             expiresAt: newBlock.timeLimit
               ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
               : undefined,
@@ -1158,20 +1164,8 @@ export async function activateLiveQuizBlock(
       },
     },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      blocks: { orderBy: { order: 'asc' } },
     },
   })
 
@@ -1210,9 +1204,9 @@ export async function activateLiveQuizBlock(
     }
 
     switch (elementData.type) {
-      case ElementType.SC:
-      case ElementType.MC:
-      case ElementType.KPRIM: {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: elementData.options.choices.length,
@@ -1232,7 +1226,7 @@ export async function activateLiveQuizBlock(
         break
       }
 
-      case ElementType.NUMERICAL: {
+      case DB.ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions:
@@ -1249,7 +1243,7 @@ export async function activateLiveQuizBlock(
         break
       }
 
-      case ElementType.FREE_TEXT: {
+      case DB.ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: elementData.options.hasSampleSolution
@@ -1262,7 +1256,7 @@ export async function activateLiveQuizBlock(
         break
       }
 
-      case ElementType.SELECTION: {
+      case DB.ElementType.SELECTION: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(
@@ -1277,7 +1271,7 @@ export async function activateLiveQuizBlock(
         break
       }
 
-      case ElementType.CASE_STUDY: {
+      case DB.ElementType.CASE_STUDY: {
         // convert solutions to object for faster access
         const validSolutions = elementData.options.cases.every(
           (caseItem) => caseItem.solutions
@@ -1300,7 +1294,7 @@ export async function activateLiveQuizBlock(
         break
       }
 
-      case ElementType.CONTENT: {
+      case DB.ElementType.CONTENT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1320,29 +1314,14 @@ export async function deactivateLiveQuizBlock(
   isScheduled?: boolean
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: quizId },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          id: 'asc',
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      blocks: { orderBy: { id: 'asc' } },
     },
   })
 
-  if (!quiz || quiz.ownerId !== ctx.user.sub || !quiz.activeBlock) return null
+  if (!quiz || !quiz.activeBlock) return null
 
   // if the block is not the active one, return early
   if (quiz.activeBlockId !== blockId) return quiz
@@ -1355,9 +1334,14 @@ export async function deactivateLiveQuizBlock(
 
     if (!cachedResults) return null
 
-    const { instanceResults, liveQuizLeaderboard, activeInstanceIds } =
-      cachedResults
+    const {
+      instanceResults,
+      liveQuizLeaderboard,
+      liveQuizLeaderboardTemporary,
+      activeInstanceIds,
+    } = cachedResults
 
+    // filter the leaderboard entries to only include those that have a valid participant id
     const existingParticipantsLB = (
       await Promise.allSettled(
         Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
@@ -1366,7 +1350,6 @@ export async function deactivateLiveQuizBlock(
           })
 
           if (!participant) return null
-
           return [id, score] as [string, string]
         })
       )
@@ -1375,21 +1358,36 @@ export async function deactivateLiveQuizBlock(
       return [result.value]
     })
 
+    // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
+    // technically, this should not be required, since all ids should be valid, but it is a safety check
+    const existingTemporaryLB = (
+      await Promise.allSettled(
+        Object.entries(liveQuizLeaderboardTemporary).map(
+          async ([id, score]) => {
+            const tempLeadeboardEntry =
+              await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+                where: { id, quizId },
+              })
+
+            if (!tempLeadeboardEntry) return null
+            return [id, score] as [string, string]
+          }
+        )
+      )
+    ).flatMap((result) => {
+      if (result.status !== 'fulfilled' || !result.value) return []
+      return [result.value]
+    })
+
     const updatedQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id: quizId,
-      },
+      where: { id: quizId },
       data: {
-        activeBlock: {
-          disconnect: true,
-        },
+        activeBlock: { disconnect: true },
         blocks: {
           update: {
-            where: {
-              id: blockId,
-            },
+            where: { id: blockId },
             data: {
-              status: ElementBlockStatus.EXECUTED,
+              status: DB.ElementBlockStatus.EXECUTED,
               elements: {
                 update: Object.entries(instanceResults).map(
                   ([id, instanceResult]) => ({
@@ -1407,16 +1405,14 @@ export async function deactivateLiveQuizBlock(
                 ([id, score]: [string, string]) => ({
                   where: {
                     type_participantId_liveQuizId: {
-                      type: LeaderboardType.SESSION,
+                      type: DB.LeaderboardType.SESSION,
                       participantId: id,
                       liveQuizId: quizId,
                     },
                   },
                   create: {
-                    type: LeaderboardType.SESSION,
-                    participant: {
-                      connect: { id },
-                    },
+                    type: DB.LeaderboardType.SESSION,
+                    participant: { connect: { id } },
                     score: parseInt(score),
                     sessionParticipation: {
                       connectOrCreate: {
@@ -1427,35 +1423,25 @@ export async function deactivateLiveQuizBlock(
                           },
                         },
                         create: {
-                          course: {
-                            connect: {
-                              id: quiz.courseId!,
-                            },
-                          },
-                          participant: {
-                            connect: {
-                              id,
-                            },
-                          },
+                          course: { connect: { id: quiz.courseId! } },
+                          participant: { connect: { id } },
                         },
                       },
                     },
                   },
-                  update: {
-                    score: parseInt(score),
-                  },
+                  update: { score: parseInt(score) },
                 })
               ),
             }
           : undefined,
-      },
-      include: {
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
+        temporaryLeaderboard: {
+          update: existingTemporaryLB.map(([id, score]: [string, string]) => ({
+            where: { id, quizId },
+            data: { score: parseInt(score) },
+          })),
         },
       },
+      include: { blocks: { orderBy: { order: 'asc' } } },
     })
 
     ctx.pubSub.publish('runningLiveQuizUpdated', {
@@ -1498,22 +1484,11 @@ export async function endLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findFirst({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     include: {
       blocks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          id: 'asc',
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { id: 'asc' },
       },
     },
   })
@@ -1523,20 +1498,20 @@ export async function endLiveQuiz(
     return null
   }
 
-  if (quiz.status === PublicationStatus.ENDED) {
+  if (quiz.status === DB.PublicationStatus.ENDED) {
     return quiz
   }
   if (
-    quiz.status === PublicationStatus.DRAFT ||
-    quiz.status === PublicationStatus.SCHEDULED
+    quiz.status === DB.PublicationStatus.DRAFT ||
+    quiz.status === DB.PublicationStatus.SCHEDULED
   ) {
     return null
   }
 
+  // update course leaderboard and participant XP
   try {
     const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
     const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
-
     const participants: Record<string, any> = {}
 
     Object.entries(quizXP).forEach(([id, xp]) => {
@@ -1553,7 +1528,7 @@ export async function endLiveQuiz(
 
     // quizXP should always be around as soon as there are logged-in participants (check first)
     // quizLB only for live quizzes that are compatible with points collection (check second)
-    if (quizXP) {
+    if (Object.keys(participants).length > 0) {
       let existingParticipants: {
         id: string
         score?: number
@@ -1568,11 +1543,7 @@ export async function endLiveQuiz(
                 // if the live quiz is part of a course, include the corresponding participations
                 // if the participant is not part of the relevant course, the joined array will be empty
                 participations: quiz.courseId
-                  ? {
-                      where: {
-                        courseId: quiz.courseId,
-                      },
-                    }
+                  ? { where: { courseId: quiz.courseId } }
                   : undefined,
               },
             })
@@ -1600,7 +1571,7 @@ export async function endLiveQuiz(
       const awardAchievements = quiz.blocks.some(
         (block) =>
           block.elements.some((instance) => {
-            return instance.elementType !== ElementType.CONTENT &&
+            return instance.elementType !== DB.ElementType.CONTENT &&
               'hasSampleSolution' in instance.elementData.options
               ? (instance.elementData.options.hasSampleSolution ?? false)
               : false
@@ -1674,14 +1645,21 @@ export async function endLiveQuiz(
           if (typeof participant.xp !== 'undefined') {
             await prisma.participant.update({
               where: { id: participant.id },
-              data: {
-                xp: {
-                  increment: Number(participant.xp),
-                },
-              },
+              data: { xp: { increment: Number(participant.xp) } },
             })
           }
         }
+
+        // remove any temporary leaderboard entries that have not been updated after their creation (with score 0)
+        await prisma.temporaryLeaderboardEntry.deleteMany({
+          where: {
+            quizId: id,
+            score: 0,
+            createdAt: {
+              equals: prisma.temporaryLeaderboardEntry.fields.updatedAt,
+            },
+          },
+        })
 
         // if the live quiz is part of a course, update the course leaderboard
         // with the accumulated points and award achievements
@@ -1695,7 +1673,7 @@ export async function endLiveQuiz(
               await prisma.leaderboardEntry.upsert({
                 where: {
                   type_participantId_courseId: {
-                    type: LeaderboardType.COURSE,
+                    type: DB.LeaderboardType.COURSE,
                     courseId: quiz.courseId,
                     participantId: participant.id,
                   },
@@ -1705,7 +1683,7 @@ export async function endLiveQuiz(
                   participant: true,
                 },
                 create: {
-                  type: LeaderboardType.COURSE,
+                  type: DB.LeaderboardType.COURSE,
                   course: { connect: { id: quiz.courseId } },
                   participant: { connect: { id: participant.id } },
                   participation: {
@@ -1792,7 +1770,7 @@ export async function endLiveQuiz(
         id,
       },
       data: {
-        status: PublicationStatus.ENDED,
+        status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
         pinCode: null,
       },
@@ -1830,10 +1808,7 @@ export async function changeLiveQuizSettings(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     data: {
       isLiveQAEnabled: isLiveQAEnabled ?? undefined,
       isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
@@ -1841,6 +1816,13 @@ export async function changeLiveQuizSettings(
       isGamificationEnabled: isGamificationEnabled ?? undefined,
     },
   })
+
+  ctx.pubSub.publish('liveQuizSettingsChanged', {
+    liveQuizId: quiz.id,
+    isLiveQAEnabled: quiz.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,
+  })
+
   return quiz
 }
 
@@ -1848,23 +1830,18 @@ export async function changeLiveQuizName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
-  const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name,
-      displayName,
-    },
-  })
+  try {
+    await ctx.prisma.liveQuiz.update({
+      where: { id },
+      data: { name, displayName },
+    })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'LiveQuiz',
-    id,
-  })
-
-  return updatedQuiz
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+    return true
+  } catch (error) {
+    console.error('Error changing live quiz name:', error)
+    return false
+  }
 }
 
 export async function getLiveQuizSummary(
@@ -1872,10 +1849,7 @@ export async function getLiveQuizSummary(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: quizId },
     include: {
       _count: {
         select: {
@@ -1884,16 +1858,8 @@ export async function getLiveQuizSummary(
           leaderboard: true,
         },
       },
-      blocks: {
-        include: {
-          elements: true,
-        },
-      },
-      activeBlock: {
-        include: {
-          elements: true,
-        },
-      },
+      blocks: { include: { elements: true } },
+      activeBlock: { include: { elements: true } },
     },
   })
 
@@ -1917,6 +1883,7 @@ export async function getLiveQuizSummary(
 
     if (cachedResults) {
       const { instanceResults } = cachedResults
+
       const cachedResponses = liveQuiz.activeBlock.elements.reduce(
         (acc, instance) => {
           acc += instanceResults[instance.id]?.anonymousResults.total ?? 0
@@ -1942,18 +1909,10 @@ export async function cancelLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     include: {
       activeBlock: true,
-      blocks: {
-        include: {
-          elements: true,
-          activeInLiveQuiz: true,
-        },
-      },
+      blocks: { include: { elements: true, activeInLiveQuiz: true } },
       leaderboard: true,
     },
   })
@@ -1961,7 +1920,7 @@ export async function cancelLiveQuiz(
   if (!quiz) return null
 
   try {
-    if (quiz.status !== PublicationStatus.PUBLISHED) {
+    if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
       throw new Error('Live quiz is not running')
     }
 
@@ -1971,46 +1930,35 @@ export async function cancelLiveQuiz(
       ctx.prisma.liveQuiz.update({
         where: { id },
         data: {
-          status: PublicationStatus.DRAFT,
+          status: DB.PublicationStatus.DRAFT,
           startedAt: null,
           pinCode: null,
-          activeBlock: {
-            disconnect: true,
-          },
-          leaderboard: {
-            deleteMany: {},
-          },
-          feedbacks: {
-            deleteMany: {},
-          },
-          confusionFeedbacks: {
-            deleteMany: {},
-          },
+          activeBlock: { disconnect: true },
+          leaderboard: { deleteMany: {} },
+          temporaryLeaderboard: { deleteMany: {} },
+          feedbacks: { deleteMany: {} },
+          confusionFeedbacks: { deleteMany: {} },
           blocks: {
             updateMany: {
               where: {
                 status: {
-                  in: [ElementBlockStatus.EXECUTED, ElementBlockStatus.ACTIVE],
+                  in: [
+                    DB.ElementBlockStatus.EXECUTED,
+                    DB.ElementBlockStatus.ACTIVE,
+                  ],
                 },
               },
               data: {
-                status: ElementBlockStatus.SCHEDULED,
+                status: DB.ElementBlockStatus.SCHEDULED,
                 expiresAt: null,
-                execution: {
-                  increment: 1,
-                },
+                execution: { increment: 1 },
               },
             },
           },
         },
         include: {
           activeBlock: true,
-          blocks: {
-            include: {
-              elements: true,
-              activeInLiveQuiz: true,
-            },
-          },
+          blocks: { include: { elements: true, activeInLiveQuiz: true } },
         },
       }),
 
@@ -2062,7 +2010,9 @@ export async function getLiveQuizEvaluation(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      status: { in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED] },
+      status: {
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+      },
       isDeleted: false,
     },
     include: {
@@ -2081,7 +2031,7 @@ export async function getLiveQuizEvaluation(
         },
         where: {
           status: {
-            equals: ElementBlockStatus.EXECUTED,
+            equals: DB.ElementBlockStatus.EXECUTED,
           },
         },
         include: {
@@ -2125,7 +2075,7 @@ export async function getLiveQuizEvaluation(
 
   // load results from active block as well
   let activeBlockWithResults:
-    | (ElementBlock & { elements: ElementInstance[] })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
     | undefined
   if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
     const cachedResults = await getCachedBlockResults({
@@ -2162,9 +2112,11 @@ export async function getLiveQuizEvaluation(
     description: liveQuiz.description,
     results: blockEvaluations,
     feedbacks:
-      liveQuiz.status === PublicationStatus.ENDED ? liveQuiz.feedbacks : null, // only shown on evaluation for completed quizzes
+      liveQuiz.status === DB.PublicationStatus.ENDED
+        ? liveQuiz.feedbacks
+        : null, // only shown on evaluation for completed quizzes
     confusionFeedbacks:
-      liveQuiz.status === PublicationStatus.ENDED
+      liveQuiz.status === DB.PublicationStatus.ENDED
         ? liveQuiz.confusionFeedbacks
         : null, // only shown on evaluation for completed quizzes
   }
@@ -2177,33 +2129,33 @@ export async function deleteLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // fetch live quiz to check its status
+  // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    select: {
-      status: true,
-    },
+    where: { id },
+    include: { blocks: { include: { elements: true } } },
   })
 
   if (!liveQuiz) return null
 
-  if (liveQuiz.status === PublicationStatus.PUBLISHED) {
+  if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
     // running live quizzes cannot be deleted
     return null
-  } else if (liveQuiz.status === PublicationStatus.ENDED) {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: PublicationStatus.ENDED,
+  } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
+    const deletedLiveQuiz = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const quiz = await prisma.liveQuiz.update({
+          where: { id, status: DB.PublicationStatus.ENDED },
+          data: { isDeleted: true },
+        })
+
+        // update derived permissions for this live quiz (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
+        await recomputeDerivedPermissions({ liveQuizId: quiz.id }, prisma)
+
+        return quiz
       },
-      data: {
-        isDeleted: true,
-      },
-    })
+      { timeout: 60000 }
+    )
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
@@ -2212,15 +2164,29 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: {
-          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
-        },
+    const deletedLiveQuiz = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const quiz = await prisma.liveQuiz.delete({
+          where: {
+            id,
+            status: {
+              in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
+            },
+          },
+        })
+
+        // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+        // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
+        // access requests need to be updated as well, since the derived permissions on elements might have changed
+        await propagateActivityToElements(
+          { stacks: liveQuiz.blocks, updateAccessRequests: true },
+          prisma
+        )
+
+        return quiz
       },
-    })
+      { timeout: 60000 }
+    )
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
@@ -2251,7 +2217,7 @@ export async function getLiveQuizHMAC(
 }
 
 // compute the average of all feedbacks that were given within the last 10 minutes
-const aggregateFeedbacks = (feedbacks: ConfusionTimestep[]) => {
+const aggregateFeedbacks = (feedbacks: DB.ConfusionTimestep[]) => {
   // TODO: for improved efficiency, try to use descending feedback ordering
   // and break early once first is not within the filtering requirements anymore
   const recentFeedbacks = feedbacks.filter(
@@ -2304,7 +2270,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
 
   // check if any block has been started / completed
   const beforeFirstBlock = quiz?.blocks?.every(
-    (block) => block.status === ElementBlockStatus.SCHEDULED
+    (block) => block.status === DB.ElementBlockStatus.SCHEDULED
   )
 
   // extract solution from instances in active block
@@ -2325,8 +2291,8 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
             return instance
 
           switch (elementData.type) {
-            case ElementType.SC:
-            case ElementType.MC:
+            case DB.ElementType.SC:
+            case DB.ElementType.MC:
               return {
                 ...instance,
                 elementData: {
@@ -2340,8 +2306,8 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
                 },
               }
 
-            case ElementType.NUMERICAL:
-            case ElementType.FREE_TEXT:
+            case DB.ElementType.NUMERICAL:
+            case DB.ElementType.FREE_TEXT:
               return {
                 ...instance,
                 elementData,
@@ -2355,11 +2321,26 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     }
   }
 
-  if (quiz?.status === PublicationStatus.PUBLISHED) {
+  if (quiz?.status === DB.PublicationStatus.PUBLISHED) {
     return quizWithoutSolutions ?? { ...quiz, beforeFirstBlock }
   }
 
   return null
+}
+
+export async function validateAvailableLiveQuiz(
+  { quizId, courseId }: { quizId: string; courseId: string },
+  ctx: Context
+) {
+  const quiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      courseId,
+    },
+  })
+
+  return !!quiz
 }
 
 export async function getCourseRunningLiveQuizzes(
@@ -2373,7 +2354,7 @@ export async function getCourseRunningLiveQuizzes(
     include: {
       liveQuizzes: {
         where: {
-          status: PublicationStatus.PUBLISHED,
+          status: DB.PublicationStatus.PUBLISHED,
         },
         include: {
           course: true,
@@ -2386,7 +2367,7 @@ export async function getCourseRunningLiveQuizzes(
 }
 
 export async function getLiveQuizLeaderboard(
-  { quizId }: { quizId: string },
+  { quizId, hmac }: { quizId: string; hmac?: string | null },
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
@@ -2395,62 +2376,93 @@ export async function getLiveQuizLeaderboard(
     },
     include: {
       leaderboard: {
-        orderBy: {
-          score: 'desc',
-        },
         include: {
           participant: true,
           sessionParticipation: true,
         },
       },
+      temporaryLeaderboard: true,
       blocks: true,
     },
   })
 
   if (!quiz) return []
 
-  const participant = ctx.user?.sub
-    ? await ctx.prisma.participant.findUnique({
-        where: {
-          id: ctx.user.sub,
-        },
-      })
-    : null
+  const participant =
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+      ? await ctx.prisma.participant.findUnique({
+          where: {
+            id: ctx.user.sub,
+          },
+        })
+      : null
 
-  const participantProfilePublic =
+  let participantProfilesVisible =
     (participant?.isProfilePublic ?? false) ||
-    ctx.user?.role === 'USER' ||
-    ctx.user?.role === 'ADMIN'
+    ctx.user?.role === DB.UserRole.TEMPORARY_PARTICIPANT ||
+    ctx.user?.role === DB.UserRole.USER ||
+    ctx.user?.role === DB.UserRole.ADMIN
+
+  // if a valid hmac is passed, the participant profile is also visible
+  if (typeof hmac === 'string' && hmac !== null && hmac !== '') {
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(quiz.namespace + quiz.id)
+    const quizHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed quiz.namespace and quiz.id equals the hmac
+    if (quizHmac === hmac) {
+      participantProfilesVisible = true
+    }
+  }
 
   // find the order attribute of the last exectued block
   const executedBlockOrders = quiz?.blocks
-    .filter((quizBlock) => quizBlock.status === ElementBlockStatus.EXECUTED)
+    .filter((quizBlock) => quizBlock.status === DB.ElementBlockStatus.EXECUTED)
     .map((quizBlock) => Number(quizBlock.order))
 
-  const lastBlockOrder = executedBlockOrders
-    ? Math.max(...executedBlockOrders)
-    : 0
+  const lastBlockOrder =
+    executedBlockOrders && executedBlockOrders.length > 0
+      ? Math.max(...executedBlockOrders)
+      : 0
 
-  const preparedEntries = quiz?.leaderboard?.flatMap((entry) => {
-    if (!entry.sessionParticipation?.isActive) return []
+  const preparedEntries =
+    quiz?.leaderboard
+      ?.flatMap((entry) => {
+        if (!entry.sessionParticipation?.isActive) return []
 
-    return {
-      id: entry.id,
-      participantId: entry.participant.id,
-      username:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.username
-          : 'Anonymous',
-      avatar:
-        entry.participant.isProfilePublic && participantProfilePublic
-          ? entry.participant.avatar
-          : null,
-      score: entry.score,
-      level: levelFromXp(entry.participant.xp),
-      // isSelf: entry.participantId === ctx.user.sub,
-      lastBlockOrder,
-    }
-  })
+        return {
+          id: entry.id,
+          participantId: entry.participant.id,
+          username:
+            entry.participant.isProfilePublic && participantProfilesVisible
+              ? entry.participant.username
+              : 'Anonymous',
+          avatar:
+            entry.participant.isProfilePublic && participantProfilesVisible
+              ? entry.participant.avatar
+              : null,
+          score: entry.score,
+          level: levelFromXp(entry.participant.xp),
+          // isSelf: entry.participantId === ctx.user.sub,
+          isTemporary: false,
+          lastBlockOrder,
+        }
+      })
+      .concat(
+        quiz?.temporaryLeaderboard?.flatMap((entry) => {
+          return {
+            id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
+            participantId: entry.id,
+            username: participantProfilesVisible ? entry.username : 'Anonymous',
+            avatar: participantProfilesVisible ? entry.avatar : null,
+            score: entry.score,
+            level: 1, // temporary leaderboard entries do not have a experience points
+            // isSelf: entry.id === ctx.user.sub,
+            isTemporary: true,
+            lastBlockOrder,
+          }
+        }) ?? []
+      ) ?? []
 
   const sortedEntries = sortBy(
     preparedEntries,

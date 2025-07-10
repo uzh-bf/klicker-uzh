@@ -1,6 +1,6 @@
 query GetCatalogSharingRequests {
   getCatalogSharingRequests {
-    permissionId
+    requestId
     objectName
     objectType
     userId

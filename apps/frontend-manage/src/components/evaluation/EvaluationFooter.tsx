@@ -62,11 +62,11 @@ function EvaluationFooter({
             {(currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
             type === 'Asynchronous'
               ? t('manage.evaluation.totalParticipantsInclAnon', {
-                  number: currentInstance?.results.totalAnswers,
-                  anonymous: currentInstance?.results.anonymousAnswers,
+                  number: currentInstance?.results.totalAnswers ?? 0,
+                  anonymous: currentInstance?.results.anonymousAnswers ?? 0,
                 })
               : t('manage.evaluation.totalParticipants', {
-                  number: currentInstance?.results.totalAnswers,
+                  number: currentInstance?.results.totalAnswers ?? 0,
                 })}
           </div>
           <div className="flex flex-row items-center gap-7">

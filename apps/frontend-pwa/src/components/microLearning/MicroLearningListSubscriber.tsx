@@ -5,19 +5,19 @@ import {
   MicroLearningEndedDocument,
   Participation,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useEffect } from 'react'
-
-interface MicroLearningListSubscriberProps {
-  activityId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
-  setEndedMicroLearning: Dispatch<SetStateAction<string | undefined>>
-}
+import { toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 
 function MicroLearningListSubscriber({
   activityId,
   subscribeToMore,
-  setEndedMicroLearning,
-}: MicroLearningListSubscriberProps) {
+}: {
+  activityId: string
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+}) {
+  const t = useTranslations()
+
   useEffect(() => {
     subscribeToMore({
       document: MicroLearningEndedDocument,
@@ -35,9 +35,13 @@ function MicroLearningListSubscriber({
         if (!subscriptionData.data) return prev
 
         // trigger toast for ended microlearning
-        setEndedMicroLearning(
-          subscriptionData.data.microLearningEnded.displayName
-        )
+        toast({
+          type: 'success',
+          message: t('pwa.courses.microLearningEndedToast', {
+            activityName: subscriptionData.data.microLearningEnded.displayName,
+          }),
+          options: { duration: 10000 },
+        })
 
         // update the values returned by the course overview data query
         const updatedParticipations: Participation[] = prev.participations.map(

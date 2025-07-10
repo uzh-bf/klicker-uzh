@@ -1,16 +1,13 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import {
-  ElementInstance,
-  GetLiveQuizHmacDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
 
-function LazyHMACLink({
+function HMACLink({
   quizId,
   hmac,
   params,
@@ -27,16 +24,12 @@ function LazyHMACLink({
 
   return (
     <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
-      <Link
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        legacyBehavior
-        passHref
-      >
+      <Link href={link} legacyBehavior passHref>
         <a
           data-cy={`open-embedding-link-${identifier}`}
           className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {link}
         </a>
@@ -51,56 +44,51 @@ function LazyHMACLink({
   )
 }
 
-interface EmbeddingModalProps {
-  open: boolean
-  onClose: () => void
-  quizId: string
-  elements?: (Pick<ElementInstance, 'id'> & { elementData: { name: string } })[]
-}
-
 function EmbeddingModal({
-  open,
   onClose,
   quizId,
   elements,
-}: EmbeddingModalProps) {
+}: {
+  onClose: () => void
+  quizId: string
+  elements?: { id: number; name: string }[]
+}) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
   const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
-    variables: {
-      id: quizId,
-    },
+    variables: { id: quizId },
     skip: !open,
   })
 
   return (
     <Modal
+      open
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
-      open={open}
       onClose={onClose}
-      className={{ content: 'max-h-[calc(100%-3rem)]' }}
-      onPrimaryAction={
-        <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.close')}
+      primaryButtonStyle="default"
+      onPrimaryAction={onClose}
+      dataPrimaryAction={{ cy: 'close-embedding-modal' }}
+      className={{ content: 'max-h-[calc(100%-3rem)]', footer: 'justify-end' }}
     >
-      <div className="mb-4 rounded-md border py-2 pl-1 pr-2">
+      <div className="mb-4 rounded-md border p-2.5">
         <Switch
+          size="sm"
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
         />
-        <div className="mb-3 pl-[3.75rem] text-sm">
+        <div className="pl-15 mb-3 text-sm">
           {t('manage.evaluation.showSolutionInfo')}
         </div>
         <Switch
+          size="sm"
           label={t('manage.evaluation.showExplanation')}
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
         />
-        <div className="pl-[3.75rem] text-sm">
+        <div className="pl-15 text-sm">
           {t('manage.evaluation.showExplanationInfo')}
         </div>
       </div>
@@ -112,7 +100,7 @@ function EmbeddingModal({
             <div className="w-30 font-bold">
               {t('shared.generic.evaluation')}
             </div>
-            <LazyHMACLink
+            <HMACLink
               quizId={quizId}
               hmac={data.liveQuizHMAC!}
               params={``}
@@ -123,9 +111,9 @@ function EmbeddingModal({
             return (
               <div key={element.id}>
                 <div className="line-clamp-1 font-bold">
-                  {ix + 1} {element.elementData.name}
+                  {ix + 1} {element.name}
                 </div>
-                <LazyHMACLink
+                <HMACLink
                   quizId={quizId}
                   hmac={data.liveQuizHMAC!}
                   params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
@@ -138,7 +126,7 @@ function EmbeddingModal({
             <div className="w-30 font-bold">
               {t('shared.generic.leaderboard')}:
             </div>
-            <LazyHMACLink
+            <HMACLink
               quizId={quizId}
               hmac={data.liveQuizHMAC!}
               params={`leaderboard=true&hideControls=true`}

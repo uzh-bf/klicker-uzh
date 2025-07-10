@@ -2,73 +2,43 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementBlock,
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
-  LiveQuiz,
-  RunningLiveQuizUpdatedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
+import LiveQuizSubscriber from '../../components/liveQuiz/LiveQuizSubscriber'
 import QuestionArea from '../../components/liveQuiz/QuestionArea'
 
-function Subscriber({
-  id,
-  subscribeToMore,
-}: {
-  id: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
-}) {
-  useEffect(() => {
-    subscribeToMore({
-      document: RunningLiveQuizUpdatedDocument,
-      variables: {
-        quizId: id,
-      },
-      updateQuery: (
-        prev: { studentLiveQuiz: LiveQuiz },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { runningLiveQuizUpdated: ElementBlock } }
-        }
-      ) => {
-        if (!subscriptionData.data) return prev
-        return Object.assign({}, prev, {
-          studentLiveQuiz: {
-            ...prev.studentLiveQuiz,
-            activeBlock: subscriptionData.data.runningLiveQuizUpdated,
-          },
-        })
-      },
-    })
-  }, [id, subscribeToMore])
-
-  return <div />
-}
+const DynamicAccountSelector = dynamic(
+  () => import('../../components/liveQuiz/AccountSelector'),
+  { ssr: false }
+)
 
 function Index({ id }: { id: string }) {
-  const [activeMobilePage, setActiveMobilePage] = useState('questions')
   const t = useTranslations()
+  const router = useRouter()
+  const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
   const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
     variables: { id },
   })
-
   const { data: selfData } = useQuery(SelfDocument)
 
   if (!data?.studentLiveQuiz) {
@@ -203,14 +173,21 @@ function Index({ id }: { id: string }) {
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
+      liveQuizId={id}
+      className={{ body: 'p-0 px-4 pb-4' }}
     >
-      <Subscriber id={id} subscribeToMore={subscribeToMore} />
+      <LiveQuizSubscriber id={id} subscribeToMore={subscribeToMore} />
+      <DynamicAccountSelector
+        isGamificationEnabled={isGamificationEnabled}
+        quizId={id}
+      />
 
-      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
+      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row md:pt-3">
         <div
           className={twMerge(
-            'hidden flex-1 border-gray-300 bg-white md:border-r md:pr-5',
-            isLiveQAEnabled && 'md:w-1/2',
+            'hidden flex-1 border-gray-300 bg-white md:pr-5',
+            (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
+              'md:w-1/2 md:border-r',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||
               activeMobilePage === 'leaderboard') &&
@@ -225,8 +202,21 @@ function Index({ id }: { id: string }) {
               <div data-cy="live-quiz-description">
                 <H3>{displayName}</H3>
                 <Markdown content={description} />
-                <UserNotification type="info" className={{ root: 'mt-4' }}>
-                  {t('pwa.liveQuiz.noActiveQuestion')}
+                <UserNotification
+                  type="info"
+                  className={{ root: 'mt-4 text-base' }}
+                >
+                  {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                    reload: (text) => (
+                      <span
+                        className="cursor-pointer underline"
+                        onClick={() => router.reload()}
+                        data-cy="reload-live-quiz"
+                      >
+                        {text}
+                      </span>
+                    ),
+                  })}
                 </UserNotification>
               </div>
             ) : isGamificationEnabled ? (
@@ -234,12 +224,23 @@ function Index({ id }: { id: string }) {
                 <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
-              <UserNotification type="info">
-                {t('pwa.liveQuiz.noActiveQuestion')}
+              <UserNotification type="info" className={{ root: 'mt-4' }}>
+                {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                  reload: (text) => (
+                    <span
+                      className="cursor-pointer underline"
+                      onClick={() => router.reload()}
+                      data-cy="reload-live-quiz"
+                    >
+                      {text}
+                    </span>
+                  ),
+                })}
               </UserNotification>
             )
           ) : (
             <QuestionArea
+              gamificationEnabled={isGamificationEnabled}
               expiresAt={activeBlock.expiresAt}
               instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}

@@ -1,37 +1,34 @@
-import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
+import { FormikTextField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import EditorField from './EditorField'
 
-interface StackDescriptionModalProps {
-  stackIx: number
-  modalOpen: boolean
-  setModalOpen: (open: boolean) => void
-}
-
 function StackDescriptionModal({
   stackIx,
-  modalOpen,
   setModalOpen,
-}: StackDescriptionModalProps) {
+}: {
+  stackIx: number
+  setModalOpen: (open: boolean) => void
+}) {
   const t = useTranslations()
 
   return (
     <Modal
-      open={modalOpen}
+      open
       onClose={() => setModalOpen(false)}
       title={t('manage.activityWizard.stackDescriptionTitle', {
         stackIx: stackIx + 1,
       })}
-      className={{
-        content: 'w-full sm:w-3/4 md:w-1/2',
-      }}
+      primaryLabel={t('shared.generic.ok')}
+      onPrimaryAction={() => setModalOpen(false)}
+      dataPrimaryAction={{ cy: 'close-stack-description' }}
+      className={{ footer: 'justify-end' }}
     >
       <FormikTextField
         name={`stacks.${stackIx}.displayName`}
         label={t('manage.activityWizard.stackDisplayName')}
         tooltip={t('manage.activityWizard.stackDisplayNameTooltip')}
         data={{ cy: `stack-${stackIx}-displayname` }}
-        className={{ label: 'mt-0' }}
+        className={{ label: 'mt-0', tooltip: 'z-50' }}
       />
       <EditorField
         label={t('manage.activityWizard.stackDescription')}
@@ -42,14 +39,6 @@ function StackDescriptionModal({
         className={{ label: 'mt-2' }}
         data={{ cy: `stack-${stackIx}-description` }}
       />
-      <Button
-        primary
-        className={{ root: 'float-right mt-4' }}
-        onClick={() => setModalOpen(false)}
-        data={{ cy: 'close-stack-description' }}
-      >
-        {t('shared.generic.ok')}
-      </Button>
     </Modal>
   )
 }

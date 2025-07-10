@@ -9,6 +9,10 @@ export const UserLoginScope = builder.enumType('UserLoginScope', {
   values: Object.values(DB.UserLoginScope),
 })
 
+export const UserRole = builder.enumType('UserRole', {
+  values: Object.values(DB.UserRole),
+})
+
 export interface IUser extends DB.User {
   catalystInstitutional: boolean
   catalystIndividual: boolean
@@ -24,6 +28,7 @@ export const User = UserRef.implement({
 
     shortname: t.exposeString('shortname'),
     locale: t.expose('locale', { type: LocaleType }),
+    role: t.expose('role', { type: UserRole }),
 
     loginToken: t.exposeString('loginToken', { nullable: true }),
     loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {
@@ -45,6 +50,22 @@ export const User = UserRef.implement({
     }),
 
     firstLogin: t.exposeBoolean('firstLogin'),
+  }),
+})
+
+export interface IUserInfo {
+  id?: string | null
+  shortname: string
+  email: string
+  isSelf?: boolean
+}
+export const UserInfoRef = builder.objectRef<IUserInfo>('UserInfo')
+export const UserInfo = UserInfoRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id', { nullable: true }),
+    shortname: t.exposeString('shortname'),
+    email: t.exposeString('email'),
+    isSelf: t.exposeBoolean('isSelf', { nullable: true }),
   }),
 })
 

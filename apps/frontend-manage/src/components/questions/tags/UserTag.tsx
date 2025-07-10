@@ -38,25 +38,25 @@ function UserTag({
         {editMode ? (
           <TagEditForm tag={tag} onConfirm={() => setEditMode(false)} />
         ) : (
-          <>
+          <div className="flex w-full flex-row items-center gap-2 overflow-hidden">
             <Button
               basic
               fluid
               onClick={(): void => handleTagClick(tag.name)}
               className={{
-                root: 'hover:text-primary-100 line-clamp-1 h-7 py-0 text-sm',
+                root: 'hover:text-primary-100 line-clamp-1 h-7 min-w-0 flex-1 overflow-hidden text-ellipsis py-0 text-sm',
               }}
               data={{ cy: `user-tag-${tag.name}` }}
             >
               <Tooltip
                 tooltip={tag.name}
                 className={{
-                  trigger: 'flex flex-row items-center gap-1 py-1',
+                  trigger: 'flex w-full flex-row items-center gap-1 py-1',
                 }}
                 delay={1000}
               >
                 <FontAwesomeIcon icon={faTag} />
-                {tag.name}
+                <span className="max-w-full truncate">{tag.name}</span>
               </Tooltip>
             </Button>
 
@@ -71,7 +71,7 @@ function UserTag({
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
             />
-          </>
+          </div>
         )}
       </li>
     </>

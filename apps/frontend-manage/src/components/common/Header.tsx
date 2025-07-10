@@ -9,6 +9,7 @@ import {
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation, NavigationItemProps } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -18,11 +19,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-interface HeaderProps {
-  user?: User | null
-}
-
-function Header({ user }: HeaderProps): React.ReactElement {
+function Header({ user }: { user?: User | null }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -51,11 +48,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
     },
     {
       type: 'button',
-      key: 'live-quizzes-menubar-item',
-      label: t('manage.general.liveQuizzes'),
-      onClick: () => router.push('/quizzes'),
-      active: router.pathname == '/quizzes',
-      data: { cy: 'live-quizzes' },
+      key: 'activities-menubar-item',
+      label: t('shared.generic.activities'),
+      onClick: () => router.push('/activities'),
+      active: router.pathname == '/activities',
+      data: { cy: 'activities' },
     },
     {
       type: 'button',
@@ -101,15 +98,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
               {
                 key: 'user-groups-item',
                 type: 'link',
-                disabled: true,
                 label: t('manage.general.userGroups'),
                 onClick: () => router.push('/resources/userGroups'),
-                badge: t('shared.generic.comingSoon'),
                 data: { cy: 'user-groups' },
                 className: {
                   label: 'bg-opacity-100',
                   text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
                 },
               },
               {
@@ -197,7 +191,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
       key: 'support-menubar-item',
       icon: faQuestionCircle,
       onClick: () => setShowSupportModal(true),
-      className: { icon: '-mx-1 ' },
+      className: { icon: '-mx-1', root: 'px-3' },
     },
     {
       type: 'dropdown',
@@ -205,18 +199,21 @@ function Header({ user }: HeaderProps): React.ReactElement {
       icon: faPlayCircle,
       disabled: !quizzes || quizzes.length === 0,
       className: {
+        trigger: 'px-3',
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
           '-mx-1',
           quizzes?.length !== 0 ? 'text-green-600' : 'text-slate-400'
         ),
       },
+      data: { cy: 'running-live-quiz-dropdown' },
       elements:
         quizzes?.map((quiz) => ({
           key: quiz.id,
           type: 'link',
           label: quiz.name,
           onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
+          data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
     {
@@ -240,6 +237,17 @@ function Header({ user }: HeaderProps): React.ReactElement {
           onClick: () => router.push('/token'),
           data: { cy: 'token-generation-page' },
         },
+        ...(user?.role === UserRole.Admin
+          ? [
+              {
+                key: 'admin',
+                type: 'link' as 'link',
+                label: t('manage.general.adminPanel'),
+                onClick: () => router.push('/admin'),
+                data: { cy: 'admin-panel-page' },
+              },
+            ]
+          : []),
         {
           key: 'separator-token-logout',
           type: 'separator',
@@ -262,7 +270,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   return (
     <>
       <div
-        className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
+        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
@@ -275,18 +283,19 @@ function Header({ user }: HeaderProps): React.ReactElement {
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          <Navigation items={leftNavigation} />
+          <Navigation
+            items={leftNavigation}
+            className={{ root: 'shadow-none' }}
+          />
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex flex-row' }}
+          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
         />
       </div>
-      <SupportModal
-        open={showSupportModal}
-        setOpen={setShowSupportModal}
-        user={user}
-      />
+      {showSupportModal && (
+        <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+      )}
     </>
   )
 }

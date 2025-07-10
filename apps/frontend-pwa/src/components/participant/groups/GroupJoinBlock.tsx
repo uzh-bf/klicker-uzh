@@ -4,9 +4,8 @@ import {
   GetCourseOverviewDataDocument,
   JoinParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Toast } from '@uzh-bf/design-system'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
 import * as Yup from 'yup'
 import GroupAction from './GroupAction'
 
@@ -18,8 +17,6 @@ function GroupJoinBlock({
   setSelectedTab: (value: string) => void
 }) {
   const t = useTranslations()
-  const [showError, setShowError] = useState(false)
-  const [fullMessage, setFullMessage] = useState(false)
   const [joinParticipantGroup, { loading }] = useMutation(
     JoinParticipantGroupDocument
   )
@@ -55,9 +52,17 @@ function GroupJoinBlock({
             !result.data?.joinParticipantGroup ||
             result.data.joinParticipantGroup === 'FAILURE'
           ) {
-            setShowError(true)
+            toast({
+              type: 'error',
+              message: t('pwa.courses.joinGroupError'),
+              options: { duration: 6000 },
+            })
           } else if (result.data.joinParticipantGroup === 'FULL') {
-            setFullMessage(true)
+            toast({
+              type: 'warning',
+              message: t('pwa.courses.joinGroupFull'),
+              options: { duration: 6000 },
+            })
           } else {
             setSelectedTab(result.data.joinParticipantGroup)
           }
@@ -67,26 +72,6 @@ function GroupJoinBlock({
         textSubmit={t('shared.generic.join')}
         data={undefined}
       />
-      <Toast
-        dismissible
-        type="error"
-        duration={6000}
-        openExternal={showError}
-        onCloseExternal={() => setShowError(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('pwa.courses.joinGroupError')}
-      </Toast>
-      <Toast
-        dismissible
-        type="warning"
-        duration={6000}
-        openExternal={fullMessage}
-        onCloseExternal={() => setFullMessage(false)}
-        className={{ root: 'max-w-[30rem]' }}
-      >
-        {t('pwa.courses.joinGroupFull')}
-      </Toast>
     </div>
   )
 }

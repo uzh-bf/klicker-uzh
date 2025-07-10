@@ -34,7 +34,6 @@ function LiveQuizTemplateSettings({
   setClosingSettingsDisabled: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
-
   const { data: dataCourses } = useQuery(GetActiveUserCoursesDocument, {
     fetchPolicy: 'cache-and-network',
   })

@@ -9,19 +9,15 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface GroupActivityConfirmationModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  activityId: string
-  courseId: string
-}
-
-function GroupActivityConfirmationModal({
-  open,
-  setOpen,
+function GroupActivityDeletionModal({
+  onClose,
   activityId,
   courseId,
-}: GroupActivityConfirmationModalProps) {
+}: {
+  onClose: () => void
+  activityId: string
+  courseId: string
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetGroupActivitySummaryDocument,
@@ -72,8 +68,7 @@ function GroupActivityConfirmationModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
       onSubmit={async () => await deleteGroupActivity()}
@@ -126,4 +121,4 @@ function GroupActivityConfirmationModal({
   )
 }
 
-export default GroupActivityConfirmationModal
+export default GroupActivityDeletionModal

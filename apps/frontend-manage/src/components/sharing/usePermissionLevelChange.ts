@@ -1,12 +1,12 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   ChangePermissionLevelDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -17,15 +17,17 @@ function usePermissionLevelChange({
   catalogCollectionId,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: ObjectType
   catalogCollectionId?: string
 }): {
   onPermissionLevelChange: ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => Promise<boolean>
   permissionChanging: boolean
 } {
@@ -35,9 +37,11 @@ function usePermissionLevelChange({
   const onPermissionLevelChange = async ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => {
     try {
       const res = await changePermissionLevel({
@@ -46,6 +50,7 @@ function usePermissionLevelChange({
           objectType,
           permissionId,
           permissionLevel: newPermissionLevel,
+          propagation: newPropagation,
         },
         update: (cache, { data }) => {
           if (!data?.changePermissionLevel) return
@@ -69,6 +74,7 @@ function usePermissionLevelChange({
                     ? {
                         ...permission,
                         permissionLevel: newPermissionLevel,
+                        propagation: newPropagation,
                       }
                     : permission
               ),
@@ -80,8 +86,8 @@ function usePermissionLevelChange({
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
           },
-          GetCatalogSharingRequestsDocument,
-          ...(objectType === CatalogObjectType.CatalogCollection
+          { query: GetCatalogSharingRequestsDocument },
+          ...(objectType === ObjectType.CatalogCollection
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
@@ -89,8 +95,8 @@ function usePermissionLevelChange({
                 },
               ]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
-            ? [GetAnswerCollectionsInfoDocument]
+          ...(objectType === ObjectType.AnswerCollection
+            ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
         ],
       })

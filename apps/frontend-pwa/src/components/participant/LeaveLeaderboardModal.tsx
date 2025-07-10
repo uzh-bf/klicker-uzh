@@ -1,49 +1,35 @@
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface LeaveLeaderboardModalProps {
-  isModalOpen: boolean
-  setIsModalOpen: (isModalOpen: boolean) => void
+  onClose: () => void
   onConfirm: () => void
 }
 
 function LeaveLeaderboardModal({
-  isModalOpen,
-  setIsModalOpen,
+  onClose,
   onConfirm,
 }: LeaveLeaderboardModalProps) {
   const t = useTranslations()
 
   return (
     <Modal
+      open
       hideCloseButton
-      onPrimaryAction={
-        <Button
-          destructive
-          onClick={() => onConfirm()}
-          data={{ cy: 'confirm-leave-course-leaderboard' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setIsModalOpen(false)}
-          data={{ cy: 'cancel-leave-course-leaderboard' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
-      onClose={(): void => setIsModalOpen(false)}
-      open={isModalOpen}
-      className={{ content: 'w-[40rem] !pt-0' }}
+      title={t('pwa.courses.leaveLeaderboardTitle')}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={() => onConfirm()}
+      dataPrimaryAction={{ cy: 'confirm-leave-course-leaderboard' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-leave-course-leaderboard' }}
+      onClose={onClose}
+      className={{ content: 'max-w-xl', title: 'self-start' }}
     >
-      <div>
-        <H2>{t('pwa.courses.leaveLeaderboardTitle')}</H2>
-        <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
-        <div className="mb-2 mt-6 text-sm italic">
-          {t('pwa.courses.leaveLeaderboardInformation')}
-        </div>
+      <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
+      <div className="my-2 text-sm italic">
+        {t('pwa.courses.leaveLeaderboardInformation')}
       </div>
     </Modal>
   )

@@ -93,7 +93,6 @@ function PracticeQuizPage({
     <Layout
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
-      previewMode={data.practiceQuiz.isOwner ?? undefined}
     >
       <PracticeQuiz
         showResetLocalStorage

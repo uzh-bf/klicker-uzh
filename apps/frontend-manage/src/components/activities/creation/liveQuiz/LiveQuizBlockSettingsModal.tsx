@@ -1,16 +1,14 @@
-import { Button, Modal, NumberField } from '@uzh-bf/design-system'
+import { Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementBlockFormValues } from '../WizardLayout'
 
 function LiveQuizBlockSettingsModal({
-  openSettings,
-  setOpenSettings,
+  onClose,
   block,
   index,
   replace,
 }: {
-  openSettings: boolean
-  setOpenSettings: (open: boolean) => void
+  onClose: () => void
   block: ElementBlockFormValues
   index: number
   replace: (index: number, block: ElementBlockFormValues) => void
@@ -19,13 +17,17 @@ function LiveQuizBlockSettingsModal({
 
   return (
     <Modal
-      open={openSettings}
-      onClose={() => setOpenSettings(false)}
+      open
+      onClose={onClose}
       title={t('manage.activityWizard.blockSettingsTitle', {
         blockIx: index + 1,
       })}
+      primaryLabel={t('shared.generic.ok')}
+      onPrimaryAction={onClose}
+      dataPrimaryAction={{ cy: 'close-block-settings' }}
       className={{
         content: 'sm:w-3/4 md:w-1/2',
+        footer: 'justify-end',
       }}
     >
       <NumberField
@@ -44,14 +46,6 @@ function LiveQuizBlockSettingsModal({
         placeholder={t('manage.activityWizard.optionalTimeLimit')}
         data={{ cy: 'block-time-limit' }}
       />
-      <Button
-        primary
-        className={{ root: 'float-right mt-3' }}
-        onClick={() => setOpenSettings(false)}
-        data={{ cy: 'close-block-settings' }}
-      >
-        <Button.Label>{t('shared.generic.ok')}</Button.Label>
-      </Button>
     </Modal>
   )
 }

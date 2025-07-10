@@ -8,22 +8,24 @@ import { useTranslations } from 'next-intl'
 import { ElementFormTypesFreeText } from '../types'
 
 interface FreeTextOptionsProps {
+  inputsDisabled?: boolean
   values: ElementFormTypesFreeText
 }
 
-function FreeTextOptions({ values }: FreeTextOptionsProps) {
+function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
   const t = useTranslations()
 
   return (
     <div className="flex flex-col">
       <div className="mb-4 flex flex-row items-center">
         <FormikNumberField
+          disabled={inputsDisabled}
           name="options.restrictions.maxLength"
-          label={t('manage.questionForms.maximumLength')}
+          label={t('manage.elements.maximumLength')}
           className={{
             field: 'w-44',
           }}
-          placeholder={t('manage.questionForms.answerLength')}
+          placeholder={t('manage.elements.answerLength')}
           precision={0}
           data={{ cy: 'set-free-text-length' }}
           hideError
@@ -41,39 +43,44 @@ function FreeTextOptions({ values }: FreeTextOptionsProps) {
                     >
                       <FormikTextField
                         required
+                        disabled={inputsDisabled}
                         name={`options.solutions.${index}`}
-                        label={t('manage.questionForms.possibleSolutionN', {
+                        label={t('manage.elements.possibleSolutionN', {
                           number: String(index + 1),
                         })}
                         type="text"
                         placeholder={t('shared.generic.solution')}
                         data={{ cy: `set-solution-ix-${index}` }}
                       />
-                      <Button
-                        destructive
-                        onClick={() => remove(index)}
-                        className={{
-                          root: 'h-9',
-                        }}
-                        data={{
-                          cy: `delete-solution-ix-${index}`,
-                        }}
-                      >
-                        {t('shared.generic.delete')}
-                      </Button>
+                      {!inputsDisabled ? (
+                        <Button
+                          destructive
+                          onClick={() => remove(index)}
+                          className={{
+                            root: 'h-9',
+                          }}
+                          data={{
+                            cy: `delete-solution-ix-${index}`,
+                          }}
+                        >
+                          {t('shared.generic.delete')}
+                        </Button>
+                      ) : null}
                     </div>
                   ))
                 : null}
-              <Button
-                fluid
-                className={{
-                  root: 'mt-1 h-8 border-gray-300 font-bold',
-                }}
-                onClick={() => push('')}
-                data={{ cy: 'add-solution-value' }}
-              >
-                {t('manage.questionForms.addSolution')}
-              </Button>
+              {!inputsDisabled ? (
+                <Button
+                  fluid
+                  className={{
+                    root: 'mt-1 h-8 border-gray-300 font-bold',
+                  }}
+                  onClick={() => push('')}
+                  data={{ cy: 'add-solution-value' }}
+                >
+                  {t('manage.elements.addSolution')}
+                </Button>
+              ) : null}
             </div>
           )}
         </FieldArray>
