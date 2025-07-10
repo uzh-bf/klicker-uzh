@@ -1,1 +1,47 @@
-<!doctype html><html lang="en" data-framework="typescript"><head><meta charset="UTF-8"/><meta http-equiv="X-UA-Compatible" content="IE=Edge"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/><meta http-equiv="Pragma" content="no-cache"/><meta http-equiv="Expires" content="0"/><title>KlickerUZH</title><script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script><link href="3564e456b2d9d6c8b74b.css" rel="stylesheet"/><script defer="defer" src="vendor.js"></script><script defer="defer" src="content.js"></script></head><body class="ms-font-m ms-Fabric"><div id="container"></div></body></html>
+<!doctype html>
+<html lang="en" data-framework="typescript">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <title>KlickerUZH</title>
+
+    <script>
+      window.global = window
+    </script>
+
+    <script type="text/javascript">
+      // Cache the history method values.
+      window._historyCache = {
+        replaceState: window.history.replaceState,
+        pushState: window.history.pushState,
+      }
+    </script>
+
+    <script
+      type="text/javascript"
+      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
+    ></script>
+
+    <script type="text/javascript">
+      // Restore the history method values after loading Office.js
+      window.history.replaceState = window._historyCache.replaceState
+      window.history.pushState = window._historyCache.pushState
+    </script>
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body class="ms-font-m ms-Fabric">
+    <div id="container"></div>
+
+    <script type="module" src="content.js"></script>
+  </body>
+</html>
