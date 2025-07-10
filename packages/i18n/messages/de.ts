@@ -2021,6 +2021,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
+      embeddingLinkCopied:
+        'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'Übungs-Quiz einsehen',

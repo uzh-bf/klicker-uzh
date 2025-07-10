@@ -1990,7 +1990,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
-      changeLiveQuizName: 'Change live quiz name',
+      embeddingLinkCopied:
+        'The embedding link has been copied to the clipboard successfully.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',
