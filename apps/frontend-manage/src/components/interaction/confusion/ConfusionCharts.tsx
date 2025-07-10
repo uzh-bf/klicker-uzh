@@ -43,14 +43,11 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
             </div>
             <Tooltip
               tooltip={t('manage.cockpit.confusionSpeedTooltip')}
-              className={{
-                trigger: 'float-right block sm:hidden lg:block',
-                tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
-              }}
+              className={{ trigger: 'float-right', tooltip: 'text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faQuestion}
-                className="bg-primary-60 mt-1 h-3 w-3 rounded-full border border-solid border-white p-1 text-white"
+                className="bg-primary-60 mt-1 h-3.5 w-3.5 rounded-full border border-solid border-white p-1 text-sm text-white"
               />
             </Tooltip>
           </div>
@@ -75,14 +72,11 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
             </div>
             <Tooltip
               tooltip={t('manage.cockpit.confusionDifficultyTooltip')}
-              className={{
-                trigger: 'float-right block sm:hidden lg:block',
-                tooltip: 'max-w-[20%] text-sm md:max-w-[30%]',
-              }}
+              className={{ trigger: 'float-right', tooltip: 'text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faQuestion}
-                className="bg-primary-60 mt-1 h-3 w-3 rounded-full border border-solid border-white p-1 text-white"
+                className="bg-primary-60 mt-1 h-3.5 w-3.5 rounded-full border border-solid border-white p-1 text-sm text-white"
               />
             </Tooltip>
           </div>

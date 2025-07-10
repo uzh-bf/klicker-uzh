@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal, Switch } from '@uzh-bf/design-system'
+import { Button, Modal, Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -18,6 +18,7 @@ function HMACLink({
   params: string
   identifier: string
 }) {
+  const t = useTranslations()
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
   }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
@@ -35,7 +36,13 @@ function HMACLink({
         </a>
       </Link>
       <Button
-        onClick={() => navigator?.clipboard?.writeText(link)}
+        onClick={() => {
+          navigator?.clipboard?.writeText(link)
+          toast({
+            type: 'success',
+            message: t('manage.liveQuizzes.embeddingLinkCopied'),
+          })
+        }}
         data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
       >
         <Button.Icon withoutLabel icon={faClipboard} />
