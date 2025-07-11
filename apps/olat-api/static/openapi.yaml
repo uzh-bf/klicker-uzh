@@ -175,7 +175,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  activityTypes:
+                  activities:
                     type: array
                     items:
                       $ref: '#/components/schemas/Activity'

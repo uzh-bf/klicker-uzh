@@ -14,11 +14,11 @@ import {
 import { activityKeysGeneral } from './static.js'
 import {
   AccountParameters,
-  activityKeysSubselection,
+  ActivityOlatConfigurationKey,
   ActivityTypeKeyParameters,
-  ActivityTypeSubselection,
+  availableActivityConfigurationKeys,
   CourseParameters,
-  ParametersError,
+  ErrorParameters,
   StatusCode,
 } from './types.js'
 
@@ -104,7 +104,7 @@ app.use(
 
 function getAccountParameters(
   req: Request
-): AccountParameters | ParametersError {
+): AccountParameters | ErrorParameters {
   const providerAccountId = req.body.identityMappingIdentifier
   if (!providerAccountId || typeof providerAccountId !== 'string') {
     return {
@@ -127,7 +127,7 @@ function getAccountParameters(
   }
 }
 
-function getCourseParameters(req: Request): CourseParameters | ParametersError {
+function getCourseParameters(req: Request): CourseParameters | ErrorParameters {
   const courseID = req.params.courseID
   if (!courseID || typeof courseID !== 'string') {
     return {
@@ -148,9 +148,15 @@ function getCourseParameters(req: Request): CourseParameters | ParametersError {
 
 function getActivityTypeKeyParameters(
   req: Request
-): ActivityTypeKeyParameters | ParametersError {
+): ActivityTypeKeyParameters | ErrorParameters {
   const activityTypeKey = req.params.activityTypeKey
-  if (!activityTypeKey || typeof activityTypeKey !== 'string') {
+  if (
+    !activityTypeKey ||
+    typeof activityTypeKey !== 'string' ||
+    !availableActivityConfigurationKeys.includes(
+      activityTypeKey as ActivityOlatConfigurationKey
+    )
+  ) {
     return {
       error: 'Missing activityTypeKey',
       status: StatusCode.BAD_REQUEST,
@@ -158,7 +164,7 @@ function getActivityTypeKeyParameters(
   }
 
   return {
-    activityTypeKey: activityTypeKey,
+    activityTypeKey: activityTypeKey as ActivityOlatConfigurationKey,
   }
 }
 
@@ -198,7 +204,7 @@ app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
     .then((activityTypes) => {
       res.set('Content-Type', 'application/json')
       return res.status(StatusCode.SUCCESS).json({
-        activityTypes: activityTypes,
+        activityTypes,
         timestamp: new Date().toISOString(),
       })
     })
@@ -237,7 +243,7 @@ app.post(
 
         res.set('Content-Type', 'application/json')
         return res.status(StatusCode.SUCCESS).json({
-          activityTypes: activityTypes,
+          activityTypes,
           timestamp: new Date().toISOString(),
         })
       })
@@ -274,15 +280,15 @@ app.post(
     const { activityTypeKey } =
       activityTypeKeyParameters as ActivityTypeKeyParameters
 
-    if (activityKeysSubselection.indexOf(activityTypeKey) !== -1) {
+    if (availableActivityConfigurationKeys.indexOf(activityTypeKey) !== -1) {
       getActivities(
         provider,
         providerAccountId,
         courseID,
-        activityTypeKey as ActivityTypeSubselection
+        activityTypeKey as ActivityOlatConfigurationKey
       )
-        .then((activityTypes) => {
-          if (activityTypes === null) {
+        .then((activities) => {
+          if (activities === null) {
             return res
               .status(StatusCode.NOT_FOUND)
               .json({ error: 'Course or account not found' })
@@ -290,7 +296,7 @@ app.post(
 
           res.set('Content-Type', 'application/json')
           return res.status(StatusCode.SUCCESS).json({
-            activityTypes: activityTypes,
+            activities,
             timestamp: new Date().toISOString(),
           })
         })
@@ -302,7 +308,7 @@ app.post(
         })
     } else if (activityKeysGeneral.indexOf(activityTypeKey) !== -1) {
       return res.status(StatusCode.SUCCESS).json({
-        activityTypes: [],
+        activities: [],
         timestamp: new Date().toISOString(),
       })
     } else {

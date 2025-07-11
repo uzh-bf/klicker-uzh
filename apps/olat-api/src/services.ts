@@ -1,14 +1,16 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import {
+  LiveQuiz,
+  MicroLearning,
+  PracticeQuiz,
+  PrismaClient,
+} from '@klicker-uzh/prisma'
 import { pick } from 'remeda'
 import { activityTypesAvailable } from './static.js'
-import { ActivityTypeSubselection } from './types.js'
+import { ActivityOlatConfigurationKey } from './types.js'
 
 const prisma = new PrismaClient()
 
-export async function getCourses(
-  provider: string,
-  providerAccountId: string
-): Promise<any[] | null> {
+export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -41,7 +43,7 @@ export async function getCourses(
   }))
 }
 
-export async function getActivityTypes(): Promise<any[] | null> {
+export async function getActivityTypes() {
   // filter out fields
   return activityTypesAvailable.map((activityType) => ({
     ...pick(activityType, [
@@ -57,7 +59,7 @@ export async function getCourseActivityTypes(
   provider: string,
   providerAccountId: string,
   courseID: string
-): Promise<any[] | null> {
+) {
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -74,7 +76,6 @@ export async function getCourseActivityTypes(
   const course = await prisma.course.findUnique({
     where: { id: courseID, ownerId: account.userId },
     select: {
-      // NOTE: modify if required
       isGamificationEnabled: true,
       liveQuizzes: true,
       practiceQuizzes: true,
@@ -88,20 +89,24 @@ export async function getCourseActivityTypes(
   const practiceQuizzes = course.practiceQuizzes ?? []
   const microLearnings = course.microLearnings ?? []
 
-  const mapOverview: Record<string, any[]> = {
-    // NOTE: modify if required
+  const mapOverview: Record<
+    string,
+    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
+  > = {
     'live-quizzes': liveQuizzes,
     'practice-quizzes': practiceQuizzes,
     'micro-learnings': microLearnings,
   }
 
-  const mapSubselection: Record<string, any[]> = {
-    // NOTE: modify if required
+  const mapSubselection: Record<
+    string,
+    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
+  > = {
     'live-quiz': liveQuizzes,
     'practice-quiz': practiceQuizzes,
     'micro-learning': microLearnings,
   }
-  const activityKeysGamification = ['course-leaderboard'] // NOTE: modify if required
+  const activityKeysGamification = ['course-leaderboard']
 
   const activityTypes = activityTypesAvailable.flatMap(
     ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
@@ -158,8 +163,8 @@ export async function getActivities(
   provider: string,
   providerAccountId: string,
   courseID: string,
-  activityTypeKey: ActivityTypeSubselection // NOTE: modify if required
-): Promise<any[] | null> {
+  activityTypeKey: ActivityOlatConfigurationKey
+) {
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -176,7 +181,6 @@ export async function getActivities(
   const course = await prisma.course.findUnique({
     where: { id: courseID, ownerId: account.userId },
     select: {
-      // NOTE: modify if required
       liveQuizzes:
         activityTypeKey === 'live-quiz'
           ? {
@@ -199,11 +203,10 @@ export async function getActivities(
   })
   if (!course) return null
 
-  // NOTE: modify if required
-  const activity =
+  const activities =
     course.liveQuizzes ?? course.practiceQuizzes ?? course.microLearnings ?? []
 
-  const activityDetails = activity.map((activity) => ({
+  const activityDetails = activities.map((activity) => ({
     id: activity.id,
     title: activity.name,
   }))

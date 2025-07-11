@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { ActivityType, activityKeysSubselection } from './types.js'
+import { ActivityType, availableActivityConfigurationKeys } from './types.js'
 
 async function readData(): Promise<{
   activityTypesAvailable: ActivityType[]
@@ -13,9 +13,9 @@ async function readData(): Promise<{
     const dataPath = path.join(__dirname, '../static/activityTypes.json')
     const data = await fs.readFile(dataPath, 'utf-8')
     const activityTypesAvailable: ActivityType[] = JSON.parse(data)
-    const activityKeysGeneral: string[] = activityTypesAvailable
+    const activityKeysGeneral = activityTypesAvailable
       .map((activityType) => activityType.olatConfigurationKey)
-      .filter((key) => !activityKeysSubselection.includes(key))
+      .filter((key) => !availableActivityConfigurationKeys.includes(key))
     return { activityTypesAvailable, activityKeysGeneral }
   } catch (error) {
     console.error('Error reading data:', error)
