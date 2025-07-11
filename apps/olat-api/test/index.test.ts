@@ -573,6 +573,7 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
         titles: getExpectedTitles(0, 'Micro Learning', courseFive),
       },
     ]
+
     for (const course of courses) {
       const courseId = course.course.id
       const activityTypeKey = course.activityTypeKey
@@ -591,6 +592,7 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
         response.body.activities.map((activity: any) => activity.title)
       ).toEqual(course.titles)
     }
+
     for (const course of [
       courseOne,
       courseTwo,
@@ -616,10 +618,9 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
             identityMappingIdentifier: course.owner.providerAccountId,
           })
 
-        expect(response.status).toBe(StatusCode.SUCCESS)
-        expect(response.body).toHaveProperty('activities')
-        expect(response.body).toHaveProperty('timestamp')
-        expect(response.body.activities).toEqual([])
+        expect(response.status).toBe(StatusCode.BAD_REQUEST)
+        expect(response.body).toHaveProperty('error')
+        expect(response.body.error).toBe('Invalid activityTypeKey')
       }
     }
   })
