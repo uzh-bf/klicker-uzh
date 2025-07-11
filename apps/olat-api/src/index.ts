@@ -11,12 +11,11 @@ import {
   getCourseActivityTypes,
   getCourses,
 } from './services.js'
-import { activityKeysGeneral } from './static.js'
 import {
   AccountParameters,
   ActivityOlatConfigurationKey,
+  activityOlatConfigurationKeys,
   ActivityTypeKeyParameters,
-  availableActivityConfigurationKeys,
   CourseParameters,
   ErrorParameters,
   StatusCode,
@@ -150,15 +149,18 @@ function getActivityTypeKeyParameters(
   req: Request
 ): ActivityTypeKeyParameters | ErrorParameters {
   const activityTypeKey = req.params.activityTypeKey
-  if (
-    !activityTypeKey ||
-    typeof activityTypeKey !== 'string' ||
-    !availableActivityConfigurationKeys.includes(
+  if (!activityTypeKey || typeof activityTypeKey !== 'string') {
+    return {
+      error: 'Missing activityTypeKey',
+      status: StatusCode.BAD_REQUEST,
+    }
+  } else if (
+    !activityOlatConfigurationKeys.includes(
       activityTypeKey as ActivityOlatConfigurationKey
     )
   ) {
     return {
-      error: 'Missing activityTypeKey',
+      error: 'Invalid activityTypeKey',
       status: StatusCode.BAD_REQUEST,
     }
   }
@@ -280,13 +282,8 @@ app.post(
     const { activityTypeKey } =
       activityTypeKeyParameters as ActivityTypeKeyParameters
 
-    if (availableActivityConfigurationKeys.indexOf(activityTypeKey) !== -1) {
-      getActivities(
-        provider,
-        providerAccountId,
-        courseID,
-        activityTypeKey as ActivityOlatConfigurationKey
-      )
+    if (activityOlatConfigurationKeys.indexOf(activityTypeKey) !== -1) {
+      getActivities(provider, providerAccountId, courseID, activityTypeKey)
         .then((activities) => {
           if (activities === null) {
             return res
@@ -306,11 +303,6 @@ app.post(
             .status(StatusCode.INTERNAL_SERVER_ERROR)
             .json({ error: 'Internal server error' })
         })
-    } else if (activityKeysGeneral.indexOf(activityTypeKey) !== -1) {
-      return res.status(StatusCode.SUCCESS).json({
-        activities: [],
-        timestamp: new Date().toISOString(),
-      })
     } else {
       return res
         .status(StatusCode.BAD_REQUEST)

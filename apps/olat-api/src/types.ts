@@ -24,13 +24,13 @@ export interface ActivityTypeOfCourse {
   isSubselectionRequired: boolean
 }
 
-export const availableActivityConfigurationKeys = [
+export const activityOlatConfigurationKeys = [
   'live-quiz',
   'practice-quiz',
   'micro-learning',
 ] as const // NOTE: add more if required
 export type ActivityOlatConfigurationKey =
-  (typeof availableActivityConfigurationKeys)[number]
+  (typeof activityOlatConfigurationKeys)[number]
 
 export interface AccountParameters {
   provider: string
