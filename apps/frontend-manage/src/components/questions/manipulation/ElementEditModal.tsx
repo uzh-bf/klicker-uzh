@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateAnswerCollectionDocument,
-  ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
@@ -127,7 +126,6 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
-      initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
       onClose={() => handleSetIsOpen(false)}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}

@@ -52,7 +52,6 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
-  initialStatus,
   onSubmitElement,
   setAutoSavedElement,
   updateInstances,
@@ -75,7 +74,6 @@ function ElementEditForm({
   loading: boolean
   // form data props
   initialValues?: ElementFormTypes
-  initialStatus: ElementStatus
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
   ) => Promise<boolean>
@@ -89,7 +87,6 @@ function ElementEditForm({
   const t = useTranslations()
 
   const [activeTab, setActiveTab] = useState('preview')
-  const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -129,7 +126,7 @@ function ElementEditForm({
       onClose={() => onClose()}
       className={{
         title: 'text-xl',
-        content: 'h-max text-sm md:text-base 2xl:max-w-[1400px]',
+        content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
         footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
       }}
       dataCloseButton={{ cy: 'close-element-modal' }}
@@ -137,15 +134,12 @@ function ElementEditForm({
       {initialValues && (
         <Formik
           validateOnMount
-          enableReinitialize={!isTemplate}
+          // enableReinitialize={!isTemplate && !initialValues}
           initialValues={initialValues}
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const success = await onSubmitElement({
-              ...values,
-              status: elementStatus,
-            })
+            const success = await onSubmitElement(values)
 
             // close modal, set success toast
             setSubmitting(false)
@@ -189,8 +183,6 @@ function ElementEditForm({
                     <ElementInformationFields
                       isTemplate={isTemplate}
                       elementId={elementId}
-                      elementStatus={elementStatus}
-                      setElementStatus={setElementStatus}
                       inputsDisabled={inputsDisabled}
                       mode={mode}
                       values={values}
