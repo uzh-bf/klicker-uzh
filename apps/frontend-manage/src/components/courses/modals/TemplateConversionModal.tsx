@@ -13,7 +13,6 @@ import {
   GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormLabel,
@@ -92,6 +91,7 @@ function TemplateConversionModal({
     <Modal
       open
       escapeDisabled
+      loading={loading}
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
@@ -155,10 +155,6 @@ function TemplateConversionModal({
         }}
       >
         {({ isSubmitting, isValid, values, setFieldValue }) => {
-          if (loading) {
-            return <Loader />
-          }
-
           if (templateInfo?.noInstances) {
             return (
               <UserNotification type="error">
