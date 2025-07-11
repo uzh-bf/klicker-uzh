@@ -14,7 +14,6 @@ import {
   faListCheck,
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikSelectField,
@@ -56,6 +55,7 @@ function SuspendedFirstLoginModal() {
     <Modal
       fullScreen
       open={firstLogin}
+      loading={!data.userProfile}
       onClose={() => null}
       hideCloseButton
       className={{ content: 'h-max pb-1' }}
@@ -66,7 +66,7 @@ function SuspendedFirstLoginModal() {
       <div className="mb-3 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
-      {data.userProfile ? (
+      {data.userProfile && (
         <Formik
           isInitialValid={false}
           validateOnMount
@@ -252,8 +252,6 @@ function SuspendedFirstLoginModal() {
             </Form>
           )}
         </Formik>
-      ) : (
-        <Loader />
       )}
     </Modal>
   )
