@@ -161,7 +161,7 @@ paths:
   /api/configuration/course/{courseID}/{activityTypeKey}:
     post:
       summary: Get activities of type
-      description: Returns specific activities of a given type within a course. For activity types that require subselection, it returns a list of available activities. For general activity types, it returns an empty array.
+      description: Returns specific activities of a given type within a course. For single activity selections, it returns a list of available activities. For all other unsupported course objects, it returns a bad request.
       tags:
         - Configuration
       parameters:
