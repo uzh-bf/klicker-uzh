@@ -18,7 +18,7 @@ function QuestionCollapsible({
         <Markdown
           className={{
             root: twMerge(
-              'prose-p:m-0 prose-lg prose-img:m-0 content-between py-2 leading-8',
+              'prose-p:m-0 prose-2xl prose-img:m-0 content-between py-2 leading-8',
               proseSize
             ),
           }}
