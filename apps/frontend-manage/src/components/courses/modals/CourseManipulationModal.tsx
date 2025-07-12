@@ -1,4 +1,5 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { Course, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -58,6 +59,14 @@ function CourseManipulationModal({
 }: CourseManipulationModalProps) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
+
+  // fetch user (from cache) to get email for notification field initialization
+  const { data: dataUser, loading: loadingUser } = useQuery(
+    UserProfileDocument,
+    {
+      fetchPolicy: 'cache-only',
+    }
+  )
 
   // check if initialValues.startDate is in the past
   const startDatePast =
@@ -189,6 +198,7 @@ function CourseManipulationModal({
     <Modal
       open
       escapeDisabled
+      loading={!initialValues && loadingUser}
       title={
         initialValues
           ? t('manage.course.modifyCourse')
@@ -204,7 +214,10 @@ function CourseManipulationModal({
           name: initialValues?.name ?? '',
           displayName: initialValues?.displayName ?? '',
           description: initialValues?.description ?? '',
-          notificationEmail: initialValues?.notificationEmail ?? '',
+          notificationEmail:
+            initialValues?.notificationEmail ??
+            dataUser?.userProfile?.email ??
+            '',
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,

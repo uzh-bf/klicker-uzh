@@ -47,9 +47,14 @@ describe('Test course creation and editing functionalities', function () {
       .realClick()
       .type(this.data.course1.description)
 
-    // enter a course notification email
+    // enter a course notification email (should be pre-filled with the user email)
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_EMAIL')
+    )
     cy.get('[data-cy="course-notification-email"]')
       .click()
+      .clear()
       .type(this.data.course1.notificationEmail)
 
     // change the start date (2 months in the future on the 15th - default is start of next month)
@@ -138,8 +143,13 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // enter a course notification email
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_EMAIL')
+    )
     cy.get('[data-cy="course-notification-email"]')
       .click()
+      .clear()
       .type(this.data.course2.notificationEmail)
 
     // change the start date (3 months in the future on the 15th)
@@ -775,9 +785,13 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').type(
       this.data.deletion.displayName
     )
-    cy.get('[data-cy="course-notification-email"]').type(
-      this.data.deletion.notificationEmail
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_EMAIL')
     )
+    cy.get('[data-cy="course-notification-email"]')
+      .clear()
+      .type(this.data.deletion.notificationEmail)
     cy.get('[data-cy="course-gamification"]').click()
     cy.get('[data-cy="manipulate-course-submit"]').click()
     cy.get('[data-cy="courses"]').click()
@@ -1380,9 +1394,13 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').type(
       this.data.sharing.courseDisplayName
     )
-    cy.get('[data-cy="course-notification-email"]').type(
-      this.data.sharing.courseNotificationEmail
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      Cypress.env('LECTURER_EMAIL')
     )
+    cy.get('[data-cy="course-notification-email"]')
+      .clear()
+      .type(this.data.sharing.courseNotificationEmail)
 
     // set course start date one year into the past
     cy.get('[data-cy="course-start-date"]').realClick().wait(100)
