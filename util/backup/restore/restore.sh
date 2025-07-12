@@ -31,7 +31,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Available services and environments
 VALID_SERVICES=("db" "redis")
-VALID_ENVIRONMENTS=("dev" "stg")
+VALID_ENVIRONMENTS=("dev" "stg" "prd")
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -76,12 +76,19 @@ SERVICES:
 ENVIRONMENTS:
     dev           Development environment (local services)
     stg           Staging environment (uses Doppler for configuration)
+    prd           Production environment (uses Doppler, requires confirmation)
 
 EXAMPLES:
     $0 db dev     # Restore database in development environment
     $0 db stg     # Restore database in staging environment
+    $0 db prd     # Restore database in production environment
     $0 redis dev  # Restore Redis in development environment
     $0 redis stg  # Restore Redis in staging environment
+
+PRODUCTION OPERATIONS:
+    For coordinated production restores with transaction-like behavior:
+    ./restore-orchestrator.sh stg   # Validate on staging first
+    ./restore-orchestrator.sh prd   # Execute on production
 
 DESCRIPTION:
     This script provides a unified interface for database and Redis restoration
@@ -90,15 +97,16 @@ DESCRIPTION:
 
     For development (dev):
     - Uses local service configurations
-    - Calls _restore-{service}-dev.sh
+    - Calls restore-{service}.sh dev
 
     For staging (stg):
     - Uses Doppler for secrets management
     - Sets CONFIG=stg for Doppler integration
-    - Calls _restore-{service}-stg.sh
+    - Calls restore-{service}.sh stg
 
 SAFETY:
-    - Production restore is NOT supported for safety reasons
+    - Production restore is supported via unified scripts with safety prompts
+    - For complex production operations, use restore-orchestrator.sh instead
     - All restore operations include validation and verification steps
     - Environment variables are properly cleaned up after execution
 
@@ -133,11 +141,11 @@ validate_environment() {
     return 1
 }
 
-# Function to get environment-specific script path
+# Function to get unified script path
 get_restore_script_path() {
     local service="$1"
     local env="$2"
-    echo "${SCRIPT_DIR}/_restore-${service}-${env}.sh"
+    echo "${SCRIPT_DIR}/restore-${service}.sh"
 }
 
 # Function to validate that the target script exists
@@ -188,9 +196,9 @@ restore_service() {
     # Execute the environment-specific restore script
     log_info "Executing environment-specific restore script: $script_path"
     
-    # Run the script and capture its exit code
+    # Run the script with environment parameter and capture its exit code
     local exit_code=0
-    if ! bash "$script_path"; then
+    if ! bash "$script_path" "$environment"; then
         exit_code=$?
         error_exit "$service restore failed with exit code $exit_code"
     fi

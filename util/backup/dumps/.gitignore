@@ -1,0 +1,10 @@
+# Ignore all dump files - these contain sensitive production data
+*.tar
+*.tar.gpg
+*.dump
+*.dump.gpg
+
+# Allow tracking the directory structure
+!.gitignore
+!db/.gitkeep
+!redis/.gitkeep

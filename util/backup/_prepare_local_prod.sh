@@ -3,8 +3,8 @@
 # This script prepares the local development environment using production dumps
 # Workflow:
 # 1. Reset docker compose environment (including volumes)
-# 2. Load Postgres database dump
-# 3. Load Redis dump
+# 2. Load Postgres database dump (automatically discovers latest dump)
+# 3. Load Redis dump (automatically discovers latest dump)
 # 4. Apply Prisma migrations
 
 # Enable error handling
@@ -12,7 +12,15 @@ set -e
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-REPO_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+REPO_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
+# Source common utility functions for dump discovery
+if [[ -f "${SCRIPT_DIR}/lib/_restore-common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/_restore-common.sh"
+else
+    echo "ERROR: Required common utilities not found at ${SCRIPT_DIR}/lib/_restore-common.sh"
+    exit 1
+fi
 
 # Function for logging
 log() {
@@ -41,14 +49,55 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if required dump files exist
-if [ ! -f "${SCRIPT_DIR}/dump.tar" ]; then
-    log "ERROR: Postgres dump file not found at ${SCRIPT_DIR}/dump.tar"
+# Check if required dump files exist using automatic discovery
+log "Discovering available dump files..."
+
+DB_DUMP=""
+if DB_DUMP=$(find_latest_dump "db" 2>/dev/null); then
+    log "Found database dump: $DB_DUMP"
+else
+    log "ERROR: No database dump found. Please create a database dump first using:"
+    log "  cd ${SCRIPT_DIR}/dump && ./dump-db.sh"
     exit 1
 fi
 
-if [ ! -f "${SCRIPT_DIR}/redis.dump" ]; then
-    log "ERROR: Redis dump file not found at ${SCRIPT_DIR}/redis.dump"
+REDIS_DUMP=""
+if REDIS_DUMP=$(find_latest_dump "redis" 2>/dev/null); then
+    log "Found Redis dump: $REDIS_DUMP"
+else
+    log "ERROR: No Redis dump found. Please create a Redis dump first using:"
+    log "  cd ${SCRIPT_DIR}/dump && ./dump-redis.sh"
+    exit 1
+fi
+
+# Check if dumps are encrypted and warn user if encryption key is needed
+if [[ "$DB_DUMP" == *.gpg ]] || [[ "$REDIS_DUMP" == *.gpg ]]; then
+    if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+        log "WARNING: Encrypted dumps found but no BACKUP_ENCRYPTION_KEY provided"
+        log "If restore fails, set BACKUP_ENCRYPTION_KEY environment variable"
+    else
+        log "Encrypted dumps detected, will decrypt automatically"
+    fi
+fi
+
+# Validate that unified restore scripts exist
+if [[ ! -f "${SCRIPT_DIR}/restore/restore-db.sh" ]]; then
+    log "ERROR: Unified database restore script not found at ${SCRIPT_DIR}/restore/restore-db.sh"
+    exit 1
+fi
+
+if [[ ! -f "${SCRIPT_DIR}/restore/restore-redis.sh" ]]; then
+    log "ERROR: Unified Redis restore script not found at ${SCRIPT_DIR}/restore/restore-redis.sh"
+    exit 1
+fi
+
+if [[ ! -x "${SCRIPT_DIR}/restore/restore-db.sh" ]]; then
+    log "ERROR: Database restore script is not executable: ${SCRIPT_DIR}/restore/restore-db.sh"
+    exit 1
+fi
+
+if [[ ! -x "${SCRIPT_DIR}/restore/restore-redis.sh" ]]; then
+    log "ERROR: Redis restore script is not executable: ${SCRIPT_DIR}/restore/restore-redis.sh"
     exit 1
 fi
 
@@ -112,14 +161,16 @@ log "PostgreSQL is ready"
 
 # Step 2: Load Postgres dump
 log "Loading Postgres dump..."
-if ! "${SCRIPT_DIR}/_restore-db-dev.sh"; then
+export DUMP_FILE="$DB_DUMP"
+if ! "${SCRIPT_DIR}/restore/restore-db.sh" dev; then
     log "WARNING: Postgres dump restore had errors (some errors are expected for production dumps)"
 fi
 log "Postgres dump loaded"
 
 # Step 3: Load Redis dump
 log "Loading Redis dump..."
-if ! "${SCRIPT_DIR}/_restore-redis-dev.sh"; then
+export DUMP_FILE="$REDIS_DUMP"
+if ! "${SCRIPT_DIR}/restore/restore-redis.sh" dev; then
     log "ERROR: Failed to load Redis dump"
     cleanup
     exit 1
@@ -141,4 +192,9 @@ if ! pnpm prisma:deploy; then
 fi
 log "Successfully applied Prisma migrations"
 
+log "=========================================="
 log "Local development environment successfully prepared!"
+log "=========================================="
+log "Database dump used: $(basename "$DB_DUMP")"
+log "Redis dump used: $(basename "$REDIS_DUMP")"
+log "=========================================="

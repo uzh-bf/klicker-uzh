@@ -317,6 +317,155 @@ build_redis_connection_string() {
 }
 
 # =============================================================================
+# PATH MANAGEMENT FUNCTIONS
+# =============================================================================
+
+# Function to detect if running in automated mode
+is_automated_mode() {
+    [[ -n "${BACKUP_VOLUME_PATH:-}" ]] || [[ -n "${AUTOMATED_BACKUP:-}" ]]
+}
+
+# Function to get appropriate dump base directory
+get_dump_base_dir() {
+    if is_automated_mode; then
+        echo "${BACKUP_VOLUME_PATH:-/mnt/backup}"
+    else
+        # Use script location to find repo dumps directory
+        local script_dir="$(get_script_dir)"
+        echo "${script_dir}/../dumps"
+    fi
+}
+
+# Function to get dump directory for specific service
+get_dump_directory() {
+    local service="$1"  # "db" or "redis"
+    local base_dir="$(get_dump_base_dir)"
+    echo "${base_dir}/${service}"
+}
+
+# Function to find latest dump file for a service
+find_latest_dump() {
+    local service="$1"  # "db" or "redis"
+    
+    # 1. Check if explicit dump file provided
+    if [[ -n "${DUMP_FILE:-}" ]] && [[ -f "$DUMP_FILE" ]]; then
+        echo "$DUMP_FILE"
+        return 0
+    fi
+    
+    # 2. Determine search directory
+    local dump_dir="$(get_dump_directory "$service")"
+    
+    # 3. Check for latest symlink
+    if [[ -L "$dump_dir/latest" ]] && [[ -f "$dump_dir/latest" ]]; then
+        echo "$dump_dir/latest"
+        return 0
+    fi
+    
+    # 4. Find most recent dump by timestamp
+    local pattern
+    if [[ "$service" == "db" ]]; then
+        pattern="dump_*.tar*"
+    else
+        pattern="redis_dump_*.dump*"
+    fi
+    
+    local latest=$(ls -1t "$dump_dir"/$pattern 2>/dev/null | head -1)
+    if [[ -n "$latest" ]]; then
+        echo "$latest"
+        return 0
+    fi
+    
+    # 5. Fallback to legacy location (backward compatibility)
+    local script_dir="$(get_script_dir)"
+    if [[ "$service" == "db" ]] && [[ -f "${script_dir}/../dump.tar" ]]; then
+        echo "${script_dir}/../dump.tar"
+        return 0
+    elif [[ "$service" == "redis" ]] && [[ -f "${script_dir}/../redis.dump" ]]; then
+        echo "${script_dir}/../redis.dump"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Function to check if encryption should be used
+should_encrypt() {
+    [[ -n "${BACKUP_ENCRYPTION_KEY:-}" ]]
+}
+
+# Function to check if cleanup should be performed
+should_cleanup() {
+    is_automated_mode && [[ "${BACKUP_CLEANUP_ENABLED:-true}" == "true" ]]
+}
+
+# Function to check if latest symlink should be updated
+should_update_latest() {
+    [[ "${BACKUP_UPDATE_LATEST:-true}" == "true" ]]
+}
+
+# Function to cleanup old dumps
+cleanup_old_dumps() {
+    local dump_dir="$1"
+    local retention_days="${BACKUP_RETENTION_DAYS:-7}"
+    
+    if [[ ! -d "$dump_dir" ]]; then
+        log_warning "Dump directory does not exist: $dump_dir"
+        return 0
+    fi
+    
+    log_info "Cleaning up dumps older than $retention_days days in $dump_dir"
+    
+    # Find and remove old dump files
+    local deleted_count=0
+    local old_files
+    old_files=$(find "$dump_dir" -name "*.tar*" -o -name "*.dump*" -type f -mtime +$retention_days 2>/dev/null || true)
+    
+    if [[ -n "$old_files" ]]; then
+        while IFS= read -r file; do
+            if [[ -n "$file" && -f "$file" ]]; then
+                log_info "Removing old dump: $(basename "$file")"
+                rm -f "$file"
+                ((deleted_count++))
+            fi
+        done <<< "$old_files"
+    fi
+    
+    if [[ $deleted_count -eq 0 ]]; then
+        log_info "No old dumps found to clean up"
+    else
+        log_info "Cleaned up $deleted_count old dump files"
+    fi
+}
+
+# Function to decrypt dump file if needed
+decrypt_dump_if_needed() {
+    local dump_file="$1"
+    
+    # Check if file is encrypted
+    if [[ "$dump_file" == *.gpg ]]; then
+        if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+            error_exit "Dump file is encrypted but BACKUP_ENCRYPTION_KEY not provided"
+        fi
+        
+        log_info "Decrypting dump file..."
+        local temp_dump="/tmp/restore_dump_$$"
+        
+        if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
+                --decrypt "$dump_file" > "$temp_dump" 2>/dev/null; then
+            rm -f "$temp_dump"
+            error_exit "Failed to decrypt dump file"
+        fi
+        
+        # Set up cleanup for temporary file
+        trap "rm -f $temp_dump" EXIT
+        echo "$temp_dump"
+    else
+        echo "$dump_file"
+    fi
+}
+
+# =============================================================================
 # INITIALIZATION
 # =============================================================================
 
@@ -357,6 +506,9 @@ export -f load_doppler_secrets load_doppler_secrets_simple
 export -f get_script_dir get_dump_file_path
 export -f build_pg_connection_string build_redis_connection_string
 export -f init_restore_environment
+export -f is_automated_mode get_dump_base_dir get_dump_directory
+export -f find_latest_dump should_encrypt should_cleanup should_update_latest
+export -f cleanup_old_dumps decrypt_dump_if_needed
 
 # Mark that this utility has been loaded
 export RESTORE_COMMON_LOADED=true
