@@ -36,7 +36,7 @@ function UserTag({
         )}
       >
         {editMode ? (
-          <TagEditForm tag={tag} onConfirm={() => setEditMode(false)} />
+          <TagEditForm tag={tag} closeEditMode={() => setEditMode(false)} />
         ) : (
           <div className="flex w-full flex-row items-center gap-2 overflow-hidden">
             <Button
