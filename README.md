@@ -22,6 +22,7 @@ In addition to the key application components, this repository also includes the
 
 - [Documentation and Website](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/docs) (subfolder)
 - [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v3/deploy) (subfolder)
+- [Backup and Restore Utilities](https://github.com/uzh-bf/klicker-uzh/tree/v3/util) (subfolder)
 
 To share code more easily between different services, we added new packages to the [Package Directory](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages) with the following components:
 
@@ -51,6 +52,50 @@ The following resources might be of special interest to you:
 ## Deployment
 
 This section is still work in progress as our architecture continues to experience minor changes and will be updated as soon as possible. If you would like to deploy an instance of the legacy KlickerUZH v2.0, please refer to the corresponding [Deployment Section](https://www.klicker.uzh.ch/v2/deployment/deployment_docker/) of the legacy docs.
+
+## Backup and Restore Utilities
+
+The `/util` directory contains comprehensive backup and restore utilities for the KlickerUZH application, supporting both database (PostgreSQL) and Redis operations across development and staging environments.
+
+### Quick Start
+
+**Database Restore:**
+
+```bash
+# Development environment
+./util/restore-db.sh dev
+
+# Staging environment
+./util/restore-db.sh stg
+```
+
+**Redis Restore:**
+
+```bash
+# Development environment
+./util/restore-redis.sh dev
+
+# Staging environment
+./util/restore-redis.sh stg
+```
+
+### Key Features
+
+- **Environment Support**: Separate configurations for development (`dev`) and staging (`stg`) environments
+- **Security**: Secure secret management via Doppler for staging environments
+- **Validation**: Comprehensive validation of dump files, connections, and restored data
+- **Error Handling**: Robust error handling with detailed logging and automatic cleanup
+- **Progress Tracking**: Progress indicators and detailed status reporting
+- **Help Documentation**: Built-in help with `--help` flag for all scripts
+
+### Prerequisites
+
+- PostgreSQL client tools (`psql`, `pg_restore`)
+- Redis client tools (`redis-cli`)
+- Doppler CLI (for staging environments)
+- Appropriate dump files (`dump.tar` for database, `redis.dump` for Redis)
+
+For complete documentation, including troubleshooting guides, environment variable requirements, and best practices, see the [Backup and Restore Utilities Documentation](util/README-restore-utilities.md).
 
 ## Contributing
 
