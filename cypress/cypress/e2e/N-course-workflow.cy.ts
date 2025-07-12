@@ -39,13 +39,18 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-list-button-new-course"]').click()
 
     // fill in the form
-    cy.get('[data-cy="course-name"]').type(this.data.course1.name)
-    cy.get('[data-cy="course-display-name"]').type(
-      this.data.course1.displayName
-    )
+    cy.get('[data-cy="course-name"]').click().type(this.data.course1.name)
+    cy.get('[data-cy="course-display-name"]')
+      .click()
+      .type(this.data.course1.displayName)
     cy.get('[data-cy="course-description"]')
       .realClick()
       .type(this.data.course1.description)
+
+    // enter a course notification email
+    cy.get('[data-cy="course-notification-email"]')
+      .click()
+      .type(this.data.course1.notificationEmail)
 
     // change the start date (2 months in the future on the 15th - default is start of next month)
     cy.get('[data-cy="course-start-date"]').realClick()
@@ -131,6 +136,11 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').type(
       this.data.course2.displayName
     )
+
+    // enter a course notification email
+    cy.get('[data-cy="course-notification-email"]')
+      .click()
+      .type(this.data.course2.notificationEmail)
 
     // change the start date (3 months in the future on the 15th)
     cy.get('[data-cy="course-start-date"]').realClick()
@@ -512,12 +522,21 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // change the course name
-    cy.get('[data-cy="course-name"]')
-      .clear()
-      .type(this.data.course1.displayName)
+    cy.get('[data-cy="course-name"]').clear().type(this.data.course1.nameNew)
     cy.get('[data-cy="course-display-name"]')
       .clear()
       .type(this.data.course1.displayNameNew)
+
+    // check if the notification email is set correctly
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      this.data.course1.notificationEmail
+    )
+
+    // change the course notification email
+    cy.get('[data-cy="course-notification-email"]')
+      .clear()
+      .type(this.data.course1.notificationEmailNew)
 
     // check course color and change it to green
     cy.get('[data-cy="course-color-trigger"]').click()
@@ -588,11 +607,15 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-settings-button"]').click()
     cy.get('[data-cy="course-name"]').should(
       'have.value',
-      this.data.course1.displayName
+      this.data.course1.nameNew
     )
     cy.get('[data-cy="course-display-name"]').should(
       'have.value',
       this.data.course1.displayNameNew
+    )
+    cy.get('[data-cy="course-notification-email"]').should(
+      'have.value',
+      this.data.course1.notificationEmailNew
     )
     cy.get('[data-cy="course-start-date"]').should(
       'contain',
@@ -752,6 +775,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').type(
       this.data.deletion.displayName
     )
+    cy.get('[data-cy="course-notification-email"]').type(
+      this.data.deletion.notificationEmail
+    )
     cy.get('[data-cy="course-gamification"]').click()
     cy.get('[data-cy="manipulate-course-submit"]').click()
     cy.get('[data-cy="courses"]').click()
@@ -889,9 +915,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
 
     // delete the non-gamified course
-    cy.get(`[data-cy="delete-course-${this.data.course1.displayName}"]`).click()
+    cy.get(`[data-cy="delete-course-${this.data.course1.nameNew}"]`).click()
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
-    cy.findByText(this.data.course1.displayName).should('not.exist')
+    cy.findByText(this.data.course1.nameNew).should('not.exist')
 
     // delete the gamified course
     cy.get(`[data-cy="delete-course-${this.data.course2.name}"]`).click()
@@ -1353,6 +1379,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-name"]').type(this.data.sharing.course)
     cy.get('[data-cy="course-display-name"]').type(
       this.data.sharing.courseDisplayName
+    )
+    cy.get('[data-cy="course-notification-email"]').type(
+      this.data.sharing.courseNotificationEmail
     )
 
     // set course start date one year into the past

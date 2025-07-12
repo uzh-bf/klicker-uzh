@@ -40,6 +40,7 @@ export interface CourseManipulationFormData {
   color: string
   startDate: Date
   endDate: Date
+  notificationEmail: string
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
   groupCreationDeadline: Date
@@ -111,6 +112,11 @@ function CourseManipulationModal({
             schema.min(startDate, t('manage.courseList.endAfterStart'))
           )
           .required(t('manage.courseList.courseEndReq')),
+    notificationEmail: yup
+      .string()
+      .email(t('manage.courseList.notificationEmailInvalid'))
+      .required(t('manage.courseList.notificationEmailReq')),
+    // gamification settings
     isGamificationEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: initialValues?.groupDeadlineDate
@@ -198,6 +204,7 @@ function CourseManipulationModal({
           name: initialValues?.name ?? '',
           displayName: initialValues?.displayName ?? '',
           description: initialValues?.description ?? '',
+          notificationEmail: initialValues?.notificationEmail ?? '',
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,
@@ -311,10 +318,23 @@ function CourseManipulationModal({
                       root: 'w-max',
                     }}
                   />
+                  <FormikTextField
+                    required
+                    name="notificationEmail"
+                    label={t('manage.courseList.notificationEmail')}
+                    placeholder={t(
+                      'manage.courseList.notificationEmailPlaceholder'
+                    )}
+                    tooltip={t('manage.courseList.notificationEmailTooltip')}
+                    className={{
+                      field: 'w-96',
+                    }}
+                    data={{ cy: 'course-notification-email' }}
+                  />
                 </div>
 
                 <div>
-                  <H3>{t('shared.generic.gamification')}</H3>
+                  <H3>{`${t('shared.generic.gamification')} & ${t('shared.generic.groups')}`}</H3>
                   <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                     <FormikSwitchField
                       required
