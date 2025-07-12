@@ -79,7 +79,9 @@ function PracticeQuizOverview({
         <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
       </div>
 
-      {description && <DynamicMarkdown content={description} />}
+      {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
+        <DynamicMarkdown content={description} />
+      ) : null}
 
       <div className="flex flex-col gap-2 text-sm md:flex-row md:gap-16">
         <div className="flex-1 space-y-2">

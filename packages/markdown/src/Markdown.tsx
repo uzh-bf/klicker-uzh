@@ -171,7 +171,7 @@ function Markdown({
   }, [content])
 
   if (withProse) {
-    // Sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl
+    // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl
     return (
       <div
         data-cy={data?.cy}
