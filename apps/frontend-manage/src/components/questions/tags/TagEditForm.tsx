@@ -46,7 +46,7 @@ function TagEditForm({
           }
         }}
       >
-        {({ errors, touched, isSubmitting, isValid }) => {
+        {({ errors, touched, isValid }) => {
           return (
             <Form className="w-full">
               <div className="flex w-full flex-row justify-between gap-2">
@@ -62,7 +62,7 @@ function TagEditForm({
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !isValid}
+                  disabled={loading || !isValid}
                   className={{
                     root: twMerge('mr-0 h-7 rounded border border-solid px-2'),
                   }}
