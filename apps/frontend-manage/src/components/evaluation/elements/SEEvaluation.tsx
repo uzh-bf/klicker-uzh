@@ -19,15 +19,14 @@ function SEEvaluation({
   showExplanation,
 }: SEEvaluationProps) {
   return (
-    <div className="flex-1 px-4">
-      <ElementChart
-        chartType={chartType}
-        instanceEvaluation={instanceEvaluation}
-        showSolution={showSolution}
-        showExplanation={showExplanation}
-        textSize={textSize}
-      />
-    </div>
+    <ElementChart
+      chartType={chartType}
+      instanceEvaluation={instanceEvaluation}
+      showSolution={showSolution}
+      showExplanation={showExplanation}
+      textSize={textSize}
+      className="px-4"
+    />
   )
 }
 
