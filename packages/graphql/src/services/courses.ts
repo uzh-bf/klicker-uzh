@@ -2208,7 +2208,12 @@ export async function getCourseActivities(
         orderBy: { createdAt: 'desc' },
       },
       microLearnings: {
-        where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
+        where: {
+          isDeleted: false,
+          status: {
+            in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+          },
+        },
         include: { _count: { select: { stacks: true } } },
         orderBy: { scheduledStartAt: 'desc' },
       },
