@@ -2224,6 +2224,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       courseDescriptionTooltip:
         'The description is shown to students. You can use it to describe the goals of the course.',
       addDescription: 'Add description',
+      notificationEmail: 'Notification Email',
+      notificationEmailTooltip:
+        'The email address to which course-specific notifications are sent (e.g. comments from students on incorrect questions). This email address can be changed later in the course settings and is not visible to students.',
+      notificationEmailPlaceholder: 'finance@uzh.ch',
+      notificationEmailInvalid: 'Please enter a valid email address.',
+      notificationEmailReq:
+        'Please enter a course-specific notification email address.',
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
