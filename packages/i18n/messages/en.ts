@@ -1236,6 +1236,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmTagDeletion:
         'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
+      uniqueTagName:
+        'Please ensure that you do not have multiple tags with the same name.',
+      tagNameUpdatedSuccessfully: 'The tag name has been updated successfully.',
     },
     elements: {
       CREATETitle: 'Create Element',

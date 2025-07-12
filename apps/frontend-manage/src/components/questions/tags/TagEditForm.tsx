@@ -1,19 +1,20 @@
 import { useMutation } from '@apollo/client'
 import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
-interface TagEditFormProps {
+function TagEditForm({
+  tag,
+  closeEditMode,
+}: {
   tag: Tag
-  onConfirm: () => void
-}
-
-function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
+  closeEditMode: () => void
+}) {
   const t = useTranslations()
-  const [editTag] = useMutation(EditTagDocument)
+  const [editTag, { loading }] = useMutation(EditTagDocument)
 
   const TagModifierSchema = Yup.object().shape({
     tag: Yup.string().required(t('manage.tags.validName')),
@@ -24,14 +25,24 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
       <Formik
         initialValues={{ tag: tag.name }}
         validationSchema={TagModifierSchema}
-        onSubmit={async (values) => {
+        onSubmit={async (values, { resetForm }) => {
           if (values.tag !== tag.name) {
-            await editTag({
+            const result = await editTag({
               variables: { id: tag.id, name: values.tag },
             })
-            onConfirm()
+
+            if (result.data?.editTag) {
+              toast({
+                type: 'success',
+                message: t('manage.tags.tagNameUpdatedSuccessfully'),
+              })
+              closeEditMode()
+            } else {
+              toast({ type: 'error', message: t('manage.tags.uniqueTagName') })
+              resetForm()
+            }
           } else {
-            onConfirm()
+            closeEditMode()
           }
         }}
       >
