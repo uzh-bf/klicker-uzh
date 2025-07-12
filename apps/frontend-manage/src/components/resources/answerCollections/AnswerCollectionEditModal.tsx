@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
   AccordionContent,
@@ -96,6 +95,7 @@ function AnswerCollectionEditModal({
     <Modal
       open
       escapeDisabled
+      loading={loading || !collection}
       onClose={() => {
         setOptionsEditingDisabled(false)
         onClose()
@@ -112,9 +112,7 @@ function AnswerCollectionEditModal({
         overlay: className?.overlay,
       }}
     >
-      {loading || !collection ? (
-        <Loader />
-      ) : (
+      {collection && (
         <Accordion
           collapsible
           type="single"

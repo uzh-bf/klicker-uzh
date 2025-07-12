@@ -4,7 +4,6 @@ import {
   GetLiveQuizHmacDocument,
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -75,48 +74,41 @@ function EmbeddingModal({
     <Modal
       open
       hideCloseButton
+      loading={loading || !data?.liveQuizHMAC}
       onClose={onClose}
       onSecondaryAction={onClose}
       secondaryLabel={t('shared.generic.close')}
       dataSecondaryAction={{ cy: 'close-embedding-modal' }}
     >
       <H2>{t('control.course.pptEmbedding')}</H2>
-      {loading || !data?.liveQuizHMAC ? (
-        <Loader />
-      ) : (
-        <>
-          <div className="flex flex-col gap-3">
-            {questions?.map((element, ix) => {
-              if (!element || !element.elementData) return null
+      <div className="flex flex-col gap-3">
+        {questions?.map((element, ix) => {
+          if (!element || !element.elementData) return null
 
-              return (
-                <div key={element.id}>
-                  <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
-                    element.elementData.name
-                  }`}</div>
-                  <HMACLink
-                    quizId={quizId}
-                    hmac={data?.liveQuizHMAC!}
-                    params={`questionIx=${ix}&hideControls=true`}
-                    identifier={`question-${ix}`}
-                  />
-                </div>
-              )
-            })}
-          </div>
-          <div className="mt-3">
-            <div className="w-30 font-bold">
-              {t('shared.generic.leaderboard')}:
+          return (
+            <div key={element.id}>
+              <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
+                element.elementData.name
+              }`}</div>
+              <HMACLink
+                quizId={quizId}
+                hmac={data?.liveQuizHMAC!}
+                params={`questionIx=${ix}&hideControls=true`}
+                identifier={`question-${ix}`}
+              />
             </div>
-            <HMACLink
-              quizId={quizId}
-              hmac={data?.liveQuizHMAC}
-              params={`leaderboard=true&hideControls=true`}
-              identifier={`leaderboard`}
-            />
-          </div>
-        </>
-      )}
+          )
+        })}
+      </div>
+      <div className="mt-3">
+        <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
+        <HMACLink
+          quizId={quizId}
+          hmac={data?.liveQuizHMAC ?? ''}
+          params={`leaderboard=true&hideControls=true`}
+          identifier={`leaderboard`}
+        />
+      </div>
     </Modal>
   )
 }

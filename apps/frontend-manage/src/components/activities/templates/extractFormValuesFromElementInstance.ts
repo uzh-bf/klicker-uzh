@@ -24,8 +24,8 @@ function extractFormValuesFromElementInstance({
 }): ElementFormTypes {
   const element = instance.elementData
   const sharedAttributes = {
-    status: ElementStatus.Ready,
     name: element.name,
+    status: ElementStatus.Ready,
     content: element.content,
     explanation: element.explanation,
     tags: [],
@@ -180,6 +180,7 @@ function extractFormValuesFromElementInstance({
   return {
     type: ElementType.Sc,
     name: '',
+    status: ElementStatus.Ready,
     content: '',
     explanation: '',
     tags: [],
