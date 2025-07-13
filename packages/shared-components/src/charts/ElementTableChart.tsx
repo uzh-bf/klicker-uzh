@@ -24,6 +24,7 @@ interface ElementTableChartProps {
   showExplanation: boolean
   textSize: string
   textSizeLg: string
+  className?: string
 }
 
 function ElementTableChart({
@@ -32,6 +33,7 @@ function ElementTableChart({
   showExplanation,
   textSize,
   textSizeLg,
+  className,
 }: ElementTableChartProps) {
   const t = useTranslations()
 
@@ -64,31 +66,29 @@ function ElementTableChart({
   }
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className={twMerge('h-full overflow-y-auto', className)}>
       <EvaluationExplanation
         explanation={instance.explanation}
         showExplanation={showExplanation}
         textSize={textSize}
         textSizeLg={textSizeLg}
       />
-      <div>
-        <DataTable
-          isPaginated
-          isResetSortingEnabled
-          initialSorting={[
-            { id: 'count', desc: true },
-            // default ordering by value after count to fix order for elements with identical counts
-            { id: 'value', desc: false },
-          ]}
-          columns={columns}
-          data={tableData}
-          csvFilename={`${instance.name}_results`}
-          className={{
-            tableHeader: twMerge('h-7 p-2', textSize),
-            tableCell: twMerge('h-7 p-2', textSize),
-          }}
-        />
-      </div>
+      <DataTable
+        isPaginated
+        isResetSortingEnabled
+        initialSorting={[
+          { id: 'count', desc: true },
+          // default ordering by value after count to fix order for elements with identical counts
+          { id: 'value', desc: false },
+        ]}
+        columns={columns}
+        data={tableData}
+        csvFilename={`${instance.name}_results`}
+        className={{
+          tableHeader: twMerge('h-7 p-2', textSize),
+          tableCell: twMerge('h-7 whitespace-break-spaces p-2', textSize),
+        }}
+      />
     </div>
   )
 }

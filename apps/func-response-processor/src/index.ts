@@ -15,7 +15,6 @@ import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
 import { verify } from 'jsonwebtoken'
-import { toLowerCase } from 'remeda'
 import getRedis from './redis'
 
 const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
@@ -387,7 +386,7 @@ const serviceBusTrigger = async function (
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
         // add the response to the aggregated results
-        const cleanResponseValue = toLowerCase(response.value.trim())
+        const cleanResponseValue = response.value.trim()
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')

@@ -6,7 +6,6 @@ import {
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -94,6 +93,7 @@ function CancelLiveQuizModal({
   return (
     <Modal
       open
+      loading={queryLoading || !summary}
       onClose={() => {
         onClose()
         setConfirmations({ ...initialConfirmations })
@@ -121,9 +121,7 @@ function CancelLiveQuizModal({
       dataSecondaryAction={{ cy: 'abort-cancel-live-quiz' }}
       className={{ content: 'max-w-240' }}
     >
-      {queryLoading || !summary ? (
-        <Loader />
-      ) : (
+      {summary && (
         <LiveQuizAbortionConfirmations
           summary={summary}
           confirmations={confirmations}

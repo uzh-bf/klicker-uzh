@@ -123,6 +123,13 @@ jobs:
         run: |
           pnpm run check
 
+      - name: Check olat-api typescript types
+        if: always()
+        shell: bash
+        working-directory: apps/olat-api
+        run: |
+          pnpm run check
+
       - name: Check func-response-processor typescript types
         if: always()
         shell: bash

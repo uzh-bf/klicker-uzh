@@ -167,8 +167,6 @@ export async function getArtificialElementInstance(
   return {
     id: 0,
     elementId: element.id,
-    migrationId: '',
-    originalId: null,
     elementType: element.type,
     order: 0,
     type: DB.ElementInstanceType.LIVE_QUIZ,
@@ -689,14 +687,20 @@ export async function editTag(
   { id, name }: { id: number; name: string },
   ctx: ContextWithUser
 ) {
+  // check if the current user already has a tag with the new name
+  const existingTag = await ctx.prisma.tag.findUnique({
+    where: { ownerId_name: { ownerId: ctx.user.sub, name } },
+  })
+
+  // due to uniqueness constraint, no two tags with the same name can exist for one user
+  if (existingTag) {
+    return null
+  }
+
+  // update the tag as requested
   const tag = await ctx.prisma.tag.update({
-    where: {
-      id: id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name: name,
-    },
+    where: { id, ownerId: ctx.user.sub },
+    data: { name },
   })
 
   return tag

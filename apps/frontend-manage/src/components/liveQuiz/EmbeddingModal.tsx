@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -71,6 +70,7 @@ function EmbeddingModal({
   return (
     <Modal
       open
+      loading={loading || !data?.liveQuizHMAC}
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       onClose={onClose}
       primaryLabel={t('shared.generic.close')}
@@ -99,49 +99,44 @@ function EmbeddingModal({
           {t('manage.evaluation.showExplanationInfo')}
         </div>
       </div>
-      {loading || !data?.liveQuizHMAC ? (
-        <Loader />
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div>
-            <div className="w-30 font-bold">
-              {t('shared.generic.evaluation')}
-            </div>
-            <HMACLink
-              quizId={quizId}
-              hmac={data.liveQuizHMAC!}
-              params={``}
-              identifier="generic-evaluation"
-            />
-          </div>
-          {elements?.map((element, ix) => {
-            return (
-              <div key={element.id}>
-                <div className="line-clamp-1 font-bold">
-                  {ix + 1} {element.name}
-                </div>
-                <HMACLink
-                  quizId={quizId}
-                  hmac={data.liveQuizHMAC!}
-                  params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
-                  identifier={`question-${ix}`}
-                />
-              </div>
-            )
-          })}
-          <div>
-            <div className="w-30 font-bold">
-              {t('shared.generic.leaderboard')}:
-            </div>
-            <HMACLink
-              quizId={quizId}
-              hmac={data.liveQuizHMAC!}
-              params={`leaderboard=true&hideControls=true`}
-              identifier={`leaderboard`}
-            />
-          </div>
+
+      <div className="flex flex-col gap-4">
+        <div>
+          <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
+          <HMACLink
+            quizId={quizId}
+            hmac={data?.liveQuizHMAC ?? ''}
+            params=""
+            identifier="generic-evaluation"
+          />
         </div>
-      )}
+        {elements?.map((element, ix) => {
+          return (
+            <div key={element.id}>
+              <div className="line-clamp-1 font-bold">
+                {ix + 1} {element.name}
+              </div>
+              <HMACLink
+                quizId={quizId}
+                hmac={data?.liveQuizHMAC ?? ''}
+                params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
+                identifier={`question-${ix}`}
+              />
+            </div>
+          )
+        })}
+        <div>
+          <div className="w-30 font-bold">
+            {t('shared.generic.leaderboard')}:
+          </div>
+          <HMACLink
+            quizId={quizId}
+            hmac={data?.liveQuizHMAC ?? ''}
+            params={`leaderboard=true&hideControls=true`}
+            identifier="leaderboard"
+          />
+        </div>
+      </div>
     </Modal>
   )
 }

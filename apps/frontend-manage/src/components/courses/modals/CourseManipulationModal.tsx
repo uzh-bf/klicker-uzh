@@ -1,4 +1,5 @@
-import { Course } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { Course, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -40,6 +41,7 @@ export interface CourseManipulationFormData {
   color: string
   startDate: Date
   endDate: Date
+  notificationEmail: string
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
   groupCreationDeadline: Date
@@ -57,6 +59,14 @@ function CourseManipulationModal({
 }: CourseManipulationModalProps) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseManipulationFormData>>(null)
+
+  // fetch user (from cache) to get email for notification field initialization
+  const { data: dataUser, loading: loadingUser } = useQuery(
+    UserProfileDocument,
+    {
+      fetchPolicy: 'cache-only',
+    }
+  )
 
   // check if initialValues.startDate is in the past
   const startDatePast =
@@ -111,6 +121,11 @@ function CourseManipulationModal({
             schema.min(startDate, t('manage.courseList.endAfterStart'))
           )
           .required(t('manage.courseList.courseEndReq')),
+    notificationEmail: yup
+      .string()
+      .email(t('manage.courseList.notificationEmailInvalid'))
+      .required(t('manage.courseList.notificationEmailReq')),
+    // gamification settings
     isGamificationEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: initialValues?.groupDeadlineDate
@@ -183,6 +198,7 @@ function CourseManipulationModal({
     <Modal
       open
       escapeDisabled
+      loading={!initialValues && loadingUser}
       title={
         initialValues
           ? t('manage.course.modifyCourse')
@@ -198,6 +214,10 @@ function CourseManipulationModal({
           name: initialValues?.name ?? '',
           displayName: initialValues?.displayName ?? '',
           description: initialValues?.description ?? '',
+          notificationEmail:
+            initialValues?.notificationEmail ??
+            dataUser?.userProfile?.email ??
+            '',
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,
@@ -311,10 +331,23 @@ function CourseManipulationModal({
                       root: 'w-max',
                     }}
                   />
+                  <FormikTextField
+                    required
+                    name="notificationEmail"
+                    label={t('manage.courseList.notificationEmail')}
+                    placeholder={t(
+                      'manage.courseList.notificationEmailPlaceholder'
+                    )}
+                    tooltip={t('manage.courseList.notificationEmailTooltip')}
+                    className={{
+                      field: 'w-96',
+                    }}
+                    data={{ cy: 'course-notification-email' }}
+                  />
                 </div>
 
                 <div>
-                  <H3>{t('shared.generic.gamification')}</H3>
+                  <H3>{`${t('shared.generic.gamification')} & ${t('shared.generic.groups')}`}</H3>
                   <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                     <FormikSwitchField
                       required

@@ -26,7 +26,7 @@ This is an Express.js application built with TypeScript that interfaces with the
 - `/src/`: Application source code
   - `index.ts`: Main API server implementation with all endpoints
 - `/static/`: Static configuration files
-  - `activityTypes.json`: Configuration for available activity types
+  - `activityTypes.json`: Configuration for available course contents (activity types, activity lists, docs, leaderboard, etc.)
 - `/test/`: Unit tests and test utilities
   - `index.test.ts`: API endpoint tests
   - `helpers.ts`: Test utility functions

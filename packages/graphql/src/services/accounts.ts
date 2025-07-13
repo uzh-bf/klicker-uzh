@@ -1519,7 +1519,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
                 const initialResults = getInitialInstanceResults(elementData)
 
                 return {
-                  migrationId: uuidv4(),
                   order: elementIx,
                   type: DB.ElementInstanceType.LIVE_QUIZ,
                   elementType: element.type,

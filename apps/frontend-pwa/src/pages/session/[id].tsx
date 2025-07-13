@@ -16,7 +16,7 @@ import { useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { H3, UserNotification } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -199,12 +199,14 @@ function Index({ id }: { id: string }) {
             description !== null &&
             typeof description !== 'undefined' &&
             description !== '' ? (
-              <div data-cy="live-quiz-description">
-                <H3>{displayName}</H3>
-                <Markdown content={description} />
+              <div data-cy="live-quiz-description" className="pt-4 md:pt-2">
+                <H2>{displayName}</H2>
+                {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
+                  <Markdown content={description} />
+                ) : null}
                 <UserNotification
                   type="info"
-                  className={{ root: 'mt-4 text-base' }}
+                  className={{ root: 'mt-1.5 md:text-base' }}
                 >
                   {t.rich('pwa.liveQuiz.noActiveQuestion', {
                     reload: (text) => (

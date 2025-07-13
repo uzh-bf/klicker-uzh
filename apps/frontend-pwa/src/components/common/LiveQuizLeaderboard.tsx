@@ -86,7 +86,7 @@ function LiveQuizLeaderboard({
 
   const leaderboard = data.liveQuizLeaderboard ?? []
   return (
-    <div className={twMerge('space-y-4 pt-4', className)}>
+    <div className={twMerge('space-y-4 pt-4 md:pt-2', className)}>
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
       <div>
         {leaderboard.length && leaderboard.length > 0 ? (
@@ -104,6 +104,7 @@ function LiveQuizLeaderboard({
           <UserNotification
             type="info"
             message={t('shared.leaderboard.noPointsCollected')}
+            className={{ root: 'mt-1.5 md:text-base' }}
           />
         )}
       </div>

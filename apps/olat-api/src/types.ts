@@ -12,7 +12,7 @@ export interface ActivityType {
   id: string
   title: string
   path: string
-  olatConfigurationKey: string
+  olatConfigurationKey: ActivityOlatConfigurationKey
   isSubselectionRequired: boolean
   isEmailTransferRequired: boolean
 }
@@ -20,16 +20,17 @@ export interface ActivityType {
 export interface ActivityTypeOfCourse {
   id: string
   title: string
-  olatConfigurationKey: string
+  olatConfigurationKey: ActivityOlatConfigurationKey
   isSubselectionRequired: boolean
 }
 
-export const activityKeysSubselection: string[] = [
+export const activityOlatConfigurationKeys = [
   'live-quiz',
   'practice-quiz',
   'micro-learning',
 ] as const // NOTE: add more if required
-export type ActivityTypeSubselection = (typeof activityKeysSubselection)[number]
+export type ActivityOlatConfigurationKey =
+  (typeof activityOlatConfigurationKeys)[number]
 
 export interface AccountParameters {
   provider: string
@@ -41,10 +42,10 @@ export interface CourseParameters {
 }
 
 export interface ActivityTypeKeyParameters {
-  activityTypeKey: string
+  activityTypeKey: ActivityOlatConfigurationKey
 }
 
-export interface ParametersError {
+export interface ErrorParameters {
   error: string
   status: StatusCode
 }

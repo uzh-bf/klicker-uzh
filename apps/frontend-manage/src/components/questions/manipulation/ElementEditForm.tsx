@@ -7,8 +7,14 @@ import {
   ObjectType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H3, Modal, TabContent, Tabs, toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Modal,
+  TabContent,
+  Tabs,
+  toast,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -46,7 +52,6 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
-  initialStatus,
   onSubmitElement,
   setAutoSavedElement,
   updateInstances,
@@ -68,8 +73,7 @@ function ElementEditForm({
   // loading state
   loading: boolean
   // form data props
-  initialValues: ElementFormTypes
-  initialStatus: ElementStatus
+  initialValues?: ElementFormTypes
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
   ) => Promise<boolean>
@@ -83,7 +87,6 @@ function ElementEditForm({
   const t = useTranslations()
 
   const [activeTab, setActiveTab] = useState('preview')
-  const [elementStatus, setElementStatus] = useState(initialStatus)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -108,83 +111,60 @@ function ElementEditForm({
     fetchPolicy: 'network-only',
   })
   const collections = data?.getAnswerCollectionsElements ?? []
-
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
   const user = dataUser?.userProfile
 
   return (
-    <>
-      <Formik
-        validateOnMount
-        enableReinitialize={!isTemplate}
-        initialValues={initialValues}
-        validationSchema={questionManipulationSchema}
-        onSubmit={async (values, { setSubmitting }) => {
-          setSubmitting(true)
-          const success = await onSubmitElement({
-            ...values,
-            status: elementStatus,
-          })
+    <Modal
+      open
+      fullScreen
+      escapeDisabled
+      loading={loading || (!isTemplate && !initialValues)}
+      title={t(`manage.elements.${mode}Title`)}
+      onClose={() => onClose()}
+      className={{
+        title: 'text-xl',
+        content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
+        footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
+      }}
+      dataCloseButton={{ cy: 'close-element-modal' }}
+    >
+      {initialValues && (
+        <Formik
+          validateOnMount
+          // enableReinitialize={!isTemplate && !initialValues}
+          initialValues={initialValues}
+          validationSchema={questionManipulationSchema}
+          onSubmit={async (values, { setSubmitting }) => {
+            setSubmitting(true)
+            const success = await onSubmitElement(values)
 
-          // close modal, set success toast
-          setSubmitting(false)
-          if (!success) {
-            toast({
-              type: 'error',
-              message: t('manage.elements.questionSavedFailed'),
-              options: { duration: 6000 },
-            })
-          } else {
-            onSuccess()
-          }
-        }}
-      >
-        {({
-          values,
-          errors,
-          isSubmitting,
-          isValid,
-          setFieldValue,
-          setFieldTouched,
-          validateForm,
-          submitForm,
-        }) => {
-          if (loading) {
-            return (
-              <Modal open onClose={() => onClose()} fullScreen>
-                <Loader />
-              </Modal>
-            )
-          }
-
-          return (
-            <Modal
-              open
-              fullScreen
-              title={t(`manage.elements.${mode}Title`)}
-              onClose={() => onClose()}
-              escapeDisabled={true}
-              onPrimaryAction={() => submitForm()}
-              primaryLabel={
-                !inputsDisabled ? t('shared.generic.save') : undefined
-              }
-              primaryDisabled={!isValid}
-              primaryLoading={isSubmitting}
-              dataPrimaryAction={{ cy: 'save-new-question' }}
-              onSecondaryAction={
-                !isTemplate && !inputsDisabled ? () => onClose() : undefined
-              }
-              secondaryLabel={t('shared.generic.close')}
-              dataSecondaryAction={{ cy: 'close-element-modal-button' }}
-              className={{
-                title: 'text-xl',
-                content: 'h-max text-sm md:text-base 2xl:max-w-[1400px]',
-                footer: twMerge(isTemplate ? 'justify-end' : 'justify-between'),
-              }}
-              dataCloseButton={{ cy: 'close-element-modal' }}
-            >
+            // close modal, set success toast
+            setSubmitting(false)
+            if (!success) {
+              toast({
+                type: 'error',
+                message: t('manage.elements.questionSavedFailed'),
+                options: { duration: 6000 },
+              })
+            } else {
+              onSuccess()
+            }
+          }}
+        >
+          {({
+            values,
+            errors,
+            isSubmitting,
+            isValid,
+            setFieldValue,
+            setFieldTouched,
+            validateForm,
+            submitForm,
+          }) => (
+            <>
               {!inputsDisabled && (
                 <AutoSaveMonitor
                   values={values}
@@ -203,8 +183,6 @@ function ElementEditForm({
                     <ElementInformationFields
                       isTemplate={isTemplate}
                       elementId={elementId}
-                      elementStatus={elementStatus}
-                      setElementStatus={setElementStatus}
                       inputsDisabled={inputsDisabled}
                       mode={mode}
                       values={values}
@@ -352,7 +330,7 @@ function ElementEditForm({
                       />
                     </TabContent>
                     <TabContent value="activity">
-                      <div className="w-sm w-full flex-1">
+                      <div className="w-full flex-1">
                         <ActivityLog
                           visible={activeTab === 'activity'}
                           objectId={elementId || ''}
@@ -390,10 +368,37 @@ function ElementEditForm({
                     setIncludeTemplateUpdates={setIncludeTemplateUpdates}
                   />
                 )}
-            </Modal>
-          )
-        }}
-      </Formik>
+
+              <div
+                className={twMerge(
+                  'mt-4 flex gap-4',
+                  isTemplate ? 'justify-end' : 'justify-between'
+                )}
+              >
+                {!isTemplate && !inputsDisabled && (
+                  <Button
+                    onClick={() => onClose()}
+                    data={{ cy: 'close-element-modal-button' }}
+                  >
+                    {t('shared.generic.close')}
+                  </Button>
+                )}
+                {!inputsDisabled && (
+                  <Button
+                    primary
+                    onClick={() => submitForm()}
+                    disabled={!isValid}
+                    loading={isSubmitting}
+                    data={{ cy: 'save-new-question' }}
+                  >
+                    {t('shared.generic.save')}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </Formik>
+      )}
 
       {collectionModal.open && typeof collectionModal.id !== 'undefined' ? (
         <AnswerCollectionEditModal
@@ -406,7 +411,7 @@ function ElementEditForm({
           className={{ overlay: 'z-30', content: 'z-30' }}
         />
       ) : null}
-    </>
+    </Modal>
   )
 }
 
