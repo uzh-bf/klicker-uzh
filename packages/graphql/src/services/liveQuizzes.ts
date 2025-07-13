@@ -1807,6 +1807,32 @@ export async function changeLiveQuizSettings(
   },
   ctx: ContextWithUser
 ) {
+  // check if moderation is being diabled
+  if (isModerationEnabled === false) {
+    // fetch all unpublished feedbacks for the quiz
+    const currentQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: { id },
+      include: {
+        feedbacks: {
+          where: { isPublished: false },
+          include: { responses: true },
+        },
+      },
+    })
+
+    if (currentQuiz?.isModerationEnabled && currentQuiz.feedbacks.length > 0) {
+      // auto-publish any unpublished feedbacks
+      await ctx.prisma.feedback.updateMany({
+        where: { liveQuizId: id, isPublished: false },
+        data: { isPublished: true },
+      })
+
+      currentQuiz.feedbacks.forEach((feedback) => {
+        ctx.pubSub.publish('feedbackAdded', feedback)
+      })
+    }
+  }
+
   const quiz = await ctx.prisma.liveQuiz.update({
     where: { id },
     data: {
@@ -1822,6 +1848,8 @@ export async function changeLiveQuizSettings(
     isLiveQAEnabled: quiz.isLiveQAEnabled,
     isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,
   })
+
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
 
   return quiz
 }

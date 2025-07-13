@@ -2070,8 +2070,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No feedbacks match the current filter settings...',
       filterSolved: 'Resolved',
       filterOpen: 'Open',
+      filterPinned: 'Pinned',
       filterUnpinned: 'Unpinned',
+      filterPublished: 'Published',
       filterUnpublished: 'Unpublished',
+      pinning: 'Pinning',
+      visibility: 'Visibility',
       sortByVotes: 'Sort by votes',
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
@@ -2094,6 +2098,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
       skipCooldown: 'Skip cooldown',
+      deleteFeedback: 'Delete Feedback',
+      deleteFeedbackMessage:
+        'Are you sure you want to delete this feedback: "{feedback}"?',
+      moderationTip: 'Alternative to deletion',
+      moderationTipMessage:
+        'You can enable moderation to hide selected feedbacks from the student view without deleting them permanently.',
+      confirmDeleteFeedback:
+        'I understand that this action will permanently delete the feedback.',
+      disableModerationTitle: 'Disable Moderation',
+      disableModerationMessage:
+        'You are about to disable moderation. This will automatically publish {count} unpublished feedback(s).',
+      autoPublishWarning: 'Auto-Publish Warning',
+      autoPublishWarningMessage:
+        'These will become visible to all students immediately.',
+      confirmDisableModeration:
+        'I understand that moderation will be disabled.',
+      confirmPublishUnpublished:
+        'I confirm that all {count} unpublished feedback(s) should be published.',
     },
     evaluation: {
       evaluationNotYetAvailable:

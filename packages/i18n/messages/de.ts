@@ -2104,8 +2104,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
       filterSolved: 'Gelöst',
       filterOpen: 'Offen',
+      filterPinned: 'Gepinnt',
       filterUnpinned: 'Ungepinnt',
+      filterPublished: 'Veröffentlicht',
       filterUnpublished: 'Unveröffentlicht',
+      pinning: 'Pinning',
+      visibility: 'Sichtbarkeit',
       sortByVotes: 'Nach Stimmen sortieren',
       sortByTime: 'Nach Zeitpunkt sortieren',
       answersGiven: '{number} Antwort(en) gegeben',
@@ -2128,6 +2132,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confusionDifficultyTooltip:
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Schwierigkeit des vermittelten Inhalts.',
       skipCooldown: 'Cooldown überspringen',
+      deleteFeedback: 'Feedback löschen',
+      deleteFeedbackMessage:
+        'Sind Sie sicher, dass Sie dieses Feedback löschen möchten: "{feedback}"?',
+      moderationTip: 'Alternative zum Löschen',
+      moderationTipMessage:
+        'Sie können die Moderation aktivieren, um ausgewählte Feedbacks vor der Studierendenansicht zu verstecken, ohne sie dauerhaft zu löschen.',
+      confirmDeleteFeedback:
+        'Ich verstehe, dass diese Aktion das Feedback dauerhaft löscht.',
+      disableModerationTitle: 'Moderation deaktivieren',
+      disableModerationMessage:
+        'Sie sind dabei, die Moderation zu deaktivieren. Dies wird automatisch {count} unveröffentlichte(s) Feedback(s) veröffentlichen.',
+      autoPublishWarning: 'Auto-Veröffentlichung Warnung',
+      autoPublishWarningMessage:
+        'Diese werden sofort für alle Studierende sichtbar.',
+      confirmDisableModeration:
+        'Ich verstehe, dass die Moderation deaktiviert wird.',
+      confirmPublishUnpublished:
+        'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
     },
     evaluation: {
       evaluationNotYetAvailable:
