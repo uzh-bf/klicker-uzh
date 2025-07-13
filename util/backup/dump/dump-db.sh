@@ -59,7 +59,7 @@ DESCRIPTION:
     cleanup, and symlink management based on environment variables.
 
 ENVIRONMENT VARIABLES:
-    BACKUP_ENCRYPTION_KEY     GPG passphrase for encryption (optional)
+    BACKUP_ENCRYPTION_KEY     GPG passphrase for encryption (REQUIRED)
     BACKUP_VOLUME_PATH        Custom backup storage location (automated mode)
     BACKUP_RETENTION_DAYS     Days to keep old dumps (default: 7)
     BACKUP_CLEANUP_ENABLED    Enable automatic cleanup (default: true)
@@ -68,14 +68,37 @@ ENVIRONMENT VARIABLES:
 EOF
 }
 
-# Check if help is requested
-if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
-    show_usage
-    exit 0
-fi
+# Parse command line arguments
+ENVIRONMENT=""
+INTERNAL_DOPPLER_LOADED=false
 
-# Get environment parameter (default to 'prd' for backward compatibility)
-ENVIRONMENT="${1:-prd}"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        dev|stg|prd)
+            ENVIRONMENT="$1"
+            shift
+            ;;
+        --internal-doppler-loaded)
+            INTERNAL_DOPPLER_LOADED=true
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown argument '$1'"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Set default environment if not provided (for backward compatibility)
+if [[ -z "$ENVIRONMENT" ]]; then
+    ENVIRONMENT="prd"
+fi
 
 # Validate environment parameter
 case "$ENVIRONMENT" in
@@ -94,12 +117,12 @@ esac
 # DOPPLER DELEGATION
 # =============================================================================
 
-# If we have environment parameter, delegate to _run_with_doppler.sh for proper environment handling
-if [[ -n "$ENVIRONMENT" ]]; then
+# If we haven't been called with internal doppler flag, delegate to Doppler
+if [[ "$INTERNAL_DOPPLER_LOADED" != "true" ]]; then
     echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
     
     # Set CONFIG and execute via _run_with_doppler.sh
-    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "--internal-doppler-loaded"
+    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
 fi
 
 # =============================================================================
@@ -107,8 +130,8 @@ fi
 # =============================================================================
 
 # This section only runs when called from _run_with_doppler.sh
-if [[ "${1:-}" != "--internal-doppler-loaded" ]]; then
-    echo "ERROR: This script should be called with environment parameter or --internal-doppler-loaded flag"
+if [[ "$INTERNAL_DOPPLER_LOADED" != "true" ]]; then
+    echo "ERROR: This script should be called with --internal-doppler-loaded flag when running internally"
     exit 1
 fi
 
@@ -259,22 +282,26 @@ fi
 echo "\n🔒 Step 8: Post-Processing"
 echo "--------------------------"
 
-# Encrypt dump if encryption key is provided
-if should_encrypt; then
-    echo "  🔐 Encrypting dump file..."
-    if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
-            --cipher-algo AES256 --symmetric \
-            --output "${DUMP_FILE}.gpg" "$DUMP_FILE"; then
-        error_exit "Failed to encrypt dump file"
-    fi
-    
-    # Remove unencrypted version
-    rm -f "$DUMP_FILE"
-    DUMP_FILE="${DUMP_FILE}.gpg"
-    echo "  ✅ Dump file encrypted successfully"
-else
-    echo "  ℹ️  No encryption key provided, dump file remains unencrypted"
+# Encrypt dump (mandatory for all dumps)
+echo "  🔐 Encrypting dump file (security policy requirement)..."
+
+if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+    echo "  ❌ ERROR: Missing required encryption key"
+    echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
+    echo "  💡 Set BACKUP_ENCRYPTION_KEY environment variable or use Doppler"
+    error_exit "Cannot create unencrypted dumps - security policy violation"
 fi
+
+if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
+        --cipher-algo AES256 --symmetric \
+        --output "${DUMP_FILE}.gpg" "$DUMP_FILE"; then
+    error_exit "Failed to encrypt dump file"
+fi
+
+# Remove unencrypted version (security requirement)
+rm -f "$DUMP_FILE"
+DUMP_FILE="${DUMP_FILE}.gpg"
+echo "  ✅ Dump file encrypted successfully"
 
 # Update latest symlink
 if should_update_latest; then

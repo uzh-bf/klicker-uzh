@@ -309,14 +309,9 @@ validate_dump_files() {
     log_info "Database dump: $db_dump"
     log_info "Redis dump: $redis_dump"
     
-    # Verify dump files
-    if ! verify_dump_file "$db_dump" 1024; then
-        error_exit "Database dump file verification failed"
-    fi
-    
-    if ! verify_dump_file "$redis_dump" 100; then
-        error_exit "Redis dump file verification failed"
-    fi
+    # Verify dump files using validate_dump_file from common utilities
+    validate_dump_file "$db_dump" "database dump"
+    validate_dump_file "$redis_dump" "Redis dump"
     
     # Update state with dump file information
     if command -v jq &> /dev/null; then

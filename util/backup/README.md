@@ -19,7 +19,7 @@ backup/
 │   ├── _restore-common.sh    # Common restore functions
 │   ├── _verify-dump-file.sh  # Dump file verification
 │   └── _verify-restore.sh    # Restore verification utilities
-└── _prepare_local_prod.sh    # Local production setup
+└── prepare_local_prod.sh     # Local production setup
 ```
 
 ## Prerequisites
@@ -28,8 +28,8 @@ backup/
 - `doppler` - For secrets management
 - `pg_dump` - PostgreSQL client tools for database operations
 - `pg_restore` - PostgreSQL restore utility
-- `redis-cli` - Redis command-line interface
-- `upstash-redis-dump` - Redis dump utility (for Redis dumps)
+- `redis-cli` - Redis command-line interface for restore operations
+- `upstash-redis-dump` - Redis dump utility (pre-installed at `util/upstash-redis-dump`)
 
 ### Environment Setup
 - Doppler CLI configured with access to appropriate configs (`dev`, `stg`, `prd`)
@@ -54,12 +54,10 @@ cd dump/
 cd restore/
 ./restore-db.sh dev    # Restore to development
 ./restore-db.sh stg    # Restore to staging
-./restore-db.sh prd    # Restore to production (with safety prompts)
 
-# Or use the wrapper
+# Or use the wrapper (dev/stg only)
 ./restore.sh db dev    # Restore to development
 ./restore.sh db stg    # Restore to staging
-./restore.sh db prd    # Restore to production
 
 # Or specify a particular dump file
 DUMP_FILE=/path/to/specific/dump.tar ./restore-db.sh dev
@@ -74,6 +72,12 @@ cd dump/
 ./dump-redis.sh prd    # Production dump (explicit)
 ./dump-redis.sh stg    # Staging dump
 ./dump-redis.sh dev    # Development dump
+
+# Enhanced dump options (via environment variables)
+REDIS_DUMP_WORKERS=20 ./dump-redis.sh dev           # Use 20 parallel workers
+REDIS_DUMP_DATABASE=1 ./dump-redis.sh dev           # Dump only database 1
+REDIS_DUMP_FILTER="user:*" ./dump-redis.sh dev      # Dump only keys matching pattern
+REDIS_DUMP_SILENT=true ./dump-redis.sh dev          # Run in silent mode
 ```
 
 #### Restore Redis
@@ -81,12 +85,10 @@ cd dump/
 cd restore/
 ./restore-redis.sh dev # Restore to development
 ./restore-redis.sh stg # Restore to staging
-./restore-redis.sh prd # Restore to production (with safety prompts)
 
-# Or use the wrapper
+# Or use the wrapper (dev/stg only)
 ./restore.sh redis dev # Restore to development
 ./restore.sh redis stg # Restore to staging
-./restore.sh redis prd # Restore to production
 
 # Or specify a particular dump file
 DUMP_FILE=/path/to/specific/redis_dump.dump ./restore-redis.sh dev
@@ -118,19 +120,43 @@ The orchestrator provides:
 
 #### Prepare Local Environment with Production Data
 ```bash
-# Automatically discovers and uses latest dumps
-./_prepare_local_prod.sh
+# One-command setup: automatically discovers and uses latest dumps
+./prepare_local_prod.sh
 
 # With encrypted dumps
-BACKUP_ENCRYPTION_KEY=<your-key> ./_prepare_local_prod.sh
+BACKUP_ENCRYPTION_KEY=<your-key> ./prepare_local_prod.sh
 ```
 
-This script:
-1. Resets Docker Compose environment and volumes
-2. Automatically discovers the latest database and Redis dumps
-3. Restores both dumps to local development environment
-4. Applies Prisma migrations
-5. Supports encrypted dumps automatically
+This script automatically:
+1. **Discovers** the latest database and Redis dumps
+2. **Resets** Docker Compose environment and volumes
+3. **Starts** local PostgreSQL and Redis services  
+4. **Restores** both dumps to local development environment
+5. **Applies** Prisma migrations
+6. **Handles** encrypted dumps transparently
+
+#### Complete Development Workflow
+
+**From Production Environment (one-time setup):**
+```bash
+# Create fresh production dumps
+cd util/backup/dump
+./dump-db.sh prd        # Creates database dump with timestamp
+./dump-redis.sh prd     # Creates Redis dump with timestamp
+```
+
+**From Development Environment (daily workflow):**
+```bash
+# Option 1: Use existing dumps (fastest)
+cd util/backup
+./prepare_local_prod.sh
+
+# Option 2: Fetch fresh dumps first, then restore
+cd util/backup/dump
+./dump-db.sh prd && ./dump-redis.sh prd
+cd ..
+./prepare_local_prod.sh
+```
 
 ### Automated Backup (Production VMs)
 
@@ -238,6 +264,12 @@ The scripts expect the following environment variables (loaded via Doppler):
   - `REDIS_PORT`
   - `REDIS_PASS`
 
+##### Redis Dump Configuration (Optional)
+- `REDIS_DUMP_WORKERS` - Number of parallel workers for dump operations (default: 10)
+- `REDIS_DUMP_DATABASE` - Specific Redis database to dump (default: all databases)
+- `REDIS_DUMP_FILTER` - Key filter pattern for selective dumps (default: * for all keys)
+- `REDIS_DUMP_SILENT` - Use silent mode for automated operations (default: false)
+
 ## File Naming Conventions
 
 ### Dump Files
@@ -295,6 +327,39 @@ If you have existing scripts in the root backup directory:
 #### File Not Found Errors
 - Verify dump files exist before restore operations
 - Check file paths and permissions
+
+#### Local Development Setup Issues
+
+**No dumps found:**
+```bash
+# Create production dumps first
+cd util/backup/dump
+./dump-db.sh prd
+./dump-redis.sh prd
+```
+
+**Docker not running:**
+```bash
+# Start Docker and retry
+docker info
+./prepare_local_prod.sh
+```
+
+**Prisma migration errors:**
+```bash
+# Reset Prisma state and retry
+cd packages/prisma
+pnpm prisma:reset --force
+cd ../../util/backup
+./prepare_local_prod.sh
+```
+
+**Services not starting:**
+```bash
+# Check Docker Compose status
+docker compose ps
+docker compose logs postgres redis_exec
+```
 - Ensure all utility scripts are in correct locations
 
 ### Getting Help
@@ -356,18 +421,19 @@ If you previously used environment-specific scripts, here are the equivalents:
 
 #### Production Operations
 ```bash
-# OLD: Direct production restore (risky)
-./restore.sh db prd
+# OLD: Direct production restore (risky and now blocked)
+./restore.sh db prd  # ❌ No longer supported
 
-# NEW: Recommended orchestrated approach
+# NEW: Safe orchestrated approach (REQUIRED for production)
 ./restore/restore-orchestrator.sh stg   # Validate on staging first
 ./restore/restore-orchestrator.sh prd   # Execute on production
 ```
 
 #### Breaking Changes
 - **Removed Scripts**: `_restore-*-*.sh` environment-specific scripts
-- **New Requirements**: Production operations strongly recommend using orchestrator
-- **Safety Prompts**: Production restores now require explicit confirmation
+- **Blocked Production Restores**: `restore.sh` no longer supports production (`prd`) for safety
+- **Required Orchestrator**: Production operations MUST use `restore-orchestrator.sh`
+- **Safety Prompts**: Production restores require explicit confirmation and staging validation
 
 #### Backward Compatibility
 - **Default Behavior**: All scripts maintain backward compatibility with defaults

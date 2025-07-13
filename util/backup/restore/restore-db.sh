@@ -105,7 +105,7 @@ esac
 # For staging and production, delegate to _run_with_doppler.sh
 if [[ "$ENVIRONMENT" == "stg" || "$ENVIRONMENT" == "prd" ]]; then
     echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
-    
+
     # Set CONFIG and execute via _run_with_doppler.sh
     CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
 fi
@@ -116,14 +116,14 @@ fi
 
 if [[ "$ENVIRONMENT" == "dev" ]]; then
     echo "🏠 Using development environment configuration"
-    
+
     # Development database configuration
     export DATABASE_HOST="localhost"
     export DATABASE_PORT="5432"
     export DATABASE_USER="klicker"
     export DATABASE_PASS="klicker"
     export DATABASE_NAME="klicker-prod"
-    
+
     echo "   Host: ${DATABASE_HOST}"
     echo "   Database: ${DATABASE_NAME}"
     echo "   User: ${DATABASE_USER}"
@@ -148,6 +148,22 @@ if [[ -f "${SCRIPT_DIR}/../lib/_restore-common.sh" ]]; then
     source "${SCRIPT_DIR}/../lib/_restore-common.sh"
 else
     echo "ERROR: Required common utilities not found at ${SCRIPT_DIR}/../lib/_restore-common.sh"
+    exit 1
+fi
+
+# Source verification utility functions
+if [[ -f "${SCRIPT_DIR}/../lib/_verify-dump-file.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+else
+    echo "ERROR: Required verification utilities not found at ${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+    exit 1
+fi
+
+# Source restore verification utility functions
+if [[ -f "${SCRIPT_DIR}/../lib/_verify-restore.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_verify-restore.sh"
+else
+    echo "ERROR: Required restore verification utilities not found at ${SCRIPT_DIR}/../lib/_verify-restore.sh"
     exit 1
 fi
 
@@ -192,27 +208,27 @@ if [[ "$ENVIRONMENT" == "prd" && "${SKIP_PRODUCTION_SAFETY:-}" != "true" ]]; the
     echo "Dump file: $DUMP_FILE"
     echo "Target: Production Database"
     echo ""
-    
+
     # Require explicit confirmation
     read -p "Are you absolutely sure you want to proceed? Type 'RESTORE PRODUCTION' to confirm: " confirmation
-    
+
     if [[ "$confirmation" != "RESTORE PRODUCTION" ]]; then
         echo "❌ Production restore cancelled by user"
         exit 1
     fi
-    
+
     echo ""
     echo "✅ Production restore confirmed"
     echo ""
-    
+
     # Additional confirmation for extra safety
     read -p "Final confirmation - type 'YES' to proceed with production restore: " final_confirmation
-    
+
     if [[ "$final_confirmation" != "YES" ]]; then
         echo "❌ Production restore cancelled by user"
         exit 1
     fi
-    
+
     echo ""
     echo "🚀 Proceeding with production database restore..."
     echo ""
@@ -225,19 +241,19 @@ fi
 # Function for comprehensive cleanup
 cleanup_database_restore() {
     log_info "Performing cleanup..."
-    
+
     # Clean up sensitive environment variables
     cleanup_database
-    
-    # Remove any temporary files
+
+    # Remove any log files (temp decrypted files handled by secure system)
     rm -f /tmp/${ENVIRONMENT}_restore_*.log 2>/dev/null || true
-    rm -f /tmp/restore_dump_$$ 2>/dev/null || true
-    
+
     log_info "Cleanup completed"
 }
 
-# Set up trap for cleanup on script exit
-trap cleanup_database_restore EXIT
+# Set up secure signal handling and register cleanup functions
+setup_secure_signal_handling
+register_cleanup_function cleanup_database_restore
 
 # =============================================================================
 # MAIN RESTORE FUNCTION
@@ -245,32 +261,68 @@ trap cleanup_database_restore EXIT
 
 restore_database() {
     log_step "Starting Database Restore for $ENVIRONMENT Environment"
-    
+
     # Initialize restore environment
     init_restore_environment "database"
-    
+
     # Check for required tools
     check_database_tools
-    
-    # Decrypt dump file if needed
+
+    # Decrypt dump file (all dumps must be encrypted)
     log_step "Preparing Dump File"
+
+    # All dumps must be encrypted - validate first
+    # Resolve symlink to get actual filename for validation
+    local actual_file="$DUMP_FILE"
+    if [[ -L "$DUMP_FILE" ]]; then
+        actual_file=$(readlink -f "$DUMP_FILE" 2>/dev/null || readlink "$DUMP_FILE" 2>/dev/null || echo "$DUMP_FILE")
+    fi
+
+    if [[ "$actual_file" != *.gpg ]]; then
+        echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
+        echo "  🔒 All dump files must be encrypted for security"
+        echo "  📁 File: $(basename "$DUMP_FILE")"
+        echo "  💡 Expected: $(basename "$actual_file").gpg"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Create encrypted dumps: BACKUP_ENCRYPTION_KEY='key' ./dump-db.sh"
+        echo "     2. Contact admin for encrypted production dumps"
+        echo ""
+        error_exit "Unencrypted dumps are not allowed - security policy violation"
+    fi
+
+    log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE")"
+
+    if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+        echo "  ❌ ERROR: Missing required encryption key"
+        echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Set the encryption key: export BACKUP_ENCRYPTION_KEY='your-key'"
+        echo "     2. Or use Doppler: doppler run -- $0 $ENVIRONMENT"
+        echo "     3. Or contact admin for the encryption key"
+        echo ""
+        error_exit "Cannot proceed without encryption key"
+    fi
+
+    log_info "🔑 Encryption key available, will decrypt dump automatically"
+
+    # Perform decryption with enhanced logging
     DUMP_FILE=$(decrypt_dump_if_needed "$DUMP_FILE")
-    log_info "Using dump file: $DUMP_FILE"
-    
+    log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE")"
+
     # Verify dump file exists and is valid
     log_step "Verifying Dump File"
-    if ! verify_dump_file "$DUMP_FILE" 1024; then  # Minimum 1KB file size
-        error_exit "Dump file verification failed"
-    fi
+    validate_dump_file "$DUMP_FILE" "database dump"
     log_success "Dump file verification completed"
-    
+
     # Validate database environment variables
     log_step "Validating Database Configuration"
     validate_database_env
-    
+
     # Build connection parameters
     log_step "Preparing Database Connection"
-    
+
     if [[ -n "${DATABASE_URL:-}" ]]; then
         log_info "Using DATABASE_URL for connection"
         # Clean up DATABASE_URL for pg_restore
@@ -281,14 +333,14 @@ restore_database() {
         log_info "Host: ${DATABASE_HOST}"
         log_info "Database: ${DATABASE_NAME}"
         log_info "User: ${DATABASE_USER}"
-        
+
         # Set PGPASSWORD for pg_restore
         export PGPASSWORD="${DATABASE_PASS}"
         DB_CONN="postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}:${DATABASE_PORT:-5432}/${DATABASE_NAME}"
     fi
-    
+
     log_success "Database connection prepared"
-    
+
     # Test database connectivity
     log_step "Testing Database Connectivity"
     if command -v pg_isready &> /dev/null; then
@@ -306,19 +358,19 @@ restore_database() {
     else
         log_warning "pg_isready not available, skipping connectivity test"
     fi
-    
+
     # Perform the database restore
     log_step "Restoring Database"
-    
+
     echo "  📥 Starting database restore..."
     echo "  📁 Dump file: $DUMP_FILE"
     echo "  🎯 Target: $ENVIRONMENT Database"
     echo "  ⏳ This may take several minutes..."
     echo ""
-    
+
     # Create log file for this restore
     local log_file="/tmp/${ENVIRONMENT}_restore_$(date +%Y%m%d_%H%M%S).log"
-    
+
     # Show progress indicator for long operations
     if [[ "$ENVIRONMENT" == "prd" ]] || [[ "$ENVIRONMENT" == "stg" ]]; then
         (
@@ -329,59 +381,97 @@ restore_database() {
         ) &
         PROGRESS_PID=$!
     fi
-    
-    # Execute the restore command
+
+    # Execute the restore command with enhanced logging
     local restore_exit_code=0
+    echo "  🔄 Executing pg_restore with enhanced logging..."
+
     if [[ -n "${DATABASE_URL:-}" ]]; then
-        # Use DATABASE_URL connection
-        if ! pg_restore --dbname="$DB_CONN" --no-owner --format="t" --verbose "$DUMP_FILE" 2>"$log_file"; then
-            restore_exit_code=$?
+        # Use DATABASE_URL connection with real-time streaming
+        echo "  📡 Using DATABASE_URL connection"
+        if pg_restore --dbname="$DB_CONN" --no-owner --format="t" --verbose "$DUMP_FILE" 2>&1 | tee "$log_file"; then
+            restore_exit_code=0
+        else
+            restore_exit_code=${PIPESTATUS[0]}
         fi
     else
-        # Use individual parameters
-        if ! pg_restore --host="${DATABASE_HOST}" --port="${DATABASE_PORT:-5432}" --user="${DATABASE_USER}" --dbname="${DATABASE_NAME}" --no-owner --format="t" --verbose "$DUMP_FILE" 2>"$log_file"; then
-            restore_exit_code=$?
+        # Use individual parameters with real-time streaming
+        echo "  📡 Using individual connection parameters"
+        if pg_restore --host="${DATABASE_HOST}" --port="${DATABASE_PORT:-5432}" --user="${DATABASE_USER}" --dbname="${DATABASE_NAME}" --no-owner --format="t" --verbose "$DUMP_FILE" 2>&1 | tee "$log_file"; then
+            restore_exit_code=0
+        else
+            restore_exit_code=${PIPESTATUS[0]}
         fi
     fi
-    
+
     # Stop progress indicator
     if [[ -n "${PROGRESS_PID:-}" ]]; then
         kill $PROGRESS_PID 2>/dev/null || true
         echo ""
     fi
-    
+
     # Check restore result and provide detailed feedback
     if [[ $restore_exit_code -eq 0 ]]; then
         log_success "Database restore completed successfully"
-        
+
+        # Perform post-restore verification
+        log_step "Verifying Database Restore"
+        echo "  🔍 Running post-restore verification checks..."
+
+        # Build connection string for verification
+        local verify_conn=""
+        if [[ -n "${DATABASE_URL:-}" ]]; then
+            verify_conn="$DB_CONN"
+        else
+            verify_conn="postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}:${DATABASE_PORT:-5432}/${DATABASE_NAME}"
+        fi
+
+        # Run KlickerUZH-specific database verification
+        if verify_klicker_database_restore "$verify_conn"; then
+            log_success "Database restore verification passed"
+            echo "  ✅ All critical tables present and populated"
+            echo "  ✅ Database structure appears intact"
+        else
+            log_warning "Database restore verification failed"
+            echo "  ⚠️  Some verification checks failed, but restore completed"
+            echo "  📋 You may need to check the database manually"
+        fi
+
         # Show summary information
+        echo ""
         echo "  📊 Restore Summary:"
         echo "  ✅ Database restored successfully"
         echo "  📁 Source file: $DUMP_FILE"
         echo "  🎯 Target: $ENVIRONMENT Database"
         echo "  🕐 Completed at: $(date '+%Y-%m-%d %H:%M:%S')"
-        
-        # Show any warnings from the restore log
+
+        # Show any warnings from the restore log, but filter out normal Redis replies
         if [[ -f "$log_file" ]] && grep -q "WARNING" "$log_file"; then
-            echo ""
-            echo "  ⚠️  Restore completed with warnings:"
-            grep "WARNING" "$log_file" | head -5 | sed 's/^/     /'
-            echo "  📋 Full log available at: $log_file"
+            # Check if warnings are just normal Redis replies (not actual problems)
+            local actual_warnings
+            actual_warnings=$(grep "WARNING" "$log_file" | grep -v "errors: 0, replies:" | head -5)
+            
+            if [[ -n "$actual_warnings" ]]; then
+                echo ""
+                echo "  ⚠️  Restore completed with warnings:"
+                echo "$actual_warnings" | sed 's/^/     /'
+                echo "  📋 Full log available at: $log_file"
+            fi
         fi
-        
+
     else
         echo "  ❌ Database restore failed"
         echo "  📋 Error details:"
-        
+
         if [[ -f "$log_file" ]]; then
             echo "     Last 10 lines of restore log:"
             tail -10 "$log_file" | sed 's/^/     /'
             echo "  📋 Full log available at: $log_file"
         fi
-        
+
         error_exit "Database restore failed with exit code $restore_exit_code"
     fi
-    
+
     # Store log file path for potential cleanup
     echo "$log_file" > /tmp/last_${ENVIRONMENT}_restore_log_path.txt
 }
@@ -402,10 +492,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "Working directory: $(pwd)"
     echo "======================================================================"
     echo ""
-    
+
     # Execute main restore function
     restore_database
-    
+
     echo ""
     echo "======================================================================"
     echo "✅ Database Restore Completed Successfully"

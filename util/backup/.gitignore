@@ -1,0 +1,14 @@
+# Backup dumps and archives
+dumps/db/latest
+dumps/redis/latest
+dumps/**/*.tar
+dumps/**/*.tar.gpg
+dumps/**/*.dump
+dumps/**/*.dump.gpg
+
+# Temporary files
+*.tmp
+*.log
+
+# Environment-specific files
+.env.*

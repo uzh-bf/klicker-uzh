@@ -59,27 +59,55 @@ DESCRIPTION:
     cleanup, and symlink management based on environment variables.
 
 ENVIRONMENT VARIABLES:
-    BACKUP_ENCRYPTION_KEY     GPG passphrase for encryption (optional)
+    BACKUP_ENCRYPTION_KEY     GPG passphrase for encryption (REQUIRED)
     BACKUP_VOLUME_PATH        Custom backup storage location (automated mode)
     BACKUP_RETENTION_DAYS     Days to keep old dumps (default: 7)
     BACKUP_CLEANUP_ENABLED    Enable automatic cleanup (default: true)
     BACKUP_UPDATE_LATEST      Update latest symlink (default: true)
+    
+    REDIS_DUMP_WORKERS        Number of parallel workers (default: 10)
+    REDIS_DUMP_DATABASE       Specific database to dump (default: all databases)
+    REDIS_DUMP_FILTER         Key filter pattern (default: *)
+    REDIS_DUMP_SILENT         Use silent mode (default: false, auto-enabled in automated mode)
 
 REQUIREMENTS:
-    - upstash-redis-dump executable in script directory
+    - upstash-redis-dump executable at ../../util/upstash-redis-dump
     - Redis connection configuration via Doppler
 
 EOF
 }
 
-# Check if help is requested
-if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
-    show_usage
-    exit 0
-fi
+# Parse command line arguments
+ENVIRONMENT=""
+INTERNAL_DOPPLER_LOADED=false
 
-# Get environment parameter (default to 'prd' for backward compatibility)
-ENVIRONMENT="${1:-prd}"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        dev|stg|prd)
+            ENVIRONMENT="$1"
+            shift
+            ;;
+        --internal-doppler-loaded)
+            INTERNAL_DOPPLER_LOADED=true
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown argument '$1'"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Set default environment if not provided (for backward compatibility)
+if [[ -z "$ENVIRONMENT" ]]; then
+    ENVIRONMENT="prd"
+fi
 
 # Validate environment parameter
 case "$ENVIRONMENT" in
@@ -98,12 +126,12 @@ esac
 # DOPPLER DELEGATION
 # =============================================================================
 
-# If we have environment parameter, delegate to _run_with_doppler.sh for proper environment handling
-if [[ -n "$ENVIRONMENT" ]]; then
+# If we haven't been called with internal doppler flag, delegate to Doppler
+if [[ "$INTERNAL_DOPPLER_LOADED" != "true" ]]; then
     echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
     
     # Set CONFIG and execute via _run_with_doppler.sh
-    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "--internal-doppler-loaded"
+    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
 fi
 
 # =============================================================================
@@ -111,8 +139,8 @@ fi
 # =============================================================================
 
 # This section only runs when called from _run_with_doppler.sh
-if [[ "${1:-}" != "--internal-doppler-loaded" ]]; then
-    echo "ERROR: This script should be called with environment parameter or --internal-doppler-loaded flag"
+if [[ "$INTERNAL_DOPPLER_LOADED" != "true" ]]; then
+    echo "ERROR: This script should be called with --internal-doppler-loaded flag when running internally"
     exit 1
 fi
 
@@ -164,13 +192,17 @@ if [[ -z "${REDIS_PASS:-}" ]]; then
 fi
 
 # Check if upstash-redis-dump executable exists
-if [[ ! -f "./upstash-redis-dump" ]]; then
-    error_exit "upstash-redis-dump executable not found in current directory"
+UPSTASH_REDIS_DUMP="${REPO_ROOT}/util/upstash-redis-dump"
+
+if [[ ! -f "$UPSTASH_REDIS_DUMP" ]]; then
+    error_exit "upstash-redis-dump executable not found at: $UPSTASH_REDIS_DUMP"
 fi
 
-if [[ ! -x "./upstash-redis-dump" ]]; then
-    error_exit "upstash-redis-dump is not executable"
+if [[ ! -x "$UPSTASH_REDIS_DUMP" ]]; then
+    error_exit "upstash-redis-dump is not executable: $UPSTASH_REDIS_DUMP"
 fi
+
+log_info "Using upstash-redis-dump: $UPSTASH_REDIS_DUMP"
 
 # Generate timestamp and prepare dump location
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -191,8 +223,51 @@ else
     log_info "Running in local development mode"
 fi
 
+# Configure dump options
+DUMP_WORKERS="${REDIS_DUMP_WORKERS:-10}"
+DUMP_DATABASE="${REDIS_DUMP_DATABASE:-}"
+DUMP_FILTER="${REDIS_DUMP_FILTER:-*}"
+DUMP_SILENT="${REDIS_DUMP_SILENT:-false}"
+
+# Build upstash-redis-dump command arguments array
+DUMP_ARGS=()
+DUMP_ARGS+=("-host" "${REDIS_HOST}")
+DUMP_ARGS+=("-port" "${REDIS_PORT}")
+DUMP_ARGS+=("-pass" "${REDIS_PASS}")
+DUMP_ARGS+=("-tls")
+DUMP_ARGS+=("-n" "$DUMP_WORKERS")
+DUMP_ARGS+=("-filter" "$DUMP_FILTER")
+DUMP_ARGS+=("-ttl")
+
+# Add database selection if specified
+if [[ -n "$DUMP_DATABASE" ]]; then
+    DUMP_ARGS+=("-db" "$DUMP_DATABASE")
+    log_info "Dumping specific database: $DUMP_DATABASE"
+fi
+
+# Add silent flag for automated mode
+if [[ "$DUMP_SILENT" == "true" ]] || is_automated_mode; then
+    DUMP_ARGS+=("-s")
+    log_info "Using silent mode for Redis dump"
+fi
+
+log_info "Redis dump options: workers=$DUMP_WORKERS, filter='$DUMP_FILTER', TTL preservation enabled"
+
+echo "\n🚀 Step 2: Executing Redis Dump"
+echo "-------------------------------"
+echo "  📊 Starting Redis dump process..."
+echo "  🏗️  Workers: $DUMP_WORKERS"
+echo "  🔍 Filter: $DUMP_FILTER"
+if [[ -n "$DUMP_DATABASE" ]]; then
+    echo "  🗄️  Database: $DUMP_DATABASE"
+else
+    echo "  🗄️  Database: All databases"
+fi
+echo "  📁 Output: $DUMP_FILE"
+echo ""
+
 # Run the dump command with the loaded environment variables
-if ! ./upstash-redis-dump -host "${REDIS_HOST}" -port "${REDIS_PORT}" -pass "${REDIS_PASS}" -tls > "$DUMP_FILE"; then
+if ! "$UPSTASH_REDIS_DUMP" "${DUMP_ARGS[@]}" > "$DUMP_FILE"; then
     error_exit "Failed to create Redis dump"
 fi
 
@@ -209,22 +284,26 @@ fi
 echo "\n🔒 Step 4: Post-Processing"
 echo "--------------------------"
 
-# Encrypt dump if encryption key is provided
-if should_encrypt; then
-    echo "  🔐 Encrypting dump file..."
-    if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
-            --cipher-algo AES256 --symmetric \
-            --output "${DUMP_FILE}.gpg" "$DUMP_FILE"; then
-        error_exit "Failed to encrypt dump file"
-    fi
-    
-    # Remove unencrypted version
-    rm -f "$DUMP_FILE"
-    DUMP_FILE="${DUMP_FILE}.gpg"
-    echo "  ✅ Dump file encrypted successfully"
-else
-    echo "  ℹ️  No encryption key provided, dump file remains unencrypted"
+# Encrypt dump (mandatory for all dumps)
+echo "  🔐 Encrypting dump file (security policy requirement)..."
+
+if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+    echo "  ❌ ERROR: Missing required encryption key"
+    echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
+    echo "  💡 Set BACKUP_ENCRYPTION_KEY environment variable or use Doppler"
+    error_exit "Cannot create unencrypted dumps - security policy violation"
 fi
+
+if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
+        --cipher-algo AES256 --symmetric \
+        --output "${DUMP_FILE}.gpg" "$DUMP_FILE"; then
+    error_exit "Failed to encrypt dump file"
+fi
+
+# Remove unencrypted version (security requirement)
+rm -f "$DUMP_FILE"
+DUMP_FILE="${DUMP_FILE}.gpg"
+echo "  ✅ Dump file encrypted successfully"
 
 # Update latest symlink
 if should_update_latest; then

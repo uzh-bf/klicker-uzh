@@ -145,6 +145,14 @@ else
     exit 1
 fi
 
+# Source verification utility functions
+if [[ -f "${SCRIPT_DIR}/../lib/_verify-dump-file.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+else
+    echo "ERROR: Required verification utilities not found at ${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+    exit 1
+fi
+
 # =============================================================================
 # SCRIPT CONFIGURATION
 # =============================================================================
@@ -223,15 +231,15 @@ cleanup_redis_restore() {
     # Clean up sensitive environment variables
     cleanup_redis
     
-    # Remove any temporary files
+    # Remove any log files (temp decrypted files handled by secure system)
     rm -f /tmp/${ENVIRONMENT}_redis_restore_*.log 2>/dev/null || true
-    rm -f /tmp/restore_dump_$$ 2>/dev/null || true
     
     log_info "Cleanup completed"
 }
 
-# Set up trap for cleanup on script exit
-trap cleanup_redis_restore EXIT
+# Set up secure signal handling and register cleanup functions
+setup_secure_signal_handling
+register_cleanup_function cleanup_redis_restore
 
 # =============================================================================
 # MAIN RESTORE FUNCTION
@@ -246,16 +254,52 @@ restore_redis() {
     # Check for required tools
     check_redis_tools
     
-    # Decrypt dump file if needed
+    # Decrypt dump file (all dumps must be encrypted)
     log_step "Preparing Dump File"
+
+    # All dumps must be encrypted - validate first
+    # Resolve symlink to get actual filename for validation
+    local actual_file="$DUMP_FILE"
+    if [[ -L "$DUMP_FILE" ]]; then
+        actual_file=$(readlink -f "$DUMP_FILE" 2>/dev/null || readlink "$DUMP_FILE" 2>/dev/null || echo "$DUMP_FILE")
+    fi
+
+    if [[ "$actual_file" != *.gpg ]]; then
+        echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
+        echo "  🔒 All dump files must be encrypted for security"
+        echo "  📁 File: $(basename "$DUMP_FILE")"
+        echo "  💡 Expected: $(basename "$actual_file").gpg"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Create encrypted dumps: BACKUP_ENCRYPTION_KEY='key' ./dump-redis.sh"
+        echo "     2. Contact admin for encrypted production dumps"
+        echo ""
+        error_exit "Unencrypted dumps are not allowed - security policy violation"
+    fi
+
+    log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE")"
+
+    if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+        echo "  ❌ ERROR: Missing required encryption key"
+        echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Set the encryption key: export BACKUP_ENCRYPTION_KEY='your-key'"
+        echo "     2. Or use Doppler: doppler run -- $0 $ENVIRONMENT"
+        echo "     3. Or contact admin for the encryption key"
+        echo ""
+        error_exit "Cannot proceed without encryption key"
+    fi
+
+    log_info "🔑 Encryption key available, will decrypt dump automatically"
+
+    # Perform decryption
     DUMP_FILE=$(decrypt_dump_if_needed "$DUMP_FILE")
-    log_info "Using dump file: $DUMP_FILE"
+    log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE")"
     
     # Verify dump file exists and is valid
     log_step "Verifying Dump File"
-    if ! verify_dump_file "$DUMP_FILE" 100; then  # Minimum 100 bytes for Redis dumps
-        error_exit "Dump file verification failed"
-    fi
+    validate_dump_file "$DUMP_FILE" "Redis dump"
     log_success "Dump file verification completed"
     
     # Validate Redis environment variables

@@ -31,7 +31,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Available services and environments
 VALID_SERVICES=("db" "redis")
-VALID_ENVIRONMENTS=("dev" "stg" "prd")
+VALID_ENVIRONMENTS=("dev" "stg")
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -76,24 +76,22 @@ SERVICES:
 ENVIRONMENTS:
     dev           Development environment (local services)
     stg           Staging environment (uses Doppler for configuration)
-    prd           Production environment (uses Doppler, requires confirmation)
 
 EXAMPLES:
     $0 db dev     # Restore database in development environment
     $0 db stg     # Restore database in staging environment
-    $0 db prd     # Restore database in production environment
     $0 redis dev  # Restore Redis in development environment
     $0 redis stg  # Restore Redis in staging environment
 
 PRODUCTION OPERATIONS:
-    For coordinated production restores with transaction-like behavior:
+    For production restores, use the orchestrator for safety:
     ./restore-orchestrator.sh stg   # Validate on staging first
-    ./restore-orchestrator.sh prd   # Execute on production
+    ./restore-orchestrator.sh prd   # Execute on production with safety measures
 
 DESCRIPTION:
     This script provides a unified interface for database and Redis restoration
-    across different environments. It validates the service and environment 
-    parameters and delegates to the appropriate environment-specific restore script.
+    for development and staging environments. It validates the service and 
+    environment parameters and delegates to the appropriate restore script.
 
     For development (dev):
     - Uses local service configurations
@@ -104,11 +102,11 @@ DESCRIPTION:
     - Sets CONFIG=stg for Doppler integration
     - Calls restore-{service}.sh stg
 
-SAFETY:
-    - Production restore is supported via unified scripts with safety prompts
-    - For complex production operations, use restore-orchestrator.sh instead
-    - All restore operations include validation and verification steps
-    - Environment variables are properly cleaned up after execution
+PRODUCTION SAFETY:
+    - Production restores are NOT supported by this script for safety reasons
+    - Use restore-orchestrator.sh for production operations instead
+    - The orchestrator provides transaction-like behavior, rollback capability,
+      and comprehensive safety measures required for production environments
 
 EOF
 }
@@ -248,6 +246,24 @@ main() {
     # Validate service parameter
     if ! validate_service "$service"; then
         error_exit "Invalid service: $service. Valid services: ${VALID_SERVICES[*]}"
+    fi
+    
+    # Check for production environment and redirect
+    if [[ "$environment" == "prd" ]]; then
+        echo ""
+        echo "❌ ERROR: Production restores are not supported by this script"
+        echo ""
+        echo "For production operations, use the orchestrator for safety:"
+        echo "  ./restore-orchestrator.sh stg   # Validate on staging first"
+        echo "  ./restore-orchestrator.sh prd   # Execute on production"
+        echo ""
+        echo "The orchestrator provides:"
+        echo "  • Transaction-like behavior (both services succeed or rollback)"
+        echo "  • Pre-restore backup creation"
+        echo "  • Comprehensive safety checks and confirmations"
+        echo "  • State management for resume/rollback operations"
+        echo ""
+        exit 1
     fi
     
     # Validate environment parameter
