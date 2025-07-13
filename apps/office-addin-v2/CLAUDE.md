@@ -81,27 +81,27 @@ apps/office-addin-v2/
 
 ```bash
 # Development server with hot reload
-npm run dev-server
+pnpm dev-server
 
 # Build for development
-npm run build:dev
+pnpm build:dev
 
 # Build for production
-npm run build
+pnpm build
 
 # Start debugging in PowerPoint
-npm run start
+pnpm start
 
 # Stop debugging
-npm run stop
+pnpm stop
 
 # Validate manifest
-npm run validate
+pnpm validate
 
 # Linting and formatting
-npm run lint
-npm run lint:fix
-npm run prettier
+pnpm lint
+pnpm lint:fix
+pnpm prettier
 ```
 
 ### Key Configuration
