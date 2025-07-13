@@ -223,27 +223,37 @@ load_doppler_secrets() {
 
     log_step "Loading Doppler Secrets for Config: $config"
 
-    # Check if Doppler is available
-    if ! command -v doppler &> /dev/null; then
-        error_exit "Doppler CLI not found. Please install Doppler CLI."
+    # Calculate repository root from this script's location
+    local lib_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local repo_root="$( cd "$lib_dir/../../.." && pwd )"
+    local doppler_script="${repo_root}/util/_run_with_doppler.sh"
+
+    # Check if _run_with_doppler.sh is available
+    if [[ ! -f "$doppler_script" ]]; then
+        error_exit "Doppler helper script not found at: $doppler_script"
     fi
 
-    # Download secrets to temporary file
+    # Create a secure temporary file for secrets
+    local temp_file
+    temp_file=$(mktemp /tmp/doppler_secrets.XXXXXX)
+    register_temp_file "$temp_file"
+
+    # Download secrets to temporary file using _run_with_doppler.sh
     log_info "Downloading Doppler secrets..."
-    if ! doppler secrets download --no-file --format env --config "$config" > /tmp/doppler_secrets.env 2>/dev/null; then
-        rm -f /tmp/doppler_secrets.env
+    if ! CONFIG="$config" "$doppler_script" doppler secrets download --no-file --format env > "$temp_file" 2>/dev/null; then
+        rm -f "$temp_file"
         error_exit "Failed to download Doppler secrets for config '$config'. Please check your Doppler configuration and authentication."
     fi
 
     # Source the environment variables
     log_info "Loading environment variables..."
-    if ! source /tmp/doppler_secrets.env; then
-        rm -f /tmp/doppler_secrets.env
+    if ! source "$temp_file"; then
+        rm -f "$temp_file"
         error_exit "Failed to load Doppler environment variables"
     fi
 
     # Clean up the temporary file
-    rm -f /tmp/doppler_secrets.env
+    rm -f "$temp_file"
 
     log_success "Doppler secrets loaded successfully for config: $config"
 }
@@ -258,13 +268,18 @@ load_doppler_secrets_simple() {
 
     log_info "Loading Doppler secrets for config: $config"
 
-    # Check if Doppler is available
-    if ! command -v doppler &> /dev/null; then
-        error_exit "Doppler CLI not found. Please install Doppler CLI."
+    # Calculate repository root from this script's location
+    local lib_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local repo_root="$( cd "$lib_dir/../../.." && pwd )"
+    local doppler_script="${repo_root}/util/_run_with_doppler.sh"
+
+    # Check if _run_with_doppler.sh is available
+    if [[ ! -f "$doppler_script" ]]; then
+        error_exit "Doppler helper script not found at: $doppler_script"
     fi
 
-    # Load secrets using eval method
-    if ! eval "$(doppler secrets download --no-file --format env --config "$config")"; then
+    # Load secrets using eval method with _run_with_doppler.sh
+    if ! eval "$(CONFIG="$config" "$doppler_script" doppler secrets download --no-file --format env)"; then
         error_exit "Failed to load Doppler secrets for config '$config'"
     fi
 

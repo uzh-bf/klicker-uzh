@@ -12,23 +12,23 @@ The system follows a modular architecture with clear separation of concerns:
 
 ```
 util/backup/
-├── dump/                    # Backup creation scripts
-│   ├── dump-db.sh          # PostgreSQL dumps (unified, all environments)
-│   ├── dump-redis.sh       # Redis dumps (unified, all environments)
+├── prepare_local_prod.sh   # Complete local development setup
+├── dump.sh                 # Main dump interface (unified wrapper)
+├── restore.sh              # Main restore interface (unified wrapper)
+├── advanced/               # Advanced and internal scripts
+│   ├── dump-db.sh          # PostgreSQL dumps (called by dump.sh)
+│   ├── dump-redis.sh       # Redis dumps (called by dump.sh)
+│   ├── restore-db.sh       # PostgreSQL restore (called by restore.sh)
+│   ├── restore-redis.sh    # Redis restore (called by restore.sh)
+│   ├── restore-orchestrator.sh # Production-safe multi-service operations
 │   └── backup-automated.sh # Automated backup orchestration
-├── restore/                 # Data restoration scripts
-│   ├── restore-db.sh       # PostgreSQL restore (unified, all environments)
-│   ├── restore-redis.sh    # Redis restore (unified, all environments)
-│   ├── restore.sh          # Simple wrapper for basic operations
-│   └── restore-orchestrator.sh # Production-safe multi-service operations
-├── lib/                     # Shared utilities and libraries
+├── lib/                    # Shared utilities and libraries
 │   ├── _restore-common.sh  # Core utility functions
 │   ├── _verify-dump-file.sh # Dump file validation
 │   └── _verify-restore.sh  # Restore verification and integrity checks
-├── dumps/                   # Local dump storage
-│   ├── db/                 # Database dumps with latest symlinks
-│   └── redis/              # Redis dumps with latest symlinks
-└── prepare_local_prod.sh   # Complete local development setup
+└── dumps/                  # Local dump storage
+    ├── db/                 # Database dumps with latest symlinks
+    └── redis/              # Redis dumps with latest symlinks
 ```
 
 ### Key Design Principles
@@ -64,7 +64,50 @@ util/backup/
 
 ## Core Components
 
-### dump/dump-db.sh
+### Main Interface Scripts
+
+#### dump.sh
+
+**Purpose**: Unified dump interface providing consistent command pattern for all backup operations
+
+**Key Features**:
+
+- Single command for both database and Redis backups
+- Support for individual service dumps (db, redis) or combined (both)
+- Unified parameter validation and error handling
+- Environment support: dev/stg/prd with Doppler integration
+- Delegates to appropriate service-specific scripts in advanced/
+
+**Usage**:
+
+```bash
+./dump.sh both prd    # Backup both database and Redis (recommended)
+./dump.sh db prd      # Production database dump
+./dump.sh redis stg   # Staging Redis dump
+```
+
+#### restore.sh
+
+**Purpose**: Unified restore interface providing consistent command pattern for all restore operations
+
+**Key Features**:
+
+- Single command pattern for both database and Redis restores
+- Environment support: dev/stg (production blocked for safety)
+- Parameter validation and safety checks
+- Delegates to appropriate service-specific scripts in advanced/
+
+**Usage**:
+
+```bash
+./restore.sh db dev    # Restore database to development
+./restore.sh redis dev # Restore Redis to development
+./restore.sh db stg    # Restore to staging
+```
+
+### Advanced/Internal Scripts
+
+#### advanced/dump-db.sh
 
 **Purpose**: Creates encrypted PostgreSQL database dumps for any environment
 
@@ -84,7 +127,7 @@ util/backup/
 ./dump-db.sh dev    # Development dump
 ```
 
-### dump/dump-redis.sh
+### advanced/dump-redis.sh
 
 **Purpose**: Creates encrypted Redis data dumps using upstash-redis-dump
 
@@ -105,7 +148,7 @@ REDIS_DUMP_FILTER="user:*"      # Key pattern
 REDIS_DUMP_SILENT=true          # Silent mode
 ```
 
-### restore/restore-db.sh
+### advanced/restore-db.sh
 
 **Purpose**: Unified PostgreSQL database restore with environment-specific configuration
 
@@ -124,7 +167,7 @@ REDIS_DUMP_SILENT=true          # Silent mode
 - Pre-restore connectivity testing
 - Comprehensive error reporting with actionable guidance
 
-### restore/restore-redis.sh
+### advanced/restore-redis.sh
 
 **Purpose**: Unified Redis data restore with transparent encryption handling
 
@@ -228,20 +271,21 @@ BACKUP_ENCRYPTION_KEY='your-key' ./prepare_local_prod.sh
 ### Creating Production Dumps
 
 ```bash
-cd util/backup/dump
-./dump-db.sh prd        # Creates encrypted database dump
-./dump-redis.sh prd     # Creates encrypted Redis dump
+cd util/backup
+./dump.sh both prd      # Creates both encrypted dumps (recommended)
+./dump.sh db prd        # Creates encrypted database dump
+./dump.sh redis prd     # Creates encrypted Redis dump
 ```
 
 ### Manual Restore Operations
 
 ```bash
-cd util/backup/restore
-./restore-db.sh dev     # Restore database to development
-./restore-redis.sh dev  # Restore Redis to development
+cd util/backup
+./restore.sh db dev     # Restore database to development
+./restore.sh redis dev  # Restore Redis to development
 
 # With specific dump file
-DUMP_FILE=/path/to/dump.tar.gpg ./restore-db.sh dev
+DUMP_FILE=/path/to/dump.tar.gpg ./restore.sh db dev
 ```
 
 ### Verification and Troubleshooting
@@ -255,6 +299,11 @@ verify_dump_file /path/to/dump.tar.gpg
 # Check database restoration
 source _verify-restore.sh
 verify_klicker_database_restore "postgresql://user:pass@host:5432/db"
+
+# Get help with main commands
+cd util/backup
+./dump.sh --help
+./restore.sh --help
 ```
 
 ## Recent Improvements
@@ -351,6 +400,36 @@ fi
 3. **Testing**: Test with all three environments (dev/stg/prd)
 4. **Cleanup**: Ensure proper cleanup function registration
 5. **Verification**: Add verification for new functionality
+6. **Doppler Consistency**: Always use `_run_with_doppler.sh` for Doppler operations
+
+### Doppler Integration Requirements
+
+All scripts must use the centralized `_run_with_doppler.sh` wrapper instead of calling `doppler` directly. This ensures:
+
+- **External Drive Support**: Automatic fallback to service tokens on external drives
+- **Consistent Authentication**: Unified authentication patterns across all environments
+- **Error Handling**: Standardized error messages and troubleshooting guidance
+
+**Correct Pattern:**
+
+```bash
+# For script delegation (in dump/restore scripts)
+CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
+
+# For secret retrieval
+CONFIG=prd "${REPO_ROOT}/util/_run_with_doppler.sh" doppler secrets get BACKUP_ENCRYPTION_KEY --plain
+
+# For utility functions
+CONFIG="$config" "$doppler_script" doppler secrets download --no-file --format env
+```
+
+**Incorrect Pattern (Do Not Use):**
+
+```bash
+# Direct doppler calls bypass external drive authentication
+doppler secrets get KEY --config prd --plain  # ❌ Wrong
+doppler run --config prd -- command args      # ❌ Wrong
+```
 
 ### Common Patterns
 

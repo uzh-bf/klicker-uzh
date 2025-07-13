@@ -212,12 +212,12 @@ load_encryption_key_if_needed() {
         fi
         log "   Attempting to load BACKUP_ENCRYPTION_KEY from Doppler..."
 
-        # Try to get the key from Doppler production config
-        if command -v doppler &> /dev/null; then
+        # Try to get the key from Doppler production config using _run_with_doppler.sh
+        if [[ -f "${REPO_ROOT}/util/_run_with_doppler.sh" ]]; then
             log "   Fetching encryption key from Doppler production config..."
 
-            # Use Doppler to get the encryption key from production config
-            if BACKUP_ENCRYPTION_KEY=$(doppler secrets get BACKUP_ENCRYPTION_KEY --config prd --plain 2>/dev/null); then
+            # Use _run_with_doppler.sh to handle external drive authentication
+            if BACKUP_ENCRYPTION_KEY=$(CONFIG=prd "${REPO_ROOT}/util/_run_with_doppler.sh" doppler secrets get BACKUP_ENCRYPTION_KEY --plain 2>/dev/null); then
                 if [[ -n "$BACKUP_ENCRYPTION_KEY" ]]; then
                     export BACKUP_ENCRYPTION_KEY
                     log "✅ Successfully loaded BACKUP_ENCRYPTION_KEY from Doppler"
@@ -229,7 +229,7 @@ load_encryption_key_if_needed() {
                 log "⚠️  Failed to fetch BACKUP_ENCRYPTION_KEY from Doppler (check Doppler setup)"
             fi
         else
-            log "⚠️  Doppler CLI not found - cannot auto-load encryption key"
+            log "⚠️  Doppler helper script not found - cannot auto-load encryption key"
         fi
 
         # If we couldn't get the key, show helpful error message
@@ -268,23 +268,23 @@ if ! load_encryption_key_if_needed; then
 fi
 
 # Validate that unified restore scripts exist
-if [[ ! -f "${SCRIPT_DIR}/restore/restore-db.sh" ]]; then
-    log "ERROR: Unified database restore script not found at ${SCRIPT_DIR}/restore/restore-db.sh"
+if [[ ! -f "${SCRIPT_DIR}/advanced/restore-db.sh" ]]; then
+    log "ERROR: Unified database restore script not found at ${SCRIPT_DIR}/advanced/restore-db.sh"
     exit 1
 fi
 
-if [[ ! -f "${SCRIPT_DIR}/restore/restore-redis.sh" ]]; then
-    log "ERROR: Unified Redis restore script not found at ${SCRIPT_DIR}/restore/restore-redis.sh"
+if [[ ! -f "${SCRIPT_DIR}/advanced/restore-redis.sh" ]]; then
+    log "ERROR: Unified Redis restore script not found at ${SCRIPT_DIR}/advanced/restore-redis.sh"
     exit 1
 fi
 
-if [[ ! -x "${SCRIPT_DIR}/restore/restore-db.sh" ]]; then
-    log "ERROR: Database restore script is not executable: ${SCRIPT_DIR}/restore/restore-db.sh"
+if [[ ! -x "${SCRIPT_DIR}/advanced/restore-db.sh" ]]; then
+    log "ERROR: Database restore script is not executable: ${SCRIPT_DIR}/advanced/restore-db.sh"
     exit 1
 fi
 
-if [[ ! -x "${SCRIPT_DIR}/restore/restore-redis.sh" ]]; then
-    log "ERROR: Redis restore script is not executable: ${SCRIPT_DIR}/restore/restore-redis.sh"
+if [[ ! -x "${SCRIPT_DIR}/advanced/restore-redis.sh" ]]; then
+    log "ERROR: Redis restore script is not executable: ${SCRIPT_DIR}/advanced/restore-redis.sh"
     exit 1
 fi
 
@@ -354,7 +354,7 @@ log "Loading Postgres dump with enhanced logging..."
 export DUMP_FILE="$DB_DUMP"
 
 # Execute database restore with clear feedback about any issues
-if "${SCRIPT_DIR}/restore/restore-db.sh" dev; then
+if "${SCRIPT_DIR}/advanced/restore-db.sh" dev; then
     log_success "Postgres dump restored successfully"
 else
     restore_exit_code=$?
@@ -416,7 +416,7 @@ log_step "Step 5: Restoring Redis Dump"
 log "Loading Redis dump with enhanced logging..."
 export DUMP_FILE="$REDIS_DUMP"
 
-if "${SCRIPT_DIR}/restore/restore-redis.sh" dev; then
+if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev; then
     log_success "Redis dump restored successfully"
 else
     log "ERROR: Failed to load Redis dump"

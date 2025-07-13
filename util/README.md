@@ -1,121 +1,218 @@
-# Backup and Restore Utilities
+# KlickerUZH Utilities
 
-This directory contains comprehensive backup and restore utilities for the KlickerUZH application, supporting both database (PostgreSQL) and Redis operations across development and staging environments.
+This directory contains essential development and operational utilities for the KlickerUZH platform. These tools support local development, deployment, database management, and system operations.
 
-## Overview
+## 🔧 Available Utilities
 
-The restore utilities provide a unified, safe, and reliable way to restore PostgreSQL and Redis data across different environments, with comprehensive error handling, logging, validation, and cleanup mechanisms.
+### 1. **Backup/Restore System** (`backup/`)
 
-## Quick Start
+Production-ready backup and restore utilities for PostgreSQL databases and Redis data with enterprise-grade security features.
 
-**Database Restore:**
+**Quick Start:**
 
 ```bash
-# Development environment
-./restore-db.sh dev
+# Create production dumps
+cd backup && ./dump.sh both prd
 
-# Staging environment
-./restore-db.sh stg
+# Set up local development with production data
+cd backup && ./prepare_local_prod.sh
+
+# Restore to development environment
+cd backup && ./restore.sh db dev
 ```
 
-**Redis Restore:**
+**Key Features:**
+
+- Unified interface with `dump.sh` and `restore.sh` wrapper scripts
+- Mandatory AES256 encryption for all dumps
+- External drive authentication support for Doppler
+- Comprehensive error handling and verification
+- One-command local development setup
+
+📚 **Detailed Documentation:** [backup/README.md](./backup/README.md) | [backup/CLAUDE.md](./backup/CLAUDE.md)
+
+### 2. **Doppler Integration** (`_run_with_doppler.sh`)
+
+Centralized Doppler CLI wrapper that handles authentication across different environments, with special support for external drive scenarios.
+
+**Purpose:**
+
+- Automatic fallback to service tokens on external drives (e.g., `/Volumes/*` on macOS)
+- Consistent Doppler authentication patterns across all scripts
+- Secure handling of credentials and environment variables
+
+**Usage:**
 
 ```bash
-# Development environment
-./restore-redis.sh dev
-
-# Staging environment
-./restore-redis.sh stg
+# Used internally by other scripts
+CONFIG=prd ./_run_with_doppler.sh command args...
 ```
 
-**Get Help:**
+### 3. **Schema Management** (`sync-schema.sh`)
+
+Synchronizes Prisma database schemas between `packages/prisma` and `apps/analytics` to ensure consistency across the codebase.
+
+**Purpose:**
+
+- Keeps database schemas in sync between different parts of the application
+- Required after any Prisma schema changes
+- Part of the development workflow
+
+**Usage:**
 
 ```bash
-# Database help
-./restore-db.sh --help
-
-# Redis help
-./restore-redis.sh --help
+# Sync schemas after making changes
+./sync-schema.sh
 ```
 
-## Prerequisites
+### 4. **Infrastructure Configuration** (`traefik/`)
 
-### Required Tools
+Contains Docker and reverse proxy configuration files for local development and deployment.
 
-- PostgreSQL client tools (`psql`, `pg_restore`)
-- Redis client tools (`redis-cli`)
-- Doppler CLI for secret management (staging)
-- Appropriate dump files (`dump.tar` for database, `redis.dump` for Redis)
+**Contents:**
 
-### Installation Commands
+- `Dockerfile` / `Dockerfile.wsl` - Container configurations for different platforms
+- `rules_docker.yaml` / `rules_wsl.yaml` - Routing rules for development
+- `ssl/` - Local SSL certificates for HTTPS development
 
-**Ubuntu/Debian:**
+**Purpose:**
+
+- Enables local HTTPS development
+- Provides consistent routing across services
+- Platform-specific configurations (macOS/WSL)
+
+### 5. **Database Tools**
+
+#### `init.sql`
+
+Database initialization script with required setup commands, roles, and initial data.
+
+#### `upstash-redis-dump`
+
+Specialized binary utility for creating and restoring Redis dumps, optimized for Upstash Redis instances with support for parallel processing and TTL preservation.
+
+### 6. **Development Tools**
+
+#### `yaml-updater.js`
+
+Node.js utility for programmatic YAML file updates, used in deployment and configuration management workflows.
+
+**Purpose:**
+
+- Automated configuration updates
+- Deployment pipeline support
+- Consistent YAML processing
+
+## 🚀 Common Development Tasks
+
+### Setting Up Local Development
 
 ```bash
+# 1. Sync database schemas
+./sync-schema.sh
+
+# 2. Set up local environment with production data
+cd backup && ./prepare_local_prod.sh
+
+# 3. Start development with proper reverse proxy
+# (from project root)
+pnpm dev
+```
+
+### Creating Production Backups
+
+```bash
+# Create encrypted dumps of both database and Redis
+cd backup && ./dump.sh both prd
+```
+
+### Database Operations
+
+```bash
+# Initialize database
+psql -f init.sql
+
+# Restore from backup
+cd backup && ./restore.sh db dev
+```
+
+## 📋 Directory Structure
+
+```
+util/
+├── backup/                    # Complete backup/restore system
+│   ├── dump.sh               # Main dump interface
+│   ├── restore.sh            # Main restore interface
+│   ├── prepare_local_prod.sh # One-command local setup
+│   ├── advanced/             # Individual service scripts
+│   ├── lib/                  # Shared utilities
+│   └── dumps/                # Local dump storage
+├── _run_with_doppler.sh      # Doppler CLI wrapper
+├── sync-schema.sh            # Prisma schema sync
+├── traefik/                  # Reverse proxy config
+│   ├── ssl/                  # Local SSL certificates
+│   └── rules_*.yaml          # Platform-specific routing
+├── init.sql                  # Database initialization
+├── upstash-redis-dump        # Redis dump utility
+└── yaml-updater.js           # YAML processing tool
+```
+
+## 🔧 Prerequisites
+
+### Development Tools
+
+```bash
+# macOS
+brew install postgresql redis dopplerhq/cli/doppler
+
+# Ubuntu/Debian
 sudo apt-get install postgresql-client redis-tools
 curl -Ls https://cli.doppler.com/install.sh | sh
 ```
 
-**macOS:**
+### Environment Setup
+
+- Docker and Docker Compose for local development
+- Doppler CLI configured with access to dev/stg/prd configs
+- Node.js for running JavaScript utilities
+
+## 🛠️ Troubleshooting
+
+### Doppler Authentication Issues
 
 ```bash
-brew install postgresql redis
-brew install dopplerhq/cli/doppler
+# Standard setup
+doppler login && doppler setup
+
+# External drive (service token required)
+# See backup/README.md for detailed instructions
 ```
 
-## Detailed Usage
+### Permission Errors
 
-### Configuration
-
-**Development Environment:**
-
-- Uses local database and Redis instances with hardcoded credentials.
-
-**Staging Environment:**
-
-- Secure configuration via Doppler, requires Doppler setup.
-
-### Example Commands
-
-- For development: `./restore-db.sh dev`
-- For staging: `CONFIG=stg ./restore-db.sh stg`
-
-## File Structure
-
-```
-util/
-├── restore-db.sh              # Unified Database Restore Wrapper
-├── restore-redis.sh           # Unified Redis Restore Wrapper
-├── _restore-db-dev.sh         # Development database restore
-├── _restore-db-stg.sh         # Staging database restore
-├── _restore-redis-dev.sh      # Development Redis restore
-├── _restore-redis-stg.sh      # Staging Redis restore
-├── _restore-common.sh         # Shared utilities
-├── _verify-restore.sh         # Verification functions
-├── _verify-dump-file.sh       # Dump file validation
-└── _run_with_doppler.sh       # Doppler integration
+```bash
+# Make scripts executable
+chmod +x *.sh backup/*.sh
 ```
 
-## Common Issues and Solutions
+### Database Connection Issues
 
-- `Command not found: pg_restore`: Install PostgreSQL client tools.
-- `Permission denied`: Run `chmod +x *.sh`.
-- `Dump file not found`: Verify `dump.tar` and `redis.dump` exist.
-- `Could not connect to database`: Check that the database is running and credentials.
-- `Doppler secrets not loading`: Run `doppler login`, verify configuration.
+```bash
+# Check if PostgreSQL is running
+docker compose ps postgres
 
-## Security and Best Practices
+# Test connection
+psql -h localhost -p 5432 -U klicker -d klicker-prod
+```
 
-- Protect dump files with appropriate permissions (600 or 640).
-- Use Doppler for managing secrets in production/staging environments.
-- Regularly rotate database and Redis passwords.
+## 📚 Additional Documentation
 
-## Troubleshooting and Debugging
+- **Backup System**: [backup/README.md](./backup/README.md) - User guide
+- **AI Development**: [backup/CLAUDE.md](./backup/CLAUDE.md) - Technical details
+- **Project Overview**: [../CLAUDE.md](../CLAUDE.md) - Main documentation
 
-- **Logs Location:** Review logs in /tmp directory.
-- **Debug Mode:** Enable debug mode with `export DEBUG=1`.
-
-## Support and Documentation
+## 🆘 Support
 
 - [KlickerUZH Community](https://community.klicker.uzh.ch/)
 - [GitHub Issues](https://github.com/uzh-bf/klicker-uzh/issues)
+- [Project Documentation](https://www.klicker.uzh.ch/)

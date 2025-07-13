@@ -85,8 +85,8 @@ EXAMPLES:
 
 PRODUCTION OPERATIONS:
     For production restores, use the orchestrator for safety:
-    ./restore-orchestrator.sh stg   # Validate on staging first
-    ./restore-orchestrator.sh prd   # Execute on production with safety measures
+    ./advanced/restore-orchestrator.sh stg   # Validate on staging first
+    ./advanced/restore-orchestrator.sh prd   # Execute on production with safety measures
 
 DESCRIPTION:
     This script provides a unified interface for database and Redis restoration
@@ -143,7 +143,7 @@ validate_environment() {
 get_restore_script_path() {
     local service="$1"
     local env="$2"
-    echo "${SCRIPT_DIR}/restore-${service}.sh"
+    echo "${SCRIPT_DIR}/advanced/restore-${service}.sh"
 }
 
 # Function to validate that the target script exists
@@ -254,8 +254,8 @@ main() {
         echo "❌ ERROR: Production restores are not supported by this script"
         echo ""
         echo "For production operations, use the orchestrator for safety:"
-        echo "  ./restore-orchestrator.sh stg   # Validate on staging first"
-        echo "  ./restore-orchestrator.sh prd   # Execute on production"
+        echo "  ./advanced/restore-orchestrator.sh stg   # Validate on staging first"
+        echo "  ./advanced/restore-orchestrator.sh prd   # Execute on production"
         echo ""
         echo "The orchestrator provides:"
         echo "  • Transaction-like behavior (both services succeed or rollback)"
