@@ -1237,6 +1237,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmTagDeletion:
         'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
+      uniqueTagName:
+        'Bitte beachten Sie, dass Sie nicht mehrere Tags mit dem gleichen Namen erfassen können.',
+      tagNameUpdatedSuccessfully: 'Der Tagname wurde erfolgreich angepasst.',
     },
     elements: {
       CREATETitle: 'Element erstellen',
@@ -2257,6 +2260,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseDescriptionTooltip:
         'Die Beschreibung wird den Studierenden angezeigt. Sie können hier z.B. die Ziele des Kurses beschreiben.',
       addDescription: 'Beschreibung hinzufügen',
+      notificationEmail: 'Benachrichtigungs-E-Mail',
+      notificationEmailTooltip:
+        'Die E-Mail-Adresse, an welche kurs-spezifische Benachrichtigungen gesendet werden (z.B. Anmerkungen von Studierenden zu fehlerhaften Fragen). Diese E-Mail-Adresse kann später in den Kurseinstellungen geändert werden und ist für die Studierenden nicht sichtbar.',
+      notificationEmailPlaceholder: 'finance@uzh.ch',
+      notificationEmailInvalid:
+        'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+      notificationEmailReq:
+        'Bitte geben Sie eine E-Mail-Adresse für Kurs-spezifische Benachrichtigungen an.',
       startDate: 'Startdatum',
       startDateTooltip:
         'Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.',

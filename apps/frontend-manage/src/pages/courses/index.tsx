@@ -178,6 +178,7 @@ function CourseSelectionPage() {
                       color: values.color,
                       startDate: startDateUTC,
                       endDate: endDateUTC,
+                      notificationEmail: values.notificationEmail,
                       isGamificationEnabled: values.isGamificationEnabled,
                       isGroupCreationEnabled: values.isGroupCreationEnabled,
                       groupDeadlineDate: groupDeadlineDateUTC,

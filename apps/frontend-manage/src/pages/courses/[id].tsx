@@ -81,9 +81,6 @@ function CourseOverviewPage() {
       <div className="mb-2 w-full">
         <CourseOverviewHeader
           course={course}
-          name={course.name}
-          pinCode={course.pinCode ?? 0}
-          numOfParticipants={course.numOfParticipants ?? 0}
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}

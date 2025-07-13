@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.69...v3.3.0-alpha.70) (2025-07-12)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure that all practice quizzes and microlearnings are shown on quiz analytics list ([708896e](https://github.com/uzh-bf/klicker-uzh/commit/708896e42bb7a9c0a11332411441cb1614319442))
+* **packages/markdown:** resolve compatibility issues of markdown pipeline with React 19 ([#4768](https://github.com/uzh-bf/klicker-uzh/issues/4768)) ([863fca8](https://github.com/uzh-bf/klicker-uzh/commit/863fca80a88afba27a69e81c7fbfde7c09bb90e2))
+
+
+### Enhancements
+
+* **apps/frontend-*:** use enhanced modal loading states for consistent UX ([#4771](https://github.com/uzh-bf/klicker-uzh/issues/4771)) ([423f0c1](https://github.com/uzh-bf/klicker-uzh/commit/423f0c10643474cb7351d1e3ab890040eb08e2bd))
+
 ## [3.3.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.68...v3.3.0-alpha.69) (2025-07-08)
 
 

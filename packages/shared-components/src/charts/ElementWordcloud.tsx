@@ -6,6 +6,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { TagCloud } from 'react-tagcloud'
+import { twMerge } from 'tailwind-merge'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 
 interface ElementWordcloudProps {
@@ -18,6 +19,7 @@ interface ElementWordcloudProps {
     min: number
     max: number
   }
+  className?: string
 }
 
 function ElementWordcloud({
@@ -25,6 +27,7 @@ function ElementWordcloud({
   showSolution,
   showExplanation,
   textSize,
+  className,
 }: ElementWordcloudProps) {
   const t = useTranslations()
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
@@ -48,7 +51,7 @@ function ElementWordcloud({
   }
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className={twMerge('flex h-full w-full flex-col', className)}>
       <EvaluationExplanation
         explanation={instance.explanation}
         showExplanation={showExplanation}
