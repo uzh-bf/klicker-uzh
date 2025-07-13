@@ -1,187 +1,196 @@
 import commonjs from '@rollup/plugin-commonjs'
-import resolve from '@rollup/plugin-node-resolve'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
-import fs from 'fs/promises'
-import devCerts from 'office-addin-dev-certs'
+import fs from 'fs'
 import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
 import livereload from 'rollup-plugin-livereload'
-import postcss from 'rollup-plugin-postcss'
-import serve from 'rollup-plugin-serve-proxy'
+import serve from 'rollup-plugin-serve'
+import { visualizer } from 'rollup-plugin-visualizer'
 
-// Custom plugin to handle manifest.xml like vite-plugin-office-addin
-function officeAddinPlugin({
-  devUrl = 'https://localhost:3020',
-  prodUrl = 'https://www.klicker.uzh.ch/office-addin',
-  manifestPaths = ['src/manifest-content.xml', 'src/manifest-taskpane.xml'],
-} = {}) {
+// Environment variables and constants
+const isDev = process.env.NODE_ENV === 'development'
+const urlDev = 'https://localhost:3020/'
+const urlProd = 'https://www.klicker.uzh.ch/'
+
+// Helper function to get HTTPS options for development
+async function getHttpsOptions() {
+  try {
+    // Use office-addin-dev-certs to get HTTPS certificates
+    const devCerts = await import('office-addin-dev-certs')
+    const httpsOptions = await devCerts.default.getHttpsServerOptions()
+    return {
+      ca: httpsOptions.ca,
+      key: httpsOptions.key,
+      cert: httpsOptions.cert,
+    }
+  } catch (error) {
+    console.warn('Could not load dev certificates:', error)
+    return undefined
+  }
+}
+
+// Custom Office Add-in plugin for HTML and manifest processing
+function officeAddinPlugin() {
   return {
     name: 'office-addin',
-    async generateBundle() {
-      // Process each manifest file
-      for (const manifestPath of manifestPaths) {
-        // Read and process manifest.xml
-        const manifestContent = await fs.readFile(manifestPath, 'utf-8')
-        const processedManifest = manifestContent.replaceAll(
-          devUrl,
-          process.env.BUILD === 'production' ? prodUrl : devUrl
+    generateBundle: {
+      order: 'post',
+      handler() {
+        // Process content.html template
+        const htmlTemplate = fs.readFileSync(
+          'src/content/content.html',
+          'utf-8'
         )
 
-        // Get the output filename based on the input path
-        const fileName = manifestPath.split('/').pop()
+        // Replace script references with Rollup output
+        let processedHtml = htmlTemplate
+          // Remove the existing content.js script tag
+          .replace(/<script[^>]*src="content\.js"[^>]*><\/script>/g, '')
+          // Add polyfills script first, then content script
+          .replace(
+            '</head>',
+            `    <!-- Polyfills bundle -->\n    <script type="text/javascript" src="polyfills.js"></script>\n    <!-- Main content bundle -->\n    <script type="text/javascript" src="content.js"></script>\n  </head>`
+          )
+
+        // Add processed HTML to bundle
+        this.emitFile({
+          type: 'asset',
+          fileName: 'content.html',
+          source: processedHtml,
+        })
+
+        // Process manifest.xml with URL replacement
+        const manifestTemplate = fs.readFileSync('manifest.xml', 'utf-8')
+        const processedManifest = isDev
+          ? manifestTemplate
+          : manifestTemplate.replace(new RegExp(urlDev, 'g'), urlProd)
 
         this.emitFile({
           type: 'asset',
-          fileName,
+          fileName: 'manifest.xml',
           source: processedManifest,
         })
-      }
-
-      // Copy and process HTML files
-      const taskpaneHtml = await fs.readFile(
-        'src/taskpane/taskpane.html',
-        'utf-8'
-      )
-      const contentHtml = await fs.readFile('src/content/content.html', 'utf-8')
-
-      this.emitFile({
-        type: 'asset',
-        fileName: 'taskpane.html',
-        source: taskpaneHtml,
-      })
-
-      this.emitFile({
-        type: 'asset',
-        fileName: 'content.html',
-        source: contentHtml,
-      })
+      },
     },
   }
 }
 
-async function getHttpsOptions() {
-  const httpsOptions = await devCerts.getHttpsServerOptions()
-  return {
-    ca: httpsOptions.ca,
-    key: httpsOptions.key,
-    cert: httpsOptions.cert,
-  }
-}
+// Create configuration function to handle async operations
+async function createConfig() {
+  const httpsOptions = isDev ? await getHttpsOptions() : undefined
 
-export default defineConfig(async ({}) => {
-  const isProd = process.env.BUILD === 'production'
-  console.log('Build mode:', process.env.BUILD || 'development')
-
-  // Only get HTTPS options in dev mode
-  const httpsOptions = !isProd ? await getHttpsOptions() : {}
-
-  return {
-    input: {
-      taskpane: 'src/taskpane/index.tsx',
-      content: 'src/content/index.tsx',
-    },
-    output: {
-      dir: 'dist',
-      format: 'es',
-      sourcemap: !isProd,
-      entryFileNames: '[name].js',
-      chunkFileNames: 'chunks/[name]-[hash].js',
-      assetFileNames: 'assets/[name][extname]',
-    },
-    watch: {
-      include: ['src/**'],
-      exclude: ['node_modules/**'],
-      clearScreen: false,
-    },
-    plugins: [
-      // Clean dist directory before build
-      // del({ targets: 'dist/*', verbose: true }),
-      resolve({
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.html'],
-        browser: true,
-        mainFields: ['module', 'browser', 'main'],
-      }),
-      commonjs({
-        include: /node_modules/,
-        requireReturnsDefault: 'auto',
-      }),
-      postcss({
-        extract: 'styles.css',
-        modules: false,
-        inject: false,
-        minimize: isProd,
-        config: './postcss.config.cjs',
-      }),
-      typescript({
-        tsconfig: './tsconfig.json',
-        sourceMap: !isProd,
-        inlineSources: !isProd,
-        noEmit: false,
-        compilerOptions: {
-          emitDeclarationOnly: false,
-          declaration: true,
-          declarationDir: './dist/types',
-        },
-      }),
-      replace({
-        preventAssignment: true,
-        values: {
+  return defineConfig([
+    // Polyfills bundle
+    {
+      input: 'src/polyfills.ts',
+      output: {
+        file: 'dist/polyfills.js',
+        format: 'iife',
+        sourcemap: true,
+      },
+      plugins: [
+        replace({
           'process.env.NODE_ENV': JSON.stringify(
-            process.env.BUILD || 'development'
+            process.env.NODE_ENV || 'production'
           ),
-          'process.env': '({})',
-          global: 'window',
-          'globalThis.process.env.NODE_ENV': JSON.stringify(
-            process.env.BUILD || 'development'
+          preventAssignment: true,
+        }),
+        nodeResolve({
+          browser: true,
+          preferBuiltins: false,
+        }),
+        commonjs(),
+        typescript({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+        }),
+        !isDev && terser(),
+      ].filter(Boolean),
+    },
+    // Main content bundle
+    {
+      input: 'src/content/content.ts',
+      output: {
+        file: 'dist/content.js',
+        format: 'iife',
+        sourcemap: true,
+      },
+      plugins: [
+        // Replace environment variables
+        replace({
+          'process.env.NODE_ENV': JSON.stringify(
+            process.env.NODE_ENV || 'production'
           ),
-        },
-      }),
-      officeAddinPlugin({
-        devUrl: 'https://localhost:3020',
-        prodUrl: 'https://www.klicker.uzh.ch/office-addin',
-        manifestPaths: [
-          'src/manifest-content.xml',
-          'src/manifest-taskpane.xml',
-        ],
-      }),
-      copy({
-        targets: [
-          {
-            src: 'assets/*',
-            dest: 'dist/assets',
-          },
-        ],
-      }),
-      !isProd &&
-        serve({
-          contentBase: ['dist'],
-          host: 'localhost',
-          port: 3020,
-          https: httpsOptions,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-          },
-          historyApiFallback: true,
-          open: false,
-          verbose: true,
-          // watch: {
-          //   dir: ['src'],
-          //   include: ['**/*.html', '**/*.tsx', '**/*.ts', '**/*.css'],
-          //   skipWrite: true,
-          // },
+          preventAssignment: true,
         }),
-      !isProd &&
-        livereload({
-          watch: ['dist'],
-          verbose: true,
-          delay: 200,
-          exts: ['html', 'js', 'css'],
-          port: 35729,
-          https: httpsOptions,
+
+        // Resolve Node modules
+        nodeResolve({
+          browser: true,
+          preferBuiltins: false,
         }),
-      isProd && terser(),
-    ].filter(Boolean),
-  }
-})
+
+        // Handle CommonJS modules
+        commonjs(),
+
+        // TypeScript compilation
+        typescript({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+        }),
+
+        // Copy assets (only in main bundle to avoid duplication)
+        copy({
+          targets: [{ src: 'assets/*', dest: 'dist/assets' }],
+        }),
+
+        // Custom Office add-in processing (only in main bundle)
+        officeAddinPlugin(),
+
+        // Minification for production
+        !isDev &&
+          terser({
+            compress: {
+              drop_console: false, // Keep console logs for debugging Office add-ins
+            },
+          }),
+
+        // Development server (only in main bundle)
+        isDev &&
+          serve({
+            contentBase: 'dist',
+            host: 'localhost',
+            port: 3020,
+            https: httpsOptions,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+            },
+          }),
+
+        // Live reload for development (only in main bundle)
+        isDev && livereload('dist'),
+
+        // Bundle analysis for production (only in main bundle)
+        !isDev &&
+          visualizer({
+            filename: 'dist/bundle-analysis.html',
+            open: false,
+            gzipSize: true,
+          }),
+      ].filter(Boolean), // Remove falsy plugins
+
+      // External dependencies (keep Office.js external)
+      external: [],
+
+      // Watch options for development
+      watch: {
+        clearScreen: false,
+      },
+    },
+  ])
+}
+
+export default createConfig()

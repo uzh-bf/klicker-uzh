@@ -4,5 +4,5 @@
  * This will be bundled separately by Rollup for better optimization.
  */
 
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
+import 'core-js/stable'
+import 'regenerator-runtime/runtime'

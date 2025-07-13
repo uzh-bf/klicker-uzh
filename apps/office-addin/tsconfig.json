@@ -1,29 +1,32 @@
 {
+  "include": ["**/**/*"],
   "compilerOptions": {
-    // Base Options
-    "target": "es2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "target": "es2022",
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    // Strictness
+    "verbatimModuleSyntax": false,
+    /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    // React Specific
-    "jsx": "react-jsx",
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    // Build Output
+    /* If transpiling with TypeScript: */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
     "sourceMap": true,
+    /* AND if you're building for a library: */
     "declaration": true,
-    "declarationDir": "./dist/types",
-    "outDir": "./dist",
-    "emitDeclarationOnly": true
-  },
-  "include": ["src"]
+    /* AND if you're building for a library in a monorepo: */
+    "composite": true,
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "declarationMap": true,
+    /* If your code runs in the DOM: */
+    "lib": ["es2022", "dom", "dom.iterable"]
+  }
 }
