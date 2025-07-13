@@ -1378,6 +1378,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-feedback-${this.data.course2.quiz.feedbackMobile}"]`
     ).click()
+    cy.get('[data-cy="confirm-feedback-deletion"]').click()
     cy.get(
       `[data-cy="open-feedback-${this.data.course2.quiz.feedbackDesktop}"]`
     ).click()

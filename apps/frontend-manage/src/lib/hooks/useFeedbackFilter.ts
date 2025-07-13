@@ -6,9 +6,11 @@ import { useEffect, useState } from 'react'
 
 const defaultFilterParams = {
   showResolvedInitial: true,
-  showUnpublishedInitial: true,
+  showUnpublishedInitial: false,
   showOpenInitial: true,
-  showUnpinnedInitial: true,
+  showUnpinnedInitial: false,
+  showPublishedInitial: false,
+  showPinnedInitial: false,
   sortByInitial: 'votes',
   withSearch: false,
 }
@@ -18,6 +20,8 @@ interface FilterParams {
   showUnpublishedInitial?: boolean
   showOpenInitial?: boolean
   showUnpinnedInitial?: boolean
+  showPublishedInitial?: boolean
+  showPinnedInitial?: boolean
   withSearch?: boolean
   sortByInitial?: string
 }
@@ -29,6 +33,8 @@ function useFeedbackFilter(
     showUnpublishedInitial,
     showOpenInitial,
     showUnpinnedInitial,
+    showPublishedInitial,
+    showPinnedInitial,
     sortByInitial,
     withSearch,
   }: FilterParams = defaultFilterParams
@@ -38,10 +44,14 @@ function useFeedbackFilter(
 
   const [showResolved, setShowResolved] = useState(showResolvedInitial ?? true)
   const [showUnpublished, setShowUnpublished] = useState(
-    showUnpublishedInitial ?? true
+    showUnpublishedInitial ?? false
   )
   const [showOpen, setShowOpen] = useState(showOpenInitial ?? true)
-  const [showUnpinned, setShowUnpinned] = useState(showUnpinnedInitial ?? true)
+  const [showUnpinned, setShowUnpinned] = useState(showUnpinnedInitial ?? false)
+  const [showPublished, setShowPublished] = useState(
+    showPublishedInitial ?? false
+  )
+  const [showPinned, setShowPinned] = useState(showPinnedInitial ?? false)
   const [sortBy, setSortBy] = useState(sortByInitial ?? 'votes')
 
   const [searchString, setSearchString] = useState('')
@@ -65,10 +75,25 @@ function useFeedbackFilter(
     }
     setFilteredFeedbacks(
       results?.filter((item) => {
-        if (!showResolved && item.isResolved === true) return false
-        if (!showOpen && item.isResolved === false) return false
-        if (!showUnpublished && item.isPublished === false) return false
-        if (!showUnpinned && item.isPinned === false) return false
+        // status filters (resolved/open can be shown independently)
+        if (!showResolved && !showOpen) {
+          return false
+        }
+        if (!showResolved && item.isResolved) return false
+        if (!showOpen && !item.isResolved) return false
+
+        // publication filters (mutually exclusive)
+        if (showPublished || showUnpublished) {
+          if (showPublished && !item.isPublished) return false
+          if (showUnpublished && item.isPublished) return false
+        }
+
+        // pinning filters (mutually exclusive)
+        if (showPinned || showUnpinned) {
+          if (showPinned && !item.isPinned) return false
+          if (showUnpinned && item.isPinned) return false
+        }
+
         return true
       })
     )
@@ -79,7 +104,9 @@ function useFeedbackFilter(
     showResolved,
     showOpen,
     showUnpinned,
+    showPinned,
     showUnpublished,
+    showPublished,
     withSearch,
   ])
 
@@ -103,15 +130,29 @@ function useFeedbackFilter(
       setShowUnpublished,
       setShowUnpinned,
       setShowOpen,
+      setShowPublished,
+      setShowPinned,
       setSortBy,
       setSearchString,
       searchString,
       sortBy,
       showUnpinned,
+      showPinned,
       showOpen,
       showResolved,
       showUnpublished,
+      showPublished,
       withSearch,
+      handleReset: () => {
+        setShowResolved(true)
+        setShowOpen(true)
+        setShowUnpinned(false)
+        setShowPinned(false)
+        setShowUnpublished(false)
+        setShowPublished(false)
+        setSearchString('')
+        setSortBy('votes')
+      },
     },
   }
 }
