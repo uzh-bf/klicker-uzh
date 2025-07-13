@@ -1,0 +1,482 @@
+#!/bin/bash
+
+# =============================================================================
+# Unified Redis Data Restore Script
+# =============================================================================
+#
+# This script restores Redis data from a dump file for any environment.
+# It supports all environments (dev/stg/prd) via Doppler configuration.
+#
+# Usage: ./restore-redis.sh [environment]
+#
+# Arguments:
+#   environment    Target environment (dev|stg|prd). Defaults to 'dev'
+#
+# Features:
+# - Environment-specific configuration via Doppler (stg/prd) or local config (dev)
+# - Automatic dump file discovery with priority order
+# - Comprehensive error handling and validation
+# - Production safety measures and confirmation prompts
+# - Progress indicators and detailed logging
+# - Automatic decryption of encrypted dumps
+# - Connection testing and post-restore verification
+#
+# =============================================================================
+
+# Enable strict error handling
+set -euo pipefail
+
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+
+# =============================================================================
+# PARAMETER VALIDATION AND HELP
+# =============================================================================
+
+# Function to display usage information
+show_usage() {
+    cat << EOF
+Usage: $0 [ENVIRONMENT]
+
+Unified Redis Data Restore Script
+
+ARGUMENTS:
+    ENVIRONMENT    Target environment for restore (dev|stg|prd). Defaults to 'dev'
+
+ENVIRONMENTS:
+    dev           Development environment (local configuration)
+    stg           Staging environment (uses Doppler)
+    prd           Production environment (uses Doppler, requires safety confirmation)
+
+EXAMPLES:
+    $0            # Restore to development (default)
+    $0 dev        # Restore to development (explicit)
+    $0 stg        # Restore to staging
+    $0 prd        # Restore to production (with safety prompts)
+
+DESCRIPTION:
+    Restores Redis data from dump files with automatic discovery.
+    Uses different configuration methods based on environment:
+    - Development: Direct local configuration (redis://localhost:6379)
+    - Staging/Production: Doppler secrets management
+
+ENVIRONMENT VARIABLES:
+    DUMP_FILE                 Explicit path to dump file (overrides auto-discovery)
+    BACKUP_ENCRYPTION_KEY     GPG passphrase for encrypted dumps
+    REDIS_URL                 Redis connection URL (Doppler environments)
+    SKIP_PRODUCTION_SAFETY    Skip production safety prompts (use with caution)
+
+SAFETY FEATURES:
+    - Production restores require explicit confirmation
+    - Pre-restore connectivity checks
+    - Automatic decryption of encrypted dumps
+    - Comprehensive error handling and validation
+
+EOF
+}
+
+# Check if help is requested
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_usage
+    exit 0
+fi
+
+# Get environment parameter (default to 'dev' for safety)
+ENVIRONMENT="${1:-dev}"
+
+# Validate environment parameter
+case "$ENVIRONMENT" in
+    "dev"|"stg"|"prd")
+        echo "🎯 Target environment: $ENVIRONMENT"
+        ;;
+    *)
+        echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
+        echo ""
+        show_usage
+        exit 1
+        ;;
+esac
+
+# =============================================================================
+# DOPPLER DELEGATION (for stg/prd environments)
+# =============================================================================
+
+# For staging and production, delegate to _run_with_doppler.sh
+if [[ "$ENVIRONMENT" == "stg" || "$ENVIRONMENT" == "prd" ]]; then
+    echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
+    
+    # Set CONFIG and execute via _run_with_doppler.sh
+    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
+fi
+
+# =============================================================================
+# DEVELOPMENT CONFIGURATION (dev environment only)
+# =============================================================================
+
+if [[ "$ENVIRONMENT" == "dev" ]]; then
+    echo "🏠 Using development environment configuration"
+    
+    # Development Redis configuration
+    export REDIS_URL="redis://localhost:6379"
+    
+    echo "   Redis URL: ${REDIS_URL}"
+fi
+
+# =============================================================================
+# INTERNAL EXECUTION (after Doppler delegation or dev config)
+# =============================================================================
+
+# For Doppler environments, ensure we have the --internal-doppler-loaded flag
+if [[ "$ENVIRONMENT" != "dev" && "${2:-}" != "--internal-doppler-loaded" ]]; then
+    echo "ERROR: Non-dev environments should be called with --internal-doppler-loaded flag"
+    exit 1
+fi
+
+# =============================================================================
+# SOURCE UTILITIES
+# =============================================================================
+
+# Source common utility functions
+if [[ -f "${SCRIPT_DIR}/../lib/_restore-common.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_restore-common.sh"
+else
+    echo "ERROR: Required common utilities not found at ${SCRIPT_DIR}/../lib/_restore-common.sh"
+    exit 1
+fi
+
+# Source verification utility functions
+if [[ -f "${SCRIPT_DIR}/../lib/_verify-dump-file.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+else
+    echo "ERROR: Required verification utilities not found at ${SCRIPT_DIR}/../lib/_verify-dump-file.sh"
+    exit 1
+fi
+
+# =============================================================================
+# SCRIPT CONFIGURATION
+# =============================================================================
+
+echo "========================================"
+echo "Starting Redis Data Restore"
+echo "Environment: $ENVIRONMENT"
+echo "========================================"
+
+# Try to find the latest dump file automatically
+if [[ -z "${DUMP_FILE:-}" ]]; then
+    if DISCOVERED_DUMP=$(find_latest_dump "redis"); then
+        DUMP_FILE="$DISCOVERED_DUMP"
+        log_info "Auto-discovered dump file: $DUMP_FILE"
+    else
+        # Fallback to default location for backward compatibility
+        DUMP_FILE="${SCRIPT_DIR}/../redis.dump"
+        log_warning "No dumps found, using fallback: $DUMP_FILE"
+    fi
+else
+    log_info "Using explicitly provided dump file: $DUMP_FILE"
+fi
+
+# =============================================================================
+# PRODUCTION SAFETY CHECKS
+# =============================================================================
+
+if [[ "$ENVIRONMENT" == "prd" && "${SKIP_PRODUCTION_SAFETY:-}" != "true" ]]; then
+    echo ""
+    echo "⚠️  PRODUCTION ENVIRONMENT DETECTED ⚠️"
+    echo "======================================="
+    echo ""
+    echo "You are about to restore to the PRODUCTION Redis instance."
+    echo "This operation will:"
+    echo "  • Replace all existing production Redis data"
+    echo "  • Clear all caches and sessions"
+    echo "  • Potentially cause service disruption"
+    echo ""
+    echo "Dump file: $DUMP_FILE"
+    echo "Target: Production Redis"
+    echo ""
+    
+    # Require explicit confirmation
+    read -p "Are you absolutely sure you want to proceed? Type 'RESTORE PRODUCTION' to confirm: " confirmation
+    
+    if [[ "$confirmation" != "RESTORE PRODUCTION" ]]; then
+        echo "❌ Production restore cancelled by user"
+        exit 1
+    fi
+    
+    echo ""
+    echo "✅ Production restore confirmed"
+    echo ""
+    
+    # Additional confirmation for extra safety
+    read -p "Final confirmation - type 'YES' to proceed with production restore: " final_confirmation
+    
+    if [[ "$final_confirmation" != "YES" ]]; then
+        echo "❌ Production restore cancelled by user"
+        exit 1
+    fi
+    
+    echo ""
+    echo "🚀 Proceeding with production Redis restore..."
+    echo ""
+fi
+
+# =============================================================================
+# CLEANUP HANDLER
+# =============================================================================
+
+# Function for comprehensive cleanup
+cleanup_redis_restore() {
+    log_info "Performing cleanup..."
+    
+    # Clean up sensitive environment variables
+    cleanup_redis
+    
+    # Remove any log files (temp decrypted files handled by secure system)
+    rm -f /tmp/${ENVIRONMENT}_redis_restore_*.log 2>/dev/null || true
+    
+    log_info "Cleanup completed"
+}
+
+# Set up secure signal handling and register cleanup functions
+setup_secure_signal_handling
+register_cleanup_function cleanup_redis_restore
+
+# =============================================================================
+# MAIN RESTORE FUNCTION
+# =============================================================================
+
+restore_redis() {
+    log_step "Starting Redis Restore for $ENVIRONMENT Environment"
+    
+    # Initialize restore environment
+    init_restore_environment "redis"
+    
+    # Check for required tools
+    check_redis_tools
+    
+    # Decrypt dump file (all dumps must be encrypted)
+    log_step "Preparing Dump File"
+
+    # All dumps must be encrypted - validate first
+    # Resolve symlink to get actual filename for validation
+    local actual_file="$DUMP_FILE"
+    if [[ -L "$DUMP_FILE" ]]; then
+        actual_file=$(readlink -f "$DUMP_FILE" 2>/dev/null || readlink "$DUMP_FILE" 2>/dev/null || echo "$DUMP_FILE")
+    fi
+
+    if [[ "$actual_file" != *.gpg ]]; then
+        echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
+        echo "  🔒 All dump files must be encrypted for security"
+        echo "  📁 File: $(basename "$DUMP_FILE")"
+        echo "  💡 Expected: $(basename "$actual_file").gpg"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Create encrypted dumps: BACKUP_ENCRYPTION_KEY='key' ./dump-redis.sh"
+        echo "     2. Contact admin for encrypted production dumps"
+        echo ""
+        error_exit "Unencrypted dumps are not allowed - security policy violation"
+    fi
+
+    log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE")"
+
+    if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+        echo "  ❌ ERROR: Missing required encryption key"
+        echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Set the encryption key: export BACKUP_ENCRYPTION_KEY='your-key'"
+        echo "     2. Or use Doppler: doppler run -- $0 $ENVIRONMENT"
+        echo "     3. Or contact admin for the encryption key"
+        echo ""
+        error_exit "Cannot proceed without encryption key"
+    fi
+
+    log_info "🔑 Encryption key available, will decrypt dump automatically"
+
+    # Perform decryption
+    DUMP_FILE=$(decrypt_dump_if_needed "$DUMP_FILE")
+    log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE")"
+    
+    # Verify dump file exists and is valid
+    log_step "Verifying Dump File"
+    validate_dump_file "$DUMP_FILE" "Redis dump"
+    log_success "Dump file verification completed"
+    
+    # Validate Redis environment variables
+    log_step "Validating Redis Configuration"
+    validate_redis_env
+    
+    # Build Redis connection string
+    log_step "Preparing Redis Connection"
+    
+    if [[ -n "${REDIS_URL:-}" ]]; then
+        REDIS_CONNECTION="$REDIS_URL"
+        log_info "Using REDIS_URL for connection"
+    else
+        log_info "Using individual Redis parameters for connection"
+        log_info "Host: ${REDIS_HOST}"
+        log_info "Port: ${REDIS_PORT}"
+        
+        # Build connection string from individual parameters
+        REDIS_CONNECTION=$(build_redis_connection_string)
+    fi
+    
+    # Mask password in logs
+    REDIS_CONNECTION_DISPLAY=$(echo "$REDIS_CONNECTION" | sed 's/:[^@]*@/:***@/')
+    log_info "Redis connection: $REDIS_CONNECTION_DISPLAY"
+    log_success "Redis connection prepared"
+    
+    # Test Redis connectivity
+    log_step "Testing Redis Connectivity"
+    
+    # Extract connection details for redis-cli
+    if [[ "$REDIS_CONNECTION" =~ ^redis(s)?://([^:]*):([^@]*)@([^:]*):([0-9]+)(/[0-9]+)?$ ]]; then
+        REDIS_SCHEME="${BASH_REMATCH[1]}"
+        REDIS_USER="${BASH_REMATCH[2]}"
+        REDIS_PASS="${BASH_REMATCH[3]}"
+        REDIS_HOST="${BASH_REMATCH[4]}"
+        REDIS_PORT="${BASH_REMATCH[5]}"
+        REDIS_DB="${BASH_REMATCH[6]}"
+    elif [[ "$REDIS_CONNECTION" =~ ^redis(s)?://([^@]*)@([^:]*):([0-9]+)(/[0-9]+)?$ ]]; then
+        REDIS_SCHEME="${BASH_REMATCH[1]}"
+        REDIS_PASS="${BASH_REMATCH[2]}"
+        REDIS_HOST="${BASH_REMATCH[3]}"
+        REDIS_PORT="${BASH_REMATCH[4]}"
+        REDIS_DB="${BASH_REMATCH[5]}"
+    elif [[ "$REDIS_CONNECTION" =~ ^redis(s)?://([^:]*):([0-9]+)(/[0-9]+)?$ ]]; then
+        REDIS_SCHEME="${BASH_REMATCH[1]}"
+        REDIS_HOST="${BASH_REMATCH[2]}"
+        REDIS_PORT="${BASH_REMATCH[3]}"
+        REDIS_DB="${BASH_REMATCH[4]}"
+    else
+        error_exit "Invalid Redis connection URL format: $REDIS_CONNECTION_DISPLAY"
+    fi
+    
+    # Build redis-cli command
+    REDIS_CLI_CMD="redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT}"
+    
+    if [[ -n "${REDIS_PASS:-}" ]]; then
+        REDIS_CLI_CMD="$REDIS_CLI_CMD -a $REDIS_PASS"
+    fi
+    
+    if [[ "${REDIS_SCHEME}" == "s" ]]; then
+        REDIS_CLI_CMD="$REDIS_CLI_CMD --tls"
+    fi
+    
+    # Test connectivity
+    if ! $REDIS_CLI_CMD ping > /dev/null 2>&1; then
+        error_exit "Redis connectivity test failed. Please check your Redis configuration."
+    fi
+    log_success "Redis connectivity confirmed"
+    
+    # Get file size for progress indication
+    DUMP_SIZE=$(ls -lh "$DUMP_FILE" | awk '{print $5}')
+    log_info "Restoring Redis data from dump file (${DUMP_SIZE})"
+    
+    # Perform the Redis restore
+    log_step "Restoring Redis Data"
+    
+    echo "  📥 Starting Redis restore..."
+    echo "  📁 Dump file: $DUMP_FILE"
+    echo "  🎯 Target: $ENVIRONMENT Redis"
+    echo "  ⏳ This may take several minutes depending on dump size..."
+    echo ""
+    
+    # Create log file for this restore
+    local log_file="/tmp/${ENVIRONMENT}_redis_restore_$(date +%Y%m%d_%H%M%S).log"
+    
+    # Show progress indicator for production/staging
+    if [[ "$ENVIRONMENT" == "prd" ]] || [[ "$ENVIRONMENT" == "stg" ]]; then
+        (
+            while true; do
+                echo -n "."
+                sleep 2
+            done
+        ) &
+        PROGRESS_PID=$!
+    fi
+    
+    # Execute the restore command
+    local restore_exit_code=0
+    echo "  📤 Uploading data to Redis..."
+    
+    # Use redis-cli to restore the data
+    if ! $REDIS_CLI_CMD --pipe < "$DUMP_FILE" > "$log_file" 2>&1; then
+        restore_exit_code=$?
+    fi
+    
+    # Stop progress indicator
+    if [[ -n "${PROGRESS_PID:-}" ]]; then
+        kill $PROGRESS_PID 2>/dev/null || true
+        echo ""
+    fi
+    
+    # Check restore result and provide detailed feedback
+    if [[ $restore_exit_code -eq 0 ]]; then
+        log_success "Redis restore completed successfully"
+        
+        # Verify Redis has data after restore
+        echo "  🔍 Verifying restored data..."
+        KEY_COUNT=$($REDIS_CLI_CMD dbsize 2>/dev/null || echo "unknown")
+        
+        # Show summary information
+        echo "  📊 Restore Summary:"
+        echo "  ✅ Redis data restored successfully"
+        echo "  📁 Source file: $DUMP_FILE"
+        echo "  🎯 Target: $ENVIRONMENT Redis"
+        echo "  📊 Keys in database: $KEY_COUNT"
+        echo "  🕐 Completed at: $(date '+%Y-%m-%d %H:%M:%S')"
+        
+        # Show any warnings from the restore log
+        if [[ -f "$log_file" ]] && grep -qi "error\|warning" "$log_file"; then
+            echo ""
+            echo "  ⚠️  Restore completed with warnings/errors:"
+            grep -i "error\|warning" "$log_file" | head -5 | sed 's/^/     /'
+            echo "  📋 Full log available at: $log_file"
+        fi
+        
+    else
+        echo "  ❌ Redis restore failed"
+        echo "  📋 Error details:"
+        
+        if [[ -f "$log_file" ]]; then
+            echo "     Last 10 lines of restore log:"
+            tail -10 "$log_file" | sed 's/^/     /'
+            echo "  📋 Full log available at: $log_file"
+        fi
+        
+        error_exit "Redis restore failed with exit code $restore_exit_code"
+    fi
+    
+    # Store log file path for potential cleanup
+    echo "$log_file" > /tmp/last_${ENVIRONMENT}_redis_restore_log_path.txt
+}
+
+# =============================================================================
+# SCRIPT EXECUTION
+# =============================================================================
+
+# Main execution
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Print script header
+    echo "======================================================================"
+    echo "🔄 Unified Redis Restore Script"
+    echo "======================================================================"
+    echo "Started at: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "Environment: $ENVIRONMENT"
+    echo "Script: ${BASH_SOURCE[0]}"
+    echo "Working directory: $(pwd)"
+    echo "======================================================================"
+    echo ""
+    
+    # Execute main restore function
+    restore_redis
+    
+    echo ""
+    echo "======================================================================"
+    echo "✅ Redis Restore Completed Successfully"
+    echo "======================================================================"
+    echo "Environment: $ENVIRONMENT"
+    echo "Completed at: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "======================================================================"
+fi
