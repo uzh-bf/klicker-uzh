@@ -60,5 +60,11 @@
     "last 2 versions",
     "ie 11"
   ],
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
   "type": "module"
 }
