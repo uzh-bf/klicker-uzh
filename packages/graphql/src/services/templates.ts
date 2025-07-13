@@ -15,7 +15,7 @@ import {
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
+import { validate as uuidValidate } from 'uuid'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -488,7 +488,6 @@ export async function createActivityTemplate(
                 elements: {
                   create: block.elements.map((element) => ({
                     elementType: element.elementType,
-                    migrationId: uuidv4(),
                     order: element.order,
                     type: DB.ElementInstanceType.LIVE_QUIZ,
                     elementData: element.elementData,
@@ -578,7 +577,6 @@ export async function createActivityTemplate(
                 elements: {
                   create: stack.elements.map((element) => ({
                     elementType: element.elementType,
-                    migrationId: uuidv4(),
                     order: element.order,
                     type: DB.ElementInstanceType.PRACTICE_QUIZ,
                     elementData: element.elementData,
@@ -670,7 +668,6 @@ export async function createActivityTemplate(
                 elements: {
                   create: stack.elements.map((element) => ({
                     elementType: element.elementType,
-                    migrationId: uuidv4(),
                     order: element.order,
                     type: DB.ElementInstanceType.MICROLEARNING,
                     elementData: element.elementData,
@@ -771,7 +768,6 @@ export async function createActivityTemplate(
                 elements: {
                   create: stack.elements.map((element) => ({
                     elementType: element.elementType,
-                    migrationId: uuidv4(),
                     order: element.order,
                     type: DB.ElementInstanceType.GROUP_ACTIVITY,
                     elementData: element.elementData,
@@ -1853,7 +1849,6 @@ export async function createLiveQuizFromTemplate(
 
                     return {
                       elementType: entry.element.type,
-                      migrationId: uuidv4(),
                       order: entry.order,
                       type: DB.ElementInstanceType.LIVE_QUIZ,
                       elementData,

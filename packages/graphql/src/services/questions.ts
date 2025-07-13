@@ -167,8 +167,6 @@ export async function getArtificialElementInstance(
   return {
     id: 0,
     elementId: element.id,
-    migrationId: '',
-    originalId: null,
     elementType: element.type,
     order: 0,
     type: DB.ElementInstanceType.LIVE_QUIZ,

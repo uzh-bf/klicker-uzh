@@ -681,7 +681,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId'> {
   tags?: ITag[] | null
   permissionLevel?: DB.PermissionLevel
   derivedAccess?: boolean // = derived from other object => removal disabled
@@ -923,7 +923,7 @@ export const InstanceUpdateActivityInfo =
   })
 
 export interface ITag
-  extends Omit<DB.Tag, 'originalId' | 'ownerId' | 'createdAt' | 'updatedAt'> {}
+  extends Omit<DB.Tag, 'ownerId' | 'createdAt' | 'updatedAt'> {}
 export const TagRef = builder.objectRef<ITag>('Tag')
 export const Tag = TagRef.implement({
   fields: (t) => ({

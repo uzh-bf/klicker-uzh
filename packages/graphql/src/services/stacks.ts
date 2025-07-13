@@ -265,7 +265,7 @@ function computeUpdatedInstanceStatistics({
           uniqueParticipantCount: {
             increment: Number(!existingResponse),
           },
-          averageTimeSpent: newAverageInstanceTime,
+          averageTimeSpent: newAverageInstanceTime ?? 0,
           correctCount: {
             increment: Number(answerCorrect),
           },
@@ -569,7 +569,7 @@ async function upsertFlashcardResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -632,7 +632,7 @@ async function upsertFlashcardResponse({
         correctness: response,
       },
       lastResponseCorrectness: responseCorrectness,
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       aggregatedResponses: {
         ...aggregatedResponses,
         [response]: aggregatedResponses[response] + 1,
@@ -923,7 +923,7 @@ async function upsertContentResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -983,7 +983,7 @@ async function upsertContentResponse({
     },
     update: {
       // RESPONSE
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       lastResponse: {
         viewed: true,
       },
@@ -2400,7 +2400,7 @@ async function upsertQuestionResponse({
       totalPointsAwarded: pointsAwarded,
       totalXpAwarded: xpAwarded,
       trialsCount: 1,
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       lastAwardedAt,
       lastXpAwardedAt,
       firstResponse: response as SingleQuestionResponse,
@@ -2454,7 +2454,7 @@ async function upsertQuestionResponse({
       trialsCount: {
         increment: 1,
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       totalScore: {
         increment: score,
       },

@@ -32,7 +32,7 @@
     "vitest": "~3.2.3"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "cross-env NODE_ENV=production rollup -c",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:ts dev:run",

@@ -233,14 +233,12 @@ export function prepareGroupActivityStack({
   contentElements,
   courseId,
   connectStackToCourse = false,
-  migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
   questions: Prisma.Element[]
   contentElements: Prisma.Element[]
   courseId: string
   connectStackToCourse?: boolean
-  migrationIdOffset: number
 }) {
   return {
     displayName: 'Stack displayname for group activity',
@@ -259,7 +257,6 @@ export function prepareGroupActivityStack({
             const initialResults = getInitialInstanceResults(elementData)
 
             return {
-              migrationId: String(migrationIdOffset + 2 + ix),
               order: 2 + ix,
               type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
               elementType: el.type,
@@ -284,7 +281,6 @@ export function prepareGroupActivityStack({
           const initialResults = getInitialInstanceResults(elementData)
 
           return {
-            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
             order: questions.length + 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -351,7 +347,6 @@ export function prepareStackVariety({
   courseId,
   connectToCourse = false,
   activityType,
-  migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
   questions: Prisma.Element[]
@@ -361,7 +356,6 @@ export function prepareStackVariety({
   courseId: string
   connectToCourse?: boolean
   activityType: ActivityType
-  migrationIdOffset: number
 }) {
   return [
     // create stacks with one flashcard each
@@ -377,7 +371,6 @@ export function prepareStackVariety({
         elements: {
           create: [
             {
-              migrationId: String(migrationIdOffset + ix),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -417,7 +410,6 @@ export function prepareStackVariety({
           const initialResults = getInitialInstanceResults(elementData)
 
           return {
-            migrationId: String(migrationIdOffset + flashcards.length + ix),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -457,9 +449,6 @@ export function prepareStackVariety({
         elements: {
           create: [
             {
-              migrationId: String(
-                migrationIdOffset + 2 * flashcards.length + ix
-              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -499,9 +488,6 @@ export function prepareStackVariety({
       type: stackType,
       elements: {
         create: questions.map((el, ix) => ({
-          migrationId: String(
-            migrationIdOffset + 2 * flashcards.length + questions.length + ix
-          ),
           order: ix,
           type: elementInstanceType,
           elementType: el.type,
@@ -544,12 +530,6 @@ export function prepareStackVariety({
         elements: {
           create: [
             {
-              migrationId: String(
-                migrationIdOffset +
-                  2 * flashcards.length +
-                  2 * questions.length +
-                  ix
-              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -594,14 +574,6 @@ export function prepareStackVariety({
           const initialResults = getInitialInstanceResults(elementData)
 
           return {
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                contentElements.length +
-                outer_ix * contentElements.length +
-                ix
-            ),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -639,13 +611,6 @@ export function prepareStackVariety({
       elements: {
         create: [
           {
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5
-            ),
             order: 0,
             type: elementInstanceType,
             elementType: flashcards[0]!.type,
@@ -667,14 +632,6 @@ export function prepareStackVariety({
             elementId: flashcards[0]!.id,
           },
           {
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                1
-            ),
             order: 1,
             type: elementInstanceType,
             elementType: questions[0]!.type,
@@ -700,14 +657,6 @@ export function prepareStackVariety({
             elementId: questions[0]!.id,
           },
           {
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                2
-            ),
             order: 2,
             type: elementInstanceType,
             elementType: contentElements[0]!.type,
