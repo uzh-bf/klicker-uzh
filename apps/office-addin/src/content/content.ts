@@ -40,6 +40,9 @@ const changeEmbeddedUrlButton = document.getElementById(
 const appContainer = document.getElementById(
   'app-container'
 ) as HTMLDivElement | null
+const urlValidationMessage = document.getElementById(
+  'url-validation-message'
+) as HTMLDivElement | null
 
 // --- Constants ---
 /**
@@ -54,6 +57,19 @@ const SETTINGS_KEY = 'embeddedUrl'
  * Displays an error message if the host is not PowerPoint.
  */
 Office.onReady((info) => {
+  // Ensure DOM is fully loaded before accessing elements
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initializeOfficeAddin(info))
+  } else {
+    initializeOfficeAddin(info)
+  }
+})
+
+/**
+ * Initializes the Office add-in after ensuring both Office.js and DOM are ready.
+ * @param info - Office host information from Office.onReady callback
+ */
+function initializeOfficeAddin(info: any) {
   // Check if the host application is PowerPoint
   if (info.host === Office.HostType.PowerPoint) {
     initializeApp() // Proceed with add-in initialization
@@ -62,7 +78,7 @@ Office.onReady((info) => {
     console.error('This add-in is designed to run only in PowerPoint.')
     showMessage('This add-in only works in PowerPoint.', 'error')
   }
-})
+}
 
 // --- Initialization ---
 /**
@@ -79,6 +95,13 @@ function initializeApp(): void {
   }
   if (changeEmbeddedUrlButton) {
     changeEmbeddedUrlButton.addEventListener('click', showInitialView) // Handle changing the URL
+  }
+  
+  // Add input validation event listeners
+  if (urlInput) {
+    urlInput.addEventListener('input', handleUrlInput) // Real-time validation
+    urlInput.addEventListener('blur', handleUrlBlur) // Validation on focus loss
+    urlInput.addEventListener('paste', handleUrlPaste) // Handle paste events
   }
 
   // Load the initial state (either show saved iframe or initial view)
@@ -278,6 +301,165 @@ async function getSlideID(maxRetries = 3): Promise<number> {
   throw new Error('Failed to get slide ID') // This should never be reached due to the throw in the retry loop
 }
 
+// --- Input Validation ---
+
+/**
+ * Real-time validation states for the URL input
+ */
+type ValidationState = 'valid' | 'invalid' | 'empty' | 'pending'
+
+/**
+ * Handles real-time input validation as the user types
+ */
+function handleUrlInput(): void {
+  if (!urlInput) return
+  
+  const url = urlInput.value.trim()
+  
+  if (url === '') {
+    setValidationState('empty')
+    return
+  }
+  
+  // Debounce validation to avoid excessive checks while typing
+  clearTimeout(validationTimeout)
+  setValidationState('pending')
+  
+  validationTimeout = setTimeout(() => {
+    validateUrlInput(url)
+  }, 300) // 300ms debounce
+}
+
+/**
+ * Handles validation when the input loses focus
+ */
+function handleUrlBlur(): void {
+  if (!urlInput) return
+  
+  const url = urlInput.value.trim()
+  if (url !== '') {
+    validateUrlInput(url)
+  }
+}
+
+/**
+ * Handles paste events with immediate validation
+ */
+function handleUrlPaste(): void {
+  if (!urlInput) return
+  
+  // Use setTimeout to allow the paste to complete
+  setTimeout(() => {
+    const url = urlInput.value.trim()
+    if (url !== '') {
+      validateUrlInput(url)
+    }
+  }, 10)
+}
+
+/**
+ * Validates the URL input and updates the UI accordingly
+ * @param url - The URL to validate
+ */
+function validateUrlInput(url: string): void {
+  if (isValidUrl(url)) {
+    setValidationState('valid')
+  } else {
+    setValidationState('invalid')
+  }
+}
+
+/**
+ * Sets the visual validation state of the input field
+ * @param state - The validation state to apply
+ */
+function setValidationState(state: ValidationState): void {
+  if (!urlInput || !urlValidationMessage) return
+  
+  // Reset all classes
+  urlInput.classList.remove(
+    'border-red-500',
+    'border-green-500', 
+    'border-yellow-500',
+    'focus:ring-red-500',
+    'focus:ring-green-500',
+    'focus:ring-yellow-500'
+  )
+  urlValidationMessage.classList.add('hidden')
+  
+  switch (state) {
+    case 'valid':
+      urlInput.classList.add('border-green-500', 'focus:ring-green-500')
+      showValidationMessage('✓ Valid KlickerUZH evaluation URL', 'success')
+      updateEmbedButton(true)
+      break
+      
+    case 'invalid':
+      urlInput.classList.add('border-red-500', 'focus:ring-red-500')
+      showValidationMessage('Please enter a valid KlickerUZH evaluation URL', 'error')
+      updateEmbedButton(false)
+      break
+      
+    case 'pending':
+      urlInput.classList.add('border-yellow-500', 'focus:ring-yellow-500')
+      showValidationMessage('Validating...', 'pending')
+      updateEmbedButton(false)
+      break
+      
+    case 'empty':
+      // Neutral state, no special styling
+      updateEmbedButton(false)
+      break
+  }
+}
+
+/**
+ * Shows a validation message below the input field
+ * @param message - The message to display
+ * @param type - The type of message (success, error, pending)
+ */
+function showValidationMessage(message: string, type: 'success' | 'error' | 'pending'): void {
+  if (!urlValidationMessage) return
+  
+  urlValidationMessage.textContent = message
+  urlValidationMessage.classList.remove('text-red-600', 'text-green-600', 'text-yellow-600')
+  
+  switch (type) {
+    case 'success':
+      urlValidationMessage.classList.add('text-green-600')
+      break
+    case 'error':
+      urlValidationMessage.classList.add('text-red-600')
+      break
+    case 'pending':
+      urlValidationMessage.classList.add('text-yellow-600')
+      break
+  }
+  
+  urlValidationMessage.classList.remove('hidden')
+}
+
+/**
+ * Updates the embed button state based on validation
+ * @param isValid - Whether the input is valid
+ */
+function updateEmbedButton(isValid: boolean): void {
+  if (!embedButton) return
+  
+  if (isValid) {
+    embedButton.disabled = false
+    embedButton.classList.remove('opacity-50', 'cursor-not-allowed')
+    embedButton.classList.add('hover:border-gray-400', 'hover:bg-gray-300')
+  } else {
+    embedButton.disabled = true
+    embedButton.classList.add('opacity-50', 'cursor-not-allowed')
+    embedButton.classList.remove('hover:border-gray-400', 'hover:bg-gray-300')
+  }
+}
+
+// Validation timeout for debouncing
+let validationTimeout: ReturnType<typeof setTimeout>
+
 // --- Event Handlers ---
 /**
  * Handles the click event of the 'Embed' button.
@@ -414,6 +596,7 @@ function showInitialView(): void {
   }
   if (urlInput) {
     urlInput.value = '' // Clear the input field
+    setValidationState('empty') // Reset validation state
   }
 
   // Clear the saved setting asynchronously
@@ -470,7 +653,13 @@ function showMessage(
   )
 
   if (!messageBox || !messageText) {
-    console.error('Message box elements not found in the DOM.')
+    console.error('Message box elements not found in the DOM.', {
+      messageBox: !!messageBox,
+      messageText: !!messageText,
+      domReady: document.readyState,
+      messageBoxElement: document.getElementById('message-box'),
+      messageTextElement: document.getElementById('message-text'),
+    })
     return
   }
 

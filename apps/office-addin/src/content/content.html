@@ -177,13 +177,20 @@
         <label for="url-input" class="whitespace-nowrap text-sm font-medium text-gray-700"
           >URL <span class="text-red-500">*</span></label
         >
-        <input
-          type="url"
-          id="url-input"
-          placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
-          required
-          class="flex-grow rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div class="flex-grow relative">
+          <input
+            type="url"
+            id="url-input"
+            placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
+            required
+            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+          />
+          <!-- Validation message -->
+          <div
+            id="url-validation-message"
+            class="absolute mt-1 text-xs text-red-600 hidden"
+          ></div>
+        </div>
         <button
           type="button"
           id="embed-button"
