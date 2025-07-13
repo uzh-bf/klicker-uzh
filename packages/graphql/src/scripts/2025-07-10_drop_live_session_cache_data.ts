@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis'
 
-// ? This script removes all redis cache entries that are related to live sessions (and not the new live quiz)
+// ! This script removes all redis cache entries that are related to live sessions (and not the new live quiz)
 async function run() {
   const redisExec = new Redis({
     family: 4,
@@ -15,8 +15,10 @@ async function run() {
   console.log(`Deleting ${keys.length} keys:`)
   console.log(keys)
 
-  // TODO: uncomment this line to execute redis pipeline
-  // await redisExec.del(...keys)
+  // ! unlink the keys to remove them from redis asynchronously
+  if (keys.length > 0) {
+    await redisExec.unlink(...keys)
+  }
 
   redisExec.quit()
 }
