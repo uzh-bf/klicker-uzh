@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.70...v3.3.0-alpha.71) (2025-07-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve table scrolling and overflow issues on live quiz evaluation ([#4773](https://github.com/uzh-bf/klicker-uzh/issues/4773)) ([9799b67](https://github.com/uzh-bf/klicker-uzh/commit/9799b67389206f27a9cfd3a9bca480c91f21d060))
+* ensure that errors due to tags with identical names are handled gracefully ([#4775](https://github.com/uzh-bf/klicker-uzh/issues/4775)) ([fea2ccd](https://github.com/uzh-bf/klicker-uzh/commit/fea2ccd5b1e5ef4d607e62e480221a2de03b11ae))
+
+
+### Enhancements
+
+* **apps(frontend-manage:** add possibility to set and modify notication email on course ([#4774](https://github.com/uzh-bf/klicker-uzh/issues/4774)) ([e81bdd0](https://github.com/uzh-bf/klicker-uzh/commit/e81bdd0e1e627af0f209b0b1693bc542394a21cd))
+* **apps/frontend-manage:** introduce new Live-Q&A view for lecturer ([#4778](https://github.com/uzh-bf/klicker-uzh/issues/4778)) ([5a4fb56](https://github.com/uzh-bf/klicker-uzh/commit/5a4fb569f3b780be1148d728e7e8a32ccd00965f))
+
 ## [3.3.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.69...v3.3.0-alpha.70) (2025-07-12)
 
 
