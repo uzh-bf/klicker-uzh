@@ -9,8 +9,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="KlickerUZH Evaluation" />
   <Description DefaultValue="Embed KlickerUZH Polls" />
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png" />
+  <IconUrl DefaultValue="https://localhost:3020/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:3020/assets/icon-64.png" />
   <SupportUrl DefaultValue="https://www.klicker.uzh.ch" />
   <AppDomains>
     <AppDomain>https://manage.klicker.uzh.ch/</AppDomain>
@@ -19,7 +19,7 @@
     <Host Name="Presentation" />
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3000/content.html" />
+    <SourceLocation DefaultValue="https://localhost:3020/content.html" />
     <RequestedWidth>600</RequestedWidth>
     <RequestedHeight>400</RequestedHeight>
   </DefaultSettings>
