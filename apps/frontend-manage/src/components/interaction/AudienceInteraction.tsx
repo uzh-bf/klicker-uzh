@@ -347,7 +347,7 @@ function AudienceInteraction({
               push([
                 'trackEvent',
                 'Running Live Quiz',
-                'Feedback Moderation Toggled',
+                'Confusion Feedback Toggled',
                 String(!isConfusionFeedbackEnabled),
               ])
             }}
