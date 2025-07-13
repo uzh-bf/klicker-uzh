@@ -1,11 +1,7 @@
 {
-  "name": "office-addin-taskpane-js",
-  "version": "0.0.1",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/OfficeDev/Office-Addin-TaskPane-JS.git"
-  },
-  "license": "MIT",
+  "name": "@klicker-uzh/ppt-addin",
+  "version": "3.3.0-alpha.70",
+  "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
     "app_type_to_debug": "desktop",
