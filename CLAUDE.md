@@ -33,6 +33,10 @@ KlickerUZH is an open-source audience interaction platform developed by the Teac
 
 - **Cypress**: End-to-end tests for all applications (@cypress/CLAUDE.md)
 
+### Utilities
+
+- **Backup/Restore System**: Production-ready backup and restore utilities for PostgreSQL and Redis (@util/backup/CLAUDE.md)
+
 ## Development Workflow
 
 ### Setting Up the Development Environment
