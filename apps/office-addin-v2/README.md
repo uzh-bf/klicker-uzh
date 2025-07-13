@@ -12,18 +12,18 @@ PowerPoint add-ins are integrations built by third parties into PowerPoint by us
 ### Run the add-in using Office Add-ins Development Kit extension
 
 1. **Open the Office Add-ins Development Kit**
-    
-    In the **Activity Bar**, select the **Office Add-ins Development Kit** icon to open the extension.
+
+   In the **Activity Bar**, select the **Office Add-ins Development Kit** icon to open the extension.
 
 1. **Preview Your Office Add-in (F5)**
 
-    Select **Preview Your Office Add-in(F5)** to launch the add-in and debug the code. In the Quick Pick menu, select the option **PowerPoint Desktop (Edge Chromium)**.
+   Select **Preview Your Office Add-in(F5)** to launch the add-in and debug the code. In the Quick Pick menu, select the option **PowerPoint Desktop (Edge Chromium)**.
 
-    The extension then checks that the prerequisites are met before debugging starts. Check the terminal for detailed information if there are issues with your environment. After this process, the PowerPoint desktop application launches and sideloads the add-in.
+   The extension then checks that the prerequisites are met before debugging starts. Check the terminal for detailed information if there are issues with your environment. After this process, the PowerPoint desktop application launches and sideloads the add-in.
 
 1. **Stop Previewing Your Office Add-in**
 
-    Once you are finished testing and debugging the add-in, select **Stop Previewing Your Office Add-in**. This closes the web server and removes the add-in from the registry and cache.
+   Once you are finished testing and debugging the add-in, select **Stop Previewing Your Office Add-in**. This closes the web server and removes the add-in from the registry and cache.
 
 ## Use the add-in project
 
@@ -33,7 +33,7 @@ The add-in project that you've created contains code for a basic task pane add-i
 
 To explore an Office add-in project, you can start with the key files listed below.
 
-- The `./manifest.xml` file in the root directory of the project defines the settings and capabilities of the add-in.  <br>You can check whether your manifest file is valid by selecting **Validate Manifest File** option from the Office Add-ins Development Kit.
+- The `./manifest.xml` file in the root directory of the project defines the settings and capabilities of the add-in. <br>You can check whether your manifest file is valid by selecting **Validate Manifest File** option from the Office Add-ins Development Kit.
 - The `./src/taskpane/taskpane.html` file contains the HTML markup for the task pane.
 - The `./src/taskpane/taskpane.css` file contains the CSS that's applied to content in the task pane.
 - The `./src/taskpane/taskpane.js` file contains the Office JavaScript API code that facilitates interaction between the task pane and the PowerPoint application.
@@ -45,7 +45,7 @@ If you have problems running the add-in, take these steps.
 - Close any open instances of PowerPoint.
 - Close the previous web server started for the add-in with the **Stop Previewing Your Office Add-in** Office Add-ins Development Kit extension option.
 
-If you still have problems, see [troubleshoot development errors](https://learn.microsoft.com//office/dev/add-ins/testing/troubleshoot-development-errors) or [create a GitHub issue](https://aka.ms/officedevkitnewissue) and we'll help you.  
+If you still have problems, see [troubleshoot development errors](https://learn.microsoft.com//office/dev/add-ins/testing/troubleshoot-development-errors) or [create a GitHub issue](https://aka.ms/officedevkitnewissue) and we'll help you.
 
 For information on running the add-in on PowerPoint on the web, see [Sideload Office Add-ins to Office on the web](https://learn.microsoft.com/office/dev/add-ins/testing/sideload-office-add-ins-for-testing).
 
@@ -69,4 +69,4 @@ Copyright (c) 2024 Microsoft Corporation. All rights reserved.
 
 ## Disclaimer
 
-**THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.**
+**THIS CODE IS PROVIDED _AS IS_ WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.**

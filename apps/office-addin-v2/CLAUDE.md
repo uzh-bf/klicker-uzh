@@ -5,6 +5,7 @@ This is the new version of the KlickerUZH PowerPoint add-in that allows users to
 ## Overview
 
 The PowerPoint add-in provides an embedded content pane that allows lecturers to:
+
 - Enter a KlickerUZH evaluation URL (from live quizzes)
 - Embed the evaluation content directly into PowerPoint slides
 - Display real-time quiz results, specific questions, or leaderboards
@@ -30,17 +31,20 @@ The PowerPoint add-in provides an embedded content pane that allows lecturers to
 ## Key Features
 
 ### URL Validation and Storage
+
 - Validates KlickerUZH evaluation URLs with specific regex pattern
 - Stores embedded URLs in Office document settings (persistent across sessions)
 - Handles migration from legacy slide-specific storage to document-wide storage
 
 ### Responsive UI
+
 - Initial view with instructions and URL input
 - Fullscreen iframe mode for embedded content
 - "Change URL" button to return to initial view
 - Toast notifications for user feedback
 
 ### Office Integration
+
 - PowerPoint host detection and validation
 - Document settings API for persistent storage
 - Slide ID detection for legacy migration
@@ -112,8 +116,9 @@ npm run prettier
 ### URL Validation
 
 The add-in validates URLs using a strict regex pattern:
+
 ```javascript
-/^https:\/\/manage\.klicker\.uzh\.ch\/quizzes\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/evaluation\?hmac=.+$/
+;/^https:\/\/manage\.klicker\.uzh\.ch\/quizzes\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/evaluation\?hmac=.+$/
 ```
 
 This ensures only valid KlickerUZH evaluation URLs are accepted.

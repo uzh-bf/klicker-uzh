@@ -80,7 +80,9 @@
         height: 100%;
       }
       #iframe-wrapper {
-        height: calc(100% - 4rem); /* Adjust height calculation based on header/button bar */
+        height: calc(
+          100% - 4rem
+        ); /* Adjust height calculation based on header/button bar */
       }
       /* Style for the message box */
       #message-box {
@@ -100,23 +102,31 @@
   </head>
 
   <body class="bg-white">
-    <div id="app-container" class="h-full-flex flex flex-col p-6 relative">
+    <div id="app-container" class="h-full-flex relative flex flex-col p-6">
       <!-- Header -->
-      <header class="flex items-center mb-6 pb-4 border-b border-gray-200">
+      <header class="mb-6 flex items-center border-b border-gray-200 pb-4">
         <!-- Replace with actual logo path -->
-        <img src="../../assets/logo-filled.png" alt="Klicker UZH Logo" class="h-10 mr-4" />
-        <h1 class="text-2xl font-semibold text-gray-800">KlickerUZH: Embed Evaluation</h1>
+        <img
+          src="../../assets/logo-filled.png"
+          alt="Klicker UZH Logo"
+          class="mr-4 h-10"
+        />
+        <h1 class="text-2xl font-semibold text-gray-800">
+          KlickerUZH: Embed Evaluation
+        </h1>
       </header>
 
       <!-- Main Content Area (Instructions + Image) - with background and padding -->
       <div
         id="main-content-area"
-        class="flex flex-grow space-x-8 mb-6 bg-gray-50 p-6 rounded-lg border border-gray-200"
+        class="mb-6 flex flex-grow space-x-8 rounded-lg border border-gray-200 bg-gray-50 p-6"
       >
         <!-- Left Panel: Instructions (padding removed as parent now has padding) -->
         <div class="w-1/2">
-          <h3 class="font-semibold text-gray-800 mb-4 text-sm">Instructions:</h3>
-          <ol class="list-decimal list-inside text-sm text-gray-600 space-y-3">
+          <h3 class="mb-4 text-sm font-semibold text-gray-800">
+            Instructions:
+          </h3>
+          <ol class="list-inside list-decimal space-y-3 text-sm text-gray-600">
             <li>
               Go to
               <a
@@ -127,22 +137,28 @@
                 >https://manage.klicker.uzh.ch/quizzes</a
               >
             </li>
-            <li>For the live quiz you want to embed, open the "Embed Evaluation" dialog</li>
             <li>
-              Copy the link of the view to embed (the full evaluation, a specific question, or the
-              leaderboard)
+              For the live quiz you want to embed, open the "Embed Evaluation"
+              dialog
+            </li>
+            <li>
+              Copy the link of the view to embed (the full evaluation, a
+              specific question, or the leaderboard)
             </li>
             <li>Paste the link into the field and click "Embed"</li>
-            <li>Resize the add-in to your preferred size (e.g., to cover the full slide)</li>
+            <li>
+              Resize the add-in to your preferred size (e.g., to cover the full
+              slide)
+            </li>
           </ol>
         </div>
 
         <!-- Right Panel: Evaluation Links IMAGE -->
-        <div class="w-1/2 flex justify-center items-start">
+        <div class="flex w-1/2 items-start justify-center">
           <img
             src="../../assets/embed-modal.png"
             alt="Example Embed Evaluation Links Modal"
-            class="w-full h-auto max-w-md shadow-md rounded-lg border border-gray-200"
+            class="h-auto w-full max-w-md rounded-lg border border-gray-200 shadow-md"
           />
         </div>
       </div>
@@ -150,9 +166,11 @@
       <!-- Bottom Input Area -->
       <div
         id="input-bar-area"
-        class="flex items-center space-x-3 pt-4 mt-6 border-t border-gray-200"
+        class="mt-6 flex items-center space-x-3 border-t border-gray-200 pt-4"
       >
-        <label for="url-input" class="whitespace-nowrap text-sm font-medium text-gray-700"
+        <label
+          for="url-input"
+          class="whitespace-nowrap text-sm font-medium text-gray-700"
           >URL <span class="text-red-500">*</span></label
         >
         <input
@@ -160,28 +178,28 @@
           id="url-input"
           placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
           required
-          class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          class="flex-grow rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           type="button"
           id="embed-button"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-md border border-gray-300 hover:border-gray-400 transition duration-150 ease-in-out text-sm"
+          class="rounded-md border border-gray-300 bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-800 transition duration-150 ease-in-out hover:border-gray-400 hover:bg-gray-300"
         >
           Embed
         </button>
       </div>
 
       <!-- Hidden iframe container (populated by JS after clicking Embed) -->
-      <div id="iframe-container" class="hidden flex-grow flex-col mt-4">
+      <div id="iframe-container" class="mt-4 hidden flex-grow flex-col">
         <div
           id="iframe-wrapper"
-          class="flex-grow border border-gray-300 rounded-md overflow-hidden bg-white shadow-sm"
+          class="flex-grow overflow-hidden rounded-md border border-gray-300 bg-white shadow-sm"
         >
           <iframe
             id="content-iframe"
             title="Embedded Content"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-            class="w-full h-full border-0"
+            class="h-full w-full border-0"
           ></iframe>
         </div>
       </div>
@@ -189,7 +207,7 @@
       <!-- Message Box (keep for error/info messages) -->
       <div
         id="message-box"
-        class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 bg-red-500 text-white rounded-md shadow-md opacity-0 transition-opacity duration-500 ease-in-out"
+        class="fixed left-1/2 top-4 z-50 hidden -translate-x-1/2 transform rounded-md bg-red-500 px-4 py-2 text-white opacity-0 shadow-md transition-opacity duration-500 ease-in-out"
       >
         <span id="message-text"></span>
       </div>
@@ -197,7 +215,7 @@
       <!-- Button to change URL when iframe is active -->
       <button
         id="change-embedded-url-button"
-        class="hidden absolute top-6 right-6 z-20 bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold py-1 px-3 rounded-md transition duration-150 ease-in-out"
+        class="absolute right-6 top-6 z-20 hidden rounded-md bg-gray-600 px-3 py-1 text-xs font-bold text-white transition duration-150 ease-in-out hover:bg-gray-700"
       >
         Change URL
       </button>

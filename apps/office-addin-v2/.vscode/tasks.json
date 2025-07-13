@@ -30,85 +30,49 @@
       "label": "Debug: Excel Desktop",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "excel"
-      ],
+      "args": ["run", "start", "--", "desktop", "--app", "excel"],
       "presentation": {
         "clear": true,
         "panel": "dedicated"
       },
       "problemMatcher": [],
-      "dependsOn": [
-        "Check And Install Deps"
-      ]
+      "dependsOn": ["Check And Install Deps"]
     },
     {
       "label": "Debug: Outlook Desktop",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "outlook"
-      ],
+      "args": ["run", "start", "--", "desktop", "--app", "outlook"],
       "presentation": {
         "clear": true,
         "panel": "dedicated"
       },
       "problemMatcher": [],
-      "dependsOn": [
-        "Check And Install Deps"
-      ]
+      "dependsOn": ["Check And Install Deps"]
     },
     {
       "label": "Debug: PowerPoint Desktop",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "powerpoint"
-      ],
+      "args": ["run", "start", "--", "desktop", "--app", "powerpoint"],
       "presentation": {
         "clear": true,
         "panel": "dedicated"
       },
       "problemMatcher": [],
-      "dependsOn": [
-        "Check And Install Deps"
-      ]
+      "dependsOn": ["Check And Install Deps"]
     },
     {
       "label": "Debug: Word Desktop",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "start",
-        "--",
-        "desktop",
-        "--app",
-        "word"
-      ],
+      "args": ["run", "start", "--", "desktop", "--app", "word"],
       "presentation": {
         "clear": true,
         "panel": "dedicated"
       },
       "problemMatcher": [],
-      "dependsOn": [
-        "Check And Install Deps"
-      ]
+      "dependsOn": ["Check And Install Deps"]
     },
     {
       "label": "Dev Server",
@@ -135,17 +99,13 @@
       "label": "Lint: Check for problems",
       "type": "npm",
       "script": "lint",
-      "problemMatcher": [
-        "$eslint-stylish"
-      ]
+      "problemMatcher": ["$eslint-stylish"]
     },
     {
       "label": "Lint: Fix all auto-fixable problems",
       "type": "npm",
       "script": "lint:fix",
-      "problemMatcher": [
-        "$eslint-stylish"
-      ]
+      "problemMatcher": ["$eslint-stylish"]
     },
     {
       "label": "Stop Debug",
