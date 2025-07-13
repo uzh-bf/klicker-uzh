@@ -42,18 +42,21 @@ util/backup/
 ## Security Features
 
 ### Mandatory Encryption
+
 - **Policy**: All dump files MUST be encrypted using GPG AES256 cipher
 - **Implementation**: Scripts automatically reject unencrypted dumps
 - **Key Management**: Encryption keys stored securely in Doppler secrets
 - **Validation**: Automatic encryption detection and transparent decryption
 
 ### Secure Temporary File Management
+
 - **Registry System**: All temporary files tracked in persistent registry
 - **Secure Permissions**: Temporary files created with 600 permissions
 - **Cleanup Chain**: Comprehensive cleanup on any script termination
 - **Emergency Cleanup**: Proactive cleanup of leftover files from previous runs
 
 ### Signal Handling
+
 - **Trap Chaining**: Multiple cleanup functions executed in reverse order
 - **Signal Coverage**: Handles SIGINT, SIGTERM, SIGHUP, and EXIT
 - **Emergency Response**: Secure deletion with data overwriting
@@ -62,9 +65,11 @@ util/backup/
 ## Core Components
 
 ### dump/dump-db.sh
+
 **Purpose**: Creates encrypted PostgreSQL database dumps for any environment
 
 **Key Features**:
+
 - Unified script supporting dev/stg/prd environments
 - Automatic Doppler secrets loading
 - Mandatory encryption with security policy enforcement
@@ -72,6 +77,7 @@ util/backup/
 - Comprehensive error handling and validation
 
 **Usage**:
+
 ```bash
 ./dump-db.sh prd    # Production dump
 ./dump-db.sh stg    # Staging dump
@@ -79,9 +85,11 @@ util/backup/
 ```
 
 ### dump/dump-redis.sh
+
 **Purpose**: Creates encrypted Redis data dumps using upstash-redis-dump
 
 **Key Features**:
+
 - Multi-database support with selective dumping
 - Parallel worker configuration for performance
 - Key filtering patterns for targeted dumps
@@ -89,6 +97,7 @@ util/backup/
 - Silent mode for automated operations
 
 **Configuration**:
+
 ```bash
 REDIS_DUMP_WORKERS=20           # Parallel workers
 REDIS_DUMP_DATABASE=1           # Specific database
@@ -97,9 +106,11 @@ REDIS_DUMP_SILENT=true          # Silent mode
 ```
 
 ### restore/restore-db.sh
+
 **Purpose**: Unified PostgreSQL database restore with environment-specific configuration
 
 **Key Features**:
+
 - Production safety checks with explicit confirmations
 - Automatic encrypted dump decryption
 - Connection testing with retry logic
@@ -107,24 +118,29 @@ REDIS_DUMP_SILENT=true          # Silent mode
 - KlickerUZH-specific table validation
 
 **Safety Measures**:
+
 - Production restores require "RESTORE PRODUCTION" confirmation
 - Staging validation required before production operations
 - Pre-restore connectivity testing
 - Comprehensive error reporting with actionable guidance
 
 ### restore/restore-redis.sh
+
 **Purpose**: Unified Redis data restore with transparent encryption handling
 
 **Key Features**:
+
 - Automatic connection string building from Doppler secrets
 - Encrypted dump handling with transparent decryption
 - Connection validation with retry mechanisms
 - Error handling with detailed troubleshooting guidance
 
-### lib/_restore-common.sh
+### lib/\_restore-common.sh
+
 **Purpose**: Core utility library providing shared functionality across all scripts
 
 **Key Functions**:
+
 - `setup_secure_signal_handling()`: Configures comprehensive signal traps
 - `decrypt_dump_if_needed()`: Handles encrypted dump decryption
 - `find_latest_dump()`: Intelligent dump discovery with fallbacks
@@ -133,10 +149,12 @@ REDIS_DUMP_SILENT=true          # Silent mode
 - `build_pg_connection_string()`: PostgreSQL connection handling
 - `build_redis_connection_string()`: Redis connection handling
 
-### lib/_verify-restore.sh
+### lib/\_verify-restore.sh
+
 **Purpose**: Comprehensive verification and integrity checking utilities
 
 **Key Functions**:
+
 - `verify_klicker_database_restore()`: KlickerUZH-specific database validation
 - `verify_klicker_critical_tables()`: Critical table existence and population checks
 - `get_table_row_count()`: PostgreSQL table row counting with case sensitivity handling
@@ -144,15 +162,18 @@ REDIS_DUMP_SILENT=true          # Silent mode
 - `check_prisma_migration_status()`: Migration state verification
 
 **Critical Tables Verified**:
+
 - User, Element, Course, Participant
 - LiveQuiz, PracticeQuiz, MicroLearning
 - ElementInstance, QuestionResponse
-- _prisma_migrations
+- \_prisma_migrations
 
 ### prepare_local_prod.sh
+
 **Purpose**: Complete local development environment setup with production data
 
 **Workflow**:
+
 1. **Discovery**: Automatically finds latest database and Redis dumps
 2. **Reset**: Stops Docker Compose and removes volumes
 3. **Start**: Launches PostgreSQL and Redis services
@@ -161,6 +182,7 @@ REDIS_DUMP_SILENT=true          # Silent mode
 6. **Verify**: Comprehensive integrity checks
 
 **Key Improvements** (from recent work):
+
 - Fixed PostgreSQL case sensitivity in table verification
 - Enhanced error handling for non-critical verification failures
 - Removed automatic Prisma migrations to preserve exact production state
@@ -170,18 +192,21 @@ REDIS_DUMP_SILENT=true          # Silent mode
 ## Environment Handling
 
 ### Development (dev)
+
 - **Configuration**: Local hardcoded settings
 - **Database**: localhost:5432, klicker/klicker credentials
 - **Safety**: Minimal restrictions, designed for rapid iteration
 - **Use Case**: Local development with production data
 
 ### Staging (stg)
+
 - **Configuration**: Doppler secrets management
 - **Purpose**: Production validation and testing
 - **Requirements**: Required validation step before production operations
 - **Use Case**: Final testing before production deployment
 
 ### Production (prd)
+
 - **Configuration**: Doppler secrets with enhanced security
 - **Restrictions**: Restore operations blocked for safety
 - **Requirements**: Must use restore-orchestrator.sh with staging validation
@@ -190,6 +215,7 @@ REDIS_DUMP_SILENT=true          # Silent mode
 ## Common Tasks
 
 ### Setting Up Local Development
+
 ```bash
 # Complete one-command setup
 cd util/backup
@@ -200,6 +226,7 @@ BACKUP_ENCRYPTION_KEY='your-key' ./prepare_local_prod.sh
 ```
 
 ### Creating Production Dumps
+
 ```bash
 cd util/backup/dump
 ./dump-db.sh prd        # Creates encrypted database dump
@@ -207,6 +234,7 @@ cd util/backup/dump
 ```
 
 ### Manual Restore Operations
+
 ```bash
 cd util/backup/restore
 ./restore-db.sh dev     # Restore database to development
@@ -217,6 +245,7 @@ DUMP_FILE=/path/to/dump.tar.gpg ./restore-db.sh dev
 ```
 
 ### Verification and Troubleshooting
+
 ```bash
 # Verify dump file integrity
 cd util/backup/lib
@@ -231,26 +260,31 @@ verify_klicker_database_restore "postgresql://user:pass@host:5432/db"
 ## Recent Improvements
 
 ### Row Count Verification Fixes
+
 **Problem**: PostgreSQL case sensitivity causing table verification failures
 **Solution**: Enhanced `get_table_row_count()` with proper quoting and schema specification
 **Impact**: Reliable verification of critical tables like Element, Course, Participant
 
 ### Non-Critical Error Handling
+
 **Problem**: Row count failures treated as critical errors
 **Solution**: Enhanced error handling to continue verification despite non-critical failures
 **Impact**: More robust verification process with appropriate warning levels
 
 ### Production State Preservation
+
 **Problem**: Automatic Prisma migrations modifying restored production data
 **Solution**: Removed automatic migration step, preserved exact production state
 **Impact**: Developers get exact production data without local modifications
 
 ### Database Persistence Fix
+
 **Problem**: Script destroying database after successful restoration
 **Solution**: Renamed cleanup to `cleanup_on_failure`, removed from automatic EXIT trap
 **Impact**: Services remain running for local development use
 
 ### Enhanced Cleanup System
+
 **Problem**: Leftover temporary files from previous runs
 **Solution**: Proactive cleanup system with comprehensive pattern matching
 **Impact**: Clean environment for each script execution
@@ -258,24 +292,28 @@ verify_klicker_database_restore "postgresql://user:pass@host:5432/db"
 ## Error Handling Patterns
 
 ### Validation Errors
+
 ```bash
 # Example: Missing encryption key
 validation_error "BACKUP_ENCRYPTION_KEY is required for all backup operations"
 ```
 
 ### Connection Failures
+
 ```bash
 # Example: Database connectivity with retry
 test_pg_connection_with_retry "$connection_string" 3 5 10
 ```
 
 ### File Verification
+
 ```bash
 # Example: Dump file validation
 validate_dump_file "$dump_file" "database dump"
 ```
 
 ### Cleanup on Failure
+
 ```bash
 # Example: Explicit cleanup on errors
 if ! restore_operation; then
@@ -287,16 +325,19 @@ fi
 ## Integration Points
 
 ### Docker Compose
+
 - Services started/stopped via Docker Compose commands
 - Volume management for persistent data
 - Service readiness checks with retries
 
 ### Doppler Secrets
+
 - Environment-specific configuration loading
 - Automatic fallback to service tokens
 - Secure key management for encryption
 
 ### Prisma Migrations
+
 - Manual migration control (no automatic application)
 - Migration status verification utilities
 - Production state preservation
@@ -343,29 +384,34 @@ fi
 ### Common Issues
 
 **Encryption Key Missing**:
+
 ```bash
 export BACKUP_ENCRYPTION_KEY='your-key'
 # or configure Doppler with: doppler setup
 ```
 
 **Docker Not Running**:
+
 ```bash
 docker info
 # Start Docker and retry operation
 ```
 
 **Permission Errors**:
+
 ```bash
 chmod +x script-name.sh
 # Verify database/Redis access permissions
 ```
 
 **Row Count Verification Failures**:
+
 - Check database connectivity
 - Verify table names are correct (case sensitive)
 - Review PostgreSQL schema structure
 
 **Leftover Temp Files**:
+
 - Scripts automatically clean up on next run
 - Manual cleanup: `rm -rf /tmp/klicker_secure_*`
 

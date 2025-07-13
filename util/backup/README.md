@@ -25,6 +25,7 @@ backup/
 ## Prerequisites
 
 ### Required Tools
+
 - `doppler` - For secrets management
 - `pg_dump` - PostgreSQL client tools for database operations
 - `pg_restore` - PostgreSQL restore utility
@@ -32,6 +33,7 @@ backup/
 - `upstash-redis-dump` - Redis dump utility (pre-installed at `util/upstash-redis-dump`)
 
 ### Environment Setup
+
 - Doppler CLI configured with access to appropriate configs (`dev`, `stg`, `prd`)
 - Network access to target databases and Redis instances
 - Appropriate permissions for database and Redis operations
@@ -41,6 +43,7 @@ backup/
 ### Database Operations
 
 #### Create Database Dump
+
 ```bash
 cd dump/
 ./dump-db.sh           # Production dump (default)
@@ -50,6 +53,7 @@ cd dump/
 ```
 
 #### Restore Database
+
 ```bash
 cd restore/
 ./restore-db.sh dev    # Restore to development
@@ -66,6 +70,7 @@ DUMP_FILE=/path/to/specific/dump.tar ./restore-db.sh dev
 ### Redis Operations
 
 #### Create Redis Dump
+
 ```bash
 cd dump/
 ./dump-redis.sh        # Production dump (default)
@@ -81,6 +86,7 @@ REDIS_DUMP_SILENT=true ./dump-redis.sh dev          # Run in silent mode
 ```
 
 #### Restore Redis
+
 ```bash
 cd restore/
 ./restore-redis.sh dev # Restore to development
@@ -99,18 +105,21 @@ DUMP_FILE=/path/to/specific/redis_dump.dump ./restore-redis.sh dev
 For production environments, use the orchestrator for coordinated multi-service operations:
 
 #### Staging Validation (Required before production)
+
 ```bash
 cd restore/
 ./restore-orchestrator.sh stg
 ```
 
 #### Production Execution (After staging validation)
+
 ```bash
 cd restore/
 ./restore-orchestrator.sh prd
 ```
 
 The orchestrator provides:
+
 - Transaction-like behavior (both services succeed or both rollback)
 - Pre-restore backup creation
 - Comprehensive safety checks and confirmations
@@ -119,6 +128,7 @@ The orchestrator provides:
 ### Local Development Setup
 
 #### Prepare Local Environment with Production Data
+
 ```bash
 # One-command setup: automatically discovers and uses latest dumps
 ./prepare_local_prod.sh
@@ -128,9 +138,10 @@ BACKUP_ENCRYPTION_KEY=<your-key> ./prepare_local_prod.sh
 ```
 
 This script automatically:
+
 1. **Discovers** the latest database and Redis dumps
 2. **Resets** Docker Compose environment and volumes
-3. **Starts** local PostgreSQL and Redis services  
+3. **Starts** local PostgreSQL and Redis services
 4. **Restores** both dumps to local development environment
 5. **Applies** Prisma migrations
 6. **Handles** encrypted dumps transparently
@@ -138,6 +149,7 @@ This script automatically:
 #### Complete Development Workflow
 
 **From Production Environment (one-time setup):**
+
 ```bash
 # Create fresh production dumps
 cd util/backup/dump
@@ -146,6 +158,7 @@ cd util/backup/dump
 ```
 
 **From Development Environment (daily workflow):**
+
 ```bash
 # Option 1: Use existing dumps (fastest)
 cd util/backup
@@ -161,6 +174,7 @@ cd ..
 ### Automated Backup (Production VMs)
 
 #### Schedule Automated Backups
+
 ```bash
 # For scheduled execution via cron
 ./dump/backup-automated.sh prd     # Production backups (default)
@@ -176,6 +190,7 @@ cd ..
 ```
 
 #### Environment Variables for Automation
+
 ```bash
 # Required for automated mode
 BACKUP_VOLUME_PATH=/mnt/backup          # Backup storage location
@@ -191,6 +206,7 @@ MONITORING_WEBHOOK_FAILURE=https://...  # Failure notification URL
 ## Features
 
 ### Security & Safety
+
 - **Production restore is NOT supported** for safety reasons
 - Sensitive environment variables are automatically cleaned up
 - Comprehensive error handling with early exit on failures
@@ -198,36 +214,42 @@ MONITORING_WEBHOOK_FAILURE=https://...  # Failure notification URL
 - Post-restore validation and verification
 
 ### Logging & Monitoring
+
 - Timestamped logging for all operations
 - Progress indicators for long-running operations
 - Comprehensive error reporting with exit codes
 - Operation summaries with file sizes and timing
 
 ### Environment Management
+
 - Automatic Doppler secrets loading for staging/production
 - Environment-specific configuration handling
 - Support for both DATABASE_URL and individual connection parameters
 - Fallback authentication methods for external drives
 
 ### Unified Script Architecture
+
 - **Environment Support**: All scripts support dev/stg/prd environments via parameter
 - **Doppler Integration**: Automatic environment loading via `_run_with_doppler.sh`
 - **Consistent Interface**: Single pattern for both dump and restore operations
 - **Backward Compatibility**: Existing workflows continue to work with defaults
 
 ### Intelligent Dump Management
+
 - **Automatic dump discovery**: Restore scripts automatically find the latest dump
 - **Flexible storage**: Works in both local development and dedicated backup VMs
 - **Latest symlinks**: Automatically maintained for easy access to most recent dumps
 - **Smart path resolution**: Adapts to local repos or backup volumes
 
 ### Encryption & Security
+
 - **Optional GPG encryption**: Dumps can be encrypted using `BACKUP_ENCRYPTION_KEY`
 - **Automatic decryption**: Restore scripts handle encrypted dumps transparently
 - **AES256 cipher**: Strong encryption for sensitive production data
 - **Key management**: Encryption keys stored securely in Doppler
 
 ### Production Safety Features
+
 - **Multi-layer Confirmations**: Production operations require explicit confirmation
 - **Staging Validation**: Production restores require successful staging testing first
 - **Pre-restore Backups**: Automatic backup creation before production changes
@@ -235,6 +257,7 @@ MONITORING_WEBHOOK_FAILURE=https://...  # Failure notification URL
 - **State Management**: Operation tracking for resume/rollback capabilities
 
 ### Automated Operations
+
 - **Multi-environment Support**: Automated backups for any environment
 - **Automatic cleanup**: Old dumps removed based on retention policy
 - **Monitoring integration**: Webhook notifications for backup status
@@ -243,45 +266,54 @@ MONITORING_WEBHOOK_FAILURE=https://...  # Failure notification URL
 ## Configuration
 
 ### Doppler Integration
+
 The scripts use Doppler for secrets management with the following configs:
+
 - `prd` - Production environment (dump operations only)
 - `stg` - Staging environment (restore operations)
 - `dev` - Development environment (local configuration)
 
 ### Environment Variables
+
 The scripts expect the following environment variables (loaded via Doppler):
 
 #### Database
+
 - `DATABASE_URL` (preferred) or individual variables:
   - `DATABASE_HOST`
-  - `DATABASE_USER` 
+  - `DATABASE_USER`
   - `DATABASE_PASS`
   - `DATABASE_NAME`
 
 #### Redis
+
 - `REDIS_URL` (preferred) or individual variables:
   - `REDIS_HOST`
   - `REDIS_PORT`
   - `REDIS_PASS`
 
 ##### Redis Dump Configuration (Optional)
+
 - `REDIS_DUMP_WORKERS` - Number of parallel workers for dump operations (default: 10)
 - `REDIS_DUMP_DATABASE` - Specific Redis database to dump (default: all databases)
-- `REDIS_DUMP_FILTER` - Key filter pattern for selective dumps (default: * for all keys)
+- `REDIS_DUMP_FILTER` - Key filter pattern for selective dumps (default: \* for all keys)
 - `REDIS_DUMP_SILENT` - Use silent mode for automated operations (default: false)
 
 ## File Naming Conventions
 
 ### Dump Files
+
 - Database dumps: `dump_YYYYMMDD_HHMMSS.tar[.gpg]`
 - Redis dumps: `redis_dump_YYYYMMDD_HHMMSS.dump[.gpg]`
 - Latest symlinks: `latest` -> most recent dump file
 
 ### Directory Structure
+
 - Local development: `dumps/db/` and `dumps/redis/`
 - Automated backups: `$BACKUP_VOLUME_PATH/db/` and `$BACKUP_VOLUME_PATH/redis/`
 
 ### Scripts
+
 - `dump-*.sh` - Create backups (with environment parameter)
 - `restore-*.sh` - Unified restore scripts (with environment parameter)
 - `restore-orchestrator.sh` - Production-safe multi-service operations
@@ -290,6 +322,7 @@ The scripts expect the following environment variables (loaded via Doppler):
 ## Error Handling
 
 All scripts include comprehensive error handling:
+
 - Input validation with helpful error messages
 - Tool availability checks before operations
 - File existence and permission verification
@@ -299,8 +332,9 @@ All scripts include comprehensive error handling:
 ## Migration from Legacy Structure
 
 If you have existing scripts in the root backup directory:
+
 1. Move dump scripts to `dump/` directory
-2. Move restore scripts to `restore/` directory  
+2. Move restore scripts to `restore/` directory
 3. Move utility scripts to `lib/` directory
 4. Update any custom scripts to reference new paths
 5. Use the unified `restore.sh` script for new operations
@@ -310,27 +344,32 @@ If you have existing scripts in the root backup directory:
 ### Common Issues
 
 #### Doppler Authentication Failures
+
 - Run `doppler login` to authenticate
 - Verify access to required configs with `doppler configs`
 - For external drives, create service tokens in `~/.doppler-tokens/`
 
 #### Missing Tools
+
 - Install PostgreSQL client tools: `brew install libpq`
 - Install Redis CLI: `brew install redis`
 - Install Doppler CLI: `brew install dopplerhq/cli/doppler`
 
 #### Permission Errors
+
 - Ensure scripts are executable: `chmod +x script-name.sh`
 - Verify database/Redis access permissions
 - Check network connectivity to target services
 
 #### File Not Found Errors
+
 - Verify dump files exist before restore operations
 - Check file paths and permissions
 
 #### Local Development Setup Issues
 
 **No dumps found:**
+
 ```bash
 # Create production dumps first
 cd util/backup/dump
@@ -339,6 +378,7 @@ cd util/backup/dump
 ```
 
 **Docker not running:**
+
 ```bash
 # Start Docker and retry
 docker info
@@ -346,6 +386,7 @@ docker info
 ```
 
 **Prisma migration errors:**
+
 ```bash
 # Reset Prisma state and retry
 cd packages/prisma
@@ -355,15 +396,19 @@ cd ../../util/backup
 ```
 
 **Services not starting:**
+
 ```bash
 # Check Docker Compose status
 docker compose ps
 docker compose logs postgres redis_exec
 ```
+
 - Ensure all utility scripts are in correct locations
 
 ### Getting Help
+
 Run any script with `--help` or `-h` for usage information:
+
 ```bash
 ./restore.sh --help
 ./dump-db.sh --help
@@ -376,6 +421,7 @@ Run any script with `--help` or `-h` for usage information:
 This version introduces unified scripts with full environment support and production-grade safety features.
 
 #### Major Changes
+
 - **Unified Scripts**: Single script per service supporting all environments
 - **Environment Parameters**: All scripts now accept environment parameter (dev|stg|prd)
 - **Doppler Integration**: Consistent environment loading via `_run_with_doppler.sh`
@@ -407,6 +453,7 @@ If you previously used environment-specific scripts, here are the equivalents:
 ```
 
 #### Dump Script Updates
+
 ```bash
 # OLD: Hardcoded to production
 ./dump/dump-db.sh
@@ -420,6 +467,7 @@ If you previously used environment-specific scripts, here are the equivalents:
 ```
 
 #### Production Operations
+
 ```bash
 # OLD: Direct production restore (risky and now blocked)
 ./restore.sh db prd  # ❌ No longer supported
@@ -430,12 +478,14 @@ If you previously used environment-specific scripts, here are the equivalents:
 ```
 
 #### Breaking Changes
+
 - **Removed Scripts**: `_restore-*-*.sh` environment-specific scripts
 - **Blocked Production Restores**: `restore.sh` no longer supports production (`prd`) for safety
 - **Required Orchestrator**: Production operations MUST use `restore-orchestrator.sh`
 - **Safety Prompts**: Production restores require explicit confirmation and staging validation
 
 #### Backward Compatibility
+
 - **Default Behavior**: All scripts maintain backward compatibility with defaults
 - **Environment Variables**: `DUMP_FILE` and other variables still work
 - **Doppler Configs**: Existing dev/stg/prd configurations unchanged
@@ -444,6 +494,7 @@ If you previously used environment-specific scripts, here are the equivalents:
 ## Safety Notes
 
 ⚠️ **Important Safety Reminders:**
+
 - **Never restore to production environments**
 - Always verify dump file integrity before restore
 - Test restore operations in development first
