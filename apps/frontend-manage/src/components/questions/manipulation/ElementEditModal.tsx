@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateAnswerCollectionDocument,
-  ElementStatus,
   ElementType,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
@@ -15,9 +14,7 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Modal } from '@uzh-bf/design-system'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -118,22 +115,17 @@ function ElementEditModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isDuplication, initialValues])
 
-  if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
-    return (
-      <Modal open onClose={() => null} fullScreen>
-        <Loader />
-      </Modal>
-    )
-  }
-
   return (
     <ElementEditForm
       mode={mode}
       elementId={elementId}
       inputsDisabled={inputsDisabled}
-      loading={loadingQuestion}
+      loading={
+        loadingQuestion ||
+        !formikInitialValues ||
+        Object.keys(formikInitialValues).length === 0
+      }
       initialValues={formikInitialValues}
-      initialStatus={dataQuestion?.question?.status ?? ElementStatus.Ready}
       onClose={() => handleSetIsOpen(false)}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}

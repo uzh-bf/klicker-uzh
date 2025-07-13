@@ -11,14 +11,13 @@ import {
   getCourseActivityTypes,
   getCourses,
 } from './services.js'
-import { activityKeysGeneral } from './static.js'
 import {
   AccountParameters,
-  activityKeysSubselection,
+  ActivityOlatConfigurationKey,
+  activityOlatConfigurationKeys,
   ActivityTypeKeyParameters,
-  ActivityTypeSubselection,
   CourseParameters,
-  ParametersError,
+  ErrorParameters,
   StatusCode,
 } from './types.js'
 
@@ -104,7 +103,7 @@ app.use(
 
 function getAccountParameters(
   req: Request
-): AccountParameters | ParametersError {
+): AccountParameters | ErrorParameters {
   const providerAccountId = req.body.identityMappingIdentifier
   if (!providerAccountId || typeof providerAccountId !== 'string') {
     return {
@@ -127,7 +126,7 @@ function getAccountParameters(
   }
 }
 
-function getCourseParameters(req: Request): CourseParameters | ParametersError {
+function getCourseParameters(req: Request): CourseParameters | ErrorParameters {
   const courseID = req.params.courseID
   if (!courseID || typeof courseID !== 'string') {
     return {
@@ -148,17 +147,26 @@ function getCourseParameters(req: Request): CourseParameters | ParametersError {
 
 function getActivityTypeKeyParameters(
   req: Request
-): ActivityTypeKeyParameters | ParametersError {
+): ActivityTypeKeyParameters | ErrorParameters {
   const activityTypeKey = req.params.activityTypeKey
   if (!activityTypeKey || typeof activityTypeKey !== 'string') {
     return {
       error: 'Missing activityTypeKey',
       status: StatusCode.BAD_REQUEST,
     }
+  } else if (
+    !activityOlatConfigurationKeys.includes(
+      activityTypeKey as ActivityOlatConfigurationKey
+    )
+  ) {
+    return {
+      error: 'Invalid activityTypeKey',
+      status: StatusCode.BAD_REQUEST,
+    }
   }
 
   return {
-    activityTypeKey: activityTypeKey,
+    activityTypeKey: activityTypeKey as ActivityOlatConfigurationKey,
   }
 }
 
@@ -198,7 +206,7 @@ app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
     .then((activityTypes) => {
       res.set('Content-Type', 'application/json')
       return res.status(StatusCode.SUCCESS).json({
-        activityTypes: activityTypes,
+        activityTypes,
         timestamp: new Date().toISOString(),
       })
     })
@@ -237,7 +245,7 @@ app.post(
 
         res.set('Content-Type', 'application/json')
         return res.status(StatusCode.SUCCESS).json({
-          activityTypes: activityTypes,
+          activityTypes,
           timestamp: new Date().toISOString(),
         })
       })
@@ -274,15 +282,10 @@ app.post(
     const { activityTypeKey } =
       activityTypeKeyParameters as ActivityTypeKeyParameters
 
-    if (activityKeysSubselection.indexOf(activityTypeKey) !== -1) {
-      getActivities(
-        provider,
-        providerAccountId,
-        courseID,
-        activityTypeKey as ActivityTypeSubselection
-      )
-        .then((activityTypes) => {
-          if (activityTypes === null) {
+    if (activityOlatConfigurationKeys.indexOf(activityTypeKey) !== -1) {
+      getActivities(provider, providerAccountId, courseID, activityTypeKey)
+        .then((activities) => {
+          if (activities === null) {
             return res
               .status(StatusCode.NOT_FOUND)
               .json({ error: 'Course or account not found' })
@@ -290,7 +293,7 @@ app.post(
 
           res.set('Content-Type', 'application/json')
           return res.status(StatusCode.SUCCESS).json({
-            activityTypes: activityTypes,
+            activities,
             timestamp: new Date().toISOString(),
           })
         })
@@ -300,11 +303,6 @@ app.post(
             .status(StatusCode.INTERNAL_SERVER_ERROR)
             .json({ error: 'Internal server error' })
         })
-    } else if (activityKeysGeneral.indexOf(activityTypeKey) !== -1) {
-      return res.status(StatusCode.SUCCESS).json({
-        activityTypes: [],
-        timestamp: new Date().toISOString(),
-      })
     } else {
       return res
         .status(StatusCode.BAD_REQUEST)
