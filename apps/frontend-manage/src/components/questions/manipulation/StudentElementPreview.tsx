@@ -7,7 +7,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { Checkbox, FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ElementFormTypes } from './types'
 import useArtificialElementInstance from './useArtificialElementInstance'
 
@@ -57,6 +57,89 @@ function StudentElementPreview({
     setStudentResponse,
   })
 
+  // memoized stack storage for evaluation components
+  const stackStorage = useMemo<StackStudentResponseType | undefined>(() => {
+    if (
+      !artificialInstance ||
+      !explanationOrFeedbacksDefined ||
+      !showFeedbacksExplanation
+    ) {
+      return undefined
+    }
+
+    const explanation =
+      values.explanation &&
+      !values.explanation.match(/^(<br>(\n)*)$/g) &&
+      values.explanation !== ''
+        ? values.explanation
+        : undefined
+
+    switch (values.type) {
+      case ElementType.Sc:
+      case ElementType.Mc:
+      case ElementType.Kprim:
+        return {
+          [artificialInstance.id]: {
+            evaluation: {
+              __typename: 'ChoicesInstanceEvaluation',
+              explanation,
+              feedbacks: values.options.hasAnswerFeedbacks
+                ? values.options.choices
+                : undefined,
+            },
+          },
+        } as StackStudentResponseType
+
+      case ElementType.Numerical:
+        return {
+          [artificialInstance.id]: {
+            evaluation: {
+              __typename: 'NumericalInstanceEvaluation',
+              explanation,
+            },
+          },
+        } as StackStudentResponseType
+
+      case ElementType.FreeText:
+        return {
+          [artificialInstance.id]: {
+            evaluation: {
+              __typename: 'FreeTextInstanceEvaluation',
+              explanation,
+            },
+          },
+        } as StackStudentResponseType
+
+      case ElementType.Selection:
+        return {
+          [artificialInstance.id]: {
+            evaluation: {
+              __typename: 'SelectionInstanceEvaluation',
+              explanation,
+            },
+          },
+        } as StackStudentResponseType
+
+      case ElementType.CaseStudy:
+        return {
+          [artificialInstance.id]: {
+            evaluation: {
+              __typename: 'CaseStudyInstanceEvaluation',
+              explanation,
+            },
+          },
+        } as StackStudentResponseType
+
+      default:
+        return undefined
+    }
+  }, [
+    values,
+    artificialInstance,
+    explanationOrFeedbacksDefined,
+    showFeedbacksExplanation,
+  ])
+
   if (!artificialInstance) {
     return <Loader />
   }
@@ -104,78 +187,7 @@ function StudentElementPreview({
           elementIx={0}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
-          stackStorage={
-            showFeedbacksExplanation && explanationOrFeedbacksDefined
-              ? (() => {
-                  const explanation =
-                    values.explanation &&
-                    !values.explanation.match(/^(<br>(\n)*)$/g) &&
-                    values.explanation !== ''
-                      ? values.explanation
-                      : undefined
-
-                  switch (values.type) {
-                    case ElementType.Sc:
-                    case ElementType.Mc:
-                    case ElementType.Kprim:
-                      return {
-                        [artificialInstance.id]: {
-                          evaluation: {
-                            __typename: 'ChoicesInstanceEvaluation',
-                            explanation,
-                            feedbacks: values.options.hasAnswerFeedbacks
-                              ? values.options.choices
-                              : undefined,
-                          },
-                        },
-                      } as unknown as StackStudentResponseType
-
-                    case ElementType.Numerical:
-                      return {
-                        [artificialInstance.id]: {
-                          evaluation: {
-                            __typename: 'NumericalInstanceEvaluation',
-                            explanation,
-                          },
-                        },
-                      } as unknown as StackStudentResponseType
-
-                    case ElementType.FreeText:
-                      return {
-                        [artificialInstance.id]: {
-                          evaluation: {
-                            __typename: 'FreeTextInstanceEvaluation',
-                            explanation,
-                          },
-                        },
-                      } as unknown as StackStudentResponseType
-
-                    case ElementType.Selection:
-                      return {
-                        [artificialInstance.id]: {
-                          evaluation: {
-                            __typename: 'SelectionInstanceEvaluation',
-                            explanation,
-                          },
-                        },
-                      } as unknown as StackStudentResponseType
-
-                    case ElementType.CaseStudy:
-                      return {
-                        [artificialInstance.id]: {
-                          evaluation: {
-                            __typename: 'CaseStudyInstanceEvaluation',
-                            explanation,
-                          },
-                        },
-                      } as unknown as StackStudentResponseType
-
-                    default:
-                      return undefined
-                  }
-                })()
-              : undefined
-          }
+          stackStorage={stackStorage}
         />
       </div>
     </div>
