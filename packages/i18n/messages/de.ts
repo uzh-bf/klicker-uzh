@@ -828,6 +828,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pseudonymSelection: 'Pseudonym-Auswahl',
       avatarExplanation:
         'Falls sie möchten, können Sie hier Ihren <b>Avatar</b> für das Live-Quiz auswählen.',
+      noQuizTitle: 'Kein Live-Quiz verfügbar',
+      noQuizDescription:
+        'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
+      refreshPage: 'Seite aktualisieren',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
