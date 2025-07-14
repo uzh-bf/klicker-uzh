@@ -825,6 +825,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pseudonymSelection: 'Pseudonym Selection',
       avatarExplanation:
         'If you wish, you can select your <b>avatar</b> for the live quiz here.',
+      noQuizTitle: 'No Live Quiz Available',
+      noQuizDescription:
+        'There is currently no running live quiz available under this link. Please check your link or contact your instructor.',
+      refreshPage: 'Refresh Page',
     },
     feedbacks: {
       title: 'Feedback Channel',

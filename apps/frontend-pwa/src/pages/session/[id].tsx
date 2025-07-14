@@ -1,5 +1,10 @@
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
-import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowsRotate,
+  faExclamationCircle,
+  faQuestion,
+  faRankingStar,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementType,
@@ -16,7 +21,7 @@ import { useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -36,15 +41,38 @@ function Index({ id }: { id: string }) {
   const router = useRouter()
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
-    variables: { id },
-  })
+  const { data, loading, subscribeToMore } = useQuery(
+    GetRunningLiveQuizDocument,
+    {
+      variables: { id },
+    }
+  )
   const { data: selfData } = useQuery(SelfDocument)
+
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
 
   if (!data?.studentLiveQuiz) {
     return (
       <Layout>
-        <Loader />
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="flex flex-row items-center gap-4 text-red-600">
+            <FontAwesomeIcon icon={faExclamationCircle} size="3x" />
+            <H1>{t('pwa.liveQuiz.noQuizTitle')}</H1>
+          </div>
+          <p className="my-4 max-w-96 text-gray-600">
+            {t('pwa.liveQuiz.noQuizDescription')}
+          </p>
+          <Button onClick={() => router.reload()} className={{ root: 'h-8' }}>
+            <Button.Icon icon={faArrowsRotate} />
+            <Button.Label>{t('pwa.liveQuiz.refreshPage')}</Button.Label>
+          </Button>
+        </div>
       </Layout>
     )
   }
