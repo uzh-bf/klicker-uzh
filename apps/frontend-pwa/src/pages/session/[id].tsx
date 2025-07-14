@@ -43,9 +43,7 @@ function Index({ id }: { id: string }) {
 
   const { data, loading, subscribeToMore } = useQuery(
     GetRunningLiveQuizDocument,
-    {
-      variables: { id },
-    }
+    { variables: { id } }
   )
   const { data: selfData } = useQuery(SelfDocument)
 
@@ -63,7 +61,9 @@ function Index({ id }: { id: string }) {
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="flex flex-row items-center gap-4 text-red-600">
             <FontAwesomeIcon icon={faExclamationCircle} size="3x" />
-            <H1>{t('pwa.liveQuiz.noQuizTitle')}</H1>
+            <H1 className={{ root: 'mb-0' }}>
+              {t('pwa.liveQuiz.noQuizTitle')}
+            </H1>
           </div>
           <p className="my-4 max-w-96 text-gray-600">
             {t('pwa.liveQuiz.noQuizDescription')}
