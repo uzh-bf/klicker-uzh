@@ -12,7 +12,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Swiss Whiz',
       nameDE: 'Swiss Whiz',
       nameEN: 'Swiss Whiz',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/swiss_quiz.svg',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_swiss_whiz.svg',
       type: Prisma.AchievementType.PARTICIPANT,
       scope: Prisma.AchievementScope.GLOBAL,
     },
@@ -32,7 +32,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Escape Artist',
       nameDE: 'Escape Artist',
       nameEN: 'Escape Artist',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/uzh_escape_room.svg',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_escape_uzh.svg',
       type: Prisma.AchievementType.PARTICIPANT,
       scope: Prisma.AchievementScope.GLOBAL,
     },
@@ -51,12 +51,29 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'ChocoStrategist',
       nameDE: 'ChocoStrategist',
       nameEN: 'ChocoStrategist',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/uzh_business_game.svg',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_choco_strategist.svg',
       type: Prisma.AchievementType.PARTICIPANT,
       scope: Prisma.AchievementScope.GLOBAL,
     },
     update: {},
   })
+
+  const PMG_GAME_ACHIEVEMENT_ID = 21
+  const pmgGameAchievement = await prisma.achievement.upsert({
+    where: { id: PMG_GAME_ACHIEVEMENT_ID },
+    create: {
+      id: PMG_GAME_ACHIEVEMENT_ID,
+      name: 'Portfolio Professional',
+      nameDE: 'Portfolio Professional',
+      nameEN: 'Portfolio Professional',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_portfolio_professional.svg',
+      type: Prisma.AchievementType.PARTICIPANT,
+      scope: Prisma.AchievementScope.GLOBAL,
+    },
+    update: {},
+  })
+
+  pmgGameAchievement
 
   // achievement instances for swiss quiz
   // ! AWARDED
@@ -161,9 +178,63 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   //   Ningyi: 600,
   // }
 
+  // achievement instances for PMG game
+  // ! AWARDED
+  // const pmgGameWinners = [
+  //   'Boban25',
+  //   'Financesis',
+  //   'Liangwen',
+  //   'DobPdPv7Xf',
+  //   'Ik73oqe1',
+  //   'buqichen',
+  // ]
+
+  // points collected during PMG game
+  // ! AWARDED
+  // const pmgGamePoints = {
+  //   Boban25: 1000,
+  //   Financesis: 1000,
+  //   Liangwen: 1000,
+  //   DobPdPv7Xf: 1000,
+  //   Ik73oqe1: 1000,
+  //   buqichen: 1000,
+  //   OliverCourtness: 800,
+  //   'Sprindt&Lüngli': 800,
+  //   Yanchuan: 800,
+  //   Yilin: 800,
+  //   CookieMonster: 700,
+  //   Ningyi: 700,
+  //   '14860023': 700,
+  //   vihan: 700,
+  //   Devansh: 700,
+  //   Rheinhart: 700,
+  //   MiMi77: 700,
+  //   Justinmoser: 700,
+  //   '2pFxA1hAEm': 700,
+  //   Gloria: 700,
+  //   piper: 700,
+  //   amelievastiau: 700,
+  //   chenjiajia1412: 700,
+  //   Thiago: 700,
+  //   Helen1102: 700,
+  //   GianLucas: 700,
+  //   suKJH8dWOs: 600,
+  //   Kavin: 600,
+  //   arianna: 600,
+  //   SorinaMatthey: 600,
+  //   agash17: 600,
+  //   TaylanS: 600,
+  //   Joeyss: 600,
+  //   Belly: 600,
+  //   Karan: 600,
+  //   Svanen: 600,
+  //   Nikolina: 600,
+  //   zoeyy: 600,
+  // }
+
   // ! Grant achievements
-  // const ACHIEVEMENT_USERNAMES = businessGameWinners
-  // const ACHIEVEMENT_ID = businessGameAchievement.id
+  // const ACHIEVEMENT_USERNAMES = pmgGameWinners
+  // const ACHIEVEMENT_ID = pmgGameAchievement.id
   // await prisma.$transaction(async (prisma) => {
   //   const participants = await prisma.participant.findMany({
   //     where: { username: { in: ACHIEVEMENT_USERNAMES } },
@@ -194,7 +265,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   // })
 
   // ! Increment leaderboard entries with points
-  // const POINTS = businessGamePoints
+  // const POINTS = pmgGamePoints
   // await prisma.$transaction(async (prisma) => {
   //   const participants = await prisma.participant.findMany({
   //     where: { username: { in: Object.keys(POINTS) } },
