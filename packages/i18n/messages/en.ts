@@ -1230,6 +1230,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
       restoreFromArchiveFailed:
         'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
+      showFeedbacksExplanation: 'Show answer feedbacks & explanation',
+      showExplanation: 'Show explanation',
+      showFeedbacksExplanationTooltip:
+        'View a preview of how the explanation and answer feedbacks will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
+      showExplanationTooltip:
+        'View a preview of how the explanation will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
     },
     tags: {
       deleteTag: 'Delete tag',

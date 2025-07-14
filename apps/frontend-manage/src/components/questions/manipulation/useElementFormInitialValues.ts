@@ -43,9 +43,10 @@ function useElementFormInitialValues({
           choices: [
             {
               id: nanoid(),
+              ix: 0,
               value: undefined,
               correct: false,
-              feedback: undefined,
+              feedback: '',
             },
           ],
         },
