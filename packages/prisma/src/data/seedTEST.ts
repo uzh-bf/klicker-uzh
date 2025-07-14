@@ -6,7 +6,6 @@ import {
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { v4 as uuid } from 'uuid'
 import Prisma from '../../dist/index.js'
 import {
   COURSE_ID_TEST,
@@ -26,6 +25,7 @@ import {
   prepareQuestion,
   prepareStackVariety,
 } from './helpers.js'
+import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
@@ -110,6 +110,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedLevels(prisma)
   await seedAchievements(prisma)
   await seedUsers(prisma)
+  await seedAccounts(prisma)
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
@@ -478,7 +479,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 const initialResults = getInitialInstanceResults(elementData)
 
                 return {
-                  migrationId: uuid(),
                   order: elementIx,
                   type: Prisma.ElementInstanceType.LIVE_QUIZ,
                   elementType: el.type,
@@ -884,7 +884,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 0,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -929,7 +928,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 100,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -974,7 +972,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 200,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -1019,7 +1016,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 300,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -1064,7 +1060,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
             questions: questionsTest,
             contentElements: [contentElements[0]!],
@@ -1116,7 +1111,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: {
           ...prepareGroupActivityStack({
-            migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
             questions: questionsTest,
             contentElements: [contentElements[0]!],
@@ -1593,7 +1587,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 600,
             flashcards: flashcards,
             questions: asyncActivityQuestions,
             contentElements: contentElements,
@@ -1634,7 +1627,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 700,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -1675,7 +1667,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 800,
             flashcards: [flashcards[0]!],
             questions: [questionsTest[0]!],
             contentElements: [contentElements[0]!],
@@ -1728,7 +1719,6 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 900,
             flashcards: flashcards,
             questions: asyncActivityQuestions,
             contentElements: contentElements,
@@ -1774,7 +1764,6 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 1000,
             flashcards: flashcards,
             questions: asyncActivityQuestions,
             contentElements: contentElements,
@@ -1816,7 +1805,6 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 1100,
             flashcards: flashcards,
             questions: asyncActivityQuestions,
             contentElements: contentElements,
@@ -1858,7 +1846,6 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 1200,
             flashcards: flashcards,
             questions: asyncActivityQuestions.filter(
               (q) => q.type !== Prisma.ElementType.FREE_TEXT
@@ -1904,7 +1891,6 @@ Once this microlearning is published, it will be immediately accessible
       stacks: {
         create: [
           ...prepareStackVariety({
-            migrationIdOffset: 1300,
             flashcards: flashcards,
             questions: asyncActivityQuestions,
             contentElements: contentElements,

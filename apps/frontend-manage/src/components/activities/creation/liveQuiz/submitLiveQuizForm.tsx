@@ -52,14 +52,19 @@ async function submitLiveQuizForm({
           displayName: values.displayName,
           description: values.description,
           blocks: blockSubmission,
-          courseId: values.courseId === '' ? null : values.courseId,
-          multiplier: values.courseId !== '' ? parseInt(values.multiplier) : 1,
+          courseId:
+            values.courseId === 'no-course-selected' ? null : values.courseId,
+          multiplier:
+            values.courseId !== 'no-course-selected'
+              ? parseInt(values.multiplier)
+              : 1,
           defaultPoints: parseInt(String(values.defaultPoints)),
           defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
-            values.courseId !== '' && values.isGamificationEnabled,
+            values.courseId !== 'no-course-selected' &&
+            values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
@@ -71,7 +76,7 @@ async function submitLiveQuizForm({
           {
             query: GetUserActivitiesDocument,
           },
-          ...(values.courseId
+          ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,
@@ -91,14 +96,16 @@ async function submitLiveQuizForm({
           displayName: values.displayName,
           description: values.description,
           blocks: blockSubmission,
-          courseId: values.courseId === '' ? null : values.courseId,
+          courseId:
+            values.courseId === 'no-course-selected' ? null : values.courseId,
           multiplier: parseInt(values.multiplier),
           defaultPoints: parseInt(String(values.defaultPoints)),
           defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
-            values.courseId !== '' && values.isGamificationEnabled,
+            values.courseId !== 'no-course-selected' &&
+            values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
@@ -110,7 +117,7 @@ async function submitLiveQuizForm({
           {
             query: GetUserActivitiesDocument,
           },
-          ...(values.courseId
+          ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,

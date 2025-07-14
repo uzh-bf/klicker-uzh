@@ -561,6 +561,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      validateAvailableLiveQuiz: t.boolean({
+        nullable: true,
+        args: {
+          quizId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.validateAvailableLiveQuiz(args, ctx)
+        },
+      }),
+
       participantGroups: t.withAuth(asAuthenticated).field({
         nullable: true,
         type: [ParticipantGroup],

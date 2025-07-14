@@ -5,4 +5,5 @@ kubectl rollout restart -n klicker-v2-qa deployment klicker-v2-qa-klicker-uzh-v2
 kubectl rollout restart -n klicker-v2-qa deployment klicker-v2-qa-klicker-uzh-v2-frontend-control
 kubectl rollout restart -n klicker-v2-qa deployment klicker-v2-qa-klicker-uzh-v2-auth
 kubectl rollout restart -n klicker-v2-qa deployment klicker-v2-qa-klicker-uzh-v2-lti
+kubectl rollout restart -n klicker-v2-qa deployment klicker-v2-qa-klicker-uzh-v2-olat-api
 kubectl get pods -n klicker-v2-qa

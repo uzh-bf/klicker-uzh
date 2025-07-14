@@ -30,7 +30,7 @@ export function CTA() {
           >
             <Button
               className={{
-                root: 'h-full w-full cursor-pointer flex-col items-start whitespace-normal rounded-xl border-none bg-gradient-to-br from-gray-50 to-gray-100 p-6 text-left text-lg shadow-lg transition-all duration-300 hover:from-gray-100 hover:to-gray-200 hover:shadow-xl',
+                root: 'bg-linear-to-br h-full w-full cursor-pointer flex-col items-start whitespace-normal rounded-xl border-none from-gray-50 to-gray-100 p-6 text-left text-lg shadow-lg transition-all duration-300 hover:from-gray-100 hover:to-gray-200 hover:shadow-xl',
               }}
             >
               <div className="text-primary-600 mb-2 font-bold">

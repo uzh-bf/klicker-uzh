@@ -173,11 +173,12 @@ function MicrolearningActions({
         {publishModal && (
           <PublishConfirmationModal
             onClose={() => setPublishModal(false)}
-            elementType={ElementInstanceType.Microlearning}
-            elementId={microLearning.id}
+            activityType={ElementInstanceType.Microlearning}
+            activityId={microLearning.id}
+            startAt={microLearning.scheduledStartAt}
+            endAt={microLearning.scheduledEndAt}
             title={microLearning.name}
             courseId={microLearning.courseId!}
-            publicationHint={t('manage.course.microPublishingHint')}
           />
         )}
 

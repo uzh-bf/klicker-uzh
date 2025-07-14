@@ -11,7 +11,7 @@ function MissingPage() {
           <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
           <div>404 Page not found</div>
         </div>
-        <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+        <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
           Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum{' '}
           <Link
             href="/"

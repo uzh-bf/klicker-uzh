@@ -17,7 +17,7 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
         className
       )}
     >
-      <hr className="h-[1px] border-0 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+      <hr className="bg-linear-to-r h-px border-0 from-transparent via-gray-500 to-transparent" />
 
       {browserLink && (
         <div className="mt-4 text-center text-sm text-slate-700">

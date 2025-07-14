@@ -20,7 +20,6 @@ import {
   type ElementResultsCaseStudy,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
-import { v4 as uuidv4 } from 'uuid'
 
 // save custom type
 const CONTENT_KEYS: ElementKeys[] = [
@@ -403,7 +402,6 @@ export function getActivityInstanceConnectOrCreate({
       // dummy content - case should never occur
       create: {
         elementType: ElementType.SC,
-        migrationId: uuidv4(),
         order: instance.order,
         type: instanceType,
         elementData: {} as ElementData,
@@ -439,7 +437,6 @@ export function getActivityInstanceConnectOrCreate({
       where: { id: -1 },
       create: {
         elementType: existingInstance.elementType,
-        migrationId: uuidv4(),
         order: instance.order,
         type: instanceType,
         elementData: existingInstance.elementData,
@@ -482,7 +479,6 @@ export function getActivityInstanceConnectOrCreate({
       where: { id: -1 },
       create: {
         elementType: element.type,
-        migrationId: uuidv4(),
         order: instance.order,
         type: instanceType,
         elementData: elementData,

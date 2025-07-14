@@ -326,7 +326,7 @@ function Index() {
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length,
+                      total: processedQuestions?.length ?? 0,
                     })}
                   </div>
 
@@ -339,8 +339,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 !pl-8',
-                      field: 'w-30 rounded-md pr-3',
+                      input: 'h-10 pl-8',
+                      field: 'min-w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -350,9 +350,7 @@ function Index() {
                       onClick={() => {
                         handleSortOrderToggle()
                       }}
-                      className={{
-                        root: 'h-10 rounded-md shadow-sm',
-                      }}
+                      className={{ root: 'h-10 rounded-md' }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon icon={sortIcon} withoutLabel />

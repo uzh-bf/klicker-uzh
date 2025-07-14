@@ -27,7 +27,7 @@ function LiveQuizQRModal({
       open
       title={t('manage.cockpit.liveQuizQRCodes')}
       onClose={onClose}
-      className={{ content: '!w-full max-w-6xl pb-2' }}
+      className={{ content: 'w-full! max-w-6xl pb-2' }}
     >
       <div className="flex flex-col gap-8 md:flex-row">
         <div className="flex flex-1 flex-col justify-between">

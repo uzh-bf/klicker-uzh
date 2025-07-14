@@ -167,8 +167,8 @@ function CaseStudyCasesFields({
                                         {t(
                                           'manage.elements.caseStudySolutionIntervalStep',
                                           {
-                                            lower: criterion.min,
-                                            upper: criterion.max,
+                                            lower: criterion.min ?? 0,
+                                            upper: criterion.max ?? 0,
                                             step: criterion.step,
                                           }
                                         )}

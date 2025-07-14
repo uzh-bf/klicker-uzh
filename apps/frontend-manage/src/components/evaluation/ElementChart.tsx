@@ -7,6 +7,7 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 import { ShowStatisticsType } from './elements/NREvaluation'
 import { TextSizeType } from './textSizes'
 
@@ -17,6 +18,7 @@ interface ElementChartProps {
   showExplanation: boolean
   showStatistics?: ShowStatisticsType
   textSize: TextSizeType
+  className?: string
 }
 
 function ElementChart({
@@ -26,6 +28,7 @@ function ElementChart({
   showExplanation,
   showStatistics,
   textSize,
+  className,
 }: ElementChartProps): React.ReactElement {
   const t = useTranslations()
 
@@ -37,6 +40,7 @@ function ElementChart({
         showExplanation={showExplanation}
         textSize={textSize.text}
         textSizeLg={textSize.textLg}
+        className={className}
       />
     )
   } else if (chartType === ChartType.WORD_CLOUD) {
@@ -51,6 +55,7 @@ function ElementChart({
           min: textSize.min,
           max: textSize.max,
         }}
+        className={className}
       />
     )
   } else if (chartType === ChartType.BAR_CHART) {
@@ -60,6 +65,7 @@ function ElementChart({
         showSolution={showSolution}
         showExplanation={showExplanation}
         textSize={textSize}
+        className={className}
       />
     )
   } else if (
@@ -74,7 +80,7 @@ function ElementChart({
     )
 
     return (
-      <div className="flex h-full w-full flex-col">
+      <div className={twMerge('flex h-full w-full flex-col', className)}>
         <EvaluationExplanation
           explanation={instanceEvaluation.explanation}
           showExplanation={showExplanation}

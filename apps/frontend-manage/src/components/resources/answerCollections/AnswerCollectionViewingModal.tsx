@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
   AccordionContent,
@@ -57,32 +56,25 @@ function AnswerCollectionViewingModal({
   return (
     <Modal
       open
+      loading={loading || !collection}
       onClose={onClose}
       title={
         <div
           className="flex flex-row items-end gap-2"
           data-cy="viewing-collection-title"
         >
-          <div className="text-lg font-semibold">
-            {loading || !collection
-              ? t('shared.generic.loading')
-              : collection.name}
+          <div className="text-lg font-semibold">{collection?.name}</div>
+          <div className="mb-0.5 hidden text-base font-normal text-gray-500 md:block">
+            {t('manage.resources.byOwner', {
+              owner: collection?.ownerShortname ?? t('shared.generic.unknown'),
+            })}
           </div>
-          {loading || !collection ? null : (
-            <div className="mb-0.5 hidden text-base font-normal text-gray-500 md:block">
-              {t('manage.resources.byOwner', {
-                owner: collection.ownerShortname,
-              })}
-            </div>
-          )}
         </div>
       }
       dataCloseButton={{ cy: 'close-viewing-collection-modal' }}
       className={{ content: 'max-w-2xl pb-2' }}
     >
-      {loading || !collection ? (
-        <Loader />
-      ) : (
+      {collection && (
         <Accordion
           collapsible
           type="single"
@@ -121,7 +113,7 @@ function AnswerCollectionViewingModal({
                 icon={faSearch}
                 placeholder={t('manage.resources.searchAnswerOptions')}
                 data={{ cy: 'search-viewing-answer-options' }}
-                className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
+                className={{ field: 'mb-2 w-full', input: 'pl-8! h-8 text-sm' }}
               />
 
               <div className="max-h-[calc(100vh-16rem)] overflow-y-auto rounded-md border border-gray-200">

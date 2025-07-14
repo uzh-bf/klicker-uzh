@@ -51,8 +51,8 @@ function WizardElementList({
   return (
     <div
       className={twMerge(
-        'my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto',
-        selectionActive ? 'max-h-[5.5rem]' : ''
+        'max-h-30 my-2 flex flex-1 flex-col overflow-y-auto',
+        selectionActive ? 'max-h-22' : ''
       )}
     >
       {stack.elements.map((element, elementIdx) => {

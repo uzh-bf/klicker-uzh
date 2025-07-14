@@ -123,7 +123,7 @@ function AccountSelector({
           <span className="ml-3 text-2xl">👑</span>
         </div>
       }
-      className={{ title: 'mb-4 text-center', content: 'max-w-[25rem] pb-2' }}
+      className={{ title: 'mb-4 text-center', content: 'max-w-100 pb-2' }}
     >
       {step === 'choice' ? (
         <>

@@ -45,7 +45,7 @@ function NumericalSolutionTypeSwitch({
           onClick={() => helpers.setValue('exact')}
           className={{
             root: twMerge(
-              'h-8 !rounded-l-none',
+              'rounded-l-none! h-8',
               solutionType === 'exact'
                 ? 'bg-primary-100 border-primary-100 hover:bg-primary-100 text-white hover:text-white'
                 : ''

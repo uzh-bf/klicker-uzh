@@ -28,7 +28,7 @@ function DelegatedPasswordChangeModal({
       title={t('manage.settings.changeDelegatedLoginPassword')}
       onClose={onClose}
       className={{
-        content: 'h-max !min-h-[10rem] max-w-[25rem] pb-2',
+        content: 'min-h-40! max-w-100 h-max pb-2',
       }}
     >
       <div className="mb-3 text-sm">

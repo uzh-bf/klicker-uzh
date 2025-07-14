@@ -53,7 +53,7 @@ function PermissionRevocationModal({
                 b: (text) => <b>{text}</b>,
               })
             : t.rich('manage.sharing.revokeGroupPermission', {
-                groupName: userGroup,
+                groupName: userGroup!,
                 b: (text) => <b>{text}</b>,
               })}
         </p>

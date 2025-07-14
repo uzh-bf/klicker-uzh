@@ -165,18 +165,17 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.selectOption('[data-cy="select-course"]', this.data.course)
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -226,8 +225,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -256,8 +255,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -409,10 +408,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -472,8 +471,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -2331,43 +2330,49 @@ describe('Create and solve a group activity', function () {
       cy.get(`[data-cy="share-group-activity-${quiz.name}"]`).click()
 
       // grant READ permission to user 2
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_IND_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-READ"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsREAD)
 
       // grant EXECUTE permission to user 3
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-EXECUTE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsEXECUTE)
 
       // grand WRITE permissions to user 4
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST2_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
       )
@@ -2375,15 +2380,17 @@ describe('Create and solve a group activity', function () {
         .contains(messages.manage.sharing.permissionsWRITE)
 
       // grant ADMIN permissions to user 5
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_INST3_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_INST3_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-ADMIN"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(
         `[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`
       )
@@ -2527,53 +2534,69 @@ describe('Create and solve a group activity', function () {
       cy.get(`[data-cy="share-group-activity-${quiz.name}"]`).click()
 
       // grant READ permission to user group 1
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-READ"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group1
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsREAD
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsREAD
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsREAD)
 
       // grant EXECUTE permission to user group 2
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group2}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-EXECUTE"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group2
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsEXECUTE
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsEXECUTE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group2}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsEXECUTE)
 
       // grand WRITE permissions to user group 3
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group3}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group3
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group3}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)
 
       // grant ADMIN permissions to user group 4
-      cy.get('[data-cy="new-permission-user-group"]').click()
-      cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).click()
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-ADMIN"]').click()
+      cy.selectOption(
+        '[data-cy="new-permission-user-group"]',
+        this.data.sharing.group4
+      )
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsADMIN
+      )
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsADMIN
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${this.data.sharing.group4}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsADMIN)
@@ -2661,15 +2684,17 @@ describe('Create and solve a group activity', function () {
       cy.get(`[data-cy="share-group-activity-${quiz.name}"]`).click()
 
       // share the course with WRITE permissions with user pro1
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_IND_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)
@@ -2713,15 +2738,17 @@ describe('Create and solve a group activity', function () {
       cy.get(`[data-cy="share-group-activity-${quiz.name}"]`).click()
 
       // grant a WRITE permission to the main user (should change the existing permission in this case)
-      cy.get('[data-cy="new-permission-username-or-email"]').type(
-        Cypress.env('LECTURER_SHORTNAME')
+      cy.get('[data-cy="new-permission-username-or-email"]')
+        .click()
+        .type(Cypress.env('LECTURER_SHORTNAME'))
+      cy.selectOption(
+        '[data-cy="new-permission-access-level"]',
+        messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-access-level"]').click()
-      cy.get('[data-cy="permission-level-WRITE"]').click()
       cy.get('[data-cy="new-permission-access-level"]').contains(
         messages.manage.sharing.permissionsWRITE
       )
-      cy.get('[data-cy="new-permission-submit"]').click()
+      cy.get('[data-cy="new-permission-submit"]').click().wait(500)
       cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
         .should('exist')
         .contains(messages.manage.sharing.permissionsWRITE)

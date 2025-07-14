@@ -81,9 +81,6 @@ function CourseOverviewPage() {
       <div className="mb-2 w-full">
         <CourseOverviewHeader
           course={course}
-          name={course.name}
-          pinCode={course.pinCode ?? 0}
-          numOfParticipants={course.numOfParticipants ?? 0}
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
@@ -150,7 +147,7 @@ function CourseOverviewPage() {
         )}
       </div>
 
-      <div className="mt-4 flex flex-col flex-wrap gap-4 lg:flex-row">
+      <div className="mt-4 flex flex-col gap-4 lg:flex-row">
         <Tabs
           defaultValue="liveQuizzes"
           value={tabValue}
@@ -196,7 +193,7 @@ function CourseOverviewPage() {
               data: { cy: 'tab-groupActivities' },
             },
           ]}
-          className={{ root: 'flex-1 basis-2/3' }}
+          className={{ root: 'flex-1 basis-3/5' }}
         >
           <TabContent
             key="content-liveQuizzes"

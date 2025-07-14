@@ -21,7 +21,7 @@ function Settings() {
 
   return (
     <Layout displayName={t('shared.generic.settings')}>
-      <div className="border-uzh-grey-100 mx-auto flex w-[46rem] max-w-full flex-col rounded border border-solid p-4">
+      <div className="border-uzh-grey-100 w-184 mx-auto flex max-w-full flex-col rounded border border-solid p-4">
         <H2>{t('manage.settings.userSettings')}</H2>
         <div className="mb-1">
           {`${t('manage.settings.storedEmail')}: ${user.userProfile.email}`}

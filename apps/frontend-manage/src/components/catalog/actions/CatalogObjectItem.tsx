@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faClock,
   faFileLines,
@@ -16,7 +15,6 @@ import {
   CatalogObject,
   ObjectAccess,
   ObjectType,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -56,11 +54,6 @@ function CatalogObjectItem({
     [ObjectType.Element]: faQuestion,
   }
   const actionsDisabled = object.isOwner || object.isShared
-
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
 
   // modal states
   const [requestModal, setRequestModal] = useState(false)

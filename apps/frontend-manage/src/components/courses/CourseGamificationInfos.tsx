@@ -43,7 +43,7 @@ function CourseGamificationInfos({
           data: { cy: 'tab-groups' },
         },
       ]}
-      className={{ root: 'flex-1 basis-1/3' }}
+      className={{ root: 'flex-1 basis-2/5' }}
     >
       <IndividualLeaderboard
         courseName={course.name}

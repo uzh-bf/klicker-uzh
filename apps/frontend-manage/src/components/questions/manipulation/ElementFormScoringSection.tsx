@@ -35,7 +35,7 @@ function ElementformScoringSection({
             required={false}
             label={t('manage.elements.sampleSolutionAndScoring')}
             labelType="small"
-            className={{ label: 'my-1 !text-lg' }}
+            className={{ label: 'text-lg! my-1' }}
           />
           <Link
             href={'https://www.klicker.uzh.ch/gamification/grading_logic/'}

@@ -645,7 +645,6 @@ export async function seedLiveQuiz(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.LIVE_QUIZ,
                 elementType: element.type,
                 options: {},
@@ -702,7 +701,6 @@ export async function seedPracticeQuiz(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.PRACTICE_QUIZ,
                 elementType: element.type,
                 options: {},
@@ -769,7 +767,6 @@ export async function seedMicroLearning(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.MICROLEARNING,
                 elementType: element.type,
                 options: {},
@@ -835,7 +832,6 @@ export async function seedGroupActivity(
             create: elements.map((element, index) => ({
               order: index,
               elementId: element.id,
-              migrationId: uuidv4(),
               type: ElementInstanceType.GROUP_ACTIVITY,
               elementType: element.type,
               options: {},

@@ -32,7 +32,7 @@ export function QR({
 }: Props): React.ReactElement {
   const t = useTranslations()
 
-  const ref = useRef<QRCode>()
+  const ref = useRef<QRCode>(null)
 
   const onButtonClick = useCallback(() => {
     if (ref.current === null) {

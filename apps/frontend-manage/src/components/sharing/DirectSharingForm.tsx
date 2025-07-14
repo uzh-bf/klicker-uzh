@@ -4,6 +4,7 @@ import {
   GetUserGroupsUserDocument,
   ObjectType,
   PermissionLevel,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -11,6 +12,7 @@ import {
   FormikSwitchField,
   SelectField,
   TextField,
+  toast,
 } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -22,14 +24,10 @@ import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelec
 function DirectSharingForm({
   type,
   showPropagationSetting,
-  onSuccess,
-  onFailure,
   shareObjectCallback,
 }: {
   type: ObjectType
   showPropagationSetting: boolean
-  onSuccess: () => void
-  onFailure: () => void
   shareObjectCallback: ({
     shortnameOrEmail,
     userGroupId,
@@ -47,6 +45,18 @@ function DirectSharingForm({
   const { data, loading } = useQuery(GetUserGroupsUserDocument, {
     fetchPolicy: 'cache-and-network',
   })
+
+  // fetch own user to disable sharing with self
+  const { data: user } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+
+  const onFailure = () =>
+    toast({
+      type: 'error',
+      message: t('manage.sharing.sharingFailed'),
+      options: { duration: 3000 },
+    })
 
   return (
     <Formik
@@ -82,10 +92,6 @@ function DirectSharingForm({
 
           if (success) {
             resetForm()
-            onSuccess()
-            setSubmitting(false)
-          } else {
-            onFailure()
             setSubmitting(false)
           }
         } else {
@@ -94,14 +100,29 @@ function DirectSharingForm({
         }
       }}
       validationSchema={Yup.object().shape({
-        shortnameOrEmail: Yup.string().test(
-          'either-shortname-or-group',
-          t('manage.sharing.shortnameEmailOrGroupRequired'),
-          function (value) {
-            // if userGroupId exists in the parent, this field can be empty
-            return this.parent.userGroupId || (!!value && value !== '')
-          }
-        ),
+        shortnameOrEmail: Yup.string()
+          .test(
+            'either-shortname-or-group',
+            t('manage.sharing.shortnameEmailOrGroupRequired'),
+            function (value) {
+              // if userGroupId exists in the parent, this field can be empty
+              return this.parent.userGroupId || (!!value && value !== '')
+            }
+          )
+          .test(
+            'not-self',
+            t('manage.sharing.noSelfSharing'),
+            function (value) {
+              // check if the user is trying to share with themselves
+              if (value && user?.userProfile) {
+                return (
+                  value.toLowerCase() !==
+                  user.userProfile.shortname.toLowerCase()
+                )
+              }
+              return true
+            }
+          ),
         userGroupId: Yup.number().test(
           'either-group-or-shortname',
           t('manage.sharing.shortnameEmailOrGroupRequired'),
@@ -120,9 +141,12 @@ function DirectSharingForm({
     >
       {({
         values,
+        errors,
+        touched,
         isSubmitting,
         isValid,
         setFieldValue,
+        setFieldTouched,
         submitForm,
         validateForm,
       }) => (
@@ -130,9 +154,12 @@ function DirectSharingForm({
           <td className="px-4 py-3 text-sm text-gray-900">
             <TextField
               value={values.shortnameOrEmail || ''}
+              error={errors.shortnameOrEmail}
+              isTouched={touched.shortnameOrEmail}
               onChange={(newValue) => {
                 setFieldValue('shortnameOrEmail', newValue)
                 setFieldValue('userGroupId', undefined)
+                setFieldTouched('shortnameOrEmail', true)
 
                 // manually trigger form re-validation (otherwise lacks one step behind)
                 setTimeout(() => {
@@ -227,11 +254,11 @@ function DirectSharingForm({
               basic
               type="button"
               onClick={() => submitForm()}
-              primary={isValid}
               disabled={!isValid}
               className={{
                 root: twMerge(
-                  'px-2 py-2 hover:text-white',
+                  'mr-2 p-1.5 hover:text-white',
+                  isValid && 'bg-primary-100 hover:bg-primary-80 text-white',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}

@@ -1,5 +1,4 @@
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { v4 as uuidv4 } from 'uuid'
 import Prisma, {
   ElementInstanceType,
   ElementOrderType,
@@ -52,8 +51,6 @@ async function seedFlashcardSet(
             createMany: {
               data: [
                 {
-                  migrationId: el.originalId ?? uuidv4(),
-                  originalId: el.originalId,
                   order: ix,
                   type: ElementInstanceType.PRACTICE_QUIZ,
                   elementType: ElementType.FLASHCARD,

@@ -21,8 +21,12 @@ function Card({ slug, title, image, abstract }) {
           src={image}
           alt={title}
         />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-black/0 p-4">
-          <H2 className={{ root: 'text-lg text-white sm:text-xl md:text-2xl' }}>
+        <div className="bg-linear-to-t absolute bottom-0 left-0 right-0 from-black/80 to-black/0 p-4">
+          <H2
+            className={{
+              root: 'text-white! text-lg sm:text-xl md:text-2xl',
+            }}
+          >
             {title}
           </H2>
         </div>

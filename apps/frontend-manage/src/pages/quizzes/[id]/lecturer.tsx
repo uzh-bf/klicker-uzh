@@ -127,7 +127,7 @@ function LecturerView() {
   return (
     <div
       className={twMerge(
-        'border-t-only flex flex-col gap-8 border-t-[30px] border-solid p-4 md:flex-row',
+        'border-t-only border-t-30 flex flex-col gap-8 border-solid p-4 md:flex-row',
         borderColor
       )}
     >

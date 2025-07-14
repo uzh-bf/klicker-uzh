@@ -174,7 +174,7 @@ function PublicFeedback({
             response && (
               <div
                 key={response.content}
-                className="border-uzh-grey-60 bg-uzh-grey-20 mb-1 ml-8 flex flex-1 transform flex-row rounded-md border border-solid p-1.5 text-sm shadow-sm transition-shadow duration-300 hover:shadow-md"
+                className="bg-uzh-grey-20 mb-1 ml-8 flex flex-1 transform flex-row rounded-md border border-solid p-1.5 text-sm shadow-sm transition-shadow duration-300 hover:shadow-md"
               >
                 <div className="flex flex-1 flex-col">{response.content}</div>
                 <div>

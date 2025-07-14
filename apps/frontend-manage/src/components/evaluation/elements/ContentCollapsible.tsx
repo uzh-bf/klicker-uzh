@@ -40,14 +40,14 @@ function ContentCollapsible({
         ref={(ref) => setContentElem(ref)}
         className={twMerge(
           contentCollapsed
-            ? 'max-h-[7rem]'
+            ? 'max-h-28'
             : twMerge(
                 maxExpandedHeight ?? 'max-h-[calc(100vh-10.8rem)]',
                 'overflow-auto'
               ),
           showExtensibleButton &&
             contentCollapsed &&
-            'overflow-y-hidden bg-gradient-to-b from-black via-black to-white bg-clip-text',
+            'bg-linear-to-b overflow-y-hidden from-black via-black to-white bg-clip-text',
           !showExtensibleButton && 'border-uzh-grey-80 border-b',
           'w-full px-4'
         )}
@@ -60,7 +60,7 @@ function ContentCollapsible({
           className={{
             root: twMerge(
               'border-uzh-grey-80 h-6 w-full rounded-none border-0 border-b text-xs shadow-none print:hidden',
-              contentCollapsed && 'bg-gradient-to-b from-white to-slate-100'
+              contentCollapsed && 'bg-linear-to-b from-white to-slate-100'
             ),
           }}
           onClick={() => setContentCollapsed(!contentCollapsed)}

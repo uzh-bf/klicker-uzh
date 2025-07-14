@@ -182,6 +182,7 @@ export default defineConfig({
 
   e2e: {
     experimentalStudio: true,
+    experimentalMemoryManagement: true,
     //   // includeShadowDom: true,
     setupNodeEvents(on, config) {
       // merge process.env with config.env
@@ -1961,6 +1962,6 @@ export default defineConfig({
   },
 
   retries: {
-    runMode: 5,
+    runMode: 3,
   },
 })

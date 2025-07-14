@@ -62,12 +62,9 @@ const config: Config = {
   plugins: [
     async function docusaurusTailwindPlugin(context, options) {
       return {
-        name: 'docusaurus-tailwindcss',
+        name: 'tailwind-plugin',
         configurePostCss(postcssOptions) {
-          // ref: https://dev.to/sajclarke_62/using-tailwindcss-v3-in-docusaurus-in-5-steps-5c26
-          // postcssOptions.plugins.push(require('postcss-import'))
-          postcssOptions.plugins.push(require('tailwindcss'))
-          postcssOptions.plugins.push(require('autoprefixer'))
+          postcssOptions.plugins = [require('@tailwindcss/postcss')]
           return postcssOptions
         },
       }

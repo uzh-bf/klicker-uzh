@@ -205,7 +205,7 @@ function QuestionArea({
 
   return (
     <div className="min-h-content h-full w-full">
-      <H2 className={{ root: 'mb-0 hidden pt-4 md:block' }}>
+      <H2 className={{ root: 'mb-0 pt-4 md:pt-2' }}>
         {t('shared.generic.question')}
       </H2>
 

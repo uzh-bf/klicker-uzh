@@ -59,7 +59,7 @@ function AnswerCollectionItem({
     <>
       <div
         className={twMerge(
-          'border-uzh-grey-60 my-[0.2rem] flex items-center justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
+          'my-[0.2rem] flex items-center justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
           highlighted && 'border-primary-100 bg-orange-50'
         )}
         data-cy={`answer-collection-${collection.name}`}

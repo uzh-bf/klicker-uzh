@@ -197,7 +197,7 @@ function ElementCreation({
   }
 
   return (
-    <div className="print-hidden mb-3 flex flex-col justify-center md:h-[18.25rem] md:min-h-[18.25rem]">
+    <div className="print-hidden md:h-73 md:min-h-73 mb-3 flex flex-col justify-center">
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard

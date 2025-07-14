@@ -19,8 +19,6 @@ function GrantedPermissionsTable({
   showPropagationSetting,
   onPermissionLevelChange,
   onPermissionRemoval,
-  onSharingSuccess,
-  onSharingFailure,
   onOwnershipTransfer,
   shareObjectCallback,
 }: {
@@ -40,8 +38,6 @@ function GrantedPermissionsTable({
     newPropagation: boolean
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
-  onSharingSuccess: () => void
-  onSharingFailure: () => void
   onOwnershipTransfer: () => void
   shareObjectCallback: ({
     shortnameOrEmail,
@@ -119,8 +115,6 @@ function GrantedPermissionsTable({
               <DirectSharingForm
                 type={type}
                 showPropagationSetting={showPropagationSetting}
-                onSuccess={onSharingSuccess}
-                onFailure={onSharingFailure}
                 shareObjectCallback={shareObjectCallback}
               />
             </>

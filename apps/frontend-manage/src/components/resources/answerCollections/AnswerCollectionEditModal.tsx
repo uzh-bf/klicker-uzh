@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
   AccordionContent,
@@ -96,6 +95,7 @@ function AnswerCollectionEditModal({
     <Modal
       open
       escapeDisabled
+      loading={loading || !collection}
       onClose={() => {
         setOptionsEditingDisabled(false)
         onClose()
@@ -112,9 +112,7 @@ function AnswerCollectionEditModal({
         overlay: className?.overlay,
       }}
     >
-      {loading || !collection ? (
-        <Loader />
-      ) : (
+      {collection && (
         <Accordion
           collapsible
           type="single"
@@ -131,7 +129,7 @@ function AnswerCollectionEditModal({
         >
           <AccordionItem value="metadata">
             <AccordionTrigger
-              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              className="hover:bg-accent px-1 py-2 text-base font-semibold hover:no-underline"
               data-cy="open-answer-collection-metadata"
             >
               {t('manage.resources.nameAndDescription')}
@@ -153,7 +151,7 @@ function AnswerCollectionEditModal({
 
           <AccordionItem value="options">
             <AccordionTrigger
-              className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+              className="hover:bg-accent px-1 py-2 text-base font-semibold hover:no-underline"
               data-cy="open-answer-collection-options"
             >
               {t('manage.resources.answerOptions')}
@@ -178,7 +176,7 @@ function AnswerCollectionEditModal({
                 icon={faSearch}
                 placeholder={t('manage.resources.searchAnswerOptions')}
                 data={{ cy: 'search-answer-options' }}
-                className={{ field: 'mb-2 w-full', input: 'h-8 !pl-8 text-sm' }}
+                className={{ field: 'mb-2 w-full', input: 'pl-8! h-8 text-sm' }}
               />
               <div className="my-2 flex max-h-[calc(100vh-35rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-29rem)] lg:max-h-[calc(100vh-26rem)]">
                 {filteredEntries.length === 0 ? (

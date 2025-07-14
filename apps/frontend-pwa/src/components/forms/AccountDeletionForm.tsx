@@ -30,7 +30,7 @@ function AccountDeletionForm() {
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
       <div className="flex-initial space-y-2">
-        <H3 className={{ root: 'mb-0 border-b' }}>
+        <H3 className={{ root: 'mb-1.5 border-b' }}>
           {t('pwa.profile.deleteProfile')}
         </H3>
         <div>{t('pwa.profile.deleteProfileDescription')}</div>

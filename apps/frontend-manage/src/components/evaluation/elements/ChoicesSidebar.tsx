@@ -75,7 +75,7 @@ function ChoicesSidebar({
                     maxLines={3}
                     // maxLength={60}
                     className={{
-                      tooltip: 'z-20 float-right min-w-[25rem]',
+                      tooltip: 'min-w-100 z-20 float-right',
                       markdown: textSize.text,
                     }}
                   >

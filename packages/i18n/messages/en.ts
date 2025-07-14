@@ -253,6 +253,7 @@ export default {
       createdAt: 'Created at {date}',
       updatedAt: 'Edited at {date}',
       startAt: 'Start at {time}',
+      endAt: 'End at {time}',
       finishedAt: 'Finished at {time}',
       introduction: 'Introduction',
       information: 'Information',
@@ -1235,6 +1236,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmTagDeletion:
         'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
+      uniqueTagName:
+        'Please ensure that you do not have multiple tags with the same name.',
+      tagNameUpdatedSuccessfully: 'The tag name has been updated successfully.',
     },
     elements: {
       CREATETitle: 'Create Element',
@@ -1989,7 +1993,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
-      changeLiveQuizName: 'Change live quiz name',
+      embeddingLinkCopied:
+        'The embedding link has been copied to the clipboard successfully.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',
@@ -2065,8 +2070,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No feedbacks match the current filter settings...',
       filterSolved: 'Resolved',
       filterOpen: 'Open',
+      filterPinned: 'Pinned',
       filterUnpinned: 'Unpinned',
+      filterPublished: 'Published',
       filterUnpublished: 'Unpublished',
+      pinning: 'Pinning',
+      visibility: 'Visibility',
       sortByVotes: 'Sort by votes',
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
@@ -2089,6 +2098,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
       skipCooldown: 'Skip cooldown',
+      deleteFeedback: 'Delete Feedback',
+      deleteFeedbackMessage:
+        'Are you sure you want to delete this feedback: "{feedback}"?',
+      moderationTip: 'Alternative to deletion',
+      moderationTipMessage:
+        'You can enable moderation to hide selected feedbacks from the student view without deleting them permanently.',
+      confirmDeleteFeedback:
+        'I understand that this action will permanently delete the feedback.',
+      disableModerationTitle: 'Disable Moderation',
+      disableModerationMessage:
+        'You are about to disable moderation. This will automatically publish {count} unpublished feedback(s).',
+      autoPublishWarning: 'Auto-Publish Warning',
+      autoPublishWarningMessage:
+        'These will become visible to all students immediately.',
+      confirmDisableModeration:
+        'I understand that moderation will be disabled.',
+      confirmPublishUnpublished:
+        'I confirm that all {count} unpublished feedback(s) should be published.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -2219,6 +2246,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       courseDescriptionTooltip:
         'The description is shown to students. You can use it to describe the goals of the course.',
       addDescription: 'Add description',
+      notificationEmail: 'Notification Email',
+      notificationEmailTooltip:
+        'The email address to which course-specific notifications are sent (e.g. comments from students on incorrect questions). This email address can be changed later in the course settings and is not visible to students.',
+      notificationEmailPlaceholder: 'finance@uzh.ch',
+      notificationEmailInvalid: 'Please enter a valid email address.',
+      notificationEmailReq:
+        'Please enter a course-specific notification email address.',
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
@@ -2384,7 +2418,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newEndDate: 'New end date',
       futureEndDateRequired:
         'Please enter an end date that lies in the future.',
-      publishMicrolearning: 'Publish Microlearning',
       unpublishMicrolearning: 'Unpublish Microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       shareMicroLearning: 'Share Microlearning',
@@ -2392,19 +2425,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteMicroLearning: 'Delete Microlearning',
       deleteMicroLearningMessage:
         'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
-      publishItemPRACTICE_QUIZ: 'Publish practice quiz',
+      publishItemPRACTICE_QUIZ: 'Publish Practice Quiz',
       publishItemMICROLEARNING: 'Publish Microlearning',
-      publishItemGROUP_ACTIVITY: 'Publish group activity',
-      confirmPublishing: 'Are you sure you want to publish the following item?',
+      publishItemGROUP_ACTIVITY: 'Publish Group Activity',
+      confirmPublishingMicrolearning:
+        'Please confirm that you want to publish the microlearning <b>{name}</b>. This action will make it available to all participants in the following time window:',
+      microlearningPublishingHint:
+        'This process can only be undone if the start time is in the future. Changes to the content of contained elements are no longer possible after publishing.',
+      confirmPublishingGroupActivity:
+        'Please confirm that you want to publish the group activity <b>{name}</b>. This action will make it available to all groups in the following time window:',
+      groupActivityPublishingHint:
+        'This process can only be undone if the start time lies in the future. Changes to the content of contained elements are no longer possible after publishing.',
       practicePublishingHint:
         'Publishing a practice quiz makes the element immediately visible to all participants through the provided access link and the KlickerUZH App. This process cannot be undone.',
       practiceSchedulingHint:
         'Publishing this practice quiz activates the automatic publication on the date you set: {date}. From this point on, the practice quiz will be automatically visible to all participants. Until {date}, you can still undo the publication.',
-      microPublishingHint:
-        'Publishing a microlearning makes the element visible to all participants in the defined time window. This process can only be undone if the start time is in the future. Changes to the content of an element are no longer possible after publishing.',
       editPracticeQuiz: 'Edit Practice Quiz',
       duplicatePracticeQuiz: 'Duplicate Practice Quiz',
-      publishPracticeQuiz: 'Publish Practice Quiz',
       sharePracticeQuiz: 'Share Practice Quiz',
       removePracticeQuiz: 'Remove Practice Quiz',
       deletePracticeQuiz: 'Delete Practice Quiz',
@@ -2419,9 +2456,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteAnonymousResponses:
         '{number} anonymous response(s) for this activity will be deleted.',
       unpublishPracticeQuiz: 'Unpublish Practice Quiz',
-      publishGroupActivity: 'Publish group activity',
-      groupActivityPublishingHint:
-        'Publishing a group activity makes the element visible to all groups in the defined time window. This process can only be undone if the start time lies in the future. Changes to the content of an element cannot be made after publishing.',
       editGroupActivity: 'Edit Group Activity',
       endGroupActivity: 'End Group Activity',
       endGroupActivityMessage:
@@ -2882,6 +2916,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noUserGroupsAvailable: 'No user groups available',
       shortnameEmailOrGroupRequired:
         'Please enter a shortname / email address or select a user group.',
+      noSelfSharing: 'You cannot share objects with yourself.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:

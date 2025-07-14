@@ -14,7 +14,6 @@ import {
   faListCheck,
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikSelectField,
@@ -56,6 +55,7 @@ function SuspendedFirstLoginModal() {
     <Modal
       fullScreen
       open={firstLogin}
+      loading={!data.userProfile}
       onClose={() => null}
       hideCloseButton
       className={{ content: 'h-max pb-1' }}
@@ -66,7 +66,7 @@ function SuspendedFirstLoginModal() {
       <div className="mb-3 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
-      {data.userProfile ? (
+      {data.userProfile && (
         <Formik
           isInitialValid={false}
           validateOnMount
@@ -150,7 +150,7 @@ function SuspendedFirstLoginModal() {
                   unavailableMessage={t('shared.generic.usernameAvailability')}
                   className={{
                     root: 'w-[250px] md:w-max',
-                    input: 'bg-white !pl-8',
+                    input: 'pl-8! bg-white',
                     icon: 'bg-transparent',
                   }}
                   data={{ cy: 'first-login-shortname' }}
@@ -174,7 +174,7 @@ function SuspendedFirstLoginModal() {
                   labelLeft
                   label={t('manage.settings.emailUpdates')}
                   tooltip={t('manage.settings.emailUpdatesTooltip')}
-                  className={{ tooltip: 'max-w-[20rem] md:max-w-[35rem]' }}
+                  className={{ tooltip: 'md:max-w-140 max-w-80' }}
                 />
               </div>
               {showGenericError && (
@@ -252,8 +252,6 @@ function SuspendedFirstLoginModal() {
             </Form>
           )}
         </Formik>
-      ) : (
-        <Loader />
       )}
     </Modal>
   )

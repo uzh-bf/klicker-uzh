@@ -15,7 +15,7 @@ function MissingPage() {
           <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
           <div>{t('shared.error.404')}</div>
         </div>
-        <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+        <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
           {t.rich('manage.general.404Message', {
             link: (linkText) => (
               <Link href="/" legacyBehavior passHref>

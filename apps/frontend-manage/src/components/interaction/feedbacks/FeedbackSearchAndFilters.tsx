@@ -108,7 +108,7 @@ function FeedbackSearchAndFilters({
             placeholder={t('manage.general.searchPlaceholder')}
             className={{
               field: 'md:order-0 order-1 w-full md:mr-2 md:w-64',
-              input: '!pl-8',
+              input: 'pl-8!',
             }}
             icon={faMagnifyingGlass}
           />

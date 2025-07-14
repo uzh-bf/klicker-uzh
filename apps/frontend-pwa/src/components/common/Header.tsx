@@ -154,20 +154,20 @@ function Header({
                     id: 'loggedInAs',
                     type: 'label' as 'label',
                     label: (
-                      <div className="">
+                      <div className="font-bold">
                         <div>{t('pwa.profile.loggedInAs')}</div>
                         <div className="font-normal">
                           {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),
-                    className: { item: '!h-max py-0.5' },
+                    className: { item: 'h-max! py-0.5' },
                     data: { cy: 'header-logged-in-as' },
                   },
                   {
                     id: 'separator',
                     type: 'separator' as 'separator',
-                    className: { item: '!h-1.5' },
+                    className: { item: 'h-1.5!' },
                   },
                 ]
               : []),
@@ -295,7 +295,7 @@ function Header({
                     type: 'standard' as 'standard',
                     disabled: loggingOut,
                     label: (
-                      <div className="text-red-500">
+                      <div className="text-red-600">
                         <FontAwesomeIcon
                           icon={faRightFromBracket}
                           className="mr-2 w-4"
@@ -319,7 +319,7 @@ function Header({
                     type: 'standard' as 'standard',
                     disabled: loggingOutTemporary,
                     label: (
-                      <div className="text-red-500">
+                      <div className="text-red-600">
                         <FontAwesomeIcon
                           icon={faRightFromBracket}
                           className="mr-2 w-4"
@@ -369,7 +369,7 @@ function Header({
           className={{
             item: 'h-8 text-sm md:h-8 md:text-base',
             trigger:
-              'relative my-1 border-none bg-transparent !p-0 hover:bg-transparent',
+              'p-0! relative my-1 border-none bg-transparent hover:bg-transparent',
           }}
           data={{ cy: 'header-avatar' }}
         />
