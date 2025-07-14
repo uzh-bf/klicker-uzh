@@ -147,6 +147,22 @@ During this session, we resolved a final TypeScript compilation issue that was p
 - [x] Add proper TypeScript interfaces for Office API responses
 - [x] Configure TypeScript for DOM + Office.js environments
 
+### 1.2.1 TypeScript Type Safety Improvements
+
+- [ ] **Replace all `any` types with proper Office API types**:
+  - [ ] Replace `info: any` in `initializeOfficeAddin()` with `Office.HostInformation`
+  - [ ] Use `Office.AsyncResult<T>` for all Office API callback parameters
+  - [ ] Replace generic object types with specific Office API interfaces
+  - [ ] Add proper typing for `Office.CoercionType.SlideRange` responses
+- [ ] **Enhance custom interfaces with Office API integration**:
+  - [ ] Update `SlideData` interface to match actual Office API response structure
+  - [ ] Add typed event handler interfaces for DOM events
+  - [ ] Create typed callback interfaces for Office settings operations
+- [ ] **Add comprehensive JSDoc with TypeScript annotations**:
+  - [ ] Document all parameters with specific Office API types
+  - [ ] Add `@throws` annotations for Office API error conditions
+  - [ ] Include example usage with proper typing in documentation
+
 ### 1.3 Rollup Build System Setup
 
 - [x] **Replace webpack.config.js with rollup.config.js** following KlickerUZH standards
