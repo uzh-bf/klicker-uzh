@@ -21,6 +21,7 @@ import {
 } from './utils/validateResponse'
 
 interface ChoicesQuestionProps {
+  preview?: boolean
   content: string
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
   options: ChoiceElementOptions
@@ -34,6 +35,7 @@ interface ChoicesQuestionProps {
 }
 
 function ChoicesQuestion({
+  preview = false,
   content,
   type,
   options,
@@ -103,7 +105,7 @@ function ChoicesQuestion({
         )}
       </div>
 
-      {evaluation && (
+      {evaluation && !preview ? (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -120,7 +122,7 @@ function ChoicesQuestion({
             )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

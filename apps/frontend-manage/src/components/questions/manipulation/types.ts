@@ -15,6 +15,7 @@ interface SharedQuestionFormProps {
 
 interface ElementFormTypesChoice {
   id: string
+  ix?: number
   value?: string | null
   correct?: boolean | null
   feedback?: string | null
