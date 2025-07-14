@@ -17,32 +17,16 @@ interface SlideData {
 type MessageType = 'success' | 'error' | 'info' | 'warning'
 
 // --- DOM Element References ---
-// Get references to essential UI elements needed for interactivity.
-const iframeContainer = document.getElementById(
-  'iframe-container'
-) as HTMLDivElement | null
-const urlInput = document.getElementById('url-input') as HTMLInputElement | null
-const contentIframe = document.getElementById(
-  'content-iframe'
-) as HTMLIFrameElement | null
-const messageBox = document.getElementById(
-  'message-box'
-) as HTMLDivElement | null
-const messageText = document.getElementById(
-  'message-text'
-) as HTMLSpanElement | null
-const embedButton = document.getElementById(
-  'embed-button'
-) as HTMLButtonElement | null
-const changeEmbeddedUrlButton = document.getElementById(
-  'change-embedded-url-button'
-) as HTMLButtonElement | null
-const appContainer = document.getElementById(
-  'app-container'
-) as HTMLDivElement | null
-const urlValidationMessage = document.getElementById(
-  'url-validation-message'
-) as HTMLDivElement | null
+// These will be initialized in initializeApp() when DOM is ready
+let iframeContainer: HTMLDivElement | null = null
+let urlInput: HTMLInputElement | null = null
+let contentIframe: HTMLIFrameElement | null = null
+let messageBox: HTMLDivElement | null = null
+let messageText: HTMLSpanElement | null = null
+let embedButton: HTMLButtonElement | null = null
+let changeEmbeddedUrlButton: HTMLButtonElement | null = null
+let appContainer: HTMLDivElement | null = null
+let urlValidationMessage: HTMLDivElement | null = null
 
 // --- Constants ---
 /**
@@ -59,7 +43,9 @@ const SETTINGS_KEY = 'embeddedUrl'
 Office.onReady((info) => {
   // Ensure DOM is fully loaded before accessing elements
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initializeOfficeAddin(info))
+    document.addEventListener('DOMContentLoaded', () =>
+      initializeOfficeAddin(info)
+    )
   } else {
     initializeOfficeAddin(info)
   }
@@ -87,7 +73,30 @@ function initializeOfficeAddin(info: any) {
  * based on any previously saved URL in the document settings.
  */
 function initializeApp(): void {
-  console.log('KlickerUZH Add-in initializing...')
+  // Get DOM element references when DOM is ready
+  iframeContainer = document.getElementById(
+    'iframe-container'
+  ) as HTMLDivElement | null
+  urlInput = document.getElementById('url-input') as HTMLInputElement | null
+  contentIframe = document.getElementById(
+    'content-iframe'
+  ) as HTMLIFrameElement | null
+  messageBox = document.getElementById('message-box') as HTMLDivElement | null
+  messageText = document.getElementById(
+    'message-text'
+  ) as HTMLSpanElement | null
+  embedButton = document.getElementById(
+    'embed-button'
+  ) as HTMLButtonElement | null
+  changeEmbeddedUrlButton = document.getElementById(
+    'change-embedded-url-button'
+  ) as HTMLButtonElement | null
+  appContainer = document.getElementById(
+    'app-container'
+  ) as HTMLDivElement | null
+  urlValidationMessage = document.getElementById(
+    'url-validation-message'
+  ) as HTMLDivElement | null
 
   // Attach event listeners to buttons
   if (embedButton) {
@@ -96,7 +105,7 @@ function initializeApp(): void {
   if (changeEmbeddedUrlButton) {
     changeEmbeddedUrlButton.addEventListener('click', showInitialView) // Handle changing the URL
   }
-  
+
   // Add input validation event listeners
   if (urlInput) {
     urlInput.addEventListener('input', handleUrlInput) // Real-time validation
@@ -116,20 +125,15 @@ function initializeApp(): void {
  * Otherwise, it shows the initial view for entering a URL.
  */
 async function loadInitialState(): Promise<void> {
-  console.log('Loading initial state...')
   const savedUrl = Office.context.document.settings.get(SETTINGS_KEY) as
     | string
     | undefined
 
   if (savedUrl && isValidUrl(savedUrl)) {
     // Standard case: URL found with new key
-    console.log(`Found saved URL with new key '${SETTINGS_KEY}': ${savedUrl}`)
     displayIframe(savedUrl)
   } else {
     // No valid URL with new key, attempt legacy migration
-    console.log(
-      `No valid URL found with new key '${SETTINGS_KEY}'. Attempting legacy migration...`
-    )
     try {
       const slideID = await getSlideID() // Get current slide ID (can throw)
       const legacyKey = 'selectedURL' + slideID
@@ -139,34 +143,19 @@ async function loadInitialState(): Promise<void> {
 
       if (legacyUrl && isValidUrl(legacyUrl)) {
         // Found a valid legacy URL
-        console.log(
-          `Found valid legacy URL '${legacyUrl}' with key '${legacyKey}'. Migrating...`
-        )
-
         // Save the legacy URL under the new key
         saveUrlToSettings(legacyUrl, (saveSuccess) => {
           if (saveSuccess) {
-            console.log(
-              `Successfully saved migrated URL under new key '${SETTINGS_KEY}'. Removing legacy key...`
-            )
             // Now remove the old legacy key
             Office.context.document.settings.remove(legacyKey)
             Office.context.document.settings.saveAsync((removeResult) => {
               if (removeResult.status === Office.AsyncResultStatus.Succeeded) {
-                console.log(
-                  `Successfully removed legacy setting key: ${legacyKey}`
-                )
                 showMessage(
                   'Settings format updated successfully.',
                   'info',
                   4000
                 ) // Show longer message
               } else {
-                // Log error but proceed, migration is mostly done
-                console.error(
-                  `Failed to remove legacy setting key ${legacyKey}:`,
-                  removeResult.error?.message
-                )
                 showMessage(
                   'Could not remove old setting, but migration succeeded.',
                   'warning'
@@ -177,9 +166,6 @@ async function loadInitialState(): Promise<void> {
             })
           } else {
             // Failed to save the migrated URL under the new key - critical step failed
-            console.error(
-              `Failed to save migrated URL under new key '${SETTINGS_KEY}'. Aborting migration.`
-            )
             showMessage(
               'Failed to update settings format. Please try embedding again.',
               'error'
@@ -189,20 +175,10 @@ async function loadInitialState(): Promise<void> {
         })
       } else {
         // No legacy URL found for this slide, or it's invalid
-        if (legacyUrl) {
-          console.log(
-            `Found legacy URL with key '${legacyKey}', but it's invalid: ${legacyUrl}`
-          )
-        } else {
-          console.log(`No legacy URL found with key '${legacyKey}'.`)
-        }
         showInitialView() // Show initial view, no migration needed/possible
       }
     } catch (error) {
       // Error during migration attempt (e.g., getSlideID failed or other unexpected error)
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-      console.warn(`Could not perform legacy URL migration: ${errorMessage}`)
       // Do not show error to user, just proceed to initial view as a fallback
       showInitialView()
     }
@@ -241,7 +217,6 @@ async function getSlideID(maxRetries = 3): Promise<number> {
           (asyncResult: Office.AsyncResult<{ slides: SlideData[] }>) => {
             // Handle the API callback
             if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-              console.log('Slide data result:', asyncResult.value)
               if (!asyncResult.value?.slides?.length) {
                 reject(
                   new Error(
@@ -257,7 +232,6 @@ async function getSlideID(maxRetries = 3): Promise<number> {
               }
               resolve(id) // Resolve the promise with the valid slide ID
             } else {
-              console.error('getSelectedDataAsync error:', asyncResult.error)
               reject(
                 new Error(
                   asyncResult.error?.message || 'Failed to read slide ID'
@@ -280,10 +254,6 @@ async function getSlideID(maxRetries = 3): Promise<number> {
       retryCount++
       const errorMessage =
         error instanceof Error ? error.message : String(error)
-      console.log(
-        `Attempt ${retryCount} of ${maxRetries} failed:`,
-        errorMessage
-      )
 
       if (retryCount === maxRetries) {
         throw new Error(
@@ -293,7 +263,6 @@ async function getSlideID(maxRetries = 3): Promise<number> {
 
       // Wait for a short time before retrying (exponential backoff)
       const delay = Math.min(1000 * Math.pow(2, retryCount), 5000)
-      console.log(`Retrying in ${delay}ms...`)
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
@@ -308,23 +277,26 @@ async function getSlideID(maxRetries = 3): Promise<number> {
  */
 type ValidationState = 'valid' | 'invalid' | 'empty' | 'pending'
 
+// Validation timeout for debouncing
+let validationTimeout: ReturnType<typeof setTimeout>
+
 /**
  * Handles real-time input validation as the user types
  */
 function handleUrlInput(): void {
   if (!urlInput) return
-  
+
   const url = urlInput.value.trim()
-  
+
   if (url === '') {
     setValidationState('empty')
     return
   }
-  
+
   // Debounce validation to avoid excessive checks while typing
   clearTimeout(validationTimeout)
   setValidationState('pending')
-  
+
   validationTimeout = setTimeout(() => {
     validateUrlInput(url)
   }, 300) // 300ms debounce
@@ -335,7 +307,7 @@ function handleUrlInput(): void {
  */
 function handleUrlBlur(): void {
   if (!urlInput) return
-  
+
   const url = urlInput.value.trim()
   if (url !== '') {
     validateUrlInput(url)
@@ -347,9 +319,10 @@ function handleUrlBlur(): void {
  */
 function handleUrlPaste(): void {
   if (!urlInput) return
-  
+
   // Use setTimeout to allow the paste to complete
   setTimeout(() => {
+    if (!urlInput) return
     const url = urlInput.value.trim()
     if (url !== '') {
       validateUrlInput(url)
@@ -375,37 +348,40 @@ function validateUrlInput(url: string): void {
  */
 function setValidationState(state: ValidationState): void {
   if (!urlInput || !urlValidationMessage) return
-  
+
   // Reset all classes
   urlInput.classList.remove(
     'border-red-500',
-    'border-green-500', 
+    'border-green-500',
     'border-yellow-500',
     'focus:ring-red-500',
     'focus:ring-green-500',
     'focus:ring-yellow-500'
   )
   urlValidationMessage.classList.add('hidden')
-  
+
   switch (state) {
     case 'valid':
       urlInput.classList.add('border-green-500', 'focus:ring-green-500')
       showValidationMessage('✓ Valid KlickerUZH evaluation URL', 'success')
       updateEmbedButton(true)
       break
-      
+
     case 'invalid':
       urlInput.classList.add('border-red-500', 'focus:ring-red-500')
-      showValidationMessage('Please enter a valid KlickerUZH evaluation URL', 'error')
+      showValidationMessage(
+        'Please enter a valid KlickerUZH evaluation URL',
+        'error'
+      )
       updateEmbedButton(false)
       break
-      
+
     case 'pending':
       urlInput.classList.add('border-yellow-500', 'focus:ring-yellow-500')
       showValidationMessage('Validating...', 'pending')
       updateEmbedButton(false)
       break
-      
+
     case 'empty':
       // Neutral state, no special styling
       updateEmbedButton(false)
@@ -418,12 +394,19 @@ function setValidationState(state: ValidationState): void {
  * @param message - The message to display
  * @param type - The type of message (success, error, pending)
  */
-function showValidationMessage(message: string, type: 'success' | 'error' | 'pending'): void {
+function showValidationMessage(
+  message: string,
+  type: 'success' | 'error' | 'pending'
+): void {
   if (!urlValidationMessage) return
-  
+
   urlValidationMessage.textContent = message
-  urlValidationMessage.classList.remove('text-red-600', 'text-green-600', 'text-yellow-600')
-  
+  urlValidationMessage.classList.remove(
+    'text-red-600',
+    'text-green-600',
+    'text-yellow-600'
+  )
+
   switch (type) {
     case 'success':
       urlValidationMessage.classList.add('text-green-600')
@@ -435,7 +418,7 @@ function showValidationMessage(message: string, type: 'success' | 'error' | 'pen
       urlValidationMessage.classList.add('text-yellow-600')
       break
   }
-  
+
   urlValidationMessage.classList.remove('hidden')
 }
 
@@ -445,7 +428,7 @@ function showValidationMessage(message: string, type: 'success' | 'error' | 'pen
  */
 function updateEmbedButton(isValid: boolean): void {
   if (!embedButton) return
-  
+
   if (isValid) {
     embedButton.disabled = false
     embedButton.classList.remove('opacity-50', 'cursor-not-allowed')
@@ -456,9 +439,6 @@ function updateEmbedButton(isValid: boolean): void {
     embedButton.classList.remove('hover:border-gray-400', 'hover:bg-gray-300')
   }
 }
-
-// Validation timeout for debouncing
-let validationTimeout: ReturnType<typeof setTimeout>
 
 // --- Event Handlers ---
 /**
@@ -473,7 +453,6 @@ function handleEmbedClick(): void {
   }
 
   const url = urlInput.value.trim() // Get and trim the URL from the input
-  console.log(`Embed button clicked. URL entered: ${url}`)
 
   if (isValidUrl(url)) {
     // If the URL is valid
@@ -481,18 +460,15 @@ function handleEmbedClick(): void {
       // Attempt to save the URL
       if (success) {
         // If save is successful
-        console.log('URL successfully saved to settings.')
         displayIframe(url) // Display the iframe
         showMessage('URL embedded successfully.', 'success') // Show success message
       } else {
         // If save fails
-        console.error('Failed to save URL to settings.')
         showMessage('Error saving URL. Please try again.', 'error') // Show error message
       }
     })
   } else {
     // If the URL is invalid
-    console.warn('Invalid URL provided by user.')
     showMessage(
       'Please enter a valid KlickerUZH Evaluation URL (e.g., https://manage.klicker.uzh.ch/quizzes/.../evaluation?hmac=... or https://manage.klicker.uzh.ch/sessions/.../evaluation?hmac=...).',
       'error'
@@ -519,13 +495,9 @@ function saveUrlToSettings(
   Office.context.document.settings.saveAsync((asyncResult) => {
     if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
       // If persistence succeeded
-      console.log('Document settings saved successfully.')
       if (callback) callback(true) // Notify success via callback
     } else {
       // If persistence failed
-      console.error(
-        'Failed to save document settings. Error: ' + asyncResult.error?.message
-      )
       if (callback) callback(false) // Notify failure via callback
     }
   })
@@ -539,8 +511,6 @@ function saveUrlToSettings(
  * @param url - The URL to load into the iframe.
  */
 function displayIframe(url: string): void {
-  console.log(`Switching to iframe view with URL: ${url}`)
-
   if (!contentIframe) {
     console.error('Content iframe element not found')
     return
@@ -551,8 +521,6 @@ function displayIframe(url: string): void {
   // Add the CSS class to trigger fullscreen styles defined in content.html
   if (appContainer) {
     appContainer.classList.add('fullscreen-mode')
-  } else {
-    console.warn("'app-container' not found. Cannot apply fullscreen styles.")
   }
 
   // Show iframe container and change button, hide initial input area
@@ -574,8 +542,6 @@ function displayIframe(url: string): void {
  * Clears the currently saved URL from settings and the input field.
  */
 function showInitialView(): void {
-  console.log('Switching back to initial view.')
-
   // Remove fullscreen styles
   if (appContainer) {
     appContainer.classList.remove('fullscreen-mode')
@@ -603,9 +569,7 @@ function showInitialView(): void {
   Office.context.document.settings.remove(SETTINGS_KEY)
   Office.context.document.settings.saveAsync((asyncResult) => {
     // Log success or failure of clearing the setting
-    if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-      console.log('Saved URL setting cleared successfully.')
-    } else {
+    if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
       console.error(
         'Failed to clear saved URL setting. Error: ' +
           asyncResult.error?.message
@@ -648,10 +612,6 @@ function showMessage(
   type: MessageType,
   duration = 3000
 ): void {
-  console.log(
-    `Showing message (type: ${type}, duration: ${duration}): "${message}"`
-  )
-
   if (!messageBox || !messageText) {
     console.error('Message box elements not found in the DOM.', {
       messageBox: !!messageBox,
@@ -698,18 +658,26 @@ function showMessage(
   messageBox.classList.remove('hidden')
   // Use a slight delay before setting opacity to 1 to ensure transition works
   setTimeout(() => {
-    messageBox.classList.add('opacity-100')
+    if (messageBox) {
+      messageBox.classList.add('opacity-100')
+    }
   }, 10) // 10ms delay
 
   // Set a timer to hide the message box after the specified duration
   setTimeout(() => {
-    messageBox.classList.remove('opacity-100')
+    if (messageBox) {
+      messageBox.classList.remove('opacity-100')
+    }
     // Wait for the fade-out transition to complete before hiding the element
     setTimeout(() => {
-      messageBox.classList.add('hidden')
+      if (messageBox) {
+        messageBox.classList.add('hidden')
+        messageBox.classList.remove('text-black') // Remove text color override if present
+      }
       // Clear text and remove specific styling if needed
-      messageText.textContent = ''
-      messageBox.classList.remove('text-black') // Remove text color override if present
+      if (messageText) {
+        messageText.textContent = ''
+      }
     }, 500) // Duration should match the CSS transition duration
   }, duration)
 }

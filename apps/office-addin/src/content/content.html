@@ -5,14 +5,17 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
     <title>KlickerUZH</title>
 
     <script>
-      window.global = window;
+      window.global = window
     </script>
 
     <script type="text/javascript">
@@ -20,7 +23,7 @@
       window._historyCache = {
         replaceState: window.history.replaceState,
         pushState: window.history.pushState,
-      };
+      }
     </script>
 
     <!-- Office JavaScript API -->
@@ -31,8 +34,8 @@
 
     <script type="text/javascript">
       // Restore the history method values after loading Office.js
-      window.history.replaceState = window._historyCache.replaceState;
-      window.history.pushState = window._historyCache.pushState;
+      window.history.replaceState = window._historyCache.replaceState
+      window.history.pushState = window._historyCache.pushState
     </script>
 
     <!-- Custom Styles for Reset and Full Height -->
@@ -103,7 +106,9 @@
         height: 100%;
       }
       #iframe-wrapper {
-        height: calc(100% - 4rem); /* Adjust height calculation based on header/button bar */
+        height: calc(
+          100% - 4rem
+        ); /* Adjust height calculation based on header/button bar */
       }
       /* Style for the message box */
       #message-box {
@@ -126,8 +131,14 @@
       <!-- Header -->
       <header class="mb-6 flex items-center border-b border-gray-200 pb-4">
         <!-- Replace with actual logo path -->
-        <img src="assets/logo-filled.png" alt="Klicker UZH Logo" class="mr-4 h-10" />
-        <h1 class="text-2xl font-semibold text-gray-800">KlickerUZH: Embed Evaluation</h1>
+        <img
+          src="assets/logo-filled.png"
+          alt="Klicker UZH Logo"
+          class="mr-4 h-10"
+        />
+        <h1 class="text-2xl font-semibold text-gray-800">
+          KlickerUZH: Embed Evaluation
+        </h1>
       </header>
 
       <!-- Main Content Area (Instructions + Image) - with background and padding -->
@@ -137,7 +148,9 @@
       >
         <!-- Left Panel: Instructions (padding removed as parent now has padding) -->
         <div class="w-1/2">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800">Instructions:</h3>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800">
+            Instructions:
+          </h3>
           <ol class="list-inside list-decimal space-y-3 text-sm text-gray-600">
             <li>
               Go to
@@ -149,13 +162,19 @@
                 >https://manage.klicker.uzh.ch/quizzes</a
               >
             </li>
-            <li>For the live quiz you want to embed, open the "Embed Evaluation" dialog</li>
             <li>
-              Copy the link of the view to embed (the full evaluation, a specific question, or the
-              leaderboard)
+              For the live quiz you want to embed, open the "Embed Evaluation"
+              dialog
+            </li>
+            <li>
+              Copy the link of the view to embed (the full evaluation, a
+              specific question, or the leaderboard)
             </li>
             <li>Paste the link into the field and click "Embed"</li>
-            <li>Resize the add-in to your preferred size (e.g., to cover the full slide)</li>
+            <li>
+              Resize the add-in to your preferred size (e.g., to cover the full
+              slide)
+            </li>
           </ol>
         </div>
 
@@ -174,21 +193,23 @@
         id="input-bar-area"
         class="mt-6 flex items-center space-x-3 border-t border-gray-200 pt-4"
       >
-        <label for="url-input" class="whitespace-nowrap text-sm font-medium text-gray-700"
+        <label
+          for="url-input"
+          class="whitespace-nowrap text-sm font-medium text-gray-700"
           >URL <span class="text-red-500">*</span></label
         >
-        <div class="flex-grow relative">
+        <div class="relative flex-grow">
           <input
             type="url"
             id="url-input"
             placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
             required
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm transition-colors duration-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <!-- Validation message -->
           <div
             id="url-validation-message"
-            class="absolute mt-1 text-xs text-red-600 hidden"
+            class="absolute mt-1 hidden text-xs text-red-600"
           ></div>
         </div>
         <button
@@ -209,7 +230,7 @@
           <iframe
             id="content-iframe"
             title="Embedded Content"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             class="h-full w-full border-0"
           ></iframe>
         </div>
