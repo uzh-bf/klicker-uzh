@@ -119,7 +119,7 @@ function StudentElementPreview({
                     case ElementType.Mc:
                     case ElementType.Kprim:
                       return {
-                        ['0']: {
+                        [artificialInstance.id]: {
                           evaluation: {
                             __typename: 'ChoicesInstanceEvaluation',
                             explanation,
@@ -132,7 +132,7 @@ function StudentElementPreview({
 
                     case ElementType.Numerical:
                       return {
-                        ['0']: {
+                        [artificialInstance.id]: {
                           evaluation: {
                             __typename: 'NumericalInstanceEvaluation',
                             explanation,
@@ -142,7 +142,7 @@ function StudentElementPreview({
 
                     case ElementType.FreeText:
                       return {
-                        ['0']: {
+                        [artificialInstance.id]: {
                           evaluation: {
                             __typename: 'FreeTextInstanceEvaluation',
                             explanation,
@@ -152,7 +152,7 @@ function StudentElementPreview({
 
                     case ElementType.Selection:
                       return {
-                        ['0']: {
+                        [artificialInstance.id]: {
                           evaluation: {
                             __typename: 'SelectionInstanceEvaluation',
                             explanation,
@@ -162,7 +162,7 @@ function StudentElementPreview({
 
                     case ElementType.CaseStudy:
                       return {
-                        ['0']: {
+                        [artificialInstance.id]: {
                           evaluation: {
                             __typename: 'CaseStudyInstanceEvaluation',
                             explanation,
