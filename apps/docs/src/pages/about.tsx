@@ -28,6 +28,12 @@ const PEOPLE: {
     github: 'https://github.com/sjschlapbach',
   },
   {
+    name: 'Patrick Aldover',
+    role: 'Project Developer',
+    info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/patrick-aldover.html',
+    github: 'https://github.com/jabbadizzleCode',
+  },
+  {
     name: 'Johanna Braun',
     role: 'Head Teaching Center',
     imageUrl:
@@ -57,16 +63,13 @@ const PEOPLE: {
     github: 'https://github.com/TheHummel',
   },
   {
-    name: 'Julia Gut',
-    role: 'Contributor (Content)',
-    imageUrl:
-      'https://www.df.uzh.ch/contacts/df/student-assistants/jgut/photo/Julia%20Gut.jpg.jpg',
-    info: 'https://www.df.uzh.ch/en/people/student-assistants/julia-gut.html',
-  },
-  {
     name: 'Selina De Pizzol',
     role: 'Contributor (Content)',
     info: 'https://www.df.uzh.ch/en/people/student-assistants/selina-de-pizzol.html',
+  },
+  {
+    name: 'Julia Gut',
+    role: 'Contributor (Content)',
   },
   {
     name: "Alessio D'Andrea",

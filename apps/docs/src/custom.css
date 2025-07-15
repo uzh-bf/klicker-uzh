@@ -1,9 +1,14 @@
-@import 'tailwindcss';
+/* define layer order explicitly - later layers have higher priority */
+@layer theme, base, docusaurus, components, utilities;
+
+/* import tailwind without preflight styles */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 
 @plugin '@tailwindcss/typography';
 
-@source "../../node_modules/@uzh-bf/design-system/src";
-@source "../src";
+@source "../node_modules/@uzh-bf/design-system/src";
+@source "./";
 @source "../docs";
 
 /* make sure dark mode is applied only with the dark top level class */
