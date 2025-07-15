@@ -6,11 +6,13 @@ import Tabs from '@theme/Tabs'
 import TabItem from '@theme/TabItem'
 import PrivatePreviewTag from '../../src/components/PrivatePreviewTag'
 
-Based on learning settings or learning goals, you can choose from seven different element types in KlickerUZH (i.e., five types of questions, content elements, and flashcards). Questions support the definition of a sample solution, which is used for automated grading processes in asynchronous KlickerUZH activities, such as practice quizzes and microlearnings. To use a question in a live quiz setting, you do not have to provide information on the answer correctness.
+Based on learning settings or learning goals, you can choose from nine different element types in KlickerUZH (i.e., seven types of questions, content elements, and flashcards). Questions support the definition of a sample solution, which is used for automated grading processes in asynchronous KlickerUZH activities, such as practice quizzes and microlearnings. To use a question in a live quiz setting, you do not have to provide information on the answer correctness, unless you want it to affect the awarded points in gamified settings.
+
+In asynchronous settings, you can additionally provide an explanation of the solution (all question types) and answer feedbacks for SC / MC / Kprime questions. These components will be shown to the students after they have submitted their answer. In live quiz settings, you can choose to display the sample solution and the optional explanation on the lecturer evaluation view.
 
 KlickerUZH supports the following element types:
 
-- **Questions**: [Single Choice (SC)](#single-choice-sc), [Multiple Choice (MC)](#multiple-choice-mc), [Kprime (KP)](#kprime-kp), [Free Text (FT)](#free-text-ft), [Numerical Response (NR)](#numerical-response-nr), [Selection (SE)](#selection-se), and [Case Study (CS)](#case-study-cs)
+- **Questions**: [Single Choice (SC)](#single-choice-sc), [Multiple Choice (MC)](#multiple-choice-mc), [Kprime (KP)](#kprime-kp), [Free Text (FT)](#free-text-ft), [Numerical Response (NR)](#numerical-response-nr), [Selection (SE)](#selection-se-), and [Case Study (CS)](#case-study-cs-)
 - **Content**: [Content Element (CT)](#content-element-ct), [Flashcard (FC)](#flashcard-fc)
 
 For a more detailed description on how to create the listed elements in the KlickerUZH lecturer interface, please refer to the documentation on [element management](/tutorials/element_management/) or check out the tooltips for the corresponding fields in the editor directly.
@@ -18,12 +20,12 @@ For a more detailed description on how to create the listed elements in the Klic
 ## Single Choice (SC)
 
 :::info
-For single choice questions, students select one of the available answer options. You should specify the correct answer and may also provide feedback (per answer option) and an explanation if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. A preview on the right allows you to see how the question will appear to students.
+For single choice questions, students select exactly one of the available answer options. You should specify the correct answer and may also provide a feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows to you inspect the question as it will be shown to the students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, single choice questions are viewed as follows, with the solution (and feedback) appearing in asynchronous activities after submitting their answer.
+For **students**, single choice questions are viewed as follows, with the sample solution, explanation and optional answer feedbacks appearing in asynchronous activities after submitting an answer.
 
 ![Single Choice Question - Student View](/img/supported_element_types/SC_student.png)
 
@@ -41,12 +43,12 @@ This is how it looks from the **lecturer's** perspective.
 ## Multiple Choice (MC)
 
 :::info
-With multiple choice questions one or more of the provided answers may be correct. You should mark correct answers and can offer feedback (per answer option) and an explanation if you wish. You can format these elements using the editor, Markdown, or LaTeX syntax, and include images if needed. A preview on the right allows you to see how the question will appear to students.
+For multiple choice questions, students select one or more of the provided answers. You may select the correct answers and can provide feedback (per answer option) to be shown in asynchronous activities and an explanation if you wish. You can format these elements using the editor, Markdown, or LaTeX syntax, and include images if needed. A preview on the right allows you to see how the question will be shown to students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, multiple choice questions are viewed as follows, with the solution (and feedback) appearing in asynchronous activities after submitting their answer.
+For **students**, multiple choice questions are viewed as follows, with the solution, explanation and optional answer feedbacks appearing in asynchronous activities after submitting their answer.
 
 ![Multiple Choice Question - Student View](/img/supported_element_types/MC_student.png)
 
@@ -64,12 +66,12 @@ This is how it looks from the **lecturer's** perspective.
 ## Kprime (KP)
 
 :::info
-Kprime questions always present four possible answers, each of which must be marked as correct or incorrect. This format has proven effective for theoretical assessments due to its good selectivity and low likelihood of success when guessing. You can mark each answer option as correct or incorrect and offer feedback (per answer option) and an explanation if you wish. You can format these elements using the editor, Markdown, or LaTeX syntax, and include images if needed. A preview on the right allows you to see how the question will appear to students.
+For Kprime questions, students are presented with exactly four answer options, each of which must be marked as correct or incorrect. You should specify which options are correct and may also provide feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows you to inspect the question as it will be shown to students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, Kprime questions are viewed as follows, with the solution (and feedback) appear-ing after submitting their answer in asynchronous activities.
+For **students**, Kprime questions are viewed as follows, with the solution, explanation and optional answer feedbacks appearing after submitting their answer in asynchronous activities.
 
 ![Kprime Question - Student View](/img/supported_element_types/KP_student.png)
 
@@ -87,12 +89,12 @@ This is how it looks from the **lecturer's** perspective.
 ## Numerical Response (NR)
 
 :::info
-Numerical response questions enable students to respond to the question by typing in their numerical answer. You can specify additional restrictions, like minimum and maximum values as well as display units. It is also possible to specify solution ranges, which are considered to be correct for graded and gamified settings, as well as a general explanation. All of these texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+Numerical response questions enable students to respond to the question by typing in their numerical answer. You can specify additional restrictions, like minimum and maximum values (highly recommended for use in live quizzes), a precision (number of accepted decimal points), as well as display units. It is also possible to specify solution ranges or a set of exact solutions for graded and gamified settings, as well as a general explanation to be shown to students in asynchronous activities. Question and explanation can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students, optionally including the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, numerical response questions are viewed as follows, with the solution appearing after submitting their answer in asynchronous activities.
+For **students**, numerical response questions are viewed as follows, with the solution and explanation appearing after submitting their answer in asynchronous activities.
 
 ![Numerical Response Question - Student View](/img/supported_element_types/NR_student.png)
 
@@ -110,12 +112,12 @@ This is how it looks from the **lecturer's** perspective.
 ## Free Text (FT)
 
 :::info
-Free text questions enable students to respond to the question by typing in their answer. Free text questions can be integrated into live quizzes and group activities (not practice quizzes and microlearnings). You can specify additional restrictions, like a maximum length, as well as sample solutions for graded and gamified settings (note that the student response must match one of the sample solutions exactly to be counted as correct). All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students.
+Free text questions enable students to respond to the question by typing in their answer. You can specify additional restrictions, like a maximum length, as well as sample solutions for graded and gamified settings (note that the student response must match one of the sample solutions exactly to be counted as correct - except capitalization and whitespaces). Free text questions also support the definition of an explanation to be shown to students in asynchronous activities. Question and explanation can be formatted using the editor or Markdown and LaTeX syntax and can contain images. A preview on the right allows you to see how the question will appear to students, optionally including the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, free text questions are viewed as follows. This is the view from a live quiz. For students to view the solution, you can choose to share it on the lecturer evaluation view.
+For **students**, free text questions are viewed as follows with the solution and explanation appearing after submitting their answer in asynchronous activities.
 
 ![Free Text Question - Student View](/img/supported_element_types/FT_student.png)
 

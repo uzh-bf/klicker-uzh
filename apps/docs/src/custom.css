@@ -1,5 +1,5 @@
 /* define layer order explicitly - later layers have higher priority */
-@layer theme, base, docusaurus, components, utilities;
+@layer theme, base, components, utilities, docusaurus;
 
 /* import tailwind without preflight styles */
 @import 'tailwindcss/theme.css' layer(theme);
@@ -186,13 +186,9 @@
 
 /* base styling for apps from design system */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
   html {
     scroll-padding-top: 125px;
-    font-size: 16px;
+    font-size: 15.5px;
   }
 
   body {
