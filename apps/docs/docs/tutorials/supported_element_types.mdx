@@ -133,12 +133,12 @@ This is how it looks from the **lecturer's** perspective.
 ## Selection (SE) <PrivatePreviewTag />
 
 :::info
-Selection questions require students to choose a specific number of items from a predefined list, known as an **[Answer Collection](/tutorials/answer_collections)**. You present a question or scenario, define the **maximum number of items** the student can select (they must select at least one), specify which items from the linked Answer Collection are the correct solutions, and optionally provide a general explanation. When answering, students can search through the items in the collection. This type is useful for scenarios where students need to identify multiple correct elements from a larger set (e.g., identifying indicated medications, relevant symptoms, or applicable concepts). All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
+Selection questions require students to choose a specific number of items from a predefined list, known as an **[Answer Collection](/tutorials/answer_collections)**. You present a question or scenario, define the **maximum number of items** the student can select (they must select at least one), specify which items from the linked Answer Collection are the correct solutions, and optionally provide a general explanation. When answering, students can search through the items in the collection. This type is useful for scenarios where students need to identify multiple correct elements from a larger set (e.g., identifying indicated medications, relevant symptoms, or applicable concepts). Question and explanation support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective, optionally including the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, selection questions are viewed as follows. This is the view from a live quiz. For students to view the solution, you can choose to share it on the lecturer evaluation view.
+For **students**, selection questions are viewed as follows, with the solution and explanation appearing after submitting their answer in asynchronous activities.
 
 ![Selection Question - Student View](/img/supported_element_types/SE_student.png)
 
@@ -159,11 +159,11 @@ Case Study questions allow for complex, multi-faceted evaluations. They enable s
 Here's how it works:
 
 1.  **Define Items:** You specify the set of items students will evaluate, typically by linking an **Answer Collection**.
-2.  **Define Criteria:** You establish the dimensions for evaluation (e.g., "Probability", "Treatment Cost"). Each criterion has a defined range (Min/Max), step size, and optional unit (e.g., %, €).
-3.  **Create Cases:** You write one or more detailed scenarios or case descriptions.
-4.  **Set Solutions:** For _each_ Case, you define the "correct" range (Lower and Upper Bounds) for _each_ Item against _each_ Criterion.
+2.  **Define Criteria:** You establish the dimensions for evaluation (e.g., "Probability", "Treatment Cost"). You can choose between numerical criteria (for quantitative assessment) and likert criteria (for qualitative assessment). Additional configuration options for these criteria include the defined range (min/max), step size, an optional unit (e.g., %, €), and custom slider labels.
+3.  **Create Cases:** Define one or more case scenarios within which students will evaluate the items against the criteria. Different cases and items can be compared later in the evaluation view.
+4.  **Set Solutions:** For _each_ case, you define the "correct" range (Lower and Upper Bounds) for _each_ item against _each_ criterion.
 
-Students are presented with a case and must provide a value for each criterion for every listed item (the items themselves are drawn from a linked **[Answer Collection](/tutorials/answer_collections)** and are searchable by students), usually via sliders or input fields constrained by the defined ranges. This type is ideal for simulating complex decision-making processes where multiple factors must be weighed across different scenarios. All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
+Students are presented with a case and must assess every listed item with respect to all criteria (the items themselves are drawn from a linked **[Answer Collection](/tutorials/answer_collections)** or defined manually, and are searchable by students). This type is ideal for simulating complex decision-making processes where multiple factors must be weighed across different scenarios. All text fields support editor formatting, Markdown, and LaTeX syntax, and can include images. The preview shows the student's perspective.
 :::
 
 <Tabs>
@@ -184,7 +184,7 @@ This is how it looks from the **lecturer's** perspective.
 ## Content Element (CT)
 
 :::info
-Content elements are a great way to provide additional information to students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in asynchronous KlickerUZH elements before asking a series of questions or even in between them to build coherent case studies. A preview on the right allows you to see how the question will appear to students.
+Content elements are a great way to provide additional information to students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in KlickerUZH activities before asking a series of questions or even in between them to build coherent case studies. A preview on the right allows you to see how the content element will appear to students.
 :::
 
 <Tabs>
@@ -205,7 +205,7 @@ Content elements are a great way to provide additional information to students. 
 ## Flashcard (FC)
 
 :::info
-Flashcards enable students to practice content, like definitions, by heart using a much simpler modality. Students then provide a grading response for each flashcard themselves, indicating whether or not they already remember the corresponding content correctly based on the provided explanation. In this way, flashcards in practice quizzes can also be ordered in a spaced-repetition manner. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images. A preview on the right allows you to see how the question will appear to students.
+Flashcards enable students to practice content, like definitions, by heart using a much simpler modality. Students then provide a grading response for each flashcard themselves, indicating whether or not they already remember the corresponding content correctly based on the provided explanation. In this way, flashcards in practice quizzes can also be ordered in a spaced-repetition manner. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images. A preview on the right allows you to see how the flashcard will appear to students.
 :::
 
 <Tabs>
