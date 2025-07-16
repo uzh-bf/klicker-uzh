@@ -13,7 +13,7 @@ function Card({ slug, title, image, abstract }) {
   return (
     <a
       href={`/use_cases/${slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-white shadow transition-all hover:shadow-lg"
+      className="border-border group flex h-full flex-col overflow-hidden rounded-xl border bg-white shadow transition-all hover:shadow-lg"
     >
       <div className="relative h-40 shrink-0 sm:h-48 md:h-56">
         <img
@@ -33,7 +33,7 @@ function Card({ slug, title, image, abstract }) {
       </div>
       <div className="flex flex-1 flex-col p-4 sm:p-6">
         <p className="text-sm text-slate-600 sm:text-base">{abstract}</p>
-        <div className="mt-auto border-t pt-4">
+        <div className="border-border mt-auto border-t pt-4">
           <div className="group-hover:text-primary flex items-center gap-2 text-sm font-medium text-slate-600">
             <FontAwesomeIcon
               icon={faArrowRight}

@@ -81,7 +81,7 @@ const About = () => {
   return (
     <Layout>
       <div className="m-auto max-w-[1300px] p-8">
-        <H1>About KlickerUZH</H1>
+        <H1 className={{ root: 'mb-2' }}>About KlickerUZH</H1>
 
         <div className="mb-8">
           <p>
@@ -111,7 +111,7 @@ const About = () => {
           />
         </div>
 
-        <H2 className={{ root: 'mb-4' }}>Our Team</H2>
+        <H2 className={{ root: 'mb-2' }}>Our Team</H2>
         <p>
           The following people are actively involved in the KlickerUZH project
           and its continued development. If you have any questions or feedback,
