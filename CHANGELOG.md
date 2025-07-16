@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.71...v3.3.0-alpha.72) (2025-07-15)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to see explanation and answer feedbacks in element preview ([#4780](https://github.com/uzh-bf/klicker-uzh/issues/4780)) ([40fbf64](https://github.com/uzh-bf/klicker-uzh/commit/40fbf6449ee862521570c4114bb0d96ca95fb7ca))
+* **apps/frontend-pwa:** add error page for invalid live quiz links instead of persistent loading circle ([#4781](https://github.com/uzh-bf/klicker-uzh/issues/4781)) ([4bcaa91](https://github.com/uzh-bf/klicker-uzh/commit/4bcaa91d85699680f26f059b6c356029b3624f6d))
+
 ## [3.3.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.70...v3.3.0-alpha.71) (2025-07-13)
 
 
