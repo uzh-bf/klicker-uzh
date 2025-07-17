@@ -262,18 +262,18 @@ async function run() {
           `Transferring microlearning: ${mlId} (${++microLearningCounter}/${microLearningIds.length})`
         )
 
-        const upatedMicroLearning = await prisma.microLearning.update({
+        const updatedMicroLearning = await prisma.microLearning.update({
           where: { id: mlId },
           data: { ownerId: newUserId },
         })
 
         emitter.emit('invalidate', {
           typename: 'MicroLearning',
-          id: upatedMicroLearning.id,
+          id: updatedMicroLearning.id,
         })
 
         await recomputeDerivedPermissions(
-          { microLearningId: upatedMicroLearning.id },
+          { microLearningId: updatedMicroLearning.id },
           prisma
         )
       }
