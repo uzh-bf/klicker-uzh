@@ -57,8 +57,8 @@ function GroupAction({
         buttonMode && 'mb-0 md:mb-0'
       )}
     >
-      <H2 className={{ root: 'm-0!' }}>{title}</H2>
-      <FontAwesomeIcon icon={icon} className="h-14 w-14 md:h-24 md:w-24" />
+      <H2 className={{ root: 'mb-2' }}>{title}</H2>
+      <FontAwesomeIcon icon={icon} size="5x" className="mb-2" />
     </div>
   )
 
