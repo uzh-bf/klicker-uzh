@@ -106,7 +106,7 @@ function CourseOverviewHeader({
             data={{ cy: 'course-activity-log-button' }}
           >
             <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.activity.tooltip')}</Button.Label>
+            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
           </Button>
         ) : null}
         <QRCodePopover
