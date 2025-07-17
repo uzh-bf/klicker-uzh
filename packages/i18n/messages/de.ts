@@ -100,7 +100,7 @@ export default {
     login: {
       installButton: 'Jetzt installieren',
     },
-    activity: {
+    comments: {
       title: 'Kommentare',
       viewComments: 'Kommentare anzeigen',
       noActivity: 'Noch keine Aktivität',
@@ -1199,7 +1199,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:
-        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage.',
+        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen.',
+      activeFiltersWarning:
+        'Aktuell sind Filter aktiv, welche die angezeigten Elemente beeinflussen können. Um alle Elemente (ausser archivierte) anzuzeigen, können Sie die Filter <reset>zurücksetzen</reset> oder verändern Sie diese auf der rechten Seite.',
       deleteElement: 'Element löschen',
       confirmDeletion:
         'Bitte bestätigen Sie die folgenden Folgen der Löschung des Elementes <b>{name}</b>.',
