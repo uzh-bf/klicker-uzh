@@ -588,13 +588,14 @@ export async function deleteElement(
       // ! Once elements are hard deleted, the propagation to dependent resources (e.g. answer collections) need to be handled manually in this mutation
       // ! --> for comparison, check the hard and soft-deletion logic for all activity types (live quiz / practice quiz / microlearning / group activity)
       const element = await prisma.element.update({
-        where: { id: id },
+        where: { id },
         data: {
           isDeleted: true,
           answerCollection: { disconnect: true },
           answerCollectionItems: { set: [] },
           directPermissions: { deleteMany: {} }, // delete all direct permissions on the element
         },
+        include: { tags: true },
       })
 
       // update derived permissions for element
@@ -607,6 +608,27 @@ export async function deleteElement(
           prisma
         )
       }
+
+      // if the element was linked to any tags, check if the tags still have other questions linked to it
+      for (const tag of element.tags) {
+        const elementTag = await prisma.tag.findUnique({
+          where: { id: tag.id },
+          include: {
+            _count: { select: { questions: { where: { isDeleted: false } } } },
+          },
+        })
+
+        // if the tag has no other questions linked to it, delete it
+        if (elementTag?._count.questions === 0) {
+          await prisma.tag.delete({ where: { id: tag.id } })
+        }
+      }
+
+      // remove all tags from the soft-deleted element
+      await prisma.element.update({
+        where: { id },
+        data: { tags: { set: [] } },
+      })
 
       return { deletedElement: element, originalElement }
     },
