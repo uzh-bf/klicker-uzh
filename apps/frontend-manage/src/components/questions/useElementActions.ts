@@ -61,7 +61,7 @@ function useElementActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewComments'),
+        label: t('shared.comments.viewComments'),
         icon: faComment,
         onClick: () => setActivityLogOpen(true),
         disabled,

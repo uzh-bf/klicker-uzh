@@ -99,7 +99,7 @@ export default {
     login: {
       installButton: 'Install Now',
     },
-    activity: {
+    comments: {
       title: 'Comments',
       viewComments: 'View Comments',
       noActivity: 'No activity yet',
@@ -1198,7 +1198,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
-        'We could not find any questions that meet the desired criteria. Please try other filters or create a new question.',
+        'We could not find any questions that meet the desired criteria.',
+      activeFiltersWarning:
+        'There are currently active filters that might affect the elements shown here. To view all elements (except archived ones), please <reset>reset</reset> the filters or update them on the right side.',
       deleteElement: 'Delete element',
       confirmDeletion:
         'Please confirm the following consequences of deleting the element <b>{name}</b>.',

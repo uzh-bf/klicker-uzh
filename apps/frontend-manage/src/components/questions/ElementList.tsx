@@ -9,6 +9,7 @@ import React from 'react'
 import Element from './Element'
 
 interface ElementListProps {
+  filtersActive: boolean
   activityWizardOpen: boolean
   setSelectedQuestions: (id: number, data: ElementType) => void
   selectedQuestions: Record<number, ElementType>
@@ -17,9 +18,11 @@ interface ElementListProps {
   tagfilter?: string[]
   handleTagClick: (tagName: string) => void
   unsetDeletedQuestion: (questionId: number) => void
+  handleFilterReset: () => void
 }
 
 function ElementList({
+  filtersActive,
   activityWizardOpen,
   setSelectedQuestions,
   selectedQuestions,
@@ -28,6 +31,7 @@ function ElementList({
   tagfilter = [],
   handleTagClick,
   unsetDeletedQuestion,
+  handleFilterReset,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
   const { value: hideSurvey, setValue: setHideSurvey } = useStickyState(
@@ -41,16 +45,44 @@ function ElementList({
 
   if (elements.length === 0) {
     return (
-      <UserNotification
-        type="warning"
-        className={{ root: 'ml-7 text-sm' }}
-        message={t('manage.questionPool.noQuestionsWarning')}
-      />
+      <UserNotification type="warning" className={{ root: 'ml-7 text-sm' }}>
+        <span className="mr-1">
+          {t('manage.questionPool.noQuestionsWarning')}
+        </span>
+        {filtersActive && (
+          <span>
+            {t.rich('manage.questionPool.activeFiltersWarning', {
+              reset: (text) => (
+                <span
+                  className="cursor-pointer font-bold underline"
+                  onClick={handleFilterReset}
+                >
+                  {text}
+                </span>
+              ),
+            })}
+          </span>
+        )}
+      </UserNotification>
     )
   }
 
   return (
     <div className="space-y-1 md:space-y-2">
+      {filtersActive && (
+        <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
+          {t.rich('manage.questionPool.activeFiltersWarning', {
+            reset: (text) => (
+              <span
+                className="cursor-pointer font-bold underline"
+                onClick={handleFilterReset}
+              >
+                {text}
+              </span>
+            ),
+          })}
+        </UserNotification>
+      )}
       {elements.map((element) => (
         <Element
           key={`question-list-element-${element.id}`}
