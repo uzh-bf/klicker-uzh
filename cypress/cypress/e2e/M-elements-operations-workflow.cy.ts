@@ -1589,7 +1589,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="remove-element-${this.data.SEML.title}"]`).click()
 
     cy.get('[data-cy="confirm-deletion-final"]').click()
-    cy.get('[data-cy="confirm-derived-access"]').click()
+    // cy.get('[data-cy="confirm-derived-access"]').click() // element is not used in this account
     cy.get('[data-cy="confirm-dependency-access"]').click()
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SEML.title}"]`).should(

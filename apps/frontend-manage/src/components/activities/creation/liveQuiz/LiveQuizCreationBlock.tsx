@@ -22,7 +22,7 @@ import {
   ElementBlockFormValues,
 } from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
-import LIveQuizTimeoutModal from './LIveQuizTimeoutModal'
+import LiveQuizTimeoutModal from './LiveQuizTimeoutModal'
 
 interface LiveQuizCreationBlockProps {
   blockIx: number
@@ -200,7 +200,7 @@ function LiveQuizCreationBlock({
         index={blockIx}
       />
       {openSettings && (
-        <LIveQuizTimeoutModal
+        <LiveQuizTimeoutModal
           onClose={() => setOpenSettings(false)}
           block={block}
           index={blockIx}
