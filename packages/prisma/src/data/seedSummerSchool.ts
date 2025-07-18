@@ -265,214 +265,214 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   // }
 
   // achievement instances for happiness achievement
-  // TODO
-  const happinessAchievementWinners = [
-    'Svanen',
-    'Financesis',
-    'Justinmoser',
-    'Sprindt&Lüngli',
-    'Liangwen',
-    'SorinaMatthey',
-    'piper',
-    'CookieMonster',
-    'Ik73oqe1',
-    'Nikolina',
-    'Ningyi',
-    'Rheinhart',
-    'suKJH8dWOs',
-    'Gloria',
-    'vihan',
-    'OliverCourtness',
-    'Devansh',
-    'Helen1102',
-    'Kavin',
-    'Joeyss',
-    'amelievastiau',
-    'Karan',
-    'agash17',
-    'DobPdPv7Xf',
-    'Yilin',
-    'GianLucas',
-    'Belly',
-    'arianna',
-    '2pFxA1hAEm',
-    'Thiago',
-  ]
+  // ! AWARDED
+  // const happinessAchievementWinners = [
+  //   'Svanen',
+  //   'Financesis',
+  //   'Justinmoser',
+  //   'Sprindt&Lüngli',
+  //   'Liangwen',
+  //   'SorinaMatthey',
+  //   'piper',
+  //   'CookieMonster',
+  //   'Ik73oqe1',
+  //   'Nikolina',
+  //   'Ningyi',
+  //   'Rheinhart',
+  //   'suKJH8dWOs',
+  //   'Gloria',
+  //   'vihan',
+  //   'OliverCourtness',
+  //   'Devansh',
+  //   'Helen1102',
+  //   'Kavin',
+  //   'Joeyss',
+  //   'amelievastiau',
+  //   'Karan',
+  //   'agash17',
+  //   'DobPdPv7Xf',
+  //   'Yilin',
+  //   'GianLucas',
+  //   'Belly',
+  //   'arianna',
+  //   '2pFxA1hAEm',
+  //   'Thiago',
+  // ]
 
   // points for happiness achievement
-  // TODO
-  const happinessPoints = {
-    Svanen: 100,
-    Financesis: 100,
-    Justinmoser: 100,
-    'Sprindt&Lüngli': 100,
-    Liangwen: 100,
-    SorinaMatthey: 100,
-    piper: 100,
-    CookieMonster: 100,
-    Ik73oqe1: 100,
-    Nikolina: 100,
-    Ningyi: 100,
-    Rheinhart: 100,
-    suKJH8dWOs: 100,
-    Gloria: 100,
-    vihan: 100,
-    OliverCourtness: 100,
-    Devansh: 100,
-    Helen1102: 100,
-    Kavin: 100,
-    Joeyss: 100,
-    amelievastiau: 100,
-    Karan: 100,
-    agash17: 100,
-    DobPdPv7Xf: 100,
-    Yilin: 100,
-    GianLucas: 100,
-    Belly: 100,
-    arianna: 100,
-    '2pFxA1hAEm': 100,
-    Thiago: 100,
-  }
+  // ! AWARDED
+  // const happinessPoints = {
+  //   Svanen: 100,
+  //   Financesis: 100,
+  //   Justinmoser: 100,
+  //   'Sprindt&Lüngli': 100,
+  //   Liangwen: 100,
+  //   SorinaMatthey: 100,
+  //   piper: 100,
+  //   CookieMonster: 100,
+  //   Ik73oqe1: 100,
+  //   Nikolina: 100,
+  //   Ningyi: 100,
+  //   Rheinhart: 100,
+  //   suKJH8dWOs: 100,
+  //   Gloria: 100,
+  //   vihan: 100,
+  //   OliverCourtness: 100,
+  //   Devansh: 100,
+  //   Helen1102: 100,
+  //   Kavin: 100,
+  //   Joeyss: 100,
+  //   amelievastiau: 100,
+  //   Karan: 100,
+  //   agash17: 100,
+  //   DobPdPv7Xf: 100,
+  //   Yilin: 100,
+  //   GianLucas: 100,
+  //   Belly: 100,
+  //   arianna: 100,
+  //   '2pFxA1hAEm': 100,
+  //   Thiago: 100,
+  // }
 
   // achievement instances for shooting star achievement
-  // TODO
-  const shootingStarAchievementWinners = [
-    'Svanen',
-    'Financesis',
-    'Justinmoser',
-    'chenjiajia1412',
-    'Sprindt&Lüngli',
-    'Liangwen',
-    'SorinaMatthey',
-    'piper',
-    'CookieMonster',
-    'Ik73oqe1',
-    'Nikolina',
-  ]
+  // ! AWARDED
+  // const shootingStarAchievementWinners = [
+  //   'Svanen',
+  //   'Financesis',
+  //   'Justinmoser',
+  //   'chenjiajia1412',
+  //   'Sprindt&Lüngli',
+  //   'Liangwen',
+  //   'SorinaMatthey',
+  //   'piper',
+  //   'CookieMonster',
+  //   'Ik73oqe1',
+  //   'Nikolina',
+  // ]
 
   // points for shooting star achievement
-  // TODO
-  const shootingStarPoints = {
-    Svanen: 100,
-    Financesis: 100,
-    Justinmoser: 100,
-    chenjiajia1412: 100,
-    'Sprindt&Lüngli': 100,
-    Liangwen: 100,
-    SorinaMatthey: 100,
-    piper: 100,
-    CookieMonster: 100,
-    Ik73oqe1: 100,
-    Nikolina: 100,
-  }
+  // ! AWARDED
+  // const shootingStarPoints = {
+  //   Svanen: 100,
+  //   Financesis: 100,
+  //   Justinmoser: 100,
+  //   chenjiajia1412: 100,
+  //   'Sprindt&Lüngli': 100,
+  //   Liangwen: 100,
+  //   SorinaMatthey: 100,
+  //   piper: 100,
+  //   CookieMonster: 100,
+  //   Ik73oqe1: 100,
+  //   Nikolina: 100,
+  // }
 
   // achievement instances for cocoa contract wizard achievement
-  // TODO
-  const cocoaContractWizardAchievementWinners = [
-    'Financesis',
-    'piper',
-    'GianLucas',
-    'Belly',
-  ]
+  // ! AWARDED
+  // const cocoaContractWizardAchievementWinners = [
+  //   'Financesis',
+  //   'piper',
+  //   'GianLucas',
+  //   'Belly',
+  // ]
 
   // points for cocoa contract wizard achievement
-  // TODO
-  const cocoaContractWizardPoints = {
-    Svanen: 700,
-    Financesis: 1000,
-    Justinmoser: 700,
-    chenjiajia1412: 700,
-    'Sprindt&Lüngli': 700,
-    Liangwen: 700,
-    SorinaMatthey: 700,
-    piper: 1000,
-    CookieMonster: 700,
-    Ik73oqe1: 700,
-    Nikolina: 700,
-    Boban25: 700,
-    Yanchuan: 700,
-    Ningyi: 700,
-    Rheinhart: 700,
-    buqichen: 700,
-    zoeyy: 700,
-    suKJH8dWOs: 700,
-    Gloria: 700,
-    vihan: 700,
-    OliverCourtness: 700,
-    Devansh: 700,
-    Helen1102: 700,
-    Kavin: 700,
-    Joeyss: 700,
-    amelievastiau: 700,
-    Karan: 700,
-    agash17: 700,
-    DobPdPv7Xf: 700,
-    Yilin: 700,
-    GianLucas: 1000,
-    Belly: 1000,
-    arianna: 700,
-    '2pFxA1hAEm': 700,
-    MiMi77: 700,
-    TaylanS: 700,
-    Thiago: 700,
-    '14860023': 700,
-  }
+  // ! AWARDED
+  // const cocoaContractWizardPoints = {
+  //   Svanen: 700,
+  //   Financesis: 1000,
+  //   Justinmoser: 700,
+  //   chenjiajia1412: 700,
+  //   'Sprindt&Lüngli': 700,
+  //   Liangwen: 700,
+  //   SorinaMatthey: 700,
+  //   piper: 1000,
+  //   CookieMonster: 700,
+  //   Ik73oqe1: 700,
+  //   Nikolina: 700,
+  //   Boban25: 700,
+  //   Yanchuan: 700,
+  //   Ningyi: 700,
+  //   Rheinhart: 700,
+  //   buqichen: 700,
+  //   zoeyy: 700,
+  //   suKJH8dWOs: 700,
+  //   Gloria: 700,
+  //   vihan: 700,
+  //   OliverCourtness: 700,
+  //   Devansh: 700,
+  //   Helen1102: 700,
+  //   Kavin: 700,
+  //   Joeyss: 700,
+  //   amelievastiau: 700,
+  //   Karan: 700,
+  //   agash17: 700,
+  //   DobPdPv7Xf: 700,
+  //   Yilin: 700,
+  //   GianLucas: 1000,
+  //   Belly: 1000,
+  //   arianna: 700,
+  //   '2pFxA1hAEm': 700,
+  //   MiMi77: 700,
+  //   TaylanS: 700,
+  //   Thiago: 700,
+  //   '14860023': 700,
+  // }
 
   // achievement instances for creative mastermind achievement
-  // TODO
-  const creativeMastermindAchievementWinners = [
-    'Svanen',
-    'SorinaMatthey',
-    'Boban25',
-    'Yanchuan',
-  ]
+  // ! AWARDED
+  // const creativeMastermindAchievementWinners = [
+  //   'Svanen',
+  //   'SorinaMatthey',
+  //   'Boban25',
+  //   'Yanchuan',
+  // ]
 
   // points for creative mastermind achievement
-  // TODO
-  const creativeMastermindPoints = {
-    Svanen: 1000,
-    Financesis: 900,
-    Justinmoser: 700,
-    chenjiajia1412: 700,
-    'Sprindt&Lüngli': 700,
-    Liangwen: 700,
-    SorinaMatthey: 1000,
-    piper: 900,
-    CookieMonster: 700,
-    Ik73oqe1: 700,
-    Nikolina: 700,
-    Boban25: 1000,
-    Yanchuan: 1000,
-    Ningyi: 900,
-    Rheinhart: 700,
-    buqichen: 700,
-    zoeyy: 700,
-    suKJH8dWOs: 700,
-    Gloria: 700,
-    vihan: 700,
-    OliverCourtness: 700,
-    Devansh: 700,
-    Helen1102: 700,
-    Kavin: 700,
-    Joeyss: 700,
-    amelievastiau: 700,
-    Karan: 700,
-    agash17: 700,
-    DobPdPv7Xf: 700,
-    Yilin: 700,
-    GianLucas: 700,
-    Belly: 700,
-    arianna: 700,
-    '2pFxA1hAEm': 700,
-    MiMi77: 700,
-    TaylanS: 700,
-    Thiago: 700,
-    '14860023': 700,
-  }
+  // ! AWARDED
+  // const creativeMastermindPoints = {
+  //   Svanen: 1000,
+  //   Financesis: 900,
+  //   Justinmoser: 700,
+  //   chenjiajia1412: 700,
+  //   'Sprindt&Lüngli': 700,
+  //   Liangwen: 700,
+  //   SorinaMatthey: 1000,
+  //   piper: 900,
+  //   CookieMonster: 700,
+  //   Ik73oqe1: 700,
+  //   Nikolina: 700,
+  //   Boban25: 1000,
+  //   Yanchuan: 1000,
+  //   Ningyi: 900,
+  //   Rheinhart: 700,
+  //   buqichen: 700,
+  //   zoeyy: 700,
+  //   suKJH8dWOs: 700,
+  //   Gloria: 700,
+  //   vihan: 700,
+  //   OliverCourtness: 700,
+  //   Devansh: 700,
+  //   Helen1102: 700,
+  //   Kavin: 700,
+  //   Joeyss: 700,
+  //   amelievastiau: 700,
+  //   Karan: 700,
+  //   agash17: 700,
+  //   DobPdPv7Xf: 700,
+  //   Yilin: 700,
+  //   GianLucas: 700,
+  //   Belly: 700,
+  //   arianna: 700,
+  //   '2pFxA1hAEm': 700,
+  //   MiMi77: 700,
+  //   TaylanS: 700,
+  //   Thiago: 700,
+  //   '14860023': 700,
+  // }
 
   // ! Grant achievements
-  // const ACHIEVEMENT_USERNAMES = pmgGameWinners
-  // const ACHIEVEMENT_ID = pmgGameAchievement.id
+  // const ACHIEVEMENT_USERNAMES = creativeMastermindAchievementWinners
+  // const ACHIEVEMENT_ID = CREATIVE_MASTERMIND_ACHIEVEMENT_ID
   // await prisma.$transaction(async (prisma) => {
   //   const participants = await prisma.participant.findMany({
   //     where: { username: { in: ACHIEVEMENT_USERNAMES } },
@@ -503,45 +503,45 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   // })
 
   // ! Increment leaderboard entries with points
-  // const POINTS = pmgGamePoints
-  // await prisma.$transaction(async (prisma) => {
-  //   const participants = await prisma.participant.findMany({
-  //     where: { username: { in: Object.keys(POINTS) } },
-  //   })
+  //   const POINTS = creativeMastermindPoints
+  //   await prisma.$transaction(async (prisma) => {
+  //     const participants = await prisma.participant.findMany({
+  //       where: { username: { in: Object.keys(POINTS) } },
+  //     })
 
-  //   if (participants.length !== Object.keys(POINTS).length) {
-  //     throw new Error('Not all participants found')
-  //   }
-
-  //   // update leaderboard entries for all participants
-  //   for (const [username, points] of Object.entries(POINTS)) {
-  //     const participant = participants.find((p) => p.username === username)
-  //     if (!participant) {
-  //       throw new Error(`Participant not found: ${username}`)
+  //     if (participants.length !== Object.keys(POINTS).length) {
+  //       throw new Error('Not all participants found')
   //     }
 
-  //     await prisma.leaderboardEntry.upsert({
-  //       where: {
-  //         type_participantId_courseId: {
+  //     // update leaderboard entries for all participants
+  //     for (const [username, points] of Object.entries(POINTS)) {
+  //       const participant = participants.find((p) => p.username === username)
+  //       if (!participant) {
+  //         throw new Error(`Participant not found: ${username}`)
+  //       }
+
+  //       await prisma.leaderboardEntry.upsert({
+  //         where: {
+  //           type_participantId_courseId: {
+  //             type: Prisma.LeaderboardType.COURSE,
+  //             participantId: participant.id,
+  //             courseId: COURSE_ID,
+  //           },
+  //         },
+  //         create: {
   //           type: Prisma.LeaderboardType.COURSE,
   //           participantId: participant.id,
   //           courseId: COURSE_ID,
+  //           score: points,
   //         },
-  //       },
-  //       create: {
-  //         type: Prisma.LeaderboardType.COURSE,
-  //         participantId: participant.id,
-  //         courseId: COURSE_ID,
-  //         score: points,
-  //       },
-  //       update: {
-  //         score: {
-  //           increment: points,
+  //         update: {
+  //           score: {
+  //             increment: points,
+  //           },
   //         },
-  //       },
-  //     })
-  //   }
-  // })
+  //       })
+  //     }
+  //   })
 }
 
 const prismaClient = new Prisma.PrismaClient()
