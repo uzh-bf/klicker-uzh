@@ -1225,9 +1225,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementRemovalFinal:
         'The removal of this element from your account is irreversible and cannot be undone.',
       elementRemovalDerivedAccessHint:
-        'If the element is used in an activity that you own or have admin access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its removal. Once the associated activity is deleted, the element will be automatically removed as well.',
-      elementRemovalDependencyAccess:
-        'Derived access rights to included resources will be automatically revoked.',
+        'You are using the element in an activity for which you have at least admin access. For technical reasons, the element cannot be completely removed. You will automatically receive a derived permission on the element after its deletion. Once the associated activity is deleted, the element will be automatically removed as well.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'You are not using the element in any activity. The element can be completely removed.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',

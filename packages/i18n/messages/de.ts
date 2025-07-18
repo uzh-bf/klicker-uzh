@@ -1211,7 +1211,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementDeletionOtherUsers:
         'Andere Nutzer setzen dieses Element in Aktivitäten ein. Der Zugriff für diese Nutzer bleibt bestehen.',
       elementDeletionDerivedAccessHint:
-        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig gelöscht werden. Sie nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig gelöscht werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
       elementDeletionDependencyAccess:
         'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
       elementDeletionOtherUsersNotApplicable:
@@ -1226,9 +1226,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementRemovalFinal:
         'Die Entfernung dieses Elements aus Ihrem Konto ist unwiderruflich und kann nicht rückgängig gemacht werden.',
       elementRemovalDerivedAccessHint:
-        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall werden Sie nach der Entfernung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
-      elementRemovalDependencyAccess:
-        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig entfernt werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig entfernt werden.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
