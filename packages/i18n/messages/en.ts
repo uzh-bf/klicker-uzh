@@ -370,6 +370,7 @@ export default {
       objects: 'Objects',
       pseudonym: 'Pseudonym',
       selected: 'Selected',
+      seconds: 'seconds',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1207,11 +1208,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementDeletionFinal:
         'The deletion of an element is irreversible and deleted elements cannot be restored. The element will not be removed from existing activities.',
       elementDeletionOtherUsers:
-        'If other users with shared access to the element use it in activities, access for these users will remain.',
+        'Other users are using this element in activities. They will retain access to the element.',
       elementDeletionDerivedAccessHint:
-        'If the element is used in an activity that you own or have admin access to, it cannot be completely deleted for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its deletion. Once the associated activity is deleted, the element will be automatically deleted as well.',
+        'You are using the element in an activity for which you have at least admin access. For technical reasons, the element cannot be completely deleted. You will automatically receive a derived permission on the element after its deletion. Once the associated activity is deleted, the element will be automatically deleted as well.',
       elementDeletionDependencyAccess:
         'Derived access rights to included resources will be automatically revoked.',
+      elementDeletionOtherUsersNotApplicable:
+        'The element is not used by other users in activities.',
+      elementDeletionDerivedAccessNotApplicable:
+        'You are not using the element in any activity. The element can be completely deleted.',
+      elementDeletionDependencyAccessNotApplicable:
+        'No derived resources are affected by the deletion of the element.',
       removeElement: 'Remove Element',
       confirmElementRemoval:
         'Please confirm the following consequences of removing the element <b>{name}</b> from your user account.',
@@ -1469,7 +1476,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
-      blockSettingsTitle: 'Settings Block {blockIx}',
+      blockCountdownTitle: 'Countdown Block {blockIx}',
       timeLimit: 'Time limit',
       noTimeLimit: 'No time limit',
       optionalTimeLimit: 'Optional time limit',

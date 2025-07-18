@@ -842,6 +842,21 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+interface IElementSummary {
+  sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access
+  retainsDerivedAccess: boolean // = true if the element is used in activity with admin / owner access -> retain derived access
+  derivedAccessToResources: boolean // = true if the element leads to derived access to resources
+}
+export const ElementSummaryRef =
+  builder.objectRef<IElementSummary>('ElementSummary')
+export const ElementSummary = ElementSummaryRef.implement({
+  fields: (t) => ({
+    sharedElementActivityUse: t.exposeBoolean('sharedElementActivityUse'),
+    retainsDerivedAccess: t.exposeBoolean('retainsDerivedAccess'),
+    derivedAccessToResources: t.exposeBoolean('derivedAccessToResources'),
+  }),
+})
+
 interface IArchivedElementList {
   success?: boolean
   partialSuccess?: boolean

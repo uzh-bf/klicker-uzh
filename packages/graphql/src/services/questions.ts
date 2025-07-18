@@ -1089,6 +1089,104 @@ export async function getInstanceUpdateActivities(
   )
 }
 
+export async function getElementSummary(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const levels = [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER]
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      answerCollection: {
+        include: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: { not: DB.PermissionLevel.OWNER },
+            },
+          },
+        },
+      },
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              practiceQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  const sharedElementActivityUse =
+    element.elementInstances.filter(
+      (instance) => instance.ownerId !== ctx.user.sub
+    ).length > 0
+  const retainsDerivedAccess = element.elementInstances.some(
+    (instance) =>
+      (instance.elementStack?.microLearning?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.practiceQuiz?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.groupActivity?.permissions.length ?? 0) > 0 ||
+      (instance.elementBlock?.liveQuiz?.permissions.length ?? 0) > 0
+  )
+  const derivedAccessToResources =
+    (element.answerCollection?.permissions.length ?? 0) > 0
+
+  return {
+    sharedElementActivityUse,
+    retainsDerivedAccess,
+    derivedAccessToResources,
+  }
+}
+
 export async function updateElementInstances(
   {
     elementId,
