@@ -3,6 +3,10 @@ import Prisma from '../../dist/index.js'
 async function seedAchievements(prisma: Prisma.PrismaClient) {
   const COURSE_ID = '829c93c8-e8bc-433e-838b-5b33d3108cf4'
 
+  // existing achievement IDs
+  const HAPPINESS_ACHIEVEMENT_ID = 14
+  const SHOOTING_STAR_ACHIEVEMENT_ID = 16
+
   // seed swiss quiz achievement
   const SWISS_QUIZ_ACHIEVEMENT_ID = 18
   const swissQuizAchievement = await prisma.achievement.upsert({
@@ -73,7 +77,35 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
-  pmgGameAchievement
+  const COCOA_CONTRACT_WIZARD_ACHIEVEMENT_ID = 22
+  const cocoaContractWizardAchievement = await prisma.achievement.upsert({
+    where: { id: COCOA_CONTRACT_WIZARD_ACHIEVEMENT_ID },
+    create: {
+      id: COCOA_CONTRACT_WIZARD_ACHIEVEMENT_ID,
+      name: 'Cocoa Contract Wizard',
+      nameDE: 'Cocoa Contract Wizard',
+      nameEN: 'Cocoa Contract Wizard',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_cocoa_contract_wizard.svg',
+      type: Prisma.AchievementType.PARTICIPANT,
+      scope: Prisma.AchievementScope.GLOBAL,
+    },
+    update: {},
+  })
+
+  const CREATIVE_MASTERMIND_ACHIEVEMENT_ID = 23
+  const creativeMastermindAchievement = await prisma.achievement.upsert({
+    where: { id: CREATIVE_MASTERMIND_ACHIEVEMENT_ID },
+    create: {
+      id: CREATIVE_MASTERMIND_ACHIEVEMENT_ID,
+      name: 'Creative Mastermind',
+      nameDE: 'Creative Mastermind',
+      nameEN: 'Creative Mastermind',
+      icon: 'https://klickeruzhprodimages.blob.core.windows.net/application/achievement_creative_mastermind.svg',
+      type: Prisma.AchievementType.PARTICIPANT,
+      scope: Prisma.AchievementScope.GLOBAL,
+    },
+    update: {},
+  })
 
   // achievement instances for swiss quiz
   // ! AWARDED
@@ -231,6 +263,212 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   //   Nikolina: 600,
   //   zoeyy: 600,
   // }
+
+  // achievement instances for happiness achievement
+  // TODO
+  const happinessAchievementWinners = [
+    'Svanen',
+    'Financesis',
+    'Justinmoser',
+    'Sprindt&Lüngli',
+    'Liangwen',
+    'SorinaMatthey',
+    'piper',
+    'CookieMonster',
+    'Ik73oqe1',
+    'Nikolina',
+    'Ningyi',
+    'Rheinhart',
+    'suKJH8dWOs',
+    'Gloria',
+    'vihan',
+    'OliverCourtness',
+    'Devansh',
+    'Helen1102',
+    'Kavin',
+    'Joeyss',
+    'amelievastiau',
+    'Karan',
+    'agash17',
+    'DobPdPv7Xf',
+    'Yilin',
+    'GianLucas',
+    'Belly',
+    'arianna',
+    '2pFxA1hAEm',
+    'Thiago',
+  ]
+
+  // points for happiness achievement
+  // TODO
+  const happinessPoints = {
+    Svanen: 100,
+    Financesis: 100,
+    Justinmoser: 100,
+    'Sprindt&Lüngli': 100,
+    Liangwen: 100,
+    SorinaMatthey: 100,
+    piper: 100,
+    CookieMonster: 100,
+    Ik73oqe1: 100,
+    Nikolina: 100,
+    Ningyi: 100,
+    Rheinhart: 100,
+    suKJH8dWOs: 100,
+    Gloria: 100,
+    vihan: 100,
+    OliverCourtness: 100,
+    Devansh: 100,
+    Helen1102: 100,
+    Kavin: 100,
+    Joeyss: 100,
+    amelievastiau: 100,
+    Karan: 100,
+    agash17: 100,
+    DobPdPv7Xf: 100,
+    Yilin: 100,
+    GianLucas: 100,
+    Belly: 100,
+    arianna: 100,
+    '2pFxA1hAEm': 100,
+    Thiago: 100,
+  }
+
+  // achievement instances for shooting star achievement
+  // TODO
+  const shootingStarAchievementWinners = [
+    'Svanen',
+    'Financesis',
+    'Justinmoser',
+    'chenjiajia1412',
+    'Sprindt&Lüngli',
+    'Liangwen',
+    'SorinaMatthey',
+    'piper',
+    'CookieMonster',
+    'Ik73oqe1',
+    'Nikolina',
+  ]
+
+  // points for shooting star achievement
+  // TODO
+  const shootingStarPoints = {
+    Svanen: 100,
+    Financesis: 100,
+    Justinmoser: 100,
+    chenjiajia1412: 100,
+    'Sprindt&Lüngli': 100,
+    Liangwen: 100,
+    SorinaMatthey: 100,
+    piper: 100,
+    CookieMonster: 100,
+    Ik73oqe1: 100,
+    Nikolina: 100,
+  }
+
+  // achievement instances for cocoa contract wizard achievement
+  // TODO
+  const cocoaContractWizardAchievementWinners = [
+    'Financesis',
+    'piper',
+    'GianLucas',
+    'Belly',
+  ]
+
+  // points for cocoa contract wizard achievement
+  // TODO
+  const cocoaContractWizardPoints = {
+    Svanen: 700,
+    Financesis: 1000,
+    Justinmoser: 700,
+    chenjiajia1412: 700,
+    'Sprindt&Lüngli': 700,
+    Liangwen: 700,
+    SorinaMatthey: 700,
+    piper: 1000,
+    CookieMonster: 700,
+    Ik73oqe1: 700,
+    Nikolina: 700,
+    Boban25: 700,
+    Yanchuan: 700,
+    Ningyi: 700,
+    Rheinhart: 700,
+    buqichen: 700,
+    zoeyy: 700,
+    suKJH8dWOs: 700,
+    Gloria: 700,
+    vihan: 700,
+    OliverCourtness: 700,
+    Devansh: 700,
+    Helen1102: 700,
+    Kavin: 700,
+    Joeyss: 700,
+    amelievastiau: 700,
+    Karan: 700,
+    agash17: 700,
+    DobPdPv7Xf: 700,
+    Yilin: 700,
+    GianLucas: 1000,
+    Belly: 1000,
+    arianna: 700,
+    '2pFxA1hAEm': 700,
+    MiMi77: 700,
+    TaylanS: 700,
+    Thiago: 700,
+    '14860023': 700,
+  }
+
+  // achievement instances for creative mastermind achievement
+  // TODO
+  const creativeMastermindAchievementWinners = [
+    'Svanen',
+    'SorinaMatthey',
+    'Boban25',
+    'Yanchuan',
+  ]
+
+  // points for creative mastermind achievement
+  // TODO
+  const creativeMastermindPoints = {
+    Svanen: 1000,
+    Financesis: 900,
+    Justinmoser: 700,
+    chenjiajia1412: 700,
+    'Sprindt&Lüngli': 700,
+    Liangwen: 700,
+    SorinaMatthey: 1000,
+    piper: 900,
+    CookieMonster: 700,
+    Ik73oqe1: 700,
+    Nikolina: 700,
+    Boban25: 1000,
+    Yanchuan: 1000,
+    Ningyi: 900,
+    Rheinhart: 700,
+    buqichen: 700,
+    zoeyy: 700,
+    suKJH8dWOs: 700,
+    Gloria: 700,
+    vihan: 700,
+    OliverCourtness: 700,
+    Devansh: 700,
+    Helen1102: 700,
+    Kavin: 700,
+    Joeyss: 700,
+    amelievastiau: 700,
+    Karan: 700,
+    agash17: 700,
+    DobPdPv7Xf: 700,
+    Yilin: 700,
+    GianLucas: 700,
+    Belly: 700,
+    arianna: 700,
+    '2pFxA1hAEm': 700,
+    MiMi77: 700,
+    TaylanS: 700,
+    Thiago: 700,
+    '14860023': 700,
+  }
 
   // ! Grant achievements
   // const ACHIEVEMENT_USERNAMES = pmgGameWinners
