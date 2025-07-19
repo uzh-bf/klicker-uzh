@@ -2,7 +2,7 @@ import { Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementBlockFormValues } from '../WizardLayout'
 
-function LiveQuizTimeoutModal({
+function LiveQuizCountdownModal({
   onClose,
   block,
   index,
@@ -48,4 +48,4 @@ function LiveQuizTimeoutModal({
   )
 }
 
-export default LiveQuizTimeoutModal
+export default LiveQuizCountdownModal
