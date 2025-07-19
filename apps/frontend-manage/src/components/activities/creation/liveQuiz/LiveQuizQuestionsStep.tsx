@@ -5,7 +5,6 @@ import {
   GetOutdatedElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, Form, Formik } from 'formik'
-import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AddStackButton from '../AddStackButton'
@@ -37,8 +36,6 @@ function LiveQuizQuestionsStep({
   selection,
   resetSelection,
 }: LiveQuizQuestionsStepProps) {
-  const t = useTranslations()
-
   // get all instances of elements alongside with the included element version
   const instanceVersionMap = useMemo(
     () =>
