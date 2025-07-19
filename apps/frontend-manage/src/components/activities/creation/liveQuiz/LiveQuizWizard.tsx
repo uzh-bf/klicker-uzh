@@ -318,9 +318,6 @@ function LiveQuizWizard({
     [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
 
-  // TODO: remove!!
-  console.log(formData)
-
   return (
     <WizardLayout
       title={title}

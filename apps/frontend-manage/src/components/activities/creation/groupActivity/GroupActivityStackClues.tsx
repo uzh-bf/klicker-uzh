@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCircleExclamation,
@@ -7,14 +8,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Element,
   ElementType,
+  GetOutdatedElementInstancesDocument,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormLabel, Tooltip } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreationFormValidator from '../CreationFormValidator'
+import InstanceUpdateOption from '../InstanceUpdateOption'
 import StackBlockCreation from '../StackBlockCreation'
 import WizardNavigation from '../WizardNavigation'
 import GroupActivityClueModal from './GroupActivityClueModal'
@@ -46,6 +49,27 @@ function GroupActivityStackClues({
   const [clueIx, setClueIx] = useState<number | undefined>(undefined)
   const [clueModal, setClueModal] = useState(false)
 
+  // get all instances of elements alongside with the included element version
+  const instanceVersionMap = useMemo(
+    () =>
+      formData.stack.elements
+        .filter((instance) => instance.existingInstanceId !== null)
+        .map((instance) => instance.existingInstanceId!),
+    [formData.stack.elements]
+  )
+
+  // query if any invalid element versions are used
+  const { data, loading, refetch } = useQuery(
+    GetOutdatedElementInstancesDocument,
+    {
+      variables: { instanceIds: instanceVersionMap },
+      skip: instanceVersionMap.length === 0 || activeStep !== 3,
+      fetchPolicy: 'network-only',
+    }
+  )
+  const outdatedInstances = data?.getOutdatedElementInstances ?? []
+  const showNotification = outdatedInstances.length > 0
+
   return (
     <Formik
       validateOnMount
@@ -54,7 +78,14 @@ function GroupActivityStackClues({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setFieldValue, errors }) => (
+      {({
+        values,
+        setValues,
+        isValid,
+        isSubmitting,
+        setFieldValue,
+        errors,
+      }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -62,7 +93,21 @@ function GroupActivityStackClues({
             setStepValidity={setStepValidity}
           />
           <div className="flex h-full w-full flex-col justify-between gap-1">
-            <div className="flex flex-row gap-3">
+            {showNotification && (
+              <InstanceUpdateOption
+                values={values}
+                loading={loading}
+                outdatedInstances={outdatedInstances}
+                setValues={setValues}
+                refetch={refetch}
+              />
+            )}
+            <div
+              className={twMerge(
+                'flex flex-row gap-3',
+                showNotification && 'h-40'
+              )}
+            >
               <StackBlockCreation
                 singleStackMode
                 stackIx={0}
