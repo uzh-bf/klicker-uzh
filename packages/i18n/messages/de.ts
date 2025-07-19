@@ -373,6 +373,7 @@ export default {
       pseudonym: 'Pseudonym',
       selected: 'Ausgewählt',
       seconds: 'Sekunden',
+      moreInformation: 'Mehr Informationen',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1505,6 +1506,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       stackFTQuestionsNoSL:
         'Sie haben eine Freitext-Frage in diesem Stack ohne Musterlösung genutzt. Während dies Freitext-Fragen möglich ist, beachten Sie bitte, dass die Teilnehmenden eine Standardpunktzahl für die Beantwortung erhalten und keine Bewertungslogik angewendet wird.',
+      outdatedElementsWarning:
+        'Ihre Aktivität enthält veraltete Versionen von Elementen.',
+      updateElements: 'Elemente aktualisieren',
+      elementInstancesFrozen:
+        'Beim Erstellen der Aktivität wurde der Inhalt der Elemente eingefroren. Wenn aktiviert, werden Änderungen an Elementen auf Aktivitäten mit Entwurf-Status angewendet.',
+      noInstanceUpdatePublishedActivities:
+        'Keine Änderungen an Elementen werden auf veröffentlichte Aktivitäten angewendet (für Teilnehmende zugänglich).',
+      choiceOnDuplication:
+        'Beim Duplizieren einer Aktivität können Sie wählen, ob der Inhalt der Aktivität unverändert bleiben oder die Elemente auf die neueste Version aktualisiert werden sollen.',
       microlearningTypes:
         'Microlearnings können alle verfügbaren Elemente enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',

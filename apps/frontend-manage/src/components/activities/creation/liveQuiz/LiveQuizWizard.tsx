@@ -220,24 +220,24 @@ function LiveQuizWizard({
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
     blocks: initialValues?.blocks
-      ? initialValues.blocks.map((block) => {
-          return {
-            timeLimit: block.timeLimit ?? undefined,
-            elements: block.elements!.map((element) => {
-              return {
-                id: parseInt(element.elementData.id),
-                title: element.elementData.name,
-                type: element.elementData.type,
-                hasSampleSolution:
-                  'options' in element.elementData
-                    ? (element.elementData.options.hasSampleSolution ?? false)
-                    : true,
-                existingInstanceId: element.id,
-                duplicateInstance: duplicationMode,
-              }
-            }),
-          }
-        })
+      ? initialValues.blocks.map((block) => ({
+          timeLimit: block.timeLimit ?? undefined,
+          elements: block.elements!.map((instance) => {
+            const [elementId, _] = instance.elementData.id.split('-v')
+
+            return {
+              id: parseInt(elementId),
+              title: instance.elementData.name,
+              type: instance.elementData.type,
+              hasSampleSolution:
+                'options' in instance.elementData
+                  ? (instance.elementData.options.hasSampleSolution ?? false)
+                  : true,
+              existingInstanceId: instance.id,
+              duplicateInstance: duplicationMode,
+            }
+          }),
+        }))
       : formDefaultValues.blocks,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
     multiplier: initialValues?.pointsMultiplier
@@ -317,6 +317,9 @@ function LiveQuizWizard({
     },
     [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
+
+  // TODO: remove!!
+  console.log(formData)
 
   return (
     <WizardLayout

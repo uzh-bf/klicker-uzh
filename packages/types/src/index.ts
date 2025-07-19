@@ -64,6 +64,11 @@ export type ElementInstanceInput = {
   duplicateInstance: boolean
 }
 
+export type ElementVersionInput = {
+  instanceId: number
+  version: number
+}
+
 export type CaseStudyCriterionResponse = {
   criterionId: string
   response: number

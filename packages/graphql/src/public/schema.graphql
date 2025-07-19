@@ -923,6 +923,12 @@ enum ElementInstanceType {
   PRACTICE_QUIZ
 }
 
+type ElementInstanceVersionInfo {
+  id: Int!
+  newSampleSolution: Boolean!
+  newTitle: String!
+}
+
 type ElementOptionsAnswerCollection {
   entries: [ElementOptionsAnswerCollectionEntry!]
   id: Int!
@@ -2112,6 +2118,7 @@ type Query {
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
+  getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation

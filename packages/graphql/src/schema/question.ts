@@ -326,6 +326,22 @@ export const TemplateBlockInput = TemplateBlockInputRef.implement({
   }),
 })
 
+interface IElementInstanceVersionInfo {
+  id: number
+  newTitle: string
+  newSampleSolution: boolean
+}
+export const ElementInstanceVersionInfoRef =
+  builder.objectRef<IElementInstanceVersionInfo>('ElementInstanceVersionInfo')
+export const ElementInstanceVersionInfo =
+  ElementInstanceVersionInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      newTitle: t.exposeString('newTitle'),
+      newSampleSolution: t.exposeBoolean('newSampleSolution'),
+    }),
+  })
+
 // #endregion
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
