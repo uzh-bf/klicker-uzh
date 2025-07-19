@@ -707,9 +707,20 @@ Cypress.Commands.add(
 
     cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
     cy.get(`[data-cy="confirm-deletion-final"]`).click()
-    cy.get(`[data-cy="confirm-other-users-access"]`).click()
-    cy.get(`[data-cy="confirm-derived-access"]`).click()
-    cy.get(`[data-cy="confirm-dependency-access"]`).click()
+
+    // only click confirmation buttons if they exist
+    cy.get('body').then(($body) => {
+      if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-other-users-access"]`).click()
+      }
+      if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-derived-access"]`).click()
+      }
+      if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-dependency-access"]`).click()
+      }
+    })
+
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
     cy.wait(500)
   }

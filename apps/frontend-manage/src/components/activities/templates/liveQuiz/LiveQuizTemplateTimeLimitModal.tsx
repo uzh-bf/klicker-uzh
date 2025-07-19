@@ -20,7 +20,7 @@ function LiveQuizTemplateTimeLimitModal({
     <Modal
       open
       onClose={onClose}
-      title={t('manage.activityWizard.blockSettingsTitle', {
+      title={t('manage.activityWizard.blockCountdownTitle', {
         blockIx: blockIx + 1,
       })}
       primaryLabel={

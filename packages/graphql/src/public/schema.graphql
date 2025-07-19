@@ -966,6 +966,12 @@ enum ElementStatus {
   REVIEW
 }
 
+type ElementSummary {
+  derivedAccessToResources: Boolean!
+  retainsDerivedAccess: Boolean!
+  sharedElementActivityUse: Boolean!
+}
+
 enum ElementType {
   CASE_STUDY
   CONTENT
@@ -2094,6 +2100,7 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
+  getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]

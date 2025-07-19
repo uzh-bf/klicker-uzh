@@ -196,6 +196,7 @@
    "GetCourseWeeklyActivity": "769cc8d45ec0f063e4ca121bf1cc362ea9fa9f822ef1eab1a578f9f7db59bdb4",
    "GetDerivedObjectPermissions": "4e210f056af320e86428ff096ea73e683c530055415ea7511669433437936d35",
    "GetDerivedPermissionOrigin": "b2e55d6bd34c82c085d4b2d447b18b5bc18534d72d520c32976082a9d0623601",
+   "GetElementSummary": "c4a91bf4322c64867cdbe6588886ba72a80be50a9761637d3c6af5540c22d1d7",
    "GetFeedbacks": "4d12fff29b8c270acb661bd340c218fd12b89ec382e47e0adeab91d5eac3749b",
    "GetGradingGroupActivity": "6ead5548d4b7ef28d0ad61484b11570dd911a2c30a371572561d586aaf4937cc",
    "GetGroupActivity": "e375976f804087f25c136b32a092c2b675e2b2122074cbc2c491d78f1e309423",

@@ -372,6 +372,7 @@ export default {
       objects: 'Objekte',
       pseudonym: 'Pseudonym',
       selected: 'Ausgewählt',
+      seconds: 'Sekunden',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1208,20 +1209,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementDeletionFinal:
         'Die Löschung eines Elements is unwiderruflich und gelöschte Elemente können nicht wiederhergestellt werden. Das Element wird durch die Löschung nicht aus bestehenden Aktivitäten entfernt.',
       elementDeletionOtherUsers:
-        'Falls andere Nutzer mit geteiltem Zugriff auf das Element dieses in Aktivitäten einsetzen, bleibt der Zugriff für diese Nutzer bestehen.',
+        'Andere Nutzer setzen dieses Element in Aktivitäten ein. Der Zugriff für diese Nutzer bleibt bestehen.',
       elementDeletionDerivedAccessHint:
-        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig gelöscht werden. In diesem Fall werden Sie nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig gelöscht werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
       elementDeletionDependencyAccess:
         'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+      elementDeletionOtherUsersNotApplicable:
+        'Das Element wird nicht von anderen Nutzern in Aktivitäten verwendet.',
+      elementDeletionDerivedAccessNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig gelöscht werden.',
+      elementDeletionDependencyAccessNotApplicable:
+        'Keine abgeleiteten Ressourcen sind durch die Löschung des Elements betroffen.',
       removeElement: 'Element entfernen',
       confirmElementRemoval:
         'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Elementes <b>{name}</b> aus Ihrem Nutzerkonto.',
       elementRemovalFinal:
         'Die Entfernung dieses Elements aus Ihrem Konto ist unwiderruflich und kann nicht rückgängig gemacht werden.',
       elementRemovalDerivedAccessHint:
-        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall werden Sie nach der Entfernung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
-      elementRemovalDependencyAccess:
-        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig entfernt werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig entfernt werden.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
@@ -1473,7 +1480,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterContentHere: 'Inhalt hier eingeben…',
       questionsDragDrop: 'Fügen Sie mittels Drag&Drop Fragen hinzu.',
       newQuestion: 'Neue Frage',
-      blockSettingsTitle: 'Einstellungen Block {blockIx}',
+      blockCountdownTitle: 'Countdown Block {blockIx}',
       timeLimit: 'Zeit-Limit',
       noTimeLimit: 'Kein Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',

@@ -2,7 +2,7 @@ import { Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementBlockFormValues } from '../WizardLayout'
 
-function LiveQuizBlockSettingsModal({
+function LiveQuizCountdownModal({
   onClose,
   block,
   index,
@@ -19,16 +19,13 @@ function LiveQuizBlockSettingsModal({
     <Modal
       open
       onClose={onClose}
-      title={t('manage.activityWizard.blockSettingsTitle', {
+      title={t('manage.activityWizard.blockCountdownTitle', {
         blockIx: index + 1,
       })}
       primaryLabel={t('shared.generic.ok')}
       onPrimaryAction={onClose}
-      dataPrimaryAction={{ cy: 'close-block-settings' }}
-      className={{
-        content: 'sm:w-3/4 md:w-1/2',
-        footer: 'justify-end',
-      }}
+      dataPrimaryAction={{ cy: 'close-block-countdown' }}
+      className={{ content: 'max-w-xl', footer: 'justify-end' }}
     >
       <NumberField
         label={t('manage.activityWizard.timeLimit')}
@@ -37,6 +34,7 @@ function LiveQuizBlockSettingsModal({
         })}
         id={`timeLimits.${index}`}
         value={block.timeLimit || ''}
+        unit={t('shared.generic.seconds')}
         onChange={(newValue: string) => {
           replace(index, {
             ...block,
@@ -50,4 +48,4 @@ function LiveQuizBlockSettingsModal({
   )
 }
 
-export default LiveQuizBlockSettingsModal
+export default LiveQuizCountdownModal
