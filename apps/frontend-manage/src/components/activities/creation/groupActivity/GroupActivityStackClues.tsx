@@ -118,6 +118,8 @@ function GroupActivityStackClues({
                 selection={selection}
                 resetSelection={resetSelection}
                 error={errors.stack as any}
+                outdatedInstances={outdatedInstances}
+                refetchOutdatedInstances={refetch}
                 className="w-80"
               />
               <div className="h-max w-full">

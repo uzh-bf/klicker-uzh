@@ -15,6 +15,16 @@ import {
   PracticeQuizFormValues,
 } from './WizardLayout'
 
+export type OutdatedInstancesRefetchFunction = (
+  variables?:
+    | Partial<
+        Exact<{
+          instanceIds: Array<Scalars['Int']['input']> | Scalars['Int']['input']
+        }>
+      >
+    | undefined
+) => Promise<ApolloQueryResult<GetOutdatedElementInstancesQuery>>
+
 function InstanceUpdateOption({
   values,
   loading,
@@ -34,17 +44,7 @@ function InstanceUpdateOption({
     newSampleSolution: boolean
   }[]
   setValues: any
-  refetch: (
-    variables?:
-      | Partial<
-          Exact<{
-            instanceIds:
-              | Array<Scalars['Int']['input']>
-              | Scalars['Int']['input']
-          }>
-        >
-      | undefined
-  ) => Promise<ApolloQueryResult<GetOutdatedElementInstancesQuery>>
+  refetch: OutdatedInstancesRefetchFunction
 }) {
   const t = useTranslations()
 
@@ -158,7 +158,7 @@ function InstanceUpdateOption({
         >
           <Button.Icon icon={faArrowsRotate} loading={loading} />
           <Button.Label>
-            {t('manage.activityWizard.updateElements')}
+            {t('manage.activityWizard.updateAllElements')}
           </Button.Label>
         </Button>
       </div>

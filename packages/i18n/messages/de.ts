@@ -1508,7 +1508,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben eine Freitext-Frage in diesem Stack ohne Musterlösung genutzt. Während dies Freitext-Fragen möglich ist, beachten Sie bitte, dass die Teilnehmenden eine Standardpunktzahl für die Beantwortung erhalten und keine Bewertungslogik angewendet wird.',
       outdatedElementsWarning:
         'Ihre Aktivität enthält veraltete Versionen von Elementen.',
-      updateElements: 'Elemente aktualisieren',
+      updateAllElements: 'Alle Elemente aktualisieren',
       elementInstancesFrozen:
         'Beim Erstellen der Aktivität wurde der Inhalt der Elemente eingefroren. Wenn aktiviert, werden Änderungen an Elementen auf Aktivitäten mit Entwurf-Status angewendet.',
       noInstanceUpdatePublishedActivities:

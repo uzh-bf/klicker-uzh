@@ -1503,7 +1503,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You included a free text question in without a sample solution in this stack. While this is possible for free text questions, please note that the participants will receive a default number of points for answering and no grading logic is applied.',
       outdatedElementsWarning:
         'Your activity contains outdated versions of elements.',
-      updateElements: 'Update Elements',
+      updateAllElements: 'Update all Elements',
       elementInstancesFrozen:
         'When creating the activity, the content of the elements was frozen. When enabled, changes to elements are applied to draft activities.',
       noInstanceUpdatePublishedActivities:

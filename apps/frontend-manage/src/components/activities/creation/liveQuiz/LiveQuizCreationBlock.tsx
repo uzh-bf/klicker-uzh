@@ -6,7 +6,11 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Element,
+  ElementInstanceVersionInfo,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -15,6 +19,7 @@ import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../../questions/Element'
 import DropElementsStack from '../DropElementsStack'
+import { OutdatedInstancesRefetchFunction } from '../InstanceUpdateOption'
 import PasteSelectionButton from '../PasteSelectionButton'
 import WizardElementList from '../WizardElementList'
 import {
@@ -35,6 +40,8 @@ interface LiveQuizCreationBlockProps {
   selection?: Record<number, Element>
   resetSelection?: () => void
   error?: ElementBlockErrorValues[]
+  outdatedInstances: ElementInstanceVersionInfo[]
+  refetchOutdatedInstances: OutdatedInstancesRefetchFunction
 }
 
 function LiveQuizCreationBlock({
@@ -48,6 +55,8 @@ function LiveQuizCreationBlock({
   selection,
   resetSelection,
   error,
+  outdatedInstances,
+  refetchOutdatedInstances,
 }: LiveQuizCreationBlockProps): React.ReactElement {
   const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
@@ -182,6 +191,8 @@ function LiveQuizCreationBlock({
         selectionActive={
           (selection && Object.keys(selection).length > 0) ?? false
         }
+        outdatedInstances={outdatedInstances}
+        refetchOutdatedInstances={refetchOutdatedInstances}
       />
 
       {selection && !isEmpty(selection) && (
