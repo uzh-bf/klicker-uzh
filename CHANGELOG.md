@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.73...v3.3.0-alpha.74) (2025-07-20)
+
+
+### Features
+
+* add possibility to update elements to latest versions in activity editor ([#4786](https://github.com/uzh-bf/klicker-uzh/issues/4786)) ([03706f2](https://github.com/uzh-bf/klicker-uzh/commit/03706f26e15b875b33a90cd0566200acf81e202c))
+
+
+### Build and CI
+
+* adjust claude code review workflow ([06e8477](https://github.com/uzh-bf/klicker-uzh/commit/06e84776dda3f384c4a423f4e2bba05dd0e70e1c))
+
+
+### Enhancements
+
+* correctly update, load and display if an activity contains oudated element instances ([#4789](https://github.com/uzh-bf/klicker-uzh/issues/4789)) ([0d3beb7](https://github.com/uzh-bf/klicker-uzh/commit/0d3beb700d274c7c7a5acb0653f017280e53143f))
+* verify required confirmations for element deletion or removal before showing modal ([#4785](https://github.com/uzh-bf/klicker-uzh/issues/4785)) ([9ac1f52](https://github.com/uzh-bf/klicker-uzh/commit/9ac1f522b9259621694cfe5d9c4aed4fc5a13ebb))
+
 ## [3.3.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.72...v3.3.0-alpha.73) (2025-07-18)
 
 ## [3.3.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.71...v3.3.0-alpha.72) (2025-07-15)
