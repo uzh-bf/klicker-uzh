@@ -6,9 +6,6 @@ const DEBUG = false
 async function run() {
   const prisma = new PrismaClient()
 
-  // get the number of element instances in the database
-  const instanceCount = await prisma.elementInstance.count()
-
   // get the activity counts
   const liveQuizCount = await prisma.liveQuiz.count({
     where: { isDeleted: false },
@@ -34,9 +31,9 @@ async function run() {
       },
     })
 
-    let batchCouter = 0
+    let batchCounter = 0
     for (const liveQuiz of liveQuizzes) {
-      console.log(`Processing live quiz ${i + ++batchCouter}/${liveQuizCount}`)
+      console.log(`Processing live quiz ${i + ++batchCounter}/${liveQuizCount}`)
       const instances = liveQuiz.blocks.flatMap((block) => block.elements)
       const anyInstanceOutdated = await processInstances(instances, prisma)
 
@@ -60,12 +57,12 @@ async function run() {
       },
     })
 
-    let batchCouter = 0
+    let batchCounter = 0
     for (const practiceQuiz of practiceQuizzes) {
       console.log(
-        `Processing practice quiz ${i + ++batchCouter}/${practiceQuizCount}`
+        `Processing practice quiz ${i + ++batchCounter}/${practiceQuizCount}`
       )
-      const instances = practiceQuiz.stacks.flatMap((block) => block.elements)
+      const instances = practiceQuiz.stacks.flatMap((stack) => stack.elements)
       const anyInstanceOutdated = await processInstances(instances, prisma)
 
       if (anyInstanceOutdated) {
@@ -88,12 +85,12 @@ async function run() {
       },
     })
 
-    let batchCouter = 0
+    let batchCounter = 0
     for (const microLearning of microLearnings) {
       console.log(
-        `Processing micro learning ${i + ++batchCouter}/${microLearningCount}`
+        `Processing micro learning ${i + ++batchCounter}/${microLearningCount}`
       )
-      const instances = microLearning.stacks.flatMap((block) => block.elements)
+      const instances = microLearning.stacks.flatMap((stack) => stack.elements)
       const anyInstanceOutdated = await processInstances(instances, prisma)
 
       if (anyInstanceOutdated) {
@@ -116,12 +113,12 @@ async function run() {
       },
     })
 
-    let batchCouter = 0
+    let batchCounter = 0
     for (const groupActivity of groupActivities) {
       console.log(
-        `Processing group activity ${i + ++batchCouter}/${groupActivityCount}`
+        `Processing group activity ${i + ++batchCounter}/${groupActivityCount}`
       )
-      const instances = groupActivity.stacks.flatMap((block) => block.elements)
+      const instances = groupActivity.stacks.flatMap((stack) => stack.elements)
       const anyInstanceOutdated = await processInstances(instances, prisma)
 
       if (anyInstanceOutdated) {
