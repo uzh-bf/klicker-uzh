@@ -61,7 +61,6 @@ async function submitMicrolearningForm({
     }
 
     if (editMode) {
-      // TODO: extend this mutation to also update the flags for outdated instances
       const result = await editMicroLearning({
         variables: {
           id,
