@@ -675,7 +675,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="cancel-activity-creation"]').click()
   })
 
-  // TODO: update the multiple choice question (no instance updates) and verify that the update hint is shown, update all instances in all activities (and verify the change in the activity details modal)
   it('Update the multiple choice question and update all outdated instances in all activities', function () {
     cy.loginLecturer()
 
