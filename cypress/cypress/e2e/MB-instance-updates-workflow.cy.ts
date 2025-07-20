@@ -190,6 +190,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -203,6 +206,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('not.exist')
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
@@ -218,6 +224,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -231,6 +240,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('not.exist')
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
@@ -251,6 +263,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('not.exist')
     cy.get(
       `[data-cy="edit-live-quiz-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
@@ -273,6 +288,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="edit-practice-quiz-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -294,6 +312,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="actions-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="edit-microlearning-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -314,6 +335,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="actions-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('not.exist')
     cy.get(
       `[data-cy="edit-group-activity-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
@@ -353,6 +377,9 @@ describe('Create different types of elements (with and without sample solution) 
     // open the live quiz editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
     cy.get(
@@ -387,6 +414,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -401,6 +431,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the practice quiz editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
@@ -436,6 +469,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -450,6 +486,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the microlearning editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
@@ -485,6 +524,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -499,6 +541,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the group activity editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
@@ -534,6 +579,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
@@ -552,6 +600,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the live quiz editing dialog and update all instances of the single choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
@@ -584,6 +635,9 @@ describe('Create different types of elements (with and without sample solution) 
     // open the practice quiz editing dialog and update all instances of the single choice question
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
     cy.get(
@@ -615,6 +669,9 @@ describe('Create different types of elements (with and without sample solution) 
     // open the microlearning editing dialog and update all instances of the single choice question
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get(
@@ -645,6 +702,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the group activity editing dialog and update all instances of the single choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
@@ -697,6 +757,9 @@ describe('Create different types of elements (with and without sample solution) 
     // open the live quiz editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('exist')
+    cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
     cy.get(
@@ -731,6 +794,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-LIVE_QUIZ-${this.data.instanceUpdates.liveQuizName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.liveQuizName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
@@ -751,6 +817,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the practice quiz editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
@@ -786,6 +855,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.instanceUpdates.practiceQuizName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.practiceQuizName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
@@ -806,6 +878,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the microlearning editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
@@ -841,6 +916,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-MICRO_LEARNING-${this.data.instanceUpdates.microlearningName}"]`
     ).should('exist')
     cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.microlearningName}"]`
+    ).should('not.exist')
+    cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
@@ -861,6 +939,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // open the group activity editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="actions-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
@@ -895,6 +976,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.instanceUpdates.groupActivityName}"]`
     ).should('exist')
+    cy.get(
+      `[data-cy="instances-outdated-${this.data.instanceUpdates.groupActivityName}"]`
+    ).should('not.exist')
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()

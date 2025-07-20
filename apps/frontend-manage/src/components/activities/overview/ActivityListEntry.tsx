@@ -261,7 +261,10 @@ function ActivityListEntry({
               )}
               className={{ tooltip: 'text-wrap' }}
             >
-              <div className="text-uzh-red-100 flex flex-row items-center gap-2 text-sm">
+              <div
+                className="text-uzh-red-100 flex flex-row items-center gap-2 text-sm"
+                data-cy={`instances-outdated-${activity.name}`}
+              >
                 <FontAwesomeIcon icon={faExclamationTriangle} />
                 {t('manage.activities.instancesOutdated')}
               </div>
