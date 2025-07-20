@@ -109,6 +109,8 @@ function LiveQuizQuestionsStep({
                         selection={selection}
                         resetSelection={resetSelection}
                         error={errors.blocks as any}
+                        outdatedInstances={outdatedInstances}
+                        refetchOutdatedInstances={refetch}
                       />
                     ))}
                     <AddStackButton

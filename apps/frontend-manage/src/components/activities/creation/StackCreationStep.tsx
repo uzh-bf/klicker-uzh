@@ -110,6 +110,7 @@ function StackCreationStep({
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
                           key={`stack-${index}-${stack.elements.map((e) => e.id).join('-')}`}
+                          highlightFTNoSL
                           stackIx={index}
                           stack={stack}
                           numOfStacks={values.stacks.length}
@@ -120,7 +121,8 @@ function StackCreationStep({
                           selection={selection}
                           resetSelection={resetSelection}
                           error={errors.stacks as any}
-                          highlightFTNoSL
+                          outdatedInstances={outdatedInstances}
+                          refetchOutdatedInstances={refetch}
                         />
                       )
                     )}
