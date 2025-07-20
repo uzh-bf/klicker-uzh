@@ -409,9 +409,8 @@ export async function splitActivityInstances(
 
   // fetch instances that should be kept in the activity
   const persistentInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      id: { in: persistentInstanceIds },
-    },
+    where: { id: { in: persistentInstanceIds } },
+    include: { element: true },
   })
 
   // in DUPLICATION mode - instances that should be duplicated in the activity
@@ -442,6 +441,17 @@ export async function splitActivityInstances(
         },
       },
     },
+    include: { element: true },
+  })
+
+  // check if any of the persistent / duplication instances are outdated (w.r.t. the element version)
+  // -> only persistent and duplicated instances can be outdated, other instances are created from the current element
+  const allInstances = [...persistentInstances, ...duplicationInstances]
+  const anyInstanceOutdated = allInstances.some((instance) => {
+    const [_, instanceVersion] = instance.elementData.id.split('-v')
+    return (
+      instanceVersion && parseInt(instanceVersion) !== instance.element.version
+    )
   })
 
   // get the ids of all elements that should be used for instance creation
@@ -490,6 +500,7 @@ export async function splitActivityInstances(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   }
 }
 
@@ -552,6 +563,7 @@ export async function manipulateLiveQuiz(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
   // in EDIT mode - check which instances and blocks should be removed
@@ -589,6 +601,7 @@ export async function manipulateLiveQuiz(
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
+    areInstancesOutdated: anyInstanceOutdated,
     blocks: {
       create: blocks.map((block) => ({
         order: block.order,

@@ -1050,6 +1050,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
       lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      instancesOutdated: 'Aktivität enthält veraltete Elemente',
+      instanceUpdateDraftScheduled:
+        'Für einige der in dieser Aktivität enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, während die Aktivität bereits veröffentlicht ist oder ohne die Aktualisierungen in Aktivitäten zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, <b>bearbeiten Sie die Aktivität</b> und wählen Sie die Instanzen aus, die Sie im letzten Schritt des Assistenten aktualisieren möchten.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Entwurfs- und geplanten Aktivitäten enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Aktivitätsinformationen, indem Sie auf den Titel der Aktivität in der Übersicht klicken.</li></ul>',
+      instanceUpdateTemplate:
+        'Für einige der in dieser Vorlage enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, ohne die Aktualisierungen in Vorlagen zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, erstellen Sie die Vorlage erneut.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Vorlagen enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Übersicht, indem Sie auf den Titel der Vorlage in der Liste klicken.</li></ul>',
       automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
       availability: 'Verfügbarkeit: {startDate} - {endDate}',
       removeActivity: 'Aktivität entfernen',

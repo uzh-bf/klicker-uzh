@@ -160,7 +160,7 @@ export const ElementStack = ElementStackRef.implement({
 export interface IPracticeQuiz
   extends Omit<
     DB.PracticeQuiz,
-    'startedCount' | 'completedCount' | 'repeatedCount'
+    'startedCount' | 'completedCount' | 'repeatedCount' | 'areInstancesOutdated'
   > {
   course?: ICourse
   stacks?: IElementStack[]
