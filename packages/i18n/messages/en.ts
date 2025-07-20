@@ -1049,6 +1049,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      instancesOutdated: 'Activity contains outdated elements',
+      instanceUpdateDraftScheduled:
+        'For some of the elements included in this activity, newer versions are available in the library. This happens when you modify an element with the activity already being published or without having the instance updates in activities activate.<ul><li>To update outdated versions of elements, <b>edit the activity</b> and choose the instances you would like to update in the last step of the wizard.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in draft and scheduled activities.</li><li>To get a list of all outdated instances, please check out the activity information by clicking on the activity title in the overview.</li></ul>',
+      instanceUpdateTemplate:
+        'For some of the elements included in this template, newer versions are available in the library. This happens when you modify an elements without enabling updates in templates.<ul><li>To update outdated versions of elements, re-create the template.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in templates.</li><li>To get a list of all outdated instances, please check out the template information by clicking on the template title in the overview.</li></ul>',
       automaticPublicationAt: 'Automatic publication at {date}',
       availability: 'Availability: {startDate} - {endDate}',
       removeActivity: 'Remove Activity',

@@ -5,6 +5,7 @@ import {
   faPenToSquare,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faExclamationTriangle,
   faFilePen,
   faPencil,
   faPlay,
@@ -18,6 +19,7 @@ import {
   ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -188,53 +190,85 @@ function ActivityListEntry({
             />
           </div>
         </div>
+        <div className="gap-4.5 flex flex-col items-end">
+          <div className="flex flex-row items-center gap-4">
+            {activity.numSharedUsers && activity.isManager ? (
+              <div
+                className="hover:text-primary-100 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setSharingModal(true)
+                }}
+              >
+                <div>{activity.numSharedUsers}</div>
+                <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
+              </div>
+            ) : null}
 
-        <div className="flex flex-row items-center gap-4">
-          {activity.numSharedUsers && activity.isManager ? (
-            <div
-              className="hover:text-primary-100 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setSharingModal(true)
-              }}
+            {activity.type === ActivityType.LiveQuiz ? (
+              <LiveQuizActions
+                liveQuiz={activity}
+                isTemplate={!!activity.templateId}
+                sharingModal={sharingModal}
+                setSharingModal={setSharingModal}
+              />
+            ) : null}
+            {activity.type === ActivityType.PracticeQuiz ? (
+              <PracticeQuizActions
+                practiceQuiz={activity}
+                isTemplate={!!activity.templateId}
+                sharingModal={sharingModal}
+                setSharingModal={setSharingModal}
+              />
+            ) : null}
+            {activity.type === ActivityType.MicroLearning ? (
+              <MicrolearningActions
+                microLearning={activity}
+                isTemplate={!!activity.templateId}
+                sharingModal={sharingModal}
+                setSharingModal={setSharingModal}
+              />
+            ) : null}
+            {activity.type === ActivityType.GroupActivity ? (
+              <GroupActivityActions
+                groupActivity={activity}
+                isTemplate={!!activity.templateId}
+                sharingModal={sharingModal}
+                setSharingModal={setSharingModal}
+              />
+            ) : null}
+          </div>
+          {activity.areInstancesOutdated &&
+          [
+            PublicationStatus.Draft,
+            PublicationStatus.Scheduled,
+            PublicationStatus.Template,
+          ].includes(activity.status) ? (
+            <Tooltip
+              delay={0}
+              tooltip={t.rich(
+                activity.status === PublicationStatus.Template
+                  ? 'manage.activities.instanceUpdateTemplate'
+                  : 'manage.activities.instanceUpdateDraftScheduled',
+                {
+                  b: (content) => <b>{content}</b>,
+                  ul: (content) => (
+                    <ul className="list-disc pl-4">{content}</ul>
+                  ),
+                  li: (content) => <li className="mt-0.5">{content}</li>,
+                }
+              )}
+              className={{ tooltip: 'text-wrap' }}
             >
-              <div>{activity.numSharedUsers}</div>
-              <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
-            </div>
-          ) : null}
-
-          {activity.type === ActivityType.LiveQuiz ? (
-            <LiveQuizActions
-              liveQuiz={activity}
-              isTemplate={!!activity.templateId}
-              sharingModal={sharingModal}
-              setSharingModal={setSharingModal}
-            />
-          ) : null}
-          {activity.type === ActivityType.PracticeQuiz ? (
-            <PracticeQuizActions
-              practiceQuiz={activity}
-              isTemplate={!!activity.templateId}
-              sharingModal={sharingModal}
-              setSharingModal={setSharingModal}
-            />
-          ) : null}
-          {activity.type === ActivityType.MicroLearning ? (
-            <MicrolearningActions
-              microLearning={activity}
-              isTemplate={!!activity.templateId}
-              sharingModal={sharingModal}
-              setSharingModal={setSharingModal}
-            />
-          ) : null}
-          {activity.type === ActivityType.GroupActivity ? (
-            <GroupActivityActions
-              groupActivity={activity}
-              isTemplate={!!activity.templateId}
-              sharingModal={sharingModal}
-              setSharingModal={setSharingModal}
-            />
+              <div
+                className="text-uzh-red-100 flex flex-row items-center gap-2 text-sm"
+                data-cy={`instances-outdated-${activity.name}`}
+              >
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                {t('manage.activities.instancesOutdated')}
+              </div>
+            </Tooltip>
           ) : null}
         </div>
       </div>

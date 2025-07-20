@@ -926,7 +926,8 @@ export const ArchivedElement = builder
   })
 // #endregion
 
-export interface IElementInstance extends DB.ElementInstance {
+export interface IElementInstance
+  extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
 }
 export const ElementInstanceRef =
