@@ -67,6 +67,7 @@ import {
 import {
   Element,
   ElementInstance,
+  ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
   Tag,
@@ -726,6 +727,17 @@ export const Query = builder.queryType({
             return await QuestionService.getElementSummary(args, ctx)
           }
         ),
+      }),
+
+      getOutdatedElementInstances: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ElementInstanceVersionInfo],
+        args: {
+          instanceIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.getOutdatedElementInstances(args, ctx)
+        },
       }),
 
       artificialInstance: t.withAuth(asUser).field({

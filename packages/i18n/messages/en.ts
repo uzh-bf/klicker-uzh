@@ -371,6 +371,7 @@ export default {
       pseudonym: 'Pseudonym',
       selected: 'Selected',
       seconds: 'seconds',
+      moreInformation: 'More information',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1472,7 +1473,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementCreated: 'Element has been created successfully',
       openPreview: 'Open preview',
       openOverview: 'Open overview',
-      createNewElement: 'Create another element',
+      createAnotherActivity: 'Create another activity',
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
@@ -1500,6 +1501,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       stackDescriptionPlaceholder: 'Enter description here...',
       stackFTQuestionsNoSL:
         'You included a free text question in without a sample solution in this stack. While this is possible for free text questions, please note that the participants will receive a default number of points for answering and no grading logic is applied.',
+      outdatedElementsWarning:
+        'Your activity contains outdated versions of elements.',
+      updateAllElements: 'Update all Elements',
+      elementInstancesFrozen:
+        'When creating the activity, the content of the elements was frozen. When enabled, changes to elements are applied to draft activities.',
+      noInstanceUpdatePublishedActivities:
+        'No changes made to elements are applied to published activities (accessible to students).',
+      choiceOnDuplication:
+        "When duplicating an activity, you can choose whether to keep an activity's content unmodified or update the elements to their latest version.",
       microlearningTypes:
         'A microlearning can contain all available element types.',
       microlearningCreated:

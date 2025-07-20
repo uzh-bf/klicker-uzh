@@ -1187,6 +1187,59 @@ export async function getElementSummary(
   }
 }
 
+export async function getOutdatedElementInstances(
+  { instanceIds }: { instanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  if (instanceIds.length === 0) {
+    return []
+  }
+
+  // fetch all used elements
+  const dbInstances = await ctx.prisma.elementInstance.findMany({
+    where: { id: { in: instanceIds }, element: { isDeleted: false } },
+    include: {
+      element: {
+        select: { id: true, version: true, name: true, options: true },
+      },
+    },
+  })
+
+  // check if any of the instances has an outdated element version
+  const { outdatedInstances } = dbInstances.reduce<{
+    outdatedInstances: {
+      id: number
+      newTitle: string
+      newSampleSolution: boolean
+    }[]
+  }>(
+    (acc, instance) => {
+      const [_, instanceVersion] = instance.elementData.id.split('-v')
+
+      if (
+        instanceVersion &&
+        instance.element &&
+        parseInt(instanceVersion) < instance.element.version
+      ) {
+        acc.outdatedInstances.push({
+          id: instance.id,
+          newTitle: instance.element.name,
+          newSampleSolution:
+            instance.element.options &&
+            'hasSampleSolution' in instance.element.options
+              ? (instance.element.options?.hasSampleSolution ?? false)
+              : false,
+        })
+      }
+
+      return acc
+    },
+    { outdatedInstances: [] }
+  )
+
+  return outdatedInstances
+}
+
 export async function updateElementInstances(
   {
     elementId,
