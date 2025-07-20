@@ -1473,7 +1473,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementCreated: 'Element has been created successfully',
       openPreview: 'Open preview',
       openOverview: 'Open overview',
-      createNewElement: 'Create another element',
+      createAnotherActivity: 'Create another activity',
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',

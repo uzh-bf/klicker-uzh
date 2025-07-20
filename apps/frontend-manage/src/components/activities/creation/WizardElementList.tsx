@@ -150,6 +150,9 @@ function WizardElementList({
                   className={{
                     root: 'px-1 text-orange-500 hover:bg-transparent hover:text-orange-500',
                   }}
+                  data={{
+                    cy: `update-element-${elementIdx}-${type}-${stackIx}`,
+                  }}
                 >
                   <Button.Icon withoutLabel icon={faArrowsRotate} />
                 </Button>

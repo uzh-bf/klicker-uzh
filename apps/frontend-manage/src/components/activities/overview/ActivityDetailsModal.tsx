@@ -62,7 +62,7 @@ function ActivityDetailsModal({
               </div>
             </div>
             <div>
-              {stack.elements.map((instance) => (
+              {stack.elements.map((instance, instanceIx) => (
                 <Link
                   href={`/instances/${instance.id}`}
                   className="text-sm hover:text-slate-700"
@@ -75,7 +75,10 @@ function ActivityDetailsModal({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <div className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm">
+                    <div
+                      className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm"
+                      data-cy={`stack-${index}-instance-${instanceIx}`}
+                    >
                       <div>
                         {instance.name} ({t(`shared.${instance.type}.short`)})
                       </div>
