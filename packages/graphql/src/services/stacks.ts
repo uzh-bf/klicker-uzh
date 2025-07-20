@@ -1652,13 +1652,10 @@ export function updateChoicesResults({
 
   updatedResults.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, choiceResponse) => ({
-      ...acc,
-      [choiceResponse.ix]: acc[choiceResponse.ix]! + 1,
-    }),
-    results.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, results.choices)
   updatedResults.total = results.total + 1
   return { results: updatedResults, modified: true }
 }
@@ -2173,13 +2170,10 @@ function computeAggregatedResponsesChoices({
   // update aggregated responses for choices
   newAggResponses.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, choiceResponse) => ({
-      ...acc,
-      [choiceResponse.ix]: acc[choiceResponse.ix]! + 1,
-    }),
-    newAggResponses.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, newAggResponses.choices)
   newAggResponses.total = newAggResponses.total + 1
 
   return newAggResponses
