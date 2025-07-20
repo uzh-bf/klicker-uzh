@@ -1477,7 +1477,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementCreated: 'Element erfolgreich erstellt',
       openPreview: 'Vorschau öffnen',
       openOverview: 'Übersicht öffnen',
-      createNewElement: 'Weiteres Element erstellen',
+      createAnotherActivity: 'Weitere Aktivität erstellen',
       enterContentHere: 'Inhalt hier eingeben…',
       questionsDragDrop: 'Fügen Sie mittels Drag&Drop Fragen hinzu.',
       newQuestion: 'Neue Frage',

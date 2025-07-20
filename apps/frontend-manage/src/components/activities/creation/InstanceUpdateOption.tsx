@@ -155,6 +155,7 @@ function InstanceUpdateOption({
 
             await refetch({ instanceIds: [] })
           }}
+          data={{ cy: 'update-all-outdated-instances' }}
         >
           <Button.Icon icon={faArrowsRotate} loading={loading} />
           <Button.Label>
