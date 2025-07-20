@@ -18,7 +18,7 @@ export function TitleImage() {
             <div className="relative px-6 py-12 sm:py-40 md:py-32 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
                 <div className="hidden sm:mb-10 sm:flex">
-                  <div className="text-md relative rounded-full px-3 py-1 leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                  <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
                     KlickerUZH v3.2 has been released with brand new features
                     <a
                       href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
@@ -33,21 +33,23 @@ export function TitleImage() {
                 </div>
 
                 <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
-                <p className="mt-6 text-2xl leading-8 text-gray-600">
+                <p className="mt-1 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
                   <a href="https://manage.klicker.uzh.ch" target="_blank">
-                    <Button primary>Sign Up / Login</Button>
+                    <Button primary className={{ root: 'border-none text-lg' }}>
+                      Sign Up / Login
+                    </Button>
                   </a>
                   <a
                     href="/getting_started/welcome"
-                    className="font-semibold leading-6 text-gray-900"
+                    className="text-lg font-semibold leading-6 text-gray-900"
                   >
                     Get started <span aria-hidden="true">→</span>
                   </a>
                 </div>
-                <div className="mt-4 rounded-md border border-solid border-slate-200 bg-slate-100 px-3 py-2 shadow">
+                <div className="mt-4 rounded-md bg-slate-100 px-3 py-2 shadow">
                   We are now regularly offering introductory courses through UZH
                   Central IT. For more details see{' '}
                   <a
@@ -64,7 +66,7 @@ export function TitleImage() {
         </div>
         <div className="hidden bg-gray-50 md:block lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
-            className="aspect-[3/2] object-cover lg:aspect-auto lg:h-full lg:w-full"
+            className="aspect-3/2 object-cover lg:aspect-auto lg:h-full lg:w-full"
             src="/img/landing/hero.jpg"
             alt=""
           />

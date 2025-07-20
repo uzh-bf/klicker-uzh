@@ -5,10 +5,17 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
+import {
+  ActivityLogModificationDetails,
+  ActivityLogModificationFieldType,
+  ActivityType,
+  ElementManipulationInput,
+  SharingType,
+} from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
@@ -19,35 +26,74 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { getAnswerCollectionsElements } from './resources.js'
+import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
-export async function getUserQuestions(ctx: ContextWithUser) {
-  const userQuestions = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+export async function getUserElements(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
     include: {
-      questions: {
-        where: {
-          isDeleted: false,
-        },
-        orderBy: [
-          {
-            createdAt: 'desc',
-          },
-        ],
+      objects: {
+        where: { elementId: { not: null } },
         include: {
-          tags: {
-            orderBy: {
-              order: 'asc',
+          directPermission: true,
+          element: {
+            include: {
+              tags: {
+                where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
+                orderBy: { order: 'asc' },
+              },
+              // ? hide number of shared users for now due to performance drawbacks
+              // _count: {
+              //   select: {
+              //     permissions: true,
+              //   },
+              // },
             },
           },
         },
+        orderBy: [{ element: { createdAt: 'desc' } }],
       },
     },
   })
 
-  return userQuestions?.questions
+  return (
+    user?.objects.flatMap((object) =>
+      // filter out objects where the user only has derived access to and they were deleted before
+      object.element !== null && !(object.derived && object.element.isDeleted)
+        ? {
+            ...object.element,
+            permissionLevel: object.permissionLevel,
+            derivedAccess: object.derived,
+            numSharedUsers: undefined, // object.element._count.permissions - 1,
+            isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+            isManager:
+              object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN,
+            isEditor:
+              object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN ||
+              object.permissionLevel === DB.PermissionLevel.WRITE,
+            isImported:
+              object.permissionLevel === DB.PermissionLevel.OWNER &&
+              object.element.originalId !== null,
+            isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+            // object can be removed, if the object is shared and the permission is not derived / granted through a user group
+            isRemovable:
+              object.permissionLevel !== DB.PermissionLevel.OWNER &&
+              !object.derived &&
+              object.directPermission?.userGroupId === null,
+            sharingType:
+              object.permissionLevel === DB.PermissionLevel.OWNER
+                ? SharingType.OWNED
+                : object.derived
+                  ? SharingType.DEPENDENCY
+                  : SharingType.SHARED,
+          }
+        : []
+    ) ?? []
+  )
 }
 
 export async function getSingleQuestion(
@@ -55,16 +101,14 @@ export async function getSingleQuestion(
   ctx: ContextWithUser
 ) {
   const question = await ctx.prisma.element.findUnique({
-    where: {
-      id,
-      isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
+    where: { id, permissions: { some: { userId: ctx.user.sub } } },
     include: {
+      permissions: {
+        where: { userId: ctx.user.sub },
+      },
       tags: {
-        orderBy: {
-          order: 'asc',
-        },
+        where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
+        orderBy: { order: 'asc' },
       },
       answerCollectionItems: true,
     },
@@ -75,9 +119,20 @@ export async function getSingleQuestion(
   }
 
   const selectedItemIds = question.answerCollectionItems.map((item) => item.id)
+  const permission = question.permissions[0]
 
   return {
     ...question,
+    permissionLevel: permission!.permissionLevel,
+    derivedAccess: permission!.derived,
+    isOwner: permission!.permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permission!.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission!.permissionLevel === DB.PermissionLevel.ADMIN,
+    isEditor:
+      permission!.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission!.permissionLevel === DB.PermissionLevel.WRITE,
     options: {
       ...question.options,
       // SE elements
@@ -93,24 +148,13 @@ export async function getSingleQuestion(
 }
 
 export async function getArtificialElementInstance(
-  {
-    elementId,
-  }: {
-    elementId: number
-  },
+  { elementId }: { elementId: number },
   ctx: ContextWithUser
 ) {
   const element = await ctx.prisma.element.findUnique({
-    where: {
-      id: elementId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: elementId },
     include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
-      },
+      answerCollection: { include: { entries: true } },
       answerCollectionItems: true,
     },
   })
@@ -123,8 +167,6 @@ export async function getArtificialElementInstance(
   return {
     id: 0,
     elementId: element.id,
-    migrationId: '',
-    originalId: '',
     elementType: element.type,
     order: 0,
     type: DB.ElementInstanceType.LIVE_QUIZ,
@@ -147,10 +189,40 @@ export async function getSingleElementInstance(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
+  // fetch instance and check that the user has access to the activity the instance is included in (minimum READ access is sufficient)
   const instance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
+      OR: [
+        {
+          elementBlock: {
+            liveQuiz: {
+              permissions: { some: { userId: ctx.user.sub } },
+            },
+          },
+        },
+        {
+          elementStack: {
+            OR: [
+              {
+                practiceQuiz: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+              {
+                microLearning: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+              {
+                groupActivity: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+            ],
+          },
+        },
+      ],
     },
   })
 
@@ -169,6 +241,7 @@ export async function manipulateQuestion(
     basePoints,
     pointsMultiplier,
     tags,
+    templateId,
   }: ElementManipulationInput,
   // type modification required for method to be usable inside transaction without type errors
   ctx: PrismaTransactionContextWithUser
@@ -194,30 +267,62 @@ export async function manipulateQuestion(
     return null
   }
 
-  const questionPrev =
-    typeof id !== 'undefined' && id !== null
-      ? await ctx.prisma.element.findUnique({
-          where: {
-            id: id,
-            isDeleted: false,
-            ownerId: ctx.user.sub,
-          },
-          include: {
-            tags: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-            answerCollectionItems: true,
-          },
-        })
-      : undefined
+  // fetch the existing element to compare before/after state
+  const isNewElement = typeof id === 'undefined' || id === null
+  const questionPrev = !isNewElement
+    ? await ctx.prisma.element.findUnique({
+        where: { id: id, isDeleted: false },
+        include: {
+          tags: { orderBy: { order: 'asc' } },
+          answerCollectionItems: true,
+        },
+      })
+    : undefined
 
   // determine which tags have been deconnected
   if (questionPrev?.tags) {
     tagsToDisconnect = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
+  }
+
+  // (SE & CS only) validate that the user has access to the answer collection that should be used
+  if (
+    (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
+    options &&
+    options.answerCollection
+  ) {
+    if (templateId) {
+      // fetch all answer collections that are either available directly or through template
+      const availableAnswerCollections = await getAnswerCollectionsElements(
+        { templateId },
+        ctx
+      )
+
+      // check if the answer collection that should be linked is available
+      const validAccess = availableAnswerCollections.some(
+        (collection) => collection.id === options.answerCollection
+      )
+
+      if (!validAccess) {
+        return null
+      }
+    } else {
+      // access check for answer collection
+      const validAccess = await checkAccess(
+        [
+          {
+            answerCollectionId: options.answerCollection,
+            minimumPermissionLevel: DB.PermissionLevel.READ,
+          },
+        ],
+        ctx
+      )
+
+      if (!validAccess) {
+        return null
+      }
+    }
   }
 
   // (SE only) determine which answer options are no longer considered to be correct
@@ -248,9 +353,7 @@ export async function manipulateQuestion(
   }
 
   const question = await ctx.prisma.element.upsert({
-    where: {
-      id: typeof id !== 'undefined' && id !== null ? id : -1,
-    },
+    where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
       type,
@@ -260,21 +363,12 @@ export async function manipulateQuestion(
       basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {
         connectOrCreate: tags?.map((tag: string) => {
           return {
-            where: {
-              ownerId_name: {
-                ownerId: ctx.user.sub,
-                name: tag,
-              },
-            },
+            where: { ownerId_name: { ownerId: ctx.user.sub, name: tag } },
             create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
           }
         }),
@@ -282,22 +376,14 @@ export async function manipulateQuestion(
       // connect the selection question to the corresponding answer collection
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
-              connect: {
-                id: options!.answerCollection!,
-              },
-            }
+          ? { connect: { id: options!.answerCollection! } }
           : undefined,
       // connect the answer collection options to the selection question if sample solution is enabled
       answerCollectionItems:
         type === DB.ElementType.SELECTION && options!.hasSampleSolution
-          ? {
-              connect: options!.correctAnswers!.map((id) => ({ id })),
-            }
+          ? { connect: options!.correctAnswers!.map((id) => ({ id })) }
           : type === DB.ElementType.CASE_STUDY
-            ? {
-                connect: options!.collectionItemIds!.map((id) => ({ id })),
-              }
+            ? { connect: options!.collectionItemIds!.map((id) => ({ id })) }
             : undefined,
     },
     update: {
@@ -317,32 +403,20 @@ export async function manipulateQuestion(
           ?.filter((tag: string) => tag !== '')
           .map((tag: string) => {
             return {
-              where: {
-                ownerId_name: {
-                  ownerId: ctx.user.sub,
-                  name: tag,
-                },
-              },
+              where: { ownerId_name: { ownerId: ctx.user.sub, name: tag } },
               create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
             }
           }),
         disconnect: tagsToDisconnect.map((tag) => {
           return {
-            ownerId_name: {
-              ownerId: ctx.user.sub,
-              name: tag,
-            },
+            ownerId_name: { ownerId: ctx.user.sub, name: tag },
           }
         }),
       },
       // connect new answer collection and disconnect previous one if they are not the same
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
-              connect: {
-                id: options!.answerCollection!,
-              },
-            }
+          ? { connect: { id: options!.answerCollection! } }
           : undefined,
       // connect or disconnect the answer collection options if sample solution is enabled
       answerCollectionItems:
@@ -367,6 +441,59 @@ export async function manipulateQuestion(
       answerCollectionItems: true,
     },
   })
+
+  // compute derived permissions as required for this question
+  await recomputeDerivedPermissions(
+    { elementId: question.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
+  // if the answer collection linked to the question has changed, recompute the derived permissions for the removed answer collection
+  if (
+    questionPrev?.answerCollectionId !== null &&
+    typeof questionPrev?.answerCollectionId !== 'undefined' &&
+    question.answerCollectionId !== questionPrev.answerCollectionId
+  ) {
+    await recomputeDerivedPermissions(
+      { answerCollectionId: questionPrev.answerCollectionId },
+      ctx.prisma
+    )
+  }
+
+  // track element creation or modification
+  // ? status changes are tracked through the corresponding separate mutation
+  if (isNewElement) {
+    // create an activity log entry for element creation
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.CREATION,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId: question.id,
+        userId: ctx.user.sub,
+        createdAt: question.createdAt,
+        updatedAt: question.updatedAt,
+      },
+    })
+  } else if (questionPrev) {
+    // track title changes
+    if (name && name !== questionPrev.name) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.TITLE,
+        oldValue: questionPrev.name,
+        newValue: name,
+      }
+
+      await ctx.prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      })
+    }
+  }
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
@@ -401,68 +528,201 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion(
+export async function changeElementStatus(
+  { elementId, status }: { elementId: number; status: DB.ElementStatus },
+  ctx: ContextWithUser
+) {
+  const previousElement = await ctx.prisma.element.findUnique({
+    where: { id: elementId },
+  })
+
+  if (!previousElement) {
+    return false
+  }
+
+  const element = await ctx.prisma.element.update({
+    where: { id: elementId },
+    data: { status },
+  })
+
+  if (status && status !== previousElement.status) {
+    const modificationDetails: ActivityLogModificationDetails = {
+      field: ActivityLogModificationFieldType.STATUS,
+      oldValue: previousElement.status,
+      newValue: status,
+    }
+
+    await ctx.prisma.activityLogEntry.create({
+      data: {
+        type: DB.ActivityLogType.MODIFICATION,
+        modificationDetails,
+        objectType: DB.ObjectType.ELEMENT,
+        elementId,
+        userId: ctx.user.sub,
+      },
+    })
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: element.id,
+  })
+
+  return true
+}
+
+export async function deleteElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
   // soft delete question and disconnect linked answer collection and sample solutions
-  const question = await ctx.prisma.element.update({
-    where: {
-      id: id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      isDeleted: true,
-      answerCollection: {
-        disconnect: true,
-      },
-      answerCollectionItems: {
-        set: [],
-      },
-    },
-  })
+  const { deletedElement, originalElement } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const originalElement = await prisma.element.findUnique({ where: { id } })
 
-  // TODO: Once migration deadline is over, rework approach and delete question for real
-  // const question = await ctx.prisma.element.delete({
-  //   where: {
-  //     id: id,
-  //     ownerId: ctx.user.sub,
-  //   },
-  // })
+      if (!originalElement) {
+        throw new Error('Element not found')
+      }
 
-  // ctx.emitter.emit('invalidate', {
-  //   typename: 'Element',
-  //   id: question.id,
-  // })
+      // TODO: evaluate if soft deletion of elements is still required (assuming that there are no derived permissions on them anymore)
+      // ! Once elements are hard deleted, the propagation to dependent resources (e.g. answer collections) need to be handled manually in this mutation
+      // ! --> for comparison, check the hard and soft-deletion logic for all activity types (live quiz / practice quiz / microlearning / group activity)
+      const element = await prisma.element.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          answerCollection: { disconnect: true },
+          answerCollectionItems: { set: [] },
+          directPermissions: { deleteMany: {} }, // delete all direct permissions on the element
+        },
+        include: { tags: true },
+      })
+
+      // update derived permissions for element
+      await recomputeDerivedPermissions({ elementId: id }, prisma)
+
+      // update derived permissions on the linked answer collection (if defined) -> derived permissions
+      if (originalElement.answerCollectionId !== null) {
+        await recomputeDerivedPermissions(
+          { answerCollectionId: originalElement.answerCollectionId },
+          prisma
+        )
+      }
+
+      // if the element was linked to any tags, check if the tags still have other questions linked to it
+      for (const tag of element.tags) {
+        const elementTag = await prisma.tag.findUnique({
+          where: { id: tag.id },
+          include: {
+            _count: { select: { questions: { where: { isDeleted: false } } } },
+          },
+        })
+
+        // if the tag has no other questions linked to it, delete it
+        if (elementTag?._count.questions === 0) {
+          await prisma.tag.delete({ where: { id: tag.id } })
+        }
+      }
+
+      // remove all tags from the soft-deleted element
+      await prisma.element.update({
+        where: { id },
+        data: { tags: { set: [] } },
+      })
+
+      return { deletedElement: element, originalElement }
+    },
+    { timeout: 60000 }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
-    id: question.id,
+    id: deletedElement.id,
   })
 
   // if answer collection was connected, invalidate it
-  if (question.answerCollectionId) {
+  if (deletedElement.answerCollectionId) {
     ctx.emitter.emit('invalidate', {
       typename: 'AnswerCollection',
-      id: question.answerCollectionId,
+      id: originalElement.answerCollectionId,
     })
   }
 
-  return question
+  return deletedElement
+}
+
+export async function removeElement(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // verify that the user has a direct permission on the specified element
+  const element = await ctx.prisma.element.findUnique({
+    where: { id, directPermissions: { some: { userId: ctx.user.sub } } },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  // remove direct permission and recompute derived permissions for this element and user
+  await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the direct permission for the user on the element
+      await prisma.element.update({
+        where: { id },
+        data: {
+          directPermissions: {
+            deleteMany: { userId: ctx.user.sub },
+          },
+        },
+      })
+
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(id),
+          objectType: DB.ObjectType.ELEMENT,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ELEMENT} (ID: ${id})`,
+        },
+      })
+
+      // recompute derived permissions for the element
+      await recomputeDerivedPermissions(
+        { elementId: id, userId: ctx.user.sub },
+        prisma
+      )
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id,
+  })
+
+  return String(id)
 }
 
 export async function editTag(
   { id, name }: { id: number; name: string },
   ctx: ContextWithUser
 ) {
+  // check if the current user already has a tag with the new name
+  const existingTag = await ctx.prisma.tag.findUnique({
+    where: { ownerId_name: { ownerId: ctx.user.sub, name } },
+  })
+
+  // due to uniqueness constraint, no two tags with the same name can exist for one user
+  if (existingTag) {
+    return null
+  }
+
+  // update the tag as requested
   const tag = await ctx.prisma.tag.update({
-    where: {
-      id: id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name: name,
-    },
+    where: { id, ownerId: ctx.user.sub },
+    data: { name },
   })
 
   return tag
@@ -513,25 +773,53 @@ export async function updateTagOrdering(
 }
 
 export async function toggleIsArchived(
-  { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
+  { elementIds, isArchived }: { elementIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
 ) {
-  await ctx.prisma.element.updateMany({
+  // find all elements that should be archived
+  const elements = await ctx.prisma.element.findMany({
     where: {
-      id: {
-        in: questionIds,
+      id: { in: elementIds },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
       },
-      ownerId: ctx.user.sub,
     },
-    data: {
-      isArchived,
-    },
+    select: { id: true },
   })
 
-  return questionIds.map((id) => ({
-    id,
-    isArchived,
-  }))
+  // if no elements are found, return an empty array
+  if (!elements || elements.length === 0) {
+    return { elements: [], failure: true }
+  }
+
+  // update the isArchived status of the elements
+  const updatedElements = await ctx.prisma.element.updateMany({
+    where: {
+      id: { in: elements.map((el) => el.id) },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
+      },
+    },
+    data: { isArchived },
+  })
+
+  return {
+    success: updatedElements.count === elementIds.length,
+    partialSuccess:
+      updatedElements.count > 0 && updatedElements.count < elementIds.length,
+    failure: updatedElements.count === 0,
+    elements: elements.map(({ id }) => ({ id, isArchived })),
+  }
 }
 
 // map mime types of images to file extensions
@@ -627,10 +915,16 @@ export async function getInstanceUpdateActivities(
         DB.PublicationStatus.TEMPLATE,
       ]
     : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
+
+  // only activities where the user has at least WRITE permissions should be updated
+  const requiredActivityAccess: DB.PermissionLevel[] = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
   const element = await ctx.prisma.element.findUnique({
-    where: {
-      id: elementId,
-    },
+    where: { id: elementId },
     include: {
       elementInstances: {
         include: {
@@ -638,32 +932,51 @@ export async function getInstanceUpdateActivities(
             include: {
               microLearning: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
               practiceQuiz: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
               groupActivity: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
             },
           },
+          // ? where clause is not accepted by prisma for unknown reasons
           elementBlock: {
-            include: {
-              // ? where clause is not accepted by prisma for unknown reasons
-              liveQuiz: true,
-            },
+            include: { liveQuiz: { include: { permissions: true } } },
           },
         },
       },
@@ -691,12 +1004,18 @@ export async function getInstanceUpdateActivities(
     }[]
   >((acc, instance) => {
     if (
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplateInstances &&
+      (instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
         instance.elementBlock?.liveQuiz?.status ===
-          DB.PublicationStatus.TEMPLATE)
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementBlock?.liveQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
+      // ensure that user has at least WRITE permissions on activity (cannot be checked with where clause above)
+      instance.elementBlock.liveQuiz.permissions
+        .filter((permission) => permission.userId === ctx.user.sub)
+        .some((permission) =>
+          requiredActivityAccess.includes(permission.permissionLevel)
+        )
     ) {
       acc.push({
         activityName: instance.elementBlock.liveQuiz.name,
@@ -770,6 +1089,157 @@ export async function getInstanceUpdateActivities(
   )
 }
 
+export async function getElementSummary(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const levels = [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER]
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      answerCollection: {
+        include: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: { not: DB.PermissionLevel.OWNER },
+            },
+          },
+        },
+      },
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              practiceQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  const sharedElementActivityUse =
+    element.elementInstances.filter(
+      (instance) => instance.ownerId !== ctx.user.sub
+    ).length > 0
+  const retainsDerivedAccess = element.elementInstances.some(
+    (instance) =>
+      (instance.elementStack?.microLearning?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.practiceQuiz?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.groupActivity?.permissions.length ?? 0) > 0 ||
+      (instance.elementBlock?.liveQuiz?.permissions.length ?? 0) > 0
+  )
+  const derivedAccessToResources =
+    (element.answerCollection?.permissions.length ?? 0) > 0
+
+  return {
+    sharedElementActivityUse,
+    retainsDerivedAccess,
+    derivedAccessToResources,
+  }
+}
+
+export async function getOutdatedElementInstances(
+  { instanceIds }: { instanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  if (instanceIds.length === 0) {
+    return []
+  }
+
+  // fetch all used elements
+  const dbInstances = await ctx.prisma.elementInstance.findMany({
+    where: { id: { in: instanceIds }, element: { isDeleted: false } },
+    include: {
+      element: {
+        select: { id: true, version: true, name: true, options: true },
+      },
+    },
+  })
+
+  // check if any of the instances has an outdated element version
+  const { outdatedInstances } = dbInstances.reduce<{
+    outdatedInstances: {
+      id: number
+      newTitle: string
+      newSampleSolution: boolean
+    }[]
+  }>(
+    (acc, instance) => {
+      const [_, instanceVersion] = instance.elementData.id.split('-v')
+
+      if (
+        instanceVersion &&
+        instance.element &&
+        parseInt(instanceVersion) < instance.element.version
+      ) {
+        acc.outdatedInstances.push({
+          id: instance.id,
+          newTitle: instance.element.name,
+          newSampleSolution:
+            instance.element.options &&
+            'hasSampleSolution' in instance.element.options
+              ? (instance.element.options?.hasSampleSolution ?? false)
+              : false,
+        })
+      }
+
+      return acc
+    },
+    { outdatedInstances: [] }
+  )
+
+  return outdatedInstances
+}
+
 export async function updateElementInstances(
   {
     elementId,
@@ -789,11 +1259,17 @@ export async function updateElementInstances(
       ]
     : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
 
+  // only activities where the user has at least WRITE permissions should be updated
+  const requiredActivityAccess: DB.PermissionLevel[] = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
       isDeleted: false,
-      ownerId: ctx.user.sub,
     },
     include: {
       elementInstances: {
@@ -805,6 +1281,15 @@ export async function updateElementInstances(
                   status: {
                     in: acceptedStatusValues,
                   },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
+                  },
                 },
                 include: {
                   templateInfo: true,
@@ -815,6 +1300,15 @@ export async function updateElementInstances(
                   status: {
                     in: acceptedStatusValues,
                   },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
+                  },
                 },
                 include: {
                   templateInfo: true,
@@ -824,6 +1318,15 @@ export async function updateElementInstances(
                 where: {
                   status: {
                     in: acceptedStatusValues,
+                  },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
                 include: {
@@ -838,6 +1341,7 @@ export async function updateElementInstances(
               liveQuiz: {
                 include: {
                   templateInfo: true,
+                  permissions: true,
                 },
               },
             },
@@ -879,12 +1383,18 @@ export async function updateElementInstances(
     }[]
   >((acc, instance) => {
     if (
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplates &&
+      (instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
         instance.elementBlock?.liveQuiz?.status ===
-          DB.PublicationStatus.TEMPLATE)
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementBlock?.liveQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
+      // ensure that user has at least WRITE permissions on activity (cannot be checked with where clause above)
+      instance.elementBlock.liveQuiz.permissions
+        .filter((permission) => permission.userId === ctx.user.sub)
+        .some((permission) =>
+          requiredActivityAccess.includes(permission.permissionLevel)
+        )
     ) {
       acc.push({
         instanceId: instance.id,
@@ -898,13 +1408,7 @@ export async function updateElementInstances(
 
       return acc
     } else if (
-      (instance.elementStack?.microLearning?.status ===
-        DB.PublicationStatus.DRAFT ||
-        instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED ||
-        (includeTemplates &&
-          instance.elementStack?.microLearning?.status ===
-            DB.PublicationStatus.TEMPLATE)) &&
+      instance.elementStack?.microLearning &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -919,13 +1423,7 @@ export async function updateElementInstances(
 
       return acc
     } else if (
-      (instance.elementStack?.practiceQuiz?.status ===
-        DB.PublicationStatus.DRAFT ||
-        instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED ||
-        (includeTemplates &&
-          instance.elementStack?.practiceQuiz?.status ===
-            DB.PublicationStatus.TEMPLATE)) &&
+      instance.elementStack?.practiceQuiz &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -939,15 +1437,7 @@ export async function updateElementInstances(
       })
 
       return acc
-    } else if (
-      instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.DRAFT ||
-      instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplates &&
-        instance.elementStack?.groupActivity?.status ===
-          DB.PublicationStatus.TEMPLATE)
-    ) {
+    } else if (instance.elementStack?.groupActivity) {
       acc.push({
         instanceId: instance.id,
         multiplier: instance.elementStack.groupActivity.pointsMultiplier,
@@ -964,6 +1454,11 @@ export async function updateElementInstances(
     return acc
   }, [])
 
+  // keep track of answer collections for which the assignment / link to a template was modified
+  // --> update of derived permissions is required
+  let touchedAnswerCollectionIds: number[] = []
+
+  // execute the instance updates
   const updatedInstances = (
     await Promise.allSettled(
       Object.values(instanceData).map(
@@ -1010,48 +1505,66 @@ export async function updateElementInstances(
               element.type === DB.ElementType.CASE_STUDY) &&
             element.answerCollectionId !== null
           ) {
-            // get all answer collections connected to one of the impacted template activities
+            // get all answer collections and answer collection entries used in any instance in the affected template
             let instanceCollectionIds: number[] = []
+            let instanceCollectionEntryIds: number[] = []
+
             if (typeof liveQuizId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: liveQuizId,
-                    activityType: ActivityType.LIVE_QUIZ,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: liveQuizId,
+                  activityType: ActivityType.LIVE_QUIZ,
+                },
+                ctx.prisma
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof practiceQuizId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: practiceQuizId,
-                    activityType: ActivityType.PRACTICE_QUIZ,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: practiceQuizId,
+                  activityType: ActivityType.PRACTICE_QUIZ,
+                },
+                ctx.prisma
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof microLearningId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: microLearningId,
-                    activityType: ActivityType.MICRO_LEARNING,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: microLearningId,
+                  activityType: ActivityType.MICRO_LEARNING,
+                },
+                ctx.prisma
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             } else if (typeof groupActivityId !== 'undefined') {
-              const { answerCollectionIds: ids } =
-                await getActivityAnswerCollectionIds(
-                  {
-                    activityId: groupActivityId,
-                    activityType: ActivityType.GROUP_ACTIVITY,
-                  },
-                  ctx
-                )
+              const {
+                answerCollectionIds: ids,
+                answerCollectionEntryIds: entryIds,
+              } = await getActivityAnswerCollectionIds(
+                {
+                  activityId: groupActivityId,
+                  activityType: ActivityType.GROUP_ACTIVITY,
+                },
+                ctx.prisma
+              )
+
               instanceCollectionIds = ids
+              instanceCollectionEntryIds = entryIds
             }
 
             // fetch the existing template and the contained answer collections
@@ -1061,6 +1574,7 @@ export async function updateElementInstances(
               },
               include: {
                 answerCollections: true,
+                answerCollectionItems: true,
               },
             })
 
@@ -1079,30 +1593,71 @@ export async function updateElementInstances(
               (id) => !templateCollectionIds.includes(id)
             )
 
+            const templateCollectionEntryIds =
+              template.answerCollectionItems.map((collection) => collection.id)
+            const collectionEntriesToDisconnect =
+              templateCollectionEntryIds.filter(
+                (id) => !instanceCollectionEntryIds.includes(id)
+              )
+            const collectionEntriesToConnect =
+              instanceCollectionEntryIds.filter(
+                (id) => !templateCollectionEntryIds.includes(id)
+              )
+
+            // add all answer collections that were added or removed to the touched ones for a derived permissions update
+            touchedAnswerCollectionIds = touchedAnswerCollectionIds.concat([
+              ...collectionsToDisconnect,
+              ...collectionsToConnect,
+            ])
+
             // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
             if (
               collectionsToConnect.length > 0 ||
-              collectionsToDisconnect.length > 0
+              collectionsToDisconnect.length > 0 ||
+              collectionEntriesToConnect.length > 0 ||
+              collectionEntriesToDisconnect.length > 0
             ) {
               await ctx.prisma.activityTemplate.update({
                 where: {
                   id: templateId,
                 },
                 data: {
-                  answerCollections: {
-                    connect:
-                      collectionsToConnect.length > 0
-                        ? collectionsToConnect.map((id) => ({
-                            id,
-                          }))
-                        : [],
-                    disconnect:
-                      collectionsToDisconnect.length > 0
-                        ? collectionsToDisconnect.map((id) => ({
-                            id,
-                          }))
-                        : [],
-                  },
+                  answerCollections:
+                    collectionsToConnect.length > 0 ||
+                    collectionsToDisconnect.length > 0
+                      ? {
+                          connect:
+                            collectionsToConnect.length > 0
+                              ? collectionsToConnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                          disconnect:
+                            collectionsToDisconnect.length > 0
+                              ? collectionsToDisconnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                        }
+                      : undefined,
+                  answerCollectionItems:
+                    collectionEntriesToConnect.length > 0 ||
+                    collectionEntriesToDisconnect.length > 0
+                      ? {
+                          connect:
+                            collectionEntriesToConnect.length > 0
+                              ? collectionEntriesToConnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                          disconnect:
+                            collectionEntriesToDisconnect.length > 0
+                              ? collectionEntriesToDisconnect.map((id) => ({
+                                  id,
+                                }))
+                              : [],
+                        }
+                      : undefined,
                 },
               })
             }
@@ -1145,6 +1700,18 @@ export async function updateElementInstances(
     if (result.status !== 'fulfilled' || !result.value) return []
     return result.value
   })
+
+  if (includeTemplates) {
+    // reduce the list of touched answer collections to unique values
+    const uniqueTouchedAnswerCollectionIds = [
+      ...new Set(touchedAnswerCollectionIds),
+    ]
+
+    // recompute the derived permissions for all touched answer collections
+    for (const id of uniqueTouchedAnswerCollectionIds) {
+      await recomputeDerivedPermissions({ answerCollectionId: id }, ctx.prisma)
+    }
+  }
 
   return updatedInstances
 }

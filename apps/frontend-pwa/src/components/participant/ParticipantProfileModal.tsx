@@ -1,21 +1,18 @@
 import { useQuery } from '@apollo/client'
 import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProfileData from './ProfileData'
 
 interface ParticipantProfileModalProps {
-  isProfileModalOpen: boolean
-  closeProfileModal: () => void
+  onClose: () => void
   participantId: string
   top10Participants: string[]
 }
 
 function ParticipantProfileModal({
-  isProfileModalOpen,
-  closeProfileModal,
+  onClose,
   participantId,
   top10Participants,
 }: ParticipantProfileModalProps) {
@@ -26,7 +23,6 @@ function ParticipantProfileModal({
   )
   const { data, loading } = useQuery(GetPublicParticipantProfileDocument, {
     variables: { id: selectedParticipant },
-    skip: !isProfileModalOpen,
   })
 
   const participant = data?.publicParticipantProfile
@@ -46,8 +42,9 @@ function ParticipantProfileModal({
 
   return (
     <Modal
-      open={isProfileModalOpen}
-      onClose={closeProfileModal}
+      open
+      loading={loading || !participant}
+      onClose={onClose}
       className={{
         content: 'my-auto w-[500px]',
         title: 'text-3xl',
@@ -58,13 +55,11 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      {loading || !participant ? (
-        <Loader />
-      ) : (
+      {participant && (
         <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData
             level={participant.levelData}
-            xp={participant.xp}
+            xp={participant.xp ?? 0}
             avatar={participant.avatar}
             username={participant.username}
             achievements={participant.achievements}

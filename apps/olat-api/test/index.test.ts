@@ -1,0 +1,766 @@
+import { PrismaClient } from '@klicker-uzh/prisma'
+import request from 'supertest'
+import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import app from '../src/index.js'
+import { StatusCode } from '../src/types.js'
+import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  Course,
+  courseFive,
+  courseFour,
+  courseOne,
+  courseThree,
+  courseTwo,
+  userOne,
+  userTwo,
+} from './userData.js'
+
+const API_KEY = process.env.OLAT_API_KEY
+if (!API_KEY) {
+  console.error('Undefined API Key')
+  process.exit(1)
+}
+
+let prisma: PrismaClient
+
+beforeAll(async () => {
+  const newPrisma: PrismaClient = await initializePrisma()
+  prisma = newPrisma
+  await testInitialization(prisma)
+})
+
+afterAll(async () => {
+  await testCleanup(prisma)
+  await prisma.$disconnect()
+})
+
+function getExpectedResponse(
+  numberLiveQuizzes: number,
+  numberPracticeQuizzes: number,
+  numberMicroLearnings: number,
+  isGamificationEnabled: boolean
+) {
+  let response = {
+    activityTypes: [
+      {
+        id: 'LIVE_QUIZZES',
+        title: `Live Quiz Overview (${numberLiveQuizzes})`,
+        olatConfigurationKey: 'live-quizzes',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'PRACTICE_QUIZZES',
+        title: `Practice Quiz Overview (${numberPracticeQuizzes})`,
+        olatConfigurationKey: 'practice-quizzes',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'MICRO_LEARNINGS',
+        title: `Micro Learning Overview (${numberMicroLearnings})`,
+        olatConfigurationKey: 'micro-learnings',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'MANAGE_ACCOUNT',
+        title: 'Manage Account',
+        olatConfigurationKey: 'manage-account',
+        isSubselectionRequired: false,
+      },
+      {
+        id: 'DOCS',
+        title: 'Documentation',
+        olatConfigurationKey: 'docs',
+        isSubselectionRequired: false,
+      },
+    ],
+    timestamp: '',
+  }
+
+  if (numberLiveQuizzes !== 0) {
+    response.activityTypes.push({
+      id: 'LIVE_QUIZ',
+      title: 'Live Quiz',
+      olatConfigurationKey: 'live-quiz',
+      isSubselectionRequired: true,
+    })
+  }
+  if (numberPracticeQuizzes !== 0) {
+    response.activityTypes.push({
+      id: 'PRACTICE_QUIZ',
+      title: 'Practice Quiz',
+      olatConfigurationKey: 'practice-quiz',
+      isSubselectionRequired: true,
+    })
+  }
+  if (numberMicroLearnings !== 0) {
+    response.activityTypes.push({
+      id: 'MICRO_LEARNING',
+      title: 'Micro Learning',
+      olatConfigurationKey: 'micro-learning',
+      isSubselectionRequired: true,
+    })
+  }
+  if (isGamificationEnabled) {
+    response.activityTypes.push({
+      id: 'COURSE_LEADERBOARD',
+      title: 'Course Leaderboard',
+      olatConfigurationKey: 'course-leaderboard',
+      isSubselectionRequired: false,
+    })
+  }
+  return response
+}
+
+function getExpectedTitles(n: number, prefix: string, course: Course) {
+  return Array.from(
+    { length: n },
+    (_, i) => `${prefix} ${i + 1} for ${course.name}`
+  )
+}
+
+describe('OLAT-API /api/configuration/courses', () => {
+  test('Valid', async () => {
+    const users = [
+      {
+        user: userOne,
+        response: {
+          courses: [
+            { id: courseOne.id, title: courseOne.name },
+            { id: courseTwo.id, title: courseTwo.name },
+          ],
+          timestamp: '',
+        },
+      },
+      {
+        user: userTwo,
+        response: {
+          courses: [
+            { id: courseThree.id, title: courseThree.name },
+            { id: courseFour.id, title: courseFour.name },
+            { id: courseFive.id, title: courseFive.name },
+          ],
+          timestamp: '',
+        },
+      },
+    ]
+    users.forEach(async (user) => {
+      const providerAccountId = user.user.providerAccountId
+
+      const response = await request(app)
+        .post('/api/configuration/courses')
+        .set('X-API-Key', API_KEY)
+        .set('Content-Type', 'application/json')
+        .send({ identityMappingIdentifier: providerAccountId })
+      const response_body_expected = user.response
+
+      expect(response.status).toBe(StatusCode.SUCCESS)
+      expect(response.body).toHaveProperty('courses')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(response.body.courses).toEqual(response_body_expected.courses)
+    })
+  })
+
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post('/api/configuration/courses')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post('/api/configuration/courses')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
+  })
+
+  test('Missing/Invalid API key', async () => {
+    let response = await request(app)
+      .post('/api/configuration/courses')
+      .set('X-API-Key', 'invalid-api-key')
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+    expect(response.status).toBe(StatusCode.UNAUTHORIZED)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid API key')
+
+    response = await request(app)
+      .post('/api/configuration/courses')
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing API key')
+  })
+
+  test('Unsupported Content-Type', async () => {
+    const response = await request(app)
+      .post('/api/configuration/courses')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Unsupported content type')
+  })
+})
+
+describe('OLAT-API /api/configuration/activityTypes', () => {
+  test('Valid', async () => {
+    const response = await request(app)
+      .get('/api/configuration/activityTypes')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+
+    const response_body_expected = {
+      activityTypes: [
+        {
+          id: 'LIVE_QUIZZES',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'live-quizzes',
+          path: '/liveQuizzes',
+        },
+        {
+          id: 'PRACTICE_QUIZZES',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'practice-quizzes',
+          path: '/practiceQuizzes',
+        },
+        {
+          id: 'MICRO_LEARNINGS',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'micro-learnings',
+          path: '/microLearnings',
+        },
+        {
+          id: 'MANAGE_ACCOUNT',
+          isEmailTransferRequired: true,
+          olatConfigurationKey: 'manage-account',
+          path: '/createAccount',
+        },
+        {
+          id: 'DOCS',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'docs',
+          path: '/docs',
+        },
+        {
+          id: 'LIVE_QUIZ',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'live-quiz',
+          path: '/liveQuiz',
+        },
+        {
+          id: 'PRACTICE_QUIZ',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'practice-quiz',
+          path: '/quiz',
+        },
+        {
+          id: 'MICRO_LEARNING',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'micro-learning',
+          path: '/microlearning',
+        },
+        {
+          id: 'COURSE_LEADERBOARD',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'course-leaderboard',
+          path: '/',
+        },
+      ],
+      timestamp: '',
+    }
+
+    expect(response.status).toBe(StatusCode.SUCCESS)
+    expect(response.body).toHaveProperty('activityTypes')
+    expect(response.body).toHaveProperty('timestamp')
+    expect(response.body.activityTypes).toEqual(
+      response_body_expected.activityTypes
+    )
+  })
+
+  test('Missing/Invalid API key', async () => {
+    let response = await request(app)
+      .get('/api/configuration/activityTypes')
+      .set('X-API-Key', 'invalid-api-key')
+      .set('Content-Type', 'application/json')
+
+    expect(response.status).toBe(StatusCode.UNAUTHORIZED)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid API key')
+
+    response = await request(app)
+      .get('/api/configuration/activityTypes')
+      .set('Content-Type', 'application/json')
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing API key')
+  })
+
+  test('Unsupported Content-Type', async () => {
+    const response = await request(app)
+      .get('/api/configuration/activityTypes')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Unsupported content type')
+  })
+})
+
+describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
+  test('Valid', async () => {
+    const courses = [
+      {
+        course: courseOne,
+        numberLiveQuizzes: 3,
+        numberPracticeQuizzes: 2,
+        numberMicroLearnings: 1,
+        isGamificationEnabled: true,
+      },
+      {
+        course: courseTwo,
+        numberLiveQuizzes: 0,
+        numberPracticeQuizzes: 1,
+        numberMicroLearnings: 2,
+        isGamificationEnabled: false,
+      },
+      {
+        course: courseThree,
+        numberLiveQuizzes: 2,
+        numberPracticeQuizzes: 1,
+        numberMicroLearnings: 1,
+        isGamificationEnabled: true,
+      },
+      {
+        course: courseFour,
+        numberLiveQuizzes: 0,
+        numberPracticeQuizzes: 0,
+        numberMicroLearnings: 0,
+        isGamificationEnabled: true,
+      },
+      {
+        course: courseFive,
+        numberLiveQuizzes: 1,
+        numberPracticeQuizzes: 0,
+        numberMicroLearnings: 0,
+        isGamificationEnabled: false,
+      },
+    ]
+
+    courses.forEach(async (course) => {
+      const courseId = course.course.id
+      const numberLiveQuizzes = course.numberLiveQuizzes
+      const numberPracticeQuizzes = course.numberPracticeQuizzes
+      const numberMicroLearnings = course.numberMicroLearnings
+      const isGamificationEnabled = course.isGamificationEnabled
+
+      let response = await request(app)
+        .post(`/api/configuration/course/${courseId}/activityTypes`)
+        .set('X-API-Key', API_KEY)
+        .set('Content-Type', 'application/json')
+        .send({
+          identityMappingIdentifier: course.course.owner.providerAccountId,
+        })
+
+      let response_body_expected = getExpectedResponse(
+        numberLiveQuizzes,
+        numberPracticeQuizzes,
+        numberMicroLearnings,
+        isGamificationEnabled
+      )
+
+      expect(response.status).toBe(StatusCode.SUCCESS)
+      expect(response.body).toHaveProperty('activityTypes')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(response.body.activityTypes).toEqual(
+        response_body_expected.activityTypes
+      )
+    })
+  })
+
+  test('Invalid courseId', async () => {
+    let response = await request(app)
+      .post('/api/configuration/course/invalid-course-id/activityTypes')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid courseID')
+  })
+
+  test('Course/Account not found', async () => {
+    let response = await request(app)
+      .post(
+        '/api/configuration/course/00000000-0000-0000-0000-000000000000/activityTypes'
+      )
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: '1234567890@thirdprovider.ch' })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+  })
+
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
+  })
+
+  test('Missing/Invalid API key', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', 'invalid-api-key')
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.UNAUTHORIZED)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid API key')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing API key')
+  })
+
+  test('Unsupported Content-Type', async () => {
+    const response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/activityTypes`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
+
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Unsupported content type')
+  })
+})
+
+describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => {
+  test('Valid', async () => {
+    const courses = [
+      {
+        course: courseOne,
+        owner: userOne,
+        activityTypeKey: 'live-quiz',
+        titles: getExpectedTitles(3, 'Live Quiz', courseOne),
+      },
+      {
+        course: courseOne,
+        owner: userOne,
+        activityTypeKey: 'practice-quiz',
+        titles: getExpectedTitles(2, 'Practice Quiz', courseOne),
+      },
+      {
+        course: courseOne,
+        owner: userOne,
+        activityTypeKey: 'micro-learning',
+        titles: getExpectedTitles(1, 'Micro Learning', courseOne),
+      },
+      {
+        course: courseTwo,
+        owner: userOne,
+        activityTypeKey: 'live-quiz',
+        titles: getExpectedTitles(0, 'Live Quiz', courseTwo),
+      },
+      {
+        course: courseTwo,
+        activityTypeKey: 'practice-quiz',
+        titles: getExpectedTitles(1, 'Practice Quiz', courseTwo),
+      },
+      {
+        course: courseTwo,
+        activityTypeKey: 'micro-learning',
+        titles: getExpectedTitles(2, 'Micro Learning', courseTwo),
+      },
+      {
+        course: courseThree,
+        activityTypeKey: 'live-quiz',
+        titles: getExpectedTitles(2, 'Live Quiz', courseThree),
+      },
+      {
+        course: courseThree,
+        activityTypeKey: 'practice-quiz',
+        titles: getExpectedTitles(1, 'Practice Quiz', courseThree),
+      },
+      {
+        course: courseThree,
+        activityTypeKey: 'micro-learning',
+        titles: getExpectedTitles(1, 'Micro Learning', courseThree),
+      },
+      {
+        course: courseFour,
+        activityTypeKey: 'live-quiz',
+        titles: getExpectedTitles(0, 'Live Quiz', courseFour),
+      },
+      {
+        course: courseFour,
+        activityTypeKey: 'practice-quiz',
+        titles: getExpectedTitles(0, 'Practice Quiz', courseFour),
+      },
+      {
+        course: courseFour,
+        activityTypeKey: 'micro-learning',
+        titles: getExpectedTitles(0, 'Micro Learning', courseFour),
+      },
+      {
+        course: courseFive,
+        activityTypeKey: 'live-quiz',
+        titles: getExpectedTitles(1, 'Live Quiz', courseFive),
+      },
+      {
+        course: courseFive,
+        activityTypeKey: 'practice-quiz',
+        titles: getExpectedTitles(0, 'Practice Quiz', courseFive),
+      },
+      {
+        course: courseFive,
+        activityTypeKey: 'micro-learning',
+        titles: getExpectedTitles(0, 'Micro Learning', courseFive),
+      },
+    ]
+
+    for (const course of courses) {
+      const courseId = course.course.id
+      const activityTypeKey = course.activityTypeKey
+      let response = await request(app)
+        .post(`/api/configuration/course/${courseId}/${activityTypeKey}`)
+        .set('X-API-Key', API_KEY)
+        .set('Content-Type', 'application/json')
+        .send({
+          identityMappingIdentifier: course.course.owner.providerAccountId,
+        })
+
+      expect(response.status).toBe(StatusCode.SUCCESS)
+      expect(response.body).toHaveProperty('activities')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(
+        response.body.activities.map((activity: any) => activity.title)
+      ).toEqual(course.titles)
+    }
+
+    for (const course of [
+      courseOne,
+      courseTwo,
+      courseThree,
+      courseFour,
+      courseFive,
+    ]) {
+      const courseId = course.id
+      const activityTypesGeneral = [
+        'live-quizzes',
+        'practice-quizzes',
+        'micro-learnings',
+        'manage-account',
+        'docs',
+        'course-leaderboard',
+      ]
+      for (const activityTypeGeneral of activityTypesGeneral) {
+        let response = await request(app)
+          .post(`/api/configuration/course/${courseId}/${activityTypeGeneral}`)
+          .set('X-API-Key', API_KEY)
+          .set('Content-Type', 'application/json')
+          .send({
+            identityMappingIdentifier: course.owner.providerAccountId,
+          })
+
+        expect(response.status).toBe(StatusCode.BAD_REQUEST)
+        expect(response.body).toHaveProperty('error')
+        expect(response.body.error).toBe('Invalid activityTypeKey')
+      }
+    }
+  })
+
+  test('Invalid courseId', async () => {
+    const response = await request(app)
+      .post('/api/configuration/course/invalid-course-id/live-quiz')
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid courseID')
+  })
+
+  test('Invalid activityTypeKey', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/invalid-activity-type`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid activityTypeKey')
+  })
+
+  test('Course/Account not found', async () => {
+    let response = await request(app)
+      .post(
+        '/api/configuration/course/00000000-0000-0000-0000-000000000000/live-quiz'
+      )
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: userOne.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: '1234567890@thirdprovider.ch' })
+
+    expect(response.status).toBe(StatusCode.NOT_FOUND)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Course or account not found')
+  })
+
+  test('Missing/Invalid providerAccount', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/invalid-activity-type`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({})
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing providerAccountId')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: 'invalid-provider-account' })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe(
+      'Extraction of provider from providerAccountId failed'
+    )
+  })
+
+  test('Missing/Invalid API key', async () => {
+    let response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', 'invalid-api-key')
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.UNAUTHORIZED)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Invalid API key')
+
+    response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('Content-Type', 'application/json')
+      .send({ identityMappingIdentifier: courseOne.owner.providerAccountId })
+
+    expect(response.status).toBe(StatusCode.BAD_REQUEST)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Missing API key')
+  })
+
+  test('Unsupported Content-Type', async () => {
+    const response = await request(app)
+      .post(`/api/configuration/course/${courseOne.id}/live-quiz`)
+      .set('X-API-Key', API_KEY)
+      .set('Content-Type', 'application/pdf')
+      .send(
+        JSON.stringify({ identityMappingIdentifier: userOne.providerAccountId })
+      )
+
+    expect(response.status).toBe(StatusCode.UNSUPPORTED_MEDIA_TYPE)
+    expect(response.body).toHaveProperty('error')
+    expect(response.body.error).toBe('Unsupported content type')
+  })
+
+  describe('OLAT-API general', () => {
+    test('/health', async () => {
+      const response = await request(app).get('/health')
+
+      expect(response.status).toBe(StatusCode.SUCCESS)
+      expect(response.body).toHaveProperty('status')
+      expect(response.body).toHaveProperty('timestamp')
+      expect(response.body.status).toBe('OK')
+    })
+
+    test('Rate Limit', async () => {
+      const requests = []
+
+      for (let i = 0; i < 200; i++) {
+        requests.push(request(app).get('/health'))
+      }
+
+      const responses = await Promise.all(requests)
+
+      const rateLimitedResponses = responses.filter(
+        (r) => r.status === StatusCode.TOO_MANY_REQUESTS
+      )
+
+      // Check rate limit response
+      const rateLimitedResponse = rateLimitedResponses[0]!
+      expect(rateLimitedResponse.body).toHaveProperty('error')
+      expect(rateLimitedResponse.body.error).toBe(
+        'Too many requests, please try again later'
+      )
+    })
+  })
+})

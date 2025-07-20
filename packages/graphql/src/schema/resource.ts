@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
+import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { PermissionLevel } from './sharing.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -46,7 +47,9 @@ interface IAnswerCollection extends DB.AnswerCollection {
   isEditor?: boolean // = OWNER / ADMIN / WRITE
   isImported?: boolean // imported flag for UI icon
   isShared?: boolean // flag to signal whether the object is owned or shared
-  isRemovable?: boolean // flag to signal the existence of dependent objects
+  isRemovable?: boolean // flag to signal the option to remove the direct individual permission & the existence of dependent objects
+  isDeletable?: boolean // flag to signal whether the object can be deleted / the existence of dependent objects
+  sharingType?: SharingTypeEnum // owned / shared / dependency
 }
 
 export const AnswerCollectionRef =
@@ -61,11 +64,11 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       nullable: true,
     }),
     numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
-
     permissionLevel: t.expose('permissionLevel', {
       type: PermissionLevel,
       nullable: true,
     }),
+
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
@@ -74,6 +77,11 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isImported: t.exposeBoolean('isImported', { nullable: true }),
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+    isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
+    sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
+
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),
 })
 

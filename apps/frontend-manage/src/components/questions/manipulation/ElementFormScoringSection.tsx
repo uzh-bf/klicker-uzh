@@ -10,11 +10,13 @@ import { ElementFormTypes } from './types'
 
 function ElementformScoringSection({
   isTemplate,
+  disabled,
   values,
   setFieldValue,
   isSubmitting,
 }: {
   isTemplate: boolean
+  disabled: boolean
   values: ElementFormTypes
   setFieldValue: (
     field: string,
@@ -31,9 +33,9 @@ function ElementformScoringSection({
         <div className="flex flex-row items-center gap-5">
           <FormLabel
             required={false}
-            label={t('manage.questionForms.sampleSolutionAndScoring')}
+            label={t('manage.elements.sampleSolutionAndScoring')}
             labelType="small"
-            className={{ label: 'my-1 !text-lg' }}
+            className={{ label: 'text-lg! my-1' }}
           />
           <Link
             href={'https://www.klicker.uzh.ch/gamification/grading_logic/'}
@@ -46,12 +48,15 @@ function ElementformScoringSection({
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faBookOpen} />
-              {t('manage.questionForms.scoringDocumentation')}
+              {t('manage.elements.scoringDocumentation')}
             </a>
           </Link>
         </div>
 
-        <SampleSolutionSetting disabled={isTemplate} type={values.type} />
+        <SampleSolutionSetting
+          disabled={isTemplate || disabled}
+          type={values.type}
+        />
       </div>
 
       <div className="mt-2 flex flex-col lg:flex-row lg:gap-4">
@@ -67,15 +72,15 @@ function ElementformScoringSection({
           />
           <div className="flex flex-row gap-2">
             <div className="text-sm">
-              {t('manage.questionForms.basePointInformation')}
+              {t('manage.elements.basePointInformation')}
             </div>
           </div>
           <Switch
+            disabled={isSubmitting || disabled}
             checked={values.basePoints}
             onCheckedChange={() =>
               setFieldValue('basePoints', !values.basePoints)
             }
-            disabled={isSubmitting}
             className={{
               root: 'mt-2 self-center',
             }}
@@ -100,12 +105,12 @@ function ElementformScoringSection({
           values.options.hasSampleSolution ? (
             <div className="flex flex-col items-center gap-1">
               <div className="text-sm">
-                {t('manage.questionForms.multiplierInformation')}
+                {t('manage.elements.multiplierInformation')}
               </div>
               <MultiplierSelector
                 withoutLabel
                 name="pointsMultiplier"
-                disabled={isSubmitting}
+                disabled={isSubmitting || disabled}
                 className={{
                   trigger: 'mt-1 h-8 w-full',
                 }}
@@ -113,7 +118,7 @@ function ElementformScoringSection({
             </div>
           ) : (
             <div className="text-sm">
-              {t('manage.questionForms.multiplierNoEffect')}
+              {t('manage.elements.multiplierNoEffect')}
             </div>
           )}
         </div>
@@ -138,8 +143,8 @@ function ElementformScoringSection({
               </span>
               <span>
                 {values.basePoints
-                  ? t('manage.questionForms.liveQuizBasePoints')
-                  : t('manage.questionForms.zeroPoints')}
+                  ? t('manage.elements.liveQuizBasePoints')
+                  : t('manage.elements.zeroPoints')}
               </span>
             </div>
             <div className="text-sm">
@@ -151,7 +156,7 @@ function ElementformScoringSection({
                 'hasSampleSolution' in values.options &&
                 values.options.hasSampleSolution
                   ? `${values.pointsMultiplier} * (${t('shared.generic.correctnessPoints')} + ${t('shared.generic.bonusPoints')})`
-                  : t('manage.questionForms.zeroPoints')}
+                  : t('manage.elements.zeroPoints')}
               </span>
             </div>
           </div>

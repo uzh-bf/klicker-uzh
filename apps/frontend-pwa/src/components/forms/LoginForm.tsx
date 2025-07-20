@@ -7,6 +7,7 @@ import usePWAInstall, {
 import {
   Button,
   FormikTextField,
+  TabContent,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -64,7 +65,7 @@ function LoginForm({
   }
 
   return (
-    <div className="flex max-w-full flex-grow flex-col md:max-w-xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="md:grow-0! flex max-w-full grow flex-col md:max-w-xl md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="mb-8 w-full text-center sm:my-12">
           <Image
@@ -77,42 +78,35 @@ function LoginForm({
           />
         </div>
 
-        <Tabs defaultValue="login" className={{ root: 'w-full border-t' }}>
-          <Tabs.TabList>
-            <Tabs.Tab
-              key="login-tab"
-              value="login"
-              label={t('shared.generic.login')}
-              className={{
-                root: '!rounded-none',
-                label: 'text-md font-bold',
-              }}
-            />
-            <Tabs.Tab
-              key="joinCourse-tab"
-              value="joinCourse"
-              label={t('pwa.login.createAccountJoin')}
-              className={{
-                root: '!rounded-none',
-                label: 'text-md font-bold',
-              }}
-            />
-          </Tabs.TabList>
-          <Tabs.TabContent
-            key="joinCourse"
-            value="joinCourse"
-            className={{ root: 'md:px-4' }}
-          >
+        <Tabs
+          defaultValue="login"
+          tabs={[
+            {
+              id: 'login-tab',
+              value: 'login',
+              label: t('shared.generic.login'),
+              data: { cy: 'login-tab' },
+            },
+            {
+              id: 'joinCourse-tab',
+              value: 'joinCourse',
+              label: t('pwa.login.createAccountJoin'),
+              data: { cy: 'joinCourse-tab' },
+            },
+          ]}
+          className={{ root: 'px-3 md:px-6' }}
+        >
+          <TabContent key="joinCourse" value="joinCourse">
             <CreateAccountJoinForm />
-          </Tabs.TabContent>
-          <Tabs.TabContent
+          </TabContent>
+          <TabContent
             key="login"
             value="login"
             className={{
-              root: 'flex h-max items-center rounded-none md:-my-2 md:mt-3 md:px-4 md:pb-14',
+              root: 'flex h-max items-center rounded-none md:-my-2 md:mt-3 md:pb-14',
             }}
           >
-            <Form className="mx-auto w-full px-4">
+            <Form className="mx-auto w-full">
               {router.query.newAccount ? (
                 <UserNotification type="success">
                   {t('pwa.general.waitingForActivation')}
@@ -174,7 +168,11 @@ function LoginForm({
                     data={dataSecret}
                     icon={passwordHidden ? faEye : faEyeSlash}
                     onIconClick={() => setPasswordHidden(!passwordHidden)}
-                    className={{ root: 'mt-1', icon: 'bg-transparent' }}
+                    className={{
+                      root: 'mt-1',
+                      icon: 'bg-transparent',
+                      input: 'pr-10!',
+                    }}
                     type={passwordHidden ? 'password' : 'text'}
                   />
 
@@ -183,7 +181,7 @@ function LoginForm({
                       basic
                       onClick={() => setMagicLinkLogin(true)}
                       className={{
-                        root: 'text-primary-100 mt-1 !p-0 text-sm hover:bg-transparent hover:underline',
+                        root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',
                       }}
                     >
                       <Button.Label>
@@ -230,7 +228,7 @@ function LoginForm({
                 />
               )}
             </Form>
-          </Tabs.TabContent>
+          </TabContent>
         </Tabs>
       </div>
       <div className="w-full flex-none">

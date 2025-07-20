@@ -1,30 +1,18 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { MicroLearning } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import CatalystNotification from './CatalystNotification'
-import MicroLearningElement from './MicroLearningElement'
+import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import QRCodePopover from './QRCodePopover'
 
-interface MicroLearningListProps {
-  microLearnings: Pick<
-    MicroLearning,
-    | 'id'
-    | 'name'
-    | 'status'
-    | 'numOfStacks'
-    | 'scheduledStartAt'
-    | 'scheduledEndAt'
-  >[]
-  courseId: string
-  userCatalyst?: boolean
-}
-
 function MicroLearningList({
-  microLearnings,
   courseId,
-  userCatalyst,
-}: MicroLearningListProps) {
+  microLearnings,
+}: {
+  courseId: string
+  microLearnings: ActivityInfo[]
+}) {
   const t = useTranslations()
 
   return (
@@ -54,22 +42,24 @@ function MicroLearningList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.microLearningList')}`}</Button.Label>
         </Button>
+        <ActivityListLegend type={ActivityType.MicroLearning} />
       </div>
 
       {microLearnings && microLearnings.length > 0 ? (
-        <div className="flex w-full flex-col gap-2">
-          {microLearnings.map((microlearning) => (
-            <MicroLearningElement
-              microLearning={microlearning}
-              courseId={courseId}
-              key={microlearning.id}
-            />
-          ))}
+        <div className="mt-0.5 flex w-full flex-col">
+          <ActivityList
+            activities={microLearnings}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
-      ) : userCatalyst ? (
-        <div>{t('manage.course.noPracticeQuizzes')}</div>
       ) : (
-        <CatalystNotification />
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noMicrolearnings')}
+        </UserNotification>
       )}
     </div>
   )

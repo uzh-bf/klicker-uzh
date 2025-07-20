@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetObjectPermissionsDocument,
+  ObjectType,
   PermissionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -11,7 +11,7 @@ function useObjectPermissions({
   skip,
 }: {
   objectId: string | number
-  objectType: CatalogObjectType
+  objectType: ObjectType
   skip: boolean
 }): { permissions: PermissionInfo[]; loading: boolean } {
   const { data, loading } = useQuery(GetObjectPermissionsDocument, {

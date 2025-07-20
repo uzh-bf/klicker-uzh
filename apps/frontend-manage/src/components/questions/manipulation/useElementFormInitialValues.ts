@@ -28,9 +28,9 @@ function useElementFormInitialValues({
   return useMemo((): ElementFormTypes | undefined => {
     if (mode === ElementEditMode.CREATE) {
       return {
-        status: ElementStatus.Ready,
         type: ElementType.Sc,
         name: '',
+        status: ElementStatus.Ready,
         content: '',
         explanation: '',
         tags: [],
@@ -43,9 +43,10 @@ function useElementFormInitialValues({
           choices: [
             {
               id: nanoid(),
+              ix: 0,
               value: undefined,
               correct: false,
-              feedback: undefined,
+              feedback: '',
             },
           ],
         },
@@ -57,8 +58,8 @@ function useElementFormInitialValues({
     }
 
     const sharedAttributes = {
-      status: question.status,
       name: isDuplication ? `${question.name} (Copy)` : question.name,
+      status: question.status,
       content: question.content,
       explanation: question.explanation ?? '',
       tags: question.tags?.map((tag) => tag.name) ?? [],
@@ -153,10 +154,12 @@ function useElementFormInitialValues({
         type: ElementType.CaseStudy,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
+          itemSelectionMode: 'existing', // manual definition of elements not supported for element editing
           answerCollection: options.answerCollectionId
             ? String(options.answerCollectionId)
             : '',
           selectedItems: options.collectionItemIds ?? [],
+          manuallyCreatedItems: [],
           criteria:
             options.criteria?.map((criterion) => ({
               ...criterion,

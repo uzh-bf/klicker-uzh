@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client'
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
 import {
-  CheckPublicPreviewAvailableDocument,
   StackEvaluation,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -42,7 +42,9 @@ function EvaluationNavigation({
   feedbacksAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
-  const { data, loading } = useQuery(CheckPublicPreviewAvailableDocument)
+  const { data: user, loading } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
 
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
@@ -73,7 +75,7 @@ function EvaluationNavigation({
       )}
       <div className="flex flex-row items-center gap-4">
         {!loading &&
-        data?.checkPublicPreviewAvailable &&
+        user?.userProfile?.publicPreview &&
         type === 'Asynchronous' ? (
           <Button
             className={{ root: 'h-8 py-0' }}

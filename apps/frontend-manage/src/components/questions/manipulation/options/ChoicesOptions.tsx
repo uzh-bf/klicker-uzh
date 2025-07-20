@@ -20,6 +20,7 @@ import ContentInput from '../../../common/ContentInput'
 import { ElementFormTypes, ElementFormTypesChoices } from '../types'
 
 interface ChoicesOptionsProps {
+  inputsDisabled?: boolean
   values: ElementFormTypesChoices
   setFieldValue: (
     field: string,
@@ -29,9 +30,10 @@ interface ChoicesOptionsProps {
 }
 
 function ChoicesOptions({
+  inputsDisabled,
   values,
   setFieldValue,
-}: ChoicesOptionsProps): JSX.Element {
+}: ChoicesOptionsProps) {
   const t = useTranslations()
 
   return (
@@ -83,6 +85,7 @@ function ChoicesOptions({
                     {({ field, meta }: FastFieldProps) => (
                       <ContentInput
                         key={`${values.type}-choice-${values.options.choices[index].id}`}
+                        disabled={inputsDisabled}
                         error={meta.error}
                         touched={meta.touched}
                         content={field.value}
@@ -94,7 +97,7 @@ function ChoicesOptions({
                         }}
                         showToolbarOnFocus={true}
                         placeholder={t(
-                          'manage.questionForms.answerOptionPlaceholder'
+                          'manage.elements.answerOptionPlaceholder'
                         )}
                         className={{
                           root: 'bg-white',
@@ -111,6 +114,7 @@ function ChoicesOptions({
                       <FastField name={`options.choices.${index}.correct`}>
                         {({ field }: FieldProps) => (
                           <Switch
+                            disabled={inputsDisabled}
                             checked={field.value || false}
                             label=""
                             className={{
@@ -133,7 +137,7 @@ function ChoicesOptions({
                   <div className="ml-2 flex flex-col">
                     <Button
                       className={{ root: 'px-auto py-0.5' }}
-                      disabled={index === 0}
+                      disabled={index === 0 || inputsDisabled}
                       onClick={() => move(index, index - 1)}
                       data={{
                         cy: `move-answer-option-ix-${index}-up`,
@@ -147,7 +151,10 @@ function ChoicesOptions({
                     </Button>
                     <Button
                       className={{ root: 'px-auto py-0.5' }}
-                      disabled={index === values.options.choices.length - 1}
+                      disabled={
+                        index === values.options.choices.length - 1 ||
+                        inputsDisabled
+                      }
                       onClick={() => move(index, index + 1)}
                       data={{
                         cy: `move-answer-option-ix-${index}-down`,
@@ -162,6 +169,7 @@ function ChoicesOptions({
                   </div>
                   <Button
                     destructive
+                    disabled={inputsDisabled}
                     onClick={() => remove(index)}
                     className={{
                       root: 'ml-1 h-10 w-10',
@@ -216,6 +224,7 @@ function ChoicesOptions({
                         {({ field, meta }: FastFieldProps) => (
                           <ContentInput
                             key={`${values.type}-feedback-${values.options.choices[index].id}`}
+                            disabled={inputsDisabled}
                             error={meta.error}
                             touched={meta.touched}
                             content={field.value || '<br>'}
@@ -227,7 +236,7 @@ function ChoicesOptions({
                             }}
                             showToolbarOnFocus={true}
                             placeholder={t(
-                              'manage.questionForms.feedbackPlaceholder'
+                              'manage.elements.feedbackPlaceholder'
                             )}
                             className={{
                               root: 'bg-white',
@@ -245,33 +254,35 @@ function ChoicesOptions({
               </div>
             ))}
 
-            <Button
-              fluid
-              className={{
-                root: twMerge(
-                  'border-uzh-grey-100 border border-solid font-bold',
+            {!inputsDisabled ? (
+              <Button
+                fluid
+                className={{
+                  root: twMerge(
+                    'border-uzh-grey-100 border border-solid font-bold',
+                    values.type === ElementType.Kprim &&
+                      values.options.choices.length >= 4 &&
+                      'cursor-not-allowed opacity-50'
+                  ),
+                }}
+                disabled={
                   values.type === ElementType.Kprim &&
-                    values.options.choices.length >= 4 &&
-                    'cursor-not-allowed opacity-50'
-                ),
-              }}
-              disabled={
-                values.type === ElementType.Kprim &&
-                values.options.choices.length >= 4
-              }
-              onClick={() =>
-                push({
-                  id: nanoid(),
-                  ix: values.options.choices.length,
-                  value: '<br>',
-                  correct: false,
-                  feedback: '',
-                })
-              }
-              data={{ cy: 'add-new-answer' }}
-            >
-              <Button.Label>{t('manage.questionForms.addAnswer')}</Button.Label>
-            </Button>
+                  values.options.choices.length >= 4
+                }
+                onClick={() =>
+                  push({
+                    id: nanoid(),
+                    ix: values.options.choices.length,
+                    value: '<br>',
+                    correct: false,
+                    feedback: '',
+                  })
+                }
+                data={{ cy: 'add-new-answer' }}
+              >
+                <Button.Label>{t('manage.elements.addAnswer')}</Button.Label>
+              </Button>
+            ) : null}
           </div>
         )
       }}

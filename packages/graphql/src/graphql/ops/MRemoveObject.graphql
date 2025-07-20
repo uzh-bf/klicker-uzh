@@ -1,0 +1,3 @@
+mutation RemoveObject($objectId: String!, $objectType: ObjectType!) {
+  removeObject(objectId: $objectId, objectType: $objectType)
+}

@@ -1,17 +1,21 @@
-import {
-  CatalogObjectType,
-  PermissionLevel,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
-function usePermissionLevelSelection({ type }: { type: CatalogObjectType }) {
+function usePermissionLevelSelection({ type }: { type: ObjectType }) {
   const t = useTranslations()
 
-  // TODO: once objects with execution rights are available, add the corresponding case here
+  // execution rights are only available for activities and courses
+  const showExecution =
+    type === ObjectType.Course ||
+    type === ObjectType.LiveQuiz ||
+    type === ObjectType.PracticeQuiz ||
+    type === ObjectType.MicroLearning ||
+    type === ObjectType.GroupActivity
 
   // default case: no execution permissions, all other access levels
   return [
     PermissionLevel.Read,
+    ...(showExecution ? [PermissionLevel.Execute] : []),
     PermissionLevel.Write,
     PermissionLevel.Admin,
   ].map((level) => ({

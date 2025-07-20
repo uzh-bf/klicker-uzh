@@ -8,16 +8,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { Button } from '@uzh-bf/design-system'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@uzh-bf/design-system/dist/future'
+  Button,
+  ShadcnTable,
+  ShadcnTableBody,
+  ShadcnTableCell,
+  ShadcnTableFooter,
+  ShadcnTableHead,
+  ShadcnTableHeader,
+  ShadcnTableRow,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
@@ -37,6 +37,8 @@ interface DataTableProps<TData, TValue> {
     table?: string
     tableHeader?: string
     tableCell?: string
+    buttons?: string
+    buttonsContainer?: string
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
@@ -88,14 +90,14 @@ function DataTable<TData, TValue>({
 
   return (
     <>
-      <Table containerClassName={twMerge(className?.table)}>
-        <TableHeader
+      <ShadcnTable containerClassName={twMerge(className?.table)}>
+        <ShadcnTableHeader
           className={twMerge('bg-white shadow-sm', className?.tableHeader)}
         >
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <ShadcnTableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead
+                <ShadcnTableHead
                   key={header.id}
                   className={twMerge(
                     className?.tableCell,
@@ -108,43 +110,46 @@ function DataTable<TData, TValue>({
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                </TableHead>
+                </ShadcnTableHead>
               ))}
-            </TableRow>
+            </ShadcnTableRow>
           ))}
-        </TableHeader>
-        <TableBody>
+        </ShadcnTableHeader>
+        <ShadcnTableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
+              <ShadcnTableRow
                 key={row.id}
                 data-state={row.getIsSelected() && 'selected'}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell
+                  <ShadcnTableCell
                     key={cell.id}
                     className={twMerge(className?.tableCell)}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+                  </ShadcnTableCell>
                 ))}
-              </TableRow>
+              </ShadcnTableRow>
             ))
           ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
+            <ShadcnTableRow>
+              <ShadcnTableCell
+                colSpan={columns.length}
+                className="h-24 text-center"
+              >
                 {t('shared.table.noResults')}
-              </TableCell>
-            </TableRow>
+              </ShadcnTableCell>
+            </ShadcnTableRow>
           )}
-        </TableBody>
+        </ShadcnTableBody>
 
         {typeof footerContent !== 'undefined' && (
-          <TableFooter>
-            <TableRow>{footerContent}</TableRow>
-          </TableFooter>
+          <ShadcnTableFooter>
+            <ShadcnTableRow>{footerContent}</ShadcnTableRow>
+          </ShadcnTableFooter>
         )}
-      </Table>
+      </ShadcnTable>
 
       <div className="flex items-center justify-between space-x-2 py-2 text-sm">
         {typeof csvFilename === 'string' && (
@@ -164,9 +169,17 @@ function DataTable<TData, TValue>({
           </CsvDownloader>
         )}
 
-        <div className="flex flex-row gap-2">
+        <div
+          className={twMerge(
+            'flex flex-row gap-2',
+            className?.buttonsContainer
+          )}
+        >
           {isResetSortingEnabled && (
-            <Button onClick={() => setSorting([])} className={{ root: 'h-8' }}>
+            <Button
+              onClick={() => setSorting([])}
+              className={{ root: twMerge('h-8', className?.buttons) }}
+            >
               <Button.Icon icon={faRepeat} />
               <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
             </Button>
@@ -177,14 +190,14 @@ function DataTable<TData, TValue>({
               <Button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className={{ root: 'h-8' }}
+                className={{ root: twMerge('h-8', className?.buttons) }}
               >
                 <Button.Label>{t('shared.table.previous')}</Button.Label>
               </Button>
               <Button
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className={{ root: 'h-8' }}
+                className={{ root: twMerge('h-8', className?.buttons) }}
               >
                 <Button.Label>{t('shared.table.next')}</Button.Label>
               </Button>

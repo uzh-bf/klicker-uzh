@@ -4,21 +4,18 @@ import {
   GetMatchingUserElementsTemplateDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function ExistingElementSelectionModal({
-  open,
   onClose,
   replaceWithExistingElement,
   requiredElementType,
   hasSampleSolution,
   hasAnswerFeedbacks,
 }: {
-  open: boolean
   onClose: () => void
   replaceWithExistingElement: (elementId: number, elementName: string) => void
   requiredElementType: ElementType
@@ -60,18 +57,34 @@ function ExistingElementSelectionModal({
 
   return (
     <Modal
+      open
       escapeDisabled
       hideCloseButton
+      loading={loading}
       title={t('manage.template.selectExistingElement')}
-      open={open}
       onClose={() => {
         setSelectedElement(null)
         onClose()
       }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        setSelectedElement(null)
+        onClose()
+      }}
+      dataSecondaryAction={{ cy: 'cancel-select-existing-element' }}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryDisabled={selectedElement === null}
+      onPrimaryAction={() => {
+        if (selectedElement === null) return
+        replaceWithExistingElement(selectedElement!.id, selectedElement!.name)
+        setSelectedElement(null)
+        onClose()
+      }}
+      dataPrimaryAction={{ cy: 'confirm-select-existing-element' }}
       data-cy="select-existing-question-modal"
       className={{ content: 'overflow-visible' }}
     >
-      <div className="text-gray-700">
+      <div className="mt-2 text-gray-700">
         {t('manage.template.selectElementInstructions', {
           element: elementDescription,
         })}
@@ -79,7 +92,6 @@ function ExistingElementSelectionModal({
 
       <div className="mt-2 max-h-[calc(80vh-12rem)] overflow-y-auto rounded-md border border-gray-200 p-3">
         <div className="flex flex-col gap-2">
-          {loading && <Loader />}
           {availableElements.length === 0 && !loading && (
             <UserNotification
               type="warning"
@@ -108,35 +120,6 @@ function ExistingElementSelectionModal({
               </Button>
             ))}
         </div>
-      </div>
-
-      <div className="mt-4 flex flex-row justify-between">
-        <Button
-          onClick={() => {
-            setSelectedElement(null)
-            onClose()
-          }}
-          data={{ cy: 'cancel-select-existing-element' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-        <Button
-          primary
-          disabled={selectedElement === null}
-          onClick={() => {
-            if (selectedElement === null) return
-
-            replaceWithExistingElement(
-              selectedElement!.id,
-              selectedElement!.name
-            )
-            setSelectedElement(null)
-            onClose()
-          }}
-          data={{ cy: 'confirm-select-existing-element' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
       </div>
     </Modal>
   )

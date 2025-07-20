@@ -1,6 +1,6 @@
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import UserGroupsManagement from '../../components/catalog/UserGroupsManagement'
+import UserGroupsManagement from '../../components/groups/UserGroupsManagement'
 import Layout from '../../components/Layout'
 
 function UserGroupsPage() {

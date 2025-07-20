@@ -1,11 +1,5 @@
-import {
-  Participation,
-  PublicationStatus,
-  TimelineEntry,
-  TimelineEntryType,
-  UserRole,
-  type ElementFeedback,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
+import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
@@ -13,9 +7,51 @@ import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import { PrismaTransactionClient } from './stacks.js'
 
 dayjs.extend(isoWeek)
+
+export async function getSelf(ctx: Context) {
+  if (!ctx.user?.sub) return null
+
+  // if the user is logged in as a participant, return the participant data
+  if (ctx.user.role === DB.UserRole.PARTICIPANT) {
+    const participantData = await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
+
+    if (!participantData) return null
+
+    return { role: DB.UserRole.PARTICIPANT, ...participantData }
+  }
+
+  // if the user is logged in as a temporary quiz participant, return the corresponding pseudonym
+  if (ctx.user.role === DB.UserRole.TEMPORARY_PARTICIPANT) {
+    const temporaryParticipantData =
+      await ctx.prisma.temporaryLeaderboardEntry.findUnique({
+        where: { id: ctx.user.sub },
+      })
+
+    if (!temporaryParticipantData) return null
+
+    return {
+      ...temporaryParticipantData,
+      id: ctx.user.sub,
+      role: DB.UserRole.TEMPORARY_PARTICIPANT,
+      scopeQuizId: temporaryParticipantData.quizId,
+      lastLoginAt: temporaryParticipantData.createdAt,
+      isActive: true,
+      isProfilePublic: true,
+      isSSOAccount: false,
+      email: null,
+      isEmailValid: false,
+      avatarSettings: null,
+      xp: null,
+      locale: null,
+    }
+  }
+
+  return null
+}
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -28,6 +64,10 @@ export async function updateParticipantProfile(
   { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return null
+  }
+
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 15) {
       return null
@@ -127,12 +167,12 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                  status: PublicationStatus.PUBLISHED,
+                  status: DB.PublicationStatus.PUBLISHED,
                   isDeleted: false,
                 },
               },
               liveQuizzes: {
-                where: { status: PublicationStatus.PUBLISHED },
+                where: { status: DB.PublicationStatus.PUBLISHED },
               },
             },
           },
@@ -155,7 +195,7 @@ export async function getParticipation(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 
@@ -446,12 +486,8 @@ export async function bookmarkElementStack(
   return participation.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-interface GetBookmarkedElementStacksArgs {
-  courseId: string
-}
-
 export async function getBookmarkedElementStacks(
-  { courseId }: GetBookmarkedElementStacksArgs,
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.findUnique({
@@ -466,7 +502,7 @@ export async function getBookmarkedElementStacks(
         include: {
           elements: {
             include:
-              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
                 ? {
                     responses: {
                       where: {
@@ -488,12 +524,16 @@ export async function getBookmarkedElementStacks(
 }
 
 export async function flagElement(
-  args: { elementInstanceId: number; elementId: number; content: string },
+  {
+    elementInstanceId,
+    elementId,
+    content,
+  }: { elementInstanceId: number; elementId: number; content: string },
   ctx: ContextWithUser
 ) {
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
-      id: args.elementInstanceId,
+      id: elementInstanceId,
     },
     include: {
       elementStack: {
@@ -517,19 +557,19 @@ export async function flagElement(
     where: {
       participantId_elementInstanceId: {
         participantId: ctx.user.sub,
-        elementInstanceId: args.elementInstanceId,
+        elementInstanceId: elementInstanceId,
       },
     },
     create: {
-      feedback: args.content,
+      feedback: content,
       element: {
         connect: {
-          id: args.elementId,
+          id: elementId,
         },
       },
       elementInstance: {
         connect: {
-          id: args.elementInstanceId,
+          id: elementInstanceId,
         },
       },
       participant: {
@@ -539,7 +579,7 @@ export async function flagElement(
       },
     },
     update: {
-      feedback: args.content,
+      feedback: content,
     },
   })
 
@@ -566,8 +606,9 @@ export async function flagElement(
       elementName: practiceQuiz?.name || microLearning?.name,
       questionId: elementInstance.elementId,
       questionName: elementInstance.elementData.name,
-      content: args.content,
-      participantId: ctx.user?.sub,
+      content: content,
+      participantId:
+        ctx.user.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
         practiceQuiz?.course?.notificationEmail ||
@@ -579,21 +620,25 @@ export async function flagElement(
 }
 
 export async function rateElement(
-  args: { elementInstanceId: number; elementId: number; rating: number },
+  {
+    elementInstanceId,
+    elementId,
+    rating,
+  }: { elementInstanceId: number; elementId: number; rating: number },
   ctx: ContextWithUser
 ) {
-  if (args.rating !== 1 && args.rating !== -1) {
+  if (rating !== 1 && rating !== -1) {
     return null
   }
 
-  let elementFeedback: ElementFeedback | null = null
+  let elementFeedback: DB.ElementFeedback | null = null
   await ctx.prisma.$transaction(async (prisma) => {
     // fetch previous element feedback
     const prevFeedback = await ctx.prisma.elementFeedback.findUnique({
       where: {
         participantId_elementInstanceId: {
           participantId: ctx.user.sub,
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
       },
     })
@@ -604,27 +649,26 @@ export async function rateElement(
         where: {
           participantId_elementInstanceId: {
             participantId: ctx.user.sub,
-            elementInstanceId: args.elementInstanceId,
+            elementInstanceId: elementInstanceId,
           },
         },
         data: {
-          upvote: args.rating === 1,
-          downvote: args.rating === -1,
+          upvote: rating === 1,
+          downvote: rating === -1,
         },
       })
 
       // update instance statistics (decrement by previous feedback first to only count last feedback)
       await prisma.instanceStatistics.update({
         where: {
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
         data: {
           upvoteCount: {
-            increment: Number(args.rating === 1) - Number(prevFeedback.upvote),
+            increment: Number(rating === 1) - Number(prevFeedback.upvote),
           },
           downvoteCount: {
-            increment:
-              Number(args.rating === -1) - Number(prevFeedback.downvote),
+            increment: Number(rating === -1) - Number(prevFeedback.downvote),
           },
         },
       })
@@ -632,16 +676,16 @@ export async function rateElement(
       // create new element feedback
       elementFeedback = await prisma.elementFeedback.create({
         data: {
-          upvote: args.rating === 1,
-          downvote: args.rating === -1,
+          upvote: rating === 1,
+          downvote: rating === -1,
           elementInstance: {
             connect: {
-              id: args.elementInstanceId,
+              id: elementInstanceId,
             },
           },
           element: {
             connect: {
-              id: args.elementId,
+              id: elementId,
             },
           },
           participant: {
@@ -655,14 +699,14 @@ export async function rateElement(
       // update instance statistics
       await prisma.instanceStatistics.update({
         where: {
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
         data: {
           upvoteCount: {
-            increment: Number(args.rating === 1),
+            increment: Number(rating === 1),
           },
           downvoteCount: {
-            increment: Number(args.rating === -1),
+            increment: Number(rating === -1),
           },
         },
       })
@@ -673,13 +717,13 @@ export async function rateElement(
 }
 
 export async function getStackElementFeedbacks(
-  args: { elementInstanceIds: number[] },
+  { elementInstanceIds }: { elementInstanceIds: number[] },
   ctx: ContextWithUser
 ) {
   const elementFeedbacks = await ctx.prisma.elementFeedback.findMany({
     where: {
       elementInstanceId: {
-        in: args.elementInstanceIds,
+        in: elementInstanceIds,
       },
       participantId: ctx.user.sub,
     },
@@ -689,7 +733,7 @@ export async function getStackElementFeedbacks(
 }
 
 export async function getPublicParticipantProfile(
-  args: { participantId: string },
+  { participantId }: { participantId: string },
   ctx: ContextWithUser
 ) {
   const self = await ctx.prisma.participant.findUnique({
@@ -703,12 +747,12 @@ export async function getPublicParticipantProfile(
     },
   })
 
-  if (self?.id === args.participantId) {
+  if (self?.id === participantId) {
     return { ...self, isSelf: true }
   }
 
   const participant = await ctx.prisma.participant.findUnique({
-    where: { id: args.participantId },
+    where: { id: participantId },
     include: {
       achievements: {
         include: {
@@ -732,7 +776,7 @@ export async function getPublicParticipantProfile(
 }
 
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
-  let participant = await ctx.prisma.participant.findUnique({
+  const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       achievements: {
@@ -788,7 +832,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
         include: {
           practiceQuizzes: {
             where: {
-              status: PublicationStatus.PUBLISHED,
+              status: DB.PublicationStatus.PUBLISHED,
               isDeleted: false,
             },
           },
@@ -842,11 +886,11 @@ export async function upsertDailyTimelineEntry({
         participationId: participation.id,
         courseId,
         timestamp: new Date(),
-        type: TimelineEntryType.DAILY,
+        type: DB.TimelineEntryType.DAILY,
       },
     },
     create: {
-      type: TimelineEntryType.DAILY,
+      type: DB.TimelineEntryType.DAILY,
       timestamp: new Date(),
       collectedPoints: participation.isActive ? pointsAwarded : 0,
       collectedXp: xpAwarded,
@@ -885,16 +929,13 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 
   // iterate over all courses and update weekly timeline entries
   for (const course of courses) {
-    await updateWeeklyTimelineEntriesCourse(
-      { courseId: course.id, cronjob: true },
-      ctx
-    )
+    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, ctx)
   }
 
   // remove all daily timeline entries older than 2 weeks
   await ctx.prisma.timelineEntry.deleteMany({
     where: {
-      type: TimelineEntryType.DAILY,
+      type: DB.TimelineEntryType.DAILY,
       timestamp: {
         lt: dayjs().utc().subtract(30, 'days').toDate(),
       },
@@ -905,7 +946,7 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 }
 
 export async function updateWeeklyTimelineEntriesCourse(
-  { courseId, cronjob }: { courseId: string; cronjob: boolean },
+  { courseId }: { courseId: string },
   ctx: Context
 ) {
   // get start date of current week (monday) in UTC
@@ -920,54 +961,40 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
-  const ownerId = ctx.user?.sub
   const courseTimelineLastWeek = await ctx.prisma.course.findUnique({
-    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    where: { id: courseId },
     include: {
       timelineEntries: {
         where: {
           OR: [
             {
-              type: TimelineEntryType.DAILY,
-              timestamp: {
-                gte: startDateLastWeek,
-                lt: startDateCurrentWeek,
-              },
+              type: DB.TimelineEntryType.DAILY,
+              timestamp: { gte: startDateLastWeek, lt: startDateCurrentWeek },
             },
-            {
-              type: TimelineEntryType.WEEKLY,
-              timestamp: startDateLastWeek,
-            },
+            { type: DB.TimelineEntryType.WEEKLY, timestamp: startDateLastWeek },
           ],
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })
   const courseTimelineCurrentWeek = await ctx.prisma.course.findUnique({
-    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    where: { id: courseId },
     include: {
       timelineEntries: {
         where: {
           OR: [
             {
-              type: TimelineEntryType.DAILY,
-              timestamp: {
-                gte: startDateCurrentWeek,
-                lte: new Date(),
-              },
+              type: DB.TimelineEntryType.DAILY,
+              timestamp: { gte: startDateCurrentWeek, lte: new Date() },
             },
             {
-              type: TimelineEntryType.WEEKLY,
+              type: DB.TimelineEntryType.WEEKLY,
               timestamp: startDateCurrentWeek,
             },
           ],
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })
@@ -987,10 +1014,10 @@ export async function updateWeeklyTimelineEntriesCourse(
   let numUpdatesLastWeek = 0
   let numUpdatesCurrentWeek = 0
   const lastWeekDailys = courseTimelineLastWeek.timelineEntries.filter(
-    (entry) => entry.type === TimelineEntryType.DAILY
+    (entry) => entry.type === DB.TimelineEntryType.DAILY
   )
   const currentWeekDailys = courseTimelineCurrentWeek.timelineEntries.filter(
-    (entry) => entry.type === TimelineEntryType.DAILY
+    (entry) => entry.type === DB.TimelineEntryType.DAILY
   )
 
   // update last weeks timeline entries, if the aggregated values are not correct
@@ -1046,8 +1073,8 @@ async function updateWeeklyTimelineEntriesFromDailys({
   timestamp,
   courseId,
 }: {
-  entries: (TimelineEntry & { participation?: Participation })[]
-  dailyEntries: (TimelineEntry & { participation?: Participation })[]
+  entries: (DB.TimelineEntry & { participation?: DB.Participation })[]
+  dailyEntries: (DB.TimelineEntry & { participation?: DB.Participation })[]
   timestamp: Date
   courseId: string
 }) {
@@ -1088,7 +1115,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
       const pId = parseInt(participationId)
       const storedEntry = entries.find(
         (entry) =>
-          entry.type === TimelineEntryType.WEEKLY &&
+          entry.type === DB.TimelineEntryType.WEEKLY &&
           entry.timestamp.getTime() === timestamp.getTime() &&
           entry.participationId === pId
       )
@@ -1104,11 +1131,11 @@ async function updateWeeklyTimelineEntriesFromDailys({
               participationId: pId,
               courseId,
               timestamp: timestamp,
-              type: TimelineEntryType.WEEKLY,
+              type: DB.TimelineEntryType.WEEKLY,
             },
           },
           create: {
-            type: TimelineEntryType.WEEKLY,
+            type: DB.TimelineEntryType.WEEKLY,
             timestamp: timestamp,
             collectedPoints: values.collectedPoints,
             collectedXp: values.collectedXp,
@@ -1149,13 +1176,13 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
             where: {
               OR: [
                 {
-                  type: TimelineEntryType.WEEKLY,
+                  type: DB.TimelineEntryType.WEEKLY,
                   timestamp: {
                     lt: dayjs().subtract(14, 'days').toDate(),
                   },
                 },
                 {
-                  type: TimelineEntryType.DAILY,
+                  type: DB.TimelineEntryType.DAILY,
                   timestamp: {
                     gte: dayjs().subtract(14, 'days').toDate(),
                   },

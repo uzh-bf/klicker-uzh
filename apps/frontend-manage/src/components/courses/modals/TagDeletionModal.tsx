@@ -1,20 +1,21 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteTagDocument,
-  GetUserQuestionsDocument,
+  GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface TagDeletionModalProps {
+function TagDeletionModal({
+  id,
+  name,
+  onClose,
+}: {
   id: number
   name: string
-  open: boolean
-  setOpen: (value: boolean) => void
-}
-
-function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
+  onClose: () => void
+}) {
   const t = useTranslations()
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
     variables: {
@@ -38,7 +39,7 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
         },
       })
     },
-    refetchQueries: [{ query: GetUserQuestionsDocument }],
+    refetchQueries: [{ query: GetUserElementsDocument }],
     optimisticResponse: {
       deleteTag: {
         id: id,
@@ -49,35 +50,21 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
 
   return (
     <Modal
-      onPrimaryAction={
-        <Button
-          destructive
-          loading={deleting}
-          onClick={async () => {
-            await deleteTag()
-            setOpen(false)
-          }}
-          data={{ cy: 'confirm-delete-tag' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-delete-tag' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
-      onClose={(): void => setOpen(false)}
-      open={open}
-      hideCloseButton={true}
+      open
+      onClose={onClose}
       title={t('manage.tags.deleteTag')}
-      className={{
-        content: 'h-max min-h-max w-[40rem] self-center pt-0 text-base',
-        title: 'text-xl',
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={deleting}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={async () => {
+        await deleteTag()
+        onClose()
       }}
+      dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'cancel-delete-tag' }}
+      className={{ content: 'max-w-xl' }}
     >
       {t.rich('manage.tags.confirmTagDeletion', {
         name,

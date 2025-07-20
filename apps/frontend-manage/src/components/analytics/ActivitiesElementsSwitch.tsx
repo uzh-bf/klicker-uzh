@@ -23,7 +23,7 @@ function ActivitiesElementsSwitch({
           primary={type === 'activity'}
           onClick={() => setType('activity')}
           className={{
-            root: 'h-8 !rounded-r-none !border-r-0 px-2 py-0',
+            root: 'rounded-r-none! border-r-0! h-8 px-2 py-0',
           }}
         >
           <Button.Label>{t('manage.analytics.activities')}</Button.Label>
@@ -32,7 +32,7 @@ function ActivitiesElementsSwitch({
           primary={type === 'instance'}
           onClick={() => setType('instance')}
           className={{
-            root: 'h-8 !rounded-l-none !border-l-0 px-2 py-0',
+            root: 'rounded-l-none! border-l-0! h-8 px-2 py-0',
           }}
         >
           <Button.Label>{t('manage.analytics.elements')}</Button.Label>

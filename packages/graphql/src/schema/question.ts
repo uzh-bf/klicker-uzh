@@ -69,6 +69,7 @@ import {
   ChoicesResponse,
   PublicationStatus,
 } from './practiceQuiz.js'
+import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -333,6 +334,22 @@ export const TemplateBlockInput = TemplateBlockInputRef.implement({
   }),
 })
 
+interface IElementInstanceVersionInfo {
+  id: number
+  newTitle: string
+  newSampleSolution: boolean
+}
+export const ElementInstanceVersionInfoRef =
+  builder.objectRef<IElementInstanceVersionInfo>('ElementInstanceVersionInfo')
+export const ElementInstanceVersionInfo =
+  ElementInstanceVersionInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      newTitle: t.exposeString('newTitle'),
+      newSampleSolution: t.exposeBoolean('newSampleSolution'),
+    }),
+  })
+
 // #endregion
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
@@ -394,6 +411,7 @@ export const SingleQuestionResponseContent = builder
 // #endregion
 
 // ----- INSTANCE EVALUATION INTERFACE -----
+// #region
 export const QuestionFeedback = builder
   .objectRef<IQuestionFeedback>('QuestionFeedback')
   .implement({
@@ -697,6 +715,19 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId'> {
+  tags?: ITag[] | null
+  permissionLevel?: DB.PermissionLevel
+  derivedAccess?: boolean // = derived from other object => removal disabled
+  numSharedUsers?: number
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
+  isImported?: boolean // imported flag for UI icon
+  isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
+}
+
 const sharedElementProps = (t: any) => ({
   id: t.exposeInt('id'),
 
@@ -715,15 +746,26 @@ const sharedElementProps = (t: any) => ({
   createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
   updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
 
+  permissionLevel: t.expose('permissionLevel', {
+    type: PermissionLevel,
+    nullable: true,
+  }),
+  derivedAccess: t.exposeBoolean('derivedAccess', { nullable: true }),
+  numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+  isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+  isManager: t.exposeBoolean('isManager', { nullable: true }),
+  isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+  isImported: t.exposeBoolean('isImported', { nullable: true }),
+  isShared: t.exposeBoolean('isShared', { nullable: true }),
+  isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+  sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
+
   tags: t.expose('tags', {
     type: [TagRef],
     nullable: true,
   }),
 })
 
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
-  tags?: ITag[] | null
-}
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType
 }
@@ -834,6 +876,42 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+interface IElementSummary {
+  sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access
+  retainsDerivedAccess: boolean // = true if the element is used in activity with admin / owner access -> retain derived access
+  derivedAccessToResources: boolean // = true if the element leads to derived access to resources
+}
+export const ElementSummaryRef =
+  builder.objectRef<IElementSummary>('ElementSummary')
+export const ElementSummary = ElementSummaryRef.implement({
+  fields: (t) => ({
+    sharedElementActivityUse: t.exposeBoolean('sharedElementActivityUse'),
+    retainsDerivedAccess: t.exposeBoolean('retainsDerivedAccess'),
+    derivedAccessToResources: t.exposeBoolean('derivedAccessToResources'),
+  }),
+})
+
+interface IArchivedElementList {
+  success?: boolean
+  partialSuccess?: boolean
+  failure?: boolean
+  elements: IArchivedElement[]
+}
+export const ArchivedElementListRef = builder.objectRef<IArchivedElementList>(
+  'ArchivedElementList'
+)
+export const ArchivedElementList = ArchivedElementListRef.implement({
+  fields: (t) => ({
+    success: t.exposeBoolean('success', { nullable: true }),
+    partialSuccess: t.exposeBoolean('partialSuccess', { nullable: true }),
+    failure: t.exposeBoolean('failure', { nullable: true }),
+    elements: t.expose('elements', {
+      type: [ArchivedElement],
+      nullable: true,
+    }),
+  }),
+})
+
 interface IArchivedElement {
   id: number
   isArchived: boolean
@@ -894,7 +972,7 @@ export const InstanceUpdateActivityInfo =
   })
 
 export interface ITag
-  extends Omit<DB.Tag, 'originalId' | 'ownerId' | 'createdAt' | 'updatedAt'> {}
+  extends Omit<DB.Tag, 'ownerId' | 'createdAt' | 'updatedAt'> {}
 export const TagRef = builder.objectRef<ITag>('Tag')
 export const Tag = TagRef.implement({
   fields: (t) => ({

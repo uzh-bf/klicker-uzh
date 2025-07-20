@@ -3,7 +3,7 @@ import {
   faArrowDown,
   faArrowUp,
   faCheck,
-  faComments,
+  faComment,
   faLock,
   faLockOpen,
   faPaperPlane,
@@ -18,6 +18,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import FeedbackDeletionModal from './FeedbackDeletionModal'
 
 interface IFeedback {
   id: number
@@ -55,73 +56,98 @@ function Feedback({
   const t = useTranslations()
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
+  const [showDeletionModal, setShowDeletionModal] = useState(false)
 
   return (
-    <div>
-      <Button
-        className={{
-          root: 'border-primary-100 flex w-full border border-solid p-2 !pl-4 text-left',
-        }}
+    <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div
+        className="cursor-pointer p-4 pb-2.5 transition-colors hover:bg-gray-50"
         onClick={() => setIsEditingActive((prev) => !prev)}
-        data={{ cy: `open-feedback-${content}` }}
+        data-cy={`open-feedback-${content}`}
       >
-        <div className="no-page-break-inside flex-1">
-          <p className="mt-0">{content}</p>
-          <div className="mt-2 flex flex-row flex-wrap items-end text-gray-500">
-            <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-            <div className="min-w-max">
-              {resolved ? (
-                <>
-                  <FontAwesomeIcon icon={faCheck} className="ml-2" />
-                  {responses && responses.length > 0 && (
-                    <div className="ml-7 text-gray-500 md:hidden print:hidden">
-                      {t('manage.cockpit.answersGiven', {
-                        number: responses.length,
-                      })}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <FontAwesomeIcon icon={faComments} className="ml-2" />
+        <div className="flex w-full flex-row items-start justify-between">
+          <div className="flex-1 pr-4">
+            <p className="mb-2 text-base text-gray-900">{content}</p>
+            <div className="flex flex-row flex-wrap items-center gap-3 text-sm text-gray-500">
+              <div className="flex items-center gap-1">
+                <span>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {resolved ? (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faCheck}
+                      className="text-green-600"
+                    />
+                    <span className="text-green-600">
+                      {t('manage.cockpit.filterSolved')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faComment}
+                      className="text-orange-500"
+                    />
+                    <span className="text-orange-500">
+                      {t('manage.cockpit.filterOpen')}
+                    </span>
+                  </>
+                )}
+              </div>
+              {pinned && (
+                <div className="flex items-center gap-1">
+                  <FontAwesomeIcon
+                    icon={faThumbTack}
+                    className="text-primary-100"
+                  />
+                  <span className="text-primary-100">
+                    {t('manage.cockpit.filterPinned')}
+                  </span>
+                </div>
+              )}
+              {responses && responses.length > 0 && (
+                <div className="hidden items-center gap-1 md:flex">
+                  <span>
+                    {t('manage.cockpit.answersGiven', {
+                      number: responses.length,
+                    })}
+                  </span>
+                </div>
               )}
             </div>
-            <div className="ml-4">
-              {pinned && <FontAwesomeIcon icon={faThumbTack} />}
-            </div>
           </div>
-        </div>
-        <div className="flex flex-initial flex-col items-end justify-between print:hidden">
-          <div className="text-xl text-gray-500">
-            {votes} <FontAwesomeIcon icon={faThumbsUp} className="ml-2" />
-          </div>
-          <div className="mt-2 flex flex-row items-end">
-            {responses && responses.length > 0 && (
-              <div className="mr-4 hidden text-gray-500 md:block">
-                {t('manage.cockpit.answersGiven', {
-                  number: responses.length,
-                })}
+
+          <div className="-mt-1 flex h-full flex-col items-end justify-between print:hidden">
+            <div className="flex flex-row items-center gap-3">
+              <div className="flex items-center gap-1 text-lg text-gray-600">
+                <span>{votes}</span>
+                <FontAwesomeIcon icon={faThumbsUp} />
               </div>
-            )}
+              <div className="flex items-center gap-1">
+                <Button
+                  basic
+                  onClick={(e) => {
+                    e?.stopPropagation()
+                    setShowDeletionModal(true)
+                  }}
+                  className={{
+                    root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
+                  }}
+                  data={{ cy: `delete-feedback-${content}` }}
+                >
+                  <Button.Icon withoutLabel icon={faTrashCan} />
+                </Button>
+              </div>
+            </div>
             <Button
-              onClick={(e) => {
-                e?.stopPropagation()
-                onDeleteFeedback()
-              }}
-              className={{
-                root: 'mr-1 h-9 w-9 border-red-600 hover:text-red-600',
-              }}
-              data={{ cy: `delete-feedback-${content}` }}
-            >
-              <Button.Icon withoutLabel icon={faTrashCan} />
-            </Button>
-            <Button
-              icon={isEditingActive ? 'arrow up' : 'arrow down'}
+              basic
               onClick={(e) => {
                 e?.stopPropagation()
                 setIsEditingActive((prev) => !prev)
               }}
               className={{
-                root: 'h-9 w-9',
+                root: 'h-8 w-8 text-gray-600 hover:bg-gray-100',
               }}
               data={{ cy: `open-feedback-button-${content}` }}
             >
@@ -132,39 +158,46 @@ function Feedback({
             </Button>
           </div>
         </div>
-      </Button>
+      </div>
       <div
         className={twMerge(
-          'border border-t-0 border-solid border-gray-300 p-4 print:border-0 print:p-2 print:pr-0',
+          'border-t border-gray-200 bg-gray-50 print:border-0 print:p-2 print:pr-0',
           !isEditingActive && 'hidden print:block'
         )}
       >
-        <div>
+        <div className="space-y-2 p-3">
           {responses &&
             responses.map((response) => (
               <div
-                className="no-page-break-inside mt-2 flex flex-row items-start rounded border border-l-[5px] border-solid bg-gray-50 py-1 pl-4 shadow-sm first:mt-0 last:mb-4 print:border-l-[10px] print:pr-0"
+                className="no-page-break-inside rounded-lg border border-gray-200 bg-white p-3 shadow-sm print:border-l-4 print:border-l-blue-400"
                 key={response.createdAt}
               >
-                <div className="flex-1">
-                  <p className="prose mb-0">{response.content}</p>
-                  <div className="mt-1 text-sm text-gray-500">
-                    {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="mb-1 text-gray-900">{response.content}</p>
+                    <div className="text-sm text-gray-500">
+                      {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-initial flex-row items-center print:hidden">
-                  <div className={twMerge('text-gray-500')}>
-                    {response.positiveReactions}{' '}
-                    <FontAwesomeIcon icon={faThumbsUp} className="mr-0.5" />
-                  </div>
-                  <div className={twMerge('ml-2', 'text-gray-500')}>
-                    {response.negativeReactions}{' '}
-                    <FontAwesomeIcon icon={faQuestion} className="mr-0.5" />
-                  </div>
-                  <div className="ml-2 print:hidden">
+                  <div className="flex items-center gap-3 print:hidden">
+                    <div className="flex items-center gap-1 text-base text-gray-500">
+                      <span>{response.positiveReactions}</span>
+                      <FontAwesomeIcon
+                        icon={faThumbsUp}
+                        className="text-green-600"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 text-base text-gray-500">
+                      <span>{response.negativeReactions}</span>
+                      <FontAwesomeIcon
+                        icon={faQuestion}
+                        className="text-orange-500"
+                      />
+                    </div>
                     <Button
+                      basic
                       className={{
-                        root: 'mr-1 h-8 w-8 border-red-600 bg-transparent hover:text-red-600',
+                        root: 'h-8 w-8 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600',
                       }}
                       onClick={() => onDeleteResponse(response.id)}
                       data={{ cy: `delete-response-${response.content}` }}
@@ -175,9 +208,46 @@ function Feedback({
                 </div>
               </div>
             ))}
-        </div>
-        <div className="flex print:hidden">
-          <div className="flex-1">
+
+          <div className="flex w-full flex-col items-end print:hidden">
+            <div className="flex flex-row gap-1.5">
+              <Button
+                basic
+                className={{
+                  root: 'text-primary-100 hover:text-primary-100 mb-0.5 py-1',
+                }}
+                disabled={resolved}
+                onClick={() => onPinFeedback(!pinned)}
+                data={{ cy: `pin-feedback-${content}` }}
+              >
+                <Button.Icon icon={faThumbTack} />
+                <Button.Label>
+                  {pinned
+                    ? t('manage.cockpit.unpinFeedback')
+                    : t('manage.cockpit.pinFeedback')}
+                </Button.Label>
+              </Button>
+              <Button
+                basic
+                className={{
+                  root: 'text-primary-100 hover:text-primary-100 mb-0.5 px-3 py-1',
+                }}
+                onClick={() => {
+                  onResolveFeedback(!resolved)
+                  if (!resolved) {
+                    setIsEditingActive(false)
+                  }
+                }}
+                data={{ cy: `resolve-feedback-${content}` }}
+              >
+                <Button.Icon icon={resolved ? faLockOpen : faLock} />
+                <Button.Label>
+                  {resolved
+                    ? t('manage.cockpit.reopen')
+                    : t('manage.cockpit.resolve')}
+                </Button.Label>
+              </Button>
+            </div>
             <Formik
               initialValues={{ respondToFeedbackInput: '' }}
               onSubmit={(values, { setSubmitting }) => {
@@ -194,87 +264,70 @@ function Feedback({
               }}
             >
               {({ values, isSubmitting }) => (
-                <div className="flex-1">
-                  <Form>
-                    <FormikTextareaField
-                      className={{
-                        input: twMerge(
-                          'border-uzh-grey-80 mb-1 h-20 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
-                          resolved && 'bg-gray-100 opacity-50'
-                        ),
-                        root: 'mb-1',
-                      }}
-                      rows="3"
-                      name="respondToFeedbackInput"
-                      placeholder={
-                        resolved
-                          ? t('manage.cockpit.reopenToAnswer')
-                          : t('manage.cockpit.insertResponseHere')
-                      }
-                      disabled={resolved}
-                      maxLength={1000}
-                      maxLengthLabel={t('shared.generic.characters')}
-                      data={{ cy: `respond-to-feedback-${content}` }}
-                    />
+                <Form className="w-full">
+                  <FormikTextareaField
+                    className={{
+                      input: twMerge(
+                        'w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500',
+                        resolved && 'bg-gray-100 opacity-50'
+                      ),
+                      root: 'w-full',
+                    }}
+                    rows="3"
+                    name="respondToFeedbackInput"
+                    placeholder={
+                      resolved
+                        ? t('manage.cockpit.reopenToAnswer')
+                        : t('manage.cockpit.enterResponseHere')
+                    }
+                    disabled={resolved}
+                    maxLength={1000}
+                    maxLengthLabel={t('shared.generic.characters')}
+                    data={{ cy: `respond-to-feedback-${content}` }}
+                  />
+                  <div className="flex justify-end">
                     <Button
                       primary
-                      className={{
-                        root: 'float-right mt-1',
-                      }}
                       type="submit"
                       disabled={
                         isSubmitting ||
                         resolved ||
                         values.respondToFeedbackInput === ''
                       }
+                      className={{ root: 'mt-1 h-8' }}
                       data={{ cy: `submit-feedback-response-${content}` }}
                     >
-                      <Button.Icon
-                        icon={faPaperPlane}
-                        className={{ root: 'mr-1' }}
-                      />
+                      <Button.Icon icon={faPaperPlane} />
                       <Button.Label>{t('shared.generic.respond')}</Button.Label>
                     </Button>
-                  </Form>
-                </div>
+                  </div>
+                </Form>
               )}
             </Formik>
           </div>
-          <div className="flex w-max flex-initial flex-col gap-2 pl-4">
-            <Button
-              className={{ root: 'h-9 w-full px-4' }}
-              disabled={resolved}
-              onClick={() => onPinFeedback(!pinned)}
-              data={{ cy: `pin-feedback-${content}` }}
-            >
-              <Button.Icon icon={faThumbTack} className={{ root: 'mr-1' }} />
-              <Button.Label>
-                {pinned
-                  ? t('manage.cockpit.unpinFeedback')
-                  : t('manage.cockpit.pinFeedback')}
-              </Button.Label>
-            </Button>
-            <Button
-              className={{ root: 'h-9 w-full px-4' }}
-              icon={resolved ? 'lock open' : 'lock'}
-              onClick={() => {
-                onResolveFeedback(!resolved)
-                if (!resolved) {
-                  setIsEditingActive(false)
-                }
-              }}
-              data={{ cy: `resolve-feedback-${content}` }}
-            >
-              <Button.Icon icon={resolved ? faLockOpen : faLock} />
-              <Button.Label>
-                {resolved
-                  ? t('manage.cockpit.reopen')
-                  : t('manage.cockpit.resolve')}
-              </Button.Label>
-            </Button>
-          </div>
         </div>
       </div>
+
+      {showDeletionModal && (
+        <FeedbackDeletionModal
+          open={showDeletionModal}
+          onClose={() => setShowDeletionModal(false)}
+          onConfirm={async () => {
+            setIsBeingDeleted(true)
+            try {
+              await new Promise<void>((resolve) => {
+                onDeleteFeedback()
+                resolve()
+              })
+              setShowDeletionModal(false)
+            } finally {
+              setIsBeingDeleted(false)
+            }
+          }}
+          feedbackContent={content}
+          loading={isBeingDeleted}
+        />
+      )}
     </div>
   )
 }

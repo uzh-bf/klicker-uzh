@@ -4,11 +4,11 @@ import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import Creatable from 'react-select/creatable'
+import { ElementFormTypes } from '../manipulation/types'
 
-function SuspendedTagInput() {
+function SuspendedTagInput({ disabled }: { disabled: boolean }) {
   const t = useTranslations()
-  const [field, _, helpers] = useField<string[]>('tags')
-
+  const [field, _, helpers] = useField<ElementFormTypes['tags']>('tags')
   const { data } = useSuspenseQuery(GetUserTagsDocument)
 
   const tags = useMemo(
@@ -28,6 +28,7 @@ function SuspendedTagInput() {
     <Creatable
       isClearable
       isMulti
+      isDisabled={disabled}
       value={tags}
       options={options}
       classNames={{
@@ -36,7 +37,9 @@ function SuspendedTagInput() {
       onChange={(newValue) =>
         helpers.setValue(newValue.map((tag) => tag.value))
       }
-      onCreateOption={(newTag) => helpers.setValue([...field.value, newTag])}
+      onCreateOption={(newTag) =>
+        helpers.setValue([...(field.value ?? []), newTag])
+      }
       placeholder={t('manage.questionPool.selectOrType')}
     />
   )

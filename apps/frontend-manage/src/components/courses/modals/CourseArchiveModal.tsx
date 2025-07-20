@@ -3,28 +3,22 @@ import {
   GetUserCoursesDocument,
   ToggleArchiveCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface CourseArchiveModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  courseId: string | null
-  setSelectedCourseId: (courseId: string | null) => void
-  isArchived: boolean
-}
-
 function CourseArchiveModal({
-  open,
-  setOpen,
+  onClose,
   courseId,
-  setSelectedCourseId,
   isArchived,
-}: CourseArchiveModalProps) {
+}: {
+  onClose: () => void
+  courseId: string | null
+  isArchived: boolean
+}) {
   const t = useTranslations()
   const [toggleArchiveCourse, { loading }] = useMutation(
     ToggleArchiveCourseDocument,
-    { refetchQueries: [GetUserCoursesDocument] }
+    { refetchQueries: [{ query: GetUserCoursesDocument }] }
   )
 
   if (!courseId) {
@@ -33,52 +27,34 @@ function CourseArchiveModal({
 
   return (
     <Modal
-      open={open}
-      onClose={() => {
-        setOpen(false)
-        setSelectedCourseId(null)
-      }}
-      className={{ content: 'max-w-[30rem]' }}
+      open
+      onClose={onClose}
       title={
         isArchived
           ? t('manage.courseList.unarchiveCourse')
           : t('manage.courseList.archiveCourse')
       }
-      onPrimaryAction={
-        <Button
-          primary
-          loading={loading}
-          onClick={async () => {
-            await toggleArchiveCourse({
-              variables: { id: courseId, isArchived: !isArchived },
-              optimisticResponse: {
-                __typename: 'Mutation',
-                toggleArchiveCourse: {
-                  __typename: 'Course',
-                  id: courseId,
-                  isArchived: !isArchived,
-                },
-              },
-            })
-            setOpen(false)
-            setSelectedCourseId(null)
-          }}
-          data={{ cy: 'course-archive-modal-confirm' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={() => {
-            setOpen(false)
-            setSelectedCourseId(null)
-          }}
-          data={{ cy: 'course-archive-modal-cancel' }}
-        >
-          <Button.Label>{t('shared.generic.close')}</Button.Label>
-        </Button>
-      }
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={loading}
+      onPrimaryAction={async () => {
+        await toggleArchiveCourse({
+          variables: { id: courseId, isArchived: !isArchived },
+          optimisticResponse: {
+            __typename: 'Mutation',
+            toggleArchiveCourse: {
+              __typename: 'Course',
+              id: courseId,
+              isArchived: !isArchived,
+            },
+          },
+        })
+        onClose()
+      }}
+      dataPrimaryAction={{ cy: 'course-archive-modal-confirm' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={onClose}
+      dataSecondaryAction={{ cy: 'course-archive-modal-cancel' }}
+      className={{ content: 'max-w-120' }}
     >
       <UserNotification
         type="warning"

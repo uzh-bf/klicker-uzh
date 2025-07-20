@@ -5,6 +5,6 @@ fragment PermissionInfoData on PermissionInfo {
   userEmail
   userGroupName
   permissionLevel
-  isRevokable
+  propagation
   isOwn
 }

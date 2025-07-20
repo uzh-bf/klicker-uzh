@@ -4,6 +4,7 @@ import {
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
   SelfDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { initializeApollo } from '@lib/apollo'
@@ -53,11 +54,7 @@ function JoinCourse({
   })
 
   useEffect(() => {
-    const pin = router.query.pin
-      ? String(router.query.pin)
-          .match(/.{1,3}/g)
-          ?.join(' ')
-      : undefined
+    const pin = router.query.pin ? String(router.query.pin) : undefined
     setInitialPin(pin || '')
   }, [router.query.pin])
 
@@ -66,7 +63,7 @@ function JoinCourse({
 
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument,
-    { refetchQueries: [SelfDocument] }
+    { refetchQueries: [{ query: SelfDocument }] }
   )
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
@@ -90,9 +87,10 @@ function JoinCourse({
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
-        {dataParticipant?.self ? (
+        {dataParticipant?.self &&
+        dataParticipant.self.role === UserRole.Participant ? (
           <div>
-            <div className="mb-5">
+            <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
@@ -121,8 +119,11 @@ function JoinCourse({
                 return (
                   <Form>
                     <FormikPinField
+                      required
                       name="pin"
+                      length={9}
                       label={t('pwa.joinCourse.coursePinFormat')}
+                      className={{ inputItem: 'w-8', field: 'mb-2' }}
                     />
                     <Button
                       primary

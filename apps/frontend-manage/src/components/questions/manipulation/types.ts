@@ -15,6 +15,7 @@ interface SharedQuestionFormProps {
 
 interface ElementFormTypesChoice {
   id: string
+  ix?: number
   value?: string | null
   correct?: boolean | null
   feedback?: string | null
@@ -69,20 +70,22 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
   type: ElementType.Selection
   explanation?: string | null
   options: {
+    itemSelectionMode?: 'existing' | 'new'
     hasSampleSolution: boolean
     numberOfInputs: string
-    answerCollection: string
-    correctAnswers?: number[] | null
+    answerCollection?: string
+    manuallyCreatedItems?: { id: number; value: string }[] // new implicit AC: items that should be evaluated with respect to the defined criteria
+    correctAnswers?: number[]
   }
 }
 
 // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
 export type ElementFormTypesCaseStudySolution = Record<
-  string,
+  string, // criterion id
   { min: string; max: string }
 >
 export type ElementFormTypesCaseStudySolutions = Record<
-  string,
+  string, // `itemId-${item.id}`
   ElementFormTypesCaseStudySolution
 >
 
@@ -105,9 +108,11 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
   type: ElementType.CaseStudy
   explanation?: string | null
   options: {
+    itemSelectionMode?: 'existing' | 'new'
     hasSampleSolution: boolean
-    answerCollection: string
-    selectedItems: number[] // items that should be evaluated with respect to the defined criteria
+    answerCollection?: string
+    selectedItems?: number[] // from AC: items that should be evaluated with respect to the defined criteria
+    manuallyCreatedItems?: { id: number; value: string }[] // new implicit AC: items that should be evaluated with respect to the defined criteria
     cases: {
       id: string // short id
       title: string

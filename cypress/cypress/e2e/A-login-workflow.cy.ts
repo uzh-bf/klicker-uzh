@@ -2,11 +2,26 @@ import messages from '../../../packages/i18n/messages/en'
 import { AvatarOptions } from '../../../packages/shared-components/src/constants'
 
 describe('Login / Logout workflows for lecturer and students', () => {
+  before(() => {
+    cy.seed()
+  })
+
+  after(() => {
+    cy.cleanup()
+  })
+
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('A-login.json').then((data) => {
       this.data = data
     })
   })
+
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   it('Sign in to student account', () => {
     cy.clearAllCookies()
@@ -49,13 +64,14 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="homepage"]').should('exist')
 
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
 
     cy.get('[data-cy="avatar-hair-select"]').contains(
       messages.pwa.avatar[AvatarOptions['hair'][0]]
     )
-    cy.get('[data-cy="avatar-hair-select"]').click()
-    cy.get(`[data-cy="avatar-hair-${AvatarOptions['hair'][1]}"]`).click()
+    cy.get('[data-cy="avatar-hair-select"]').realClick()
+    cy.get(`[data-cy="avatar-hair-${AvatarOptions['hair'][1]}"]`).realClick()
     cy.get('[data-cy="avatar-hair-select"]').contains(
       messages.pwa.avatar[AvatarOptions['hair'][1]]
     )
@@ -63,10 +79,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-hairColor-select"]').contains(
       messages.pwa.avatar[AvatarOptions['hairColor'][0]]
     )
-    cy.get('[data-cy="avatar-hairColor-select"]').click()
+    cy.get('[data-cy="avatar-hairColor-select"]').realClick()
     cy.get(
       `[data-cy="avatar-hairColor-${AvatarOptions['hairColor'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-hairColor-select"]').contains(
       messages.pwa.avatar[AvatarOptions['hairColor'][1]]
     )
@@ -74,8 +90,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-eyes-select"]').contains(
       messages.pwa.avatar[AvatarOptions['eyes'][0]]
     )
-    cy.get('[data-cy="avatar-eyes-select"]').click()
-    cy.get(`[data-cy="avatar-eyes-${AvatarOptions['eyes'][1]}"]`).click()
+    cy.get('[data-cy="avatar-eyes-select"]').realClick()
+    cy.get(`[data-cy="avatar-eyes-${AvatarOptions['eyes'][1]}"]`).realClick()
     cy.get('[data-cy="avatar-eyes-select"]').contains(
       messages.pwa.avatar[AvatarOptions['eyes'][1]]
     )
@@ -83,10 +99,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-accessory-select"]').contains(
       messages.pwa.avatar[AvatarOptions['accessory'][0]]
     )
-    cy.get('[data-cy="avatar-accessory-select"]').click()
+    cy.get('[data-cy="avatar-accessory-select"]').realClick()
     cy.get(
       `[data-cy="avatar-accessory-${AvatarOptions['accessory'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-accessory-select"]').contains(
       messages.pwa.avatar[AvatarOptions['accessory'][1]]
     )
@@ -94,8 +110,8 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-mouth-select"]').contains(
       messages.pwa.avatar[AvatarOptions['mouth'][0]]
     )
-    cy.get('[data-cy="avatar-mouth-select"]').click()
-    cy.get(`[data-cy="avatar-mouth-${AvatarOptions['mouth'][1]}"]`).click()
+    cy.get('[data-cy="avatar-mouth-select"]').realClick()
+    cy.get(`[data-cy="avatar-mouth-${AvatarOptions['mouth'][1]}"]`).realClick()
     cy.get('[data-cy="avatar-mouth-select"]').contains(
       messages.pwa.avatar[AvatarOptions['mouth'][1]]
     )
@@ -103,10 +119,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-facialHair-select"]').contains(
       messages.pwa.avatar[AvatarOptions['facialHair'][0]]
     )
-    cy.get('[data-cy="avatar-facialHair-select"]').click()
+    cy.get('[data-cy="avatar-facialHair-select"]').realClick()
     cy.get(
       `[data-cy="avatar-facialHair-${AvatarOptions['facialHair'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-facialHair-select"]').contains(
       messages.pwa.avatar[AvatarOptions['facialHair'][1]]
     )
@@ -114,10 +130,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-clothing-select"]').contains(
       messages.pwa.avatar[AvatarOptions['clothing'][0]]
     )
-    cy.get('[data-cy="avatar-clothing-select"]').click()
+    cy.get('[data-cy="avatar-clothing-select"]').realClick()
     cy.get(
       `[data-cy="avatar-clothing-${AvatarOptions['clothing'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-clothing-select"]').contains(
       messages.pwa.avatar[AvatarOptions['clothing'][1]]
     )
@@ -125,10 +141,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-clothingColor-select"]').contains(
       messages.pwa.avatar[AvatarOptions['clothingColor'][0]]
     )
-    cy.get('[data-cy="avatar-clothingColor-select"]').click()
+    cy.get('[data-cy="avatar-clothingColor-select"]').realClick()
     cy.get(
       `[data-cy="avatar-clothingColor-${AvatarOptions['clothingColor'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-clothingColor-select"]').contains(
       messages.pwa.avatar[AvatarOptions['clothingColor'][1]]
     )
@@ -136,10 +152,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="avatar-skinTone-select"]').contains(
       messages.pwa.avatar[AvatarOptions['skinTone'][0]]
     )
-    cy.get('[data-cy="avatar-skinTone-select"]').click()
+    cy.get('[data-cy="avatar-skinTone-select"]').realClick()
     cy.get(
       `[data-cy="avatar-skinTone-${AvatarOptions['skinTone'][1]}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="avatar-skinTone-select"]').contains(
       messages.pwa.avatar[AvatarOptions['skinTone'][1]]
     )
@@ -158,13 +174,14 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     // modify password
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(this.data.newPassword)
     cy.get('[data-cy="update-account-password-repetition"]').type(
       this.data.newPassword
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // logout, reload page and log in again with new password
     cy.get('[data-cy="header-avatar"]').click()
@@ -179,6 +196,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     // modify password back to original value
     cy.get('[data-cy="header-avatar"]').click()
+    cy.get('[data-cy="participant-profile-login"]').click()
     cy.get('[data-cy="edit-profile"]').click()
     cy.get('[data-cy="update-account-password"]').type(
       Cypress.env('STUDENT_PASSWORD')
@@ -187,7 +205,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
       Cypress.env('STUDENT_PASSWORD')
     )
     cy.get('[data-cy="save-account-update"]').click()
-    cy.wait(1000)
+    cy.wait(1000) // wait for success toast to disappear
 
     // login again with original credentials
     cy.get('[data-cy="header-avatar"]').click()

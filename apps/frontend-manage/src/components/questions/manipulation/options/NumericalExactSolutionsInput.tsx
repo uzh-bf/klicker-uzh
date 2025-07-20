@@ -4,9 +4,11 @@ import { useTranslations } from 'next-intl'
 import { ElementFormTypesNumerical } from '../types'
 
 function NumericalExactSolutionsInput({
+  disabled,
   exactSolutions,
   precision,
 }: {
+  disabled?: boolean
   exactSolutions: ElementFormTypesNumerical['options']['exactSolutions']
   precision?: string | null
 }) {
@@ -16,9 +18,9 @@ function NumericalExactSolutionsInput({
     <div className="mt-3">
       <FormLabel
         required
-        label={t('manage.questionForms.exactSolutions')}
+        label={t('manage.elements.exactSolutions')}
         labelType="small"
-        tooltip={t('manage.questionForms.exactSolutionsTooltip')}
+        tooltip={t('manage.elements.exactSolutionsTooltip')}
       />
       <FieldArray name="options.exactSolutions">
         {({ push, remove }: FieldArrayRenderProps) => (
@@ -31,6 +33,7 @@ function NumericalExactSolutionsInput({
                 <FormikNumberField
                   hideError
                   required={index === 0}
+                  disabled={disabled}
                   name={`options.exactSolutions.${index}`}
                   label={t('shared.generic.value')}
                   placeholder={`${t('shared.generic.value')} ${index + 1}`}
@@ -39,30 +42,34 @@ function NumericalExactSolutionsInput({
                     cy: `set-exact-solution-${index}`,
                   }}
                 />
-                <Button
-                  destructive
-                  onClick={() => remove(index)}
-                  className={{
-                    root: 'h-9',
-                  }}
-                  data={{
-                    cy: `delete-exact-solution-${index}`,
-                  }}
-                >
-                  {t('shared.generic.delete')}
-                </Button>
+                {!disabled ? (
+                  <Button
+                    destructive
+                    onClick={() => remove(index)}
+                    className={{
+                      root: 'h-9',
+                    }}
+                    data={{
+                      cy: `delete-exact-solution-${index}`,
+                    }}
+                  >
+                    {t('shared.generic.delete')}
+                  </Button>
+                ) : null}
               </div>
             ))}
-            <Button
-              fluid
-              className={{
-                root: 'mt-1 h-8 border-gray-300 font-bold',
-              }}
-              onClick={() => push(undefined)}
-              data={{ cy: 'add-exact-solution' }}
-            >
-              {t('manage.questionForms.addExactSolution')}
-            </Button>
+            {!disabled ? (
+              <Button
+                fluid
+                className={{
+                  root: 'mt-1 h-8 border-gray-300 font-bold',
+                }}
+                onClick={() => push(undefined)}
+                data={{ cy: 'add-exact-solution' }}
+              >
+                {t('manage.elements.addExactSolution')}
+              </Button>
+            ) : null}
           </div>
         )}
       </FieldArray>

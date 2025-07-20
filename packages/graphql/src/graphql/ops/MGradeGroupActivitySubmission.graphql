@@ -1,8 +1,13 @@
 mutation GradeGroupActivitySubmission(
   $id: Int!
+  $groupActivityId: String!
   $gradingDecisions: GroupActivityGradingInput!
 ) {
-  gradeGroupActivitySubmission(id: $id, gradingDecisions: $gradingDecisions) {
+  gradeGroupActivitySubmission(
+    id: $id
+    groupActivityId: $groupActivityId
+    gradingDecisions: $gradingDecisions
+  ) {
     id
 
     decisionsSubmittedAt

@@ -1,0 +1,7 @@
+mutation ResolveActivityLogEntry($id: Int!) {
+  resolveActivityLogEntry(id: $id) {
+    id
+    resolved
+    resolvedAt
+  }
+}

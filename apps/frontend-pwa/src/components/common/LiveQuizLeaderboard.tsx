@@ -28,6 +28,7 @@ function LiveQuizLeaderboard({
   className?: string
 }): React.ReactElement {
   const t = useTranslations()
+  const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
 
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-only',
@@ -40,8 +41,6 @@ function LiveQuizLeaderboard({
     // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
     fetchPolicy: 'network-only',
   })
-
-  const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
 
   // save the current leaderboard to local storage
   useEffect(() => {
@@ -87,7 +86,7 @@ function LiveQuizLeaderboard({
 
   const leaderboard = data.liveQuizLeaderboard ?? []
   return (
-    <div className={twMerge('space-y-4', className)}>
+    <div className={twMerge('space-y-4 pt-4 md:pt-2', className)}>
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
       <div>
         {leaderboard.length && leaderboard.length > 0 ? (
@@ -105,6 +104,7 @@ function LiveQuizLeaderboard({
           <UserNotification
             type="info"
             message={t('shared.leaderboard.noPointsCollected')}
+            className={{ root: 'mt-1.5 md:text-base' }}
           />
         )}
       </div>

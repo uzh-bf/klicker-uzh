@@ -1,4 +1,4 @@
-import { Badge } from '@uzh-bf/design-system/dist/future'
+import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 

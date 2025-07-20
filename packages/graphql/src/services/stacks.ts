@@ -9,26 +9,13 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
-import {
-  ElementBlock,
-  type ElementInstance,
-  type ElementStack,
-  ElementStackType,
-  ElementType,
-  type InstanceStatistics,
-  type Participant,
-  type Participation,
-  Prisma,
-  PrismaClient,
-  type QuestionResponse as PrismaQuestionResponse,
-  ResponseCorrectness,
-  UserRole,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import type {
   CaseStudyElementData,
   CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
+  ChoicesResponse,
   ContentElementData,
   ElementData,
   ElementInstanceResults,
@@ -62,10 +49,12 @@ import type {
   SingleQuestionResponseFlashcard,
   SingleQuestionResponseSelection,
   SingleQuestionResponseValue,
-  StackResponseInput,
 } from '@klicker-uzh/types'
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
-import { getInitialInstanceResults } from '@klicker-uzh/util'
+import {
+  getInitialInstanceResults,
+  PrismaTransactionClient,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
@@ -79,11 +68,7 @@ import type {
 } from '../ops.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
-export type PrismaTransactionClient = Omit<
-  PrismaClient<Prisma.PrismaClientOptions, never>,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->
-type ExistingInstanceType = ElementInstance & {
+type ExistingInstanceType = DB.ElementInstance & {
   elementStack?: {
     practiceQuizId?: string | null
     microLearningId?: string | null
@@ -106,7 +91,7 @@ interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
   incorrect: boolean
-  existingResponse?: PrismaQuestionResponse | null
+  existingResponse?: DB.QuestionResponse | null
 }
 
 function combineNewCorrectnessParams({
@@ -232,10 +217,10 @@ function computeNewAverageTimes({
   existingResponse,
   answerTime,
 }: {
-  existingInstance: ElementInstance & {
-    instanceStatistics: InstanceStatistics | null
+  existingInstance: DB.ElementInstance & {
+    instanceStatistics: DB.InstanceStatistics | null
   }
-  existingResponse: PrismaQuestionResponse | null
+  existingResponse: DB.QuestionResponse | null
   answerTime: number
 }): { newAverageResponseTime: number; newAverageInstanceTime: number } {
   const existingParticipantCount =
@@ -267,8 +252,8 @@ function computeUpdatedInstanceStatistics({
   answerIncorrect,
   instanceInPracticeQuiz,
 }: {
-  participation: Participation | null
-  existingResponse: PrismaQuestionResponse | null
+  participation: DB.Participation | null
+  existingResponse: DB.QuestionResponse | null
   newAverageInstanceTime?: number
   answerCorrect: boolean
   answerPartial: boolean
@@ -281,7 +266,7 @@ function computeUpdatedInstanceStatistics({
           uniqueParticipantCount: {
             increment: Number(!existingResponse),
           },
-          averageTimeSpent: newAverageInstanceTime,
+          averageTimeSpent: newAverageInstanceTime ?? 0,
           correctCount: {
             increment: Number(answerCorrect),
           },
@@ -311,7 +296,7 @@ function computeUpdatedInstanceStatistics({
               Number(answerCorrect && instanceInPracticeQuiz) -
               Number(
                 existingResponse?.lastResponseCorrectness ===
-                  ResponseCorrectness.CORRECT
+                  DB.ResponseCorrectness.CORRECT
               ),
           },
           lastPartialCorrectCount: {
@@ -319,7 +304,7 @@ function computeUpdatedInstanceStatistics({
               Number(answerPartial && instanceInPracticeQuiz) -
               Number(
                 existingResponse?.lastResponseCorrectness ===
-                  ResponseCorrectness.PARTIAL
+                  DB.ResponseCorrectness.PARTIAL
               ),
           },
           lastWrongCount: {
@@ -327,7 +312,7 @@ function computeUpdatedInstanceStatistics({
               Number(answerIncorrect && instanceInPracticeQuiz) -
               Number(
                 existingResponse?.lastResponseCorrectness ===
-                  ResponseCorrectness.WRONG
+                  DB.ResponseCorrectness.WRONG
               ),
           },
         },
@@ -399,7 +384,7 @@ async function getValidateFlashcardInstance({
   const existingInstance = await prisma.elementInstance.findUnique({
     where: {
       id,
-      elementType: ElementType.FLASHCARD,
+      elementType: DB.ElementType.FLASHCARD,
     },
     include: {
       elementStack: true,
@@ -417,7 +402,7 @@ async function getValidateFlashcardInstance({
   // check if the instance exists and the response is valid
   if (
     !existingInstance ||
-    existingInstance.elementType !== ElementType.FLASHCARD ||
+    existingInstance.elementType !== DB.ElementType.FLASHCARD ||
     ![
       FlashcardCorrectness.INCORRECT,
       FlashcardCorrectness.PARTIAL,
@@ -449,9 +434,9 @@ function computeFlashcardResponseContent({
   existingResponse,
 }: {
   response: FlashcardCorrectness
-  existingResponse: PrismaQuestionResponse | null
+  existingResponse: DB.QuestionResponse | null
 }): {
-  responseCorrectness: ResponseCorrectness
+  responseCorrectness: DB.ResponseCorrectness
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
 } {
@@ -475,10 +460,10 @@ function computeFlashcardResponseContent({
         : 0
   const responseCorrectness =
     correctness === 1
-      ? ResponseCorrectness.CORRECT
+      ? DB.ResponseCorrectness.CORRECT
       : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+        ? DB.ResponseCorrectness.WRONG
+        : DB.ResponseCorrectness.PARTIAL
 
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor ?? 2.5,
@@ -569,8 +554,8 @@ async function upsertFlashcardResponse({
   response: FlashcardCorrectness
   newAverageResponseTime: number
   existingInstance: ExistingInstanceType
-  existingResponse: PrismaQuestionResponse | null
-  responseCorrectness: ResponseCorrectness
+  existingResponse: DB.QuestionResponse | null
+  responseCorrectness: DB.ResponseCorrectness
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
 }) {
@@ -585,7 +570,7 @@ async function upsertFlashcardResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -648,7 +633,7 @@ async function upsertFlashcardResponse({
         correctness: response,
       },
       lastResponseCorrectness: responseCorrectness,
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       aggregatedResponses: {
         ...aggregatedResponses,
         [response]: aggregatedResponses[response] + 1,
@@ -686,7 +671,7 @@ async function respondToFlashcard(
     courseId: string
     response: FlashcardCorrectness
     answerTime: number
-    participation: (Participation & { participant: Participant }) | null
+    participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
   ctx: Context
@@ -710,7 +695,8 @@ async function respondToFlashcard(
     const existingInstance = await getValidateFlashcardInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined,
       response,
     })
 
@@ -774,7 +760,11 @@ async function respondToFlashcard(
     })
 
     // early return: anonymous submissions (no login or login without participation in this course)
-    if (!ctx.user?.sub || !participation) {
+    if (
+      !ctx.user?.sub ||
+      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+      !participation
+    ) {
       return result
     }
 
@@ -833,7 +823,7 @@ async function getValidateContentInstance({
   const existingInstance = await prisma.elementInstance.findUnique({
     where: {
       id,
-      elementType: ElementType.CONTENT,
+      elementType: DB.ElementType.CONTENT,
     },
     include: {
       elementStack: true,
@@ -934,7 +924,7 @@ async function upsertContentResponse({
       participant: {
         connect: { id: participantId },
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       elementInstance: {
         connect: { id },
       },
@@ -969,11 +959,11 @@ async function upsertContentResponse({
       firstResponse: {
         viewed: true,
       },
-      firstResponseCorrectness: ResponseCorrectness.CORRECT,
+      firstResponseCorrectness: DB.ResponseCorrectness.CORRECT,
       lastResponse: {
         viewed: true,
       },
-      lastResponseCorrectness: ResponseCorrectness.CORRECT,
+      lastResponseCorrectness: DB.ResponseCorrectness.CORRECT,
       trialsCount: 1,
 
       // AGGREGATED RESPONSES
@@ -994,11 +984,11 @@ async function upsertContentResponse({
     },
     update: {
       // RESPONSE
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       lastResponse: {
         viewed: true,
       },
-      lastResponseCorrectness: ResponseCorrectness.CORRECT,
+      lastResponseCorrectness: DB.ResponseCorrectness.CORRECT,
       trialsCount: {
         increment: 1,
       },
@@ -1037,7 +1027,7 @@ async function respondToContent(
     id: number
     courseId: string
     answerTime: number
-    participation: (Participation & { participant: Participant }) | null
+    participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
   ctx: Context
@@ -1056,7 +1046,8 @@ async function respondToContent(
     const existingInstance = await getValidateContentInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
     })
 
     // check if the instance exists and the response is valid
@@ -1112,7 +1103,11 @@ async function respondToContent(
     })
 
     // early return: anonymous submissions (no login or login without participation in this course)
-    if (!ctx.user?.sub || !participation) {
+    if (
+      !ctx.user?.sub ||
+      ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+      !participation
+    ) {
       return result
     }
 
@@ -1268,7 +1263,7 @@ function evaluateNumericalElementResponse({
   multiplier?: number
 }): NumericalEvaluationReturnType | null {
   return {
-    elementType: ElementType.NUMERICAL,
+    elementType: DB.ElementType.NUMERICAL,
     feedbacks: [],
     numAnswers: results.total + anonymousResults.total,
     responses: combineNumericalResults({
@@ -1303,7 +1298,7 @@ function evaluateFreeTextElementResponse({
   multiplier?: number
 }): FreeTextEvaluationReturnType | null {
   return {
-    elementType: ElementType.FREE_TEXT,
+    elementType: DB.ElementType.FREE_TEXT,
     feedbacks: [],
     numAnswers: results.total + anonymousResults.total,
     answers: combineFreeTextResults({
@@ -1337,7 +1332,7 @@ function evaluateSelectionElementResponse({
   multiplier?: number
 }): SelectionEvaluationReturnType | null {
   return {
-    elementType: ElementType.SELECTION,
+    elementType: DB.ElementType.SELECTION,
     feedbacks: [],
     numAnswers: results.total + anonymousResults.total,
     selectionResponses: combineSelectionResults({
@@ -1372,7 +1367,7 @@ function evaluateCaseStudyElementResponse({
   multiplier?: number
 }): CaseStudyEvaluationReturnType | null {
   return {
-    elementType: ElementType.CASE_STUDY,
+    elementType: DB.ElementType.CASE_STUDY,
     feedbacks: [],
     numAnswers: results.total + anonymousResults.total,
     assessments: reduceCaseStudyResults({
@@ -1410,9 +1405,9 @@ function computeQuestionEvaluation({
   multiplier?: number
 }) {
   if (
-    (elementData.type === ElementType.SC ||
-      elementData.type === ElementType.MC ||
-      elementData.type === ElementType.KPRIM) &&
+    (elementData.type === DB.ElementType.SC ||
+      elementData.type === DB.ElementType.MC ||
+      elementData.type === DB.ElementType.KPRIM) &&
     'choices' in results &&
     'choices' in anonymousResults
   ) {
@@ -1424,7 +1419,7 @@ function computeQuestionEvaluation({
       multiplier,
     })
   } else if (
-    elementData.type === ElementType.NUMERICAL &&
+    elementData.type === DB.ElementType.NUMERICAL &&
     'responses' in results &&
     'responses' in anonymousResults
   ) {
@@ -1436,7 +1431,7 @@ function computeQuestionEvaluation({
       multiplier,
     })
   } else if (
-    elementData.type === ElementType.FREE_TEXT &&
+    elementData.type === DB.ElementType.FREE_TEXT &&
     'responses' in results &&
     'responses' in anonymousResults
   ) {
@@ -1448,7 +1443,7 @@ function computeQuestionEvaluation({
       multiplier,
     })
   } else if (
-    elementData.type === ElementType.SELECTION &&
+    elementData.type === DB.ElementType.SELECTION &&
     'selections' in results &&
     'selections' in anonymousResults
   ) {
@@ -1460,7 +1455,7 @@ function computeQuestionEvaluation({
       multiplier,
     })
   } else if (
-    elementData.type === ElementType.CASE_STUDY &&
+    elementData.type === DB.ElementType.CASE_STUDY &&
     'assessments' in results &&
     'assessments' in anonymousResults
   ) {
@@ -1487,8 +1482,8 @@ export function evaluateChoicesAnswerCorrectness({
     !('choices' in response) ||
     response.choices === null ||
     typeof response.choices === 'undefined' ||
-    ((elementData.type === ElementType.SC ||
-      elementData.type === ElementType.MC) &&
+    ((elementData.type === DB.ElementType.SC ||
+      elementData.type === DB.ElementType.MC) &&
       response.choices.length === 0)
   ) {
     return null
@@ -1500,14 +1495,14 @@ export function evaluateChoicesAnswerCorrectness({
     return acc
   }, [])
 
-  if (elementData.type === ElementType.SC) {
+  if (elementData.type === DB.ElementType.SC) {
     const correctness = gradeQuestionSC({
       responseCount: elementOptions.choices.length,
       response: response.choices,
       solution,
     })
     return correctness
-  } else if (elementData.type === ElementType.MC) {
+  } else if (elementData.type === DB.ElementType.MC) {
     const correctness = gradeQuestionMC({
       responseCount: elementOptions.choices.length,
       response: response.choices,
@@ -1680,7 +1675,7 @@ export function updateNumericalResults({
   correct?: boolean
 }): { results: ElementResultsOpen; modified: boolean } {
   // verify the input types
-  if (elementData.type !== ElementType.NUMERICAL) {
+  if (elementData.type !== DB.ElementType.NUMERICAL) {
     return { results: previousResults, modified: false }
   }
 
@@ -1746,7 +1741,7 @@ export function updateFreeTextResults({
   correct?: boolean
 }): { results: ElementResultsOpen; modified: boolean } {
   // verify the input types
-  if (elementData.type !== ElementType.FREE_TEXT) {
+  if (elementData.type !== DB.ElementType.FREE_TEXT) {
     return { results: previousResults, modified: false }
   }
 
@@ -1827,7 +1822,7 @@ export function updateSelectionResults({
 function convertCaseStudySolutionsObject({
   instance,
 }: {
-  instance: ElementInstance
+  instance: DB.ElementInstance
 }): CaseStudySolutionsObject | undefined {
   // convert case study solutions to object for faster access (if sample solution is defined)
   const options = instance.elementData.options as CaseStudyElementOptions
@@ -1941,8 +1936,8 @@ function updateQuestionResults({
   response,
   caseStudySolutions,
 }: {
-  existingInstance: ElementInstance
-  participation: (Participation & { participant: Participant }) | null
+  existingInstance: DB.ElementInstance
+  participation: (DB.Participation & { participant: DB.Participant }) | null
   response: ResponseInput
   caseStudySolutions?: CaseStudySolutionsObject
 }): {
@@ -1957,9 +1952,9 @@ function updateQuestionResults({
     : existingInstance.anonymousResults
 
   if (
-    (elementData.type === ElementType.SC ||
-      elementData.type === ElementType.MC ||
-      elementData.type === ElementType.KPRIM) &&
+    (elementData.type === DB.ElementType.SC ||
+      elementData.type === DB.ElementType.MC ||
+      elementData.type === DB.ElementType.KPRIM) &&
     'choices' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
@@ -1976,7 +1971,7 @@ function updateQuestionResults({
       correctness,
     }
   } else if (
-    elementData.type === ElementType.NUMERICAL &&
+    elementData.type === DB.ElementType.NUMERICAL &&
     'responses' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
@@ -1995,7 +1990,7 @@ function updateQuestionResults({
       correctness,
     }
   } else if (
-    elementData.type === ElementType.FREE_TEXT &&
+    elementData.type === DB.ElementType.FREE_TEXT &&
     'responses' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
@@ -2014,7 +2009,7 @@ function updateQuestionResults({
       correctness,
     }
   } else if (
-    elementData.type === ElementType.SELECTION &&
+    elementData.type === DB.ElementType.SELECTION &&
     'selections' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
@@ -2031,7 +2026,7 @@ function updateQuestionResults({
       correctness,
     }
   } else if (
-    elementData.type === ElementType.CASE_STUDY &&
+    elementData.type === DB.ElementType.CASE_STUDY &&
     'assessments' in previousResults
   ) {
     correctness = elementData.options.hasSampleSolution
@@ -2066,9 +2061,9 @@ function computeAwardedPointsAndXP({
 }: {
   score: number
   xp: number
-  existingResponse: PrismaQuestionResponse | null
-  participation: Participation | null
-  instance: ElementInstance
+  existingResponse: DB.QuestionResponse | null
+  participation: DB.Participation | null
+  instance: DB.ElementInstance
 }): {
   pointsAwarded: number | null
   newPointsFrom: Date | undefined
@@ -2168,8 +2163,8 @@ function computeAggregatedResponsesChoices({
   existingResponse,
   response,
 }: {
-  instance: ElementInstance
-  existingResponse: PrismaQuestionResponse | null
+  instance: DB.ElementInstance
+  existingResponse: DB.QuestionResponse | null
   response: ResponseInput
 }): ElementResultsChoices {
   let newAggResponses = (existingResponse?.aggregatedResponses ??
@@ -2196,8 +2191,8 @@ function computeAggregatedResponsesOpen({
   responseValue,
   correctness,
 }: {
-  instance: ElementInstance
-  existingResponse: PrismaQuestionResponse | null
+  instance: DB.ElementInstance
+  existingResponse: DB.QuestionResponse | null
   responseValue: string
   correctness: number
 }) {
@@ -2237,8 +2232,8 @@ function computeAggregatedResponsesSelection({
   existingResponse,
   responseSelection,
 }: {
-  instance: ElementInstance
-  existingResponse: PrismaQuestionResponse | null
+  instance: DB.ElementInstance
+  existingResponse: DB.QuestionResponse | null
   responseSelection: number[]
 }) {
   if (!('answerCollection' in instance.elementData.options)) {
@@ -2267,8 +2262,8 @@ function computeAggregatedResponsesCaseStudy({
   responseAssessment,
   solutions,
 }: {
-  instance: ElementInstance
-  existingResponse: PrismaQuestionResponse | null
+  instance: DB.ElementInstance
+  existingResponse: DB.QuestionResponse | null
   responseAssessment: CaseStudyCaseResponse[]
   solutions?: CaseStudySolutionsObject
 }) {
@@ -2303,16 +2298,16 @@ function computeAggregatedResponsesQuestion({
   correctness,
   caseStudySolutions,
 }: {
-  instance: ElementInstance
-  existingResponse: PrismaQuestionResponse | null
+  instance: DB.ElementInstance
+  existingResponse: DB.QuestionResponse | null
   response: ResponseInput
   correctness?: number | null
   caseStudySolutions?: CaseStudySolutionsObject
 }): ElementInstanceResults | null {
   if (
-    instance.elementType === ElementType.SC ||
-    instance.elementType === ElementType.MC ||
-    instance.elementType === ElementType.KPRIM
+    instance.elementType === DB.ElementType.SC ||
+    instance.elementType === DB.ElementType.MC ||
+    instance.elementType === DB.ElementType.KPRIM
   ) {
     return computeAggregatedResponsesChoices({
       instance,
@@ -2320,25 +2315,25 @@ function computeAggregatedResponsesQuestion({
       response,
     })
   } else if (
-    instance.elementType === ElementType.NUMERICAL ||
-    instance.elementType === ElementType.FREE_TEXT
+    instance.elementType === DB.ElementType.NUMERICAL ||
+    instance.elementType === DB.ElementType.FREE_TEXT
   ) {
     return computeAggregatedResponsesOpen({
       instance,
       existingResponse,
       responseValue:
-        instance.elementType === ElementType.NUMERICAL
+        instance.elementType === DB.ElementType.NUMERICAL
           ? String(parseFloat(response.value!))
           : toLowerCase(response.value!.trim()),
       correctness: correctness ?? 0,
     })
-  } else if (instance.elementType === ElementType.SELECTION) {
+  } else if (instance.elementType === DB.ElementType.SELECTION) {
     return computeAggregatedResponsesSelection({
       instance,
       existingResponse,
       responseSelection: response.selection!,
     })
-  } else if (instance.elementType === ElementType.CASE_STUDY) {
+  } else if (instance.elementType === DB.ElementType.CASE_STUDY) {
     return computeAggregatedResponsesCaseStudy({
       instance,
       existingResponse,
@@ -2381,7 +2376,7 @@ async function upsertQuestionResponse({
   xpAwarded: number
   lastXpAwardedAt: Date
   newAverageResponseTime: number
-  existingResponse: PrismaQuestionResponse | null
+  existingResponse: DB.QuestionResponse | null
   newAggResponses: ElementInstanceResults
   practiceQuizId?: string
   microLearningId?: string
@@ -2389,10 +2384,10 @@ async function upsertQuestionResponse({
 }) {
   const responseCorrectness =
     correctness === 1
-      ? ResponseCorrectness.CORRECT
+      ? DB.ResponseCorrectness.CORRECT
       : correctness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+        ? DB.ResponseCorrectness.WRONG
+        : DB.ResponseCorrectness.PARTIAL
 
   await prisma.questionResponse.upsert({
     where: {
@@ -2406,7 +2401,7 @@ async function upsertQuestionResponse({
       totalPointsAwarded: pointsAwarded,
       totalXpAwarded: xpAwarded,
       trialsCount: 1,
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       lastAwardedAt,
       lastXpAwardedAt,
       firstResponse: response as SingleQuestionResponse,
@@ -2460,7 +2455,7 @@ async function upsertQuestionResponse({
       trialsCount: {
         increment: 1,
       },
-      averageTimeSpent: newAverageResponseTime,
+      averageTimeSpent: newAverageResponseTime ?? 0,
       totalScore: {
         increment: score,
       },
@@ -2623,7 +2618,7 @@ export async function respondToQuestion(
     id: number
     response: ResponseInput
     answerTime: number
-    participation: (Participation & { participant: Participant }) | null
+    participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
   },
   ctx: Context
@@ -2632,7 +2627,8 @@ export async function respondToQuestion(
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
-      participantId: ctx.user?.sub,
+      participantId:
+        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
     })
 
     // if the instance does not exist or the elementData is not defined, return early
@@ -2649,7 +2645,7 @@ export async function respondToQuestion(
 
     // conver the case study solutions to object form for more efficient access
     const caseStudySolutions =
-      existingInstance.elementType === ElementType.CASE_STUDY
+      existingInstance.elementType === DB.ElementType.CASE_STUDY
         ? convertCaseStudySolutionsObject({
             instance: existingInstance,
           })
@@ -2730,7 +2726,7 @@ export async function respondToQuestion(
       !questionEval ||
       !participation ||
       !ctx.user?.sub ||
-      ctx.user.role !== UserRole.PARTICIPANT
+      ctx.user.role !== DB.UserRole.PARTICIPANT
     ) {
       return {
         ...updatedInstance,
@@ -2882,6 +2878,26 @@ export async function respondToQuestion(
 
 // ! Element & Stack Response & Combination Logic
 // #region
+interface ElementResponseInput {
+  instanceId: number
+  type: DB.ElementType
+  flashcardResponse?: FlashcardCorrectness | null
+  contentReponse?: boolean | null
+  choicesResponse?: ChoicesResponse[] | null
+  numericalResponse?: number | null
+  freeTextResponse?: string | null
+  selectionResponse?: number[] | null
+  caseStudyResponse?:
+    | {
+        caseId: string
+        itemResponses: {
+          itemId: number
+          criterionResponses: { criterionId: string; response: number }[]
+        }[]
+      }[]
+    | null
+}
+
 async function respondToElement({
   ctx,
   response,
@@ -2890,7 +2906,7 @@ async function respondToElement({
   skipTracking = false,
 }: {
   ctx: Context
-  response: StackResponseInput
+  response: ElementResponseInput
   courseId: string
   answerTime: number
   skipTracking?: boolean
@@ -2899,21 +2915,22 @@ async function respondToElement({
   score: number | null
   evaluation: InstanceEvaluation | null
 }> {
-  const participation = ctx.user?.sub
-    ? await ctx.prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
+  const participation =
+    ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+      ? await ctx.prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
           },
-        },
-        include: {
-          participant: true,
-        },
-      })
-    : null
+          include: {
+            participant: true,
+          },
+        })
+      : null
 
-  if (response.type === ElementType.FLASHCARD) {
+  if (response.type === DB.ElementType.FLASHCARD) {
     const result = await respondToFlashcard(
       {
         id: response.instanceId,
@@ -2946,7 +2963,7 @@ async function respondToElement({
       }
     }
   } else if (
-    response.type === ElementType.CONTENT &&
+    response.type === DB.ElementType.CONTENT &&
     response.contentReponse === true
   ) {
     const result = await respondToContent(
@@ -2980,9 +2997,9 @@ async function respondToElement({
       }
     }
   } else if (
-    response.type === ElementType.SC ||
-    response.type === ElementType.MC ||
-    response.type === ElementType.KPRIM
+    response.type === DB.ElementType.SC ||
+    response.type === DB.ElementType.MC ||
+    response.type === DB.ElementType.KPRIM
   ) {
     const result = await respondToQuestion(
       {
@@ -3012,7 +3029,7 @@ async function respondToElement({
         evaluation: null,
       }
     }
-  } else if (response.type === ElementType.NUMERICAL) {
+  } else if (response.type === DB.ElementType.NUMERICAL) {
     const result = await respondToQuestion(
       {
         courseId: courseId,
@@ -3041,7 +3058,7 @@ async function respondToElement({
         evaluation: null,
       }
     }
-  } else if (response.type === ElementType.FREE_TEXT) {
+  } else if (response.type === DB.ElementType.FREE_TEXT) {
     const result = await respondToQuestion(
       {
         courseId: courseId,
@@ -3070,7 +3087,7 @@ async function respondToElement({
         evaluation: null,
       }
     }
-  } else if (response.type === ElementType.SELECTION) {
+  } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
         courseId: courseId,
@@ -3101,7 +3118,7 @@ async function respondToElement({
         evaluation: null,
       }
     }
-  } else if (response.type === ElementType.CASE_STUDY) {
+  } else if (response.type === DB.ElementType.CASE_STUDY) {
     const result = await respondToQuestion(
       {
         courseId: courseId,
@@ -3143,7 +3160,7 @@ async function respondToElement({
 export interface RespondToElementStackInput {
   stackId: number
   courseId: string
-  responses: StackResponseInput[]
+  responses: ElementResponseInput[]
   stackAnswerTime: number
   isOwner?: boolean
 }
@@ -3159,7 +3176,7 @@ export async function respondToElementStack(
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const stack = await ctx.prisma.elementStack.findUnique({
       where: { id: stackId },
       include: {
@@ -3236,7 +3253,7 @@ export async function respondToElementStack(
 // #region
 type CommonEvaluationProps = {
   id: number
-  type: ElementType
+  type: DB.ElementType
   name: string
   content: string
   explanation: string | null
@@ -3698,7 +3715,7 @@ function computeContentEvaluation({
 function computeInstanceEvaluation({
   instance,
 }: {
-  instance: ElementInstance
+  instance: DB.ElementInstance
 }) {
   const hasSampleSolution =
     'options' in instance.elementData &&
@@ -3723,9 +3740,9 @@ function computeInstanceEvaluation({
   }
 
   if (
-    (instanceType === ElementType.SC ||
-      instanceType === ElementType.MC ||
-      instanceType === ElementType.KPRIM) &&
+    (instanceType === DB.ElementType.SC ||
+      instanceType === DB.ElementType.MC ||
+      instanceType === DB.ElementType.KPRIM) &&
     'choices' in instance.results &&
     'choices' in instance.anonymousResults
   ) {
@@ -3736,7 +3753,7 @@ function computeInstanceEvaluation({
       common: commonInstanceData,
     })
   } else if (
-    instanceType === ElementType.NUMERICAL &&
+    instanceType === DB.ElementType.NUMERICAL &&
     'responses' in instance.results &&
     'responses' in instance.anonymousResults
   ) {
@@ -3747,7 +3764,7 @@ function computeInstanceEvaluation({
       common: commonInstanceData,
     })
   } else if (
-    instanceType === ElementType.FREE_TEXT &&
+    instanceType === DB.ElementType.FREE_TEXT &&
     'responses' in instance.results &&
     'responses' in instance.anonymousResults
   ) {
@@ -3758,7 +3775,7 @@ function computeInstanceEvaluation({
       common: commonInstanceData,
     })
   } else if (
-    instanceType === ElementType.SELECTION &&
+    instanceType === DB.ElementType.SELECTION &&
     'selections' in instance.results &&
     'selections' in instance.anonymousResults
   ) {
@@ -3769,7 +3786,7 @@ function computeInstanceEvaluation({
       common: commonInstanceData,
     })
   } else if (
-    instanceType === ElementType.CASE_STUDY &&
+    instanceType === DB.ElementType.CASE_STUDY &&
     'assessments' in instance.results &&
     'assessments' in instance.anonymousResults
   ) {
@@ -3780,7 +3797,7 @@ function computeInstanceEvaluation({
       common: commonInstanceData,
     })
   } else if (
-    instanceType === ElementType.FLASHCARD &&
+    instanceType === DB.ElementType.FLASHCARD &&
     FlashcardCorrectness.CORRECT in instance.results &&
     FlashcardCorrectness.CORRECT in instance.anonymousResults
   ) {
@@ -3789,7 +3806,7 @@ function computeInstanceEvaluation({
       anonymousResults: instance.anonymousResults,
       common: commonInstanceData,
     })
-  } else if (instanceType === ElementType.CONTENT) {
+  } else if (instanceType === DB.ElementType.CONTENT) {
     return computeContentEvaluation({
       results: instance.results,
       anonymousResults: instance.anonymousResults,
@@ -3802,8 +3819,8 @@ function computeInstanceEvaluation({
 
 export function computeStackEvaluation(
   stacks: (
-    | (ElementStack & { elements: ElementInstance[] })
-    | (ElementBlock & { elements: ElementInstance[] })
+    | (DB.ElementStack & { elements: DB.ElementInstance[] })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
   )[]
 ) {
   return stacks.map((stack) => ({
@@ -3837,7 +3854,7 @@ function getPreviousEvaluationFlashcard({
     evaluation: {
       ...elementData,
       instanceId,
-      elementType: ElementType.FLASHCARD,
+      elementType: DB.ElementType.FLASHCARD,
       score: 0,
       correctness: null,
       lastResponse,
@@ -3860,7 +3877,7 @@ function getPreviousEvaluationContent({
     evaluation: {
       ...elementData,
       instanceId,
-      elementType: ElementType.CONTENT,
+      elementType: DB.ElementType.CONTENT,
       score: 0,
       correctness: 1,
       lastResponse,
@@ -4174,12 +4191,12 @@ export async function getPreviousStackEvaluation(
   ctx: Context
 ) {
   // previous results only exist for logged in users
-  if (!ctx.user?.sub) {
+  if (!ctx.user?.sub || ctx.user?.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
 
   const stack = await ctx.prisma.elementStack.findUnique({
-    where: { id: stackId, type: ElementStackType.MICROLEARNING },
+    where: { id: stackId, type: DB.ElementStackType.MICROLEARNING },
     include: {
       elements: {
         include: {
@@ -4219,7 +4236,7 @@ export async function getPreviousStackEvaluation(
         return acc
       }
 
-      if (element.elementData.type === ElementType.FLASHCARD) {
+      if (element.elementData.type === DB.ElementType.FLASHCARD) {
         const { evaluation, newStatus } = getPreviousEvaluationFlashcard({
           instanceId: element.id,
           elementData: element.elementData as FlashcardElementData,
@@ -4234,7 +4251,7 @@ export async function getPreviousStackEvaluation(
             newStatus,
           })
         }
-      } else if (element.elementData.type === ElementType.CONTENT) {
+      } else if (element.elementData.type === DB.ElementType.CONTENT) {
         const { evaluation, newStatus } = getPreviousEvaluationContent({
           instanceId: element.id,
           elementData: element.elementData,
@@ -4250,9 +4267,9 @@ export async function getPreviousStackEvaluation(
           })
         }
       } else if (
-        (element.elementData.type === ElementType.SC ||
-          element.elementData.type === ElementType.MC ||
-          element.elementData.type === ElementType.KPRIM) &&
+        (element.elementData.type === DB.ElementType.SC ||
+          element.elementData.type === DB.ElementType.MC ||
+          element.elementData.type === DB.ElementType.KPRIM) &&
         'choices' in element.results &&
         'choices' in element.anonymousResults
       ) {
@@ -4276,7 +4293,7 @@ export async function getPreviousStackEvaluation(
           acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
         }
       } else if (
-        element.elementData.type === ElementType.NUMERICAL &&
+        element.elementData.type === DB.ElementType.NUMERICAL &&
         'responses' in element.results &&
         'responses' in element.anonymousResults
       ) {
@@ -4300,7 +4317,7 @@ export async function getPreviousStackEvaluation(
           acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
         }
       } else if (
-        element.elementData.type === ElementType.FREE_TEXT &&
+        element.elementData.type === DB.ElementType.FREE_TEXT &&
         'responses' in element.results &&
         'responses' in element.anonymousResults
       ) {
@@ -4324,7 +4341,7 @@ export async function getPreviousStackEvaluation(
           acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
         }
       } else if (
-        element.elementData.type === ElementType.SELECTION &&
+        element.elementData.type === DB.ElementType.SELECTION &&
         'selections' in element.results &&
         'selections' in element.anonymousResults
       ) {
@@ -4348,7 +4365,7 @@ export async function getPreviousStackEvaluation(
           acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
         }
       } else if (
-        element.elementData.type === ElementType.CASE_STUDY &&
+        element.elementData.type === DB.ElementType.CASE_STUDY &&
         'assessments' in element.results &&
         'assessments' in element.anonymousResults
       ) {

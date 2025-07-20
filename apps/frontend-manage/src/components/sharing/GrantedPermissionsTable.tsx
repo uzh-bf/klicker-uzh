@@ -1,6 +1,6 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
 import {
-  CatalogObjectType,
+  ObjectType,
   PermissionInfo,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,37 +16,39 @@ function GrantedPermissionsTable({
   permissionsLoading,
   changeLoading,
   isOwner,
+  showPropagationSetting,
   onPermissionLevelChange,
   onPermissionRemoval,
-  onSharingSuccess,
-  onSharingFailure,
   onOwnershipTransfer,
   shareObjectCallback,
 }: {
-  type: CatalogObjectType
+  type: ObjectType
   permissions: PermissionInfo[]
   permissionsLoading: boolean
   changeLoading: boolean
   isOwner: boolean
+  showPropagationSetting: boolean
   onPermissionLevelChange: ({
     permissionId,
     newPermissionLevel,
+    newPropagation,
   }: {
     permissionId: number
     newPermissionLevel: PermissionLevel
+    newPropagation: boolean
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
-  onSharingSuccess: () => void
-  onSharingFailure: () => void
   onOwnershipTransfer: () => void
   shareObjectCallback: ({
     shortnameOrEmail,
     userGroupId,
     permissionLevel,
+    propagation,
   }: {
     shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
+    propagation: boolean
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
@@ -78,9 +80,14 @@ function GrantedPermissionsTable({
             <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.userGroup')}
             </th>
-            <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
+            <th className="w-40 px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.permissionLevel')}
             </th>
+            {showPropagationSetting ? (
+              <th className="w-24 px-2 text-center text-sm font-bold text-gray-700">
+                {t('shared.generic.propagation')}
+              </th>
+            ) : null}
             <th className="w-10" />
           </tr>
         </thead>
@@ -88,7 +95,10 @@ function GrantedPermissionsTable({
         <tbody>
           {permissionsLoading ? (
             <tr>
-              <td colSpan={4} className="py-4 text-center">
+              <td
+                colSpan={showPropagationSetting ? 5 : 4}
+                className="py-4 text-center"
+              >
                 <Loader />
               </td>
             </tr>
@@ -98,13 +108,13 @@ function GrantedPermissionsTable({
                 type={type}
                 permissions={permissions ?? []}
                 changeLoading={changeLoading}
+                showPropagationSetting={showPropagationSetting}
                 onPermissionLevelChange={onPermissionLevelChange}
                 onPermissionRemoval={onPermissionRemoval}
               />
               <DirectSharingForm
                 type={type}
-                onSuccess={onSharingSuccess}
-                onFailure={onSharingFailure}
+                showPropagationSetting={showPropagationSetting}
                 shareObjectCallback={shareObjectCallback}
               />
             </>

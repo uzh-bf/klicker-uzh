@@ -57,7 +57,7 @@ export function SCAnswerOptions({
                 fluid
                 className={{
                   root: twMerge(
-                    'min-h-[2.5rem] border-slate-300',
+                    'min-h-10 border-slate-300',
                     !hasFeedback && 'h-full',
                     hasFeedback && 'rounded-b-none',
                     disabled && 'bg-accent disabled:opacity-90',
@@ -82,7 +82,7 @@ export function SCAnswerOptions({
                     withProse
                     content={choice.value}
                     className={{
-                      root: 'prose-p:!m-0 prose-img:!m-0 max-w-none p-1 pt-2',
+                      root: 'prose-p:m-0! prose-img:m-0! max-w-none p-1 pt-2',
                     }}
                   />
                 </Button.Label>

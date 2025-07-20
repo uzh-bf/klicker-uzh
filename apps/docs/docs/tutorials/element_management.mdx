@@ -2,15 +2,17 @@
 title: Element Management
 ---
 
-## What is an element?
+import PrivatePreviewTag from '../../src/components/PrivatePreviewTag'
 
-![Element Editor](/img/elements/SC_element_editor.png)
+## What is an Element?
 
-Elements serve as the fundamental building blocks of KlickerUZH. The element library builds the home screen of KlickerUZH, providing a central hub for creating and editing elements. To gain a basic understanding of the role of elements in KlickerUZH, please refer to the Core Concept - Elements and Use case section.
+![Element Editor](/img/elements/MC_element_editor.png)
 
-There are several different element types:
+Elements serve as the fundamental building blocks of KlickerUZH. The element library builds the home screen of KlickerUZH, providing a central hub for creating and editing elements. To gain a basic understanding of the role of elements in KlickerUZH, please refer to the [Core Concept - Elements](/getting_started/core_concepts/#elements) and [Use Cases](/use_cases/).
 
-- **Questions**: Single Choice (SC), Multiple Choice (MC), Kprim (KP), Free Text (FT), and Numerical Response (NR)
+KlickerUZH supports the following element types (SE / CS questions are currently in private preview testing):
+
+- **Question Types**: Single Choice (SC), Multiple Choice (MC), Kprim (KP), Numerical Response (NR), Free Text (FT), Selection (SE) and Case Study (CS)
 - **Flashcards** (FC)
 - **Content Elements** (CT)
 
@@ -18,7 +20,7 @@ There are several different element types:
 A pedagogical reflection should precede the creation of elements, as different element types may be more appropriate for different learning settings or learning goals. For more pedagogical considerations, refer to use cases or to UZH Teaching Tools: e.g., https://teachingtools.uzh.ch/en/tools/multiple-choice-co-aufgaben-erstellen
 :::
 
-## How can I create an element?
+## How can I create an Element?
 
 <iframe
   id="kmsembed-0_c4db0dw8"
@@ -36,33 +38,88 @@ A pedagogical reflection should precede the creation of elements, as different e
   title="KlickerUZH - Element Creation"
 ></iframe>
 
-When creating elements, consider the following:
+<br />
+<br />
 
-- **Element Title**: Is visible to participants and provide an idea about the element's subject.
-- **Weighting**: Elements can be weighted using multipliers (x1, x2, x3, or x4) to award points in gamified contexts.
+:::warning
+Make sure that you have chosen the desired element type before saving the element, as it cannot be changed later.
+:::
+
+When creating a new element, the following fields are available:
+
+- **Element Type**:
+  - Choose one of the available element types
+  - Keep in mind that this type cannot be changed anymore after creation
+- **Title**:
+  - Descriptive title for the element that is shown when including the element in activities
+  - Depending on the activity type, the title may also be visible to participants
+- **Tags**:
+  - Tags can help organize elements and make it easier to find them later
+  - For more details, refer to the section on [library organization](#how-can-i-organize-my-element-library)
+- **Status**:
+  - State of the element (draft, published, archived)
+  - No restrictions are imposed based on an element's status
+  - States can help to organize elements when collaborating with others
+- **Question Content**:
+  - The heart piece of the element, where the actual question is defined
+  - Insert your content with the provided editor, offering formatting, lists, LaTeX formula parsing, images, and more
 - **Generic Explanation**:
-  - Optional for all element types
-  - Displayed to participants after interaction, regardless of response
-  - Shown immediately in Microlearning or Practice Quiz activities
-  - Not displayed in live quizzes (intended for class discussion)
-- **Sample Solutions**:
-  - Optionally available for question-type elements
-  - Mandatory for automatic grading of choice-based or numerical questions
-  - Recommended for free-text questions only when querying specific words/terms
-  - Multiple options can be entered to account for capitalization or spelling variations
-- **Answer Feedbacks**:
-  - Optionally available for choice-based question types (SC/MC/Kprim)
-  - Allows specific feedback for each answer option, enhancing learning effect
-- **Input Restrictions**:
-  - Available for numerical and free-text questions (NR and FT)
-  - Can restrict the range of numbers that can be entered
-  - Can restrict the length of free-text responses
-  - Precision option specifies desired decimal places and rounding
+  - Optional for all question types (not CT / FC)
+  - Displayed immediately after interaction in Microlearning or Practice Quiz activities (independent of response)
+  - Can be shown on demand on the live quiz evaluation page
+- **Sample Solution & Scoring**:
+  - Available for all question types (not CT / FC)
+  - Define if a sample solution will be defined (automatically enables automated grading and correctness points)
+  - Choose if base points should be awarded for arbitrary answers (applies to live quiz use only)
+  - Choose a **multiplier** to award more points for correct answers to hard questions in gamified settings
+- **Answer Options & Feedbacks**:
+  - Available for choice-based question types (SC, MC, KP)
+  - Define answer options and optionally provide feedback for each option (only for use in asynchronous activities)
+- **Input Restrictions & Sample Solution**:
+  - Define element type-specific restrictions and sample solutions for automated grading
+  - Domain restrictions for numerical questions (NR) for live quiz usage are highly recommended to facilitate their evaluation and avoid strong outliers
+  - Sample solutions are mandatory for microlearnings and practice quizzes, which rely on automated grading
 - **Preview**:
-  - Demonstrates how elements will appear to participants
-  - Choice-based questions can be displayed in list or grid format
+  - Inspect the student perspective of the element
+  - Optionally, display the explanation and answer feedbacks (if defined) as shown to students after answering the element in an asynchronous activity
+- **Activity**:
+  - Currently in private preview testing (not visible to all users)
+  - List of all interactions of users with this element (creation / modifications / sharing operations / ...)
+  - Support of comments to allow for detailed content reviews in combination with the element status
 
-## How can I manage created elements (e.g., edit, search, sort)?
+## How can I modify an Element?
+
+### Editing an Element
+
+:::warning
+Please make sure to always save your elements after editing and before closing them. Changes to the element might otherwise be lost and will not be applied to any activities that use the element.
+:::
+
+To edit an existing element, simply find it in the element library and either click on the element title or the pencil edit icon. This will open the same dialog that was already used for its creation. All fields except from the element type can be modified with sufficient permissions.
+
+At the bottom of the dialog, you will find the option to **update the element in existing activities**. Only with this option enabled, the changes to the element will be applied to already created activities that use this element and **are in draft state**. Element instances in published activities (including running live quizzes) will never be updated.
+
+![Element Editing Option](/img/elements/element_editing.png)
+
+### Duplicating an Element
+
+To duplicate an existing element or create a slightly different version of an element, find the element in the library and select the duplication option. This will directly open the element creation dialog with all fields pre-filled with the values of the original element. You can then modify the fields as needed and save the new element.
+
+![Element Duplication Option](/img/elements/element_duplication.png)
+
+### Sharing an Element <PrivatePreviewTag />
+
+To share an element with other users and collaborate on it, find the element in the library and select the sharing option. This will open a dialog where you can choose to share the element with specific users or entire user groups. Depending on the permissions you choose to grant, the users will be able to execute different actions on the element. Please keep in mind that sharing an element does not create a copy of the element, but all users access the same element instance.
+
+![Element Sharing Option](/img/elements/element_sharing.png)
+
+### Deleting an Element
+
+You may choose to deleted unwanted elements from the library by selecting the corresponding option on the specific element. Please carefully review the stated consequences of this action, as the deletion is irreversible. **Instances of this element in existing activities will not be affected by the deletion**. However, you will no longer be able to modify the content of the deleted element or add it to new activities. If you want to keep the element for later use, consider archiving it instead (see [library organization](#how-can-i-organize-my-element-library)).
+
+![Element Deletion Option](/img/elements/element_deletion.png)
+
+## How can I organize my Element Library?
 
 <iframe
   id="kmsembed-0_gm5oobzo"
@@ -80,21 +137,12 @@ When creating elements, consider the following:
   title="KlickerUZH - Element Management"
 ></iframe>
 
-Elements (questions, flashcards, and content elements) are the building blocks of learning activities in KlickerUZH. They can be reused across various activities, making efficient management crucial. Here's how you can organize and manipulate your elements:
+<br />
+<br />
 
-**Organizing Elements**
+Elements (questions, flashcards, and content elements) are the building blocks of learning activities in KlickerUZH. They can be reused across various activities, making efficient management crucial. Here's how you can organize your elements:
 
-- **Grouping**: Use tags to categorize elements
-- **Searching**: Find elements by title using the search field
+- **Grouping**: Use tags to categorize elements. Filters on the element library allow you to quickly find elements by tags, type, or status.
+- **Searching**: A simple search function on the element library allows you to search for elements by title or content.
 - **Sorting**: List elements by creation/modification date or alphabetically (A-Z or Z-A)
 - **Archiving**: Keep your element pool tidy by archiving and later retrieving elements
-
-**Manipulating Elements**
-
-- **Edit**: Modify existing elements. Edits to elements do not affect their status in ongoing learning activities unless explicitly activated in the edit dialog.
-- **Duplicate**: Create copies of elements for further editing
-- **Delete**: Remove unwanted elements (note: this action is irreversible)
-
-:::info
-Most elements can be used in any learning activity, with some restrictions. For detailed information on embedding elements into different activities, refer to the following sections. Remember, elements are persistent within existing quizzes, even if deleted from your element pool.
-:::

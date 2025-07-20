@@ -6,6 +6,7 @@ import ContentInput from '../../common/ContentInput'
 import { ElementFormTypes } from './types'
 
 interface ElementContentInputProps {
+  disabled?: boolean
   values: ElementFormTypes
   setFieldValue: (
     field: string,
@@ -15,6 +16,7 @@ interface ElementContentInputProps {
 }
 
 function ElementContentInput({
+  disabled = false,
   values,
   setFieldValue,
 }: ElementContentInputProps) {
@@ -38,36 +40,36 @@ function ElementContentInput({
 
   const tooltipMap: Record<
     ElementType,
-    | 'manage.questionForms.questionTooltip'
-    | 'manage.questionForms.contentTooltip'
-    | 'manage.questionForms.instructionsTooltip'
+    | 'manage.elements.questionTooltip'
+    | 'manage.elements.contentTooltip'
+    | 'manage.elements.instructionsTooltip'
   > = {
-    [ElementType.Content]: 'manage.questionForms.contentTooltip',
-    [ElementType.Flashcard]: 'manage.questionForms.questionTooltip',
-    [ElementType.Sc]: 'manage.questionForms.questionTooltip',
-    [ElementType.Mc]: 'manage.questionForms.questionTooltip',
-    [ElementType.Kprim]: 'manage.questionForms.questionTooltip',
-    [ElementType.Numerical]: 'manage.questionForms.questionTooltip',
-    [ElementType.FreeText]: 'manage.questionForms.questionTooltip',
-    [ElementType.Selection]: 'manage.questionForms.questionTooltip',
-    [ElementType.CaseStudy]: 'manage.questionForms.instructionsTooltip',
+    [ElementType.Content]: 'manage.elements.contentTooltip',
+    [ElementType.Flashcard]: 'manage.elements.questionTooltip',
+    [ElementType.Sc]: 'manage.elements.questionTooltip',
+    [ElementType.Mc]: 'manage.elements.questionTooltip',
+    [ElementType.Kprim]: 'manage.elements.questionTooltip',
+    [ElementType.Numerical]: 'manage.elements.questionTooltip',
+    [ElementType.FreeText]: 'manage.elements.questionTooltip',
+    [ElementType.Selection]: 'manage.elements.questionTooltip',
+    [ElementType.CaseStudy]: 'manage.elements.instructionsTooltip',
   }
 
   const placeholderMap: Record<
     ElementType,
-    | 'manage.questionForms.questionPlaceholder'
-    | 'manage.questionForms.contentPlaceholder'
-    | 'manage.questionForms.instructionsPlaceholder'
+    | 'manage.elements.questionPlaceholder'
+    | 'manage.elements.contentPlaceholder'
+    | 'manage.elements.instructionsPlaceholder'
   > = {
-    [ElementType.Content]: 'manage.questionForms.contentPlaceholder',
-    [ElementType.Flashcard]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.Sc]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.Mc]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.Kprim]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.Numerical]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.FreeText]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.Selection]: 'manage.questionForms.questionPlaceholder',
-    [ElementType.CaseStudy]: 'manage.questionForms.instructionsPlaceholder',
+    [ElementType.Content]: 'manage.elements.contentPlaceholder',
+    [ElementType.Flashcard]: 'manage.elements.questionPlaceholder',
+    [ElementType.Sc]: 'manage.elements.questionPlaceholder',
+    [ElementType.Mc]: 'manage.elements.questionPlaceholder',
+    [ElementType.Kprim]: 'manage.elements.questionPlaceholder',
+    [ElementType.Numerical]: 'manage.elements.questionPlaceholder',
+    [ElementType.FreeText]: 'manage.elements.questionPlaceholder',
+    [ElementType.Selection]: 'manage.elements.questionPlaceholder',
+    [ElementType.CaseStudy]: 'manage.elements.instructionsPlaceholder',
   }
 
   return (
@@ -92,13 +94,14 @@ function ElementContentInput({
               tooltip={t(tooltipMap[values.type])}
             />
             <ContentInput
+              disabled={disabled}
               error={meta.error}
               touched={meta.touched}
               content={field.value || '<br>'}
               onChange={(newValue: string) =>
                 setFieldValue('content', newValue)
               }
-              showToolbarOnFocus={false}
+              showToolbarOnFocus={disabled} // show toolbar only when not disabled
               placeholder={t(placeholderMap[values.type])}
               key={`${values.type}-content`}
               data={{ cy: 'insert-question-text' }}

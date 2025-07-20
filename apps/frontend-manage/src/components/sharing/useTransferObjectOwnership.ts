@@ -1,11 +1,15 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
+  GetUserElementsDocument,
+  GetUserLiveQuizzesDocument,
+  ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -15,7 +19,7 @@ function useTransferObjectOwnership({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -41,18 +45,44 @@ function useTransferObjectOwnership({
             query: GetObjectPermissionsDocument,
             variables: { objectId: String(objectId), objectType },
           },
-          ...(objectType === CatalogObjectType.CatalogCollection
-            ? [GetCatalogCollectionsListDocument]
+          { query: GetCatalogSharingRequestsDocument },
+          ...(objectType === ObjectType.CatalogCollection
+            ? [{ query: GetCatalogCollectionsListDocument }]
             : []),
-          ...(objectType === CatalogObjectType.AnswerCollection
+          ...(objectType === ObjectType.AnswerCollection
             ? [
                 {
                   query: GetCatalogObjectsDocument,
                   variables: { catalogCollectionId },
                 },
-                GetAnswerCollectionsInfoDocument,
-                GetCatalogSharingRequestsDocument,
+                { query: GetAnswerCollectionsInfoDocument },
               ]
+            : []),
+          ...(objectType === ObjectType.Element
+            ? [{ query: GetUserElementsDocument }]
+            : []),
+          ...(objectType === ObjectType.Course
+            ? [
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: String(objectId) },
+                },
+              ]
+            : []),
+          ...(objectType === ObjectType.LiveQuiz
+            ? [
+                { query: GetUserLiveQuizzesDocument },
+                { query: GetUserActivitiesDocument },
+              ]
+            : []),
+          ...(objectType === ObjectType.PracticeQuiz
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === ObjectType.MicroLearning
+            ? [{ query: GetUserActivitiesDocument }]
+            : []),
+          ...(objectType === ObjectType.GroupActivity
+            ? [{ query: GetUserActivitiesDocument }]
             : []),
         ],
       })

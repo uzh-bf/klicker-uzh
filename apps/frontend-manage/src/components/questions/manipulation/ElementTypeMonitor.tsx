@@ -36,7 +36,7 @@ function ElementTypeMonitor({
     }
 
     validateForm()
-  }, [elementType])
+  }, [elementType, setElementDataTypename, validateForm])
 
   return null
 }

@@ -5,21 +5,17 @@ import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface LiveQuizDeletionModalProps {
-  open: boolean
-  setOpen: (open: boolean) => void
-  quizId: string
-  onDelete: () => Promise<any>
-  deleting: boolean
-}
-
 function LiveQuizDeletionModal({
-  open,
-  setOpen,
+  onClose,
   quizId,
   onDelete,
   deleting,
-}: LiveQuizDeletionModalProps) {
+}: {
+  onClose: () => void
+  quizId: string
+  onDelete: () => Promise<any>
+  deleting: boolean
+}) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetLiveQuizSummaryDocument,
@@ -55,8 +51,7 @@ function LiveQuizDeletionModal({
 
   return (
     <ActivityConfirmationModal
-      open={open}
-      setOpen={setOpen}
+      onClose={onClose}
       title={t('manage.liveQuizzes.deleteLiveQuiz')}
       message={t('manage.liveQuizzes.deleteLiveQuizMessage')}
       onSubmit={async () => await onDelete()}

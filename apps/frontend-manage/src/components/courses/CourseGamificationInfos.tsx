@@ -1,7 +1,6 @@
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Tabs } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import GroupsLeaderboard from './GroupsLeaderboard'
 import GroupsList from './GroupsList'
 import IndividualLeaderboard from './IndividualLeaderboard'
@@ -24,49 +23,30 @@ function CourseGamificationInfos({
       defaultValue="ind-leaderboard"
       value={tabValue}
       onValueChange={(newValue: string) => setTabValue(newValue)}
-      className={{ root: 'flex-1 basis-1/3' }}
+      tabs={[
+        {
+          id: 'tab-individual-leaderboard',
+          value: 'ind-leaderboard',
+          label: t('manage.course.courseLeaderboard'),
+          data: { cy: 'tab-ind-leaderboard' },
+        },
+        {
+          id: 'tab-group-leaderboard',
+          value: 'group-leaderboard',
+          label: t('manage.course.groupLeaderboard'),
+          data: { cy: 'tab-group-leaderboard' },
+          disabled: !course.isGroupCreationEnabled,
+        },
+        {
+          id: 'tab-groups',
+          value: 'groups',
+          label: t('manage.course.groups'),
+          data: { cy: 'tab-groups' },
+          disabled: !course.isGroupCreationEnabled,
+        },
+      ]}
+      className={{ root: 'flex-1 basis-2/5' }}
     >
-      <Tabs.TabList>
-        <Tabs.Tab
-          key="tab-individual-leaderboard"
-          value="ind-leaderboard"
-          label={t('manage.course.courseLeaderboard')}
-          className={{
-            root: 'border border-solid',
-            label: twMerge(
-              'whitespace-nowrap text-base',
-              tabValue === 'ind-leaderboard' && 'font-bold'
-            ),
-          }}
-          data={{ cy: 'tab-ind-leaderboard' }}
-        />
-        <Tabs.Tab
-          key="tab-group-leaderboard"
-          value="group-leaderboard"
-          label={t('manage.course.groupLeaderboard')}
-          className={{
-            root: 'border border-solid',
-            label: twMerge(
-              'whitespace-nowrap text-base',
-              tabValue === 'group-leaderboard' && 'font-bold'
-            ),
-          }}
-          data={{ cy: 'tab-group-leaderboard' }}
-        />
-        <Tabs.Tab
-          key="groups"
-          value="groups"
-          label={t('manage.course.groups')}
-          className={{
-            root: 'border border-solid',
-            label: twMerge(
-              'whitespace-nowrap text-base',
-              tabValue === 'groups' && 'font-bold'
-            ),
-          }}
-          data={{ cy: 'tab-groups' }}
-        />
-      </Tabs.TabList>
       <IndividualLeaderboard
         courseName={course.name}
         courseId={course.id}
@@ -78,6 +58,7 @@ function CourseGamificationInfos({
       <GroupsList
         courseId={course.id}
         groupCreationFinalized={course.randomAssignmentFinalized}
+        actionsDisabled={!course.isEditor}
       />
     </Tabs>
   )

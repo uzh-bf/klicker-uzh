@@ -1,37 +1,26 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faArchive,
-  faInbox,
-  faPeopleGroup,
-  faPlusCircle,
-} from '@fortawesome/free-solid-svg-icons'
+import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  H3,
-  Switch,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../components/Layout'
 import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
 import CourseDeletionModal from '../../components/courses/modals/CourseDeletionModal'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from '../../components/courses/modals/CourseManipulationModal'
+import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
+import Layout from '../../components/Layout'
 
 function CourseSelectionPage() {
   const router = useRouter()
@@ -40,10 +29,20 @@ function CourseSelectionPage() {
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-  const [selectedCourseArchived, setSelectedCourseArchived] = useState(false)
-  const [archiveModal, showArchiveModal] = useState(false)
-  const [deletionModal, showDeletionModal] = useState(false)
+  const [archiveModal, showArchiveModal] = useState<{
+    open: boolean
+    courseId: string | null
+    isArchived: boolean
+  }>({ open: false, courseId: null, isArchived: false })
+  const [deletionModal, showDeletionModal] = useState<{
+    open: boolean
+    courseId: string | null
+  }>({ open: false, courseId: null })
+  const [removalModal, showRemovalModal] = useState<{
+    open: boolean
+    courseId: string | null
+    courseName: string | null
+  }>({ open: false, courseId: null, courseName: null })
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
     GetUserCoursesDocument
@@ -64,15 +63,15 @@ function CourseSelectionPage() {
   return (
     <Layout>
       <div className="flex w-full justify-center">
-        <div className="flex w-[30rem] flex-col md:w-[40rem]">
-          <div className="flex w-full flex-row justify-between">
+        <div className="md:w-180 flex w-full flex-col">
+          <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
             {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
               <Switch
                 checked={showArchive}
                 onCheckedChange={(newValue) => setShowArchive(newValue)}
                 className={{
-                  root: 'mr-24 flex flex-row items-center gap-3',
+                  root: 'flex flex-row items-center gap-3',
                   label: 'mr-0 font-normal',
                 }}
                 data={{ cy: 'toggle-course-archive' }}
@@ -85,77 +84,30 @@ function CourseSelectionPage() {
             <div className="w-full">
               <div className="flex flex-col gap-2">
                 {courses.map((course) => {
-                  const courseRunning = dayjs(course.endDate).isAfter(dayjs())
-
-                  const ArchiveButton = (
-                    <Button
-                      className={{
-                        root: 'h-9 w-9',
-                      }}
-                      onClick={() => {
-                        setSelectedCourseId(course.id)
-                        setSelectedCourseArchived(course.isArchived)
-                        showArchiveModal(true)
-                      }}
-                      disabled={courseRunning}
-                      data={{ cy: `archive-course-${course.name}` }}
-                    >
-                      <Button.Icon
-                        withoutLabel
-                        icon={course.isArchived ? faInbox : faArchive}
-                      />
-                    </Button>
-                  )
-
                   return (
                     <div
                       className="flex flex-row items-center gap-2"
                       key={course.id}
                     >
                       <CourseListButton
+                        course={course}
                         onClick={() => router.push(`/courses/${course.id}`)}
-                        icon={faPeopleGroup}
+                        // icon={faPeopleGroup}
                         label={course.name}
-                        color={course.color}
-                        isArchived={course.isArchived}
-                        startDate={course.startDate}
-                        endDate={course.endDate}
+                        showArchiveModal={showArchiveModal}
+                        showDeletionModal={showDeletionModal}
+                        showRemovalModal={showRemovalModal}
                         data={{ cy: `course-list-button-${course.name}` }}
                       />
-                      {courseRunning ? (
-                        <Tooltip
-                          tooltip={t(
-                            'manage.courseList.archiveOnlyPastCourses'
-                          )}
-                        >
-                          {ArchiveButton}
-                        </Tooltip>
-                      ) : (
-                        ArchiveButton
-                      )}
-                      <Button
-                        className={{
-                          root: 'h-9 w-9 border-red-600',
-                        }}
-                        onClick={() => {
-                          setSelectedCourseId(course.id)
-                          showDeletionModal(true)
-                        }}
-                        data={{ cy: `delete-course-${course.name}` }}
-                      >
-                        <Button.Icon withoutLabel icon={faTrashCan} />
-                      </Button>
                     </div>
                   )
                 })}
-                <div className="mr-[5.5rem]">
-                  <CourseListButton
-                    onClick={() => showCreateCourseModal(true)}
-                    icon={faPlusCircle}
-                    label={t('manage.courseList.createNewCourse')}
-                    data={{ cy: 'course-list-button-new-course' }}
-                  />
-                </div>
+                <CourseListButton
+                  onClick={() => showCreateCourseModal(true)}
+                  icon={faPlusCircle}
+                  label={t('manage.courseList.createNewCourse')}
+                  data={{ cy: 'course-list-button-new-course' }}
+                />
               </div>
             </div>
           ) : (
@@ -179,78 +131,94 @@ function CourseSelectionPage() {
               />
             </div>
           )}
-          <CourseArchiveModal
-            open={archiveModal}
-            setOpen={showArchiveModal}
-            courseId={selectedCourseId}
-            setSelectedCourseId={setSelectedCourseId}
-            isArchived={selectedCourseArchived}
-          />
-          <CourseDeletionModal
-            open={deletionModal}
-            setOpen={showDeletionModal}
-            courseId={selectedCourseId}
-            setSelectedCourseId={setSelectedCourseId}
-          />
-          <CourseManipulationModal
-            modalOpen={createCourseModal}
-            onModalClose={() => showCreateCourseModal(false)}
-            onSubmit={async (
-              values: CourseManipulationFormData,
-              setSubmitting,
-              setShowErrorToast
-            ) => {
-              try {
-                // convert dates to UTC
-                const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
-                  .utc()
-                  .toISOString()
-                const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
-                  .utc()
-                  .toISOString()
-                const groupDeadlineDateUTC = dayjs(
-                  values.groupCreationDeadline + 'T23:59:59.999'
-                )
-                  .utc()
-                  .toISOString()
-
-                const result = await createCourse({
-                  variables: {
-                    name: values.name,
-                    displayName: values.displayName,
-                    description: values.description,
-                    color: values.color,
-                    startDate: startDateUTC,
-                    endDate: endDateUTC,
-                    isGamificationEnabled: values.isGamificationEnabled,
-                    isGroupCreationEnabled: values.isGroupCreationEnabled,
-                    groupDeadlineDate: groupDeadlineDateUTC,
-                    maxGroupSize: parseInt(String(values.maxGroupSize)),
-                    preferredGroupSize: parseInt(
-                      String(values.preferredGroupSize)
-                    ),
-                  },
-                  refetchQueries: [
-                    {
-                      query: GetUserCoursesDocument,
-                    },
-                  ],
+          {archiveModal.open && (
+            <CourseArchiveModal
+              onClose={() =>
+                showArchiveModal({
+                  open: false,
+                  courseId: null,
+                  isArchived: false,
                 })
-
-                if (result.data?.createCourse) {
-                  showCreateCourseModal(false)
-                  router.push(`/courses/${result.data.createCourse.id}`)
-                } else {
-                  setShowErrorToast(true)
-                  setSubmitting(false)
-                }
-              } catch (error) {
-                setShowErrorToast(true)
-                setSubmitting(false)
-                console.log(error)
               }
-            }}
-          />
+              courseId={archiveModal.courseId}
+              isArchived={archiveModal.isArchived}
+            />
+          )}
+          {deletionModal.open && (
+            <CourseDeletionModal
+              onClose={() => showDeletionModal({ open: false, courseId: null })}
+              courseId={deletionModal.courseId}
+            />
+          )}
+          {createCourseModal && (
+            <CourseManipulationModal
+              onModalClose={() => showCreateCourseModal(false)}
+              onSubmit={async (
+                values: CourseManipulationFormData,
+                setSubmitting,
+                onError
+              ) => {
+                try {
+                  // convert dates to UTC
+                  const startDateUTC = dayjs(values.startDate)
+                    .utc()
+                    .toISOString()
+                  const endDateUTC = dayjs(values.endDate).utc().toISOString()
+                  const groupDeadlineDateUTC = dayjs(
+                    values.groupCreationDeadline
+                  )
+                    .utc()
+                    .toISOString()
+
+                  const result = await createCourse({
+                    variables: {
+                      name: values.name,
+                      displayName: values.displayName,
+                      description: values.description,
+                      color: values.color,
+                      startDate: startDateUTC,
+                      endDate: endDateUTC,
+                      notificationEmail: values.notificationEmail,
+                      isGamificationEnabled: values.isGamificationEnabled,
+                      isGroupCreationEnabled: values.isGroupCreationEnabled,
+                      groupDeadlineDate: groupDeadlineDateUTC,
+                      maxGroupSize: parseInt(String(values.maxGroupSize)),
+                      preferredGroupSize: parseInt(
+                        String(values.preferredGroupSize)
+                      ),
+                    },
+                    refetchQueries: [{ query: GetUserCoursesDocument }],
+                  })
+
+                  if (result.data?.createCourse) {
+                    showCreateCourseModal(false)
+                    router.push(`/courses/${result.data.createCourse.id}`)
+                  } else {
+                    onError()
+                    setSubmitting(false)
+                  }
+                } catch (error) {
+                  onError()
+                  setSubmitting(false)
+                  console.log(error)
+                }
+              }}
+            />
+          )}
+          {removalModal.courseId && removalModal.courseName ? (
+            <CourseRemovalModal
+              courseId={removalModal.courseId}
+              title={removalModal.courseName}
+              isModalOpen={removalModal.open}
+              setModalOpen={(newOpen) =>
+                showRemovalModal((prev) =>
+                  newOpen
+                    ? { ...prev, open: newOpen }
+                    : { open: false, courseId: null, courseName: null }
+                )
+              }
+            />
+          ) : null}
         </div>
       </div>
     </Layout>

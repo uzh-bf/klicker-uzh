@@ -230,13 +230,13 @@ function GroupActivityStack({
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'mb-6 mt-3 rounded !border-l-4 text-base shadow',
+                      'border-l-4! mb-6 mt-3 rounded text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
-                        '!border-l-green-500',
+                        'border-l-green-500!',
                       correctness === ResponseCorrectnessType.Partial &&
-                        '!border-l-yellow-500',
+                        'border-l-yellow-500!',
                       correctness === ResponseCorrectnessType.Incorrect &&
-                        '!border-l-red-700'
+                        'border-l-red-700!'
                     )}
                     data-cy={`group-activity-grading-feedback-${elementIx}`}
                   >
@@ -258,7 +258,7 @@ function GroupActivityStack({
                     </div>
                     {grading.feedback && (
                       <DynamicMarkdown
-                        className={{ root: 'mt-1 p-2 !pt-0' }}
+                        className={{ root: 'pt-0! mt-1 p-2' }}
                         content={grading.feedback}
                       />
                     )}
@@ -400,7 +400,7 @@ function GroupActivityStack({
           <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
       ) : null}
-      {!!decisions ? (
+      {!!decisions && submittedAt ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,

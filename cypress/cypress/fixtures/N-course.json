@@ -1,0 +1,49 @@
+{
+  "course1": {
+    "name": "Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6",
+    "nameNew": "Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW",
+    "displayName": "Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6 (Display)",
+    "displayNameNew": "Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW (Display)",
+    "notificationEmail": "course1@example.com",
+    "notificationEmailNew": "course1_new@example.com",
+    "description": "This description summarises the course's content."
+  },
+  "course2": {
+    "name": "Course 33a79abc-debc-4374-9405-38e99f92fba8",
+    "displayName": "Course 33a79abc-debc-4374-9405-38e99f92fba8 (Display)",
+    "notificationEmail": "course2@example.com",
+    "group1": "Group Student 11",
+    "group2": "Group Student 12"
+  },
+  "running": {
+    "name": "Testkurs"
+  },
+  "past": {
+    "name": "Testkurs 2"
+  },
+  "deletion": {
+    "courseName": "Course to be deleted",
+    "displayName": "Course to be deleted display",
+    "notificationEmail": "course_to_be_deleted@example.com",
+    "qTitle": "Question Title",
+    "qContent": "Question Content",
+    "lqName": "Course Live Quiz",
+    "pqName": "Course Practice Quiz",
+    "mlName": "Course Micro Learning"
+  },
+  "sharing": {
+    "course": "Sharing Course Name",
+    "courseDisplayName": "Sharing Course Display Name",
+    "courseDescription": "Sharing Course Description",
+    "courseNotificationEmail": "sharing_course@example.com",
+    "liveQuiz": "Sharing Live Quiz",
+    "practiceQuiz": "Sharing Practice Quiz",
+    "microLearning": "Sharing Micro Learning",
+    "groupActivity": "Sharing Group Activity",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4",
+    "group5": "Group 5"
+  }
+}

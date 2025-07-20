@@ -1,0 +1,53 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    branches: [v3]
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          model: "claude-opus-4-20250514"
+
+          # Direct prompt for automated review (no @claude mention needed)
+          direct_prompt: |
+            Please review this pull request and provide honest and constructive feedback on:
+
+            - Architecture and software design (e.g., modularity)
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+
+            Be constructive and helpful in your feedback.
+
+          # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          use_sticky_comment: true
+
+          # Add specific tools for running tests or linting
+          # allowed_tools: "Bash(pnpm run check),Bash(npm run lint),Bash(npm run typecheck)"
+
+          # Skip review for certain conditions
+          if: |
+            !contains(github.event.pull_request.title, '[skip-review]') &&
+            !contains(github.event.pull_request.title, 'WIP')

@@ -1,4 +1,4 @@
-import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -10,10 +10,10 @@ function ObjectFilters({
   accessTypeFilter,
   setAccessTypeFilter,
 }: {
-  typeFilter: CatalogObjectType | ''
-  setTypeFilter: Dispatch<SetStateAction<CatalogObjectType | ''>>
-  accessTypeFilter: ObjectAccess | ''
-  setAccessTypeFilter: Dispatch<SetStateAction<ObjectAccess | ''>>
+  typeFilter: ObjectType | 'all'
+  setTypeFilter: Dispatch<SetStateAction<ObjectType | 'all'>>
+  accessTypeFilter: ObjectAccess | 'all'
+  setAccessTypeFilter: Dispatch<SetStateAction<ObjectAccess | 'all'>>
 }) {
   const t = useTranslations()
 
@@ -23,11 +23,11 @@ function ObjectFilters({
         label={t('manage.catalog.objectType')}
         items={[
           {
-            value: '',
+            value: 'all',
             label: t('manage.catalog.all'),
             data: { cy: 'all-object-types' },
           },
-          ...Object.values(CatalogObjectType).map((type) => ({
+          ...Object.values(ObjectType).map((type) => ({
             label: t(`shared.types.${type}`),
             value: type,
             data: { cy: `catalog-object-type-${type}` },
@@ -35,7 +35,7 @@ function ObjectFilters({
         ]}
         value={typeFilter}
         onChange={(newValue) => {
-          setTypeFilter(newValue as CatalogObjectType)
+          setTypeFilter(newValue as ObjectType)
         }}
         className={{ select: { trigger: 'h-9 w-52' } }}
         data={{ cy: 'catalog-object-type-filter' }}
@@ -44,7 +44,7 @@ function ObjectFilters({
         label={t('manage.catalog.accessTypes')}
         items={[
           {
-            value: '',
+            value: 'all',
             label: t('manage.catalog.all'),
             data: { cy: 'catalog-access-all' },
           },

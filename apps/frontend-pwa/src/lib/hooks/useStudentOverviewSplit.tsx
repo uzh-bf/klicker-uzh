@@ -1,4 +1,5 @@
 import {
+  ActivityInfo,
   Course,
   LiveQuiz,
   MicroLearning,
@@ -45,10 +46,10 @@ function useStudentOverviewSplit({
           | 'endDate'
           | 'isGamificationEnabled'
         > & {
-          liveQuizzes?: Pick<LiveQuiz, 'id' | 'displayName'>[] | null
+          liveQuizzes?: Pick<ActivityInfo, 'id' | 'displayName'>[] | null
           microLearnings?:
             | Pick<
-                MicroLearning,
+                ActivityInfo,
                 'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
               >[]
             | null

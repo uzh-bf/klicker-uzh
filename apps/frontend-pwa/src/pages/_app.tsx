@@ -12,12 +12,12 @@ import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
+import { Toaster } from '@uzh-bf/design-system'
 import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
-import '@uzh-bf/design-system/dist/style.css'
 import '../globals.css'
 
 config.autoAddCss = false
@@ -91,6 +91,7 @@ function App({ Component, pageProps }: AppProps) {
         getMessageFallback={getMessageFallback}
       >
         <ApolloProvider client={apolloClient}>
+          <Toaster closeButton position="top-right" />
           <Component {...pageProps} />
         </ApolloProvider>
       </NextIntlClientProvider>

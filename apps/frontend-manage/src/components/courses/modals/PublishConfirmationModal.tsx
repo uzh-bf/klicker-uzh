@@ -1,92 +1,132 @@
 import { useMutation } from '@apollo/client'
 import {
+  faArrowRight,
+  faHourglassEnd,
+  faHourglassStart,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
   ElementInstanceType,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 
 interface PublishConfirmationModalProps {
-  elementType:
+  onClose: () => void
+  activityType:
     | ElementInstanceType.Microlearning
     | ElementInstanceType.GroupActivity
-  elementId: string
+  activityId: string
+  startAt: Date
+  endAt: Date
   title: string
-  publicationHint: string
-  open: boolean
-  setOpen: (value: boolean) => void
+  courseId: string
 }
 
 function PublishConfirmationModal({
-  elementType,
-  elementId,
+  onClose,
+  activityType,
+  activityId,
+  startAt,
+  endAt,
   title,
-  publicationHint,
-  open,
-  setOpen,
+  courseId,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
     {
-      variables: {
-        id: elementId,
-      },
+      variables: { id: activityId },
+      // TODO: replace with proper cache update
+      refetchQueries: [
+        { query: GetUserActivitiesDocument },
+        { query: GetSingleCourseDocument, variables: { id: courseId } },
+      ],
     }
   )
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
     {
-      variables: {
-        id: elementId,
-      },
+      variables: { id: activityId },
+      // TODO: replace with proper cache update
+      refetchQueries: [
+        { query: GetUserActivitiesDocument },
+        { query: GetSingleCourseDocument, variables: { id: courseId } },
+      ],
     }
   )
 
   return (
     <Modal
-      title={t(`manage.course.publishItem${elementType}`)}
-      onPrimaryAction={
-        <Button
-          primary
-          loading={mlPublishLoading || gaPublishLoading}
-          onClick={async () => {
-            if (elementType === ElementInstanceType.Microlearning) {
-              await publishMicroLearning()
-            } else if (elementType === ElementInstanceType.GroupActivity) {
-              await publishGroupActivity()
-            }
-            setOpen(false)
-          }}
-          data={{ cy: 'confirm-publish-action' }}
-        >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
-        </Button>
-      }
-      onSecondaryAction={
-        <Button
-          onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-publish-action' }}
-        >
-          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-        </Button>
-      }
-      onClose={(): void => setOpen(false)}
-      open={open}
-      hideCloseButton={true}
-      className={{
-        content: 'w-[40rem]',
-        title: 'text-xl',
+      open
+      title={t(`manage.course.publishItem${activityType}`)}
+      primaryLabel={t('shared.generic.confirm')}
+      primaryLoading={mlPublishLoading || gaPublishLoading}
+      onPrimaryAction={async () => {
+        if (activityType === ElementInstanceType.Microlearning) {
+          await publishMicroLearning()
+        } else if (activityType === ElementInstanceType.GroupActivity) {
+          await publishGroupActivity()
+        }
+        onClose()
       }}
+      dataPrimaryAction={{ cy: 'confirm-publish-action' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => {
+        onClose()
+      }}
+      dataSecondaryAction={{ cy: 'cancel-publish-action' }}
+      onClose={onClose}
+      hideCloseButton={true}
+      className={{ content: 'max-w-2xl', title: 'text-xl' }}
     >
-      <div>
-        <div className="text-base">{t('manage.course.confirmPublishing')}</div>
-        <div className="border-uzh-grey-40 mt-1 rounded border border-solid p-2">
-          <H3>{title}</H3>
+      <div className="mt-4 space-y-2 text-base">
+        <div>
+          {t.rich(
+            activityType === ElementInstanceType.Microlearning
+              ? 'manage.course.confirmPublishingMicrolearning'
+              : 'manage.course.confirmPublishingGroupActivity',
+            { name: title, b: (text) => <b>{text}</b> }
+          )}
         </div>
-        <div className="mb-2 mt-3 text-sm italic">{publicationHint}</div>
+        <div className="flex w-max flex-row items-center rounded-md bg-gray-100 p-2.5">
+          <div className="flex items-center">
+            <FontAwesomeIcon
+              icon={faHourglassStart}
+              className="mr-2 text-green-600"
+            />
+            <span className="font-medium">
+              {t('shared.generic.startAt', {
+                time: dayjs(startAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </span>
+          </div>
+          <FontAwesomeIcon icon={faArrowRight} className="mx-4 text-gray-400" />
+          <div className="flex items-center">
+            <FontAwesomeIcon
+              icon={faHourglassEnd}
+              className="mr-2 text-red-600"
+            />
+            <span className="font-medium">
+              {t('shared.generic.endAt', {
+                time: dayjs(endAt).format('DD.MM.YYYY HH:mm'),
+              })}
+            </span>
+          </div>
+        </div>
+        <div className="text-sm text-gray-600">
+          {t(
+            activityType === ElementInstanceType.Microlearning
+              ? 'manage.course.microlearningPublishingHint'
+              : 'manage.course.groupActivityPublishingHint'
+          )}
+        </div>
       </div>
     </Modal>
   )

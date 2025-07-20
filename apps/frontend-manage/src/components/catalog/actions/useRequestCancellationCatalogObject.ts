@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   CancelObjectSharingRequestDocument,
-  CatalogObjectType,
   GetCatalogObjectsDocument,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object sharing request, returns success boolean
@@ -12,7 +12,7 @@ function useRequestCancellationCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -32,7 +32,7 @@ function useRequestCancellationCatalogObject({
           const cancelledCollection = data?.cancelObjectSharingRequest
           if (!cancelledCollection) return
 
-          // update list of answer collections
+          // update list of catalog objects
           const catalogObjects = cache.readQuery({
             query: GetCatalogObjectsDocument,
             variables: {
@@ -43,7 +43,10 @@ function useRequestCancellationCatalogObject({
           if (catalogObjects?.getCatalogObjects) {
             const updatedObjects = catalogObjects?.getCatalogObjects.map(
               (obj) => {
-                if (obj.id === objectId) {
+                if (
+                  (typeof objectId === 'number' && obj.objectId === objectId) ||
+                  (typeof objectId === 'string' && obj.objectUuid === objectId)
+                ) {
                   return { ...obj, isRequested: false }
                 }
 

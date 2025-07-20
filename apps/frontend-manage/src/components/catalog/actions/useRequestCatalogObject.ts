@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
-  CatalogObjectType,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
+  ObjectType,
   RequestCatalogCollectionDocument,
   RequestCatalogObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -14,7 +14,7 @@ function useRequestCatalogObject({
   catalogCollectionId,
   onError,
 }: {
-  objectType: CatalogObjectType
+  objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
@@ -24,7 +24,7 @@ function useRequestCatalogObject({
   const [requestCatalogObject, { loading: requestingCatalogObject }] =
     useMutation(RequestCatalogObjectDocument)
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
+  if (objectType === ObjectType.CatalogCollection) {
     const onRequestCatalogCollection = async () => {
       try {
         const res = await requestCatalogCollection({
@@ -99,7 +99,10 @@ function useRequestCatalogObject({
           if (catalogObjects?.getCatalogObjects) {
             const updatedObjects = catalogObjects?.getCatalogObjects.map(
               (obj) => {
-                if (obj.id === objectId) {
+                if (
+                  (typeof objectId === 'number' && obj.objectId === objectId) ||
+                  (typeof objectId === 'string' && obj.objectUuid === objectId)
+                ) {
                   return { ...obj, isRequested: true }
                 }
 

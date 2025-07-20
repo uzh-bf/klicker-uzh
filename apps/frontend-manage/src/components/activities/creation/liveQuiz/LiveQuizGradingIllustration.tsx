@@ -76,7 +76,6 @@ function LiveQuizGradingIllustration({
           />
         </XAxis>
         <YAxis
-          dataKey="points"
           domain={[
             0,
             defaultPoints +
@@ -103,18 +102,23 @@ function LiveQuizGradingIllustration({
           verticalAlign="top"
           align="right"
           wrapperStyle={{ paddingBottom: '8px' }}
-          payload={[
-            {
-              value: t('manage.activityWizard.liveQuizCorrectAnswersPoints'),
-              type: 'line',
-              color: '#006400',
-            },
-            {
-              value: t('manage.activityWizard.liveQuizIncorrectAnswersPoints'),
-              type: 'line',
-              color: '#ed2939',
-            },
-          ]}
+          formatter={(value: string) => {
+            if (value === 'correctPoints') {
+              return (
+                <span style={{ color: '#006400' }}>
+                  {t('manage.activityWizard.liveQuizCorrectAnswersPoints')}
+                </span>
+              )
+            }
+            if (value === 'wrongPoints') {
+              return (
+                <span style={{ color: '#ed2939' }}>
+                  {t('manage.activityWizard.liveQuizIncorrectAnswersPoints')}
+                </span>
+              )
+            }
+            return value
+          }}
         />
         <RechartsTooltip
           content={({ active, payload }) => {

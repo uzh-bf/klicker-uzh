@@ -3,16 +3,15 @@ import {
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PermissionStatus,
   PrismaClient,
   PublicationStatus,
-  UserLoginScope,
-  UserRole,
 } from '@klicker-uzh/prisma'
 import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -21,23 +20,21 @@ import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
 } from '../src/services/resources.js'
-import { MISSING_CATALOG_COLLECTION_ID } from '../src/services/sharing.js'
 import {
   createActivityTemplate,
+  deleteActivityTemplate,
   getMatchingUserElementsTemplate,
+  validateTemplateAccessible,
 } from '../src/services/templates.js'
-import { questionsSLAF, userOne, userTwo } from './templateData.js'
-
-// setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
-const getDatabaseUrl = () => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
-}
+import {
+  initializePrisma,
+  seedCatalogCollections,
+  seedLiveQuizTemplates,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
+import { questionsSLAF } from './testData.js'
+import { userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests for template service', () => {
   // shared resources used across tests
@@ -45,80 +42,46 @@ describe('Unit tests for template service', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let userThreeCtx: ContextWithUser
+  let userFourCtx: ContextWithUser
+  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    // configure database
-    const databaseUrl = getDatabaseUrl()
-
-    try {
-      // initialize PrismaClient with the database URL
-      prisma = new PrismaClient({
-        datasources: {
-          db: { url: databaseUrl },
-        },
-        log: ['error', 'warn'],
-      })
-
-      // test database connection
-      await prisma.$connect()
-
-      // create EventEmitter for test context
-      emitter = new EventEmitter()
-
-      // upsert all users in the database
-      const users = await Promise.all(
-        [userOne, userTwo].map(
-          async (user) =>
-            await prisma.user.upsert({
-              where: { id: user.id },
-              update: {},
-              create: {
-                id: user.id,
-                email: user.email,
-                shortname: user.shortname,
-              },
-            })
-        )
-      )
-
-      // mock context with user including all required properties
-      userOneCtx = {
-        user: {
-          sub: userOne.sub,
-          role: UserRole.USER,
-          scope: UserLoginScope.ACCOUNT_OWNER,
-          catalystInstitutional: true,
-          catalystIndividual: true,
-        },
-        prisma,
-        emitter,
-        redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-        pubSub: { publish: jest.fn(), subscribe: jest.fn() },
-        req: {} as any,
-        res: {} as any,
-      }
-
-      // mock remaining contexts
-      userTwoCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userTwo.sub },
-      }
-    } catch (error) {
-      console.error('Failed to initialize test environment:', error)
-      throw new Error(`Database connection failed: ${error}`)
-    }
+    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    prisma = newPrisma
+    emitter = newEmitter
   })
 
-  // disconnect from the database
   afterAll(async () => {
+    await testCleanup(prisma)
     await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const {
+      userOneCtx: ctx1,
+      userTwoCtx: ctx2,
+      userThreeCtx: ctx3,
+      userFourCtx: ctx4,
+      userFiveCtx: ctx5,
+    } = await testInitialization(prisma, emitter)
+
+    userOneCtx = ctx1
+    userTwoCtx = ctx2
+    userThreeCtx = ctx3
+    userFourCtx = ctx4
+    userFiveCtx = ctx5
+  })
+
+  afterEach(async () => {
+    await testCleanup(prisma)
   })
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
     // seed a number of minimal elements into the database
     const elements = await Promise.all(
       questionsSLAF.map(async (question) => {
-        return await prisma.element.create({
+        const newElement = await prisma.element.create({
           data: {
             name: question.name,
             content: '',
@@ -129,6 +92,16 @@ describe('Unit tests for template service', () => {
             },
           },
         })
+
+        await recomputeDerivedPermissions(
+          {
+            elementId: newElement.id,
+            userId: userOne.id,
+          },
+          prisma
+        )
+
+        return newElement
       })
     )
 
@@ -535,10 +508,6 @@ describe('Unit tests for template service', () => {
       userTwoCtx
     )
     expect(res35).toHaveLength(0)
-
-    // cleanup: delete all elements from the database
-    const elementIds = elements.map((element) => element.id)
-    await prisma.element.deleteMany({ where: { id: { in: elementIds } } })
   })
 
   it('Verify access to correct answer collections when using activity template', async () => {
@@ -551,15 +520,19 @@ describe('Unit tests for template service', () => {
         name: 'AC1',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        accessRequests: {
           create: {
             permissionLevel: PermissionLevel.READ,
-            permissionStatus: PermissionStatus.REQUESTED, // requested permissions should not affect access
             user: { connect: { id: userTwo.id } },
+            objectAdminOrOwner: { connect: { id: userOne.id } },
           },
         },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC1.id, userId: userOne.id },
+      prisma
+    )
 
     // create unshared answer collection for user 1 (not used in activity template)
     const AC2 = await prisma.answerCollection.create({
@@ -569,6 +542,10 @@ describe('Unit tests for template service', () => {
         owner: { connect: { id: userOne.id } },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC2.id, userId: userOne.id },
+      prisma
+    )
 
     // create answer collection for user 1 (shared with user 2, used in activity template)
     const AC3 = await prisma.answerCollection.create({
@@ -576,15 +553,15 @@ describe('Unit tests for template service', () => {
         name: 'AC3',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        directPermissions: {
           create: {
             permissionLevel: PermissionLevel.READ,
-            permissionStatus: PermissionStatus.GRANTED,
             user: { connect: { id: userTwo.id } },
           },
         },
       },
     })
+    await recomputeDerivedPermissions({ answerCollectionId: AC3.id }, prisma)
 
     // create answer collection for user 1 (shared with user 2, not used in activity template)
     const AC4 = await prisma.answerCollection.create({
@@ -592,15 +569,15 @@ describe('Unit tests for template service', () => {
         name: '',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        directPermissions: {
           create: {
             permissionLevel: PermissionLevel.WRITE,
-            permissionStatus: PermissionStatus.GRANTED,
             user: { connect: { id: userTwo.id } },
           },
         },
       },
     })
+    await recomputeDerivedPermissions({ answerCollectionId: AC4.id }, prisma)
 
     // create unshared answer collection for user 2
     const AC5 = await prisma.answerCollection.create({
@@ -610,6 +587,10 @@ describe('Unit tests for template service', () => {
         owner: { connect: { id: userTwo.id } },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC5.id, userId: userTwo.id },
+      prisma
+    )
 
     // verify access to answer collections (user 1: 1-4, user 2: 3-5)
     const collectionsUser1 = await getAnswerCollectionsInfo(userOneCtx)
@@ -649,6 +630,13 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: activityId,
+        userId: userOne.id,
+      },
+      prisma
+    )
 
     // add template to the top-level catalog collection (accessible to everyone)
     await prisma.catalogCollectionAssignment.upsert({
@@ -668,7 +656,7 @@ describe('Unit tests for template service', () => {
       },
     })
 
-    // queries not related to the template should still only return owned or directly shared answer collections
+    // queries not related to the template should still only return owned or shared answer collections
     const collectionsUser1Alt = await getAnswerCollectionsElements(
       { templateId: undefined },
       userOneCtx
@@ -717,23 +705,11 @@ describe('Unit tests for template service', () => {
     expect(templateCollectionIdsUser2).toEqual(
       expect.arrayContaining([AC1.id, AC3.id, AC4.id, AC5.id])
     )
-
-    // cleanup; delete the created answer collections and the template
-    await prisma.liveQuiz.delete({ where: { id: activityId } })
-    await prisma.answerCollection.deleteMany({
-      where: { id: { in: [AC1.id, AC2.id, AC3.id, AC4.id, AC5.id] } },
-    })
-    const templateCount = await prisma.activityTemplate.count()
-    expect(templateCount).toBe(0)
-    const liveQuizCount = await prisma.liveQuiz.count()
-    expect(liveQuizCount).toBe(0)
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
   })
 
   it('Verify that when updating element instances in templates, answer collection - template links are updated correctly', async () => {
     // seed three answer collections, one selection question (1) and one case study question (2)
-    const AC1 = await userOneCtx.prisma.answerCollection.create({
+    const AC1 = await prisma.answerCollection.create({
       data: {
         name: 'AC1',
         description: '',
@@ -750,7 +726,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
-    const AC2 = await userOneCtx.prisma.answerCollection.create({
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC1.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
+
+    const AC2 = await prisma.answerCollection.create({
       data: {
         name: 'AC2',
         description: '',
@@ -767,7 +751,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
-    const AC3 = await userOneCtx.prisma.answerCollection.create({
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC2.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
+
+    const AC3 = await prisma.answerCollection.create({
       data: {
         name: 'AC3',
         description: '',
@@ -784,8 +776,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC3.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
-    const SEQuestion = await userOneCtx.prisma.element.create({
+    const SEQuestion = await prisma.element.create({
       data: {
         name: 'Selection Question',
         content: '',
@@ -808,8 +807,15 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        elementId: SEQuestion.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
-    const CSQuestion = await userOneCtx.prisma.element.create({
+    const CSQuestion = await prisma.element.create({
       data: {
         name: 'Case Study Question',
         content: '',
@@ -835,12 +841,19 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        elementId: CSQuestion.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
     // combine these questions into a live quiz and create a template
     const activityId = 'a7b750a4-5fd9-4575-85f1-9f981206477f'
     const SEElementData = processElementData(SEQuestion)
     const CSElementData = processElementData(CSQuestion)
-    const LQ = await userOneCtx.prisma.liveQuiz.create({
+    const LQ = await prisma.liveQuiz.create({
       data: {
         id: activityId,
         name: 'Test Quiz',
@@ -854,7 +867,6 @@ describe('Unit tests for template service', () => {
               elements: {
                 create: [
                   {
-                    migrationId: '0fbd0e21-f5d7-4e60-8f4a-a7f3e7703cab',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementData: SEElementData,
                     elementType: ElementType.SELECTION,
@@ -877,7 +889,6 @@ describe('Unit tests for template service', () => {
               elements: {
                 create: [
                   {
-                    migrationId: '3c0f2df0-62fa-4e42-a028-2b95f4355a18',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementData: CSElementData,
                     elementType: ElementType.CASE_STUDY,
@@ -899,6 +910,10 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      { liveQuizId: activityId, userId: userOneCtx.user.sub },
+      prisma
+    )
 
     await createActivityTemplate(
       {
@@ -919,6 +934,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -938,6 +954,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds).toHaveLength(2)
     expect(answerCollectionIds).toEqual(
       expect.arrayContaining([AC1.id, AC2.id])
+    )
+    const answerCollectionItems = template?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems).toHaveLength(2)
+    expect(answerCollectionItems).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion.name
@@ -981,6 +1004,7 @@ describe('Unit tests for template service', () => {
       CSQuestion.name
     )
 
+    // trigger another element instance update, this time including the activity templates
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
       userOneCtx
@@ -993,6 +1017,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1010,6 +1035,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds3).toHaveLength(2)
     expect(answerCollectionIds3).toEqual(
       expect.arrayContaining([AC1.id, AC2.id])
+    )
+    const answerCollectionItems3 = template3?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems3).toHaveLength(2)
+    expect(answerCollectionItems3).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template3?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion2.name
@@ -1040,6 +1072,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1057,6 +1090,13 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds4).toHaveLength(2)
     expect(answerCollectionIds4).toEqual(
       expect.arrayContaining([AC2.id, AC3.id])
+    )
+    const answerCollectionItems4 = template4?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems4).toHaveLength(2)
+    expect(answerCollectionItems4).toEqual(
+      expect.arrayContaining([AC2.entries[0]!.id, AC2.entries[1]!.id])
     )
     expect(template4?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
@@ -1091,6 +1131,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1107,6 +1148,13 @@ describe('Unit tests for template service', () => {
     )
     expect(answerCollectionIds5).toHaveLength(1)
     expect(answerCollectionIds5).toEqual(expect.arrayContaining([AC3.id]))
+    const answerCollectionItems5 = template5?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems5).toHaveLength(2)
+    expect(answerCollectionItems5).toEqual(
+      expect.arrayContaining([AC3.entries[0]!.id, AC3.entries[1]!.id])
+    )
     expect(template5?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
     )
@@ -1140,6 +1188,7 @@ describe('Unit tests for template service', () => {
       },
       include: {
         answerCollections: true,
+        answerCollectionItems: true,
         liveQuiz: {
           include: {
             blocks: {
@@ -1158,11 +1207,68 @@ describe('Unit tests for template service', () => {
     expect(answerCollectionIds6).toEqual(
       expect.arrayContaining([AC1.id, AC3.id])
     )
+    const answerCollectionItems6 = template6?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionItems6).toHaveLength(2)
+    expect(answerCollectionItems6).toEqual(
+      expect.arrayContaining([AC1.entries[0]!.id, AC1.entries[1]!.id])
+    )
     expect(template6?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
       SEQuestion3.name
     )
     expect(template6?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
       CSQuestion3.name
+    )
+
+    // modify the answer collection entries used in the case study question (same answer collection, but options 2 & 3 instead of 1 & 2)
+    const CSQuestion4 = await prisma.element.update({
+      where: { id: CSQuestion.id },
+      data: {
+        name: 'Updated Case Study Question 4',
+        answerCollectionItems: {
+          disconnect: [{ id: AC1.entries[0]!.id }],
+          connect: [{ id: AC1.entries[2]!.id }],
+        },
+      },
+    })
+    await updateElementInstances(
+      { elementId: CSQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the update was successful and that the corresponding answer collection entries are now linked to the template
+    const template7 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        answerCollectionItems: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds7 = template7?.answerCollections.map(
+      (collection) => collection.id
+    )
+    const answerCollectionItems7 = template7?.answerCollectionItems.map(
+      (item) => item.id
+    )
+    expect(answerCollectionIds7).toHaveLength(2)
+    expect(answerCollectionIds7).toEqual(
+      expect.arrayContaining([AC1.id, AC3.id])
+    )
+    expect(answerCollectionItems7).toHaveLength(2)
+    expect(answerCollectionItems7).toEqual(
+      expect.arrayContaining([AC1.entries[1]!.id, AC1.entries[2]!.id])
     )
 
     // delete the live quiz / template, answer collections and questions
@@ -1175,18 +1281,276 @@ describe('Unit tests for template service', () => {
     })
   })
 
-  it('Cleanup: delete all created data used in this unit test', async () => {
-    // verify that all elements have been deleted already
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
+  it('Validate that access to activity templates is correctly checked', async () => {
+    // create activity templates for testing
+    const {
+      activityId1,
+      activityId2,
+      activityId3,
+      templateId1,
+      templateId2,
+      templateId3,
+    } = await seedLiveQuizTemplates(prisma)
 
-    // delete all users that have been created for the test and validate that they have been removed
-    await prisma.user.deleteMany({
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await seedCatalogCollections(userOneCtx)
+
+    // seed permissions on the catalog collection for access validation
+    // create permissions for users 2, 3, and 4 (READ, WRITE, ADMIN in ascending order)
+    await prisma.permission.createMany({
+      data: [
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+      ],
+    })
+
+    // recompute derived permissions that are checked in backend service functions
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: restrictedCatalog.id },
+      prisma
+    )
+
+    // verify that the creation was successful
+    const templates = await prisma.liveQuiz.findMany({
       where: {
-        id: { in: [userOne.id, userTwo.id] },
+        status: PublicationStatus.TEMPLATE,
       },
     })
-    const dbUsers = await prisma.user.count()
-    expect(dbUsers).toBe(0)
+    expect(templates.length).toBe(3)
+    expect(templates.map((template) => template.id)).toEqual(
+      expect.arrayContaining([activityId1, activityId2, activityId3])
+    )
+
+    // add LQ1 to top level catlaog collection with public access -> should be accessible to everyone
+    await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId1,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId1,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessible for everyone
+    const { accessible: res1 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userOneCtx
+    )
+    expect(res1).toBeTruthy()
+    const { accessible: res2 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userTwoCtx
+    )
+    expect(res2).toBeTruthy()
+    const { accessible: res3 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userThreeCtx
+    )
+    expect(res3).toBeTruthy()
+    const { accessible: res4 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userFourCtx
+    )
+    expect(res4).toBeTruthy()
+    const { accessible: res5 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userFiveCtx
+    )
+    expect(res5).toBeTruthy()
+
+    // add LQ2 to public catalog collection with public access rights -> should be accessible to everyone
+    const assignment2 = await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId2,
+          catalogCollectionId: publicCatalog.id,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId2,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: publicCatalog.id,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessible for everyone
+    const { accessible: res6 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userOneCtx
+    )
+    expect(res6).toBeTruthy()
+    const { accessible: res7 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userTwoCtx
+    )
+    expect(res7).toBeTruthy()
+    const { accessible: res8 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userThreeCtx
+    )
+    expect(res8).toBeTruthy()
+    const { accessible: res9 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userFourCtx
+    )
+    expect(res9).toBeTruthy()
+    const { accessible: res10 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userFiveCtx
+    )
+    expect(res10).toBeTruthy()
+
+    // add LQ3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
+    const assignment3 = await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId3,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId3,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: restrictedCatalog.id,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessilbe only to users with access to restricted catalog collection
+    const { accessible: res11 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userOneCtx
+    )
+    expect(res11).toBeTruthy() // owner of restricted catalog collection
+    const { accessible: res12 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userTwoCtx
+    )
+    expect(res12).toBeTruthy() // read permissions on restricted catalog collection
+    const { accessible: res13 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userThreeCtx
+    )
+    expect(res13).toBeTruthy() // write permissions on restricted catalog collection
+    const { accessible: res14 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userFourCtx
+    )
+    expect(res14).toBeTruthy() // admin permissions on restricted catalog collection
+    const { accessible: res15 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userFiveCtx
+    )
+    expect(res15).toBeFalsy() // no permissions on restricted catalog collection
+  })
+
+  it('Verify that users with sufficient permissions can delete the created activity templates', async () => {
+    // create activity templates for testing
+    const { activityId1, activityId2, activityId3 } =
+      await seedLiveQuizTemplates(prisma)
+
+    // delete activity templates with owner / admin permissions
+    const res5 = await deleteActivityTemplate(
+      {
+        activityId: activityId1,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res5).toBeTruthy()
+    const res6 = await deleteActivityTemplate(
+      {
+        activityId: activityId2,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res6).toBeTruthy()
+    const res7 = await deleteActivityTemplate(
+      {
+        activityId: activityId3,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res7).toBeTruthy()
+
+    // verify that the activity templates have been removed from the database
+    const liveQuizTemplates = await prisma.liveQuiz.findMany({
+      where: {
+        status: PublicationStatus.TEMPLATE,
+      },
+    })
+    expect(liveQuizTemplates.length).toBe(0)
   })
 })

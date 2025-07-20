@@ -20,6 +20,8 @@ function AddAnswerCollectionEntry({
   onTouched,
   onUntouched,
   onSuccess,
+  inlineEditing,
+  refetchAnswerCollections,
 }: {
   collectionId: number
   entries: AnswerCollectionEntry[]
@@ -27,6 +29,8 @@ function AddAnswerCollectionEntry({
   onTouched: () => void
   onUntouched: () => void
   onSuccess: () => void
+  inlineEditing: boolean
+  refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
   const [fieldOpen, setFieldOpen] = useState(false)
@@ -104,8 +108,14 @@ function AddAnswerCollectionEntry({
               },
             })
           },
-          refetchQueries: [GetAnswerCollectionsInfoDocument],
+          refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
         })
+
+        // if the answer collection is edited inline (in a question context), refetch the selection
+        if (inlineEditing) {
+          await refetchAnswerCollections?.()
+        }
+
         setFieldOpen(false)
         setOptionsEditingDisabled(false)
         onSuccess()

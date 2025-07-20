@@ -1,26 +1,17 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { sort } from 'remeda'
-import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
+import ActivityList from '../activities/overview/ActivityList'
+import ActivityListLegend from '../activities/overview/ActivityListLegend'
 import QRCodePopover from './QRCodePopover'
-
-const sortingOrderLiveQuizzes: Record<PublicationStatus, number> = {
-  [PublicationStatus.Published]: 0,
-  [PublicationStatus.Scheduled]: 1,
-  [PublicationStatus.Draft]: 2,
-  [PublicationStatus.Template]: 3,
-  [PublicationStatus.Ended]: 4,
-  [PublicationStatus.Graded]: 5,
-}
 
 function LiveQuizList({
   courseId,
   liveQuizzes,
 }: {
   courseId: string
-  liveQuizzes: LiveQuizListElementType[]
+  liveQuizzes: ActivityInfo[]
 }) {
   const t = useTranslations()
 
@@ -51,23 +42,24 @@ function LiveQuizList({
           <Button.Icon icon={faLink} />
           <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.liveQuizList')}`}</Button.Label>
         </Button>
+        <ActivityListLegend type={ActivityType.LiveQuiz} />
       </div>
 
       {liveQuizzes && liveQuizzes.length > 0 ? (
-        <div className="flex w-full flex-col gap-2">
-          {sort(liveQuizzes, (a, b) => {
-            if (!a.status || !b.status) return 0
-
-            return (
-              sortingOrderLiveQuizzes[a.status] -
-              sortingOrderLiveQuizzes[b.status]
-            )
-          }).map((quiz) => (
-            <LiveQuizElement quiz={quiz} key={quiz.id} />
-          ))}
+        <div className="mt-0.5 flex w-full flex-col">
+          <ActivityList
+            activities={liveQuizzes}
+            noActivities={false}
+            hideActivityType
+          />
         </div>
       ) : (
-        <div>{t('manage.course.noLiveQuizzes')}</div>
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-full text-left' }}
+        >
+          {t('manage.course.noLiveQuizzes')}
+        </UserNotification>
       )}
     </div>
   )

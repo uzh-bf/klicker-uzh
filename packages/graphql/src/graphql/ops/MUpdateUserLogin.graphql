@@ -1,0 +1,11 @@
+mutation UpdateUserLogin($id: String!, $password: String!) {
+  updateUserLogin(id: $id, password: $password) {
+    id
+    name
+    scope
+    user {
+      id
+      shortname
+    }
+  }
+}

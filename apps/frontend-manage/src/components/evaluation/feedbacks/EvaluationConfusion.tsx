@@ -132,14 +132,13 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
 
   return (
     <div className="flex h-full flex-col justify-start">
-      <div className="min-h-[10rem] w-full flex-auto">
+      <div className="min-h-40 w-full flex-auto">
         <div className="ml-2">
           <Tooltip
             tooltip={t('manage.evaluation.confusionDiagramsTooltip')}
             className={{
               tooltip: 'z-10 max-w-[20%] text-sm md:max-w-[30%]',
             }}
-            withIndicator={false}
           >
             <FontAwesomeIcon
               icon={faQuestion}

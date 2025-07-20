@@ -2,7 +2,7 @@ import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import type { TextFieldClassName } from '@uzh-bf/design-system'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
-import type { useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -22,7 +22,6 @@ interface DebouncedUsernameFieldProps {
     test?: string
   }
   className?: TextFieldClassName & { root?: string }
-  t: ReturnType<typeof useTranslations>
 }
 
 function DebouncedUsernameField({
@@ -38,9 +37,9 @@ function DebouncedUsernameField({
   hideError = false,
   data,
   className,
-  t,
 }: DebouncedUsernameFieldProps) {
-  const [field, meta, helpers] = useField(name)
+  const t = useTranslations()
+  const [field, meta, helpers] = useField<string>(name)
 
   // validate field when valid value changes
   useEffect(() => {
@@ -56,7 +55,7 @@ function DebouncedUsernameField({
     check()
   }, [])
 
-  const usernameValidationTimeout = useRef<any>()
+  const usernameValidationTimeout = useRef<any>(null)
   const debouncedUsernameCheck = useCallback(
     ({ username }: { username: string }) => {
       clearTimeout(usernameValidationTimeout.current)
@@ -83,13 +82,14 @@ function DebouncedUsernameField({
         label: twMerge('text-md font-bold text-black', className?.label),
         icon: twMerge(
           typeof valid === 'undefined'
-            ? 'animate-spin bg-transparent !py-0'
+            ? 'py-0! animate-spin bg-transparent'
             : !valid || typeof meta.error !== 'undefined'
               ? 'bg-red-50 text-red-600'
               : 'text-green-600',
           className?.icon
         ),
         input: twMerge(
+          'pl-8!',
           valid === false || typeof meta.error !== 'undefined'
             ? 'border-red-600 bg-red-50'
             : '',

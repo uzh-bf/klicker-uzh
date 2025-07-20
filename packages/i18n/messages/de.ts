@@ -24,22 +24,26 @@ export default {
       statusLabel: 'Geplant',
     },
     PUBLISHED: {
-      statusLabel: 'Öffentlich',
+      statusLabel: 'Öffentlich / Laufend',
+      statusLabel1: 'Öffentlich',
+      statusLabel2: 'Laufend',
     },
     ENDED: {
-      statusLabel: 'Abgeschlossen',
+      statusLabel: 'Abgeschlossen / Bereit zur Bewertung',
+      statusLabel1: 'Abgeschlossen',
+      statusLabel2: 'Bereit zur Bewertung',
     },
     GRADED: {
       statusLabel: 'Bewertet',
+    },
+    TEMPLATE: {
+      statusLabel: 'Vorlage',
     },
     REVIEW: {
       statusLabel: 'Review',
     },
     READY: {
       statusLabel: 'Bereit',
-    },
-    TEMPLATE: {
-      statusLabel: 'Vorlage',
     },
     SC: {
       short: 'SC',
@@ -96,9 +100,35 @@ export default {
     login: {
       installButton: 'Jetzt installieren',
     },
+    comments: {
+      title: 'Kommentare',
+      viewComments: 'Kommentare anzeigen',
+      noActivity: 'Noch keine Aktivität',
+      noUnresolvedActivity: 'Keine unerledigten Nachrichten',
+      addMessage:
+        'Fügen Sie eine Nachricht hinzu, um eine Unterhaltung zu beginnen',
+      messageInputPlaceholder: 'Nachricht schreiben...',
+      sending: 'Senden...',
+      send: 'Senden',
+      tooltip: 'Kommentare anzeigen',
+      markResolved: 'Als erledigt markieren',
+      markUnresolved: 'Als unerledigt markieren',
+      resolved: 'Erledigt',
+      hideResolved: 'Erledigte Nachrichten ausblenden',
+      resolvedAt: 'Erledigt {time}',
+      messageMESSAGE: '',
+      messageCREATION: '{username} hat dieses Objekt erstellt.',
+      messageMODIFICATION:
+        '{username} hat {field} geändert ({oldValue} -> {newValue}).',
+      messageSHARING: '', // TODO: implement once available
+      fieldtitle: 'Titel',
+      fieldstatus: 'Status',
+      fieldcontent: 'Inhalt',
+    },
     generic: {
       date: 'Datum',
       percentage: 'Prozent',
+      status: 'Status',
       groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
@@ -152,6 +182,7 @@ export default {
       home: 'Home',
       questions: 'Fragen',
       question: 'Frage',
+      activities: 'Aktivitäten',
       element: 'Element',
       block: 'Block',
       stack: 'Stack',
@@ -172,6 +203,7 @@ export default {
       activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
+      loading: 'Lädt...',
       characters: 'Zeichen',
       precision: 'Präzision',
       unit: 'Einheit',
@@ -222,6 +254,7 @@ export default {
       createdAt: 'Erstellt am {date}',
       updatedAt: 'Editiert am {date}',
       startAt: 'Start am {time}',
+      endAt: 'Endet am {time}',
       finishedAt: 'Beendet am {time}',
       introduction: 'Einführung',
       information: 'Information',
@@ -229,6 +262,7 @@ export default {
       settings: 'Einstellungen',
       activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
+      courses: 'Kurse',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
       endDate: 'Enddatum',
@@ -316,7 +350,9 @@ export default {
       results: 'Resultate',
       never: 'Nie',
       actions: 'Aktionen',
+      object: 'Objekt',
       read: 'Lesen',
+      execute: 'Ausführen',
       write: 'Schreiben',
       admin: 'Admin',
       owner: 'Besitzer',
@@ -325,8 +361,22 @@ export default {
       template: 'Vorlage',
       noPoints: 'keine Punkte',
       criterionN: 'Kriterium {number}',
+      propagation: 'Propagation',
+      sharing: 'Sharing',
+      shared: 'Geteilt',
+      imported: 'Importiert',
+      dependency: 'Abhängigkeit',
+      tryAgain: 'Erneut versuchen',
+      legend: 'Legende',
+      collections: 'Sammlungen',
+      objects: 'Objekte',
+      pseudonym: 'Pseudonym',
+      selected: 'Ausgewählt',
+      seconds: 'Sekunden',
+      moreInformation: 'Mehr Informationen',
     },
     types: {
+      ACTIVITIES: 'Aktivitäten',
       LIVE_QUIZ: 'Live Quiz',
       LIVE_QUIZ_TEMPLATE: 'Live Quiz Vorlage',
       PRACTICE_QUIZ: 'Übungs-Quiz',
@@ -337,6 +387,8 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
+      ELEMENT: 'Element',
+      COURSE: 'Kurs',
       SC: 'Single Choice Frage',
       MC: 'Multiple Choice Frage',
       KPRIM: 'Kprim Frage',
@@ -489,7 +541,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
     },
     studentDocs: {
       pageList: `
-In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH in Ihrem Kurs:
+In dieser Dokumentation finden Sie die wichtigsten Informationen zu KlickerUZH in Ihrem Kurs:
 
 - [Features im Überblick](docs/features)
 - [Erster Login & Accounteinrichtung](docs/login)
@@ -533,7 +585,7 @@ Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen verg
 
 ![Gamification](/img/leaderboard/08_gamification.png)
 
-Alle Aktivitäten im KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
+Alle Aktivitäten in KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
 
 Die folgenden Aktivitäten sind Teil der Challenge:
 
@@ -570,7 +622,7 @@ Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den
 
 #### Anonyme Teilnahme
 
-Generell ist es möglich, an den Activitäten im KlickerUZH auch anonym teilzunehmen. Für Live Quizzes finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
+Generell ist es möglich, an den Aktivitäten in KlickerUZH auch anonym teilzunehmen. Für Live Quizzes finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
 Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von Ihren Dozierenden erhalten können. Wenn Sie über die OLAT-Integration auf KlickerUZH zugreifen, können Sie ein Konto erstellen und werden dann automatisch eingeloggt. Wenn Sie kein KlickerUZH-Konto haben, bleibt Ihre Teilnahme an den Practice Quizzes anonym.
       `,
       appSetupTitle: 'App Installation',
@@ -747,11 +799,41 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
     liveQuiz: {
-      noActiveQuestion: 'Keine Frage aktiv.',
+      noActiveQuestion:
+        'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
+      thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
+      loginSelectionHint:
+        'Sie sind dabei, an einem gamifizierten Live-Quiz teilzunehmen. Bitte wählen Sie zwischen den folgenden Optionen: <ul><li>Login mit <b>KlickerUZH-Konto</b>: Punkte und XP sammeln</li><li>Erstellen Sie ein <b>temporäres Pseudonym</b>: Sammeln Sie Punkte nur in diesem Live-Quiz (Punkte nicht im Kurs verfügbar)</li><li><b>Anonyme</b> Teilnahme: Nicht an den Gamifizierungselementen teilnehmen</li></ul>',
+      loginWithAccount: 'Login mit KlickerUZH-Konto',
+      createTemporaryPseudonym: 'Temporäres Pseudonym erstellen',
+      participateAnonymously: 'Anonym teilnehmen',
+      changeLoginMode: 'Login-Modus ändern',
+      pseudonymExplanation:
+        'Durch die Eingabe eines <b>Pseudonyms</b> können Sie Punkte in diesem gamifizierten Live-Quiz sammeln, ohne ein KlickerUZH-Konto erstellen zu müssen. Gesammelte Punkte werden nur im Zusammenhang mit diesem Live-Quiz gespeichert und nicht in der Kursrangliste angezeigt.',
+      pseudonymRequired: 'Bitte geben Sie ein Pseudonym ein.',
+      pseudonymMinLength:
+        'Das Pseudonym muss mindestens {length} Zeichen lang sein.',
+      pseudonymMaxLength:
+        'Das Pseudonym darf nicht länger als {length} Zeichen sein.',
+      joinedSuccessfullyWithPseudonym:
+        'Sie sind dem Live Quiz erfolgreich mit dem Pseudonym <b>{pseudonym}</b> beigetreten.',
+      pseudonymAlreadyExists:
+        'Das gewählte Pseudonym ist leider bereits vergeben. Bitte wählen Sie ein anderes.',
+      pseudonymCreationFailed:
+        'Die Erstellung des Pseudonyms ist fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      temporaryParticipantsLeaderboard:
+        'Temporäre Teilnehmende (sammeln nur in diesem gamifizierten Live-Quiz Punkte)',
+      pseudonymSelection: 'Pseudonym-Auswahl',
+      avatarExplanation:
+        'Falls sie möchten, können Sie hier Ihren <b>Avatar</b> für das Live-Quiz auswählen.',
+      noQuizTitle: 'Kein Live-Quiz verfügbar',
+      noQuizDescription:
+        'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
+      refreshPage: 'Seite aktualisieren',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
@@ -762,6 +844,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       feedbackPlaceholder: 'Feedback / Frage eingeben',
       postedAt: 'Gepostet am {date}',
       solvedAt: 'Gelöst am {date}',
+      feedbackSubmitted:
+        'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',
@@ -786,7 +870,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usernameRequired: 'Bitte geben Sie einen Benutzernamen ein.',
       passwordRequired: 'Bitte geben Sie ein Passwort ein.',
       welcomeMessage:
-        'Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.',
+        'Willkommen bei KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.',
       deleteProfile: 'Konto löschen',
       deleteProfileDescription:
         'Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen irreversibel löschen.',
@@ -796,6 +880,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
       forgotPasswordInfo:
         'Wenn Sie Ihr Passwort vergessen haben, verwenden Sie die E-Mail Login Funktion, um einen einmaligen Login-Link zu erhalten und Ihr Passwort anschliessend zu ändern.',
+      errorLogoutTemporaryParticipant:
+        'Beim Ausloggen aus ihrem temporären Pseudonym ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      loggedInAs: 'Angemeldet als',
+      temporaryPseudonym: 'temporäres Pseudonym',
     },
     avatar: {
       hair: 'Frisur',
@@ -918,8 +1006,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mediaLibrary: 'Mediathek',
       userGroups: 'Benutzergruppen',
       generateToken: 'Login-Token generieren',
+      adminPanel: 'Admin-Panel',
       '404Message':
-        'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
+        'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zur <link>Bibliothek</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
       date: 'Datum',
       dateCreated: 'Erstellungsdatum',
       dateModified: 'Änderungsdatum',
@@ -929,6 +1018,56 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
+    },
+    admin: {
+      pageName: 'Admin-Panel',
+      privatePreviewAvailability: 'Verfügbarkeit: Private Features',
+      privatePreviewDescription:
+        'Alle Benutzer in der folgenden Liste haben Zugriff auf Funktionen, die derzeit als "Private Preview" gekennzeichnet sind. Neue Benutzer können durch Eingabe ihrer E-Mail-Adresse (primäre Edu-ID-E-Mail) hinzugefügt werden.',
+      grantAccessEmailLabel: 'Benutzer E-Mail-Adresse',
+      grantAccessTooltip:
+        'Bitte geben Sie die primäre Edu-ID-E-Mail-Adresse des Benutzers ein, dem Zugriff auf die privaten Funktionen gewährt werden soll. Alle Benutzer müssen sich zuvor bei KlickerUZH angemeldet haben. Die gespeicherte E-Mail-Adresse kann im Benutzerprofil eingesehen werden.',
+      grantAccess: 'Zugriff gewähren',
+      grantAccessEmailError: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+      grantAccessEmailRequired:
+        'Um Zugriff zu gewähren, geben Sie bitte eine E-Mail-Adresse ein.',
+      accessGranted:
+        'Der Zugriff auf private Vorschaufunktionen wurde dem angegebenen Benutzer erfolgreich gewährt.',
+      alreadyAccess:
+        'Der angegebene Benutzer hat bereits Zugriff auf private Vorschaufunktionen.',
+      userNotExist:
+        'Der angegebene Benutzer existiert nicht. Bitte überprüfen Sie die E-Mail-Adresse und stellen Sie sicher, dass sich der Benutzer mindestens einmal bei KlickerUZH angemeldet hat.',
+      grantAccessError:
+        'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
+    },
+    activities: {
+      activityType: 'Aktivitätstyp',
+      noActivitiesAvailable:
+        'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Fragen in der <link>Bibliothek</link> erstellen.',
+      noActivitiesForFilters:
+        'Für die aktuell ausgewählten Filter bzw. den eingegebenen Suchbegriff konnten keine Aktivitäten gefunden werden. Bitte versuchen Sie es mit anderen Filtern oder einem anderen Suchbegriff.',
+      liveQuizInfo: '{numOfBlocks} Blöcke, {numOfElements} Element(e)',
+      activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
+      activityDetails: 'Aktivitätsdetails',
+      lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
+      availability: 'Verfügbarkeit: {startDate} - {endDate}',
+      removeActivity: 'Aktivität entfernen',
+      confirmActivityRemoval:
+        'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
+      activityRemovalFinal:
+        'Die Entfernung der Aktivität wird sie aus Ihrem Benutzerkonto entfernen, aber nicht deren Inhalt löschen. Zudem bleiben veröffentlichte Aktivitäten für alle Studierenden weiterhin verfügbar. Die Aktion kann nicht rückgängig gemacht werden.',
+      activityRemovalDerivedAccessHint:
+        'Wenn diese Aktivität einem Kurs zugewiesen ist, auf den Sie Zugriff haben, kann sie aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall erhalten Sie automatisch eine abgeleitete Berechtigung für die Aktivität, nachdem Sie deren Entfernung ausgelöst haben. Sobald der zugehörige Kurs gelöscht oder entfernt wird, wird das Element ebenfalls automatisch entfernt.',
+      activityRemovalDependencyAccess:
+        'Abgeleitete Zugriffsrechte auf enthaltene Elemente und Ressourcen werden automatisch widerrufen (es sei denn, diese sind technisch erforderlich).',
+      changeActivityName: 'Aktivitätsnamen ändern',
+      activityNameChangeSuccess:
+        'Der Name der Aktivität wurde erfolgreich geändert.',
+      activityNameChangeError:
+        'Der Name der Aktivität konnte nicht geändert werden.',
+      noCourseAssigned: 'Kein Kurs zugewiesen',
+      actionsLegend: 'Aktionen für Aktivitäten',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -972,21 +1111,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
     },
     firstLogin: {
-      welcome: 'Willkommen beim KlickerUZH!',
+      welcome: 'Willkommen bei KlickerUZH!',
       makeFirstSettings:
         'Da Sie KlickerUZH v3.0 zum ersten Mal nutzen, möchten wir Ihnen gerne helfen, einige wichtige Einstellungen gleich zu Beginn vorzunehmen, damit Sie so effizient wie möglich starten können. Dazu gehören Ihre bevorzugte Sprache sowie der Kurzname, der mit diesem Konto verknüpft ist. Beides kann jederzeit in den Benutzereinstellungen erneut geändert werden.',
       relevantLinks:
         'Stellen Sie sicher, dass Sie die folgenden relevanten Links gesehen/gespeichert haben:',
       watchVideo:
         'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
+      seedDemoElements: 'Demo-Elemente generieren',
+      seedDemoElementsExplanation:
+        'Bitte wählen Sie, ob Demo-Elemente zur Demonstration der verfügbaren Element-Typen in Ihrer Bibliothek generiert werden sollen. Diese können jederzeit gelöscht werden.',
+      seedDemoElementsDecisionRequired:
+        'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
+      storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
-      confirmDelegatedAcces: 'Delegierten Login bestätigen',
-      confirmDelegatedAccesTooltip:
+      confirmDelegatedAccess: 'Delegierten Login bestätigen',
+      confirmDelegatedAccessTooltip:
         'Bitte überprüfen Sie die Zugangsdaten für den delegierten Login. Kopieren Sie das Passwort, bevor Sie dieses Pop-Up schliessen, da es nicht erneut angezeigt werden kann.',
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Live Quizzes',
@@ -1022,6 +1167,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
+      changePassword: 'Passwort ändern',
+      changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
+      changeDelegatedLoginPasswordMessage:
+        'Hier können Sie das Passwort des gewählten delegierten Logins ändern. Bitte beachten Sie, dass das Passwort nur einmalig angezeigt wird, bitte notieren Sie es sich daher vor dem Bestätigen.',
+      newPassword: 'Neues Passwort',
     },
     token: {
       pageName: 'Token Generation',
@@ -1034,29 +1184,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
     },
-    migration: {
-      pageName: 'Migration der Daten von KlickerV2',
-      step1Title: 'Schritt 1: Migrations-Token anfordern',
-      step1Description:
-        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      requestMigrationToken: 'Migrations-Token anfordern',
-      step2Title: 'Schritt 2: Migrations-Link einfügen',
-      step2Description:
-        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      step3Title: 'Schritt 3: Migration starten',
-      step3Description:
-        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-      startMigration: 'Migration starten',
-      step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
-      step4Description:
-        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@df.uzh.ch.',
-    },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaktivität erstellen',
-      createQuestion: 'Frage Erstellen',
+      createQuestion: 'Element Erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
@@ -1068,26 +1201,75 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:
-        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage.',
-      deleteQuestion: 'Frage löschen',
+        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen.',
+      activeFiltersWarning:
+        'Aktuell sind Filter aktiv, welche die angezeigten Elemente beeinflussen können. Um alle Elemente (ausser archivierte) anzuzeigen, können Sie die Filter <reset>zurücksetzen</reset> oder verändern Sie diese auf der rechten Seite.',
+      deleteElement: 'Element löschen',
       confirmDeletion:
-        'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
-      noQuestionRecovery:
-        'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Live Quizzes werden gelöschte Fragen nicht entfernt.',
+        'Bitte bestätigen Sie die folgenden Folgen der Löschung des Elementes <b>{name}</b>.',
+      elementDeletionFinal:
+        'Die Löschung eines Elements is unwiderruflich und gelöschte Elemente können nicht wiederhergestellt werden. Das Element wird durch die Löschung nicht aus bestehenden Aktivitäten entfernt.',
+      elementDeletionOtherUsers:
+        'Andere Nutzer setzen dieses Element in Aktivitäten ein. Der Zugriff für diese Nutzer bleibt bestehen.',
+      elementDeletionDerivedAccessHint:
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig gelöscht werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
+      elementDeletionDependencyAccess:
+        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+      elementDeletionOtherUsersNotApplicable:
+        'Das Element wird nicht von anderen Nutzern in Aktivitäten verwendet.',
+      elementDeletionDerivedAccessNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig gelöscht werden.',
+      elementDeletionDependencyAccessNotApplicable:
+        'Keine abgeleiteten Ressourcen sind durch die Löschung des Elements betroffen.',
+      removeElement: 'Element entfernen',
+      confirmElementRemoval:
+        'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Elementes <b>{name}</b> aus Ihrem Nutzerkonto.',
+      elementRemovalFinal:
+        'Die Entfernung dieses Elements aus Ihrem Konto ist unwiderruflich und kann nicht rückgängig gemacht werden.',
+      elementRemovalDerivedAccessHint:
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig entfernt werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig entfernt werden.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
+      archivingSuccess:
+        'Alle ausgewählten Elemente wurden erfolgreich archiviert.',
+      archivingPartialSuccess:
+        'Alle Elemente mit ausreichenden Berechtigungen wurden erfolgreich archiviert. Bitte beachten Sie, dass zur Archivierung von Elementen mindestens Admin-Berechtigungen auf dem entsprechenden Objekt erforderlich sind.',
+      archivingFailed:
+        'Keines der ausgewählten Elemente konnte archiviert werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      restoreFromArchiveSuccess:
+        'Das Element wurde erfolgreich aus dem Archiv wiederhergestellt.',
+      restoreFromArchivePartialSuccess:
+        'Einige Elemente konnten erfolgreich aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      restoreFromArchiveFailed:
+        'Keine Elemente konnten aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
+      showExplanation: 'Erklärung anzeigen',
+      showFeedbacksExplanationTooltip:
+        'Eine Vorschau, wie die Erklärung und die Antwort-Feedbacks in <b>asynchronen Aktivitäten</b> angezeigt werden, nachdem ein Schüler auf das Element reagiert hat.',
+      showExplanationTooltip:
+        'Eine Vorschau, wie die Erklärung in <b>asynchronen Aktivitäten</b> angezeigt wird, nachdem ein Schüler auf das Element reagiert hat.',
     },
     tags: {
       deleteTag: 'Tag löschen',
       confirmTagDeletion:
         'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
+      uniqueTagName:
+        'Bitte beachten Sie, dass Sie nicht mehrere Tags mit dem gleichen Namen erfassen können.',
+      tagNameUpdatedSuccessfully: 'Der Tagname wurde erfolgreich angepasst.',
     },
-    questionForms: {
-      CREATETitle: 'Frage erstellen',
-      EDITTitle: 'Frage bearbeiten',
-      DUPLICATETitle: 'Frage duplizieren',
+    elements: {
+      CREATETitle: 'Element erstellen',
+      EDITTitle: 'Element bearbeiten',
+      DUPLICATETitle: 'Element duplizieren',
+      deleteElement: 'Element löschen',
+      shareElement: 'Element teilen',
+      viewElement: 'Element anzeigen',
+      modifyElement: 'Element bearbeiten',
+      useElementInActivities: 'Element in Aktivitäten verwenden',
       elementType: 'Elementtyp',
       selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
@@ -1140,27 +1322,50 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
-      SEAnswerCollectionRequired:
-        'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter <link>"Ressourcen"</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.',
       CSAnswerCollectionRequired:
-        'Zur Erstellung von Fallstudien benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter <link>"Ressourcen"</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.',
+        'Zur Erstellung von Fallstudien-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Fallstudien-Elemente manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
+      SEAnswerCollectionRequired:
+        'Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf eine Antwort-Sammlung oder können <link>die Auswahl-Möglichkeiten manuell eingeben</link>. Um eine Antwort-Sammlung zu verwenden, erstellen Sie entweder eine eigene unter <link2>Ressourcen → Antwort-Sammlungen</link2> oder importieren Sie bestehende Sammlungen anderer Nutzer über den <link3>Katalog</link3>.',
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
+      notSufficientPermissionsEditCollection:
+        'Ihre Berechtigungen für diese Antwort-Sammlung sind nicht ausreichend, um diese zu bearbeiten.',
+      noAnswerCollectionSelected:
+        'Bitte wählen Sie zuerst eine Antwort-Sammlung mit ausreichenden Berechtigungen aus, bevor Sie diese ergänzen können.',
       caseStudyAnswerCollectionTooltip:
         'Bitte wählen Sie eine Antwort-Sammlung, aus welcher Sie die in der Fallstudie zu bewertenden Elemente auswählen möchten.',
       numberOfInputs: 'Anzahl Eingabefelder',
       correctAnswerOptions: 'Korrekte Antwortoptionen',
       correctAnswerOptionsTooltip:
         'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
-      selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
+      selectCorrectAnswerOptions: 'Korrekte Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
       changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
       confirmCollectionChange:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
       selectedItems: 'Ausgewählte Elemente',
+      selectionItems: 'Elemente zur Auswahl',
+      newSelectionItemsTooltip:
+        'Bitte geben Sie hier die Elemente ein, aus welchen die Studierenden die korrekten Optionen auswählen sollen. Diese werden beim Speichern der Frage automatisch in eine neue Antwort-Sammlung kombiniert.',
+      definedItems: 'Neue Fallstudien-Elemente',
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
+      newCaseStudyItemsTooltip:
+        'Bitte geben Sie hier die Fallstudien-Elemente an, die in Bezug auf die angegebenen Kriterien bewertet werden sollen. Diese werden beim Speichern der Frage automatisch in eine neue Antwort-Sammlung kombiniert.',
+      enterItemsManually:
+        'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
+      enterItemsManuallyExplanation:
+        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+      returnItemsCollectionSelection:
+        'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
+      enterSelectionItemsManually:
+        'Möchten Sie die zur Auswahl stehenden Elemente manuell erfassen?',
+      enterSelectionItemsManuallyExplanation:
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Auswahl-Frage direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+      returnSelectionItemsCollection:
+        'Möchten Sie zur Auswahl einer bestehenden Sammlung zurückkehren?',
       selectCaseStudyItems: 'Elemente auswählen...',
+      insertNewItems: 'Elemente erfassen...',
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
@@ -1272,11 +1477,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementCreated: 'Element erfolgreich erstellt',
       openPreview: 'Vorschau öffnen',
       openOverview: 'Übersicht öffnen',
-      createNewElement: 'Weiteres Element erstellen',
+      createAnotherActivity: 'Weitere Aktivität erstellen',
       enterContentHere: 'Inhalt hier eingeben…',
       questionsDragDrop: 'Fügen Sie mittels Drag&Drop Fragen hinzu.',
       newQuestion: 'Neue Frage',
-      blockSettingsTitle: 'Einstellungen Block {blockIx}',
+      blockCountdownTitle: 'Countdown Block {blockIx}',
       timeLimit: 'Zeit-Limit',
       noTimeLimit: 'Kein Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',
@@ -1301,6 +1506,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       stackFTQuestionsNoSL:
         'Sie haben eine Freitext-Frage in diesem Stack ohne Musterlösung genutzt. Während dies Freitext-Fragen möglich ist, beachten Sie bitte, dass die Teilnehmenden eine Standardpunktzahl für die Beantwortung erhalten und keine Bewertungslogik angewendet wird.',
+      outdatedElementsWarning:
+        'Ihre Aktivität enthält veraltete Versionen von Elementen.',
+      updateAllElements: 'Alle Elemente aktualisieren',
+      elementInstancesFrozen:
+        'Beim Erstellen der Aktivität wurde der Inhalt der Elemente eingefroren. Wenn aktiviert, werden Änderungen an Elementen auf Aktivitäten mit Entwurf-Status angewendet.',
+      noInstanceUpdatePublishedActivities:
+        'Keine Änderungen an Elementen werden auf veröffentlichte Aktivitäten angewendet (für Teilnehmende zugänglich).',
+      choiceOnDuplication:
+        'Beim Duplizieren einer Aktivität können Sie wählen, ob der Inhalt der Aktivität unverändert bleiben oder die Elemente auf die neueste Version aktualisiert werden sollen.',
       microlearningTypes:
         'Microlearnings können alle verfügbaren Elemente enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
@@ -1582,7 +1796,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noInstances:
         'Die ausgewählte Aktivität enthält keine Elemente und kann daher nicht in ein Template umgewandelt werden.',
       resourcesRequiredMissing:
-        'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
+        'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht, verändert (benötigte Antwort-Optionen entfernt) oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
       noResourceAccessRequired:
         'Diese Aktivität enthält keine Elemente, die von Ressourcen abhängen.',
       confirmationsTitle: 'Erforderliche Bestätigungen',
@@ -1755,6 +1969,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie eine Antwort-Sammlung aus welcher die zu bewertenden Element der Fallstudie selektiert werden.',
       CSItemsRequired:
         'Bitte wählen Sie mindestens ein Element aus der Antwort-Sammlung aus, welches von den Teilnehmenden auf die erstellten Kriterien bewertet werden soll.',
+      CSNewItemsRequired:
+        'Bitten definieren Sie mindestens ein Element, welches von den Teilnehmenden auf die erstellten Kriterien bewertet werden soll.',
       CSCriteriaNameRequired:
         'Bitte geben Sie einen Namen für das Kriterium ein.',
       CSCriteriaMinRequired:
@@ -1806,9 +2022,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Quiz bearbeiten',
-      duplicateLiveQuiz: 'Quiz duplizieren',
+      duplicateLiveQuiz: 'Live Quiz duplizieren',
+      viewLiveQuiz: 'Live Quiz einsehen',
+      executeLiveQuiz: 'Live Quiz ausführen',
+      manageFeedbacksExecution: 'Feedbacks während der Ausführung verwalten',
+      viewLiveQuizEvaluation: 'Live Quiz Evaluation einsehen',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente im Live Quiz verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
+      shareLiveQuiz: 'Live Quiz teilen',
+      removeLiveQuiz: 'Live Quiz entfernen',
       deleteLiveQuiz: 'Live Quiz löschen',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
@@ -1828,11 +2053,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
-      changeLiveQuizName: 'Änderung Live Quiz Namen',
-      liveQuizNameChangeSuccess:
-        'Der Name des Live Quizzes wurde erfolgreich geändert.',
-      liveQuizNameChangeError:
-        'Der Name des Live Quizzes konnte nicht geändert werden.',
+      embeddingLinkCopied:
+        'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
+    },
+    practiceQuizzes: {
+      viewPracticeQuiz: 'Übungs-Quiz einsehen',
+      publishUnpublishPracticeQuiz:
+        'Übungs-Quiz veröffentlichen / Veröffentlichung aufheben',
+      viewPracticeQuizEvaluation: 'Übungs-Quiz Evaluation einsehen',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente im Übungs-Quiz verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
+    },
+    microLearnings: {
+      viewMicroLearning: 'Microlearning einsehen',
+      publishUnpublishMicroLearning:
+        'Microlearning veröffentlichen / Veröffentlichung aufheben',
+      viewMicroLearningEvaluation: 'Microlearning Evaluation einsehen',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente im Microlearning verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicateMicroLearning: 'Microlearning duplizieren',
+    },
+    groupActivities: {
+      viewGroupActivity: 'Gruppenaktivität einsehen',
+      publishUnpublishGroupActivity:
+        'Gruppenaktivität veröffentlichen / Veröffentlichung aufheben',
+      gradeGroupActivitySubmissions: 'Abgaben zur Gruppenaktivität bewerten',
+      modifyActivitySettings: 'Aktivitäts-Einstellungen ändern',
+      modifyContainedElements: 'Elemente in der Gruppenaktivität verwalten',
+      modifyCourseAssignment: 'Kurszuweisung ändern',
+      duplicateGroupActivity: 'Gruppenaktivität duplizieren',
     },
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Codes',
@@ -1881,13 +2133,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
       filterSolved: 'Gelöst',
       filterOpen: 'Offen',
+      filterPinned: 'Gepinnt',
       filterUnpinned: 'Ungepinnt',
+      filterPublished: 'Veröffentlicht',
       filterUnpublished: 'Unveröffentlicht',
+      pinning: 'Pinning',
+      visibility: 'Sichtbarkeit',
       sortByVotes: 'Nach Stimmen sortieren',
       sortByTime: 'Nach Zeitpunkt sortieren',
       answersGiven: '{number} Antwort(en) gegeben',
       reopenToAnswer: 'Öffnen Sie das Feedback wieder, um zu antworten...',
-      insertResponseHere: 'Formulieren Sie Ihre Antwort hier...',
+      enterResponseHere: 'Geben Sie Ihre Antwort hier ein...',
       pinFeedback: 'Pin',
       unpinFeedback: 'Unpin',
       reopen: 'Wieder öffnen',
@@ -1905,6 +2161,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confusionDifficultyTooltip:
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Schwierigkeit des vermittelten Inhalts.',
       skipCooldown: 'Cooldown überspringen',
+      deleteFeedback: 'Feedback löschen',
+      deleteFeedbackMessage:
+        'Sind Sie sicher, dass Sie dieses Feedback löschen möchten: "{feedback}"?',
+      moderationTip: 'Alternative zum Löschen',
+      moderationTipMessage:
+        'Sie können die Moderation aktivieren, um ausgewählte Feedbacks vor der Studierendenansicht zu verstecken, ohne sie dauerhaft zu löschen.',
+      confirmDeleteFeedback:
+        'Ich verstehe, dass diese Aktion das Feedback dauerhaft löscht.',
+      disableModerationTitle: 'Moderation deaktivieren',
+      disableModerationMessage:
+        'Sie sind dabei, die Moderation zu deaktivieren. Dies wird automatisch {count} unveröffentlichte(s) Feedback(s) veröffentlichen.',
+      autoPublishWarning: 'Auto-Veröffentlichung Warnung',
+      autoPublishWarningMessage:
+        'Diese werden sofort für alle Studierende sichtbar.',
+      confirmDisableModeration:
+        'Ich verstehe, dass die Moderation deaktiviert wird.',
+      confirmPublishUnpublished:
+        'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -1935,6 +2209,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selection: 'Auswahl',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
+      histogramBinsError:
+        'Bitte geben Sie eine Anzahl Unterteilungen zwischen 2 und 100 ein.',
+      histogramLowerLimit: 'Untere Grenze',
+      histogramUpperLimit: 'Obere Grenze',
+      histogramLowerLimitError:
+        'Die untere Grenze muss grösser als {minValue} sein.',
+      histogramUpperLimitError:
+        'Die obere Grenze muss kleiner als {maxValue} sein.',
+      histogramRangeError:
+        'Bitte stellen Sie sicher, dass die untere Grenze kleiner als die obere Grenze ist.',
       correctLabel: 'Korrekt',
       correctLabelValue: 'Korrekt: {value}',
       resetSorting: 'Sortierung zurücksetzen',
@@ -2027,6 +2311,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseDescriptionTooltip:
         'Die Beschreibung wird den Studierenden angezeigt. Sie können hier z.B. die Ziele des Kurses beschreiben.',
       addDescription: 'Beschreibung hinzufügen',
+      notificationEmail: 'Benachrichtigungs-E-Mail',
+      notificationEmailTooltip:
+        'Die E-Mail-Adresse, an welche kurs-spezifische Benachrichtigungen gesendet werden (z.B. Anmerkungen von Studierenden zu fehlerhaften Fragen). Diese E-Mail-Adresse kann später in den Kurseinstellungen geändert werden und ist für die Studierenden nicht sichtbar.',
+      notificationEmailPlaceholder: 'finance@uzh.ch',
+      notificationEmailInvalid:
+        'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+      notificationEmailReq:
+        'Bitte geben Sie eine E-Mail-Adresse für Kurs-spezifische Benachrichtigungen an.',
       startDate: 'Startdatum',
       startDateTooltip:
         'Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.',
@@ -2117,9 +2409,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
+      shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
+      viewCourse: 'Kurs einsehen',
+      viewActivities: 'Aktivitäten einsehen',
+      executeActivities: 'Aktivitäten ausführen',
+      modifyCourseSettings: 'Kurseinstellungen ändern',
+      modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
+      manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      deleteCourse: 'Kurs löschen',
+      removeCourse: 'Kurs entfernen',
+      confirmCourseRemoval:
+        'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Kurses <b>{name}</b> aus Ihrem Nutzerkonto.',
+      courseRemovalFinal:
+        'Durch die Entfernung des Kurses wird dieser aus Ihrem Benutzerkonto entfernt, aber nicht dessen Inhalt gelöscht. Zudem bleiben alle Kursinhalte für die Studierenden weiterhin verfügbar. Die Aktion kann nicht rückgängig gemacht werden.',
+      courseRemovalDependencyAccess:
+        'Allfällige abgeleitete Berechtigungen auf Kursinhalte (Aktivitäten, Elemente, etc.) werden automatisch widerrufen, sofern deren Erhalt nicht technisch erforderlich ist.',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
@@ -2182,26 +2489,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Verwenden Sie dieses Dialogfeld, um das Enddatum des Microlearnings zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       newEndDate: 'Neues Enddatum',
       futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
-      publishMicrolearning: 'Microlearning veröffentlichen',
       unpublishMicrolearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
+      shareMicroLearning: 'Microlearning teilen',
+      removeMicroLearning: 'Microlearning entfernen',
       deleteMicroLearning: 'Microlearning löschen',
       deleteMicroLearningMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
-      confirmPublishing:
-        'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
+      confirmPublishingMicrolearning:
+        'Bitte bestätigen Sie, dass Sie das Microlearning <b>{name}</b> veröffentlichen möchten. Diese Aktion macht es für alle Teilnehmenden im folgenden Zeitfenster verfügbar:',
+      microlearningPublishingHint:
+        'Dieser Prozess kann nur rückgängig gemacht werden, wenn das Startdatum in der Zukunft liegt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
+      confirmPublishingGroupActivity:
+        'Bitte bestätigen Sie, dass Sie die Gruppenaktivität <b>{name}</b> veröffentlichen möchten. Diese Aktion macht sie für alle Gruppen im folgenden Zeitfenster verfügbar:',
+      groupActivityPublishingHint:
+        'Dieser Prozess kann nur rückgängig gemacht werden, wenn das Startdatum in der Zukunft liegt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
       practicePublishingHint:
         'Das Publizieren dieses Übungs-Quizzes macht das Element ab sofort für alle Teilnehmenden über den Zuganglink und die KlickerUZH App sichtbar. Dieser Prozess kann nicht rückgängig gemacht werden.',
       practiceSchedulingHint:
         'Das Publizieren dieses Übungs-Quizzes aktiviert die automatische Veröffentlichung am von Ihnen gesetzen Datum: {date}. Ab diesem Zeitpunkt wird das Übungs-Quiz automatisch für alle Teilnehmenden sichtbar sein. Bis zum {date} können Sie die Veröffentlichung noch rückgängig machen.',
-      microPublishingHint:
-        'Das Publizieren eines Microlearnings macht das Element im definierten Zeitfenster für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
       duplicatePracticeQuiz: 'Übungs-Quiz duplizieren',
-      publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
+      sharePracticeQuiz: 'Übungs-Quiz teilen',
+      removePracticeQuiz: 'Übungs-Quiz entfernen',
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2214,9 +2527,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteAnonymousResponses:
         '{number} anonyme Antwort(en) für diese Aktivität werden gelöscht.',
       unpublishPracticeQuiz: 'Veröffentlichung aufheben',
-      publishGroupActivity: 'Gruppenaktivität veröffentlichen',
-      groupActivityPublishingHint:
-        'Das Publizieren einer Gruppenaktivität macht das Element im definierten Zeitfenster für alle Gruppen im Kurs sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn der Startzeitpunkt der Aktivität in der Zukunft liegt. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       editGroupActivity: 'Gruppenaktivität bearbeiten',
       endGroupActivity: 'Gruppenaktivität beenden',
       endGroupActivityMessage:
@@ -2243,6 +2553,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{number} Teilnehmergruppe(n) erhalten nach dem Start der Gruppenaktivität sofort Zugriff auf den entsprechenden Inhalt.',
       groupActivityAvailableUntil:
         'Das Enddatum der Gruppenaktivität wird durch das frühzeitige Starten nicht beeinflusst. Die Gruppenaktivität ended Planmässig am {date}. Sie können die Gruppenaktivität über die entsprechende Aktion frühzeitig beenden.',
+      shareGroupActivity: 'Gruppenaktivität teilen',
+      removeGroupActivity: 'Gruppenaktivität entfernen',
       deleteGroupActivity: 'Gruppenaktivität löschen',
       deleteGroupActivityMessage:
         'Bitte bestätigen Sie die Löschung aller mit dieser Gruppenaktivität verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
@@ -2260,7 +2572,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
       courseElements: 'Kurs-Elemente',
-      otherActions: 'Weitere Aktionen',
+      ltiLinks: 'LTI Links',
       enableGamification: 'Gamifizierung aktivieren',
       enableGamificationWarning:
         'Möchten Sie Gamifizierung für diesen Kurs aktivieren? Dies erlaubt Ihnen, dem Kurs gamifizierte Elemente zuzuweisen, Leaderboards einzusehen, etc. Bitte beachten Sie, dass die Gamifizierung nicht mehr deaktiviert werden kann!',
@@ -2300,13 +2612,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsed:
-        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung or Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage oder einer Aktivitätsvorlage als korrekte Lösung oder Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
       access: 'Zugriff',
       accessTooltip:
-        "Wählen Sie aus, ob dieses Objekt durch alle Nutzer mit Zugriff auf die ausgewählte Katalog-Sammlung importiert werden kann. Bei einem 'eingeschränkten' Zugriff müssen andere Nutzer diesen explizit beantragen.",
+        "Wählen Sie aus, ob dieses Objekt durch alle Nutzer mit Zugriff auf die ausgewählte Katalog-Sammlung importiert / genutzt werden kann. Bei einem 'eingeschränkten' Zugriff müssen andere Nutzer diesen explizit beantragen.",
       catalogCollection: 'Katalog-Sammlung',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
@@ -2351,6 +2663,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
       shareCollection: 'Sammlung teilen',
+      duplicateCollection: 'Sammlung duplizieren',
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
       modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
@@ -2362,7 +2675,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
       removeCollection: 'Sammlung entfernen',
       removalDisabledInUse:
-        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht entfernen.',
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt oder wurde mit Ihnen über eine Nutzergruppe geteilt. Sie können die Sammlung daher nicht entfernen.',
       deleteAnswerCollection: 'Antwort-Sammlung löschen',
       confirmCollectionDeletion:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden. Nutzer welche die Antwort-Sammlung nicht nutzen, verlieren den Zugriff.',
@@ -2372,17 +2685,78 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Löschen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
+      duplicationNote:
+        'Die Sammlung wird in ihrem aktuellen Zustand dupliziert und kann im Anschluss verändert werden. Bitte beachten Sie, dass ...',
+      duplicationNote1:
+        '... die neue Sammlung mit keiner der bisher abhängigen Fragen / Vorlagen verlinkt ist.',
+      duplicationNote2:
+        '... die neue Sammlung mit keinen anderen Nutzern geteilt ist.',
+      duplicationNote3:
+        '... die neue Sammlung umbenannt werden sollte, um eine Verwechslung mit dem Original bei der Integration in Fragen zu vermeiden.',
+      duplicationFailure:
+        'Duplizierung der Sammlung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      duplicationSuccess: 'Sammlung wurde erfolgreich dupliziert.',
     },
     userGroups: {
-      comingSoon:
-        'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+      description:
+        'Auf dieser Seite können Sie Nutzergruppen erstellen und verwalten. Um den Prozess des Teilens mehrerer Objekte mit denselben Nutzern oder der gemeinsamen Erstellung von Inhalten zu vereinfachen, können die Nutzer zuerst in Gruppen zusammengefasst werden. Berechtigungen, welche an Gruppen vergeben werden, verhalten sich genauso wie wenn sie allen Nutzern einzeln gewährt werden. Beachten Sie jedoch immer, dass je nach den gewährten Berechtigungsstufen die Gruppenmitglieder möglicherweise Objekte wiederverwenden können, was ihren Zugriff auf ein Objekt potenziell unwiderruflich macht. Für weitere Details konsultieren Sie bitte auch die offizielle Dokumentation.',
+      existingUserGroups: 'Bestehende Nutzergruppen',
+      noGroups:
+        'Sie haben noch keine Nutzergruppen erstellt oder wurden noch keiner Gruppe hinzugefügt. Um Ihre erste Nutzergruppe zu erstellen, klicken Sie bitte auf die Schaltfläche auf der rechten Seite.',
+      userGroupCreation: 'Erstellung Nutzergruppe',
+      creationExplanation:
+        'Bitte füllen Sie alle Felder des folgenden Formulars aus, um eine Nutzergruppe zu erstellen. Die Auswahl der Gruppen-Admins kann nach der Erstellung noch geändert werden. Admin-Nutzer können Mitglieder zur Gruppe hinzufügen oder entfernen und den Namen der Gruppe ändern.',
+      newUserGroup: 'Neue Nutzergruppe',
+      nameTooltip:
+        'Bitte geben Sie einen Namen für die Nutzergruppe an. Dieser Name wird benötigt, um die Gruppe zu identifizieren.',
+      nameRequired: 'Die Eingabe eines Namens für die Gruppe ist erforderlich.',
+      member: 'Mitglied',
+      members: 'Mitglieder',
+      admin: 'Admin',
+      admins: 'Admins',
+      addMember: 'Mitglied hinzufügen',
+      emailOrShortname: 'Email oder Kurzname',
+      emailShortnameRequired:
+        'Bitte stellen Sie sicher, dass eine E-Mail-Adresse oder ein Kurzname für jeden Nutzer angegeben ist.',
+      minOneMemberRequired:
+        'Für die Bildung einer Gruppe ist mindestens ein Mitglied erforderlich.',
+      uniqueUsersRequired:
+        'Bitte stellen Sie sicher, dass alle Nutzer eindeutig sind. Unterschiedliche Einträge für den gleichen Nutzer werden bei der Erstellung kombiniert.',
+      creationSuccessMessage: 'Die Nutzergruppe wurde erfolgreich erstellt.',
+      creationErrorMessage:
+        'Bei der Erstellung der Nutzergruppe ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass gültige Angeben für mindestens einen Nutzer (nicht Sie selbst) eingegeben wurden und dass keine andere Nutzergruppe mit demselben Namen bereits existiert.',
+      viewGroup: 'Nutzergruppe ansehen',
+      editGroup: 'Nutzergruppe bearbeiten',
+      leaveGroup: 'Nutzergruppe verlassen',
+      deleteGroup: 'Nutzergruppe löschen',
+      confirmLeaveGroup:
+        'Sie sind dabei, die Nutzergruppe {groupName} zu verlassen. Durch das Verlassen dieser Gruppe verlieren Sie den Zugriff auf alle Objekte, die mit dieser Gruppe geteilt wurden. Wenn Sie sicher sind, bestätigen Sie bitte diese Aktion.',
+      leaveGroupSuccess:
+        'Sie haben die Nutzergruppe wurde erfolgreich verlassen.',
+      leaveGroupError:
+        'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      availableActions: 'Verfügbare Aktionen',
+      promoteUserToAdmin: 'Beförderung Mitglied zu Admin',
+      demoteAdminToMember: 'Herabstufung Admin zu Mitglied',
+      removeUserFromGroup: 'Entfernung Nutzer aus Gruppe',
+      transferOwnership: 'Übertragung Eigentümer',
+      noAdmins: 'Dieser Gruppe wurden bisher keine Admins zugewiesen.',
+      noMembers:
+        'Dieser Gruppe wurden bisher keine Mitglieder (ohne Admin-Rechte) zugewiesen.',
+      addAdminPlaceholder: 'Kurznamen oder E-Mail für neuen Admin eingeben...',
+      addMemberPlaceholder:
+        'Kurznamen oder E-Mail für neues Mitglied eingeben...',
+      addUser: 'Nutzer hinzufügen',
+      addUserGroupSuccess: 'Nutzer erfolgreich zur Gruppe hinzugefügt.',
+      addUserGroupError:
+        'Beim Hinzufügen des Nutzers zur Gruppe ist ein Fehler aufgetreten. Bitte verwenden Sie die Beförderungs- / Herabstufungsfunktionen, wenn der Nutzer bereits Mitglied der Gruppe ist.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',
       accessPUBLIC: 'Öffentlich',
       accessRESTRICTED: 'Eingeschränkt',
       infoAccessPUBLIC:
-        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
+        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und kopiert werden. Antwort-Sammlungen können zusätzlich direkt durch die entsprechenden Nutzer in Fragen verwendet werden (mit Leserechten).',
       infoAccessRESTRICTED:
         'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       objectType: 'Objekt-Typ',
@@ -2393,10 +2767,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
       useTemplate: 'Vorlage verwenden',
-      importObject: 'Objekt importieren',
-      importObjectType: '{object} importieren',
+      copyObjectToAccount: 'Objekt in eigenen Account kopieren',
+      copyObjectType: '{object} in eigenen Account kopieren',
+      importObjectType: '{object} importieren (Leseberechtigungen)',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
+      copyPublicResource: 'Öffentliche Ressource kopieren',
       importPublicResource: 'Öffentliche Ressource importieren',
       requestPublicResource:
         'Durch das Beantragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den gewährten Berechtigungen. Gewährte Berechtigungen können vom Besitzer entzogen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die Option "Importieren".',
@@ -2444,8 +2820,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTIONtitle: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeANSWER_COLLECTIONtitle: 'Antwort-Sammlung aus Katalog entfernen',
+      removeELEMENT: 'Element entfernen',
+      removeELEMENTtitle: 'Element aus Katalog entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
+      removePRACTICE_QUIZ_TEMPLATE: '',
+      removePRACTICE_QUIZ_TEMPLATEtitle: '',
+      removeMICRO_LEARNING_TEMPLATE: '',
+      removeMICRO_LEARNING_TEMPLATEtitle: '',
+      removeGROUP_ACTIVITY_TEMPLATE: '',
+      removeGROUP_ACTIVITY_TEMPLATEtitle: '',
+      removeLIVE_QUIZ: 'Live-Quiz entfernen',
+      removeLIVE_QUIZtitle: '',
+      removePRACTICE_QUIZ: 'Übungs-Quiz entfernen',
+      removePRACTICE_QUIZtitle: '',
+      removeMICRO_LEARNING: 'Microlearning entfernen',
+      removeMICRO_LEARNINGtitle: '',
+      removeGROUP_ACTIVITY: 'Gruppenaktivität entfernen',
+      removeGROUP_ACTIVITYtitle: '',
+      removeCOURSE: 'Kurs entfernen',
+      removeCOURSEtitle: '',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -2466,7 +2860,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       collectionCreationSuccess: 'Katalog-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
         'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-      backToCatalogOverview: 'zurück zur Katalog-Übersicht',
+      backToCatalogOverview: 'Zurück zur Katalog-Übersicht',
       deleteCatalogCollection: 'Katalogsammlung löschen',
       openCatalogCollection: 'Sammlung öffnen',
       browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',
@@ -2485,21 +2879,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestCatalogObjectAccessDescription:
         'Hier können Sie Zugriff auf "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen.',
       requestSuccessInfoCATALOG_COLLECTION:
-        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren/kopieren.',
       requestSuccessInfoANSWER_COLLECTION:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
-      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
-        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
+      requestSuccessInfoLIVE_QUIZ: '',
+      requestSuccessInfoPRACTICE_QUIZ: '',
+      requestSuccessInfoMICRO_LEARNING: '',
+      requestSuccessInfoGROUP_ACTIVITY: '',
+      requestSuccessInfoCOURSE: '',
+      requestSuccessInfoELEMENT:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, können Sie das Element einsehen und möglicherweise in Ihren eigenen Aktivitäten wiederverwenden, abhängig von den gewährten Berechtigungen.',
       requestCatalogObjectSuccess:
         'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
       requestCatalogObjectFailed:
         'Bei der Anforderung des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      copyCatalogObjectDescription:
+        'Hier können Sie eine Kopie von "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto kopieren. Nach dem Kopieren können Sie das Objekt direkt verwenden oder bei Bedarf anpassen. Änderungen am ursprünglichen Objekt haben keinen Einfluss auf Ihre Kopie.',
       importCatalogObjectDescription:
-        'Hier können Sie eine Kopie von "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie das Objekt direkt verwenden oder bei Bedarf anpassen. Änderungen am ursprünglichen Objekt haben keinen Einfluss auf Ihre importierte Kopie.',
+        'Hier können Sie das Object "<b>{name}</b>" (von {owner}) mit Leseberechtigungen in Ihr eigenes Konto importieren. Änderungen am ursprünglichen Objekt werden automatisch auch für Sie sichtbar sein.',
+      copyCatalogObjectSuccess:
+        'Das Objekt wurde erfolgreich in Ihr Konto kopiert.',
+      copyCatalogObjectFailed:
+        'Beim kopieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       importCatalogObjectSuccess:
         'Das Objekt wurde erfolgreich in Ihr Konto importiert.',
       importCatalogObjectFailed:
-        'Beim Importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+        'Beim importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       cancelCatalogObjectRequest: 'Zugriffsanfrage zurückziehen',
       cancelCatalogObjectRequestDescription: `Bitte bestätigen Sie, dass Sie die Zugriffsanfrage für "{name}" (von {owner}) zurückziehen möchten. Sie können später erneut Zugriff auf das Objekt beantragen.`,
       cancelRequest: 'Anfrage zurückziehen',
@@ -2518,12 +2923,41 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Ändern der Object-Sichtbarkeit ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
     sharing: {
+      noAccess: 'Kein Zugriff',
       permissionsREAD: 'Leserechte',
       permissionsWRITE: 'Schreibrechte',
       permissionsADMIN: 'Adminrechte',
       permissionsEXECUTE: 'Ausführungsrechte',
+      permissionsOWNER: 'Eigentümerrechte',
+      labelOWNED: 'Eigentümer',
+      labelSHARED: 'Geteilt',
+      labelDEPENDENCY: 'Abhängigkeit',
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
+      showDerivedPermissions: 'Abgeleitete Berechtigungen anzeigen',
+      hideDerivedPermissions: 'Abgeleitete Berechtigungen ausblenden',
+      minimumRequired: 'Minimale Berechtigungen',
+      propagationOfPermissions: 'Propagierung von Berechtigungen',
+      derivedPermissions: 'Abgeleitete Berechtigungen',
+      derivedPermissionsDescription:
+        'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',
+      noDerivedPermissions:
+        'Für dieses Objekt sind keine abgeleiteten Berechtigungen vorhanden.',
+      whereDoesThisPermissionOriginate: 'Woher stammt diese Berechtigung?',
+      derivedPermissionOrigin: 'Herkunft der abgeleiteten Berechtigung',
+      derivedAccessFor:
+        'Der abgeleitete Zugriff von Nutzer {user} auf diese Objekt stammt von folgendem Objekt ab:',
+      originalObjectOwner: 'Besitzer des übergeordneten Objekts',
+      originalObjectType: 'Typ des übergeordneten Objekts',
+      originalObjectName: 'Name des übergeordneten Objekts',
+      reasonDerivedAccess: 'Grund für den abgeleiteten Zugriff',
+      ownerOfOriginalObject: 'Besitzer des übergeordneten Objekts',
+      originalObjectSharedREAD: 'Leserechte auf übergeordnetes Objekt',
+      originalObjectSharedEXECUTE:
+        'Ausführungsrechte auf übergeordnetes Objekt',
+      originalObjectSharedWRITE: 'Schreibrechte auf übergeordnetes Objekt',
+      originalObjectSharedADMIN: 'Adminrechte auf übergeordnetes Objekt',
+      viaUserGroup: 'über Nutzergruppe {name}',
       importantInformation: 'Wichtige Information',
       shortnameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
@@ -2541,23 +2975,70 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       revokeAccessDisabledTooltip:
         'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
+      noUserGroupsAvailable: 'Keine Nutzergruppen verfügbar',
       shortnameEmailOrGroupRequired:
         'Bitte geben Sie einen Kurznamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
+      noSelfSharing: 'Sie können keine Objekte mit sich selbst teilen.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
         'Sie sind dabei, die Eigentumsrechte für die Live-Quiz Vorlage <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Vorlage, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipPRACTICE_QUIZ_TEMPLATE: '',
+      infoTransferOwnershipMICRO_LEARNING_TEMPLATE: '',
+      infoTransferOwnershipGROUP_ACTIVITY_TEMPLATE: '',
+      infoTransferOwnershipELEMENT:
+        'Sie sind dabei, die Eigentumsrechte für das Element <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Element, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipLIVE_QUIZ:
+        'Sie sind dabei, die Eigentumsrechte für das Live-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Live-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipPRACTICE_QUIZ:
+        'Sie sind dabei, die Eigentumsrechte für das Übungs-Quiz <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Quiz und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Übungs-Quiz behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipMICRO_LEARNING:
+        'Sie sind dabei, die Eigentumsrechte für das Microlearning <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über dieses Micro-Learning und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie Admin-Zugriff auf das Micro-Learning behalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipGROUP_ACTIVITY:
+        'Sie sind dabei, die Eigentumsrechte für die Gruppen-Aktivität <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Gruppen-Aktivität, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipCOURSE:
+        'Sie sind dabei, die Eigentumsrechte für den Kurs <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diesen Kurs und erhält unwiderruflichen Admin-Zugriff auf alle enthaltenen Aktivitäten und Elemente (gemäss der technisch erfordlichen Berechtigungen), während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
-      shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
+      shareLIVE_QUIZ: 'Live-Quiz teilen',
+      sharePRACTICE_QUIZ: 'Übungs-Quiz teilen',
+      shareMICRO_LEARNING: 'Microlearning teilen',
+      shareGROUP_ACTIVITY: 'Gruppen-Aktivität teilen',
+      shareCOURSE: 'Kurs teilen',
+      shareELEMENT: 'Element teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
-      infoSharingLIVE_QUIZ_TEMPLATE:
-        'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
+      infoSharingLIVE_QUIZ:
+        'Diese Ansicht erlaubt es Ihnen, das Live-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Live-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingPRACTICE_QUIZ:
+        'Diese Ansicht erlaubt es Ihnen, das Übungs-Quiz "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Übungs-Quiz bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingMICRO_LEARNING:
+        'Diese Ansicht erlaubt es Ihnen, das Microlearning "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Microlearning bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingGROUP_ACTIVITY:
+        'Diese Ansicht erlaubt es Ihnen, die Gruppen-Aktivität "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Gruppen-Aktivität bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingCOURSE:
+        'Diese Ansicht erlaubt es Ihnen, den Kurs "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Kurs bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingELEMENT:
+        'Diese Ansicht erlaubt es Ihnen, das Element "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Element bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      propagatedPermissions: 'Abgeleitete Berechtigungen',
+      propagatedPermissionsANSWER_COLLECTION: '',
+      propagatedPermissionsCATALOG_COLLECTION: '',
+      propagatedPermissionsELEMENT:
+        'Wenn Ihr Element von einer Antwort-Sammlung abhängt, wird das Teilen des Elements automatisch auch zu Berechtigungen auf den entsprechenden Objekten führen. Für die gewährte Berechtigungsstufe für eine bestimmte Berechtigungsstufe auf dem Element siehe bitte die Tabelle unten.',
+      propagatedPermissionsLIVE_QUIZ:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Live-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsPRACTICE_QUIZ:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Übungs-Quiz übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsMICRO_LEARNING:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in diesem Microlearning übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsGROUP_ACTIVITY:
+        'Abhängig von der gewährten Berechtigungsstufe werden die Berechtigungen auf die Elemente in dieser Gruppen-Aktivität übertragen und die entsprechenden Nutzer können Elemente und verlinkte Ressourcen mit anderen Nutzern auch ausserhalb der vorliegenden Aktivität wiederverwenden oder teilen. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
+      propagatedPermissionsCOURSE:
+        'Abhängig von der gewährten Berechtigungsstufe und Ihrer Auswahl, ob höhere Berechtigungen propagiert werden sollen, werden die technisch benötigten oder propagierten Berechtigungen auf den im Kurs enthaltenen Aktivitäten, Elementen, etc. wie in der folgenden Tabelle aufgeführt, gewährt. Für weitere Details zu den erlaubten Aktionen konsultieren Sie bitte die Berechtigungstabellen für die entsprechenden Objekte oder die offizielle Dokumentation.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2567,17 +3048,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
+      removeLIVE_QUIZ: 'Live-Quiz entfernen',
+      removeCOURSE: 'Kurs entfernen',
+      removeELEMENT: 'Element entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalANSWER_COLLECTION:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalLIVE_QUIZ_TEMPLATE:
         'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalLIVE_QUIZ:
+        'Sind Sie sicher, dass Sie das Live-Quiz "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalCOURSE:
+        'Sind Sie sicher, dass Sie den Kurs "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalELEMENT:
+        'Sind Sie sicher, dass Sie das Element "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',
       removalSuccessful:
         'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',
       removalFailed:
         'Beim Entfernen des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      revokeDirectPermission: 'Direkten Zugriff entziehen',
+      revokeUserPermission:
+        'Bitte bestätigen Sie, dass Sie Nutzer <b>{username}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
+      revokeGroupPermission:
+        'Bitte bestätigen Sie, dass Sie der Nutzergruppe <b>{groupName}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
+      derivedPermissionWarning:
+        'Achtung: Das Entziehen der direkten Zugriffsrechte auf ein Objekt entfernt möglicherweise nicht den Zugriff des Nutzers darauf. Wenn ein Nutzer Zugriff auf andere Objekte hat, die von diesem Objekt abhängen, erhält er eine abgeleitete Berechtigung, die im unteren Bereich des Freigabedialogs eingesehen werden kann.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
@@ -2812,6 +3309,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
+    },
+    activity: {
+      title: '{type} Aktivitäten',
+      tooltip: 'Kommentare anzeigen',
+      viewComments: 'Kommentare anzeigen',
+      noActivity: 'Noch keine Aktivitäten.',
+      addMessage:
+        'Verwenden Sie das Formular unten, um die erste Nachricht hinzuzufügen.',
+      messageInputPlaceholder: 'Nachricht eingeben...',
+      send: 'Senden',
+      sending: 'Wird gesendet...',
+      missingId: 'Objekt-ID fehlt. Kommentare kann nicht angezeigt werden.',
     },
   },
 }

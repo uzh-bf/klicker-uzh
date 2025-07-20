@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
   AddObjectToCatalogDocument,
-  CatalogObjectType,
   GetCatalogObjectsDocument,
   ObjectAccess,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -13,7 +13,6 @@ import ObjectTypeSelection from './ObjectTypeSelection'
 import SelectObjectForCatalog from './SelectObjectForCatalog'
 
 interface AddObjectToCatalogModalProps {
-  open: boolean
   onClose: () => void
   catalogCollectionId?: string
   onSuccess: () => void
@@ -21,13 +20,13 @@ interface AddObjectToCatalogModalProps {
 }
 
 export interface CatalogObjectAdditionFormValues {
-  objectType?: CatalogObjectType
+  objectType?: ObjectType
+  isTemplate?: boolean
   access: ObjectAccess
   objectId?: string
 }
 
 function AddObjectToCatalogModal({
-  open,
   onClose,
   catalogCollectionId,
   onSuccess,
@@ -38,16 +37,17 @@ function AddObjectToCatalogModal({
 
   return (
     <Modal
+      open
       title={t('manage.catalog.addObjectToCatalogTitle')}
-      open={open}
       onClose={onClose}
-      className={{ content: 'max-w-2xl' }}
+      className={{ content: 'max-w-2xl pb-2' }}
       dataCloseButton={{ cy: 'close-add-object-modal' }}
     >
       <Formik
         initialValues={
           {
             objectType: undefined,
+            isTemplate: undefined,
             access: ObjectAccess.Restricted,
             objectId: undefined,
           } as CatalogObjectAdditionFormValues
@@ -100,13 +100,13 @@ function AddObjectToCatalogModal({
                 }
 
                 const newObject = data.addObjectToCatalog
-                const modifiedObjectId = newObject.id
-                const modifiedObjectUuid = newObject.uuid
+                const modifiedObjectId = newObject.objectId
+                const modifiedObjectUuid = newObject.objectUuid
                 const newObjects = prevObjects.getCatalogObjects
                   .filter((obj) =>
-                    typeof obj.id !== 'undefined' && obj.id !== null
-                      ? obj.id !== modifiedObjectId
-                      : obj.uuid !== modifiedObjectUuid
+                    typeof obj.objectId !== 'undefined' && obj.objectId !== null
+                      ? obj.objectId !== modifiedObjectId
+                      : obj.objectUuid !== modifiedObjectUuid
                   )
                   .concat(newObject)
 
@@ -160,10 +160,10 @@ function AddObjectToCatalogModal({
                 className={`rounded-md border p-4 ${values.objectType ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-gray-100'}`}
               >
                 <H4>2. {t('manage.catalog.selectSpecificObject')}</H4>
-
                 {values.objectType ? (
                   <SelectObjectForCatalog
-                    objectType={values.objectType as CatalogObjectType}
+                    objectType={values.objectType as ObjectType}
+                    isTemplate={values.isTemplate}
                     setFieldValue={setFieldValue}
                   />
                 ) : (
@@ -174,7 +174,7 @@ function AddObjectToCatalogModal({
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-4 flex justify-end">
               <Button
                 primary
                 type="submit"

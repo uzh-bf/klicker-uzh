@@ -28,38 +28,27 @@ function CaseStudyCaseDeletionButton({
           overrideClassName="h-8 border-red-600 hover:border-red-600 hover:text-red-600"
         >
           <Button.Icon icon={faTrashCan} />
-          <Button.Label>{t('manage.questionForms.removeCase')}</Button.Label>
+          <Button.Label>{t('manage.elements.removeCase')}</Button.Label>
         </ForwardRefButton>
       }
-      title={t('manage.questionForms.confirmCaseDeletion')}
+      title={t('manage.elements.confirmCaseDeletion')}
+      primaryLabel={t('shared.generic.delete')}
+      primaryButtonStyle="destructive"
+      onPrimaryAction={() => {
+        onConfirm()
+        setDeletionConfirmationOpen(false)
+      }}
+      dataPrimaryAction={{ cy: 'confirm-delete-case' }}
+      secondaryLabel={t('shared.generic.cancel')}
+      onSecondaryAction={() => setDeletionConfirmationOpen(false)}
+      dataSecondaryAction={{ cy: 'cancel-delete-case' }}
+      className={{ content: 'max-w-lg' }}
     >
-      <div className="flex flex-col gap-4">
-        <div>
-          {t(
-            hasSampleSolution
-              ? 'manage.questionForms.confirmCaseDeleteSolutions'
-              : 'manage.questionForms.confirmCaseDelete'
-          )}
-        </div>
-        <div className="flex justify-between gap-2">
-          <Button
-            onClick={() => setDeletionConfirmationOpen(false)}
-            data={{ cy: 'cancel-delete-case' }}
-          >
-            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
-          </Button>
-          <Button
-            destructive
-            onClick={() => {
-              onConfirm()
-              setDeletionConfirmationOpen(false)
-            }}
-            data={{ cy: 'confirm-delete-case' }}
-          >
-            <Button.Label>{t('shared.generic.delete')}</Button.Label>
-          </Button>
-        </div>
-      </div>
+      {t(
+        hasSampleSolution
+          ? 'manage.elements.confirmCaseDeleteSolutions'
+          : 'manage.elements.confirmCaseDelete'
+      )}
     </Modal>
   )
 }

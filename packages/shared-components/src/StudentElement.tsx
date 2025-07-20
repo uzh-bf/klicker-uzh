@@ -104,7 +104,7 @@ interface StudentElementStackProps extends StudentElementBaseProps {
 interface StudentElementSingleProps extends StudentElementBaseProps {
   studentResponse?: never
   setStudentResponse?: never
-  stackStorage?: never
+  stackStorage?: StackStudentResponseType
   singleStudentResponse: InstanceStackStudentResponseType
   setSingleStudentResponse: Dispatch<
     SetStateAction<InstanceStackStudentResponseType>
@@ -130,6 +130,7 @@ function StudentElement({
     return (
       <ChoicesQuestion
         key={element.id}
+        preview={preview}
         content={element.elementData.content}
         type={element.elementData.type as ElementChoicesType}
         options={element.elementData.options}
@@ -181,6 +182,7 @@ function StudentElement({
     return (
       <NumericalQuestion
         key={element.id}
+        preview={preview}
         content={element.elementData.content}
         options={element.elementData.options}
         response={
@@ -233,6 +235,7 @@ function StudentElement({
     return (
       <FreeTextQuestion
         key={element.id}
+        preview={preview}
         content={element.elementData.content}
         options={element.elementData.options}
         response={
@@ -285,6 +288,7 @@ function StudentElement({
     return (
       <SelectionQuestion
         key={element.id}
+        preview={preview}
         content={element.elementData.content}
         options={element.elementData.options}
         response={
@@ -334,13 +338,13 @@ function StudentElement({
           !element.elementData.options.hasSampleSolution
         }
         disabled={disabledInput}
-        preview={preview}
       />
     )
   } else if (element.elementData.__typename === 'CaseStudyElementData') {
     return (
       <CaseStudyQuestion
         key={element.id}
+        preview={preview}
         sequential={sequential}
         content={element.elementData.content}
         options={element.elementData.options}

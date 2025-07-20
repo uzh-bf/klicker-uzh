@@ -10,7 +10,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H1, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -93,8 +93,9 @@ function GroupActivityDetails() {
       </Head>
       <GroupActivitySubscriber
         activityId={groupActivity.id}
+        groupActivityName={groupActivity.displayName}
+        setActivityEnded={setActivityEnded}
         subscribeToMore={subscribeToMore}
-        setEndedGroupActivity={setActivityEnded}
       />
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
@@ -210,8 +211,8 @@ function GroupActivityDetails() {
                   className={twMerge(
                     'mb-6 rounded shadow',
                     instance.results.passed
-                      ? '!border-l-4 !border-l-green-500'
-                      : '!border-l-4 !border-l-red-700'
+                      ? 'border-l-4! border-l-green-500!'
+                      : 'border-l-4! border-l-red-700!'
                   )}
                 >
                   <div
@@ -237,7 +238,7 @@ function GroupActivityDetails() {
                   </div>
                   {instance.results.comment && (
                     <DynamicMarkdown
-                      className={{ root: 'mt-1 p-2 !pt-0' }}
+                      className={{ root: 'pt-0! mt-1 p-2' }}
                       content={instance.results.comment}
                       data={{ cy: 'group-activity-results-comment' }}
                     />
@@ -259,18 +260,6 @@ function GroupActivityDetails() {
           )}
         </div>
       </div>
-      <Toast
-        type="warning"
-        openExternal={activityEnded}
-        onCloseExternal={() => setActivityEnded(false)}
-        duration={10000}
-        className={{ root: 'max-w-[30rem]' }}
-        dismissible
-      >
-        {t('pwa.groupActivity.groupActivityEnded', {
-          activityName: groupActivity.displayName,
-        })}
-      </Toast>
     </Layout>
   )
 }

@@ -1,8 +1,18 @@
 // TODO: eliminate duplicated content and improve layout instead dynamically
 
-import { faFilter, faPrint } from '@fortawesome/free-solid-svg-icons'
+import {
+  faFilter,
+  faMagnifyingGlass,
+  faPrint,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Checkbox, Dropdown, Select } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Select,
+  TextField,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
@@ -91,15 +101,16 @@ function FeedbackSearchAndFilters({
     >
       <div className="flex flex-row items-center">
         {withSearch && !hidden?.search && (
-          <input
+          <TextField
             disabled={disabled?.search}
             value={searchString}
             onChange={(e: any) => setSearchString(e.target.value)}
             placeholder={t('manage.general.searchPlaceholder')}
-            className={twMerge(
-              'border-uzh-grey-60 md:order-0 order-1 w-full rounded-md border border-solid px-1.5 py-2 md:mr-2 md:w-64',
-              disabled?.search && 'cursor-not-allowed'
-            )}
+            className={{
+              field: 'md:order-0 order-1 w-full md:mr-2 md:w-64',
+              input: 'pl-8!',
+            }}
+            icon={faMagnifyingGlass}
           />
         )}
         {!hidden?.filters && (
@@ -107,37 +118,18 @@ function FeedbackSearchAndFilters({
             <div className="order-0 mr-1 block md:order-1 md:mr-0 xl:hidden">
               <Dropdown
                 disabled={disabled?.filters}
-                trigger={
-                  <FontAwesomeIcon
-                    icon={faFilter}
-                    className={twMerge(
-                      'border-uzh-grey-60 hover:bg-primary-20 ml-2 rounded-md border border-solid p-2.5 shadow-md hover:shadow-none',
-                      disabled?.filters && 'shadow-none hover:bg-white'
-                    )}
-                  />
-                }
+                trigger={<FontAwesomeIcon icon={faFilter} />}
                 items={filter.map((filter) => {
                   return {
-                    label: (
-                      <span
-                        className={twMerge(
-                          'hover:bg-primary-60 flex items-center px-2 py-0.5 hover:cursor-pointer'
-                        )}
-                      >
-                        <Checkbox
-                          checked={filter.checked}
-                          onCheck={() => null}
-                          disabled={disabled?.filters}
-                          className={{ root: 'mr-2' }}
-                        />
-                        {filter.label}
-                      </span>
-                    ),
+                    type: 'checkbox',
+                    label: filter.label,
+                    selected: filter.checked,
                     onClick: filter.onChange,
                     data: { cy: `feedback-channel-filter-${filter.label}` },
                   }
                 })}
-                data={{ cy: 'feedback-channel-mobile-filter-dropdown' }}
+                className={{ trigger: 'h-9 w-9' }}
+                data={{ cy: 'feedback-channel-mobile-filter-button' }}
               />
             </div>
 
@@ -168,7 +160,6 @@ function FeedbackSearchAndFilters({
       <div className="flex flex-row items-center">
         {!hidden?.print && (
           <Button
-            basic
             className={{
               root: twMerge('h-9 w-9', !hidden?.sorting && 'mr-2'),
             }}
@@ -198,6 +189,7 @@ function FeedbackSearchAndFilters({
             ]}
             onChange={(newValue: string) => setSortBy(newValue)}
             data={{ cy: 'sort-feedback-channel-select' }}
+            className={{ trigger: 'h-9' }}
           />
         )}
       </div>

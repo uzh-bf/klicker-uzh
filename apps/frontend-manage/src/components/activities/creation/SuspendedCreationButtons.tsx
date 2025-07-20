@@ -1,5 +1,8 @@
 import { useSuspenseQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 
 import {
   faChalkboardUser,
@@ -8,11 +11,10 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
-import { WizardMode } from '../ElementCreation'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
-  setCreationMode: (mode: WizardMode) => void
+  setCreationMode: (mode: ActivityType) => void
 }
 
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
@@ -26,7 +28,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
         onClick={() => {
-          setCreationMode(WizardMode.LiveQuiz)
+          setCreationMode(ActivityType.LiveQuiz)
         }}
         data={{ cy: 'create-live-quiz' }}
       />
@@ -36,7 +38,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicrolearning')}
         onClick={() => {
-          setCreationMode(WizardMode.Microlearning)
+          setCreationMode(ActivityType.MicroLearning)
         }}
         data={{ cy: 'create-microlearning' }}
       />
@@ -46,7 +48,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faGraduationCap}
         text={t('manage.questionPool.createPracticeQuiz')}
         onClick={() => {
-          setCreationMode(WizardMode.PracticeQuiz)
+          setCreationMode(ActivityType.PracticeQuiz)
         }}
         data={{ cy: 'create-practice-quiz' }}
       />
@@ -56,7 +58,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {
-          setCreationMode(WizardMode.GroupActivity)
+          setCreationMode(ActivityType.GroupActivity)
         }}
         data={{ cy: 'create-group-activity' }}
       />

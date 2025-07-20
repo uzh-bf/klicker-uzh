@@ -36,8 +36,11 @@ model PracticeQuiz {
   performance             ActivityPerformance?
   progress                ActivityProgress?
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
@@ -59,101 +62,9 @@ model PracticeQuiz {
 
 // ----- LIVE QUIZZES -----
 // #region
-// TODO: delete after migration
-enum SessionBlockStatus {
-  SCHEDULED
-  ACTIVE
-  EXECUTED
-}
-
-// TODO: delete after migration
-model SessionBlock {
-  id Int @id @default(autoincrement())
-
-  originalId String?
-
-  order  Int
-  status SessionBlockStatus @default(SCHEDULED)
-
-  expiresAt       DateTime?
-  timeLimit       Int?
-  randomSelection Int?
-
-  execution Int @default(0)
-
-  instances QuestionInstance[]
-
-  activeInSession LiveSession[] @relation(name: "ActiveSessionBlock")
-
-  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String      @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([sessionId, order])
-  @@unique([sessionId, originalId])
-}
-
-// TODO: delete after migration
-enum SessionStatus {
-  PREPARED
-  SCHEDULED
-  RUNNING
-  COMPLETED
-}
-
 enum AccessMode {
   PUBLIC
   RESTRICTED
-}
-
-// TODO: delete after migration
-model LiveSession {
-  id String @id @default(uuid()) @db.Uuid
-
-  originalId                 String?
-  isLiveQAEnabled            Boolean @default(false)
-  isConfusionFeedbackEnabled Boolean @default(true)
-  isModerationEnabled        Boolean @default(true)
-  isGamificationEnabled      Boolean @default(false)
-  isDeleted                  Boolean @default(false)
-
-  namespace        String    @default(uuid()) @db.Uuid
-  pinCode          Int?
-  name             String
-  displayName      String
-  description      String?
-  startedAt        DateTime?
-  finishedAt       DateTime?
-  linkTo           String?
-  pointsMultiplier Int       @default(1)
-  maxBonusPoints   Int       @default(45)
-  timeToZeroBonus  Int       @default(20)
-
-  accessMode AccessMode    @default(PUBLIC)
-  status     SessionStatus @default(PREPARED)
-
-  activeBlock   SessionBlock? @relation(name: "ActiveSessionBlock", fields: [activeBlockId], references: [id])
-  activeBlockId Int?
-
-  blocks      SessionBlock[]
-  leaderboard LeaderboardEntry[]
-
-  feedbacks Feedback[]
-
-  confusionFeedbacks ConfusionTimestep[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([ownerId, originalId])
 }
 
 model LiveQuiz {
@@ -185,14 +96,18 @@ model LiveQuiz {
   activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
 
-  blocks      ElementBlock[]
-  leaderboard LeaderboardEntry[]
+  blocks               ElementBlock[]
+  leaderboard          LeaderboardEntry[]
+  temporaryLeaderboard TemporaryLeaderboardEntry[]
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   templateInfo ActivityTemplate?
   templateName String? // name of the template the quiz was created from
@@ -234,8 +149,11 @@ model MicroLearning {
   performance             ActivityPerformance?
   progress                ActivityProgress?
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // (every instance answered at least once)
@@ -331,8 +249,11 @@ model GroupActivity {
   clues             GroupActivityClue[]
   activityInstances GroupActivityInstance[]
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
 
   templateInfo ActivityTemplate? // template information set for the corresponding publication status
   templateName String? // name of the template the group activity was created from
@@ -400,10 +321,6 @@ model Feedback {
 
   resolvedAt DateTime?
 
-  // TODO: remove after migration
-  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String?      @db.Uuid
-
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid
 
@@ -433,10 +350,6 @@ model ConfusionTimestep {
 
   difficulty Int
   speed      Int
-
-  // TODO: remove after migration
-  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String?      @db.Uuid
 
   liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String?   @db.Uuid

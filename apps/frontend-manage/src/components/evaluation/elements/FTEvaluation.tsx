@@ -9,7 +9,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@uzh-bf/design-system/dist/future'
+} from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -72,15 +72,14 @@ function FTEvaluation({
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
-        <div className="order-2 flex-1 px-4 md:order-1">
-          <ElementChart
-            chartType={chartType}
-            instanceEvaluation={instanceEvaluation}
-            showSolution={showSolution}
-            showExplanation={showExplanation}
-            textSize={textSize}
-          />
-        </div>
+        <ElementChart
+          chartType={chartType}
+          instanceEvaluation={instanceEvaluation}
+          showSolution={showSolution}
+          showExplanation={showExplanation}
+          textSize={textSize}
+          className="px-4"
+        />
       )}
     </>
   )

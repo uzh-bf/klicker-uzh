@@ -1,5 +1,19 @@
 import {
+  ApolloCache,
+  DefaultContext,
+  FetchResult,
+  MutationFunctionOptions,
+} from '@apollo/client'
+import {
+  CreateAnswerCollectionMutation,
+  ElementStatus,
+  Exact,
+  GetAnswerCollectionsInfoDocument,
+  Scalars,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
   ElementFormTypesCaseStudy,
+  ElementFormTypesCaseStudySolutions,
   ElementFormTypesChoices,
   ElementFormTypesContent,
   ElementFormTypesFlashcard,
@@ -11,7 +25,7 @@ import {
 interface PrepareContentArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesContent
+  values: ElementFormTypesContent & { status: ElementStatus }
 }
 export function prepareContentArgs({
   elementId,
@@ -32,7 +46,7 @@ export function prepareContentArgs({
 interface PrepareFlashcardArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesFlashcard
+  values: ElementFormTypesFlashcard & { status: ElementStatus }
 }
 export function prepareFlashcardArgs({
   elementId,
@@ -54,7 +68,7 @@ export function prepareFlashcardArgs({
 interface PrepareChoicesArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesChoices
+  values: ElementFormTypesChoices & { status: ElementStatus }
 }
 export function prepareChoicesArgs({
   elementId,
@@ -97,7 +111,7 @@ export function prepareChoicesArgs({
 interface PrepareNumericalArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesNumerical
+  values: ElementFormTypesNumerical & { status: ElementStatus }
 }
 export function prepareNumericalArgs({
   elementId,
@@ -167,7 +181,7 @@ export function prepareNumericalArgs({
 interface PrepareFreeTextArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesFreeText
+  values: ElementFormTypesFreeText & { status: ElementStatus }
 }
 export function prepareFreeTextArgs({
   elementId,
@@ -204,10 +218,105 @@ export function prepareFreeTextArgs({
   }
 }
 
+type CreateAnswerCollectionType = (
+  options?:
+    | MutationFunctionOptions<
+        CreateAnswerCollectionMutation,
+        Exact<{
+          name: Scalars['String']['input']
+          description: Scalars['String']['input']
+          answers:
+            | Array<Scalars['String']['input']>
+            | Scalars['String']['input']
+        }>,
+        DefaultContext,
+        ApolloCache<any>
+      >
+    | undefined
+) => Promise<FetchResult<CreateAnswerCollectionMutation>>
+
+interface CreateInlineSelectionCollectionProps {
+  values: ElementFormTypesSelection
+  createAnswerCollection: CreateAnswerCollectionType
+}
+
+export async function createInlineSelectionCollection({
+  values,
+  createAnswerCollection,
+}: CreateInlineSelectionCollectionProps) {
+  if (!values.options.manuallyCreatedItems) {
+    return null
+  }
+
+  // create a deep copy of the element form values to ensure successful mutation
+  const innerValues: ElementFormTypesSelection & {
+    status: ElementStatus
+  } = JSON.parse(JSON.stringify(values))
+
+  const { data } = await createAnswerCollection({
+    variables: {
+      name: `AC: ${values.name}`,
+      description: `Answer collection containing all the items used in the context of the selection question ${values.name}`,
+      answers:
+        values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
+    },
+    update: (cache, { data }) => {
+      if (!data?.createAnswerCollection) return
+
+      const queryData = cache.readQuery({
+        query: GetAnswerCollectionsInfoDocument,
+      })
+      const previousCollections = queryData?.getAnswerCollectionsInfo
+      if (!previousCollections) return
+
+      cache.writeQuery({
+        query: GetAnswerCollectionsInfoDocument,
+        data: {
+          getAnswerCollectionsInfo: [
+            ...previousCollections,
+            data.createAnswerCollection,
+          ],
+        },
+      })
+    },
+  })
+
+  if (!data?.createAnswerCollection) {
+    return null
+  }
+
+  // set the answer collection id to the newly created answer collection
+  innerValues.options.answerCollection = String(data.createAnswerCollection.id)
+
+  if (values.options.hasSampleSolution) {
+    // create a map between the old item index and the new correct answer collection entry ids
+    const entries = data.createAnswerCollection.entries ?? []
+    const itemOldIdNewIdMap = new Map<number, number>()
+    values.options.manuallyCreatedItems.forEach((createdItem) => {
+      const entry = entries.find((entry) => entry.value === createdItem.value)
+      if (entry) {
+        itemOldIdNewIdMap.set(createdItem.id, entry.id)
+      }
+    })
+
+    // update the ids of the correct answer options
+    innerValues.options.correctAnswers =
+      values.options.correctAnswers?.flatMap((oldId) => {
+        const newItemId = itemOldIdNewIdMap.get(oldId)
+        if (typeof newItemId === 'undefined') {
+          return []
+        }
+        return [newItemId]
+      }) ?? []
+  }
+
+  return innerValues
+}
+
 interface PrepareSelectionArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesSelection
+  values: ElementFormTypesSelection & { status: ElementStatus }
 }
 export function prepareSelectionArgs({
   elementId,
@@ -228,7 +337,7 @@ export function prepareSelectionArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      answerCollection: parseInt(values.options.answerCollection),
+      answerCollection: parseInt(values.options.answerCollection!),
       numberOfInputs: parseInt(values.options.numberOfInputs),
       correctAnswers: values.options.correctAnswers,
     },
@@ -237,10 +346,106 @@ export function prepareSelectionArgs({
   }
 }
 
+interface CreateInlineCaseStudyCollectionProps {
+  values: ElementFormTypesCaseStudy
+  createAnswerCollection: CreateAnswerCollectionType
+}
+
+export async function createInlineCaseStudyCollection({
+  values,
+  createAnswerCollection,
+}: CreateInlineCaseStudyCollectionProps) {
+  if (!values.options.manuallyCreatedItems) {
+    return null
+  }
+
+  // create a deep copy of the element form values to ensure successful mutation
+  const innerValues: ElementFormTypesCaseStudy & {
+    status: ElementStatus
+  } = JSON.parse(JSON.stringify(values))
+
+  const { data } = await createAnswerCollection({
+    variables: {
+      name: `AC: ${values.name}`,
+      description: `Answer collection containing all the items used in the context of the case study ${values.name}`,
+      answers:
+        values.options.manuallyCreatedItems.map((item) => item.value) ?? [],
+    },
+    update: (cache, { data }) => {
+      if (!data?.createAnswerCollection) return
+
+      const queryData = cache.readQuery({
+        query: GetAnswerCollectionsInfoDocument,
+      })
+      const previousCollections = queryData?.getAnswerCollectionsInfo
+      if (!previousCollections) return
+
+      cache.writeQuery({
+        query: GetAnswerCollectionsInfoDocument,
+        data: {
+          getAnswerCollectionsInfo: [
+            ...previousCollections,
+            data.createAnswerCollection,
+          ],
+        },
+      })
+    },
+  })
+
+  if (!data?.createAnswerCollection) {
+    return null
+  }
+
+  // set the answer collection id to the newly created answer collection
+  innerValues.options.answerCollection = String(data.createAnswerCollection.id)
+
+  // set the items to the newly created answer collection items (in the same order as the values were defined)
+  const entries = data.createAnswerCollection.entries ?? []
+  const entryIds = values.options.manuallyCreatedItems.flatMap(
+    (createdItem) => {
+      const entry = entries.find((entry) => entry.value === createdItem.value)
+      return entry ? entry.id : []
+    }
+  )
+  innerValues.options.selectedItems = entryIds
+
+  if (values.options.hasSampleSolution) {
+    // create a map between the old item id and the new correct answer collection entry ids
+    const itemOldIdNewIdMap = new Map<number, number>()
+    values.options.manuallyCreatedItems.forEach((createdItem) => {
+      const entry = entries.find((entry) => entry.value === createdItem.value)
+      if (entry) {
+        itemOldIdNewIdMap.set(createdItem.id, entry.id)
+      }
+    })
+
+    // update the ids of the criterion solutions for all cases
+    innerValues.options.cases = values.options.cases.map((c) => {
+      const mappedSolutions: ElementFormTypesCaseStudySolutions =
+        Object.fromEntries(
+          Object.entries(c.solutions ?? {}).flatMap(([key, value]) => {
+            const oldId = parseInt(key.split('-')[1])
+            const newItemId = itemOldIdNewIdMap.get(oldId)
+
+            if (typeof newItemId === 'undefined') {
+              return []
+            }
+
+            return [[`itemId-${newItemId}`, value]]
+          })
+        )
+
+      return { ...c, solutions: mappedSolutions }
+    })
+  }
+
+  return innerValues
+}
+
 interface PrepareCaseStudyArgsProps {
   elementId?: number
   isDuplication: boolean
-  values: ElementFormTypesCaseStudy
+  values: ElementFormTypesCaseStudy & { status: ElementStatus }
 }
 export function prepareCaseStudyArgs({
   elementId,
@@ -261,9 +466,8 @@ export function prepareCaseStudyArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      answerCollection: parseInt(values.options.answerCollection),
+      answerCollection: parseInt(values.options.answerCollection!),
       collectionItemIds: values.options.selectedItems,
-
       criteria: values.options.criteria.map((criterion, index) => ({
         id: criterion.id,
         name: criterion.name,

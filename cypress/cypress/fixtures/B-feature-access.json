@@ -1,7 +1,8 @@
 {
   "seed": {
-    "courseName": "Testkurs",
-    "microlearning": "Test Microlearning",
-    "practiceQuiz": "Practice Quiz Demo"
+    "liveQuiz": "Seed Live Quiz",
+    "microlearning": "Seed Microlearning",
+    "practiceQuiz": "Seed Practice Quiz",
+    "groupActivity": "Seed Group Activity"
   }
 }

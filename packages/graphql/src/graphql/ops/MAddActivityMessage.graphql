@@ -1,0 +1,13 @@
+mutation AddActivityMessage(
+  $objectId: String!
+  $objectType: ObjectType!
+  $message: String!
+) {
+  addActivityMessage(
+    objectId: $objectId
+    objectType: $objectType
+    message: $message
+  ) {
+    ...ActivityEntryData
+  }
+}

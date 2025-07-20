@@ -1,0 +1,6 @@
+query GetUsersPrivatePreview {
+  getUsersPrivatePreview {
+    shortname
+    email
+  }
+}

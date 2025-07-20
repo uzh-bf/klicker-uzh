@@ -1,4 +1,4 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useState } from 'react'
 import ObjectSharingModal from './ObjectSharingModal'
 import TransferOwnershipModal from './TransferOwnershipModal'
@@ -7,10 +7,11 @@ interface ObjectSharingModalBaseProps {
   objectId?: number
   objectUuid?: string
   objectName: string
-  objectType: CatalogObjectType
+  objectType: ObjectType
+  isTemplate?: boolean
+  courseId?: string
   catalogCollectionId?: string
   isOwner: boolean
-  open: boolean
   onClose: () => void
 }
 
@@ -28,9 +29,9 @@ function ObjectSharingModalWrapper({
   objectUuid,
   objectName,
   objectType,
+  isTemplate = false,
   catalogCollectionId,
   isOwner,
-  open,
   onClose,
 }: ObjectSharingModalIdProps | ObjectSharingModalUuidProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
@@ -42,22 +43,27 @@ function ObjectSharingModalWrapper({
   return (
     <>
       <ObjectSharingModal
-        open={open}
         onClose={onClose}
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}
         objectName={objectName}
         isOwner={isOwner}
         onOwnershipTransfer={() => setTransferModalOpen(true)}
+        derivedPermissionsAvailable={
+          objectType !== ObjectType.CatalogCollection &&
+          objectType !== ObjectType.Course
+        }
       />
-      <TransferOwnershipModal
-        open={transferModalOpen}
-        onClose={() => setTransferModalOpen(false)}
-        objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
-        objectType={objectType}
-        objectName={objectName}
-        catalogCollectionId={catalogCollectionId}
-      />
+      {transferModalOpen && (
+        <TransferOwnershipModal
+          onClose={() => setTransferModalOpen(false)}
+          objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
+          objectType={objectType}
+          objectName={objectName}
+          isTemplate={isTemplate}
+          catalogCollectionId={catalogCollectionId}
+        />
+      )}
     </>
   )
 }

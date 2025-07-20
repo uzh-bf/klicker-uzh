@@ -19,6 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
 
@@ -34,6 +35,7 @@ interface ElementBarChartProps {
     textXl: string
     text3Xl: string
   }
+  className?: string
 }
 
 function ElementBarChart({
@@ -41,6 +43,7 @@ function ElementBarChart({
   showSolution,
   showExplanation,
   textSize,
+  className,
 }: ElementBarChartProps) {
   const t = useTranslations()
   const supportedElementTypes = [
@@ -62,7 +65,7 @@ function ElementBarChart({
   }
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className={twMerge('flex h-full w-full flex-col', className)}>
       <EvaluationExplanation
         explanation={instance.explanation}
         showExplanation={showExplanation}
@@ -110,6 +113,7 @@ function ElementBarChart({
                 position: 'insideLeft',
                 value: t('shared.generic.responses'),
                 className: textSize.textXl,
+                style: { textAnchor: 'middle' },
               }}
             />
             <CartesianGrid strokeDasharray="3 3" vertical={false} />

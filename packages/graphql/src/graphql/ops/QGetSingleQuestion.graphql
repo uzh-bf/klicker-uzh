@@ -13,6 +13,10 @@ query GetSingleQuestion($id: Int!) {
       basePoints
       pointsMultiplier
 
+      isOwner
+      isManager
+      isEditor
+
       options {
         __typename
         hasSampleSolution
@@ -43,6 +47,10 @@ query GetSingleQuestion($id: Int!) {
       explanation
       basePoints
       pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
 
       options {
         hasSampleSolution
@@ -78,6 +86,10 @@ query GetSingleQuestion($id: Int!) {
       basePoints
       pointsMultiplier
 
+      isOwner
+      isManager
+      isEditor
+
       options {
         hasSampleSolution
         restrictions {
@@ -103,6 +115,10 @@ query GetSingleQuestion($id: Int!) {
       explanation
       basePoints
       pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
 
       options {
         hasSampleSolution
@@ -130,6 +146,10 @@ query GetSingleQuestion($id: Int!) {
       explanation
       basePoints
       pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
 
       options {
         hasSampleSolution
@@ -183,6 +203,10 @@ query GetSingleQuestion($id: Int!) {
       basePoints
       pointsMultiplier
 
+      isOwner
+      isManager
+      isEditor
+
       tags {
         id
         name
@@ -200,6 +224,10 @@ query GetSingleQuestion($id: Int!) {
       explanation
       basePoints
       pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
 
       tags {
         id

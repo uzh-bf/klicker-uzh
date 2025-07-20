@@ -4,6 +4,7 @@ import {
   DeactivateLiveQuizBlockDocument,
   EndLiveQuizDocument,
   GetCockpitQuizDocument,
+  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -43,9 +44,8 @@ function Cockpit() {
         })
       },
       refetchQueries: [
-        {
-          query: GetUserLiveQuizzesDocument,
-        },
+        { query: GetUserLiveQuizzesDocument },
+        { query: GetUserActivitiesDocument },
       ],
     }
   )
@@ -96,7 +96,7 @@ function Cockpit() {
           quizName={name}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
-            router.push('/quizzes')
+            router.push('/activities')
           }}
           handleOpenBlock={(blockId: number) => {
             activateLiveQuizBlock({

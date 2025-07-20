@@ -1,22 +1,36 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityLogModificationFieldType as ActivityLogModificationFieldTypeEnum,
   CatalogObject as CatalogObjectInterface,
-  CatalogObjectType as CatalogObjectTypeEnum,
   ObjectSharingRequest as ObjectSharingRequestType,
+  SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { IUserInfo, UserInfo } from './user.js'
 
 export const ObjectAccess = builder.enumType('ObjectAccess', {
   values: Object.values(DB.ObjectAccess),
 })
 
-export const CatalogObjectType = builder.enumType('CatalogObjectType', {
-  values: Object.values(CatalogObjectTypeEnum),
+export const ObjectType = builder.enumType('ObjectType', {
+  values: Object.values(DB.ObjectType).filter(
+    // exclude user group from the graphql object type
+    (type) => type !== DB.ObjectType.USER_GROUP
+  ) as DB.ObjectType[],
 })
 
-export const PermissionStatus = builder.enumType('PermissionStatus', {
-  values: Object.values(DB.PermissionStatus),
+export const SharingType = builder.enumType('SharingType', {
+  values: Object.values(SharingTypeEnum),
 })
+
+export const ActivityLogType = builder.enumType('ActivityLogType', {
+  values: Object.values(DB.ActivityLogType),
+})
+
+export const ActivityLogModificationFieldType = builder.enumType(
+  'ActivityLogModificationFieldType',
+  { values: Object.values(ActivityLogModificationFieldTypeEnum) }
+)
 
 export const PermissionLevel = builder.enumType('PermissionLevel', {
   values: Object.values(DB.PermissionLevel),
@@ -52,11 +66,11 @@ export const CatalogObjectRef =
   builder.objectRef<CatalogObjectInterface>('CatalogObject')
 export const CatalogObject = CatalogObjectRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id', { nullable: true }),
-    uuid: t.exposeString('uuid', { nullable: true }),
+    id: t.exposeInt('id'), // assignment id
+    objectId: t.exposeInt('objectId', { nullable: true }), // object id
+    objectUuid: t.exposeString('objectUuid', { nullable: true }), // object uuid
     name: t.exposeString('name'),
-    objectType: t.expose('objectType', { type: CatalogObjectType }),
-    assignmentId: t.exposeInt('assignmentId'),
+    objectType: t.expose('objectType', { type: ObjectType }),
     templateId: t.exposeString('templateId', { nullable: true }),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
@@ -84,9 +98,9 @@ export const ObjectSharingRequestRef =
   builder.objectRef<ObjectSharingRequestType>('ObjectSharingRequest')
 export const ObjectSharingRequest = ObjectSharingRequestRef.implement({
   fields: (t) => ({
-    permissionId: t.exposeInt('permissionId'),
+    requestId: t.exposeInt('requestId'),
     objectName: t.exposeString('objectName'),
-    objectType: t.expose('objectType', { type: CatalogObjectType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
     userId: t.exposeString('userId'),
     userShortname: t.exposeString('userShortname'),
     userEmail: t.exposeString('userEmail'),
@@ -116,7 +130,7 @@ interface IPermissionInfo {
   userEmail?: string
   userGroupName?: string
   permissionLevel: DB.PermissionLevel
-  isRevokable?: boolean
+  propagation?: boolean
   isOwn?: boolean
 }
 export const PermissionInfoRef =
@@ -129,8 +143,165 @@ export const PermissionInfo = PermissionInfoRef.implement({
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
-    isRevokable: t.exposeBoolean('isRevokable', { nullable: true }),
+    propagation: t.exposeBoolean('propagation', { nullable: true }),
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
+  }),
+})
+
+interface IDerivedPermissionInfo {
+  permissionId: number
+  permissionLevel: DB.PermissionLevel
+  userId: string
+  username: string
+  userEmail: string
+  isOwn: boolean
+}
+export const DerivedPermissionInfoRef =
+  builder.objectRef<IDerivedPermissionInfo>('DerivedPermissionInfo')
+export const DerivedPermissionInfo = DerivedPermissionInfoRef.implement({
+  fields: (t) => ({
+    permissionId: t.exposeInt('permissionId'),
+    permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
+    userId: t.exposeString('userId'),
+    username: t.exposeString('username'),
+    userEmail: t.exposeString('userEmail'),
+    isOwn: t.exposeBoolean('isOwn'),
+  }),
+})
+
+interface IDerivedPermissionOriginInformation {
+  permissionUser: string
+  parentObjectType?: DB.ObjectType
+  parentObjectName?: string
+  parentObjectOwner?: string
+  parentTargetUser?: string
+  parentTargetUserGroup?: string
+  parentPermissionLevel?: DB.PermissionLevel
+}
+
+export const DerivedPermissionOriginInformationRef =
+  builder.objectRef<IDerivedPermissionOriginInformation>(
+    'DerivedPermissionOriginInformation'
+  )
+export const DerivedPermissionOriginInformation =
+  DerivedPermissionOriginInformationRef.implement({
+    fields: (t) => ({
+      permissionUser: t.exposeString('permissionUser'),
+      parentObjectType: t.expose('parentObjectType', {
+        type: ObjectType,
+        nullable: true,
+      }),
+      parentObjectName: t.exposeString('parentObjectName', {
+        nullable: true,
+      }),
+      parentObjectOwner: t.exposeString('parentObjectOwner', {
+        nullable: true,
+      }),
+      parentTargetUser: t.exposeString('parentTargetUser', {
+        nullable: true,
+      }),
+      parentTargetUserGroup: t.exposeString('parentTargetUserGroup', {
+        nullable: true,
+      }),
+      parentPermissionLevel: t.expose('parentPermissionLevel', {
+        type: PermissionLevel,
+        nullable: true,
+      }),
+    }),
+  })
+// #endregion
+
+// ----- USER GROUPS -----
+// #region
+export const UserGroupMembersInput = builder.inputType(
+  'UserGroupMembersInput',
+  {
+    fields: (t) => ({
+      shortnameOrEmail: t.string({ required: true }),
+      isAdmin: t.boolean(),
+    }),
+  }
+)
+
+interface IUserGroup extends DB.UserGroup {
+  numOfMembers?: number
+  members?: IUserInfo[]
+  admins?: IUserInfo[]
+  owner?: IUserInfo
+  isMember?: boolean
+  isAdmin?: boolean
+  isOwner?: boolean
+}
+export const UserGroupRef = builder.objectRef<IUserGroup>('UserGroup')
+export const UserGroup = UserGroupRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    name: t.exposeString('name'),
+    members: t.expose('members', {
+      type: [UserInfo],
+      nullable: true,
+    }),
+    admins: t.expose('admins', {
+      type: [UserInfo],
+      nullable: true,
+    }),
+    owner: t.expose('owner', {
+      type: UserInfo,
+      nullable: true,
+    }),
+    numOfMembers: t.exposeInt('numOfMembers', { nullable: true }),
+    isMember: t.exposeBoolean('isMember', { nullable: true }),
+    isAdmin: t.exposeBoolean('isAdmin', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+  }),
+})
+
+// #endregion
+
+// ----- ACTIVITY LOG -----
+// #region
+interface IActivityLogEntry extends DB.ActivityLogEntry {
+  username: string // username of the user who created the activity/changelog entry
+  options: {
+    field?: ActivityLogModificationFieldTypeEnum
+    oldValue?: string
+    newValue?: string
+  }
+  isEdited?: boolean // boolean to signal if an entry has been edited after its creation
+}
+
+export const ActivityLogEntryOptionsRef = builder.objectRef<
+  IActivityLogEntry['options']
+>('ActivityLogEntryOptions')
+export const ActivityLogEntryOptions = ActivityLogEntryOptionsRef.implement({
+  fields: (t) => ({
+    field: t.expose('field', {
+      type: ActivityLogModificationFieldType,
+      nullable: true,
+    }),
+    oldValue: t.exposeString('oldValue', { nullable: true }),
+    newValue: t.exposeString('newValue', { nullable: true }),
+  }),
+})
+
+export const ActivityLogEntryRef =
+  builder.objectRef<IActivityLogEntry>('ActivityLogEntry')
+export const ActivityLogEntry = ActivityLogEntryRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    type: t.expose('type', { type: ActivityLogType }),
+    objectType: t.expose('objectType', { type: ObjectType }),
+    message: t.exposeString('message', { nullable: true }),
+    resolved: t.exposeBoolean('resolved'),
+    resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
+    username: t.exposeString('username'),
+    options: t.expose('options', {
+      type: ActivityLogEntryOptions,
+      nullable: true,
+    }),
+    isEdited: t.exposeBoolean('isEdited', { nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
 // #endregion

@@ -21,14 +21,14 @@ import * as yup from 'yup'
 
 interface UpdateAccountInfoFormProps {
   user: Partial<Participant>
-  setShowError: (showError: boolean) => void
-  setShowSuccess: (showSuccess: boolean) => void
+  onError: () => void
+  onSuccess: () => void
 }
 
 function UpdateAccountInfoForm({
   user,
-  setShowError,
-  setShowSuccess,
+  onError,
+  onSuccess,
 }: UpdateAccountInfoFormProps) {
   const t = useTranslations()
   const [updateParticipantProfile] = useMutation(
@@ -94,7 +94,7 @@ function UpdateAccountInfoForm({
           typeof values.email === 'undefined' ||
           values.email === null
         ) {
-          setShowError(true)
+          onError()
           return
         }
 
@@ -109,9 +109,9 @@ function UpdateAccountInfoForm({
         })
 
         if (!result.data?.updateParticipantProfile || result.errors) {
-          setShowError(true)
+          onError()
         } else {
-          setShowSuccess(true)
+          onSuccess()
         }
       }}
     >
@@ -147,7 +147,6 @@ function UpdateAccountInfoForm({
                     data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
-                    t={t}
                     name="username"
                     label={t('shared.generic.username')}
                     valid={isUsernameAvailable}

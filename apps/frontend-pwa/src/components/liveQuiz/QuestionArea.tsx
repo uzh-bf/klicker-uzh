@@ -12,8 +12,10 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
+import AllQuestionsAnsweredMessage from './AllQuestionsAnsweredMessage'
 
 interface QuestionAreaProps {
+  gamificationEnabled: boolean
   expiresAt?: Date
   instances: ElementInstance[]
   handleNewResponse: (
@@ -28,6 +30,7 @@ interface QuestionAreaProps {
 }
 
 function QuestionArea({
+  gamificationEnabled,
   expiresAt,
   instances,
   handleNewResponse,
@@ -205,14 +208,16 @@ function QuestionArea({
 
   return (
     <div className="min-h-content h-full w-full">
-      <H2 className={{ root: 'mb-2 hidden md:block' }}>
+      <H2 className={{ root: 'mb-0 pt-4 md:pt-2' }}>
         {t('shared.generic.question')}
       </H2>
 
       {remainingQuestions.length === 0 ? (
-        t('pwa.liveQuiz.allQuestionsAnswered')
+        <AllQuestionsAnsweredMessage
+          gamificationEnabled={gamificationEnabled}
+        />
       ) : (
-        <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full flex-col">
           <LiveQuizProgress
             activeIndex={instances.length - remainingQuestions.length}
             contentInstance={

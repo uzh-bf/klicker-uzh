@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLiveQuizHmacDocument,
   GetSingleLiveQuizDocument,
@@ -10,56 +9,59 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
-interface EmbeddingModalProps {
-  open: boolean
-  setOpen: (newValue: boolean) => void
-  quizId: string
-}
-
-function LazyHMACLink({
+function HMACLink({
   quizId,
+  hmac,
   params,
   identifier,
 }: {
   quizId: string
+  hmac: string
   params: string
   identifier: string
 }) {
-  const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
-    variables: {
-      id: quizId,
-    },
-  })
-
-  if (quizHMAC.loading || !quizHMAC.data?.liveQuizHMAC) {
-    return <></>
-  }
-
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/quizzes/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
-    params ? `&${params}` : ''
-  }`
+  }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
 
   return (
-    <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
-      <FontAwesomeIcon
-        icon={faClipboard}
-        className="hover:cursor-pointer"
-        onClick={() => navigator?.clipboard?.writeText(link)}
-      />
-      <Link href={link} target="_blank" legacyBehavior passHref>
-        <a data-cy={`open-embedding-link-${identifier}`}>{link}</a>
+    <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
+      <Link href={link} legacyBehavior passHref>
+        <a
+          data-cy={`open-embedding-link-${identifier}`}
+          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {link}
+        </a>
       </Link>
+      <Button
+        onClick={() => navigator?.clipboard?.writeText(link)}
+        data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
+      >
+        <Button.Icon withoutLabel icon={faClipboard} />
+      </Button>
     </div>
   )
 }
 
-function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
+function EmbeddingModal({
+  onClose,
+  quizId,
+}: {
+  onClose: () => void
+  quizId: string
+}) {
   const t = useTranslations()
   const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
     variables: { quizId: quizId || '' },
     skip: !quizId,
+  })
+
+  const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
+    variables: { id: quizId },
+    skip: !open,
   })
 
   const questions = useMemo(
@@ -70,23 +72,13 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
 
   return (
     <Modal
-      asPortal
-      open={open}
-      onOpenChange={() => setOpen(!open)}
-      onClose={() => setOpen(false)}
-      onPrimaryAction={
-        <Button
-          onClick={() => setOpen(false)}
-          data={{ cy: 'close-embedding-modal' }}
-        >
-          {t('shared.generic.close')}
-        </Button>
-      }
-      className={{
-        content:
-          'mx-auto my-auto h-max max-h-[calc(100%-5rem)] w-full overflow-y-scroll md:w-max md:min-w-[30rem]',
-      }}
+      open
       hideCloseButton
+      loading={loading || !data?.liveQuizHMAC}
+      onClose={onClose}
+      onSecondaryAction={onClose}
+      secondaryLabel={t('shared.generic.close')}
+      dataSecondaryAction={{ cy: 'close-embedding-modal' }}
     >
       <H2>{t('control.course.pptEmbedding')}</H2>
       <div className="flex flex-col gap-3">
@@ -98,23 +90,23 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
               <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
                 element.elementData.name
               }`}</div>
-              <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
-                <LazyHMACLink
-                  quizId={quizId}
-                  params={`questionIx=${ix}`}
-                  identifier={`question-${ix}`}
-                />
-              </div>
+              <HMACLink
+                quizId={quizId}
+                hmac={data?.liveQuizHMAC!}
+                params={`questionIx=${ix}&hideControls=true`}
+                identifier={`question-${ix}`}
+              />
             </div>
           )
         })}
       </div>
       <div className="mt-3">
         <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <LazyHMACLink
+        <HMACLink
           quizId={quizId}
-          params={`leaderboard=true`}
-          identifier="leaderboard"
+          hmac={data?.liveQuizHMAC ?? ''}
+          params={`leaderboard=true&hideControls=true`}
+          identifier={`leaderboard`}
         />
       </div>
     </Modal>

@@ -2,14 +2,15 @@
   "private": true,
   "name": "@klicker-uzh/cypress",
   "devDependencies": {
-    "@cypress/code-coverage": "~3.13.11",
+    "@cypress/code-coverage": "~3.14.5",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@testing-library/cypress": "~10.0.3",
     "@types/node": "^20.16.1",
     "@types/uuid": "^10.0.0",
-    "cypress": "~14.0.2",
+    "bcryptjs": "~2.4.3",
+    "cypress": "~14.5.1",
     "cypress-real-events": "~1.14.0",
     "jose": "~5.9.4",
     "localforage": "~1.10.0",
@@ -18,8 +19,10 @@
   },
   "scripts": {
     "test": "doppler run --config=dev_cypress -- cypress open",
+    "test:raw": "cypress open",
     "test:run": "doppler run --config=dev_cypress -- cypress run",
     "test:run:one": "doppler run --config=dev_cypress -- cypress run --spec",
+    "test:run:raw": "cypress run",
     "test:watch": "doppler run --config=dev_cypress -- cypress open --watch"
   },
   "engines": {

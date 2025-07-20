@@ -14,6 +14,7 @@ import {
   H2,
   H3,
   Slider,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -60,8 +61,8 @@ function FeedbackArea({
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
   const [isConfusionEnabled, setConfusionEnabled] = useState(true)
-  const confusionButtonTimeout = useRef<any>()
-  const confusionSubmissionTimeout = useRef<any>()
+  const confusionButtonTimeout = useRef<any>(null)
+  const confusionSubmissionTimeout = useRef<any>(null)
 
   const {
     loading: feedbacksLoading,
@@ -82,6 +83,7 @@ function FeedbackArea({
         content: input,
       },
     })
+    toast({ type: 'success', message: t('pwa.feedbacks.feedbackSubmitted') })
   }
 
   const onUpvoteFeedback = async (id: number, change: number) => {
@@ -226,7 +228,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full pt-4 md:pt-2">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <FeedbackAreaSubscriber
@@ -238,10 +240,10 @@ function FeedbackArea({
         <div className="mb-8">
           <Formik
             initialValues={{ feedbackInput: '' }}
-            onSubmit={(values, { setSubmitting }) => {
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
               if (values.feedbackInput !== '') {
-                onAddFeedback(values.feedbackInput)
-                values.feedbackInput = ''
+                await onAddFeedback(values.feedbackInput)
+                resetForm()
 
                 setTimeout(() => {
                   setSubmitting(false)
@@ -267,18 +269,20 @@ function FeedbackArea({
                   maxLengthUnit={t('shared.generic.characters')}
                   data={{ cy: 'feedback-input' }}
                 />
-                <Button
-                  primary
-                  type="submit"
-                  disabled={isSubmitting}
-                  loading={isSubmitting}
-                  className={{
-                    root: 'float-right h-9 w-24 items-center text-center',
-                  }}
-                  data={{ cy: 'feedback-submit' }}
-                >
-                  <Button.Label>{t('shared.generic.send')}</Button.Label>
-                </Button>
+                <div className="flex items-center justify-end">
+                  <Button
+                    primary
+                    type="submit"
+                    disabled={isSubmitting}
+                    loading={isSubmitting}
+                    className={{
+                      root: 'h-9 w-24 transform items-center text-center transition-transform hover:scale-105',
+                    }}
+                    data={{ cy: 'feedback-submit' }}
+                  >
+                    <Button.Label>{t('shared.generic.send')}</Button.Label>
+                  </Button>
+                </div>
               </Form>
             )}
           </Formik>
@@ -287,7 +291,7 @@ function FeedbackArea({
 
       {isConfusionFeedbackEnabled && (
         <div className="mb-8 space-y-6 text-sm">
-          <div className="">
+          <div className="transform transition-all duration-300">
             <H3 className={{ root: 'mb-0 mt-2' }}>
               {t('pwa.feedbacks.speed')}
             </H3>
@@ -307,7 +311,7 @@ function FeedbackArea({
               />
             </div>
           </div>
-          <div>
+          <div className="transform transition-all duration-300">
             <H3 className={{ root: 'mb-0' }}>
               {t('pwa.feedbacks.difficulty')}
             </H3>

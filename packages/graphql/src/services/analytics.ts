@@ -1,17 +1,4 @@
-import {
-  ActivityProgress,
-  Course,
-  ElementFeedback,
-  ElementInstance,
-  ElementStack,
-  ElementType,
-  MicroLearning,
-  Participant,
-  PracticeQuiz,
-  ActivityPerformance as PrismaActivityPerformance,
-  InstancePerformance as PrismaInstancePerformance,
-  ParticipantActivityPerformance as PrismaParticipantActivityPerformance,
-} from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityFeedback,
   ActivityPerformance,
@@ -29,7 +16,7 @@ export async function getCourseActivityAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -87,15 +74,11 @@ export async function getCourseActivityAnalytics(
 }
 
 export async function getCourseWeeklyActivity(
-  { courseId }: { courseId?: string | null },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  if (!courseId) {
-    return null
-  }
-
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -122,8 +105,8 @@ function aggregateInstanceFeedbacks({
   stacks,
   activityType,
 }: {
-  stacks: (ElementStack & {
-    elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+  stacks: (DB.ElementStack & {
+    elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
   })[]
   activityType: ActivityType
 }): InstanceFeedback[] {
@@ -133,7 +116,7 @@ function aggregateInstanceFeedbacks({
         element.feedbacks.reduce<{
           id: number
           instanceName: string
-          instanceType: ElementType
+          instanceType: DB.ElementType
           upvotes: number
           downvotes: number
           totalVotes: number
@@ -229,15 +212,15 @@ function aggregateActivityFeedbacks({
 function computeActivityInstanceFeedbacks({
   course,
 }: {
-  course: Course & {
-    practiceQuizzes: (PracticeQuiz & {
-      stacks: (ElementStack & {
-        elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+  course: DB.Course & {
+    practiceQuizzes: (DB.PracticeQuiz & {
+      stacks: (DB.ElementStack & {
+        elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
       })[]
     })[]
-    microLearnings: (MicroLearning & {
-      stacks: (ElementStack & {
-        elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+    microLearnings: (DB.MicroLearning & {
+      stacks: (DB.ElementStack & {
+        elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
       })[]
     })[]
   }
@@ -300,29 +283,31 @@ function computeActivityInstanceFeedbacks({
 function computeActivityInstancePerformance({
   course,
 }: {
-  course: Course & {
-    practiceQuizzes: (PracticeQuiz & {
-      stacks: (ElementStack & {
-        elements: (ElementInstance & {
-          instancePerformance: PrismaInstancePerformance
+  course: DB.Course & {
+    practiceQuizzes: (DB.PracticeQuiz & {
+      stacks: (DB.ElementStack & {
+        elements: (DB.ElementInstance & {
+          instancePerformance: DB.InstancePerformance | null
+          feedbacks: DB.ElementFeedback[]
         })[]
       })[]
-      progress: ActivityProgress | null
-      performance: PrismaActivityPerformance | null
-      participantPerformances: (PrismaParticipantActivityPerformance & {
-        participant: Participant
+      progress: DB.ActivityProgress | null
+      performance: DB.ActivityPerformance | null
+      participantPerformances: (DB.ParticipantActivityPerformance & {
+        participant: DB.Participant
       })[]
     })[]
-    microLearnings: (MicroLearning & {
-      stacks: (ElementStack & {
-        elements: (ElementInstance & {
-          instancePerformance: PrismaInstancePerformance
+    microLearnings: (DB.MicroLearning & {
+      stacks: (DB.ElementStack & {
+        elements: (DB.ElementInstance & {
+          instancePerformance: DB.InstancePerformance | null
+          feedbacks: DB.ElementFeedback[]
         })[]
       })[]
-      progress: ActivityProgress | null
-      performance: PrismaActivityPerformance | null
-      participantPerformances: (PrismaParticipantActivityPerformance & {
-        participant: Participant
+      progress: DB.ActivityProgress | null
+      performance: DB.ActivityPerformance | null
+      participantPerformances: (DB.ParticipantActivityPerformance & {
+        participant: DB.Participant
       })[]
     })[]
   }
@@ -448,7 +433,7 @@ function computeActivityInstancePerformance({
       }
     >
   >((acc, activity) => {
-    activity.participantPerformances.map((performance) => {
+    activity.participantPerformances.forEach((performance) => {
       // extract performance data that should be tracked (table cell value)
       const performanceEntry = {
         id: performance.id,
@@ -490,27 +475,18 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId },
     include: {
-      _count: {
-        select: { participations: true },
-      },
+      _count: { select: { participations: true } },
       practiceQuizzes: {
         include: {
           progress: true,
           performance: true,
-          participantPerformances: {
-            include: {
-              participant: true,
-            },
-          },
+          participantPerformances: { include: { participant: true } },
           stacks: {
             include: {
               elements: {
-                include: {
-                  instancePerformance: true,
-                  feedbacks: true,
-                },
+                include: { instancePerformance: true, feedbacks: true },
               },
             },
           },
@@ -521,18 +497,11 @@ export async function getCoursePerformanceAnalytics(
         include: {
           progress: true,
           performance: true,
-          participantPerformances: {
-            include: {
-              participant: true,
-            },
-          },
+          participantPerformances: { include: { participant: true } },
           stacks: {
             include: {
               elements: {
-                include: {
-                  instancePerformance: true,
-                  feedbacks: true,
-                },
+                include: { instancePerformance: true, feedbacks: true },
               },
             },
           },
@@ -619,11 +588,11 @@ export async function getActivityAnalytics(
   }
 
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on activity are required (implied by >= READ permissions on course)
     include: activityIncludes,
   })
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on activity are required (implied by >= READ permissions on course)
     include: activityIncludes,
   })
   const activity = practiceQuiz ?? microLearning

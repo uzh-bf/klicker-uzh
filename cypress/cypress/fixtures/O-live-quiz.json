@@ -1,0 +1,64 @@
+{
+  "course1": {
+    "name": "Testkurs",
+    "quiz": {
+      "name": "Live Quiz 1",
+      "displayName": "Live Quiz 1 (Display)",
+      "description": "Live Quiz 1 Description",
+      "nameNew": "Live Quiz 1 NEW",
+      "displayNameNew": "Live Quiz 1 (Display) NEW",
+      "descriptionNew": "Live Quiz 1 Description NEW",
+      "nameDupl": "Live Quiz 1 NEW (Copy)",
+      "defaultPoints": 50,
+      "defaultCorrectPoints": 100,
+      "maxBonusPoints": 200,
+      "timeToZeroBonus": 100
+    }
+  },
+  "course2": {
+    "name": "Non-Gamified Course",
+    "quiz": {
+      "name": "Live Quiz 2",
+      "displayName": "Live Quiz 2 (Display)",
+      "description": "Live Quiz 2 Description",
+      "feedbackDesktop": "Feedback Desktop",
+      "feedbackDesktop2": "Feedback Desktop 2",
+      "feedbackMobile": "Feedback Mobile",
+      "feedbackResponse": "Response to Feedback"
+    }
+  },
+  "liveQuiz": {
+    "course": "Testkurs",
+    "name": "Live Quiz 3",
+    "displayName": "Live Quiz 3 (Display)",
+    "duplicateName": "Duplication of Live Quiz",
+    "duplicateDisplayName": "Duplication of Live Quiz (Display)",
+    "newSCTitle": "New SC Title",
+    "newSCContent": "New SC Content"
+  },
+  "sharing": {
+    "quiz1": "Sharing Live Quiz 1",
+    "quiz1Display": "Sharing Live Quiz 1 (Display)",
+    "quiz2": "Sharing Live Quiz 2",
+    "quiz2Display": "Sharing Live Quiz 2 (Display)",
+    "quiz3": "Sharing Live Quiz 3",
+    "quiz3Display": "Sharing Live Quiz 3 (Display)",
+    "quiz4": "Sharing Live Quiz 4",
+    "quiz4Display": "Sharing Live Quiz 4 (Display)",
+    "group1": "Group 1",
+    "group2": "Group 2",
+    "group3": "Group 3",
+    "group4": "Group 4"
+  },
+  "modes": {
+    "course": "Testkurs",
+    "name": "Live Quiz 4",
+    "displayName": "Live Quiz 4 (Display)",
+    "practiceQuizName": "Practice Quiz",
+    "practiceQuizDisplayName": "Practice Quiz (Display)",
+    "microLearningName": "Micro Learning Quiz",
+    "microLearningDisplayName": "Micro Learning Quiz (Display)",
+    "pseudonym": "klickerMaster",
+    "pseudonym2": "klickerAmateur"
+  }
+}

@@ -16,14 +16,13 @@ import {
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import ElementCreationErrorToast from '../../../toasts/ElementCreationErrorToast'
 import { ElementSelectCourse } from '../../ElementCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
@@ -103,7 +102,6 @@ function LiveQuizWizard({
   const t = useTranslations()
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
@@ -179,7 +177,7 @@ function LiveQuizWizard({
     displayName: '',
     description: '',
     blocks: [{ timeLimit: undefined, elements: [] }],
-    courseId: '',
+    courseId: 'no-course-selected',
     multiplier: '1',
     defaultPoints: LQ_DEFAULT_POINTS,
     defaultCorrectPoints: LQ_DEFAULT_CORRECT_POINTS,
@@ -222,24 +220,24 @@ function LiveQuizWizard({
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
     blocks: initialValues?.blocks
-      ? initialValues.blocks.map((block) => {
-          return {
-            timeLimit: block.timeLimit ?? undefined,
-            elements: block.elements!.map((element) => {
-              return {
-                id: parseInt(element.elementData.id),
-                title: element.elementData.name,
-                type: element.elementData.type,
-                hasSampleSolution:
-                  'options' in element.elementData
-                    ? (element.elementData.options.hasSampleSolution ?? false)
-                    : true,
-                existingInstanceId: element.id,
-                duplicateInstance: duplicationMode,
-              }
-            }),
-          }
-        })
+      ? initialValues.blocks.map((block) => ({
+          timeLimit: block.timeLimit ?? undefined,
+          elements: block.elements!.map((instance) => {
+            const [elementId, _] = instance.elementData.id.split('-v')
+
+            return {
+              id: parseInt(elementId),
+              title: instance.elementData.name,
+              type: instance.elementData.type,
+              hasSampleSolution:
+                'options' in instance.elementData
+                  ? (instance.elementData.options.hasSampleSolution ?? false)
+                  : true,
+              existingInstanceId: instance.id,
+              duplicateInstance: duplicationMode,
+            }
+          }),
+        }))
       : formDefaultValues.blocks,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
     multiplier: initialValues?.pointsMultiplier
@@ -300,164 +298,167 @@ function LiveQuizWizard({
         createLiveQuiz,
         editLiveQuiz,
         setIsWizardCompleted,
-        setErrorToastOpen,
+        onError: () =>
+          toast({
+            type: 'error',
+            message: (
+              <div>
+                <div>
+                  {editMode
+                    ? t('manage.activityWizard.liveQuizEditingFailed')
+                    : t('manage.activityWizard.liveQuizCreationFailed')}
+                </div>
+                <div>{t('manage.activityWizard.considerFormErrors')}</div>
+              </div>
+            ),
+            options: { duration: 6000 },
+          }),
       })
     },
     [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
 
   return (
-    <>
-      <WizardLayout
-        title={title}
-        editMode={editMode}
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-        disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
-        workflowItems={workflowItems}
-        isCompleted={isWizardCompleted}
-        completionStep={
-          <CompletionStep
-            completionSuccessMessage={(elementName) => (
-              <div>
-                {editMode
-                  ? t.rich('manage.activityWizard.liveQuizUpdated', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })
-                  : t.rich('manage.activityWizard.liveQuizCreated', {
-                      b: (text) => <strong>{text}</strong>,
-                      name: elementName,
-                    })}
-              </div>
-            )}
-            name={formData.name}
-            editMode={editMode}
-            viewElementHref="/quizzes"
-            onRestartForm={() => {
-              setIsWizardCompleted(false)
-              closeWizard()
-            }}
-            resetForm={() => setFormData(formDefaultValues)}
-            setStepNumber={setActiveStep}
-            onCloseWizard={closeWizard}
-          >
-            {!editMode && data?.createLiveQuiz?.id ? (
-              <Button
-                data={{ cy: 'quick-start' }}
-                onClick={async () => {
-                  await startLiveQuiz({
-                    variables: {
-                      id: data.createLiveQuiz!.id,
-                    },
+    <WizardLayout
+      title={title}
+      editMode={editMode}
+      activeStep={activeStep}
+      setActiveStep={setActiveStep}
+      disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
+      workflowItems={workflowItems}
+      isCompleted={isWizardCompleted}
+      completionStep={
+        <CompletionStep
+          completionSuccessMessage={(elementName) => (
+            <div>
+              {editMode
+                ? t.rich('manage.activityWizard.liveQuizUpdated', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
                   })
-                  router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
-                }}
-              >
-                <Button.Icon icon={faPlay} />
-                <Button.Label>
-                  {t('manage.activityWizard.liveQuizStartNow')}
-                </Button.Label>
-              </Button>
-            ) : null}
-          </CompletionStep>
-        }
-        steps={[
-          <LiveQuizInformationStep
-            key="live-quiz-information-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={nameValidationSchema}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <LiveQuizDescriptionStep
-            key="live-quiz-description-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={descriptionValidationSchema}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <LiveQuizSettingsStep
-            key="live-quiz-settings-step"
-            editMode={editMode}
-            formRef={formRef}
-            formData={formData}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={settingsValidationSchema}
-            gamifiedCourses={gamifiedCourses}
-            nonGamifiedCourses={nonGamifiedCourses}
-            setStepValidity={setStepValidity}
-            onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep + 1)
-            }}
-            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-          <LiveQuizQuestionsStep
-            key="live-quiz-questions-step"
-            editMode={editMode}
-            selection={selection}
-            resetSelection={resetSelection}
-            formRef={formRef}
-            formData={formData}
-            acceptedTypes={acceptedTypes}
-            continueDisabled={false}
-            activeStep={activeStep}
-            stepValidity={stepValidity}
-            validationSchema={questionsValidationSchema}
-            setStepValidity={setStepValidity}
-            onSubmit={(newValues: LiveQuizFormValues) =>
-              handleSubmit({ ...formData, ...newValues })
-            }
-            onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
-              setFormData((prev) => ({ ...prev, ...newValues }))
-              setActiveStep((currentStep) => currentStep - 1)
-            }}
-            closeWizard={closeWizard}
-          />,
-        ]}
-        saveFormData={() => {
-          setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
-        }}
-      />
-      <ElementCreationErrorToast
-        open={errorToastOpen}
-        setOpen={setErrorToastOpen}
-        error={
-          editMode
-            ? t('manage.activityWizard.liveQuizEditingFailed')
-            : t('manage.activityWizard.liveQuizCreationFailed')
-        }
-      />
-    </>
+                : t.rich('manage.activityWizard.liveQuizCreated', {
+                    b: (text) => <strong>{text}</strong>,
+                    name: elementName,
+                  })}
+            </div>
+          )}
+          name={formData.name}
+          editMode={editMode}
+          viewElementHref="/activities"
+          onRestartForm={() => {
+            setIsWizardCompleted(false)
+            closeWizard()
+          }}
+          resetForm={() => setFormData(formDefaultValues)}
+          setStepNumber={setActiveStep}
+          onCloseWizard={closeWizard}
+        >
+          {!editMode && data?.createLiveQuiz?.id ? (
+            <Button
+              data={{ cy: 'quick-start' }}
+              onClick={async () => {
+                await startLiveQuiz({
+                  variables: {
+                    id: data.createLiveQuiz!.id,
+                  },
+                })
+                router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
+              }}
+            >
+              <Button.Icon icon={faPlay} />
+              <Button.Label>
+                {t('manage.activityWizard.liveQuizStartNow')}
+              </Button.Label>
+            </Button>
+          ) : null}
+        </CompletionStep>
+      }
+      steps={[
+        <LiveQuizInformationStep
+          key="live-quiz-information-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={nameValidationSchema}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <LiveQuizDescriptionStep
+          key="live-quiz-description-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={descriptionValidationSchema}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <LiveQuizSettingsStep
+          key="live-quiz-settings-step"
+          editMode={editMode}
+          formRef={formRef}
+          formData={formData}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={settingsValidationSchema}
+          gamifiedCourses={gamifiedCourses}
+          nonGamifiedCourses={nonGamifiedCourses}
+          setStepValidity={setStepValidity}
+          onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep + 1)
+          }}
+          onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+        <LiveQuizQuestionsStep
+          key="live-quiz-questions-step"
+          editMode={editMode}
+          selection={selection}
+          resetSelection={resetSelection}
+          formRef={formRef}
+          formData={formData}
+          acceptedTypes={acceptedTypes}
+          continueDisabled={false}
+          activeStep={activeStep}
+          stepValidity={stepValidity}
+          validationSchema={questionsValidationSchema}
+          setStepValidity={setStepValidity}
+          onSubmit={(newValues: LiveQuizFormValues) =>
+            handleSubmit({ ...formData, ...newValues })
+          }
+          onPrevStep={(newValues: Partial<LiveQuizFormValues>) => {
+            setFormData((prev) => ({ ...prev, ...newValues }))
+            setActiveStep((currentStep) => currentStep - 1)
+          }}
+          closeWizard={closeWizard}
+        />,
+      ]}
+      saveFormData={() => {
+        setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
+      }}
+    />
   )
 }
 

@@ -1,0 +1,13 @@
+mutation ApproveObjectSharingRequest(
+  $requestId: Int!
+  $userId: String!
+  $permissionLevel: PermissionLevel!
+  $propagation: Boolean!
+) {
+  approveObjectSharingRequest(
+    requestId: $requestId
+    userId: $userId
+    permissionLevel: $permissionLevel
+    propagation: $propagation
+  )
+}

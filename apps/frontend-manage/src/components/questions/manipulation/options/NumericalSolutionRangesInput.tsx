@@ -4,8 +4,10 @@ import { useTranslations } from 'next-intl'
 import { ElementFormTypesNumerical } from '../types'
 
 function NumericalSolutionRangesInput({
+  disabled,
   solutionRanges,
 }: {
+  disabled?: boolean
   solutionRanges: ElementFormTypesNumerical['options']['solutionRanges']
 }) {
   const t = useTranslations()
@@ -14,9 +16,9 @@ function NumericalSolutionRangesInput({
     <div className="mt-3">
       <FormLabel
         required
-        label={t('manage.questionForms.solutionRanges')}
+        label={t('manage.elements.solutionRanges')}
         labelType="small"
-        tooltip={t('manage.questionForms.solutionRangesTooltip')}
+        tooltip={t('manage.elements.solutionRangesTooltip')}
       />
       <FieldArray name="options.solutionRanges">
         {({ push, remove }: FieldArrayRenderProps) => (
@@ -29,6 +31,7 @@ function NumericalSolutionRangesInput({
                   >
                     <FormikNumberField
                       required={index === 0}
+                      disabled={disabled}
                       name={`options.solutionRanges.${index}.min`}
                       label={t('shared.generic.min')}
                       placeholder={t('shared.generic.minLong')}
@@ -38,6 +41,7 @@ function NumericalSolutionRangesInput({
                     />
                     <FormikNumberField
                       required={index === 0}
+                      disabled={disabled}
                       name={`options.solutionRanges.${index}.max`}
                       label={t('shared.generic.max')}
                       placeholder={t('shared.generic.maxLong')}
@@ -45,34 +49,38 @@ function NumericalSolutionRangesInput({
                         cy: `set-solution-range-max-${index}`,
                       }}
                     />
-                    <Button
-                      destructive
-                      onClick={() => remove(index)}
-                      className={{ root: 'h-9' }}
-                      data={{
-                        cy: `delete-solution-range-ix-${index}`,
-                      }}
-                    >
-                      {t('shared.generic.delete')}
-                    </Button>
+                    {!disabled ? (
+                      <Button
+                        destructive
+                        onClick={() => remove(index)}
+                        className={{ root: 'h-9' }}
+                        data={{
+                          cy: `delete-solution-range-ix-${index}`,
+                        }}
+                      >
+                        {t('shared.generic.delete')}
+                      </Button>
+                    ) : null}
                   </div>
                 ))
               : null}
-            <Button
-              fluid
-              className={{
-                root: 'mt-1 h-8 border-gray-300 font-bold',
-              }}
-              onClick={() =>
-                push({
-                  min: undefined,
-                  max: undefined,
-                })
-              }
-              data={{ cy: 'add-solution-range' }}
-            >
-              {t('manage.questionForms.addSolutionRange')}
-            </Button>
+            {!disabled ? (
+              <Button
+                fluid
+                className={{
+                  root: 'mt-1 h-8 border-gray-300 font-bold',
+                }}
+                onClick={() =>
+                  push({
+                    min: undefined,
+                    max: undefined,
+                  })
+                }
+                data={{ cy: 'add-solution-range' }}
+              >
+                {t('manage.elements.addSolutionRange')}
+              </Button>
+            ) : null}
           </div>
         )}
       </FieldArray>

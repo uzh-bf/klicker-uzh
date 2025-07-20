@@ -5,7 +5,11 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementOrderType, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementOrderType,
+  SelfDocument,
+  UserRole,
+} from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -42,39 +46,42 @@ function PracticeQuizOverview({
 
   return (
     <div className="flex flex-col space-y-4">
-      {!previewOnly && !data?.self && (
-        <UserNotification type="warning">
-          {t.rich('pwa.general.userNotLoggedIn', {
-            login: (text) => (
-              <Button
-                basic
-                className={{
-                  root: 'hover:text-primary-100 !p-0 text-sm font-bold hover:bg-transparent',
-                }}
-                onClick={() =>
-                  router.push(
-                    `/login?expired=true&redirect_to=${
-                      encodeURIComponent(
-                        window?.location?.pathname +
-                          (window?.location?.search ?? '')
-                      ) ?? '/'
-                    }`
-                  )
-                }
-                data={{ cy: 'login-to-student-login-collect-points' }}
-              >
-                {text}
-              </Button>
-            ),
-          })}
-        </UserNotification>
-      )}
+      {!previewOnly &&
+        (!data?.self || data.self.role === UserRole.TemporaryParticipant) && (
+          <UserNotification type="warning">
+            {t.rich('pwa.general.userNotLoggedIn', {
+              login: (text) => (
+                <Button
+                  basic
+                  className={{
+                    root: 'hover:text-primary-100 p-0! text-sm font-bold hover:bg-transparent',
+                  }}
+                  onClick={() =>
+                    router.push(
+                      `/login?expired=true&redirect_to=${
+                        encodeURIComponent(
+                          window?.location?.pathname +
+                            (window?.location?.search ?? '')
+                        ) ?? '/'
+                      }`
+                    )
+                  }
+                  data={{ cy: 'login-to-student-login-collect-points' }}
+                >
+                  {text}
+                </Button>
+              ),
+            })}
+          </UserNotification>
+        )}
 
       <div className="border-b">
         <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
       </div>
 
-      {description && <DynamicMarkdown content={description} />}
+      {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
+        <DynamicMarkdown content={description} />
+      ) : null}
 
       <div className="flex flex-col gap-2 text-sm md:flex-row md:gap-16">
         <div className="flex-1 space-y-2">
@@ -82,7 +89,7 @@ function PracticeQuizOverview({
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
-                number: numOfStacks,
+                number: numOfStacks ?? 0,
               })}
             </div>
           </div>

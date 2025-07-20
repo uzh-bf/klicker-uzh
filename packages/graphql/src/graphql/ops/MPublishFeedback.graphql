@@ -1,5 +1,9 @@
-mutation PublishFeedback($id: Int!, $isPublished: Boolean!) {
-  publishFeedback(id: $id, isPublished: $isPublished) {
+mutation PublishFeedback(
+  $id: Int!
+  $isPublished: Boolean!
+  $liveQuizId: String!
+) {
+  publishFeedback(id: $id, isPublished: $isPublished, liveQuizId: $liveQuizId) {
     id
     isPublished
     isPinned

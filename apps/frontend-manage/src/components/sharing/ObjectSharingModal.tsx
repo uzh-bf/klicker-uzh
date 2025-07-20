@@ -1,20 +1,19 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { faEye } from '@fortawesome/free-regular-svg-icons'
+import { ObjectType } from '@klicker-uzh/graphql/dist/ops'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import DerivedPermissionsTable from './DerivedPermissionsTable'
 import GrantedPermissionsTable from './GrantedPermissionsTable'
-import ObjectAccessRemovalErrorToast from './ObjectAccessRemovalErrorToast'
-import ObjectAccessRemovalSuccessToast from './ObjectAccessRemovalSuccessToast'
-import ObjectSharingErrorToast from './ObjectSharingErrorToast'
-import ObjectSharingSuccessToast from './ObjectSharingSuccessToast'
 import PermissionsTable from './PermissionsTable'
+import PropagatedPermissionsTable from './PropagatedPermissionsTable'
+import useDerivedObjectPermissions from './useDerivedObjectPermissions'
 import useObjectPermissions from './useObjectPermissions'
 import useObjectSharing from './useObjectSharing'
 import usePermissionLevelChange from './usePermissionLevelChange'
 import usePermissionRevocation from './usePermissionRevocation'
 
 function ObjectSharingModal({
-  open,
   onClose,
   objectId,
   objectType,
@@ -22,21 +21,48 @@ function ObjectSharingModal({
   catalogCollectionId,
   onOwnershipTransfer,
   isOwner,
+  derivedPermissionsAvailable,
 }: {
-  open: boolean
   onClose: () => void
   objectId: number | string
-  objectType: CatalogObjectType
+  objectType: ObjectType
   objectName: string
   onOwnershipTransfer: () => void
   catalogCollectionId?: string
   isOwner: boolean
+  derivedPermissionsAvailable: boolean // flag to conditionally show derived permissions (not defined for certain objects)
 }) {
   const t = useTranslations()
-  const [sharingSuccess, setSharingSuccess] = useState(false)
-  const [sharingFailure, setSharingFailure] = useState(false)
-  const [removalSuccess, setRemovalSuccess] = useState(false)
-  const [removalFailure, setRemovalFailure] = useState(false)
+  const [showDerivedPermissions, setShowDerivedPermissions] = useState(false)
+
+  const onSharingSuccess = () =>
+    toast({
+      type: 'success',
+      message: t('manage.sharing.sharingSuccessful'),
+      options: { duration: 3000 },
+    })
+
+  const onSharingFailure = () =>
+    toast({
+      type: 'error',
+      message: t('manage.sharing.sharingFailed'),
+      options: { duration: 3000 },
+    })
+
+  const onRemovalFailure = () =>
+    toast({
+      type: 'error',
+      message: t('manage.sharing.accessRemovalFailed'),
+      options: { duration: 6000 },
+    })
+
+  // boolean to determine whether to show the propagation option on the permissions
+  const showPropagationSetting =
+    objectType === ObjectType.Course ||
+    objectType === ObjectType.LiveQuiz ||
+    objectType === ObjectType.PracticeQuiz ||
+    objectType === ObjectType.MicroLearning ||
+    objectType === ObjectType.GroupActivity
 
   // get all permissions that have already been granted for this object
   const { permissions, loading: permissionsLoading } = useObjectPermissions({
@@ -44,6 +70,14 @@ function ObjectSharingModal({
     objectType,
     skip: !open,
   })
+
+  // get all permissions that have already been granted for this object
+  const { derivedPermissions, loading: derivedPermissionsLoading } =
+    useDerivedObjectPermissions({
+      objectId,
+      objectType,
+      skip: !open || !derivedPermissionsAvailable || !showDerivedPermissions,
+    })
 
   // mutation to change the access level of a certain permission
   const { onPermissionLevelChange, permissionChanging } =
@@ -59,92 +93,111 @@ function ObjectSharingModal({
       objectId,
       objectType,
       catalogCollectionId,
-      onError: () => setRemovalFailure(true),
+      onError: () => onRemovalFailure(),
     })
 
   // mutation to create new permission entry for answer collection
-  const { onShareObject, objectSharing } = useObjectSharing({
+  const { onShareObject } = useObjectSharing({
     objectId,
     objectType,
     catalogCollectionId,
-    onError: () => setSharingFailure(true),
+    onSuccess: () => onSharingSuccess(),
+    onError: () => onSharingFailure(),
   })
 
   return (
-    <>
-      <Modal
-        fullScreen
-        title={t(`manage.sharing.share${objectType}`)}
-        open={open}
-        onClose={onClose}
-        dataCloseButton={{ cy: 'close-share-object' }}
-        className={{
-          content: 'h-max max-h-full max-w-5xl',
-        }}
-      >
-        <div>
-          {t.rich(`manage.sharing.infoSharing${objectType}`, {
-            objectName,
-            b: (text) => <b>{text}</b>,
-          })}
-        </div>
-        <div className="my-4">
-          <PermissionsTable objectType={objectType} />
-        </div>
+    <Modal
+      open
+      fullScreen
+      title={t(`manage.sharing.share${objectType}`)}
+      onClose={onClose}
+      dataCloseButton={{ cy: 'close-share-object' }}
+      className={{ content: 'h-max max-w-5xl pb-0' }}
+    >
+      <div>
+        {t.rich(`manage.sharing.infoSharing${objectType}`, {
+          objectName,
+          b: (text) => <b>{text}</b>,
+        })}
+      </div>
+      <div className="my-4">
+        <PermissionsTable objectType={objectType} />
+      </div>
 
-        <div className="mt-8">
-          <GrantedPermissionsTable
-            type={objectType}
-            permissions={permissions ?? []}
-            permissionsLoading={permissionsLoading}
-            changeLoading={permissionChanging}
-            isOwner={isOwner}
-            onPermissionLevelChange={async ({
+      <PropagatedPermissionsTable
+        objectType={objectType}
+        showPropagationSetting={showPropagationSetting}
+      />
+
+      <div className="mt-8">
+        <GrantedPermissionsTable
+          type={objectType}
+          permissions={permissions ?? []}
+          permissionsLoading={permissionsLoading}
+          changeLoading={permissionChanging}
+          isOwner={isOwner}
+          showPropagationSetting={showPropagationSetting}
+          onPermissionLevelChange={async ({
+            permissionId,
+            newPermissionLevel,
+            newPropagation,
+          }) => {
+            await onPermissionLevelChange({
               permissionId,
               newPermissionLevel,
-            }) => {
-              const success = await onPermissionLevelChange({
-                permissionId,
-                newPermissionLevel,
-              })
-            }}
-            onPermissionRemoval={async (permissionId) => {
-              try {
-                const success = await onPermissionRevocation({ permissionId })
-                if (success) {
-                  setRemovalSuccess(true)
-                } else {
-                  setRemovalFailure(true)
-                }
-              } catch (error) {
-                setRemovalFailure(true)
+              newPropagation,
+            })
+          }}
+          onPermissionRemoval={async (permissionId) => {
+            try {
+              const success = await onPermissionRevocation({ permissionId })
+              if (success) {
+                toast({
+                  type: 'success',
+                  message: t('manage.sharing.accessRemovalSuccessful'),
+                  options: { duration: 3000 },
+                })
+              } else {
+                onRemovalFailure()
               }
-            }}
-            shareObjectCallback={async (values) => await onShareObject(values)}
-            onSharingSuccess={() => setSharingSuccess(true)}
-            onSharingFailure={() => setSharingFailure(true)}
-            onOwnershipTransfer={onOwnershipTransfer}
-          />
+            } catch (error) {
+              onRemovalFailure()
+            }
+          }}
+          shareObjectCallback={async (values) => await onShareObject(values)}
+          onOwnershipTransfer={onOwnershipTransfer}
+        />
+      </div>
+      {derivedPermissionsAvailable ? (
+        <div className="mt-2 flex flex-col">
+          {showDerivedPermissions ? (
+            <div className="mt-8">
+              <DerivedPermissionsTable
+                derivedPermissions={derivedPermissions ?? []}
+                derivedPermissionsLoading={derivedPermissionsLoading}
+                setShowDerivedPermissions={setShowDerivedPermissions}
+              />
+            </div>
+          ) : (
+            <Button
+              basic
+              onClick={() => setShowDerivedPermissions(true)}
+              className={{
+                root: 'text-primary-100 hover:text-primary-100 self-end px-3 py-0.5 text-sm',
+              }}
+              data={{
+                cy: 'show-derived-permissions',
+              }}
+            >
+              <Button.Icon icon={faEye} />
+              <Button.Label>
+                {t('manage.sharing.showDerivedPermissions')}
+              </Button.Label>
+            </Button>
+          )}
         </div>
-      </Modal>
-
-      <ObjectSharingSuccessToast
-        open={sharingSuccess}
-        onClose={() => setSharingSuccess(false)}
-      />
-      <ObjectSharingErrorToast
-        open={sharingFailure}
-        onClose={() => setSharingFailure(false)}
-      />
-      <ObjectAccessRemovalSuccessToast
-        open={removalSuccess}
-        onClose={() => setRemovalSuccess(false)}
-      />
-      <ObjectAccessRemovalErrorToast
-        open={removalFailure}
-        onClose={() => setRemovalFailure(false)}
-      />
-    </>
+      ) : null}
+    </Modal>
   )
 }
 
