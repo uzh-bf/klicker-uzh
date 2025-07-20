@@ -1,13 +1,22 @@
+import { useQuery } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpRightFromSquare,
+  faExclamationTriangle,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { H4, Modal } from '@uzh-bf/design-system'
+import {
+  ActivityInfo,
+  ActivityType,
+  GetOutdatedElementInstancesDocument,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
+import { H4, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 function ActivityDetailsModal({
   activity,
@@ -18,6 +27,26 @@ function ActivityDetailsModal({
 }) {
   const t = useTranslations()
 
+  const { data } = useQuery(GetOutdatedElementInstancesDocument, {
+    variables: {
+      instanceIds: activity.stacks.flatMap((stack) =>
+        stack.elements.map((instance) => instance.id)
+      ),
+    },
+  })
+  const outdatedInstances = useMemo(
+    () =>
+      [
+        PublicationStatus.Draft,
+        PublicationStatus.Scheduled,
+        PublicationStatus.Template,
+      ].includes(activity.status)
+        ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
+          [])
+        : [],
+    [data?.getOutdatedElementInstances]
+  )
+
   return (
     <Modal
       open
@@ -27,6 +56,22 @@ function ActivityDetailsModal({
       data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
+      {outdatedInstances.length > 0 && (
+        <UserNotification type="warning" className={{ root: 'mb-2' }}>
+          {t.rich(
+            activity.status === PublicationStatus.Template
+              ? 'manage.activities.instanceUpdateTemplate'
+              : 'manage.activities.instanceUpdateDraftScheduled',
+            {
+              b: (content) => <b>{content}</b>,
+              ul: (content) => <ul className="list-disc pl-4">{content}</ul>,
+              li: (content) => (
+                <li className="mt-0.5 last:hidden">{content}</li>
+              ),
+            }
+          )}
+        </UserNotification>
+      )}
       <div
         className="flex flex-col items-center gap-4 overflow-x-auto overflow-y-hidden"
         data-cy="activity-details-modal"
@@ -76,11 +121,24 @@ function ActivityDetailsModal({
                     rel="noopener noreferrer"
                   >
                     <div
-                      className="hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm"
+                      className={twMerge(
+                        'hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 border-b text-sm',
+                        outdatedInstances.includes(instance.id)
+                          ? 'bg-uzh-red-20'
+                          : ''
+                      )}
                       data-cy={`stack-${index}-instance-${instanceIx}`}
                     >
-                      <div>
-                        {instance.name} ({t(`shared.${instance.type}.short`)})
+                      <div className="flex flex-row items-center gap-1.5">
+                        {outdatedInstances.includes(instance.id) ? (
+                          <FontAwesomeIcon
+                            icon={faExclamationTriangle}
+                            className="text-uzh-red-100"
+                          />
+                        ) : null}
+                        <div>
+                          {instance.name} ({t(`shared.${instance.type}.short`)})
+                        </div>
                       </div>
                       <FontAwesomeIcon
                         icon={faArrowUpRightFromSquare}

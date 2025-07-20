@@ -959,6 +959,7 @@ export async function manipulateGroupActivity(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
 
   // in EDIT mode - check which instances and stacks should be removed
@@ -992,6 +993,7 @@ export async function manipulateGroupActivity(
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
     pointsMultiplier: multiplier,
+    areInstancesOutdated: anyInstanceOutdated,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

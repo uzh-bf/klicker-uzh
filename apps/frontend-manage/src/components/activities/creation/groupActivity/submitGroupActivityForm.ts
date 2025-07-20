@@ -24,6 +24,7 @@ async function submitGroupActivityForm({
   try {
     let success = false
     if (id) {
+      // TODO: extend this mutation to also update the flags for outdated instances
       const result = await editGroupActivity({
         variables: {
           id: id,

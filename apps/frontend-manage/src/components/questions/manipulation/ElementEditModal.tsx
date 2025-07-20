@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateAnswerCollectionDocument,
   ElementType,
+  FlagOutdatedElementInstancesDocument,
   GetSingleQuestionDocument,
   GetUserElementsDocument,
   GetUserTagsDocument,
@@ -98,6 +99,9 @@ function ElementEditModal({
   )
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
+  const [flagOutdatedElementInstances] = useMutation(
+    FlagOutdatedElementInstancesDocument
+  )
 
   const initialValues = useElementFormInitialValues({
     mode,
@@ -341,15 +345,27 @@ function ElementEditModal({
               break
           }
 
-          if (mode === ElementEditMode.EDIT && updateInstances) {
-            if (elementId !== null && typeof elementId !== 'undefined') {
-              await updateElementInstances({
-                variables: {
-                  elementId: elementId,
-                  includeTemplates: includeTemplateUpdates,
-                },
-              })
-            }
+          if (
+            mode === ElementEditMode.EDIT &&
+            updateInstances &&
+            elementId !== null &&
+            typeof elementId !== 'undefined'
+          ) {
+            await updateElementInstances({
+              variables: {
+                elementId: elementId,
+                includeTemplates: includeTemplateUpdates,
+              },
+            })
+          } else if (
+            mode === ElementEditMode.EDIT &&
+            !updateInstances &&
+            elementId !== null &&
+            typeof elementId !== 'undefined'
+          ) {
+            await flagOutdatedElementInstances({
+              variables: { elementId: elementId },
+            })
           }
 
           return true

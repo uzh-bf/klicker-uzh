@@ -45,6 +45,7 @@ async function submitLiveQuizForm({
     let success = false
 
     if (editMode && id) {
+      // TODO: extend this mutation to also update the flags for outdated instances
       const liveQuiz = await editLiveQuiz({
         variables: {
           id: id,
