@@ -133,7 +133,6 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "test": {
