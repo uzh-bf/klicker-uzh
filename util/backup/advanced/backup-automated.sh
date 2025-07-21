@@ -29,6 +29,34 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # =============================================================================
+# LOGGING SETUP
+# =============================================================================
+
+# Function for logging with timestamps
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+}
+
+# Function for error handling
+error_exit() {
+    log "ERROR: $1"
+    
+    # Send failure notification if webhook is configured
+    if [[ -n "${MONITORING_WEBHOOK_FAILURE:-}" ]]; then
+        curl -fs -X POST "$MONITORING_WEBHOOK_FAILURE" \
+            -d "message=Backup failed: $1" \
+            -d "timestamp=$(date -Iseconds)" || true
+    fi
+    
+    exit 1
+}
+
+# Function for success logging
+log_success() {
+    log "SUCCESS: $1"
+}
+
+# =============================================================================
 # PARAMETER VALIDATION
 # =============================================================================
 
@@ -56,34 +84,6 @@ export AUTOMATED_BACKUP=true
 export BACKUP_UPDATE_LATEST="${BACKUP_UPDATE_LATEST:-true}"
 export BACKUP_CLEANUP_ENABLED="${BACKUP_CLEANUP_ENABLED:-true}"
 export BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
-
-# =============================================================================
-# LOGGING SETUP
-# =============================================================================
-
-# Function for logging with timestamps
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
-}
-
-# Function for error handling
-error_exit() {
-    log "ERROR: $1"
-    
-    # Send failure notification if webhook is configured
-    if [[ -n "${MONITORING_WEBHOOK_FAILURE:-}" ]]; then
-        curl -fs -X POST "$MONITORING_WEBHOOK_FAILURE" \
-            -d "message=Backup failed: $1" \
-            -d "timestamp=$(date -Iseconds)" || true
-    fi
-    
-    exit 1
-}
-
-# Function for success logging
-log_success() {
-    log "SUCCESS: $1"
-}
 
 # =============================================================================
 # ENVIRONMENT SETUP

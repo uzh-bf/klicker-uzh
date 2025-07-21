@@ -351,7 +351,7 @@ create_pre_restore_backups() {
     
     # Create database backup
     log_info "Creating database backup..."
-    local db_backup_cmd="${SCRIPT_DIR}/../dump/dump-db.sh $ENVIRONMENT"
+    local db_backup_cmd="${SCRIPT_DIR}/dump-db.sh $ENVIRONMENT"
     
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "DRY RUN: Would execute: $db_backup_cmd"
@@ -365,7 +365,7 @@ create_pre_restore_backups() {
     
     # Create Redis backup
     log_info "Creating Redis backup..."
-    local redis_backup_cmd="${SCRIPT_DIR}/../dump/dump-redis.sh $ENVIRONMENT"
+    local redis_backup_cmd="${SCRIPT_DIR}/dump-redis.sh $ENVIRONMENT"
     
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "DRY RUN: Would execute: $redis_backup_cmd"

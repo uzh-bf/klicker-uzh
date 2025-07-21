@@ -168,7 +168,7 @@ if DB_DUMP=$(find_latest_dump "db" 2>/dev/null); then
     log "Found database dump: $DB_DUMP"
 else
     log "ERROR: No database dump found. Please create a database dump first using:"
-    log "  cd ${SCRIPT_DIR}/dump && ./dump-db.sh"
+    log "  ${SCRIPT_DIR}/dump.sh db prd"
     exit 1
 fi
 
@@ -177,7 +177,7 @@ if REDIS_DUMP=$(find_latest_dump "redis" 2>/dev/null); then
     log "Found Redis dump: $REDIS_DUMP"
 else
     log "ERROR: No Redis dump found. Please create a Redis dump first using:"
-    log "  cd ${SCRIPT_DIR}/dump && ./dump-redis.sh"
+    log "  ${SCRIPT_DIR}/dump.sh redis prd"
     exit 1
 fi
 
@@ -254,8 +254,8 @@ load_encryption_key_if_needed() {
         log "   📦 Redis: $(basename "$actual_redis_dump")"
         log ""
         log "💡 Please ensure all dumps are created with encryption enabled"
-        log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump-db.sh"
-        log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump-redis.sh"
+        log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump.sh db prd"
+        log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump.sh redis prd"
         return 1
     fi
 }
