@@ -42,7 +42,10 @@ query GetGradingGroupActivity($id: String!) {
         instanceId
         type
         freeTextResponse
-        choicesResponse
+        choicesResponse {
+          ix
+          selected
+        }
         numericalResponse
         contentResponse
         selectionResponse

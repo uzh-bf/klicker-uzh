@@ -29,7 +29,10 @@ fragment StackFeedbackEvaluations on StackFeedback {
       correctness
       lastResponse {
         __typename
-        choices
+        choices {
+          ix
+          selected
+        }
       }
     }
 

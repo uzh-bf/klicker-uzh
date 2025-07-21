@@ -186,7 +186,7 @@ export type OptionsSelectionInput = {
 }
 
 export type ResponseInput = {
-  choices?: number[] | null
+  choices?: ChoicesResponse[] | null
   value?: string | null
   selection?: number[] | null
   assessment?: CaseStudyCaseResponse[] | null
@@ -232,12 +232,17 @@ export type TemplateBlockInput = {
   elements: TemplateBlockElementInput[]
 }
 
+export type ChoicesResponse = {
+  ix: number
+  selected: boolean
+}
+
 export type StackResponseInput = {
   instanceId: number
   type: ElementType
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
-  choicesResponse?: number[] | null
+  choicesResponse?: ChoicesResponse[] | null
   numericalResponse?: number | null
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
@@ -399,7 +404,7 @@ export enum StackFeedbackStatus {
 }
 
 export type SingleQuestionResponseChoices = {
-  choices: number[]
+  choices: ChoicesResponse[]
 }
 
 export type SingleQuestionResponseValue = {
