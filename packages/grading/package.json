@@ -26,7 +26,6 @@
   },
   "scripts": {
     "build": "run-s build:ts",
-    "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
