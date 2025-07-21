@@ -11,7 +11,6 @@ import {
   ElementInstanceResults,
   ElementOptionsNumerical,
 } from '@klicker-uzh/types'
-import { v4 as uuidv4 } from 'uuid'
 import { expect } from 'vitest'
 import {
   Course,
@@ -129,7 +128,6 @@ export async function createLiveQuiz(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.LIVE_QUIZ,
                 elementType: element.type,
                 options: {},
@@ -168,7 +166,6 @@ export async function createPracticeQuiz(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.PRACTICE_QUIZ,
                 elementType: element.type,
                 options: {},
@@ -209,7 +206,6 @@ export async function createMicroLearning(
               {
                 order: 0,
                 elementId: element.id,
-                migrationId: uuidv4(),
                 type: ElementInstanceType.MICROLEARNING,
                 elementType: element.type,
                 options: {},

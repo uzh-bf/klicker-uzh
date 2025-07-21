@@ -316,7 +316,7 @@ function ElementEditForm({
                       {
                         id: 'activity',
                         value: 'activity',
-                        label: t('shared.generic.activity'),
+                        label: t('shared.comments.title'),
                         data: { cy: 'element-activity-tab' },
                       },
                     ]}

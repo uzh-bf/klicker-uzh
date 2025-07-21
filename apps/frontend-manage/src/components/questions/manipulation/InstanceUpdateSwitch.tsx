@@ -42,7 +42,6 @@ function InstanceUpdateSwitch({
       includeTemplateInstances: true,
     },
     fetchPolicy: 'cache-and-network',
-    skip: !updateInstances,
   })
 
   const usedInTemplates = useMemo(() => {

@@ -326,6 +326,22 @@ export const TemplateBlockInput = TemplateBlockInputRef.implement({
   }),
 })
 
+interface IElementInstanceVersionInfo {
+  id: number
+  newTitle: string
+  newSampleSolution: boolean
+}
+export const ElementInstanceVersionInfoRef =
+  builder.objectRef<IElementInstanceVersionInfo>('ElementInstanceVersionInfo')
+export const ElementInstanceVersionInfo =
+  ElementInstanceVersionInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      newTitle: t.exposeString('newTitle'),
+      newSampleSolution: t.exposeBoolean('newSampleSolution'),
+    }),
+  })
+
 // #endregion
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
@@ -681,7 +697,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId'> {
   tags?: ITag[] | null
   permissionLevel?: DB.PermissionLevel
   derivedAccess?: boolean // = derived from other object => removal disabled
@@ -842,6 +858,21 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+interface IElementSummary {
+  sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access
+  retainsDerivedAccess: boolean // = true if the element is used in activity with admin / owner access -> retain derived access
+  derivedAccessToResources: boolean // = true if the element leads to derived access to resources
+}
+export const ElementSummaryRef =
+  builder.objectRef<IElementSummary>('ElementSummary')
+export const ElementSummary = ElementSummaryRef.implement({
+  fields: (t) => ({
+    sharedElementActivityUse: t.exposeBoolean('sharedElementActivityUse'),
+    retainsDerivedAccess: t.exposeBoolean('retainsDerivedAccess'),
+    derivedAccessToResources: t.exposeBoolean('derivedAccessToResources'),
+  }),
+})
+
 interface IArchivedElementList {
   success?: boolean
   partialSuccess?: boolean
@@ -877,7 +908,8 @@ export const ArchivedElement = builder
   })
 // #endregion
 
-export interface IElementInstance extends DB.ElementInstance {
+export interface IElementInstance
+  extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
 }
 export const ElementInstanceRef =
@@ -923,7 +955,7 @@ export const InstanceUpdateActivityInfo =
   })
 
 export interface ITag
-  extends Omit<DB.Tag, 'originalId' | 'ownerId' | 'createdAt' | 'updatedAt'> {}
+  extends Omit<DB.Tag, 'ownerId' | 'createdAt' | 'updatedAt'> {}
 export const TagRef = builder.objectRef<ITag>('Tag')
 export const Tag = TagRef.implement({
   fields: (t) => ({

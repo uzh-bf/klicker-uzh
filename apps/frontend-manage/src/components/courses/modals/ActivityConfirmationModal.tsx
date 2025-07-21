@@ -6,6 +6,7 @@ interface ActivityConfirmationModalProps {
   onClose: () => void
   title: string
   message: string | React.ReactNode
+  loading?: boolean
   onSubmit: () => Promise<any>
   submitting: boolean
   confirmations: Record<string, boolean>
@@ -18,6 +19,7 @@ function ActivityConfirmationModal({
   onClose,
   title,
   message,
+  loading = false,
   onSubmit,
   submitting,
   confirmations,
@@ -33,6 +35,7 @@ function ActivityConfirmationModal({
   return (
     <Modal
       open
+      loading={loading}
       onClose={onClose}
       className={{ content: 'w-full! max-w-200' }}
       title={title}

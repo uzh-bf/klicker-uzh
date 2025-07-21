@@ -21,7 +21,7 @@ function SectionHeader({ icon, header }: SectionHeaderProps) {
   return (
     <div className="mb-4 flex flex-row items-center gap-4 rounded bg-slate-100 p-4 text-slate-700">
       <FontAwesomeIcon icon={icon} className="text-3xl" />
-      <H2 className={{ root: 'mb-0' }}>{header}</H2>
+      <H2 className={{ root: 'm-0!' }}>{header}</H2>
     </div>
   )
 }

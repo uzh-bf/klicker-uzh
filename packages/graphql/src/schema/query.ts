@@ -67,6 +67,8 @@ import {
 import {
   Element,
   ElementInstance,
+  ElementInstanceVersionInfo,
+  ElementSummary,
   InstanceUpdateActivityInfo,
   Tag,
 } from './question.js'
@@ -710,6 +712,32 @@ export const Query = builder.queryType({
             return await QuestionService.getInstanceUpdateActivities(args, ctx)
           }
         ),
+      }),
+
+      getElementSummary: t.withAuth(asUser).field({
+        nullable: true,
+        type: ElementSummary,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await QuestionService.getElementSummary(args, ctx)
+          }
+        ),
+      }),
+
+      getOutdatedElementInstances: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ElementInstanceVersionInfo],
+        args: {
+          instanceIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.getOutdatedElementInstances(args, ctx)
+        },
       }),
 
       artificialInstance: t.withAuth(asUser).field({

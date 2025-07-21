@@ -50,7 +50,7 @@ function useAnswerCollectionActionsDropdown({
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faMessage} className="mr-2.5 h-4 w-4" />
-            {t('shared.activity.viewComments')}
+            {t('shared.comments.viewComments')}
           </div>
         ),
         onClick: () => setActivityLogOpen(true),

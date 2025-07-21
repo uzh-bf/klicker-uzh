@@ -42,8 +42,6 @@ model Element {
 
   tags Tag[]
 
-  // TODO: as we renamed Question to Element, it will need to have instances and elementInstances in parallel for a while. once we migrated all question instances and activities to elements, we can remove instances with a migration.
-  instances        QuestionInstance[]
   elementInstances ElementInstance[]
   feedbacks        ElementFeedback[]
 
@@ -74,11 +72,6 @@ enum ElementInstanceType {
 model ElementInstance {
   id Int @id @default(autoincrement())
 
-  originalId String?
-
-  // TODO: remove after migration to new data structure
-  migrationId String
-
   type        ElementInstanceType
   elementType ElementType
   order       Int
@@ -94,6 +87,8 @@ model ElementInstance {
 
   /// [PrismaElementResults]
   anonymousResults Json // contains the collection of gathered results by anonymous participants
+
+  isVersionOutdated Boolean @default(false) // flag to indicate if the element version has changed since the instance was created
 
   responses           QuestionResponse[]
   detailResponses     QuestionResponseDetail[]
@@ -113,10 +108,8 @@ model ElementInstance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([type, migrationId])
   @@unique([type, elementStackId, order])
   @@unique([type, elementBlockId, order])
-  @@unique([ownerId, originalId])
 }
 
 model InstanceStatistics {
@@ -192,9 +185,8 @@ enum ElementBlockStatus {
 }
 
 model ElementBlock {
-  id         Int  @id @default(autoincrement())
-  originalId Int? // TODO: remove after migration to new data structure
-  order      Int
+  id    Int @id @default(autoincrement())
+  order Int
 
   timeLimit       Int?
   expiresAt       DateTime?
@@ -216,51 +208,6 @@ model ElementBlock {
 
 // #endregion
 
-// ----- QUESTION POOL (LEGACY) -----
-// #region
-enum QuestionInstanceType {
-  UNSET
-  SESSION
-  MICRO_SESSION
-  LEARNING_ELEMENT
-  GROUP_ACTIVITY
-}
-
-model QuestionInstance {
-  id Int @id @default(autoincrement())
-
-  originalId String?
-
-  type  QuestionInstanceType?
-  order Int?
-
-  participants     Int  @default(0)
-  pointsMultiplier Int  @default(1)
-  resetTimeDays    Int?
-  maxBonusPoints   Int?
-  timeToZeroBonus  Int?
-
-  questionData Json
-
-  results Json
-
-  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId Int?
-
-  question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  questionId Int?
-  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    String   @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([type, sessionBlockId, order])
-  @@unique([ownerId, originalId])
-}
-
-// #endregion
-
 // ----- TAGS AND SKILLS -----
 // #region
 model Tag {
@@ -268,8 +215,6 @@ model Tag {
   name String
 
   order Int @default(0)
-
-  originalId String?
 
   questions Element[]
 
@@ -280,7 +225,6 @@ model Tag {
   updatedAt DateTime @updatedAt
 
   @@unique([ownerId, name])
-  @@unique([ownerId, originalId])
 }
 
 // #endregion
