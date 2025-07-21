@@ -112,7 +112,7 @@ services:
     image: ghcr.io/uzh-bf/klicker-uzh/auth:v3
     environment:
       APP_SECRET: abcd
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      DATABASE_URL: 'postgres://klicker-prod:klicker@postgres:5432/main'
       # EDUID_CLIENT_SECRET: ''
       # TEAMS_WEBHOOK_URL: ''
     ports:
@@ -157,7 +157,7 @@ services:
       APP_SECRET: 'abcd'
       COOKIE_DOMAIN: .klicker.com
       CRON_TOKEN: 'abcd'
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/klicker'
+      DATABASE_URL: 'postgres://klicker-prod:klicker@postgres:5432/klicker'
       NOTIFICATION_SUPPORT_MAIL: 'noone@klicker.com'
       NOTIFICATION_URL: 'noone@klicker.com'
       REDIS_CACHE_HOST: 'redis_cache'
