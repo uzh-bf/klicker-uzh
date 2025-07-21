@@ -1,3 +1,4 @@
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   Prisma,
   PrismaClient,
@@ -28,7 +29,9 @@ export interface Context extends BaseContext {
     catalystIndividual: boolean
     // affiliations?: string[]
   }
-  // hatchet cronjob tasks
+  // hatchet client to access / modify existing hatchet tasks
+  hatchet: Hatchet
+  // available hatchet tasks
   tasks: {
     publishScheduledMicroLearningTask: ReturnType<
       typeof publishScheduledMicroLearning

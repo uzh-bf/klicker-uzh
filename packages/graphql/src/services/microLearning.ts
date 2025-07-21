@@ -380,17 +380,22 @@ export async function publishMicroLearning(
 
   // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
-    // set the status of the microlearning to scheduled
+    // schedule the task to publish the microlearning at the scheduled start date
+    const scheduledTask =
+      await ctx.tasks.publishScheduledMicroLearningTask.schedule(
+        microLearning.scheduledStartAt,
+        { microLearningId: microLearning.id }
+      )
+    const taskId = scheduledTask.metadata.id
+
+    // set the status of the microlearning to scheduled and store the hatchet task ID
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
-      data: { status: DB.PublicationStatus.SCHEDULED },
+      data: {
+        status: DB.PublicationStatus.SCHEDULED,
+        schedulingTaskId: taskId,
+      },
     })
-
-    // schedule the task to publish the microlearning at the scheduled start date
-    await ctx.tasks.publishScheduledMicroLearningTask.schedule(
-      microLearning.scheduledStartAt,
-      { microLearningId: updatedMicroLearning.id }
-    )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
@@ -410,11 +415,28 @@ export async function unpublishMicroLearning(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  // reset the status of the microlearning to draft
   const microLearning = await ctx.prisma.microLearning.update({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
     data: { status: DB.PublicationStatus.DRAFT },
     include: { stacks: { include: { elements: true } } },
   })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // remove the scheduled hatchet task, if it exists
+  if (microLearning.schedulingTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(microLearning.schedulingTaskId)
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for microlearning ${id}:`,
+        error
+      )
+    }
+  }
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
   return microLearning

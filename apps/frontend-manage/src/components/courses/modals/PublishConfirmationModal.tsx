@@ -46,7 +46,7 @@ function PublishConfirmationModal({
       // TODO: replace with proper cache update
       refetchQueries: [
         { query: GetUserActivitiesDocument },
-        { query: GetSingleCourseDocument, variables: { id: courseId } },
+        { query: GetSingleCourseDocument, variables: { courseId } },
       ],
     }
   )
@@ -57,7 +57,7 @@ function PublishConfirmationModal({
       // TODO: replace with proper cache update
       refetchQueries: [
         { query: GetUserActivitiesDocument },
-        { query: GetSingleCourseDocument, variables: { id: courseId } },
+        { query: GetSingleCourseDocument, variables: { courseId } },
       ],
     }
   )

@@ -104,6 +104,7 @@ export async function testInitialization(
       catalystIndividual: true,
     },
     prisma,
+    hatchet,
     tasks,
     emitter,
     redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],

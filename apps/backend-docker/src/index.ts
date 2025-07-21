@@ -140,6 +140,7 @@ migrate(prisma).then(() => {
     pubSub,
     cache,
     emitter,
+    hatchet,
     tasks,
   })
 

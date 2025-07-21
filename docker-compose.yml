@@ -198,7 +198,7 @@ services:
   postgres_diff:
     image: docker.io/library/postgres:15
     environment:
-      POSTGRES_USER: klicker
+      POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod
     ports:
@@ -213,7 +213,7 @@ services:
   postgres_lti:
     image: docker.io/library/postgres:15
     environment:
-      POSTGRES_USER: klicker
+      POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod-lti
     ports:
