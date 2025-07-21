@@ -259,14 +259,24 @@ function CSTwoDimScatterPlot({
           cursor={{ strokeDasharray: '3 3' }}
           animationDuration={0} // Disable tooltip animation - appear instantly
           content={({ payload }) => {
-            if (!payload?.[0]?.payload) return null
-            const data = payload[0].payload
+            // use hovered point data instead of payload[0] to ensure correct data display
+            if (!hoveredPoint) return null
+
+            // find the correct data point from the payload that matches our hovered point
+            const selectedDataPoint = payload?.find(
+              (item) =>
+                item.payload?.itemLabel === hoveredPoint.itemLabel &&
+                item.payload?.x === hoveredPoint.x &&
+                item.payload?.y === hoveredPoint.y
+            )?.payload
+
+            if (!selectedDataPoint) return null
 
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
-                <p className="font-bold">{data.itemLabel}</p>
-                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)} ${typeof data.sigmaX !== 'undefined' ? `(± ${data.sigmaX.toFixed(2)})` : ''}`}</p>
-                <p>{`${data.yCriterionName}: ${getLabelForValue(data.y, yCriterionObj, yLower, yUpper)} ${typeof data.sigmaY !== 'undefined' ? `(± ${data.sigmaY.toFixed(2)})` : ''}`}</p>
+                <p className="font-bold">{selectedDataPoint.itemLabel}</p>
+                <p>{`${selectedDataPoint.xCriterionName}: ${getLabelForValue(selectedDataPoint.x, xCriterionObj, xLower, xUpper)} ${typeof selectedDataPoint.sigmaX !== 'undefined' ? `(± ${selectedDataPoint.sigmaX.toFixed(2)})` : ''}`}</p>
+                <p>{`${selectedDataPoint.yCriterionName}: ${getLabelForValue(selectedDataPoint.y, yCriterionObj, yLower, yUpper)} ${typeof selectedDataPoint.sigmaY !== 'undefined' ? `(± ${selectedDataPoint.sigmaY.toFixed(2)})` : ''}`}</p>
               </div>
             )
           }}
