@@ -10,12 +10,12 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
+import type { ResponseInput } from '@klicker-uzh/types'
 import * as Sentry from '@sentry/node'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
 import { verify } from 'jsonwebtoken'
-import { toLowerCase } from 'remeda'
 import getRedis from './redis'
 
 const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
@@ -76,7 +76,7 @@ interface Message {
   messageId: string
   sessionId: string
   instanceId: string
-  response: any
+  response: ResponseInput
   cookie?: string
   responseTimestamp: number
 }
@@ -213,9 +213,11 @@ const serviceBusTrigger = async function (
       case 'MC':
       case 'KPRIM': {
         // add the vote to the aggregated results
-        response.choices.forEach((choiceIndex: number) => {
-          redisMulti.hincrby(`${instanceKey}:results`, String(choiceIndex), 1)
-        })
+        response.choices
+          .filter((choice) => choice.selected)
+          .forEach((choice) => {
+            redisMulti.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+          })
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
@@ -323,7 +325,7 @@ const serviceBusTrigger = async function (
               typeof parsedSolutions[0] === 'string')
 
           const answerCorrect = gradeQuestionNumerical({
-            response: response.value,
+            response: Number(response.value),
             solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
             exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
           })
@@ -387,7 +389,7 @@ const serviceBusTrigger = async function (
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
         // add the response to the aggregated results
-        const cleanResponseValue = toLowerCase(response.value.trim())
+        const cleanResponseValue = response.value.trim()
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')

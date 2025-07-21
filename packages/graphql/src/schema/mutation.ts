@@ -55,7 +55,7 @@ import {
   StackResponseInput,
 } from './practiceQuiz.js'
 import {
-  ArchivedElement,
+  ArchivedElementList,
   Element,
   ElementInstance,
   OptionsCaseStudyInput,
@@ -1307,6 +1307,20 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      flagOutdatedElementInstances: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          elementId: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await QuestionService.flagOutdatedElementInstances(args, ctx)
+          }
+        ),
+      }),
+
       createCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1402,7 +1416,7 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [ArchivedElement],
+        type: ArchivedElementList,
         args: {
           elementIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),

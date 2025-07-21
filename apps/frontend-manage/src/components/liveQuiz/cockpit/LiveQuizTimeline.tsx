@@ -229,7 +229,7 @@ function LiveQuizTimeline({
                 <FontAwesomeIcon
                   className={twMerge(
                     'my-auto',
-                    idx === blocks.length - 1 && 'hidden',
+                    idx === blocks.length - 1 && 'hidden!',
                     buttonState === 'nextBlock' &&
                       lastActiveBlockId === block.id &&
                       'text-green-500'

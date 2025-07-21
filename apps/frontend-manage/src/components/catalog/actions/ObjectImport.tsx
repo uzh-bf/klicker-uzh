@@ -41,10 +41,10 @@ function ObjectImport({
   const [search, setSearch] = useState('')
   const [collectionModalOpen, setCollectionModalOpen] = useState(false)
   const [objectAdditionModalOpen, setObjectAdditionModalOpen] = useState(false)
-  const [typeFilter, setTypeFilter] = useState<ObjectType | ''>('')
-  const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
-    ''
-  )
+  const [typeFilter, setTypeFilter] = useState<ObjectType | 'all'>('all')
+  const [accessTypeFilter, setAccessTypeFilter] = useState<
+    ObjectAccess | 'all'
+  >('all')
 
   // fetch all available catalog collections
   const { data: collectionsData, loading: collectionsLoading } = useQuery(
@@ -108,7 +108,7 @@ function ObjectImport({
             value={search}
             onChange={(newValue: string) => setSearch(newValue)}
             icon={faMagnifyingGlass}
-            className={{ input: 'w-full !pl-8 lg:w-60' }}
+            className={{ input: 'pl-8! w-full lg:w-60' }}
             data={{ cy: 'search-catalog-collection' }}
           />
           <ObjectFilters

@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -44,6 +43,7 @@ function ParticipantProfileModal({
   return (
     <Modal
       open
+      loading={loading || !participant}
       onClose={onClose}
       className={{
         content: 'my-auto w-[500px]',
@@ -55,9 +55,7 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      {loading || !participant ? (
-        <Loader />
-      ) : (
+      {participant && (
         <div className="px-auto flex h-full w-full flex-col items-center justify-between">
           <ProfileData
             level={participant.levelData}

@@ -54,6 +54,7 @@ interface ElementProps {
   checked: boolean
   element: ElementObject
   disabled: boolean
+  checkboxDisabled?: boolean
   tags?: Tag[]
   handleTagClick: (tagName: string) => void
   onCheck: () => void
@@ -68,6 +69,7 @@ function Element({
   checked = false,
   element,
   disabled,
+  checkboxDisabled,
   tags = [],
   handleTagClick,
   onCheck,
@@ -144,7 +146,7 @@ function Element({
   return (
     <div className="flex items-center" data-cy={`element-item-${element.name}`}>
       <Checkbox
-        disabled={disabled}
+        disabled={disabled || checkboxDisabled}
         checked={checked}
         onCheck={onCheck}
         className={{ root: 'border-unset mr-1.5' }}
@@ -152,7 +154,7 @@ function Element({
       {drag(
         <div
           className={twMerge(
-            'flex w-full cursor-[grab] flex-col rounded-lg border border-solid px-3 py-2 hover:shadow-md md:flex-row',
+            'flex w-full cursor-grab flex-col rounded-lg border border-solid px-3 py-2 hover:shadow-md md:flex-row',
             collectedProps.isDragging && 'opacity-50',
             disabled && 'cursor-not-allowed opacity-50 hover:shadow-none'
           )}
@@ -269,9 +271,10 @@ function Element({
                 items={availableActions.slice(2).map((action) => ({
                   label: (
                     <div
-                      className={`flex cursor-pointer items-center rounded hover:bg-gray-100 ${
-                        action.className ?? ''
-                      }`}
+                      className={twMerge(
+                        'flex cursor-pointer items-center rounded hover:bg-gray-100',
+                        action.className
+                      )}
                     >
                       <FontAwesomeIcon
                         icon={action.icon}

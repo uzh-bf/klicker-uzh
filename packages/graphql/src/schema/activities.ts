@@ -71,6 +71,7 @@ export interface IActivityInfo {
 
   permissionLevel: DB.PermissionLevel
   derivedAccess: boolean
+  areInstancesOutdated: boolean
   numSharedUsers?: number
   isOwner: boolean
   isManager: boolean
@@ -128,6 +129,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     derivedAccess: t.exposeBoolean('derivedAccess'),
+    areInstancesOutdated: t.exposeBoolean('areInstancesOutdated'),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner'),
     isManager: t.exposeBoolean('isManager'),

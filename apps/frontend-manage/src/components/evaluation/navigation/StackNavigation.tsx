@@ -108,7 +108,7 @@ function StackNavigation({
             setActiveInstance(stackInstanceMap[stack.value][0].value)
           }}
           data={{ cy: `evaluate-stack-${stack.value}` }}
-          className="w-[7rem]"
+          className="w-28"
           active={stack.value === activeStack}
           icon={faLayerGroup}
           label={stack.label}

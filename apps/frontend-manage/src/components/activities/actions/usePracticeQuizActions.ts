@@ -62,7 +62,7 @@ function usePracticeQuizActions({
     () => [
       {
         id: 'publishPracticeQuiz',
-        label: t('manage.course.publishPracticeQuiz'),
+        label: t('manage.course.publishItemPRACTICE_QUIZ'),
         icon: faUserGroup,
         onClick: () => setPublishModal(true),
         data: { cy: `publish-practice-quiz-${practiceQuiz.name}` },
@@ -197,7 +197,7 @@ function usePracticeQuizActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewComments'),
+        label: t('shared.comments.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${practiceQuiz.name}` },

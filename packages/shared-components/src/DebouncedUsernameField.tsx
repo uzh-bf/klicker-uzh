@@ -55,7 +55,7 @@ function DebouncedUsernameField({
     check()
   }, [])
 
-  const usernameValidationTimeout = useRef<any>()
+  const usernameValidationTimeout = useRef<any>(null)
   const debouncedUsernameCheck = useCallback(
     ({ username }: { username: string }) => {
       clearTimeout(usernameValidationTimeout.current)
@@ -82,14 +82,14 @@ function DebouncedUsernameField({
         label: twMerge('text-md font-bold text-black', className?.label),
         icon: twMerge(
           typeof valid === 'undefined'
-            ? 'animate-spin bg-transparent !py-0'
+            ? 'py-0! animate-spin bg-transparent'
             : !valid || typeof meta.error !== 'undefined'
               ? 'bg-red-50 text-red-600'
               : 'text-green-600',
           className?.icon
         ),
         input: twMerge(
-          '!pl-8',
+          'pl-8!',
           valid === false || typeof meta.error !== 'undefined'
             ? 'border-red-600 bg-red-50'
             : '',

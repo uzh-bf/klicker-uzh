@@ -3,6 +3,7 @@ import {
   CaseStudyCaseResponse as CaseStudyCaseResponseType,
   CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
   CaseStudyItemResponse as CaseStudyItemResponseType,
+  ChoicesResponse as ChoicesResponseType,
   ElementBlockInput as ElementBlockInputType,
   ElementInstanceInput as ElementInstanceInputType,
   ElementStackInput as ElementStackInputType,
@@ -102,7 +103,15 @@ export const CaseStudyCaseResponse = CaseStudyCaseResponseRef.implement({
   }),
 })
 
-// this type needs to be consistent with the ElementResponseInput type in the stacks service
+export const ChoicesResponseRef =
+  builder.inputRef<ChoicesResponseType>('ChoicesResponse')
+export const ChoicesResponse = ChoicesResponseRef.implement({
+  fields: (t) => ({
+    ix: t.int({ required: true }),
+    selected: t.boolean({ required: true }),
+  }),
+})
+
 export const StackResponseInputRef =
   builder.inputRef<StackResponseInputType>('StackResponseInput')
 export const StackResponseInput = StackResponseInputRef.implement({
@@ -114,7 +123,10 @@ export const StackResponseInput = StackResponseInputRef.implement({
       required: false,
     }),
     contentReponse: t.boolean({ required: false }),
-    choicesResponse: t.intList({ required: false }),
+    choicesResponse: t.field({
+      type: [ChoicesResponse],
+      required: false,
+    }),
     numericalResponse: t.float({ required: false }),
     freeTextResponse: t.string({ required: false }),
     selectionResponse: t.intList({ required: false }),
@@ -160,7 +172,7 @@ export const ElementStack = ElementStackRef.implement({
 export interface IPracticeQuiz
   extends Omit<
     DB.PracticeQuiz,
-    'startedCount' | 'completedCount' | 'repeatedCount'
+    'startedCount' | 'completedCount' | 'repeatedCount' | 'areInstancesOutdated'
   > {
   course?: ICourse
   stacks?: IElementStack[]

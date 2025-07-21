@@ -7,7 +7,6 @@ import {
   GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
@@ -20,11 +19,6 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 function Cockpit() {
   const router = useRouter()
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
-
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument

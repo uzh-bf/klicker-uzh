@@ -43,7 +43,7 @@ const RoadmapTile = ({
                 <a
                   target="_blank"
                   className={twMerge(
-                    'flex flex-1 flex-row items-center gap-4 rounded-md border border-solid bg-gray-100 px-3 py-2 text-sm hover:shadow',
+                    'border- border-border flex flex-1 flex-row items-center gap-4 rounded-md border bg-gray-100 px-3 py-2 text-sm hover:shadow',
                     isDarkTheme && 'border-gray-500 bg-gray-500'
                   )}
                   href={useCase.href || '#'}
@@ -60,7 +60,7 @@ const RoadmapTile = ({
             return (
               <div
                 className={twMerge(
-                  'flex-1 rounded-md border border-solid bg-gray-100 px-3 py-2 text-sm',
+                  'border-border flex-1 rounded-md border border-solid bg-gray-100 px-3 py-2 text-sm',
                   isDarkTheme && 'border-gray-500 bg-gray-500'
                 )}
               >

@@ -46,72 +46,33 @@ function StepProgressWithScoring({
         onItemClick={(ix: number) => setCurrentIx(ix)}
         data={{ cy: 'practice-quiz-progress' }}
         className={{ root: 'w-full' }}
-        formatter={({ element, ix }) => {
-          function render({
-            className,
-            element,
-          }: {
-            className: string
-            element: StepItem
-          }) {
-            return {
-              className,
-              element: (
-                <div className="flex w-full flex-row justify-center px-0.5 md:px-2">
-                  <div className="flex flex-row items-center justify-between md:w-full">
-                    <div
-                      className={twMerge(
-                        typeof element.score !== 'undefined' &&
-                          element.score !== null &&
-                          'hidden md:block'
-                      )}
-                    >
-                      {ix + 1}
-                    </div>
+        formatter={({ element, ix }) => (
+          <div className="flex w-full flex-row justify-center px-0.5 md:px-2">
+            <div className="flex flex-row items-center justify-between md:w-full">
+              <div
+                className={twMerge(
+                  typeof element.score !== 'undefined' &&
+                    element.score !== null &&
+                    'hidden md:block'
+                )}
+              >
+                {ix + 1}
+              </div>
 
-                    {typeof element.score !== 'undefined' &&
-                      element.score !== null && (
-                        <ProgressPoints
-                          score={element.score as string | null}
-                          status={element.status as string | null}
-                        />
-                      )}
-                    <FontAwesomeIcon
-                      icon={ICON_MAP[element.status as StackFeedbackStatus]}
-                      className="hidden md:block"
-                    />
-                  </div>
-                </div>
-              ),
-            }
-          }
-
-          if (element.status === StackFeedbackStatus.Correct) {
-            return render({
-              element,
-              className: 'bg-green-600 bg-opacity-60 text-white',
-            })
-          }
-
-          if (element.status === StackFeedbackStatus.Incorrect) {
-            return render({
-              element,
-              className: 'bg-red-600 bg-opacity-60 text-white',
-            })
-          }
-
-          if (element.status === StackFeedbackStatus.Partial) {
-            return render({
-              element,
-              className: 'bg-uzh-red-100 bg-opacity-60 text-white',
-            })
-          }
-
-          return render({
-            element,
-            className: '',
-          })
-        }}
+              {typeof element.score !== 'undefined' &&
+                element.score !== null && (
+                  <ProgressPoints
+                    score={element.score as string | null}
+                    status={element.status as string | null}
+                  />
+                )}
+              <FontAwesomeIcon
+                icon={ICON_MAP[element.status as StackFeedbackStatus]}
+                className="hidden md:block"
+              />
+            </div>
+          </div>
+        )}
       />
       {resetLocalStorage && (
         <Button

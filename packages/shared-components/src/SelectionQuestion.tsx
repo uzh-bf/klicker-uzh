@@ -38,7 +38,7 @@ function SelectionQuestion({
   evaluation,
   disabled,
   noPoints,
-  preview,
+  preview = false,
 }: SelectionQuestionProps) {
   const emptyResponses = useMemo(
     () =>
@@ -80,7 +80,7 @@ function SelectionQuestion({
         />
       </div>
 
-      {evaluation && evaluation.answerSolutionIds && (
+      {evaluation && evaluation.answerSolutionIds && !preview ? (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -92,7 +92,7 @@ function SelectionQuestion({
             <SEEValuation evaluation={evaluation} options={options} />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

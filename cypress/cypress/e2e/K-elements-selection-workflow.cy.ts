@@ -54,10 +54,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SELECTION.typeLabel)
@@ -66,10 +66,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     // enter question data
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.SE.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.SE.content)
@@ -82,10 +82,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.SE.collection}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collection
     )
@@ -221,14 +221,14 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
     cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
-    cy.get('[data-cy="choose-correct-answer-options"]').click()
+    cy.get('[data-cy="choose-correct-answer-options"]').realClick()
     cy.findByText(this.data.SE.solutions[0]).realClick()
     cy.get('[data-cy="choose-correct-answer-options"]').contains(
       this.data.SE.solutions[0]
     )
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // number of solutions needs to be >= number of inputs
     cy.wrap(this.data.SE.solutions.slice(1)).each((solution: string) => {
-      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.get('[data-cy="choose-correct-answer-options"]').realClick()
       cy.findByText(solution).realClick()
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
@@ -298,10 +298,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
       .clear()
       .type(this.data.SE.explanationEdited)
 
-    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.SE.collectionEdited}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collectionEdited
     )
@@ -311,7 +311,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       .clear()
       .type(String(this.data.SE.inputsEdited))
     cy.wrap(this.data.SE.solutionsEdited).each((solution: string) => {
-      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.get('[data-cy="choose-correct-answer-options"]').realClick()
       cy.findByText(solution).realClick()
     })
 
@@ -455,10 +455,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
   // #region
   it('Create a selection question with inline answer collection', function () {
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SELECTION.typeLabel)
@@ -469,10 +469,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
       .click()
       .type(this.data.SE_INLINE.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.SE_INLINE.content)

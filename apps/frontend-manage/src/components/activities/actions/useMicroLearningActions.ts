@@ -70,7 +70,7 @@ function useMicroLearningActions({
     () => [
       {
         id: 'publishMicroLearning',
-        label: t('manage.course.publishMicrolearning'),
+        label: t('manage.course.publishItemMICROLEARNING'),
         icon: faUserGroup,
         onClick: () => setPublishModal(true),
         data: { cy: `publish-microlearning-${microLearning.name}` },
@@ -235,7 +235,7 @@ function useMicroLearningActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewComments'),
+        label: t('shared.comments.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${microLearning.name}` },

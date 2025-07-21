@@ -7,7 +7,6 @@ import {
   GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -45,15 +44,14 @@ function TemplateEditModal({
   return (
     <Modal
       open
+      loading={loading || !info}
       title={t('manage.template.editTemplate')}
       onClose={onClose}
       className={{ content: 'gap-2 pb-2' }}
       data={{ cy: 'edit-template-modal' }}
       dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
-      {loading || !info ? (
-        <Loader />
-      ) : (
+      {info && (
         <Formik
           validateOnMount
           initialValues={{

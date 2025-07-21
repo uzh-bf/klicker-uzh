@@ -22,6 +22,7 @@ import type { CaseStudyStudentResponseType } from './StudentElement'
 import { validateCaseStudyResponse } from './utils/validateResponse'
 
 interface CaseStudyQuestionProps {
+  preview?: boolean
   sequential: boolean
   content: string
   options: CaseStudyElementOptions
@@ -32,10 +33,10 @@ interface CaseStudyQuestionProps {
   evaluation?: CaseStudyInstanceEvaluation
   noPoints: boolean
   disabled?: boolean
-  // preview: boolean
 }
 
 function CaseStudyQuestion({
+  preview = false,
   sequential,
   content,
   options,
@@ -46,7 +47,6 @@ function CaseStudyQuestion({
   evaluation,
   noPoints,
   disabled = false,
-  // preview,
 }: CaseStudyQuestionProps) {
   const t = useTranslations()
   const [caseIndex, setCaseIndex] = useState(0)
@@ -236,7 +236,7 @@ function CaseStudyQuestion({
         )}
       </div>
 
-      {evaluation && evaluation.studySolutions && solutions && (
+      {evaluation && evaluation.studySolutions && solutions && !preview ? (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -252,7 +252,7 @@ function CaseStudyQuestion({
             />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

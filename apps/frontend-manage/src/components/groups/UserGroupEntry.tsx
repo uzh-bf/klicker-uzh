@@ -25,7 +25,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
     <>
       <div
         data-cy={`user-group-${group.name}`}
-        className="border-uzh-grey-60 flex flex-row justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md"
+        className="flex flex-row justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md"
       >
         <div>
           <div className="flex flex-row items-center gap-4">

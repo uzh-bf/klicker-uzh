@@ -15,7 +15,10 @@ mutation GradeGroupActivitySubmission(
       instanceId
       type
       freeTextResponse
-      choicesResponse
+      choicesResponse {
+        ix
+        selected
+      }
       numericalResponse
       contentResponse
       selectionResponse

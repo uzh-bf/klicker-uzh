@@ -29,10 +29,10 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     // fill in minimal information for SC question
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(this.data.SC.title)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.SC.content)

@@ -2021,7 +2021,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: {},
@@ -2671,7 +2670,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: {},
@@ -2889,7 +2887,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: {},
@@ -3097,7 +3094,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.PRACTICE_QUIZ,
                     elementType: ElementType.SC,
                     options: {},
@@ -4155,7 +4151,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.MICROLEARNING,
                     elementType: ElementType.SC,
                     options: {},
@@ -4291,7 +4286,6 @@ describe('Unit tests covering the creation of derived permissions for activities
                   {
                     order: 0,
                     elementId: element.id,
-                    migrationId: '',
                     type: ElementInstanceType.GROUP_ACTIVITY,
                     elementType: ElementType.SC,
                     options: {},

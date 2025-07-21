@@ -39,6 +39,7 @@ function RecoveryPrompt({
       primaryButtonStyle="primary"
       onPrimaryAction={onRecovery}
       dataPrimaryAction={{ cy: 'load-recovered-element-data' }}
+      className={{ content: 'max-w-2xl' }}
     >
       <UserNotification
         type="warning"

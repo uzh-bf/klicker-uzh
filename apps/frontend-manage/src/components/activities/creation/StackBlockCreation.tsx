@@ -7,7 +7,11 @@ import {
   faWarning,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Element,
+  ElementInstanceVersionInfo,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -16,6 +20,7 @@ import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../questions/Element'
 import DropElementsStack from './DropElementsStack'
+import { OutdatedInstancesRefetchFunction } from './InstanceUpdateOption'
 import PasteSelectionButton from './PasteSelectionButton'
 import StackCreationErrors from './StackCreationErrors'
 import StackDescriptionModal from './StackDescriptionModal'
@@ -29,6 +34,8 @@ interface StackBlockCreationProps {
   replace: (stackIx: number, value: ElementStackFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
+  outdatedInstances: ElementInstanceVersionInfo[]
+  refetchOutdatedInstances: OutdatedInstancesRefetchFunction
   singleStackMode?: boolean
   className?: string
 }
@@ -62,6 +69,8 @@ function StackBlockCreation({
   error,
   highlightFTNoSL = false,
   singleStackMode = false,
+  outdatedInstances,
+  refetchOutdatedInstances,
   className,
 }:
   | StackBlockCreationMultipleProps
@@ -121,7 +130,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={t('manage.activityWizard.stackFTQuestionsNoSL')}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faWarning}
@@ -137,7 +146,7 @@ function StackBlockCreation({
               <Tooltip
                 tooltip={<StackCreationErrors errors={error[stackIx]} />}
                 delay={0}
-                className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+                className={{ tooltip: 'max-w-120 z-20 text-sm' }}
               >
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -149,7 +158,7 @@ function StackBlockCreation({
             <Tooltip
               tooltip={<StackCreationErrors errors={error} />}
               delay={0}
-              className={{ tooltip: 'z-20 max-w-[30rem] text-sm' }}
+              className={{ tooltip: 'max-w-120 z-20 text-sm' }}
             >
               <FontAwesomeIcon
                 icon={faCircleExclamation}
@@ -242,6 +251,8 @@ function StackBlockCreation({
         selectionActive={
           (selection && Object.keys(selection).length > 0) ?? false
         }
+        outdatedInstances={outdatedInstances}
+        refetchOutdatedInstances={refetchOutdatedInstances}
       />
 
       {selection && !isEmpty(selection) && (

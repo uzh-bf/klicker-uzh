@@ -15,12 +15,12 @@ function MissingPage() {
     <Layout className={{ body: 'h-full' }}>
       <div className="mx-auto my-auto flex flex-col items-center gap-6 text-center">
         <div className="flex flex-row items-center gap-4 text-2xl text-red-600 sm:gap-6 sm:text-3xl md:gap-8 md:text-4xl">
-          <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
+          <FontAwesomeIcon icon={faBan} size="2x" />
           <div>{t('shared.error.404')}</div>
         </div>
         {!dataParticipant?.self ||
         dataParticipant.self.role !== UserRole.Participant ? (
-          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+          <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
             {t.rich('shared.error.pwaWithoutUser', {
               login: (text) => (
                 <Link
@@ -35,7 +35,7 @@ function MissingPage() {
             })}
           </div>
         ) : (
-          <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
+          <div className="md:max-w-140 max-w-[90%] sm:max-w-[70%]">
             {t.rich('shared.error.pwaWithUser', {
               home: (text) => (
                 <Link
