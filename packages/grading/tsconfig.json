@@ -10,7 +10,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
