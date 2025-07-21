@@ -30,19 +30,19 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.NUMERICAL.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.NR.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .type(this.data.NR.content)

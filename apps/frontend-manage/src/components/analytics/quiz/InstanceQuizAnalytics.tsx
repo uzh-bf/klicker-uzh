@@ -40,7 +40,7 @@ function InstanceQuizAnalytics({
           className={{ title: 'font-bold' }}
         />
       }
-      className={{ root: 'w-full !pb-0 !pt-1' }}
+      className={{ root: 'pb-0! pt-1! w-full' }}
     >
       <div className="flex w-full flex-col py-3 md:flex-row">
         <div className="flex w-full flex-col gap-1 md:w-1/2 md:border-r md:pr-4">

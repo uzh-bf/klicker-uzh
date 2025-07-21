@@ -19,7 +19,7 @@ function SimpleSetting({ label, tooltip, children }: SimpleSettingProps) {
         label={label}
         tooltip={tooltip}
         showTooltipSymbol={!!tooltip}
-        className={{ tooltip: 'max-w-[35rem] text-base font-normal' }}
+        className={{ tooltip: 'max-w-140 text-base font-normal' }}
       />
       <>{children}</>
     </div>

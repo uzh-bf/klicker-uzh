@@ -15,11 +15,13 @@ function useObjectSharing({
   objectId,
   objectType,
   catalogCollectionId,
+  onSuccess,
   onError,
 }: {
   objectId: string | number
   objectType: ObjectType
   catalogCollectionId?: string
+  onSuccess?: () => void
   onError: () => void
 }): {
   onShareObject: ({
@@ -111,6 +113,7 @@ function useObjectSharing({
       })
 
       if (typeof res?.data?.shareObject?.permissionId !== 'undefined') {
+        onSuccess?.()
         return true
       } else {
         onError()

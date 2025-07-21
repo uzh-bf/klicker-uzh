@@ -16,7 +16,7 @@ function Login() {
             withProse
             className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
             content={t('pwa.studentDocs.firstLogin', {
-              pwa_url: process.env.NEXT_PUBLIC_PWA_URL,
+              pwa_url: process.env.NEXT_PUBLIC_PWA_URL!,
               shortname: courseInformation.owner.shortname,
             })}
           />

@@ -44,8 +44,6 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
-          cd ../shared-components
-          pnpm run build
           cd ../../apps/backend-docker
           pnpm run build
 
@@ -122,6 +120,13 @@ jobs:
         if: always()
         shell: bash
         working-directory: apps/office-addin
+        run: |
+          pnpm run check
+
+      - name: Check olat-api typescript types
+        if: always()
+        shell: bash
+        working-directory: apps/olat-api
         run: |
           pnpm run check
 

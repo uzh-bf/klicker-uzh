@@ -56,7 +56,7 @@ function CreateAccountJoinForm() {
         }}
       >
         {({ isSubmitting }) => (
-          <Form>
+          <Form className="flex flex-col">
             <FormikPinField
               required
               length={9}
@@ -71,7 +71,7 @@ function CreateAccountJoinForm() {
               type="submit"
               // TODO: add validation and disable button for invalid / incomplete pints
               disabled={isSubmitting}
-              className={{ root: 'float-right' }}
+              className={{ root: 'self-end' }}
               data={{ cy: 'signup-course' }}
             >
               <Button.Label>{t('pwa.login.signup')}</Button.Label>

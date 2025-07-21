@@ -71,7 +71,7 @@ function CourseElement({
         <Button
           className={{
             root: twMerge(
-              '!rounded-l-none p-3',
+              'rounded-l-none! p-3',
               pushDisabled
                 ? 'border-slate-400 bg-slate-400 hover:bg-slate-500'
                 : 'border-slate-600 bg-slate-600 hover:bg-slate-500',

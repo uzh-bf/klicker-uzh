@@ -141,7 +141,7 @@ function Activities() {
                   }}
                   icon={faMagnifyingGlass}
                   className={{
-                    input: 'h-10 !pl-8',
+                    input: 'pl-8! h-10',
                     field: 'w-80 rounded-md pr-3',
                   }}
                 />
@@ -149,7 +149,7 @@ function Activities() {
               </div>
             </div>
 
-            <div className="border-uzh-grey-60 h-full overflow-y-auto">
+            <div className="h-full overflow-y-auto">
               {loadingActivities ? (
                 <Loader />
               ) : (

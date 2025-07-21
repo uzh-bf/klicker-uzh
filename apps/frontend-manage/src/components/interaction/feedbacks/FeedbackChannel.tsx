@@ -1,15 +1,13 @@
 // TODO: notifications
 
-import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
-
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
+import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import FeedbacksPrintView from '../../evaluation/feedbacks/FeedbacksPrintView'
-import Feedback from './Feedback'
-import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
+import FeedbackList from './FeedbackList'
+import FeedbackOverviewFilters from './FeedbackOverviewFilters'
+import FeedbackSearchBar from './FeedbackSearchBar'
 
 interface Props {
   liveQuizName: string
@@ -65,114 +63,57 @@ function FeedbackChannel({
         feedbacks={sortedFeedbacks}
         liveQuizName={liveQuizName}
       />
-      <FeedbackSearchAndFilters
-        disabled={{
-          sorting: sortedFeedbacks?.length === 0,
-          print: sortedFeedbacks?.length === 0,
-        }}
-        {...filterProps}
-      />
-      <div className="mt-4 flex flex-col gap-2 overflow-y-auto print:hidden">
-        {/* // TODO: styling */}
-        {!feedbacks ||
-          (feedbacks.length === 0 && (
-            <div>{t('manage.cockpit.noFeedbacksYet')}</div>
-          ))}
-
-        {/* // TODO: styling */}
-        {feedbacks &&
-          feedbacks.length > 0 &&
-          sortedFeedbacks &&
-          sortedFeedbacks.length === 0 && (
-            <div>{t('manage.cockpit.noFeedbackFilterMatch')}</div>
-          )}
-
-        {sortedFeedbacks?.map(
-          (
-            {
-              id,
-              content,
-              createdAt,
-              votes,
-              isResolved,
-              isPinned,
-              isPublished,
-              responses,
-              resolvedAt,
-            }: FeedbackType,
-            index
-          ) => (
-            <div className="flex flex-row gap-2 print:mt-2" key={id}>
-              {!isPublic && (
-                <div className="flex-initial print:hidden">
-                  <Button
-                    className={{
-                      root: 'h-9 w-9',
-                    }}
-                    onClick={() => {
-                      handlePublishFeedback(id, !isPublished)
-                    }}
-                    data={{ cy: `publish-feedback-${content}` }}
-                  >
-                    <Button.Icon
-                      withoutLabel
-                      icon={isPublished ? faEye : faEyeSlash}
-                      className={{ root: 'h-4.5 w-4.5' }}
-                    />
-                  </Button>
-                </div>
-              )}
-              <div className="flex-1">
-                <Feedback
-                  id={id}
-                  content={content}
-                  createdAt={createdAt}
-                  pinned={isPinned}
-                  resolved={isResolved}
-                  resolvedAt={resolvedAt}
-                  responses={responses ?? []}
-                  votes={votes}
-                  onDeleteFeedback={() => handleDeleteFeedback(id)}
-                  onDeleteResponse={(responseId) =>
-                    handleDeleteFeedbackResponse(responseId)
-                  }
-                  onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
-                  onResolveFeedback={(resolvedState) =>
-                    handleResolveFeedback(id, resolvedState)
-                  }
-                  onRespondToFeedback={(id, response) =>
-                    handleRespondToFeedback(id, response)
-                  }
-                />
-              </div>
+      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row print:hidden">
+        <div>
+          <FeedbackOverviewFilters
+            showResolved={filterProps.showResolved}
+            showOpen={filterProps.showOpen}
+            showPinned={filterProps.showPinned}
+            showUnpinned={filterProps.showUnpinned}
+            showPublished={filterProps.showPublished}
+            showUnpublished={filterProps.showUnpublished}
+            setShowResolved={filterProps.setShowResolved}
+            setShowOpen={filterProps.setShowOpen}
+            setShowPinned={filterProps.setShowPinned}
+            setShowUnpinned={filterProps.setShowUnpinned}
+            setShowPublished={filterProps.setShowPublished}
+            setShowUnpublished={filterProps.setShowUnpublished}
+            handleReset={filterProps.handleReset}
+          />
+        </div>
+        <div className="flex w-full flex-1 flex-col overflow-auto">
+          <div>
+            <div className="mb-2 flex flex-row items-center gap-1">
+              <FeedbackSearchBar
+                searchString={filterProps.searchString}
+                setSearchString={filterProps.setSearchString}
+                sortBy={filterProps.sortBy}
+                setSortBy={filterProps.setSortBy}
+                disabled={{
+                  search: feedbacks?.length === 0,
+                  sorting: sortedFeedbacks?.length === 0,
+                  print: sortedFeedbacks?.length === 0,
+                }}
+              />
             </div>
-          )
-        )}
+          </div>
 
-        {/* // TODO: still include this banner?
-        {hasSurveyBannerInitialized && (isSurveyBannerVisible ?? true) && (
-          <div className="mt-2 print:hidden">
-            <Message
-              warning
-              content={
-                <FormattedMessage
-                  defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                  id="runningLiveQuiz.audienceInteraction.survey"
-                  values={{
-                    link: (
-                      <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">
-                        link
-                      </a>
-                    ),
-                  }}
-                />
+          <div className="h-full overflow-y-auto">
+            <FeedbackList
+              feedbacks={sortedFeedbacks || []}
+              noFeedbacks={feedbacks?.length === 0}
+              isPublic={isPublic}
+              handleDeleteFeedback={handleDeleteFeedback}
+              handlePinFeedback={handlePinFeedback}
+              handlePublishFeedback={
+                !isPublic ? handlePublishFeedback : undefined
               }
-              icon="bullhorn"
-              size="tiny"
-              onDismiss={() => setIsSurveyBannerVisible(false)}
+              handleResolveFeedback={handleResolveFeedback}
+              handleRespondToFeedback={handleRespondToFeedback}
+              handleDeleteFeedbackResponse={handleDeleteFeedbackResponse}
             />
           </div>
-        )} */}
+        </div>
       </div>
     </>
   )

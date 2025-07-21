@@ -63,7 +63,7 @@ function CourseSelectionPage() {
   return (
     <Layout>
       <div className="flex w-full justify-center">
-        <div className="flex w-full flex-col md:w-[45rem]">
+        <div className="md:w-180 flex w-full flex-col">
           <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
             {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
@@ -178,6 +178,7 @@ function CourseSelectionPage() {
                       color: values.color,
                       startDate: startDateUTC,
                       endDate: endDateUTC,
+                      notificationEmail: values.notificationEmail,
                       isGamificationEnabled: values.isGamificationEnabled,
                       isGroupCreationEnabled: values.isGroupCreationEnabled,
                       groupDeadlineDate: groupDeadlineDateUTC,

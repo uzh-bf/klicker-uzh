@@ -35,15 +35,17 @@ function CourseGamificationInfos({
           value: 'group-leaderboard',
           label: t('manage.course.groupLeaderboard'),
           data: { cy: 'tab-group-leaderboard' },
+          disabled: !course.isGroupCreationEnabled,
         },
         {
           id: 'tab-groups',
           value: 'groups',
           label: t('manage.course.groups'),
           data: { cy: 'tab-groups' },
+          disabled: !course.isGroupCreationEnabled,
         },
       ]}
-      className={{ root: 'flex-1 basis-1/3' }}
+      className={{ root: 'flex-1 basis-2/5' }}
     >
       <IndividualLeaderboard
         courseName={course.name}

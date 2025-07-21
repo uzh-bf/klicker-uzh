@@ -83,7 +83,7 @@ function TemplateElementContent({
               {!(blockIx === 0 && elementIx === 0) ? (
                 <Tooltip
                   tooltip={t('manage.template.elementActionsTemplate')}
-                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
+                  className={{ tooltip: 'max-w-120 text-sm' }}
                 >
                   <FontAwesomeIcon
                     icon={faQuestion}

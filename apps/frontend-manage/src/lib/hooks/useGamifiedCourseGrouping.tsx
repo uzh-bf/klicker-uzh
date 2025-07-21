@@ -16,12 +16,10 @@ function useGamifiedCourseGrouping({
   return [
     {
       items: gamifiedCourses,
-      showSeparator: true,
       label: t('shared.generic.gamified'),
     },
     {
       items: nonGamifiedCourses,
-      showSeparator: true,
       label: t('shared.generic.nonGamified'),
     },
   ]

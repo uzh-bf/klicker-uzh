@@ -242,7 +242,7 @@ function ActivityEvaluation({
 
       <div
         className={twMerge(
-          'h-18 z-20 flex-none',
+          'z-20 h-max flex-none',
           (activeStack === 'feedbacks' ||
             activeStack === 'confusion' ||
             activeStack === 'leaderboard') &&

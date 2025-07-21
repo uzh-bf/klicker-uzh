@@ -188,6 +188,28 @@ function Index() {
     }
   }, [dataQuestions?.userElements, filters, index, sort])
 
+  const filtersActive = useMemo(
+    () =>
+      !!(
+        filters.tags.length > 0 ||
+        filters.type ||
+        filters.status ||
+        filters.sharingType?.length !== 3 ||
+        filters.sampleSolution ||
+        filters.answerFeedbacks ||
+        filters.untagged
+      ),
+    [
+      filters.tags,
+      filters.type,
+      filters.status,
+      filters.sharingType,
+      filters.sampleSolution,
+      filters.answerFeedbacks,
+      filters.untagged,
+    ]
+  )
+
   const sortIcon = useMemo(() => {
     if (!sortBy) {
       return faSort
@@ -237,6 +259,7 @@ function Index() {
               <TagList
                 key={creationMode}
                 compact={!!creationMode}
+                filtersActive={filtersActive}
                 activeTags={filters.tags}
                 activeType={filters.type}
                 activeSharingTypes={filters.sharingType}
@@ -256,6 +279,7 @@ function Index() {
               <TagList
                 compact
                 key={creationMode}
+                filtersActive={filtersActive}
                 activeTags={filters.tags}
                 activeType={filters.type}
                 activeSharingTypes={filters.sharingType}
@@ -283,6 +307,7 @@ function Index() {
                   <div className="flex flex-col pr-0.5 text-xs">
                     <Checkbox
                       checked={
+                        processedQuestions?.length !== 0 &&
                         Object.values(selectedQuestions).filter(
                           (value) => value
                         ).length == processedQuestions?.length
@@ -326,7 +351,7 @@ function Index() {
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length,
+                      total: processedQuestions?.length ?? 0,
                     })}
                   </div>
 
@@ -339,8 +364,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 !pl-8',
-                      field: 'w-30 rounded-md pr-3',
+                      input: 'h-10 pl-8',
+                      field: 'min-w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -350,9 +375,7 @@ function Index() {
                       onClick={() => {
                         handleSortOrderToggle()
                       }}
-                      className={{
-                        root: 'h-10 rounded-md shadow-sm',
-                      }}
+                      className={{ root: 'h-10 rounded-md' }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon icon={sortIcon} withoutLabel />
@@ -396,7 +419,7 @@ function Index() {
                           disabled={toggelingArchive}
                           className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
                                 elementIds: Object.keys(
                                   selectedElementContent
@@ -404,14 +427,22 @@ function Index() {
                                 isArchived: true,
                               },
                               update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
                                 // check if request was successful
-                                const updatedElements = data?.toggleIsArchived
-                                if (!updatedElements) return
+                                const update = data?.toggleIsArchived
+                                if (!update) return
 
                                 // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds = updatedElements.map(
-                                  (element) => element.id
-                                )
+                                const updatedElementIds =
+                                  update.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
 
                                 // fetch the previously returned value for the elements list
                                 const elements = cache.readQuery({
@@ -436,7 +467,34 @@ function Index() {
                                 }
                               },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.archivingSuccess'
+                                ),
+                                options: { duration: 3000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.archivingPartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.archivingFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'move-to-archive' }}
                         >
@@ -450,7 +508,7 @@ function Index() {
                           disabled={toggelingArchive}
                           className={{ root: 'ml-1 h-10' }}
                           onClick={async () => {
-                            await toggleIsArchived({
+                            const { data } = await toggleIsArchived({
                               variables: {
                                 elementIds: Object.keys(
                                   selectedElementContent
@@ -458,14 +516,22 @@ function Index() {
                                 isArchived: false,
                               },
                               update: (cache, { data }) => {
+                                // if the request was not successful, do nothing
+                                if (
+                                  !data?.toggleIsArchived ||
+                                  data.toggleIsArchived.failure
+                                )
+                                  return
+
                                 // check if request was successful
                                 const updatedElements = data?.toggleIsArchived
                                 if (!updatedElements) return
 
                                 // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds = updatedElements.map(
-                                  (element) => element.id
-                                )
+                                const updatedElementIds =
+                                  updatedElements.elements?.map(
+                                    (element) => element.id
+                                  ) ?? []
 
                                 // fetch the previously returned value for the elements list
                                 const elements = cache.readQuery({
@@ -490,7 +556,34 @@ function Index() {
                                 }
                               },
                             })
-                            setSelectedQuestions({})
+
+                            if (data?.toggleIsArchived?.success) {
+                              toast({
+                                type: 'success',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.partialSuccess) {
+                              toast({
+                                type: 'warning',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchivePartialSuccess'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                              setSelectedQuestions({})
+                            } else if (data?.toggleIsArchived?.failure) {
+                              toast({
+                                type: 'error',
+                                message: t(
+                                  'manage.questionPool.restoreFromArchiveFailed'
+                                ),
+                                options: { duration: 8000 },
+                              })
+                            }
                           }}
                           data={{ cy: 'restore-from-archive' }}
                         >
@@ -522,6 +615,7 @@ function Index() {
 
               <div className="h-full overflow-y-auto">
                 <ElementList
+                  filtersActive={filtersActive}
                   activityWizardOpen={!!creationMode}
                   elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
@@ -557,6 +651,7 @@ function Index() {
                       return prev
                     })
                   }}
+                  handleFilterReset={handleReset}
                 />
               </div>
             </>

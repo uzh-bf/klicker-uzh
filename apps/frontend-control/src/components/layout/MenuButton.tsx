@@ -40,7 +40,7 @@ function MenuButton({
       data={data}
     >
       <Button.Icon
-        className={{ root: twMerge('!m-0 mx-auto', className?.icon) }}
+        className={{ root: twMerge('m-0! mx-auto', className?.icon) }}
         icon={icon}
       />
       <Button.Label className={{ root: twMerge('text-xs', className?.label) }}>

@@ -441,7 +441,7 @@ export async function modifyAnswerCollection(
 
     return {
       ...updateResult,
-      numSharedUsers: collection._count.permissions,
+      numSharedUsers: collection._count.permissions - 1,
     }
   })
 

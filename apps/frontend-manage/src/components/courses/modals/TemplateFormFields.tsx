@@ -22,7 +22,7 @@ function TemplateFormFields() {
         placeholder={t('manage.template.descriptionPlaceholder')}
         tooltip={t('manage.template.descriptionTooltip')}
         data={{ cy: 'template-description' }}
-        className={{ input: { editor: 'h-32 !leading-4' } }}
+        className={{ input: { editor: 'leading-4! h-32' } }}
       />
       <EditorField
         required
@@ -32,7 +32,7 @@ function TemplateFormFields() {
         placeholder={t('manage.template.instructionsPlaceholder')}
         tooltip={t('manage.template.instructionsTooltip')}
         data={{ cy: 'template-instructions' }}
-        className={{ input: { editor: 'h-32 !leading-4' } }}
+        className={{ input: { editor: 'leading-4! h-32' } }}
       />
     </div>
   )

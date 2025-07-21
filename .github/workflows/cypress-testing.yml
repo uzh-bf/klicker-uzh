@@ -24,7 +24,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: klicker
+          POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker
           POSTGRES_DB: klicker-prod
         options: >-
@@ -122,7 +122,7 @@ jobs:
           cd packages/prisma
           pnpm run prisma:reset:raw -f
         env:
-          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
 
       - name: Start services and wait for readiness
         run: |
@@ -130,7 +130,7 @@ jobs:
           .github/scripts/wait-for-services.sh
         env:
           APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
@@ -159,7 +159,7 @@ jobs:
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
 

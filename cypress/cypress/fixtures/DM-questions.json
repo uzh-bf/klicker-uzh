@@ -650,5 +650,14 @@
     "contentEdited": "Inline Selection Question Text Edited",
     "explanationEdited": "Inline Selection Question Explanation Edited",
     "inputsEdited": 2
+  },
+  "instanceUpdates": {
+    "courseName": "Testkurs",
+    "liveQuizName": "Live Quiz Instance Update",
+    "practiceQuizName": "Practice Quiz Instance Update",
+    "microlearningName": "Microlearning Instance Update",
+    "groupActivityName": "Group Activity Instance Update",
+    "newSCTitle": "New Single Choice Title",
+    "newMCTitle": "New Multiple Choice Title"
   }
 }

@@ -14,8 +14,8 @@ import { useEffect, useRef } from 'react'
 function MagicLogin() {
   const router = useRouter()
   const t = useTranslations()
-  const loginTimeout = useRef<any>()
-  const redirectionTimeout = useRef<any>()
+  const loginTimeout = useRef<any>(null)
+  const redirectionTimeout = useRef<any>(null)
   const { token, username } = router.query
 
   const [loginWithMagicLink] = useMutation(LoginParticipantMagicLinkDocument)

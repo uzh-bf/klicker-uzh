@@ -12,7 +12,7 @@
     "APP_SECRET": "abcd"
   },
   "Host": {
-    "CORS": "http://pwa.klicker.com",
+    "CORS": "https://pwa.klicker.com",
     "CORSCredentials": true
   }
 }

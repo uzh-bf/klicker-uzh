@@ -38,7 +38,7 @@ function ImgWithModal({
               height="0"
               width="0"
               className={twMerge(
-                'max-h-64 min-h-36 w-auto rounded object-contain shadow',
+                'max-h-64 min-h-36 w-auto rounded-sm object-contain shadow-sm',
                 className?.img
               )}
               style={{ width, height }}

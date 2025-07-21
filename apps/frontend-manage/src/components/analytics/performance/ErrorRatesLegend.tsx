@@ -1,5 +1,4 @@
 import { useTranslations } from 'next-intl'
-import { Legend } from 'recharts'
 
 function ErrorRatesLegend({
   colors,
@@ -15,26 +14,47 @@ function ErrorRatesLegend({
   const t = useTranslations()
 
   return (
-    <Legend
-      payload={[
-        {
-          value: t('manage.analytics.errorRate'),
-          color: colors.incorrect,
-          type: 'rect',
-        },
-        {
-          value: t('manage.analytics.partialRate'),
-          color: colors.partial,
-          type: 'rect',
-        },
-        {
-          value: t('manage.analytics.correctRate'),
-          color: colors.correct,
-          type: 'rect',
-        },
-      ]}
-      wrapperStyle={wrapperStyle ?? { top: 0, right: 0 }}
-    />
+    <div
+      className="ml-auto flex flex-row gap-6 self-end py-1"
+      style={wrapperStyle}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: colors.incorrect,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.errorRate')}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: colors.partial,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.partialRate')}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            background: colors.correct,
+            display: 'inline-block',
+            borderRadius: 2,
+          }}
+        />
+        <span>{t('manage.analytics.correctRate')}</span>
+      </div>
+    </div>
   )
 }
 

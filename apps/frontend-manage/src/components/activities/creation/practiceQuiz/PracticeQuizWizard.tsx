@@ -216,25 +216,25 @@ function PracticeQuizWizard({
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
     stacks: initialValues?.stacks
-      ? initialValues.stacks.map((stack) => {
-          return {
-            displayName: stack.displayName ?? '',
-            description: stack.description ?? '',
-            elements: stack.elements!.map((element) => {
-              return {
-                id: parseInt(element.elementData.id),
-                title: element.elementData.name,
-                type: element.elementData.type,
-                hasSampleSolution:
-                  'options' in element.elementData
-                    ? (element.elementData.options.hasSampleSolution ?? false)
-                    : true,
-                existingInstanceId: element.id,
-                duplicateInstance: duplicationMode || conversion,
-              }
-            }),
-          }
-        })
+      ? initialValues.stacks.map((stack) => ({
+          displayName: stack.displayName ?? '',
+          description: stack.description ?? '',
+          elements: stack.elements!.map((instance) => {
+            const [elementId, _] = instance.elementData.id.split('-v')
+
+            return {
+              id: parseInt(elementId),
+              title: instance.elementData.name,
+              type: instance.elementData.type,
+              hasSampleSolution:
+                'options' in instance.elementData
+                  ? (instance.elementData.options.hasSampleSolution ?? false)
+                  : true,
+              existingInstanceId: instance.id,
+              duplicateInstance: duplicationMode || conversion,
+            }
+          }),
+        }))
       : formDefaultValues.stacks,
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)

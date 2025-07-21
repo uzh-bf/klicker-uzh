@@ -70,7 +70,7 @@ function Ellipsis({
         }
         className={{
           tooltip: twMerge(
-            'max-w-md border bg-white text-sm text-black shadow',
+            'max-w-md border bg-white text-sm text-black shadow-sm',
             className?.tooltip
           ),
         }}

@@ -99,43 +99,49 @@ describe('Feature test for activity logs', function () {
 
   function setUserPermissionsElementCollection() {
     // share the element with READ permissions with user pro1
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
 
     // share the element with WRITE permissions with user pro2
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
 
     // share the element with ADMIN permissions with user pro3
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST2_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -143,57 +149,65 @@ describe('Feature test for activity logs', function () {
 
   function setUserPermissions() {
     // grant READ permission to user 2
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
 
     // grant EXECUTE permission to user 3
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsEXECUTE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-EXECUTE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsEXECUTE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsEXECUTE)
 
     // grand WRITE permissions to user 4
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST2_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
 
     // grant ADMIN permissions to user 5
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_INST3_SHORTNAME')
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_INST3_SHORTNAME'))
+    cy.selectOption(
+      '[data-cy="new-permission-access-level"]',
+      messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST3_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -272,10 +286,10 @@ describe('Feature test for activity logs', function () {
 
     // change the title of the question
     cy.get(`[data-cy="edit-element-${this.data.SC.title}"]`).click()
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-status"]').contains(
       messages.shared.REVIEW.statusLabel
     ) // wait for change to go into effect

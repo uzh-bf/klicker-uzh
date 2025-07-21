@@ -55,6 +55,7 @@
     "NOTIFICATION_SECRET",
     "NOTIFICATION_SUPPORT_MAIL",
     "NOTIFICATION_URL",
+    "OLAT_API_KEY",
     "PRISMA_OPTIMIZE",
     "REDIS_CACHE_HOST",
     "REDIS_CACHE_PORT",
@@ -135,7 +136,6 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "test": {
