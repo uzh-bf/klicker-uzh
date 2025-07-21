@@ -192,15 +192,15 @@ load_encryption_key_if_needed() {
     # Resolve symlinks to get actual filenames for encryption check
     local actual_db_dump="$DB_DUMP"
     local actual_redis_dump="$REDIS_DUMP"
-    
+
     if [[ -L "$DB_DUMP" ]]; then
         actual_db_dump=$(readlink -f "$DB_DUMP" 2>/dev/null || readlink "$DB_DUMP" 2>/dev/null || echo "$DB_DUMP")
     fi
-    
+
     if [[ -L "$REDIS_DUMP" ]]; then
         actual_redis_dump=$(readlink -f "$REDIS_DUMP" 2>/dev/null || readlink "$REDIS_DUMP" 2>/dev/null || echo "$REDIS_DUMP")
     fi
-    
+
     # Check if either dump is encrypted (check the actual target files)
     if [[ "$actual_db_dump" == *.gpg ]] || [[ "$actual_redis_dump" == *.gpg ]]; then
         log "🔑 Encrypted dumps detected:"
@@ -217,10 +217,13 @@ load_encryption_key_if_needed() {
             log "   Fetching encryption key from Doppler production config..."
 
             # Use _run_with_doppler.sh to handle external drive authentication
+            # Note: CONFIG=prd is scoped to this command only and won't affect subsequent calls
             if BACKUP_ENCRYPTION_KEY=$(CONFIG=prd "${REPO_ROOT}/util/_run_with_doppler.sh" doppler secrets get BACKUP_ENCRYPTION_KEY --plain 2>/dev/null); then
                 if [[ -n "$BACKUP_ENCRYPTION_KEY" ]]; then
                     export BACKUP_ENCRYPTION_KEY
                     log "✅ Successfully loaded BACKUP_ENCRYPTION_KEY from Doppler"
+                    # Ensure CONFIG is not set in the environment for subsequent operations
+                    unset CONFIG 2>/dev/null || true
                     return 0
                 else
                     log "⚠️  BACKUP_ENCRYPTION_KEY is empty in Doppler production config"
@@ -228,6 +231,8 @@ load_encryption_key_if_needed() {
             else
                 log "⚠️  Failed to fetch BACKUP_ENCRYPTION_KEY from Doppler (check Doppler setup)"
             fi
+            # Ensure CONFIG is not set in the environment
+            unset CONFIG 2>/dev/null || true
         else
             log "⚠️  Doppler helper script not found - cannot auto-load encryption key"
         fi
@@ -332,7 +337,7 @@ sleep 10
 log "Checking PostgreSQL connection..."
 PG_READY=false
 for i in {1..30}; do
-    if docker exec "$(docker compose ps -q postgres)" pg_isready -U klicker -d klicker-prod > /dev/null 2>&1; then
+    if docker exec "$(docker compose ps -q postgres)" pg_isready -U klicker-prod -d klicker-prod > /dev/null 2>&1; then
         PG_READY=true
         break
     fi
@@ -367,8 +372,11 @@ fi
 log_step "Step 4.5: Verifying Database Restore"
 log "Verifying database restore integrity..."
 
+# Ensure database tools are available in this script context
+check_database_tools
+
 # Build connection string for verification (matching local dev setup)
-DB_VERIFY_CONN="postgresql://klicker:klicker@localhost:5432/klicker-prod"
+DB_VERIFY_CONN="postgresql://klicker-prod:klicker@localhost:5432/klicker-prod"
 
 if verify_klicker_database_restore "$DB_VERIFY_CONN"; then
     log_success "Database restore verification passed"

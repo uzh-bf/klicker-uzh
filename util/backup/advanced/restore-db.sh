@@ -120,7 +120,7 @@ if [[ "$ENVIRONMENT" == "dev" ]]; then
     # Development database configuration
     export DATABASE_HOST="localhost"
     export DATABASE_PORT="5432"
-    export DATABASE_USER="klicker"
+    export DATABASE_USER="klicker-prod"
     export DATABASE_PASS="klicker"
     export DATABASE_NAME="klicker-prod"
 
@@ -450,7 +450,7 @@ restore_database() {
             # Check if warnings are just normal Redis replies (not actual problems)
             local actual_warnings
             actual_warnings=$(grep "WARNING" "$log_file" | grep -v "errors: 0, replies:" | head -5)
-            
+
             if [[ -n "$actual_warnings" ]]; then
                 echo ""
                 echo "  ⚠️  Restore completed with warnings:"

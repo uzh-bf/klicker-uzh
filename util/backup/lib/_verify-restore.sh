@@ -34,7 +34,7 @@ fi
 # Function to test PostgreSQL connection
 test_pg_connection() {
     local connection_string="${1:-}"
-    local timeout="${2:-10}"
+    local timeout_duration="${2:-10}"
 
     if [[ -z "$connection_string" ]]; then
         connection_string="$(build_pg_connection_string)"
@@ -43,8 +43,22 @@ test_pg_connection() {
     log_info "Testing PostgreSQL connection..."
 
     # Test connection with a simple query
-    if ! timeout "$timeout" psql "$connection_string" -c "SELECT 1;" &>/dev/null; then
-        return 1
+    # Use cross-platform timeout approach
+    if command -v timeout >/dev/null 2>&1; then
+        # Linux timeout command
+        if ! timeout "$timeout_duration" psql "$connection_string" -c "SELECT 1;" &>/dev/null; then
+            return 1
+        fi
+    elif command -v gtimeout >/dev/null 2>&1; then
+        # macOS GNU coreutils timeout
+        if ! gtimeout "$timeout_duration" psql "$connection_string" -c "SELECT 1;" &>/dev/null; then
+            return 1
+        fi
+    else
+        # Fallback: simple connection test without timeout
+        if ! psql "$connection_string" -c "SELECT 1;" &>/dev/null; then
+            return 1
+        fi
     fi
 
     log_info "PostgreSQL connection test passed"

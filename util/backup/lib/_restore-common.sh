@@ -172,7 +172,63 @@ check_command() {
 # Function to check database tools
 check_database_tools() {
     log_step "Verifying Database Tools"
-    check_command "pg_restore" "PostgreSQL restore tool"
+    
+    # Check for required PostgreSQL tools and auto-configure PATH if needed
+    local tools=("psql" "pg_restore")
+    local missing_tools=()
+    
+    for tool in "${tools[@]}"; do
+        if ! command -v "$tool" &> /dev/null; then
+            missing_tools+=("$tool")
+        fi
+    done
+    
+    # If tools are missing, try to find and add libpq to PATH
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        log_info "PostgreSQL tools not found in PATH, searching for libpq installation..."
+        
+        # Common libpq locations (Homebrew on macOS)
+        local libpq_paths=(
+            "/opt/homebrew/opt/libpq/bin"
+            "/usr/local/opt/libpq/bin"
+            "/opt/homebrew/Cellar/libpq/*/bin"
+            "/usr/local/Cellar/libpq/*/bin"
+        )
+        
+        local found_path=""
+        for path_pattern in "${libpq_paths[@]}"; do
+            # Use glob expansion for wildcard paths
+            for actual_path in $path_pattern; do
+                if [[ -d "$actual_path" && -x "$actual_path/psql" ]]; then
+                    found_path="$actual_path"
+                    break 2
+                fi
+            done
+        done
+        
+        if [[ -n "$found_path" ]]; then
+            log_info "Found libpq at: $found_path"
+            log_info "Adding to PATH for this session..."
+            export PATH="$found_path:$PATH"
+            
+            # Verify tools are now available
+            for tool in "${missing_tools[@]}"; do
+                if command -v "$tool" &> /dev/null; then
+                    log_success "Tool '$tool' is now available"
+                else
+                    error_exit "Tool '$tool' still not available after PATH update"
+                fi
+            done
+        else
+            error_exit "PostgreSQL tools not found. Please install libpq or PostgreSQL client tools."
+        fi
+    else
+        # All tools were already available
+        for tool in "${tools[@]}"; do
+            check_command "$tool" "PostgreSQL tool"
+        done
+    fi
+    
     log_success "Database tools verification completed"
 }
 

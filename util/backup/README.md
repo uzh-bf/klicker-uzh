@@ -10,7 +10,8 @@ Production-ready backup and restore scripts for PostgreSQL databases and Redis d
 
 - `docker` and `docker-compose` - For local development environment
 - `doppler` - For secrets management ([install guide](https://docs.doppler.com/docs/install-cli))
-- `pg_dump` / `pg_restore` - PostgreSQL client tools (`brew install libpq`)
+- `pg_dump` / `pg_restore` / `psql` - PostgreSQL client tools (`brew install libpq`)
+  - **Note**: Scripts automatically detect and configure PostgreSQL tools on most systems
 - `redis-cli` - Redis command-line interface (`brew install redis`)
 
 ### Environment Setup
@@ -164,6 +165,18 @@ echo 'dp.st.your_generated_token' > ~/.doppler-tokens/klicker-uzh-prd
 - Production: `~/.doppler-tokens/klicker-uzh-prd`
 - Staging: `~/.doppler-tokens/klicker-uzh-stg`
 - Development: `~/.doppler-tokens/klicker-uzh-dev`
+
+### PostgreSQL tools not found
+
+Scripts automatically detect PostgreSQL tools (psql, pg_restore) in common locations:
+
+```bash
+# If auto-detection fails, install PostgreSQL client tools:
+brew install libpq
+
+# Or add to PATH manually:
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+```
 
 ### Services not starting
 
