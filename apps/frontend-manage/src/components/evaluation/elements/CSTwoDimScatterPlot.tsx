@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 import { TextSizeType } from '../textSizes'
 import { CaseStudyScatterPlotData } from './CSEvaluationScatter'
 import getLabelForValue from './getLabelForValue'
@@ -256,6 +257,7 @@ function CSTwoDimScatterPlot({
         />
         <Tooltip
           cursor={{ strokeDasharray: '3 3' }}
+          animationDuration={0} // Disable tooltip animation - appear instantly
           content={({ payload }) => {
             if (!payload?.[0]?.payload) return null
             const data = payload[0].payload
@@ -270,109 +272,121 @@ function CSTwoDimScatterPlot({
           }}
         />
 
-        {/* render the base scatter points for all cases & values */}
+        {/* render all scatter points with conditional error bars */}
         {selectedCases.map((caseId) => {
           const caseIx = cases.findIndex((c) => c.id === caseId)
-
-          // do not show the currently hovered point in the scatter plot
-          const filteredData = hoveredPoint
-            ? scatterData[caseId].filter(
-                (point) =>
-                  !(
-                    hoveredPoint.caseId === caseId &&
-                    hoveredPoint.itemLabel === point.itemLabel
-                  )
-              )
-            : scatterData[caseId]
 
           return (
             <Scatter
               key={caseId}
               name={cases[caseIx]?.name}
-              data={filteredData}
+              data={scatterData[caseId]}
               fill={CHART_COLORS[caseIx % 12]}
-              shape={(props: any) => (
-                <circle
-                  cx={props.cx}
-                  cy={props.cy}
-                  r={6}
-                  fill={props.fill}
-                  opacity={0.8}
-                  onMouseEnter={() =>
-                    setHoveredPoint({
-                      caseId,
-                      itemLabel: props.payload.itemLabel,
-                      x: props.payload.x,
-                      y: props.payload.y,
-                    })
-                  }
-                  onMouseLeave={() => setHoveredPoint(null)}
-                  style={{ cursor: 'pointer' }}
-                />
-              )}
+              shape={(props: any) => {
+                const isHovered =
+                  hoveredPoint?.caseId === caseId &&
+                  hoveredPoint?.itemLabel === props.payload.itemLabel
+
+                return (
+                  <g>
+                    {/* visible circle */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={6}
+                      fill={props.fill}
+                      opacity={isHovered ? 1 : 0.8}
+                      stroke={isHovered ? '#000' : 'none'}
+                      strokeWidth={isHovered ? 2 : 0}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                    {/* invisible hover area to trigger tooltip and error bars */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={12}
+                      fill="transparent"
+                      onMouseEnter={() =>
+                        setHoveredPoint({
+                          caseId,
+                          itemLabel: props.payload.itemLabel,
+                          x: props.payload.x,
+                          y: props.payload.y,
+                        })
+                      }
+                      onMouseLeave={() => setHoveredPoint(null)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </g>
+                )
+              }}
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="itemLabel"
-                position="bottom"
-                offset={8}
                 className={textSize.textLg}
+                content={(props: any) => {
+                  // hide label if this point is currently hovered (tooltip is shown instead)
+                  const isHovered =
+                    hoveredPoint?.caseId === caseId &&
+                    hoveredPoint?.itemLabel === props.payload?.itemLabel
+
+                  if (isHovered) return null
+
+                  return (
+                    <text
+                      x={props.x + 5}
+                      y={props.y + 32}
+                      textAnchor="middle"
+                      fill="gray"
+                      className={twMerge(
+                        textSize.textLg,
+                        'pointer-events-none',
+                        hoveredPoint?.caseId === caseId &&
+                          hoveredPoint?.itemLabel === props.value &&
+                          'hidden'
+                      )}
+                    >
+                      {props.value}
+                    </text>
+                  )
+                }}
               />
+
+              {/* show error bars only for hovered point */}
+              {hoveredPoint?.caseId === caseId && (
+                <>
+                  <ErrorBar
+                    dataKey={(entry) =>
+                      entry.itemLabel === hoveredPoint.itemLabel
+                        ? entry.sigmaX
+                        : 0
+                    }
+                    width={4}
+                    strokeWidth={2}
+                    stroke={CHART_COLORS[caseIx % 12]}
+                    direction="x"
+                    opacity={0.8}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  <ErrorBar
+                    dataKey={(entry) =>
+                      entry.itemLabel === hoveredPoint.itemLabel
+                        ? entry.sigmaY
+                        : 0
+                    }
+                    width={4}
+                    strokeWidth={2}
+                    stroke={CHART_COLORS[caseIx % 12]}
+                    direction="y"
+                    opacity={0.8}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                </>
+              )}
             </Scatter>
           )
         })}
-
-        {/* render the hovered point with error bars */}
-        {hoveredPoint &&
-          selectedCases.map((caseId) => {
-            if (caseId !== hoveredPoint.caseId) return null
-
-            const caseIx = cases.findIndex((c) => c.id === caseId)
-            const hoveredPointData = scatterData[caseId].filter(
-              (point) => point.itemLabel === hoveredPoint.itemLabel
-            )
-            if (hoveredPointData.length === 0) return null
-
-            return (
-              <Scatter
-                legendType="none"
-                key={`${caseId}-hovered`}
-                data={hoveredPointData}
-                fill={CHART_COLORS[caseIx % 12]}
-                shape={(props: any) => (
-                  <circle
-                    cx={props.cx}
-                    cy={props.cy}
-                    r={8}
-                    fill={props.fill}
-                    opacity={1}
-                    stroke="#000"
-                    strokeWidth={1}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                )}
-                isAnimationActive={false}
-              >
-                <ErrorBar
-                  dataKey="sigmaX"
-                  width={4}
-                  strokeWidth={2}
-                  opacity={0.8}
-                  stroke={CHART_COLORS[caseIx % 12]}
-                  direction="x"
-                />
-                <ErrorBar
-                  dataKey="sigmaY"
-                  width={4}
-                  strokeWidth={2}
-                  opacity={0.8}
-                  stroke={CHART_COLORS[caseIx % 12]}
-                  direction="y"
-                />
-              </Scatter>
-            )
-          })}
         <Legend
           align="right"
           verticalAlign="top"
