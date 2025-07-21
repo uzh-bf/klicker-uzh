@@ -183,7 +183,7 @@ services:
   postgres:
     image: docker.io/library/postgres:15
     environment:
-      POSTGRES_USER: klicker
+      POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod
     ports:
@@ -193,35 +193,6 @@ services:
     volumes:
       - klicker_data:/var/lib/postgresql/data
       - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
-
-  # diff database
-  postgres_diff:
-    image: docker.io/library/postgres:15
-    environment:
-      POSTGRES_USER: klicker
-      POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: klicker-prod
-    ports:
-      - 5433:5432
-    networks:
-      - klicker
-    volumes:
-      - klicker_data_diff:/var/lib/postgresql/data
-      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
-
-  # lti database
-  postgres_lti:
-    image: docker.io/library/postgres:15
-    environment:
-      POSTGRES_USER: klicker
-      POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: klicker-prod-lti
-    ports:
-      - 5434:5432
-    networks:
-      - klicker
-    volumes:
-      - klicker_data_lti:/var/lib/postgresql/data
 
   # redis instance to support live quiz execution
   redis_exec:
@@ -256,6 +227,4 @@ networks:
 
 volumes:
   klicker_data:
-  klicker_data_diff:
-  klicker_data_lti:
   redis_data:
