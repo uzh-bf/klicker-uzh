@@ -168,7 +168,7 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker'
+  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
