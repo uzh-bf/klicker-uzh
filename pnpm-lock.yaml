@@ -1149,6 +1149,9 @@ importers:
         specifier: 2.15.0
         version: 2.15.0
     devDependencies:
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@types/jsonwebtoken':
         specifier: ^9.0.7
         version: 9.0.7
