@@ -1,12 +1,12 @@
 -- AlterTable
-ALTER TABLE "GroupActivity" ADD COLUMN     "schedulingTaskId" TEXT;
+ALTER TABLE "GroupActivity" ADD COLUMN     "scheduledTaskId" TEXT;
 
 -- AlterTable
 ALTER TABLE "LiveQuiz" ADD COLUMN     "availableFrom" TIMESTAMP(3),
-ADD COLUMN     "schedulingTaskId" TEXT;
+ADD COLUMN     "scheduledTaskId" TEXT;
 
 -- AlterTable
-ALTER TABLE "MicroLearning" ADD COLUMN     "schedulingTaskId" TEXT;
+ALTER TABLE "MicroLearning" ADD COLUMN     "scheduledTaskId" TEXT;
 
 -- AlterTable
-ALTER TABLE "PracticeQuiz" ADD COLUMN     "schedulingTaskId" TEXT;
+ALTER TABLE "PracticeQuiz" ADD COLUMN     "scheduledTaskId" TEXT;

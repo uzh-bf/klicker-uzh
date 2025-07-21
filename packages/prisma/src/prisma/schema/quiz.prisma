@@ -25,8 +25,8 @@ model PracticeQuiz {
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
 
-  availableFrom    DateTime?
-  schedulingTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  availableFrom   DateTime?
+  scheduledTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   isDeleted Boolean @default(false)
 
@@ -83,8 +83,8 @@ model LiveQuiz {
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
 
-  availableFrom    DateTime?
-  schedulingTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  availableFrom   DateTime?
+  scheduledTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   namespace            String    @default(uuid()) @db.Uuid
   pinCode              Int?
@@ -146,7 +146,7 @@ model MicroLearning {
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
-  schedulingTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   arePushNotificationsSent Boolean @default(false)
   isDeleted                Boolean @default(false)
@@ -253,7 +253,7 @@ model GroupActivity {
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
-  schedulingTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   isDeleted Boolean @default(false)
 

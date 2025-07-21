@@ -393,7 +393,7 @@ export async function publishMicroLearning(
       where: { id },
       data: {
         status: DB.PublicationStatus.SCHEDULED,
-        schedulingTaskId: taskId,
+        scheduledTaskId: taskId,
       },
     })
 
@@ -427,9 +427,9 @@ export async function unpublishMicroLearning(
   }
 
   // remove the scheduled hatchet task, if it exists
-  if (microLearning.schedulingTaskId) {
+  if (microLearning.scheduledTaskId) {
     try {
-      await ctx.hatchet.scheduled.delete(microLearning.schedulingTaskId)
+      await ctx.hatchet.scheduled.delete(microLearning.scheduledTaskId)
     } catch (error) {
       console.error(
         `Failed to delete scheduled task for microlearning ${id}:`,
