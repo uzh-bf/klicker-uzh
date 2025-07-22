@@ -1,5 +1,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
   enhanceContext,
   publishScheduledGroupActivity,
   publishScheduledMicroLearning,
@@ -128,10 +130,14 @@ const hatchet = Hatchet.init({
 const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
 const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
 const publishScheduledGroupActivityTask = publishScheduledGroupActivity(hatchet)
+const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
+const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
 const tasks = {
   publishScheduledMicroLearningTask,
   publishScheduledPracticeQuizTask,
   publishScheduledGroupActivityTask,
+  endExpiredMicroLearningTask,
+  endExpiredGroupActivityTask,
 }
 // #endregion
 

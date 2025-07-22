@@ -462,6 +462,94 @@ export async function getPracticeQuizSummary(
   }
 }
 
+export async function publishPracticeQuiz(
+  { id, availableFrom }: { id: string; availableFrom?: Date | null },
+  ctx: ContextWithUser
+) {
+  // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    try {
+      // schedule the task to publish the practice quiz
+      const scheduledTask =
+        await ctx.tasks.publishScheduledPracticeQuizTask.schedule(
+          availableFrom,
+          { practiceQuizId: id }
+        )
+      const taskId = scheduledTask.metadata.id
+
+      // change the status of the practice quiz to scheduled
+      const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+        where: { id, isDeleted: false },
+        data: {
+          availableFrom,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: taskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+      return updatedQuiz
+    } catch (error) {
+      console.error('Error scheduling practice quiz publication:', error)
+      return null
+    }
+  } else {
+    // publish practice quiz completely and link all stacks to the course
+    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
+      where: { id, isDeleted: false },
+      data: { status: DB.PublicationStatus.PUBLISHED },
+      include: { stacks: true },
+    })
+
+    // connect all elementStacks in the practice quiz to the course
+    const courseId = updatedQuiz.courseId
+    await ctx.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        elementStacks: {
+          connect: updatedQuiz.stacks.map((stack) => ({ id: stack.id })),
+        },
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedQuiz
+  }
+}
+
+export async function unpublishPracticeQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // reset the status of the practice quiz to draft and remove the availableFrom date
+  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: { availableFrom: null, status: DB.PublicationStatus.DRAFT },
+    include: { stacks: { include: { elements: true } } },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  // remove the scheduled hatchet task, if it exists
+  if (practiceQuiz.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        practiceQuiz.scheduledPublicationTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for practice quiz ${id}:`,
+        error
+      )
+    }
+  }
+
+  ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+  return practiceQuiz
+}
+
 export async function deletePracticeQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -485,6 +573,23 @@ export async function deletePracticeQuiz(
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
       where: { id },
     })
+
+    // remove the scheduled publication task, if it exists (should only exist for scheduled practice quizzes)
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledPublicationTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled task for practice quiz ${id}:`,
+          error
+        )
+      }
+    }
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the practice quiz is already hard deleted
@@ -576,90 +681,4 @@ export async function removePracticeQuiz(
   })
 
   return id
-}
-
-export async function publishPracticeQuiz(
-  { id, availableFrom }: { id: string; availableFrom?: Date | null },
-  ctx: ContextWithUser
-) {
-  // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
-  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
-    try {
-      // schedule the task to publish the practice quiz
-      const scheduledTask =
-        await ctx.tasks.publishScheduledPracticeQuizTask.schedule(
-          availableFrom,
-          { practiceQuizId: id }
-        )
-      const taskId = scheduledTask.metadata.id
-
-      // change the status of the practice quiz to scheduled
-      const updatedQuiz = await ctx.prisma.practiceQuiz.update({
-        where: { id, isDeleted: false },
-        data: {
-          availableFrom,
-          status: DB.PublicationStatus.SCHEDULED,
-          scheduledTaskId: taskId,
-        },
-      })
-
-      ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-      return updatedQuiz
-    } catch (error) {
-      console.error('Error scheduling practice quiz publication:', error)
-      return null
-    }
-  } else {
-    // publish practice quiz completely and link all stacks to the course
-    const updatedQuiz = await ctx.prisma.practiceQuiz.update({
-      where: { id, isDeleted: false },
-      data: { status: DB.PublicationStatus.PUBLISHED },
-      include: { stacks: true },
-    })
-
-    // connect all elementStacks in the practice quiz to the course
-    const courseId = updatedQuiz.courseId
-    await ctx.prisma.course.update({
-      where: { id: courseId },
-      data: {
-        elementStacks: {
-          connect: updatedQuiz.stacks.map((stack) => ({ id: stack.id })),
-        },
-      },
-    })
-
-    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-    return updatedQuiz
-  }
-}
-
-export async function unpublishPracticeQuiz(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  // reset the status of the practice quiz to draft and remove the availableFrom date
-  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { availableFrom: null, status: DB.PublicationStatus.DRAFT },
-    include: { stacks: { include: { elements: true } } },
-  })
-
-  if (!practiceQuiz) {
-    return null
-  }
-
-  // remove the scheduled hatchet task, if it exists
-  if (practiceQuiz.scheduledTaskId) {
-    try {
-      await ctx.hatchet.scheduled.delete(practiceQuiz.scheduledTaskId)
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for practice quiz ${id}:`,
-        error
-      )
-    }
-  }
-
-  ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-  return practiceQuiz
 }

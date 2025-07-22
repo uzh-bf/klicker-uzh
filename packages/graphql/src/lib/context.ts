@@ -10,6 +10,8 @@ import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'
 import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
   publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
@@ -46,6 +48,8 @@ export interface Context extends BaseContext {
     publishScheduledGroupActivityTask: ReturnType<
       typeof publishScheduledGroupActivity
     >
+    endExpiredMicroLearningTask: ReturnType<typeof endExpiredMicroLearning>
+    endExpiredGroupActivityTask: ReturnType<typeof endExpiredGroupActivity>
   }
 }
 

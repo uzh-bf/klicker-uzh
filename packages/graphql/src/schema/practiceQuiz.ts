@@ -176,7 +176,8 @@ export interface IPracticeQuiz
     | 'completedCount'
     | 'repeatedCount'
     | 'areInstancesOutdated'
-    | 'scheduledTaskId'
+    | 'scheduledPublicationTaskId'
+    | 'scheduledCompletionTaskId'
   > {
   course?: ICourse
   stacks?: IElementStack[]

@@ -1,6 +1,9 @@
+import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import * as Prisma from '@klicker-uzh/prisma'
 import EventEmitter from 'events'
+import { createPubSub } from 'graphql-yoga'
+import { Redis } from 'ioredis'
 import { sendTeamsNotifications } from '../lib/util.js'
 
 function initializePrisma() {
@@ -12,6 +15,31 @@ function initializePrisma() {
   })
 
   return prisma
+}
+
+function initializeSubscriptions() {
+  const publishClient = new Redis({
+    family: 4,
+    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+    password: process.env.REDIS_CACHE_PASS ?? '',
+    port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
+  })
+
+  const subscribeClient = new Redis({
+    family: 4,
+    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+    password: process.env.REDIS_CACHE_PASS ?? '',
+    port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
+  })
+
+  const eventTarget = createRedisEventTarget({
+    publishClient,
+    subscribeClient,
+  })
+  const pubSub = createPubSub({ eventTarget })
+  return pubSub
 }
 
 export function publishScheduledMicroLearning(hatchet: Hatchet) {
@@ -215,4 +243,133 @@ export function publishScheduledPracticeQuiz(hatchet: Hatchet) {
   })
 
   return publishScheduledPracticeQuizTask
+}
+
+export function endExpiredMicroLearning(hatchet: Hatchet) {
+  const endExpiredMicroLearningTask = hatchet.task({
+    name: 'end-expired-micro-learnings',
+    retries: 3,
+    fn: async ({ microLearningId }: { microLearningId: string }) => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+      const pubSub = initializeSubscriptions()
+
+      try {
+        const microLearning = await prisma.microLearning.findUnique({
+          where: {
+            id: microLearningId,
+            isDeleted: false,
+            status: Prisma.PublicationStatus.PUBLISHED,
+            scheduledEndAt: { lte: new Date() },
+          },
+        })
+
+        if (!microLearning) {
+          sendTeamsNotifications(
+            'hatchet/microlearning-end',
+            `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`
+          )
+          throw new Error(
+            `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`
+          )
+        }
+
+        // end the microlearning
+        const updatedMicroLearning = await prisma.microLearning.update({
+          where: { id: microLearningId },
+          data: { status: Prisma.PublicationStatus.ENDED },
+        })
+
+        await sendTeamsNotifications(
+          'hatchet/microlearning-end',
+          `Successfully ended expired microlearning ${updatedMicroLearning.id}`
+        )
+
+        // publish the event to subscribers
+        pubSub.publish('microLearningEnded', updatedMicroLearning)
+        emitter.emit('invalidate', {
+          typename: 'MicroLearning',
+          id: updatedMicroLearning.id,
+        })
+
+        return { success: true }
+      } catch (error) {
+        console.error('Error ending expired microlearning:', error)
+        sendTeamsNotifications(
+          'hatchet/microlearning-end',
+          `Error ending microlearning with ID ${microLearningId}: ${error}`
+        )
+        throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
+      }
+    },
+  })
+
+  return endExpiredMicroLearningTask
+}
+
+export function endExpiredGroupActivity(hatchet: Hatchet) {
+  const endExpiredGroupActivityTask = hatchet.task({
+    name: 'end-expired-group-activities',
+    retries: 3,
+    fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+      const pubSub = initializeSubscriptions()
+
+      try {
+        const groupActivity = await prisma.groupActivity.findUnique({
+          where: {
+            id: groupActivityId,
+            isDeleted: false,
+            status: Prisma.PublicationStatus.PUBLISHED,
+            scheduledEndAt: { lte: new Date() },
+          },
+        })
+
+        if (!groupActivity) {
+          sendTeamsNotifications(
+            'hatchet/group-activity-end',
+            `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`
+          )
+          throw new Error(
+            `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`
+          )
+        }
+
+        // end the group activity
+        const updatedGroupActivity = await prisma.groupActivity.update({
+          where: { id: groupActivityId },
+          data: { status: Prisma.PublicationStatus.ENDED },
+        })
+
+        await sendTeamsNotifications(
+          'hatchet/group-activity-end',
+          `Successfully ended expired group activity ${updatedGroupActivity.id}`
+        )
+
+        // publish the event to subscribers
+        pubSub.publish('groupActivityEnded', updatedGroupActivity)
+        pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+        emitter.emit('invalidate', {
+          typename: 'GroupActivity',
+          id: updatedGroupActivity.id,
+        })
+
+        return { success: true }
+      } catch (error) {
+        console.error('Error ending expired group activity:', error)
+        sendTeamsNotifications(
+          'hatchet/group-activity-end',
+          `Error ending group activity with ID ${groupActivityId}: ${error}`
+        )
+        throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
+      }
+    },
+  })
+
+  return endExpiredGroupActivityTask
 }

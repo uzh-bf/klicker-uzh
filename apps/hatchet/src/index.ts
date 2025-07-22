@@ -1,5 +1,7 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
   publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
@@ -23,7 +25,7 @@ const hatchet = Hatchet.init({
       : 'INFO',
 })
 
-const worker = await hatchet.worker('activity-publications', {
+const publicationWorker = await hatchet.worker('activity-publications', {
   workflows: [
     publishScheduledMicroLearning(hatchet),
     publishScheduledPracticeQuiz(hatchet),
@@ -31,4 +33,15 @@ const worker = await hatchet.worker('activity-publications', {
   ],
   slots: 100,
 })
-await worker.start()
+
+const completionWorker = await hatchet.worker('activity-endings', {
+  workflows: [
+    endExpiredMicroLearning(hatchet),
+    endExpiredGroupActivity(hatchet),
+  ],
+  slots: 100,
+})
+
+// run all workers concurrently
+publicationWorker.start()
+completionWorker.start()

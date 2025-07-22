@@ -8,7 +8,7 @@ import { prop, sortBy } from 'remeda'
 import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
+import { orderStacks } from '../lib/util.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -1985,83 +1985,46 @@ export async function enableGamification(
   return course
 }
 
+// TODO: once all available activity endings have been migrated to scheduled tasks, remove this function and the associated cronjob
 export async function endExpiredActivities(ctx: Context) {
-  // ! Set microlearning status to ended for all published microlearnings that have ended
-  const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
-    where: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledEndAt: {
-        lte: new Date(),
-      },
-    },
-  })
+  // // ! Set group activity status to ended for all published group activities that have ended
+  // const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
+  //   where: {
+  //     status: DB.PublicationStatus.PUBLISHED,
+  //     scheduledEndAt: {
+  //       lte: new Date(),
+  //     },
+  //   },
+  // })
 
-  const updatedMicroLearningsToEnd = await Promise.all(
-    microlearningsToEnd.map((micro) =>
-      ctx.prisma.microLearning.update({
-        where: {
-          id: micro.id,
-        },
-        data: {
-          status: DB.PublicationStatus.ENDED,
-        },
-      })
-    )
-  )
+  // const updatedGroupActivitiesToEnd = await Promise.all(
+  //   groupActivitiesToEnd.map((group) =>
+  //     ctx.prisma.groupActivity.update({
+  //       where: {
+  //         id: group.id,
+  //       },
+  //       data: {
+  //         status: DB.PublicationStatus.ENDED,
+  //       },
+  //     })
+  //   )
+  // )
 
-  if (updatedMicroLearningsToEnd.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/endMicroLearningsCronjob',
-      `Successfully ended ${updatedMicroLearningsToEnd.length} microlearnings`
-    )
-  }
+  // if (updatedGroupActivitiesToEnd.length !== 0) {
+  //   await sendTeamsNotifications(
+  //     'graphql/endGroupActivitiesCronjob',
+  //     `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
+  //   )
+  // }
 
-  updatedMicroLearningsToEnd.forEach((micro) => {
-    ctx.pubSub.publish('microLearningEnded', micro)
-    ctx.emitter.emit('invalidate', {
-      typename: 'MicroLearning',
-      id: micro.id,
-    })
-  })
-
-  // ! Set group activity status to ended for all published group activities that have ended
-  const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
-    where: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledEndAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedGroupActivitiesToEnd = await Promise.all(
-    groupActivitiesToEnd.map((group) =>
-      ctx.prisma.groupActivity.update({
-        where: {
-          id: group.id,
-        },
-        data: {
-          status: DB.PublicationStatus.ENDED,
-        },
-      })
-    )
-  )
-
-  if (updatedGroupActivitiesToEnd.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/endGroupActivitiesCronjob',
-      `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
-    )
-  }
-
-  updatedGroupActivitiesToEnd.forEach((activity) => {
-    ctx.pubSub.publish('groupActivityEnded', activity)
-    ctx.pubSub.publish('singleGroupActivityEnded', activity)
-    ctx.emitter.emit('invalidate', {
-      typename: 'GroupActivity',
-      id: activity.id,
-    })
-  })
+  // updatedGroupActivitiesToEnd.forEach((activity) => {
+  //   ctx.pubSub.publish('groupActivityEnded', activity)
+  //   ctx.pubSub.publish('singleGroupActivityEnded', activity)
+  //   ctx.emitter.emit('invalidate', {
+  //     typename: 'GroupActivity',
+  //     id: activity.id,
+  //   })
+  // })
 
   return true
 }

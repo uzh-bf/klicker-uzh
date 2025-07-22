@@ -24,6 +24,8 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
 import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
   publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
@@ -99,10 +101,14 @@ export async function testInitialization(
   const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
   const publishScheduledGroupActivityTask =
     publishScheduledGroupActivity(hatchet)
+  const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
+  const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
   const tasks = {
     publishScheduledMicroLearningTask,
     publishScheduledPracticeQuizTask,
     publishScheduledGroupActivityTask,
+    endExpiredMicroLearningTask,
+    endExpiredGroupActivityTask,
   }
 
   // mock context with user including all required properties

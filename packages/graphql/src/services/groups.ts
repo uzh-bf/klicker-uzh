@@ -1606,21 +1606,30 @@ export async function publishGroupActivity(
   }
 
   if (groupActivity.scheduledStartAt > new Date()) {
-    // schedule the task to publish the group activity at the scheduled start date
     try {
-      const scheduledTask =
+      // schedule the task to publish the group activity at the scheduled start date
+      const publicationTask =
         await ctx.tasks.publishScheduledGroupActivityTask.schedule(
           groupActivity.scheduledStartAt,
           { groupActivityId: groupActivity.id }
         )
-      const taskId = scheduledTask.metadata.id
+      const publicationTaskId = publicationTask.metadata.id
+
+      // schedule the task to end the group activity at the scheduled end date
+      const completionTask =
+        await ctx.tasks.endExpiredGroupActivityTask.schedule(
+          groupActivity.scheduledEndAt,
+          { groupActivityId: groupActivity.id }
+        )
+      const completionTaskId = completionTask.metadata.id
 
       // set the status of the group activity to scheduled and store the hatchet task ID
       const updatedGroupActivity = await ctx.prisma.groupActivity.update({
         where: { id },
         data: {
           status: DB.PublicationStatus.SCHEDULED,
-          scheduledTaskId: taskId,
+          scheduledPublicationTaskId: publicationTaskId,
+          scheduledCompletionTaskId: completionTaskId,
         },
       })
 
@@ -1641,13 +1650,54 @@ export async function publishGroupActivity(
     return updatedGroupActivity
   }
 
+  // if the start date is in the past, but the end date is in the future, schedule the completion task
+  const completionTask = await ctx.tasks.endExpiredGroupActivityTask.schedule(
+    groupActivity.scheduledEndAt,
+    { groupActivityId: groupActivity.id }
+  )
+  const completionTaskId = completionTask.metadata.id
+
   // if the start date is in the past, directly publish the group activity
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
-    data: { status: DB.PublicationStatus.PUBLISHED },
+    data: {
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledCompletionTaskId: completionTaskId,
+    },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+  return updatedGroupActivity
+}
+
+export async function openGroupActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+    },
+  })
+
+  // remove the scheduled hatchet task, if it exists
+  if (updatedGroupActivity.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        updatedGroupActivity.scheduledPublicationTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // trigger subscription to immediately update student frontend
+  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
   return updatedGroupActivity
 }
 
@@ -1666,12 +1716,28 @@ export async function unpublishGroupActivity(
   }
 
   // remove the scheduled hatchet task, if it exists
-  if (groupActivity.scheduledTaskId) {
+  if (groupActivity.scheduledPublicationTaskId) {
     try {
-      await ctx.hatchet.scheduled.delete(groupActivity.scheduledTaskId)
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledPublicationTaskId
+      )
     } catch (error) {
       console.error(
-        `Failed to delete scheduled task for group activity ${id}:`,
+        `Failed to delete scheduled publication task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // remove the completion task, if it exists
+  if (groupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
         error
       )
     }
@@ -1679,24 +1745,6 @@ export async function unpublishGroupActivity(
 
   ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
   return groupActivity
-}
-
-export async function openGroupActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
-    data: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledStartAt: new Date(),
-    },
-  })
-
-  // trigger subscription to immediately update student frontend
-  ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
-
-  return updatedGroupActivity
 }
 
 export async function endGroupActivity(
@@ -1711,9 +1759,74 @@ export async function endGroupActivity(
     },
   })
 
+  // remove the scheduled completion task, if it exists
+  if (updatedGroupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        updatedGroupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
   // trigger subscription to immediately update student frontend
   ctx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
   ctx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+
+  return updatedGroupActivity
+}
+
+export async function extendGroupActivity(
+  { id, endDate }: { id: string; endDate: Date },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  const groupActivity = await ctx.prisma.groupActivity.update({
+    where: {
+      id,
+      status: {
+        in: [DB.PublicationStatus.SCHEDULED, DB.PublicationStatus.PUBLISHED],
+      },
+      scheduledEndAt: { gt: new Date() },
+    },
+    data: { scheduledEndAt: endDate },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the previous scheduled completion task, if it exists and create a new one
+  if (groupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+  const completionTask = await ctx.tasks.endExpiredGroupActivityTask.schedule(
+    endDate,
+    { groupActivityId: groupActivity.id }
+  )
+
+  // store the task ID of the completion task on the group activity
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: { scheduledCompletionTaskId: completionTask.metadata.id },
+  })
 
   return updatedGroupActivity
 }
@@ -1747,6 +1860,41 @@ export async function deleteGroupActivity(
   ) {
     const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
 
+    // remove the scheduled publication task, if it exists (should only exist for scheduled group activities)
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledPublicationTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled publication task for group activity ${id}:`,
+          error
+        )
+      }
+    }
+
+    // remove the scheduled completion task, if it exists (should only exist for scheduled/published group activities)
+    if (
+      deletedItem.scheduledCompletionTaskId &&
+      (deletedItem.status === DB.PublicationStatus.SCHEDULED ||
+        deletedItem.status === DB.PublicationStatus.PUBLISHED)
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledCompletionTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled completion task for group activity ${id}:`,
+          error
+        )
+      }
+    }
+
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the group activity is already hard deleted
     // access requests need to be updated as well, since the derived permissions on elements might have changed
@@ -1765,6 +1913,23 @@ export async function deleteGroupActivity(
           where: { id },
           data: { isDeleted: true },
         })
+
+        // remove the scheduled completion task, if it exists (should only exist for published group activities)
+        if (
+          updatedActivity.status === DB.PublicationStatus.PUBLISHED &&
+          updatedActivity.scheduledCompletionTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(
+              updatedActivity.scheduledCompletionTaskId
+            )
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled completion task for microlearning ${id}:`,
+              error
+            )
+          }
+        }
 
         // update derived permissions for this group activity (after soft deletion)
         // this function call automatically includes permission updates for all linked elements
@@ -1946,31 +2111,6 @@ export async function getGradingGroupActivity(
   }))
 
   return { ...groupActivity, activityInstances: mappedInstances }
-}
-
-export async function extendGroupActivity(
-  { id, endDate }: { id: string; endDate: Date },
-  ctx: ContextWithUser
-) {
-  // check that the new end date lies in the future
-  if (endDate < new Date()) {
-    return null
-  }
-
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: {
-      id,
-      status: {
-        in: [DB.PublicationStatus.SCHEDULED, DB.PublicationStatus.PUBLISHED],
-      },
-      scheduledEndAt: { gt: new Date() },
-    },
-    data: {
-      scheduledEndAt: endDate,
-    },
-  })
-
-  return updatedGroupActivity
 }
 
 interface GradeGroupActivitySubmissionArgs {
