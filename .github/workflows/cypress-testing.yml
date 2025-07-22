@@ -223,6 +223,12 @@ jobs:
 
           # Start Hatchet Engine in background
           echo "🔄 Starting Hatchet Engine..."
+
+          # First, let's check if the configuration was created properly
+          echo "📋 Checking if config was generated:"
+          docker run --rm -v hatchet_config:/hatchet/config alpine ls -la /hatchet/config/ || echo "No config found"
+
+          # Start the engine with additional debug environment variables
           docker run -d --name hatchet_engine --network host \
             -v hatchet_config:/hatchet/config \
             -v hatchet_certs:/hatchet/certs \
@@ -230,8 +236,16 @@ jobs:
             -e SERVER_GRPC_BIND_ADDRESS='0.0.0.0' \
             -e SERVER_GRPC_PORT='7077' \
             -e SERVER_GRPC_INSECURE='t' \
+            -e SERVER_TASKQUEUE_RABBITMQ_URL='amqp://user:password@localhost:5673/' \
+            -e SERVER_AUTH_COOKIE_DOMAIN='localhost:8080' \
+            -e SERVER_AUTH_COOKIE_INSECURE='t' \
+            -e SERVER_GRPC_BROADCAST_ADDRESS='localhost:7077' \
+            -e SERVER_DEFAULT_ENGINE_VERSION='V1' \
+            -e HATCHET_LOG_LEVEL='debug' \
             ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest \
             /hatchet/hatchet-engine --config /hatchet/config
+
+          echo "✅ Hatchet Engine started with PID: $(docker ps -q -f name=hatchet_engine)"
 
           # Start Hatchet Dashboard in background  
           echo "🔄 Starting Hatchet Dashboard..."
@@ -248,30 +262,53 @@ jobs:
           # First check if the container is running
           if ! docker ps | grep hatchet_engine; then
             echo "❌ Hatchet Engine container is not running!"
-            echo "Container logs:"
-            docker logs hatchet_engine || true
+            echo "All container logs:"
+            docker logs hatchet_engine 2>&1 || true
             exit 1
           fi
           echo "✅ Hatchet Engine container is running"
 
-          # Check what ports are exposed
+          # Give the container a moment to start up
+          sleep 5
+
+          # Show all container logs to see what's happening
+          echo "📋 Full container logs:"
+          docker logs hatchet_engine 2>&1 || echo "No logs available"
+
+          # Check the container filesystem and process
+          echo "📋 Container filesystem check:"
+          docker exec hatchet_engine ls -la /hatchet/ 2>/dev/null || echo "Cannot access /hatchet/"
+          docker exec hatchet_engine ls -la /hatchet/config/ 2>/dev/null || echo "Cannot access /hatchet/config/"
+
+          # Try to see if hatchet binary exists and get help
+          echo "📋 Hatchet binary info:"
+          docker exec hatchet_engine /hatchet/hatchet-engine --help 2>/dev/null || echo "Cannot get hatchet help"
+
+          # Check what ports are exposed and listening
           echo "📋 Container port information:"
           docker port hatchet_engine || true
 
-          # Check if the process is listening on the port inside the container
-          echo "📋 Checking if Hatchet Engine is listening on port 7077 inside container:"
-          docker exec hatchet_engine netstat -tlnp | grep :7077 || echo "No process listening on 7077"
+          # Check if any Hatchet process is listening on common ports
+          echo "📋 Checking all listening ports inside container:"
+          docker exec hatchet_engine netstat -tlnp 2>/dev/null || echo "netstat not available"
+
+          # Try to check if the container has any running processes
+          echo "📋 Container processes:"
+          docker exec hatchet_engine ps aux 2>/dev/null || echo "ps not available"
 
           attempt=0
           max_attempts=60
-          until curl -f http://localhost:7077/health 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+          # Try both common Hatchet ports (7070 and 7077) and also try without /health endpoint
+          until curl -f http://localhost:7077/health 2>/dev/null || curl -f http://localhost:7070/health 2>/dev/null || curl -f http://localhost:7077/ 2>/dev/null || curl -f http://localhost:7070/ 2>/dev/null || [ $attempt -eq $max_attempts ]; do
             echo "Attempt $attempt/$max_attempts: Hatchet Engine not ready, waiting..."
-            # Every 10 attempts, show container status
-            if [ $((attempt % 10)) -eq 0 ]; then
+            # Every 5 attempts, show container status and logs
+            if [ $((attempt % 5)) -eq 0 ] && [ $attempt -gt 0 ]; then
               echo "📋 Container status:"
               docker ps | grep hatchet_engine || echo "Container not found"
               echo "📋 Recent container logs:"
-              docker logs --tail 10 hatchet_engine || true
+              docker logs --tail 20 hatchet_engine 2>&1 || true
+              echo "📋 Checking if container is still alive:"
+              docker exec hatchet_engine echo "Container is responsive" 2>/dev/null || echo "Container not responsive"
             fi
             sleep 2
             attempt=$((attempt + 1))
