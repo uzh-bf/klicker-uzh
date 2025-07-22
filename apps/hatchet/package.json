@@ -27,6 +27,8 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s build:ts",
+    "build:instrument": "nyc instrument --compact=false src instrumented",
+    "build:test": "run-s build:instrument build:ts",
     "build:ts": "rollup -c",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",

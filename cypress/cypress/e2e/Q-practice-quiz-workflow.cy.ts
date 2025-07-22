@@ -1,9 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
-// timestamps need to be dynamic to ensure full continued functionality
-const currentYear = new Date().getFullYear()
-
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', function () {
   before(() => {
