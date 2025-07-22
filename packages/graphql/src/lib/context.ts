@@ -13,9 +13,10 @@ import {
   endExpiredGroupActivity,
   endExpiredMicroLearning,
   publishScheduledGroupActivity,
+  publishScheduledLiveQuiz,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
-} from 'src/services/tasks.js'
+} from '../services/tasks.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -48,6 +49,7 @@ export interface Context extends BaseContext {
     publishScheduledGroupActivityTask: ReturnType<
       typeof publishScheduledGroupActivity
     >
+    publishScheduledLiveQuizTask: ReturnType<typeof publishScheduledLiveQuiz>
     endExpiredMicroLearningTask: ReturnType<typeof endExpiredMicroLearning>
     endExpiredGroupActivityTask: ReturnType<typeof endExpiredGroupActivity>
   }

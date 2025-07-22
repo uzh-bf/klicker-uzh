@@ -27,6 +27,7 @@ import {
   endExpiredGroupActivity,
   endExpiredMicroLearning,
   publishScheduledGroupActivity,
+  publishScheduledLiveQuiz,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
 } from '../src/services/tasks.js'
@@ -101,12 +102,14 @@ export async function testInitialization(
   const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
   const publishScheduledGroupActivityTask =
     publishScheduledGroupActivity(hatchet)
+  const publishScheduledLiveQuizTask = publishScheduledLiveQuiz(hatchet)
   const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
   const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
   const tasks = {
     publishScheduledMicroLearningTask,
     publishScheduledPracticeQuizTask,
     publishScheduledGroupActivityTask,
+    publishScheduledLiveQuizTask,
     endExpiredMicroLearningTask,
     endExpiredGroupActivityTask,
   }

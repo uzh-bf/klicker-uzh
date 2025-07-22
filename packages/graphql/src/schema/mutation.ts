@@ -735,6 +735,35 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      scheduleLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: {
+          id: t.arg.string({ required: true }),
+          availableFrom: t.arg({ type: 'Date', required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.scheduleLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      unpublishLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.unpublishLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
       deleteFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,

@@ -532,7 +532,7 @@ export async function unpublishPracticeQuiz(
     return null
   }
 
-  // remove the scheduled hatchet task, if it exists
+  // remove the scheduled hatchet publication task, if it exists
   if (practiceQuiz.scheduledPublicationTaskId) {
     try {
       await ctx.hatchet.scheduled.delete(

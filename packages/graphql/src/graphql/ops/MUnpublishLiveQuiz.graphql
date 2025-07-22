@@ -1,0 +1,8 @@
+mutation UnpublishLiveQuiz($id: String!) {
+  unpublishLiveQuiz(id: $id) {
+    id
+    name
+    status
+    availableFrom
+  }
+}

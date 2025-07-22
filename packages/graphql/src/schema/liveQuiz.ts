@@ -173,6 +173,7 @@ interface ILiveQuizMeta {
   id: string
   name: string
   status: DB.PublicationStatus
+  availableFrom?: Date | null
 }
 
 export const LiveQuizMetaRef = builder.objectRef<ILiveQuizMeta>('LiveQuizMeta')
@@ -181,6 +182,7 @@ export const LiveQuizMeta = LiveQuizMetaRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     status: t.expose('status', { type: PublicationStatus }),
+    availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
   }),
 })
 
