@@ -153,7 +153,7 @@ jobs:
       - name: Initialize Hatchet
         run: |
           # Install postgresql client for pg_isready
-          sudo apt-get update && sudo apt-get install -y postgresql-client
+          sudo apt-get update && sudo apt-get install -y postgresql-client netcat-openbsd
 
           # Wait for Hatchet dependencies to be ready
           echo "Waiting for Hatchet Postgres..."
@@ -164,10 +164,34 @@ jobs:
           echo "✅ Postgres is ready"
 
           echo "Waiting for RabbitMQ..."
-          until curl -f http://localhost:15673/api/overview 2>/dev/null; do
-            echo "RabbitMQ not ready, waiting..."
+          attempt=0
+          max_attempts=60
+          until nc -z localhost 5673 || [ $attempt -eq $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: RabbitMQ AMQP port not ready, waiting..."
             sleep 2
+            attempt=$((attempt + 1))
           done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ RabbitMQ AMQP port failed to start within timeout"
+            exit 1
+          fi
+          echo "✅ RabbitMQ AMQP port is ready"
+
+          # Wait for management UI to be ready
+          echo "Waiting for RabbitMQ Management UI..."
+          attempt=0
+          max_attempts=60
+          until curl -f -u user:password http://localhost:15673/api/aliveness-test/%2F 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: RabbitMQ Management UI not ready, waiting..."
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ RabbitMQ Management UI failed to start within timeout"
+            exit 1
+          fi
           echo "✅ RabbitMQ is ready"
 
           # Run Hatchet database migrations
