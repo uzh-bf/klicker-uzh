@@ -919,9 +919,9 @@ export async function upsertDailyTimelineEntry({
 }
 
 // cronjob function to aggregate daily timeline entries into weekly ones once per day (for the ongoing and last week)
-export async function updateWeeklyTimelineEntries(ctx: Context) {
+export async function updateWeeklyTimelineEntries(prisma: DB.PrismaClient) {
   // get all course ids
-  const courses = await ctx.prisma.course.findMany({
+  const courses = await prisma.course.findMany({
     select: {
       id: true,
     },
@@ -929,11 +929,11 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 
   // iterate over all courses and update weekly timeline entries
   for (const course of courses) {
-    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, ctx)
+    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, prisma)
   }
 
   // remove all daily timeline entries older than 2 weeks
-  await ctx.prisma.timelineEntry.deleteMany({
+  await prisma.timelineEntry.deleteMany({
     where: {
       type: DB.TimelineEntryType.DAILY,
       timestamp: {
@@ -947,7 +947,7 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 
 export async function updateWeeklyTimelineEntriesCourse(
   { courseId }: { courseId: string },
-  ctx: Context
+  prisma: DB.PrismaClient
 ) {
   // get start date of current week (monday) in UTC
   const startDateCurrentWeek = dayjs().utc().startOf('isoWeek').toDate()
@@ -961,7 +961,7 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
-  const courseTimelineLastWeek = await ctx.prisma.course.findUnique({
+  const courseTimelineLastWeek = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
       timelineEntries: {
@@ -978,7 +978,7 @@ export async function updateWeeklyTimelineEntriesCourse(
       },
     },
   })
-  const courseTimelineCurrentWeek = await ctx.prisma.course.findUnique({
+  const courseTimelineCurrentWeek = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
       timelineEntries: {
@@ -1052,7 +1052,7 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // execute all weekly timeline updates in a single transaction and log the number of updateså
   if (updates.length > 0) {
-    await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.$transaction(async (prisma) => {
       for (const update of updates) {
         await prisma.timelineEntry.upsert(update)
       }

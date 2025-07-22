@@ -1,6 +1,3 @@
-heartbeats:
-  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
-
 auth:
   priorityClassName: staging-workload
 

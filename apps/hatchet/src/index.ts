@@ -2,9 +2,14 @@ import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   endExpiredGroupActivity,
   endExpiredMicroLearning,
+  finalRandomGroupAssignmentsCron,
   publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
+  runningRandomGroupAssignmentsCron,
+  sendPushNotificationsCron,
+  updateGroupAverageScoresCron,
+  updateWeeklyTimelineEntriesCron,
 } from '@klicker-uzh/graphql'
 
 // ! Hatchet setup
@@ -42,6 +47,17 @@ const completionWorker = await hatchet.worker('activity-endings', {
   slots: 100,
 })
 
+const cronjobWorker = await hatchet.worker('cron-jobs', {
+  workflows: [
+    updateGroupAverageScoresCron(hatchet),
+    runningRandomGroupAssignmentsCron(hatchet),
+    finalRandomGroupAssignmentsCron(hatchet),
+    updateWeeklyTimelineEntriesCron(hatchet),
+    sendPushNotificationsCron(hatchet),
+  ],
+})
+
 // run all workers concurrently
 publicationWorker.start()
 completionWorker.start()
+cronjobWorker.start()
