@@ -1,6 +1,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
   enhanceContext,
+  publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
   schema,
@@ -126,9 +127,11 @@ const hatchet = Hatchet.init({
 // ? for the context to correctly accept them, update the context type in the context.ts file
 const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
 const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
+const publishScheduledGroupActivityTask = publishScheduledGroupActivity(hatchet)
 const tasks = {
   publishScheduledMicroLearningTask,
   publishScheduledPracticeQuizTask,
+  publishScheduledGroupActivityTask,
 }
 // #endregion
 

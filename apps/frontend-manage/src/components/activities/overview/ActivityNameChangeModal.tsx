@@ -69,7 +69,7 @@ function ActivityNameChangeModal({
                 ? [
                     {
                       query: GetSingleCourseDocument,
-                      variables: { id: courseId },
+                      variables: { courseId },
                     },
                   ]
                 : []),

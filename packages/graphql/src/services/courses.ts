@@ -1985,6 +1985,7 @@ export async function enableGamification(
   return course
 }
 
+// TODO: once all of its content has been migrated, remove this function and the associated cronjob
 export async function publishScheduledActivities(ctx: Context) {
   // ! Publish scheduled group activities
   const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({

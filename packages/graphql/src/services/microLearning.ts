@@ -371,14 +371,13 @@ export async function publishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, status: DB.PublicationStatus.DRAFT },
+    where: { id, isDeleted: false, status: DB.PublicationStatus.DRAFT },
   })
 
   if (!microLearning) {
     return null
   }
 
-  // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
     // schedule the task to publish the microlearning at the scheduled start date
     try {
@@ -404,6 +403,15 @@ export async function publishMicroLearning(
       console.error(`Failed to schedule task for microlearning ${id}:`, error)
       return null
     }
+  } else if (microLearning.scheduledEndAt < new Date()) {
+    // if the scheduled end date is in the past, set the status to ended
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: { id },
+      data: { status: DB.PublicationStatus.ENDED },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    return updatedMicroLearning
   }
 
   // if the start date is in the past, directly publish the microlearning

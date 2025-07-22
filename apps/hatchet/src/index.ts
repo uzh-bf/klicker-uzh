@@ -1,5 +1,6 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
+  publishScheduledGroupActivity,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
 } from '@klicker-uzh/graphql'
@@ -26,6 +27,7 @@ const worker = await hatchet.worker('activity-publications', {
   workflows: [
     publishScheduledMicroLearning(hatchet),
     publishScheduledPracticeQuiz(hatchet),
+    publishScheduledGroupActivity(hatchet),
   ],
   slots: 100,
 })

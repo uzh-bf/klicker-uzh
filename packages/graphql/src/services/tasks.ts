@@ -77,6 +77,69 @@ export function publishScheduledMicroLearning(hatchet: Hatchet) {
   return publishScheduledMicroLearningTask
 }
 
+export function publishScheduledGroupActivity(hatchet: Hatchet) {
+  const publishScheduledGroupActivityTask = hatchet.task({
+    name: 'publish-scheduled-group-activity',
+    retries: 3,
+    fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+
+      try {
+        // check if the group activity exists and if its start date is in the past
+        const groupActivity = await prisma.groupActivity.findUnique({
+          where: {
+            id: groupActivityId,
+            scheduledStartAt: { lte: new Date() },
+            status: Prisma.PublicationStatus.SCHEDULED,
+          },
+        })
+
+        if (!groupActivity) {
+          sendTeamsNotifications(
+            'hatchet/group-activity-start',
+            `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`
+          )
+          throw new Error(
+            `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`
+          )
+        }
+
+        // publish the group activity
+        await prisma.groupActivity.update({
+          where: { id: groupActivityId },
+          data: { status: Prisma.PublicationStatus.PUBLISHED },
+        })
+
+        // send a teams notification
+        await sendTeamsNotifications(
+          'graphql/publishScheduledGroupActivitys',
+          `Successfully published scheduled group activity ${groupActivity.id}`
+        )
+
+        // invalidate the cache for the group activity
+        emitter.emit('invalidate', {
+          typename: 'GroupActivity',
+          id: groupActivity.id,
+        })
+
+        return { success: true }
+      } catch (error) {
+        console.error('Error publishing scheduled group activity:', error)
+        sendTeamsNotifications(
+          'hatchet/group-activity-start',
+          `Error publishing group activity with ID ${groupActivityId}: ${error}`
+        )
+        throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
+      }
+    },
+  })
+
+  return publishScheduledGroupActivityTask
+}
+
 export function publishScheduledPracticeQuiz(hatchet: Hatchet) {
   const publishScheduledPracticeQuizTask = hatchet.task({
     name: 'publish-scheduled-practice-quiz',

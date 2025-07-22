@@ -1598,24 +1598,56 @@ export async function publishGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, isDeleted: false, status: DB.PublicationStatus.DRAFT },
   })
 
-  if (!groupActivity) return null
+  if (!groupActivity) {
+    return null
+  }
 
-  const now = new Date()
+  if (groupActivity.scheduledStartAt > new Date()) {
+    // schedule the task to publish the group activity at the scheduled start date
+    try {
+      const scheduledTask =
+        await ctx.tasks.publishScheduledGroupActivityTask.schedule(
+          groupActivity.scheduledStartAt,
+          { groupActivityId: groupActivity.id }
+        )
+      const taskId = scheduledTask.metadata.id
+
+      // set the status of the group activity to scheduled and store the hatchet task ID
+      const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledTaskId: taskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+      return updatedGroupActivity
+    } catch (error) {
+      console.error(`Failed to schedule task for group activity ${id}:`, error)
+      return null
+    }
+  } else if (groupActivity.scheduledEndAt < new Date()) {
+    // if the scheduled end date is in the past, set the status to ended
+    const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: { status: DB.PublicationStatus.ENDED },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    return updatedGroupActivity
+  }
+
+  // if the start date is in the past, directly publish the group activity
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
-    data: {
-      status:
-        now < groupActivity.scheduledStartAt
-          ? DB.PublicationStatus.SCHEDULED
-          : now > groupActivity.scheduledEndAt
-            ? DB.PublicationStatus.ENDED
-            : DB.PublicationStatus.PUBLISHED,
-    },
+    data: { status: DB.PublicationStatus.PUBLISHED },
   })
 
+  ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
   return updatedGroupActivity
 }
 
@@ -1623,12 +1655,30 @@ export async function unpublishGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
+  // reset the status of the group activity to draft
+  const groupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
     data: { status: DB.PublicationStatus.DRAFT },
   })
 
-  return updatedGroupActivity
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the scheduled hatchet task, if it exists
+  if (groupActivity.scheduledTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(groupActivity.scheduledTaskId)
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+  return groupActivity
 }
 
 export async function openGroupActivity(
