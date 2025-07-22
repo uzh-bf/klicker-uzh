@@ -5,7 +5,16 @@ import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { sendTeamsNotifications } from '../lib/util.js'
+import {
+  finalRandomGroupAssignments as finalRandomGroupAssignmentsFunction,
+  runningRandomGroupAssignments as runningRandomGroupAssignmentsFunction,
+  updateGroupAverageScores as updateGroupAverageScoresFunction,
+} from './groups.js'
+import { sendPushNotifications as sendPushNotificationsFunction } from './notifications.js'
+import { updateWeeklyTimelineEntries as updateWeeklyTimelineEntriesFunction } from './participants.js'
 
+// ! SETUP
+// #region
 function initializePrisma() {
   const prisma = new Prisma.PrismaClient({
     log:
@@ -41,7 +50,10 @@ function initializeSubscriptions() {
   const pubSub = createPubSub({ eventTarget })
   return pubSub
 }
+// #endregion
 
+// ! ACTIVITY PUBLICATION TASKS
+// #region
 export function publishScheduledMicroLearning(hatchet: Hatchet) {
   const publishScheduledMicroLearningTask = hatchet.task({
     name: 'publish-scheduled-microlearning',
@@ -244,7 +256,10 @@ export function publishScheduledPracticeQuiz(hatchet: Hatchet) {
 
   return publishScheduledPracticeQuizTask
 }
+// #endregion
 
+// ! ACTIVITY ENDING TASKS
+// #region
 export function endExpiredMicroLearning(hatchet: Hatchet) {
   const endExpiredMicroLearningTask = hatchet.task({
     name: 'end-expired-micro-learnings',
@@ -373,3 +388,99 @@ export function endExpiredGroupActivity(hatchet: Hatchet) {
 
   return endExpiredGroupActivityTask
 }
+// #endregion
+
+// ! CRONJOBS
+// #region
+export function updateGroupAverageScoresCron(hatchet: Hatchet) {
+  const updateGroupAverageScoresTask = hatchet.task({
+    name: 'update-group-average-scores',
+    retries: 3,
+    onCrons: [
+      '5 0 * * *', // running daily at 12:05 AM (UTC)
+    ],
+    fn: async () => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+
+      const success = await updateGroupAverageScoresFunction(prisma, emitter)
+      return { success }
+    },
+  })
+
+  return updateGroupAverageScoresTask
+}
+
+export function runningRandomGroupAssignmentsCron(hatchet: Hatchet) {
+  const runningRandomGroupAssignmentsTask = hatchet.task({
+    name: 'running-random-group-assignments',
+    retries: 3,
+    onCrons: [
+      '10 0 * * *', // running daily at 12:10 AM (UTC)
+    ],
+    fn: async () => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+      const success = await runningRandomGroupAssignmentsFunction(
+        prisma,
+        emitter
+      )
+      return { success }
+    },
+  })
+
+  return runningRandomGroupAssignmentsTask
+}
+
+export function finalRandomGroupAssignmentsCron(hatchet: Hatchet) {
+  const finalRandomGroupAssignmentsTask = hatchet.task({
+    name: 'final-random-group-assignments',
+    retries: 3,
+    onCrons: [
+      '15 0 * * *', // running daily at 12:15 AM (UTC)
+    ],
+    fn: async () => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+      const success = await finalRandomGroupAssignmentsFunction(prisma, emitter)
+      return { success }
+    },
+  })
+
+  return finalRandomGroupAssignmentsTask
+}
+
+export function updateWeeklyTimelineEntriesCron(hatchet: Hatchet) {
+  const updateWeeklyTimelineEntriesTask = hatchet.task({
+    name: 'update-weekly-timeline-entries',
+    retries: 3,
+    onCrons: [
+      '20 0 * * *', // running daily at 12:20 AM (UTC)
+    ],
+    fn: async () => {
+      const prisma = initializePrisma()
+      const success = await updateWeeklyTimelineEntriesFunction(prisma)
+      return { success }
+    },
+  })
+
+  return updateWeeklyTimelineEntriesTask
+}
+
+export function sendPushNotificationsCron(hatchet: Hatchet) {
+  const sendPushNotificationsTask = hatchet.task({
+    name: 'send-push-notifications',
+    retries: 3,
+    onCrons: [
+      '*/5 * * * *', // runs every 5 minutes
+    ],
+    fn: async () => {
+      const prisma = initializePrisma()
+      const success = await sendPushNotificationsFunction(prisma)
+      return { success }
+    },
+  })
+
+  return sendPushNotificationsTask
+}
+// #endregion

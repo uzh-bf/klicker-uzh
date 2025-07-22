@@ -82,7 +82,7 @@ export async function unsubscribeFromPush(
   }
 }
 
-export async function sendPushNotifications(ctx: Context) {
+export async function sendPushNotifications(prisma: DB.PrismaClient) {
   if (
     !process.env.VAPID_PUBLIC_KEY ||
     !process.env.VAPID_PRIVATE_KEY ||

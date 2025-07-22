@@ -2,7 +2,6 @@ import * as DB from '@klicker-uzh/prisma'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -282,20 +281,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateGroupAverageScores: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.updateGroupAverageScores(ctx)
-        },
-      }),
-
-      sendPushNotifications: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await NotificationService.sendPushNotifications(ctx)
-        },
-      }),
-
       createParticipantAccount: t.field({
         nullable: true,
         type: ParticipantTokenData,
@@ -376,20 +361,6 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.joinCourseWithPin(args, ctx)
-        },
-      }),
-
-      runningRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.runningRandomGroupAssignments(ctx)
-        },
-      }),
-
-      finalRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.finalRandomGroupAssignments(ctx)
         },
       }),
 
@@ -1371,17 +1342,10 @@ export const Mutation = builder.mutationType({
           async (_, args, ctx) => {
             return await ParticipantService.updateWeeklyTimelineEntriesCourse(
               args,
-              ctx
+              ctx.prisma
             )
           }
         ),
-      }),
-
-      updateWeeklyTimelineEntries: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await ParticipantService.updateWeeklyTimelineEntries(ctx)
-        },
       }),
 
       toggleArchiveCourse: t.withAuth(asUser).field({

@@ -311,7 +311,7 @@ export async function sendMagicLink(
       templateName: 'MagicLinkRequested',
       variables: { LINK: magicLink },
     },
-    ctx
+    ctx.prisma
   )
 
   if (!emailHtml) return null
@@ -792,7 +792,7 @@ export async function createParticipantAccount(
         templateName: 'ParticipantAccountActivation',
         variables: { LINK: activationLink },
       },
-      ctx
+      ctx.prisma
     )
 
     if (!emailHtml) return null
