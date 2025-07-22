@@ -2,6 +2,7 @@ import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
   enhanceContext,
   publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
   schema,
 } from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
@@ -124,7 +125,11 @@ const hatchet = Hatchet.init({
 // initialize tasks to be able to call / schedule them inside service functions
 // ? for the context to correctly accept them, update the context type in the context.ts file
 const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
-const tasks = { publishScheduledMicroLearningTask }
+const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
+const tasks = {
+  publishScheduledMicroLearningTask,
+  publishScheduledPracticeQuizTask,
+}
 // #endregion
 
 // ! PubSub setup

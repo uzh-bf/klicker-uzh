@@ -23,7 +23,10 @@ import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
-import { publishScheduledMicroLearning } from '../src/services/tasks.js'
+import {
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+} from '../src/services/tasks.js'
 import {
   answerCollection1,
   answerCollection2,
@@ -92,7 +95,11 @@ export async function testInitialization(
   // initialize tasks to be called
   const publishScheduledMicroLearningTask =
     publishScheduledMicroLearning(hatchet)
-  const tasks = { publishScheduledMicroLearningTask }
+  const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
+  const tasks = {
+    publishScheduledMicroLearningTask,
+    publishScheduledPracticeQuizTask,
+  }
 
   // mock context with user including all required properties
   const userOneCtx = {

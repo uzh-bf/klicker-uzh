@@ -76,3 +76,80 @@ export function publishScheduledMicroLearning(hatchet: Hatchet) {
 
   return publishScheduledMicroLearningTask
 }
+
+export function publishScheduledPracticeQuiz(hatchet: Hatchet) {
+  const publishScheduledPracticeQuizTask = hatchet.task({
+    name: 'publish-scheduled-practice-quiz',
+    retries: 3,
+    fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+
+      try {
+        // check if the practice quiz exists and if its availableFrom date is in the past
+        const practiceQuiz = await prisma.practiceQuiz.findUnique({
+          where: {
+            id: practiceQuizId,
+            isDeleted: false,
+            status: Prisma.PublicationStatus.SCHEDULED,
+            availableFrom: { lte: new Date() },
+          },
+        })
+
+        if (!practiceQuiz) {
+          sendTeamsNotifications(
+            'hatchet/practice-quiz-start',
+            `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
+          )
+          throw new Error(
+            `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
+          )
+        }
+
+        // publish the practice quiz
+        const updatedPracticeQuiz = await prisma.practiceQuiz.update({
+          where: { id: practiceQuizId, isDeleted: false },
+          data: { status: Prisma.PublicationStatus.PUBLISHED },
+          include: { stacks: true },
+        })
+
+        // send a teams notification
+        await sendTeamsNotifications(
+          'graphql/publishScheduledPracticeQuizs',
+          `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`
+        )
+
+        // link stacks of practice quiz to course
+        await prisma.course.update({
+          where: { id: updatedPracticeQuiz.courseId },
+          data: {
+            elementStacks: {
+              connect: updatedPracticeQuiz.stacks.map((stack) => ({
+                id: stack.id,
+              })),
+            },
+          },
+        })
+
+        // invalidate the cache for the microlearning
+        emitter.emit('invalidate', {
+          typename: 'PracticeQuiz',
+          id: updatedPracticeQuiz.id,
+        })
+
+        return { success: true }
+      } catch (error) {
+        console.error('Error publishing scheduled practice quiz:', error)
+        sendTeamsNotifications(
+          'hatchet/practice-quiz-start',
+          `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`
+        )
+        throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
+      }
+    },
+  })
+
+  return publishScheduledPracticeQuizTask
+}

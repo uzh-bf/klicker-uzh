@@ -381,24 +381,29 @@ export async function publishMicroLearning(
   // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
     // schedule the task to publish the microlearning at the scheduled start date
-    const scheduledTask =
-      await ctx.tasks.publishScheduledMicroLearningTask.schedule(
-        microLearning.scheduledStartAt,
-        { microLearningId: microLearning.id }
-      )
-    const taskId = scheduledTask.metadata.id
+    try {
+      const scheduledTask =
+        await ctx.tasks.publishScheduledMicroLearningTask.schedule(
+          microLearning.scheduledStartAt,
+          { microLearningId: microLearning.id }
+        )
+      const taskId = scheduledTask.metadata.id
 
-    // set the status of the microlearning to scheduled and store the hatchet task ID
-    const updatedMicroLearning = await ctx.prisma.microLearning.update({
-      where: { id },
-      data: {
-        status: DB.PublicationStatus.SCHEDULED,
-        scheduledTaskId: taskId,
-      },
-    })
+      // set the status of the microlearning to scheduled and store the hatchet task ID
+      const updatedMicroLearning = await ctx.prisma.microLearning.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledTaskId: taskId,
+        },
+      })
 
-    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
-    return updatedMicroLearning
+      ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+      return updatedMicroLearning
+    } catch (error) {
+      console.error(`Failed to schedule task for microlearning ${id}:`, error)
+      return null
+    }
   }
 
   // if the start date is in the past, directly publish the microlearning

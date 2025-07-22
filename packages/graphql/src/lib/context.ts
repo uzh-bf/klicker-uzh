@@ -9,7 +9,10 @@ import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'
-import { publishScheduledMicroLearning } from 'src/services/tasks.js'
+import {
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+} from 'src/services/tasks.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -35,6 +38,9 @@ export interface Context extends BaseContext {
   tasks: {
     publishScheduledMicroLearningTask: ReturnType<
       typeof publishScheduledMicroLearning
+    >
+    publishScheduledPracticeQuizTask: ReturnType<
+      typeof publishScheduledPracticeQuiz
     >
   }
 }
