@@ -91,7 +91,7 @@ function LiveQuizActions({
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
-  const [schedulingModal, setSchedulingModal] = useState(false) // TODO: impelement scheduling modal with corresponding functionality
+  const [schedulingModal, setSchedulingModal] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
