@@ -256,6 +256,93 @@ export function publishScheduledPracticeQuiz(hatchet: Hatchet) {
 
   return publishScheduledPracticeQuizTask
 }
+
+export function publishScheduledLiveQuiz(hatchet: Hatchet) {
+  const publishScheduledLiveQuizTask = hatchet.task({
+    name: 'publish-scheduled-live-quiz',
+    retries: 3,
+    fn: async ({ liveQuizId }: { liveQuizId: string }) => {
+      const prisma = initializePrisma()
+      const emitter = new EventEmitter()
+      const redisExec = new Redis({
+        family: 4,
+        host: process.env.REDIS_HOST ?? 'localhost',
+        password: process.env.REDIS_PASS ?? '',
+        port: Number(process.env.REDIS_PORT) ?? 6379,
+        tls: process.env.REDIS_TLS ? {} : undefined,
+      })
+
+      try {
+        // check if the live quiz exists and if its availableFrom date is in the past
+        const liveQuiz = await prisma.liveQuiz.findUnique({
+          where: {
+            id: liveQuizId,
+            isDeleted: false,
+            status: Prisma.PublicationStatus.SCHEDULED,
+            availableFrom: { lte: new Date() },
+          },
+        })
+
+        if (!liveQuiz) {
+          sendTeamsNotifications(
+            'hatchet/live-quiz-start',
+            `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
+          )
+          throw new Error(
+            `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
+          )
+        }
+
+        // start the live quiz
+        await redisExec
+          .pipeline()
+          .hmset(`lq:${liveQuiz.id}:meta`, {
+            namespace: liveQuiz.namespace,
+            startedAt: Number(new Date()),
+          })
+          .exec()
+
+        // generate a random pin code
+        const pinCode = 100000 + Math.floor(Math.random() * 900000)
+        const startedLiveQuiz = await prisma.liveQuiz.update({
+          where: { id: liveQuizId },
+          data: {
+            status: Prisma.PublicationStatus.PUBLISHED,
+            startedAt: new Date(),
+            pinCode:
+              liveQuiz.accessMode === Prisma.AccessMode.RESTRICTED
+                ? pinCode
+                : null,
+          },
+        })
+
+        await sendTeamsNotifications(
+          'hatchet/live-quiz-start',
+          `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`
+        )
+
+        // invalidate the cache for the live quiz
+        emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: startedLiveQuiz.id,
+        })
+
+        return { success: true }
+      } catch (error) {
+        console.error('Error publishing scheduled live quiz:', error)
+        sendTeamsNotifications(
+          'hatchet/live-quiz-start',
+          `Error publishing live quiz with ID ${liveQuizId}: ${error}`
+        )
+        throw error // rethrow to allow Hatchet to handle retries
+      } finally {
+        await prisma.$disconnect()
+      }
+    },
+  })
+
+  return publishScheduledLiveQuizTask
+}
 // #endregion
 
 // ! ACTIVITY ENDING TASKS

@@ -9,6 +9,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import LiveQuizSchedulingModal from '~/components/courses/modals/LiveQuizSchedulingModal'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
@@ -28,6 +29,7 @@ import ActivityRemovalModal from './ActivityRemovalModal'
 const statusActionMap = {
   [PublicationStatus.Draft]: [
     'startLiveQuiz',
+    'scheduleLiveQuiz',
     'editLiveQuiz',
     'qrCode',
     'embeddingEvaluation',
@@ -45,6 +47,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'unpublishLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
@@ -88,6 +91,7 @@ function LiveQuizActions({
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const [schedulingModal, setSchedulingModal] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
@@ -123,7 +127,12 @@ function LiveQuizActions({
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
-      isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+      isExecutor: [
+        'startLiveQuiz',
+        'scheduleLiveQuiz',
+        'unpublishLiveQuiz',
+        'lecturerCockpit',
+      ],
       isShared: [
         'qrCode',
         'embeddingEvaluation',
@@ -139,6 +148,7 @@ function LiveQuizActions({
     quiz: liveQuiz,
     onStart,
     starting,
+    setSchedulingModal,
     setEmbeddingModal,
     setQRModal,
     setTemplateEditingModal,
@@ -173,6 +183,16 @@ function LiveQuizActions({
         activityType={liveQuiz.type}
       />
       <div>
+        {schedulingModal && (
+          <LiveQuizSchedulingModal
+            activityId={liveQuiz.id}
+            title={liveQuiz.name}
+            courseId={liveQuiz.courseId}
+            courseStartDate={liveQuiz.courseStartDate}
+            onClose={() => setSchedulingModal(false)}
+          />
+        )}
+
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}

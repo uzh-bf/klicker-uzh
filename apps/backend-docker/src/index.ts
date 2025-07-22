@@ -4,6 +4,7 @@ import {
   endExpiredMicroLearning,
   enhanceContext,
   publishScheduledGroupActivity,
+  publishScheduledLiveQuiz,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
   schema,
@@ -130,12 +131,14 @@ const hatchet = Hatchet.init({
 const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
 const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
 const publishScheduledGroupActivityTask = publishScheduledGroupActivity(hatchet)
+const publishScheduledLiveQuizTask = publishScheduledLiveQuiz(hatchet)
 const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
 const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
 const tasks = {
   publishScheduledMicroLearningTask,
   publishScheduledPracticeQuizTask,
   publishScheduledGroupActivityTask,
+  publishScheduledLiveQuizTask,
   endExpiredMicroLearningTask,
   endExpiredGroupActivityTask,
 }

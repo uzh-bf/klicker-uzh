@@ -1497,6 +1497,7 @@ type LiveQuizInfo {
 }
 
 type LiveQuizMeta {
+  availableFrom: Date
   id: ID!
   name: String!
   status: PublicationStatus!
@@ -1671,6 +1672,7 @@ type Mutation {
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -1682,6 +1684,7 @@ type Mutation {
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
+  unpublishLiveQuiz(id: String!): LiveQuizMeta
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean

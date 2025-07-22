@@ -4,6 +4,7 @@ import {
   endExpiredMicroLearning,
   finalRandomGroupAssignmentsCron,
   publishScheduledGroupActivity,
+  publishScheduledLiveQuiz,
   publishScheduledMicroLearning,
   publishScheduledPracticeQuiz,
   runningRandomGroupAssignmentsCron,
@@ -35,6 +36,7 @@ const publicationWorker = await hatchet.worker('activity-publications', {
     publishScheduledMicroLearning(hatchet),
     publishScheduledPracticeQuiz(hatchet),
     publishScheduledGroupActivity(hatchet),
+    publishScheduledLiveQuiz(hatchet),
   ],
   slots: 100,
 })

@@ -2026,6 +2026,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       lecturerCockpit: 'Dozierenden Cockpit',
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Live Quiz planen',
+      unpublishLiveQuiz: 'Geplante Veröffentlichung aufheben',
       editLiveQuiz: 'Quiz bearbeiten',
       duplicateLiveQuiz: 'Live Quiz duplizieren',
       viewLiveQuiz: 'Live Quiz einsehen',
@@ -2060,6 +2062,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
       embeddingLinkCopied:
         'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
+      liveQuizSchedulingDateRequired:
+        'Bitte geben Sie ein Datum für den automatischen Start des Live-Quiz an.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'Das Datum zum automatischen Start des Live Quizzes muss in der Zukunft und falls zugehörig zu einem Kurs, nach dessen Startzeitpunkt liegen.',
+      scheduleLiveQuizHint:
+        'Bei der geplanten Veröffentlichung des Live Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt gestartet. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann das Quiz noch unveröffentlicht und bearbeitet werden.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'Übungs-Quiz einsehen',

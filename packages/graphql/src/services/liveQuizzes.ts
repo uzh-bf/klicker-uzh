@@ -1015,12 +1015,22 @@ export async function startLiveQuiz(
           console.error(e)
         }
 
+        // remove the scheduled hatchet publication task, if it exists
+        if (quiz.scheduledPublicationTaskId) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
+        }
+
         // generate a random pin code
         const pinCode = 100000 + Math.floor(Math.random() * 900000)
         const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: {
-            id,
-          },
+          where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
@@ -1044,6 +1054,72 @@ export async function startLiveQuiz(
     )
     throw error
   }
+}
+
+export async function scheduleLiveQuiz(
+  { id, availableFrom }: { id: string; availableFrom?: Date | null },
+  ctx: ContextWithUser
+) {
+  // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    try {
+      // schedule the task to publish the live quiz
+      const scheduledTask =
+        await ctx.tasks.publishScheduledLiveQuizTask.schedule(availableFrom, {
+          liveQuizId: id,
+        })
+      const taskId = scheduledTask.metadata.id
+
+      // change the status of the live quiz to scheduled
+      const updatedQuiz = await ctx.prisma.liveQuiz.update({
+        where: { id, isDeleted: false },
+        data: {
+          availableFrom,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: taskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+      return updatedQuiz
+    } catch (error) {
+      console.error('Error scheduling live quiz publication:', error)
+      return null
+    }
+  } else {
+    const startedLiveQuiz = await startLiveQuiz({ id }, ctx)
+    return startedLiveQuiz
+  }
+}
+
+export async function unpublishLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // reset the status of the live quiz to draft and remove the availableFrom date
+  const liveQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: { availableFrom: null, status: DB.PublicationStatus.DRAFT },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (liveQuiz.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for live quiz ${id}:`,
+        error
+      )
+    }
+  }
+
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+  return liveQuiz
 }
 
 export async function getCockpitQuiz(
@@ -2215,6 +2291,21 @@ export async function deleteLiveQuiz(
             },
           },
         })
+
+        // remove the scheduled hatchet publication task, if it exists
+        if (
+          quiz.status === DB.PublicationStatus.SCHEDULED &&
+          quiz.scheduledPublicationTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
+        }
 
         // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
         // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
