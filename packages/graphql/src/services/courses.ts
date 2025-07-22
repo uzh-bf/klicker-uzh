@@ -1985,48 +1985,6 @@ export async function enableGamification(
   return course
 }
 
-// TODO: once all of its content has been migrated, remove this function and the associated cronjob
-export async function publishScheduledActivities(ctx: Context) {
-  // ! Publish scheduled group activities
-  const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
-    where: {
-      status: DB.PublicationStatus.SCHEDULED,
-      scheduledStartAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedGroupActivities = await Promise.all(
-    groupActivitiesToPublish.map((group) =>
-      ctx.prisma.groupActivity.update({
-        where: {
-          id: group.id,
-        },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-        },
-      })
-    )
-  )
-
-  if (updatedGroupActivities.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledGroupActivities',
-      `Successfully published ${updatedGroupActivities.length} scheduled group activities`
-    )
-  }
-
-  updatedGroupActivities.forEach((group) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'GroupActivity',
-      id: group.id,
-    })
-  })
-
-  return true
-}
-
 export async function endExpiredActivities(ctx: Context) {
   // ! Set microlearning status to ended for all published microlearnings that have ended
   const microlearningsToEnd = await ctx.prisma.microLearning.findMany({

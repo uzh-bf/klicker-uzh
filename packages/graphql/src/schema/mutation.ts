@@ -296,13 +296,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishScheduledActivities: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await CourseService.publishScheduledActivities(ctx)
-        },
-      }),
-
       endExpiredActivities: t.boolean({
         resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
