@@ -22,7 +22,7 @@ function useInitialLiveQuizTemplateFormData({
       name: liveQuiz.name,
       displayName: liveQuiz.displayName,
       description: liveQuiz.description ?? undefined,
-      courseId: undefined,
+      courseId: 'no-course-selected',
       multiplier: String(liveQuiz.pointsMultiplier),
       settingsProcessed: false,
 

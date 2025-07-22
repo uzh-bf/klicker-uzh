@@ -11,6 +11,7 @@ import FREETextAnswerOptions from './questions/FREETextAnswerOptions'
 import { validateFreeTextResponse } from './utils/validateResponse'
 
 interface FreeTextQuestionProps {
+  preview?: boolean
   content: string
   options: FreeTextElementOptions
   response?: string
@@ -24,6 +25,7 @@ interface FreeTextQuestionProps {
 }
 
 function FreeTextQuestion({
+  preview = false,
   content,
   options,
   response,
@@ -59,7 +61,7 @@ function FreeTextQuestion({
         />
       </div>
 
-      {evaluation && evaluation.solutions && (
+      {evaluation && evaluation.solutions && !preview ? (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -85,7 +87,7 @@ function FreeTextQuestion({
             />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -197,7 +197,7 @@ function usePracticeQuizActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewComments'),
+        label: t('shared.comments.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${practiceQuiz.name}` },

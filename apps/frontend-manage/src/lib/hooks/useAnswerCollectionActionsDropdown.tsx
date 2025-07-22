@@ -50,7 +50,7 @@ function useAnswerCollectionActionsDropdown({
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
             <FontAwesomeIcon icon={faMessage} className="mr-2.5 h-4 w-4" />
-            {t('shared.activity.viewComments')}
+            {t('shared.comments.viewComments')}
           </div>
         ),
         onClick: () => setActivityLogOpen(true),
@@ -131,7 +131,7 @@ function useAnswerCollectionActionsDropdown({
               <Tooltip
                 tooltip={t('manage.resources.removalDisabledInUse')}
                 className={{
-                  tooltip: 'max-w-[30rem] text-sm',
+                  tooltip: 'max-w-120 text-sm',
                   trigger: 'ml-2',
                 }}
               >
@@ -166,7 +166,7 @@ function useAnswerCollectionActionsDropdown({
               <Tooltip
                 tooltip={t('manage.resources.deletionDisabledInUse')}
                 className={{
-                  tooltip: 'max-w-[30rem] text-sm',
+                  tooltip: 'max-w-120 text-sm',
                   trigger: 'ml-2',
                 }}
               >

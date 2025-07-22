@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateLiveQuizDocument,
@@ -8,7 +8,6 @@ import {
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
   StartLiveQuizDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -102,11 +101,6 @@ function LiveQuizWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
@@ -183,7 +177,7 @@ function LiveQuizWizard({
     displayName: '',
     description: '',
     blocks: [{ timeLimit: undefined, elements: [] }],
-    courseId: '',
+    courseId: 'no-course-selected',
     multiplier: '1',
     defaultPoints: LQ_DEFAULT_POINTS,
     defaultCorrectPoints: LQ_DEFAULT_CORRECT_POINTS,
@@ -226,24 +220,24 @@ function LiveQuizWizard({
     displayName: initialValues?.displayName || formDefaultValues.displayName,
     description: initialValues?.description || formDefaultValues.description,
     blocks: initialValues?.blocks
-      ? initialValues.blocks.map((block) => {
-          return {
-            timeLimit: block.timeLimit ?? undefined,
-            elements: block.elements!.map((element) => {
-              return {
-                id: parseInt(element.elementData.id),
-                title: element.elementData.name,
-                type: element.elementData.type,
-                hasSampleSolution:
-                  'options' in element.elementData
-                    ? (element.elementData.options.hasSampleSolution ?? false)
-                    : true,
-                existingInstanceId: element.id,
-                duplicateInstance: duplicationMode,
-              }
-            }),
-          }
-        })
+      ? initialValues.blocks.map((block) => ({
+          timeLimit: block.timeLimit ?? undefined,
+          elements: block.elements!.map((instance) => {
+            const [elementId, _] = instance.elementData.id.split('-v')
+
+            return {
+              id: parseInt(elementId),
+              title: instance.elementData.name,
+              type: instance.elementData.type,
+              hasSampleSolution:
+                'options' in instance.elementData
+                  ? (instance.elementData.options.hasSampleSolution ?? false)
+                  : true,
+              existingInstanceId: instance.id,
+              duplicateInstance: duplicationMode,
+            }
+          }),
+        }))
       : formDefaultValues.blocks,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
     multiplier: initialValues?.pointsMultiplier

@@ -161,7 +161,7 @@ function InstanceHeader({
           </div>
         </div>
         {withParticipant && (
-          <div className="-mr-2 flex flex-row items-center gap-1">
+          <div className="flex flex-row items-center gap-1">
             <Button
               basic
               disabled={ratingLoading}
@@ -207,7 +207,7 @@ function InstanceHeader({
           </div>
         )}
       </div>
-      {showSeparator && <hr className="mb-3 h-[1px] border-0 bg-gray-300" />}
+      {showSeparator && <hr className="mb-3 h-px border-0 bg-gray-300" />}
     </div>
   )
 }

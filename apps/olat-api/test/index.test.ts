@@ -490,94 +490,95 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
   })
 })
 
-describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
+describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => {
   test('Valid', async () => {
     const courses = [
       {
         course: courseOne,
         owner: userOne,
-        activityTypeId: 'live-quiz',
+        activityTypeKey: 'live-quiz',
         titles: getExpectedTitles(3, 'Live Quiz', courseOne),
       },
       {
         course: courseOne,
         owner: userOne,
-        activityTypeId: 'practice-quiz',
+        activityTypeKey: 'practice-quiz',
         titles: getExpectedTitles(2, 'Practice Quiz', courseOne),
       },
       {
         course: courseOne,
         owner: userOne,
-        activityTypeId: 'micro-learning',
+        activityTypeKey: 'micro-learning',
         titles: getExpectedTitles(1, 'Micro Learning', courseOne),
       },
       {
         course: courseTwo,
         owner: userOne,
-        activityTypeId: 'live-quiz',
+        activityTypeKey: 'live-quiz',
         titles: getExpectedTitles(0, 'Live Quiz', courseTwo),
       },
       {
         course: courseTwo,
-        activityTypeId: 'practice-quiz',
+        activityTypeKey: 'practice-quiz',
         titles: getExpectedTitles(1, 'Practice Quiz', courseTwo),
       },
       {
         course: courseTwo,
-        activityTypeId: 'micro-learning',
+        activityTypeKey: 'micro-learning',
         titles: getExpectedTitles(2, 'Micro Learning', courseTwo),
       },
       {
         course: courseThree,
-        activityTypeId: 'live-quiz',
+        activityTypeKey: 'live-quiz',
         titles: getExpectedTitles(2, 'Live Quiz', courseThree),
       },
       {
         course: courseThree,
-        activityTypeId: 'practice-quiz',
+        activityTypeKey: 'practice-quiz',
         titles: getExpectedTitles(1, 'Practice Quiz', courseThree),
       },
       {
         course: courseThree,
-        activityTypeId: 'micro-learning',
+        activityTypeKey: 'micro-learning',
         titles: getExpectedTitles(1, 'Micro Learning', courseThree),
       },
       {
         course: courseFour,
-        activityTypeId: 'live-quiz',
+        activityTypeKey: 'live-quiz',
         titles: getExpectedTitles(0, 'Live Quiz', courseFour),
       },
       {
         course: courseFour,
-        activityTypeId: 'practice-quiz',
+        activityTypeKey: 'practice-quiz',
         titles: getExpectedTitles(0, 'Practice Quiz', courseFour),
       },
       {
         course: courseFour,
-        activityTypeId: 'micro-learning',
+        activityTypeKey: 'micro-learning',
         titles: getExpectedTitles(0, 'Micro Learning', courseFour),
       },
       {
         course: courseFive,
-        activityTypeId: 'live-quiz',
+        activityTypeKey: 'live-quiz',
         titles: getExpectedTitles(1, 'Live Quiz', courseFive),
       },
       {
         course: courseFive,
-        activityTypeId: 'practice-quiz',
+        activityTypeKey: 'practice-quiz',
         titles: getExpectedTitles(0, 'Practice Quiz', courseFive),
       },
       {
         course: courseFive,
-        activityTypeId: 'micro-learning',
+        activityTypeKey: 'micro-learning',
         titles: getExpectedTitles(0, 'Micro Learning', courseFive),
       },
     ]
+
     for (const course of courses) {
       const courseId = course.course.id
-      const activityTypeId = course.activityTypeId
+      const activityTypeKey = course.activityTypeKey
       let response = await request(app)
-        .post(`/api/configuration/course/${courseId}/${activityTypeId}`)
+        .post(`/api/configuration/course/${courseId}/${activityTypeKey}`)
         .set('X-API-Key', API_KEY)
         .set('Content-Type', 'application/json')
         .send({
@@ -585,12 +586,13 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
         })
 
       expect(response.status).toBe(StatusCode.SUCCESS)
-      expect(response.body).toHaveProperty('activityTypes')
+      expect(response.body).toHaveProperty('activities')
       expect(response.body).toHaveProperty('timestamp')
       expect(
-        response.body.activityTypes.map((activity: any) => activity.title)
+        response.body.activities.map((activity: any) => activity.title)
       ).toEqual(course.titles)
     }
+
     for (const course of [
       courseOne,
       courseTwo,
@@ -616,10 +618,9 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeId', () => {
             identityMappingIdentifier: course.owner.providerAccountId,
           })
 
-        expect(response.status).toBe(StatusCode.SUCCESS)
-        expect(response.body).toHaveProperty('activityTypes')
-        expect(response.body).toHaveProperty('timestamp')
-        expect(response.body.activityTypes).toEqual([])
+        expect(response.status).toBe(StatusCode.BAD_REQUEST)
+        expect(response.body).toHaveProperty('error')
+        expect(response.body.error).toBe('Invalid activityTypeKey')
       }
     }
   })

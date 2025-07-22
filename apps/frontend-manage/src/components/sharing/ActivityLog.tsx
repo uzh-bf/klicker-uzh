@@ -145,7 +145,7 @@ function ActivityLog({
             onChange={() => setFilterResolved(!filterResolved)}
             className="mr-2 h-3 w-3"
           />
-          {t('shared.activity.hideResolved')}
+          {t('shared.comments.hideResolved')}
         </label>
       </div> */}
 
@@ -165,11 +165,11 @@ function ActivityLog({
               <div className="mb-2 text-4xl text-gray-300">📝</div>
               <p className="text-sm font-medium text-gray-500">
                 {entries.length > 0
-                  ? t('shared.activity.noUnresolvedActivity')
-                  : t('shared.activity.noActivity')}
+                  ? t('shared.comments.noUnresolvedActivity')
+                  : t('shared.comments.noActivity')}
               </p>
               <p className="mt-1 text-xs text-gray-400">
-                {t('shared.activity.addMessage')}
+                {t('shared.comments.addMessage')}
               </p>
             </div>
           )}
@@ -223,12 +223,13 @@ function ActivityLog({
                   // compose the message for creation / editing based on options
                   const entryMeesage =
                     entry.message ??
-                    t(`shared.activity.message${entry.type}`, {
+                    t(`shared.comments.message${entry.type}`, {
                       username: entry.username,
-                      ...entry.options,
                       field: entry.options?.field
-                        ? t(`shared.activity.field${entry.options.field}`)
-                        : undefined,
+                        ? t(`shared.comments.field${entry.options.field}`)
+                        : '',
+                      oldValue: entry.options?.oldValue ?? '',
+                      newValue: entry.options?.newValue ?? '',
                     })
 
                   return (
@@ -237,9 +238,7 @@ function ActivityLog({
                       className="flex flex-row items-center py-0.5 text-xs text-slate-500"
                       data-cy={`activity-log-entry-${entryMeesage}`}
                     >
-                      <div className="flex-grow break-words">
-                        {entryMeesage}
-                      </div>
+                      <div className="grow break-words">{entryMeesage}</div>
                       <div className="ml-2 whitespace-nowrap pr-3 text-slate-400">
                         {dayjs(entry.createdAt).format('DD.MM.YYYY HH:mm')}
                         {entry.isEdited && ' (edited)'}
@@ -257,7 +256,7 @@ function ActivityLog({
         className="mt-2 flex flex-row items-end space-x-2 border-t pt-3"
       >
         <TextareaField
-          placeholder={t('shared.activity.messageInputPlaceholder')}
+          placeholder={t('shared.comments.messageInputPlaceholder')}
           value={message}
           onChange={(text) => setMessage(text)}
           disabled={isSubmitting || isAddingMessage}
@@ -270,8 +269,8 @@ function ActivityLog({
           data={{ cy: 'activity-log-submit' }}
         >
           {isSubmitting || isAddingMessage
-            ? t('shared.activity.sending')
-            : t('shared.activity.send')}
+            ? t('shared.comments.sending')
+            : t('shared.comments.send')}
         </Button>
       </form>
     </div>

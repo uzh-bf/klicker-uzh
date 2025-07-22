@@ -1,0 +1,3 @@
+mutation FlagOutdatedElementInstances($elementId: Int!) {
+  flagOutdatedElementInstances(elementId: $elementId)
+}

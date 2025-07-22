@@ -188,6 +188,28 @@ function Index() {
     }
   }, [dataQuestions?.userElements, filters, index, sort])
 
+  const filtersActive = useMemo(
+    () =>
+      !!(
+        filters.tags.length > 0 ||
+        filters.type ||
+        filters.status ||
+        filters.sharingType?.length !== 3 ||
+        filters.sampleSolution ||
+        filters.answerFeedbacks ||
+        filters.untagged
+      ),
+    [
+      filters.tags,
+      filters.type,
+      filters.status,
+      filters.sharingType,
+      filters.sampleSolution,
+      filters.answerFeedbacks,
+      filters.untagged,
+    ]
+  )
+
   const sortIcon = useMemo(() => {
     if (!sortBy) {
       return faSort
@@ -237,6 +259,7 @@ function Index() {
               <TagList
                 key={creationMode}
                 compact={!!creationMode}
+                filtersActive={filtersActive}
                 activeTags={filters.tags}
                 activeType={filters.type}
                 activeSharingTypes={filters.sharingType}
@@ -256,6 +279,7 @@ function Index() {
               <TagList
                 compact
                 key={creationMode}
+                filtersActive={filtersActive}
                 activeTags={filters.tags}
                 activeType={filters.type}
                 activeSharingTypes={filters.sharingType}
@@ -283,6 +307,7 @@ function Index() {
                   <div className="flex flex-col pr-0.5 text-xs">
                     <Checkbox
                       checked={
+                        processedQuestions?.length !== 0 &&
                         Object.values(selectedQuestions).filter(
                           (value) => value
                         ).length == processedQuestions?.length
@@ -326,7 +351,7 @@ function Index() {
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length,
+                      total: processedQuestions?.length ?? 0,
                     })}
                   </div>
 
@@ -339,8 +364,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10 !pl-8',
-                      field: 'w-30 rounded-md pr-3',
+                      input: 'h-10 pl-8',
+                      field: 'min-w-30 rounded-md pr-3',
                     }}
                   />
 
@@ -350,9 +375,7 @@ function Index() {
                       onClick={() => {
                         handleSortOrderToggle()
                       }}
-                      className={{
-                        root: 'h-10 rounded-md shadow-sm',
-                      }}
+                      className={{ root: 'h-10 rounded-md' }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon icon={sortIcon} withoutLabel />
@@ -592,6 +615,7 @@ function Index() {
 
               <div className="h-full overflow-y-auto">
                 <ElementList
+                  filtersActive={filtersActive}
                   activityWizardOpen={!!creationMode}
                   elements={processedQuestions}
                   selectedQuestions={selectedElementContent}
@@ -627,6 +651,7 @@ function Index() {
                       return prev
                     })
                   }}
+                  handleFilterReset={handleReset}
                 />
               </div>
             </>

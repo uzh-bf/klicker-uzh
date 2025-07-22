@@ -132,19 +132,27 @@ function ActivityInstanceFeedbacksPlot({
       {entries.length > 0 ? (
         <div className="relative">
           <Legend
-            payload={[
-              {
-                value: t('manage.analytics.downvotes'),
-                color: chartColors.downvotes,
-                type: 'rect',
-              },
-              {
-                value: t('manage.analytics.upvotes'),
-                color: chartColors.upvotes,
-                type: 'rect',
-              },
-            ]}
-            wrapperStyle={{ top: 0, right: 0 }}
+            layout="horizontal"
+            verticalAlign="top"
+            align="right"
+            wrapperStyle={{ paddingBottom: '8px' }}
+            formatter={(value: string) => {
+              if (value === 'downvotes') {
+                return (
+                  <span style={{ color: chartColors.downvotes }}>
+                    {t('manage.analytics.downvotes')}
+                  </span>
+                )
+              }
+              if (value === 'upvotes') {
+                return (
+                  <span style={{ color: chartColors.upvotes }}>
+                    {t('manage.analytics.upvotes')}
+                  </span>
+                )
+              }
+              return value
+            }}
           />
           <div className="flex flex-col pt-6">
             {entries.length > 0

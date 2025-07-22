@@ -1464,7 +1464,6 @@ describe('Unit tests for sharing functionalities of elements (questions, content
                   {
                     order: 0,
                     elementId: SC.id,
-                    migrationId: '',
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: {},

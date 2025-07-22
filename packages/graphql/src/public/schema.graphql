@@ -35,6 +35,7 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
+  areInstancesOutdated: Boolean!
   automaticPublicationAt: Date
   courseId: String
   courseName: String
@@ -626,6 +627,16 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
+input ChoicesResponse {
+  ix: Int!
+  selected: Boolean!
+}
+
+type ChoicesResponseObject {
+  ix: Int!
+  selected: Boolean!
+}
+
 type ClassAchievementInstance {
   id: Int!
 }
@@ -923,6 +934,12 @@ enum ElementInstanceType {
   PRACTICE_QUIZ
 }
 
+type ElementInstanceVersionInfo {
+  id: Int!
+  newSampleSolution: Boolean!
+  newTitle: String!
+}
+
 type ElementOptionsAnswerCollection {
   entries: [ElementOptionsAnswerCollectionEntry!]
   id: Int!
@@ -964,6 +981,12 @@ enum ElementStatus {
   DRAFT
   READY
   REVIEW
+}
+
+type ElementSummary {
+  derivedAccessToResources: Boolean!
+  retainsDerivedAccess: Boolean!
+  sharedElementActivityUse: Boolean!
 }
 
 enum ElementType {
@@ -1248,7 +1271,7 @@ type GroupActivityClueInstance {
 
 type GroupActivityDecision {
   caseStudyResponse: [SingleQuestionResponseCaseStudyCase!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponseObject!]
   contentResponse: Boolean
   freeTextResponse: String
   instanceId: Int!
@@ -1599,6 +1622,7 @@ type Mutation {
   finalRandomGroupAssignments: Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
+  flagOutdatedElementInstances(elementId: Int!): Boolean
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
@@ -2094,6 +2118,7 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
+  getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
@@ -2105,6 +2130,7 @@ type Query {
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
+  getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
@@ -2188,7 +2214,7 @@ enum ResponseCorrectnessType {
 
 input ResponseInput {
   assessment: [CaseStudyCaseResponse!]
-  choices: [Int!]
+  choices: [ChoicesResponse!]
   selection: [Int!]
   value: String
 }
@@ -2339,7 +2365,7 @@ type SingleQuestionResponseCaseStudyItem {
 }
 
 type SingleQuestionResponseChoices {
-  choices: [Int!]!
+  choices: [ChoicesResponseObject!]!
 }
 
 type SingleQuestionResponseContent {
@@ -2394,7 +2420,7 @@ enum StackFeedbackStatus {
 
 input StackResponseInput {
   caseStudyResponse: [CaseStudyCaseResponse!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponse!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
   freeTextResponse: String

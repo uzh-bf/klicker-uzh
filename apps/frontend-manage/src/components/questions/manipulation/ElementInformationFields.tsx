@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ChangeElementStatusDocument,
   ElementStatus,
+  GetSingleQuestionDocument,
   GetUserElementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -13,7 +14,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, Suspense, useState } from 'react'
+import { Suspense, useState } from 'react'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
@@ -23,8 +24,6 @@ import useStatusOptions from './useStatusOptions'
 interface ElementInformationFieldsProps {
   isTemplate?: boolean
   elementId?: number
-  elementStatus: ElementStatus
-  setElementStatus: Dispatch<SetStateAction<ElementStatus>>
   mode: ElementEditMode
   values: ElementFormTypes
   isSubmitting: boolean
@@ -34,8 +33,6 @@ interface ElementInformationFieldsProps {
 function ElementInformationFields({
   isTemplate = false,
   elementId,
-  elementStatus,
-  setElementStatus,
   mode,
   values,
   isSubmitting,
@@ -66,7 +63,7 @@ function ElementInformationFields({
 
         {!isTemplate ? (
           <SelectField
-            value={elementStatus}
+            value={values.status}
             onChange={async (newValue) => {
               setStatusSaving(true)
 
@@ -79,27 +76,39 @@ function ElementInformationFields({
                     if (!success) return
 
                     // update element list
-                    const queryData = cache.readQuery({
-                      query: GetUserElementsDocument,
-                    })
-
-                    if (queryData?.userElements) {
-                      cache.writeQuery({
-                        query: GetUserElementsDocument,
-                        data: {
-                          userElements: queryData?.userElements.map((obj) =>
-                            obj.id === elementId
-                              ? { ...obj, status: newValue as ElementStatus }
-                              : obj
-                          ),
-                        },
+                    cache.updateQuery(
+                      { query: GetUserElementsDocument },
+                      (data) => ({
+                        userElements: data?.userElements
+                          ? data.userElements.map((obj) =>
+                              obj.id === elementId
+                                ? { ...obj, status: newValue as ElementStatus }
+                                : obj
+                            )
+                          : [],
                       })
-                    }
+                    )
+
+                    // update single question query
+                    cache.updateQuery(
+                      {
+                        query: GetSingleQuestionDocument,
+                        variables: { id: elementId },
+                      },
+                      (data) => ({
+                        question: data?.question
+                          ? {
+                              ...data?.question,
+                              status: newValue as ElementStatus,
+                            }
+                          : null,
+                      })
+                    )
                   },
                 })
               }
 
-              setElementStatus(newValue as ElementStatus)
+              setFieldValue('status', newValue as ElementStatus)
               setStatusSaving(false)
             }}
             contentPosition="popper"

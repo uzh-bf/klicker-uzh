@@ -34,7 +34,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useMemo, useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
@@ -54,6 +54,7 @@ export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
 
 interface TagListProps {
   compact: boolean
+  filtersActive: boolean
   isArchiveActive: boolean
   showUntagged: boolean
   activeTags: string[]
@@ -83,6 +84,7 @@ interface TagListProps {
 
 function TagList({
   compact,
+  filtersActive,
   isArchiveActive,
   showUntagged,
   activeTags,
@@ -128,30 +130,8 @@ function TagList({
   const [gamificationTagsVisible, setGamificationTagsVisible] =
     useState(!compact)
 
-  const resetDisabled = useMemo(
-    () =>
-      !(
-        activeTags.length > 0 ||
-        activeType ||
-        activeStatus ||
-        activeSharingTypes?.length !== 3 ||
-        sampleSolution ||
-        answerFeedbacks ||
-        showUntagged
-      ),
-    [
-      activeTags,
-      activeType,
-      activeStatus,
-      activeSharingTypes,
-      sampleSolution,
-      answerFeedbacks,
-      showUntagged,
-    ]
-  )
-
   return (
-    <div className="border-uzh-grey-60 flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-[14rem]">
+    <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
       <TagHeader
         text={t('manage.questionPool.elementStatus')}
         state={questionStatusVisible}
@@ -299,9 +279,9 @@ function TagList({
 
       <Button
         className={{
-          root: twMerge('mt-2 h-8 text-sm', !resetDisabled && 'border-red-600'),
+          root: twMerge('mt-2 h-8 text-sm', filtersActive && 'border-red-600'),
         }}
-        disabled={resetDisabled}
+        disabled={!filtersActive}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}
       >

@@ -17,8 +17,8 @@ function useObjectFilters({
   objects: CatalogObject[]
   collections: CatalogCollection[]
   search?: string
-  typeFilter: ObjectType | ''
-  accessTypeFilter: ObjectAccess | ''
+  typeFilter: ObjectType | 'all'
+  accessTypeFilter: ObjectAccess | 'all'
 }): {
   filteredObjects: CatalogObject[]
   filteredCatalogCollections: CatalogCollection[]
@@ -26,11 +26,11 @@ function useObjectFilters({
   return useMemo(() => {
     // filter objects based on access type and object type
     const filteredObjects = objects.filter((object) => {
-      if (typeFilter !== '' && object.objectType !== typeFilter) {
+      if (typeFilter !== 'all' && object.objectType !== typeFilter) {
         return false
       }
 
-      if (accessTypeFilter !== '' && object.access !== accessTypeFilter) {
+      if (accessTypeFilter !== 'all' && object.access !== accessTypeFilter) {
         return false
       }
 
@@ -39,11 +39,14 @@ function useObjectFilters({
 
     // filter catalog collections based on access type
     const filteredCollections = collections.filter((collection) => {
-      if (typeFilter !== '' && typeFilter !== ObjectType.CatalogCollection) {
+      if (typeFilter !== 'all' && typeFilter !== ObjectType.CatalogCollection) {
         return false
       }
 
-      if (accessTypeFilter !== '' && collection.access !== accessTypeFilter) {
+      if (
+        accessTypeFilter !== 'all' &&
+        collection.access !== accessTypeFilter
+      ) {
         return false
       }
 

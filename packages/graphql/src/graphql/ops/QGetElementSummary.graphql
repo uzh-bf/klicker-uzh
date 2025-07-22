@@ -1,0 +1,7 @@
+query GetElementSummary($id: Int!) {
+  getElementSummary(id: $id) {
+    sharedElementActivityUse
+    retainsDerivedAccess
+    derivedAccessToResources
+  }
+}

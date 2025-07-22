@@ -61,8 +61,8 @@ function FeedbackArea({
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)
   const [confusionSpeed, setConfusionSpeed] = useState(0)
   const [isConfusionEnabled, setConfusionEnabled] = useState(true)
-  const confusionButtonTimeout = useRef<any>()
-  const confusionSubmissionTimeout = useRef<any>()
+  const confusionButtonTimeout = useRef<any>(null)
+  const confusionSubmissionTimeout = useRef<any>(null)
 
   const {
     loading: feedbacksLoading,
@@ -228,7 +228,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="h-full w-full pt-4">
+    <div className="h-full w-full pt-4 md:pt-2">
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <FeedbackAreaSubscriber

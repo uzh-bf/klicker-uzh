@@ -20,7 +20,7 @@ function ActivityLogDialog({
     <Modal
       open
       onClose={onClose}
-      title={t('shared.activity.title')}
+      title={t('shared.comments.title')}
       data={{ cy: 'activity-log-dialog' }}
       dataCloseButton={{ cy: 'close-activity-log' }}
       className={{

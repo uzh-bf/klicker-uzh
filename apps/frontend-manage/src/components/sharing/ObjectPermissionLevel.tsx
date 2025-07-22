@@ -47,7 +47,7 @@ function ObjectPermissionLevel({
       )}
       data-cy={`permission-level-${objectName}-${permissionLevel}`}
     >
-      <FontAwesomeIcon icon={badge.icon} className="flex-shrink-0" size="sm" />
+      <FontAwesomeIcon icon={badge.icon} className="shrink-0" size="sm" />
       <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm transition-all duration-300 ease-in-out group-hover:max-w-xs">
         {t(`manage.sharing.permissions${permissionLevel}`)}
       </span>

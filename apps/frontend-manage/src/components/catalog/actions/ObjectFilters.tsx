@@ -10,10 +10,10 @@ function ObjectFilters({
   accessTypeFilter,
   setAccessTypeFilter,
 }: {
-  typeFilter: ObjectType | ''
-  setTypeFilter: Dispatch<SetStateAction<ObjectType | ''>>
-  accessTypeFilter: ObjectAccess | ''
-  setAccessTypeFilter: Dispatch<SetStateAction<ObjectAccess | ''>>
+  typeFilter: ObjectType | 'all'
+  setTypeFilter: Dispatch<SetStateAction<ObjectType | 'all'>>
+  accessTypeFilter: ObjectAccess | 'all'
+  setAccessTypeFilter: Dispatch<SetStateAction<ObjectAccess | 'all'>>
 }) {
   const t = useTranslations()
 
@@ -23,7 +23,7 @@ function ObjectFilters({
         label={t('manage.catalog.objectType')}
         items={[
           {
-            value: '',
+            value: 'all',
             label: t('manage.catalog.all'),
             data: { cy: 'all-object-types' },
           },
@@ -44,7 +44,7 @@ function ObjectFilters({
         label={t('manage.catalog.accessTypes')}
         items={[
           {
-            value: '',
+            value: 'all',
             label: t('manage.catalog.all'),
             data: { cy: 'catalog-access-all' },
           },

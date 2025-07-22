@@ -17,6 +17,7 @@ import StudentElement, {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
+import { ChoicesResponse } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -84,7 +85,7 @@ function GroupActivityStack({
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.choicesResponse?.reduce<Record<number, boolean>>(
-              (acc, choice) => ({ ...acc, [choice]: true }),
+              (acc, choice) => ({ ...acc, [choice.ix]: true }),
               {}
             ),
             valid: true,
@@ -98,7 +99,7 @@ function GroupActivityStack({
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.choicesResponse?.reduce<Record<number, boolean>>(
-              (acc, choice) => ({ ...acc, [choice]: true }),
+              (acc, choice) => ({ ...acc, [choice.ix]: true }),
               responseObj
             ),
             valid: true,
@@ -229,13 +230,13 @@ function GroupActivityStack({
                 {grading && correctness && (
                   <div
                     className={twMerge(
-                      'mb-6 mt-3 rounded !border-l-4 text-base shadow',
+                      'border-l-4! mb-6 mt-3 rounded text-base shadow',
                       correctness === ResponseCorrectnessType.Correct &&
-                        '!border-l-green-500',
+                        'border-l-green-500!',
                       correctness === ResponseCorrectnessType.Partial &&
-                        '!border-l-yellow-500',
+                        'border-l-yellow-500!',
                       correctness === ResponseCorrectnessType.Incorrect &&
-                        '!border-l-red-700'
+                        'border-l-red-700!'
                     )}
                     data-cy={`group-activity-grading-feedback-${elementIx}`}
                   >
@@ -257,7 +258,7 @@ function GroupActivityStack({
                     </div>
                     {grading.feedback && (
                       <DynamicMarkdown
-                        className={{ root: 'mt-1 p-2 !pt-0' }}
+                        className={{ root: 'pt-0! mt-1 p-2' }}
                         content={grading.feedback}
                       />
                     )}
@@ -287,9 +288,14 @@ function GroupActivityStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(value.response!)
+                      const responseList: ChoicesResponse[] = Object.entries(
+                        value.response!
+                      )
                         .filter(([, value]) => value)
-                        .map(([key]) => parseInt(key))
+                        .map(([key, value]) => ({
+                          ix: parseInt(key),
+                          selected: value ?? false,
+                        }))
 
                       return {
                         instanceId: parseInt(instanceId),
@@ -394,7 +400,7 @@ function GroupActivityStack({
           <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
       ) : null}
-      {!!decisions ? (
+      {!!decisions && submittedAt ? (
         <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
           {t.rich('pwa.groupActivity.alreadySubmittedAt', {
             br: () => <br />,

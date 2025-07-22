@@ -105,7 +105,7 @@ const Development = () => {
   return (
     <Layout>
       <div className="m-auto max-w-[1300px] p-8">
-        <div className="mb-4 flex h-12 flex-row items-start justify-between">
+        <div className="mb-4 flex h-12 flex-row items-end justify-between">
           <H1>Get Involved - P-8 "Digital Skills"</H1>
           <div className="hidden h-full flex-row gap-4 md:flex">
             <img

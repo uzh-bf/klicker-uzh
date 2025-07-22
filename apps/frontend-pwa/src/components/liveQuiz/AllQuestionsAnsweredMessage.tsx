@@ -26,7 +26,7 @@ function AllQuestionsAnsweredMessage({
     <div className="relative">
       <UserNotification
         type="success"
-        className={{ root: 'mt-4 text-base md:mt-1' }}
+        className={{ root: 'mt-1.5 md:text-base' }}
         message={t('pwa.liveQuiz.allQuestionsAnswered')}
       />
       {showConfetti && (

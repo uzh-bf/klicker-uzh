@@ -429,7 +429,8 @@ function CourseOverview({
                             <div>
                               {t('shared.leaderboard.participantCount', {
                                 number:
-                                  groupLeaderboardStatistics?.participantCount,
+                                  groupLeaderboardStatistics?.participantCount ??
+                                  0,
                               })}
                             </div>
                             <div>
@@ -437,7 +438,7 @@ function CourseOverview({
                                 number:
                                   groupLeaderboardStatistics?.averageScore?.toFixed(
                                     2
-                                  ),
+                                  ) ?? 0,
                               })}
                             </div>
                           </div>

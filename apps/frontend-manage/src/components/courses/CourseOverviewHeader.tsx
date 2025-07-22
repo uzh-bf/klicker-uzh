@@ -36,9 +36,6 @@ interface CourseOverviewHeaderProps {
     Course,
     'leaderboard' | 'liveQuizzes' | 'practiceQuizzes' | 'microLearnings'
   >
-  name: string
-  pinCode: number
-  numOfParticipants: number
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
@@ -46,9 +43,6 @@ interface CourseOverviewHeaderProps {
 
 function CourseOverviewHeader({
   course,
-  name,
-  pinCode,
-  numOfParticipants,
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
@@ -77,12 +71,12 @@ function CourseOverviewHeader({
         data={{ cy: 'course-name-with-pin' }}
         className={{ root: 'flex-1 whitespace-nowrap' }}
       >
-        {name}
+        {course.name}
       </H1>
       <div className="mb-2 flex flex-row items-center gap-3">
         <div className="italic">
           {t('manage.course.nParticipants', {
-            number: numOfParticipants,
+            number: course.numOfParticipants ?? 0,
           })}
         </div>
         {course.isEditor ? (
@@ -112,7 +106,7 @@ function CourseOverviewHeader({
             data={{ cy: 'course-activity-log-button' }}
           >
             <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.activity.tooltip')}</Button.Label>
+            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
           </Button>
         ) : null}
         <QRCodePopover
@@ -124,7 +118,7 @@ function CourseOverviewHeader({
               className={{ root: 'mb-3 w-80' }}
             />
           }
-          relHref={`/course/${course.id}/join?pin=${pinCode}`}
+          relHref={`/course/${course.id}/join?pin=${course.pinCode}`}
           data={{ cy: `course-join-qr-code` }}
         />
         {user?.publicPreview ? (
@@ -161,42 +155,42 @@ function CourseOverviewHeader({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTILeaderboardLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTIPracticeQuizzesLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTIMicroLearningsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
                       onSuccess: onSuccessToast,
                       t,
-                      name,
+                      name: course.name,
                       label: t('manage.course.linkLTIAccountManagement'),
                     }),
                   ]
@@ -235,6 +229,7 @@ function CourseOverviewHeader({
                   color: values.color,
                   startDate: startDateUTC,
                   endDate: endDateUTC,
+                  notificationEmail: values.notificationEmail,
                   isGamificationEnabled: values.isGamificationEnabled,
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,

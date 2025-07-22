@@ -125,11 +125,14 @@ function QuestionArea({
         (type === ElementType.Kprim && input.type === ElementType.Kprim)) &&
       typeof input.response !== 'undefined'
     ) {
-      const choicesIdxs = Object.entries(input.response)
-        .map(([key, value]) => (value === true ? parseInt(key) : undefined))
-        .filter((choice) => typeof choice !== 'undefined')
+      const responseList = Object.entries(input.response)
+        .filter(([, value]) => value)
+        .map(([key, value]) => ({
+          ix: parseInt(key),
+          selected: value,
+        }))
 
-      handleNewResponse(type, instanceId, choicesIdxs)
+      handleNewResponse(type, instanceId, responseList)
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
@@ -205,7 +208,7 @@ function QuestionArea({
 
   return (
     <div className="min-h-content h-full w-full">
-      <H2 className={{ root: 'mb-0 hidden pt-4 md:block' }}>
+      <H2 className={{ root: 'mb-0 pt-4 md:pt-2' }}>
         {t('shared.generic.question')}
       </H2>
 

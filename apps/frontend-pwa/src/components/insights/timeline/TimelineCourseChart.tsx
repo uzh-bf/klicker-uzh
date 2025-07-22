@@ -158,7 +158,7 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
                     >
                       <div>
                         <strong>
-                          {new Date(label).toLocaleDateString('de-DE', {
+                          {new Date(label ?? '').toLocaleDateString('de-DE', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faDeleteLeft,
@@ -11,7 +11,6 @@ import {
   GetUserActivitiesDocument,
   GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
@@ -39,11 +38,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
   const router = useRouter()
   const liveQuiz = template.liveQuiz
-
-  // TODO: remove, once migration to single activity overwiew has been completed
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
 
   // get processing function that creates the required answer collections
   // and prepares the element data for submission

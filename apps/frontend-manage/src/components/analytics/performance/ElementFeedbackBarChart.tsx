@@ -24,7 +24,7 @@ function ElementFeedbackBarChart({
 
   return (
     <div className="flex h-8 items-center gap-4">
-      <div className="w-48 overflow-hidden overflow-ellipsis whitespace-nowrap">
+      <div className="w-48 overflow-hidden text-ellipsis whitespace-nowrap">
         {title}
       </div>
       <div className="flex-1">

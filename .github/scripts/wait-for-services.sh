@@ -68,7 +68,7 @@ check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
-pnpm run start:test > service.log 2>&1 &
+pnpm run start:test:ci > service.log 2>&1 &
 
 # Store the PID of the background process
 SERVICE_PID=$!

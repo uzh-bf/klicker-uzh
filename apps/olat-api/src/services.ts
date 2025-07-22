@@ -1,14 +1,18 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import {
+  LiveQuiz,
+  MicroLearning,
+  PracticeQuiz,
+  PrismaClient,
+} from '@klicker-uzh/prisma'
+import fs from 'fs/promises'
+import path from 'path'
 import { pick } from 'remeda'
-import { activityTypesAvailable } from './static.js'
-import { ActivityTypeSubselection } from './types.js'
+import { fileURLToPath } from 'url'
+import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
 
 const prisma = new PrismaClient()
 
-export async function getCourses(
-  provider: string,
-  providerAccountId: string
-): Promise<any[] | null> {
+export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -41,9 +45,25 @@ export async function getCourses(
   }))
 }
 
-export async function getActivityTypes(): Promise<any[] | null> {
+async function loadActivityTypes(): Promise<ActivityType[]> {
+  try {
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const dataPath = path.join(__dirname, '../static/activityTypes.json')
+    const data = await fs.readFile(dataPath, 'utf-8')
+    const activityTypes: ActivityType[] = JSON.parse(data)
+    return activityTypes
+  } catch (error) {
+    console.error('Error reading data:', error)
+    process.exit(1)
+  }
+}
+
+export async function getActivityTypes() {
+  const activityTypes = await loadActivityTypes()
+
   // filter out fields
-  return activityTypesAvailable.map((activityType) => ({
+  return activityTypes.map((activityType) => ({
     ...pick(activityType, [
       'id',
       'path',
@@ -57,7 +77,8 @@ export async function getCourseActivityTypes(
   provider: string,
   providerAccountId: string,
   courseID: string
-): Promise<any[] | null> {
+) {
+  const activityTypes = await loadActivityTypes()
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -74,7 +95,6 @@ export async function getCourseActivityTypes(
   const course = await prisma.course.findUnique({
     where: { id: courseID, ownerId: account.userId },
     select: {
-      // NOTE: modify if required
       isGamificationEnabled: true,
       liveQuizzes: true,
       practiceQuizzes: true,
@@ -88,26 +108,30 @@ export async function getCourseActivityTypes(
   const practiceQuizzes = course.practiceQuizzes ?? []
   const microLearnings = course.microLearnings ?? []
 
-  const mapOverview: Record<string, any[]> = {
-    // NOTE: modify if required
+  const mapOverview: Record<
+    string,
+    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
+  > = {
     'live-quizzes': liveQuizzes,
     'practice-quizzes': practiceQuizzes,
     'micro-learnings': microLearnings,
   }
 
-  const mapSubselection: Record<string, any[]> = {
-    // NOTE: modify if required
+  const mapSubselection: Record<
+    string,
+    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
+  > = {
     'live-quiz': liveQuizzes,
     'practice-quiz': practiceQuizzes,
     'micro-learning': microLearnings,
   }
-  const activityKeysGamification = ['course-leaderboard'] // NOTE: modify if required
+  const activityKeysGamification = ['course-leaderboard']
 
-  const activityTypes = activityTypesAvailable.flatMap(
+  const availableActivityTypes = activityTypes.flatMap(
     ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
       // Overview activities: show count in title
       if (olatConfigurationKey in mapOverview) {
-        const count = mapOverview[olatConfigurationKey]?.length || 0
+        const count = mapOverview[olatConfigurationKey]!.length || 0
         return {
           id,
           title: `${title} (${count})`,
@@ -118,7 +142,7 @@ export async function getCourseActivityTypes(
 
       // Subselection activities: only include if they have items
       if (olatConfigurationKey in mapSubselection) {
-        const count = mapSubselection[olatConfigurationKey]?.length || 0
+        const count = mapSubselection[olatConfigurationKey]!.length || 0
         return count > 0
           ? {
               id,
@@ -151,15 +175,15 @@ export async function getCourseActivityTypes(
     }
   )
 
-  return activityTypes
+  return availableActivityTypes
 }
 
 export async function getActivities(
   provider: string,
   providerAccountId: string,
   courseID: string,
-  activityTypeKey: ActivityTypeSubselection // NOTE: modify if required
-): Promise<any[] | null> {
+  activityTypeKey: ActivityOlatConfigurationKey
+) {
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {
@@ -176,7 +200,6 @@ export async function getActivities(
   const course = await prisma.course.findUnique({
     where: { id: courseID, ownerId: account.userId },
     select: {
-      // NOTE: modify if required
       liveQuizzes:
         activityTypeKey === 'live-quiz'
           ? {
@@ -199,11 +222,10 @@ export async function getActivities(
   })
   if (!course) return null
 
-  // NOTE: modify if required
-  const activity =
+  const activities =
     course.liveQuizzes ?? course.practiceQuizzes ?? course.microLearnings ?? []
 
-  const activityDetails = activity.map((activity) => ({
+  const activityDetails = activities.map((activity) => ({
     id: activity.id,
     title: activity.name,
   }))

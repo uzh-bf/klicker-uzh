@@ -4,7 +4,6 @@ import {
   GetMatchingUserElementsTemplateDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -61,6 +60,7 @@ function ExistingElementSelectionModal({
       open
       escapeDisabled
       hideCloseButton
+      loading={loading}
       title={t('manage.template.selectExistingElement')}
       onClose={() => {
         setSelectedElement(null)
@@ -92,7 +92,6 @@ function ExistingElementSelectionModal({
 
       <div className="mt-2 max-h-[calc(80vh-12rem)] overflow-y-auto rounded-md border border-gray-200 p-3">
         <div className="flex flex-col gap-2">
-          {loading && <Loader />}
           {availableElements.length === 0 && !loading && (
             <UserNotification
               type="warning"

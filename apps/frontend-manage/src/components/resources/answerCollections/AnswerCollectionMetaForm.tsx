@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   AnswerCollection,
+  GetSingleAnswerCollectionDocument,
   ModifyAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
@@ -28,10 +29,36 @@ function AnswerCollectionMetaForm({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
-  const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument)
+  const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument, {
+    update: (cache, { data }) => {
+      if (data?.modifyAnswerCollection) {
+        const updatedCollection = data.modifyAnswerCollection
+        cache.updateQuery(
+          {
+            query: GetSingleAnswerCollectionDocument,
+            variables: { id: updatedCollection.id },
+          },
+          (existingData) => {
+            if (!existingData) return null
+
+            return {
+              ...existingData,
+              getSingleAnswerCollection: {
+                ...existingData.getSingleAnswerCollection,
+                id: collection.id,
+                name: updatedCollection.name,
+                description: updatedCollection.description,
+              },
+            }
+          }
+        )
+      }
+    },
+  })
 
   return (
     <Formik
+      enableReinitialize
       initialValues={{
         name: collection.name,
         description: collection.description,
@@ -78,6 +105,7 @@ function AnswerCollectionMetaForm({
             label={t('manage.resources.name')}
             tooltip={t('manage.resources.nameTooltip')}
             data={{ cy: 'answer-collection-name' }}
+            className={{ label: 'text-base' }}
           />
           <EditorField
             required
@@ -87,7 +115,7 @@ function AnswerCollectionMetaForm({
             fieldName="description"
             showToolbarOnFocus={false}
             data={{ cy: 'answer-collection-description' }}
-            className={{ root: 'mb-4' }}
+            className={{ root: 'mb-3 mt-1.5', label: 'text-base' }}
           />
           <Button
             primary

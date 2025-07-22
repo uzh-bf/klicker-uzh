@@ -42,7 +42,6 @@ function InstanceUpdateSwitch({
       includeTemplateInstances: true,
     },
     fetchPolicy: 'cache-and-network',
-    skip: !updateInstances,
   })
 
   const usedInTemplates = useMemo(() => {
@@ -102,7 +101,7 @@ function InstanceUpdateSwitch({
           </div>
         )}
 
-      <div className="ml-[4.25rem]">
+      <div className="ml-17">
         {loading && (
           <Loader data={{ cy: 'instance-update-activities-loading' }} />
         )}
