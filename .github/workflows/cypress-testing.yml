@@ -35,6 +35,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
       redis_cache:
         image: redis:7
         options: >-
@@ -44,6 +45,7 @@ jobs:
           --health-retries 5
         ports:
           - 6380:6379
+
       redis_exec:
         options: >-
           --health-cmd "redis-cli ping"
@@ -53,6 +55,36 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+
+      # hatchet services - only core dependencies as services
+      hatchet_postgres:
+        image: postgres:15.6
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        ports:
+          - '5435:5432'
+        options: >-
+          --health-cmd "pg_isready -d hatchet -U hatchet"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
+          --health-start-period 10s
+
+      hatchet_rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - '5673:5672' # RabbitMQ
+          - '15673:15672' # Management UI
+        env:
+          RABBITMQ_DEFAULT_USER: user
+          RABBITMQ_DEFAULT_PASS: password
+        options: >-
+          --health-cmd "rabbitmqctl status"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
     #   matrix:
@@ -118,6 +150,109 @@ jobs:
       - name: Build all packages and apps
         run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
 
+      - name: Initialize Hatchet
+        run: |
+          # Install postgresql client for pg_isready
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+
+          # Wait for Hatchet dependencies to be ready
+          echo "Waiting for Hatchet Postgres..."
+          until pg_isready -h localhost -p 5435 -U hatchet -d hatchet; do
+            echo "Postgres not ready, waiting..."
+            sleep 2
+          done
+          echo "✅ Postgres is ready"
+
+          echo "Waiting for RabbitMQ..."
+          until curl -f http://localhost:15673/api/overview 2>/dev/null; do
+            echo "RabbitMQ not ready, waiting..."
+            sleep 2
+          done
+          echo "✅ RabbitMQ is ready"
+
+          # Run Hatchet database migrations
+          echo "🔄 Running Hatchet migrations..."
+          docker run --rm --network host \
+            -e DATABASE_URL='postgres://hatchet:hatchet@localhost:5435/hatchet' \
+            ghcr.io/hatchet-dev/hatchet/hatchet-migrate:latest \
+            /hatchet/hatchet-migrate
+          echo "✅ Migrations completed"
+
+          # Setup Hatchet configuration
+          echo "🔄 Setting up Hatchet configuration..."
+          docker run --rm --network host \
+            -v hatchet_config:/hatchet/config \
+            -v hatchet_certs:/hatchet/certs \
+            -e DATABASE_URL='postgres://hatchet:hatchet@localhost:5435/hatchet' \
+            -e SERVER_TASKQUEUE_RABBITMQ_URL='amqp://user:password@localhost:5673/' \
+            -e SERVER_AUTH_COOKIE_DOMAIN='localhost:8080' \
+            -e SERVER_AUTH_COOKIE_INSECURE='t' \
+            -e SERVER_GRPC_BIND_ADDRESS='0.0.0.0' \
+            -e SERVER_GRPC_INSECURE='t' \
+            -e SERVER_GRPC_BROADCAST_ADDRESS='localhost:7077' \
+            -e SERVER_DEFAULT_ENGINE_VERSION='V1' \
+            -e SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS='localhost:7077' \
+            ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest \
+            /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
+          echo "✅ Configuration setup completed"
+
+          # Start Hatchet Engine in background
+          echo "🔄 Starting Hatchet Engine..."
+          docker run -d --name hatchet_engine --network host \
+            -v hatchet_config:/hatchet/config \
+            -v hatchet_certs:/hatchet/certs \
+            -e DATABASE_URL='postgres://hatchet:hatchet@localhost:5435/hatchet' \
+            -e SERVER_GRPC_BIND_ADDRESS='0.0.0.0' \
+            -e SERVER_GRPC_INSECURE='t' \
+            ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest \
+            /hatchet/hatchet-engine --config /hatchet/config
+
+          # Start Hatchet Dashboard in background  
+          echo "🔄 Starting Hatchet Dashboard..."
+          docker run -d --name hatchet_dashboard -p 8080:80 \
+            -v hatchet_config:/hatchet/config \
+            -v hatchet_certs:/hatchet/certs \
+            -e DATABASE_URL='postgres://hatchet:hatchet@localhost:5435/hatchet' \
+            ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:latest \
+            sh ./entrypoint.sh --config /hatchet/config
+
+          # Wait for Hatchet Engine to be ready
+          echo "🔄 Waiting for Hatchet Engine to be ready..."
+          attempt=0
+          max_attempts=60
+          until curl -f http://localhost:7077/health 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: Hatchet Engine not ready, waiting..."
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Hatchet Engine failed to start within timeout"
+            docker logs hatchet_engine || true
+            exit 1
+          fi
+          echo "✅ Hatchet Engine is ready"
+
+          # Generate Hatchet client token
+          echo "🔄 Generating Hatchet client token..."
+          HATCHET_TOKEN=$(docker run --rm --network host \
+            -v hatchet_config:/hatchet/config \
+            ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest \
+            /hatchet/hatchet-admin token create --config /hatchet/config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | grep '^eyJ' | head -n1 | xargs)
+
+          if [ -z "$HATCHET_TOKEN" ]; then
+            echo "❌ Failed to generate Hatchet token"
+            exit 1
+          fi
+
+          # Set token in backend .env for the test
+          echo "HATCHET_CLIENT_TOKEN=$HATCHET_TOKEN" >> apps/backend-docker/.env
+          echo "HATCHET_CLIENT_TLS_STRATEGY=none" >> apps/backend-docker/.env
+
+          echo "✅ Hatchet initialization complete!"
+          echo "📊 Dashboard available at: http://localhost:8080"
+          echo "🔧 Engine available at: http://localhost:7077"
+
       - name: Apply migrations and seed the database
         run: |
           cd packages/prisma
@@ -133,7 +268,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7077/health http://127.0.0.1:8080'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
 
@@ -142,8 +277,28 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: service-logs
-          path: service.log
+          path: |
+            service.log
           if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Hatchet service logs
+        if: always()
+        run: |
+          # Collect Hatchet service logs for debugging
+          echo "=== Hatchet Engine logs ===" > hatchet-logs.txt
+          docker logs hatchet_engine >> hatchet-logs.txt 2>&1 || echo "No engine logs" >> hatchet-logs.txt
+          echo -e "\n=== Hatchet Dashboard logs ===" >> hatchet-logs.txt
+          docker logs hatchet_dashboard >> hatchet-logs.txt 2>&1 || echo "No dashboard logs" >> hatchet-logs.txt
+        continue-on-error: true
+
+      - name: Upload Hatchet logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatchet-logs
+          path: hatchet-logs.txt
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Cypress run
@@ -151,7 +306,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7077/health, http://127.0.0.1:8080'
           wait-on-timeout: 300
           record: true
           browser: electron
