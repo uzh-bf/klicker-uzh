@@ -9,6 +9,13 @@ import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'
+import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
+  publishScheduledGroupActivity,
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+} from 'src/services/tasks.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -17,7 +24,6 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
-  hatchet: Hatchet
   redisExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
@@ -28,6 +34,22 @@ export interface Context extends BaseContext {
     catalystInstitutional: boolean
     catalystIndividual: boolean
     // affiliations?: string[]
+  }
+  // hatchet client to access / modify existing hatchet tasks
+  hatchet: Hatchet
+  // available hatchet tasks
+  tasks: {
+    publishScheduledMicroLearningTask: ReturnType<
+      typeof publishScheduledMicroLearning
+    >
+    publishScheduledPracticeQuizTask: ReturnType<
+      typeof publishScheduledPracticeQuiz
+    >
+    publishScheduledGroupActivityTask: ReturnType<
+      typeof publishScheduledGroupActivity
+    >
+    endExpiredMicroLearningTask: ReturnType<typeof endExpiredMicroLearning>
+    endExpiredGroupActivityTask: ReturnType<typeof endExpiredGroupActivity>
   }
 }
 

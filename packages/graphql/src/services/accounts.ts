@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { changeUserEmailSettings } from './tasks.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1089,21 +1088,12 @@ export async function changeEmailSettings(
   { projectUpdates }: { projectUpdates: boolean },
   ctx: ContextWithUser
 ) {
-  const user = await ctx.prisma.user.findUnique({
+  const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
+    data: { sendProjectUpdates: projectUpdates },
   })
 
-  const changeEmailSettingsTask = changeUserEmailSettings(ctx.hatchet)
-  const { success } = await changeEmailSettingsTask.run({
-    userId: ctx.user.sub,
-    projectUpdates,
-  })
-
-  if (!success) {
-    return user
-  }
-
-  return { ...user, sendProjectUpdates: projectUpdates } as DB.User
+  return user
 }
 
 export async function changeInitialSettings(

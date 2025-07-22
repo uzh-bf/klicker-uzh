@@ -1,5 +1,13 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
+  enhanceContext,
+  publishScheduledGroupActivity,
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+  schema,
+} from '@klicker-uzh/graphql'
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
@@ -19,6 +27,7 @@ import { migrate } from './migration.js'
 const emitter = new EventEmitter()
 
 // ! Prisma setup
+// #region
 let prisma = new PrismaClient({
   log:
     process.env.NODE_ENV === 'development'
@@ -34,17 +43,10 @@ if (
     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
   ) as PrismaClient
 }
-
-// if (process.env.SENTRY_DSN) {
-//   Sentry.init({
-//     debug: !!process.env.DEBUG,
-//     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
-//       ? Number(process.env.SENTRY_SAMPLE_RATE)
-//       : 1,
-//   })
-// }
+// #endregion
 
 // ! Redis setup
+// #region
 const redisExec = new Redis({
   family: 4,
   host: process.env.REDIS_HOST ?? 'localhost',
@@ -102,25 +104,58 @@ emitter.on('invalidate', (resource) => {
     },
   ])
 })
+// #endregion
 
-// ! Initialize Hatchet to pass it to context
+// ! Initialize Hatchet and tasks
+// #region
+const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
 const hatchet = Hatchet.init({
   token: process.env.HATCHET_CLIENT_TOKEN,
-  log_level: 'DEBUG',
+  log_level:
+    typeof process.env.HATCHET_LOG_LEVEL !== 'undefined' &&
+    validLogLevels.some(
+      (logLevel) => logLevel === process.env.HATCHET_LOG_LEVEL
+    )
+      ? (process.env.HATCHET_LOG_LEVEL as
+          | 'INFO'
+          | 'OFF'
+          | 'DEBUG'
+          | 'WARN'
+          | 'ERROR')
+      : 'INFO',
 })
+
+// initialize tasks to be able to call / schedule them inside service functions
+// ? for the context to correctly accept them, update the context type in the context.ts file
+const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
+const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
+const publishScheduledGroupActivityTask = publishScheduledGroupActivity(hatchet)
+const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
+const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
+const tasks = {
+  publishScheduledMicroLearningTask,
+  publishScheduledPracticeQuizTask,
+  publishScheduledGroupActivityTask,
+  endExpiredMicroLearningTask,
+  endExpiredGroupActivityTask,
+}
+// #endregion
 
 // ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
 
+// ! Server and context setup
+// #region
 migrate(prisma).then(() => {
   const { app, yogaApp } = prepareApp({
     prisma,
-    hatchet,
     redisCache,
     redisExec,
     pubSub,
     cache,
     emitter,
+    hatchet,
+    tasks,
   })
 
   const server = app.listen(3000, () => {
@@ -136,10 +171,10 @@ migrate(prisma).then(() => {
         schema,
         context: enhanceContext({
           prisma,
-          hatchet,
           redisExec,
           pubSub,
           emitter,
+          tasks,
         }),
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),
@@ -179,3 +214,4 @@ migrate(prisma).then(() => {
     )
   })
 })
+// #endregion

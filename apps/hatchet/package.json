@@ -32,7 +32,7 @@
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
     "dev:offline": "pnpm run dev",
-    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node ./dist/index.js'",
+    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test pnpm run dev",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config dist/index.js"

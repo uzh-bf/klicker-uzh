@@ -1,5 +1,11 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { changeUserEmailSettings } from '@klicker-uzh/graphql'
+import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
+  publishScheduledGroupActivity,
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+} from '@klicker-uzh/graphql'
 
 // ! Hatchet setup
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
@@ -19,8 +25,23 @@ const hatchet = Hatchet.init({
       : 'INFO',
 })
 
-const worker = await hatchet.worker('test-worker', {
-  workflows: [changeUserEmailSettings(hatchet)],
+const publicationWorker = await hatchet.worker('activity-publications', {
+  workflows: [
+    publishScheduledMicroLearning(hatchet),
+    publishScheduledPracticeQuiz(hatchet),
+    publishScheduledGroupActivity(hatchet),
+  ],
   slots: 100,
 })
-await worker.start()
+
+const completionWorker = await hatchet.worker('activity-endings', {
+  workflows: [
+    endExpiredMicroLearning(hatchet),
+    endExpiredGroupActivity(hatchet),
+  ],
+  slots: 100,
+})
+
+// run all workers concurrently
+publicationWorker.start()
+completionWorker.start()

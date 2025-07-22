@@ -24,6 +24,13 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
 import {
+  endExpiredGroupActivity,
+  endExpiredMicroLearning,
+  publishScheduledGroupActivity,
+  publishScheduledMicroLearning,
+  publishScheduledPracticeQuiz,
+} from '../src/services/tasks.js'
+import {
   answerCollection1,
   answerCollection2,
   catalogCollection1,
@@ -88,6 +95,22 @@ export async function testInitialization(
     update: {},
   })
 
+  // initialize tasks to be called
+  const publishScheduledMicroLearningTask =
+    publishScheduledMicroLearning(hatchet)
+  const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
+  const publishScheduledGroupActivityTask =
+    publishScheduledGroupActivity(hatchet)
+  const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
+  const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
+  const tasks = {
+    publishScheduledMicroLearningTask,
+    publishScheduledPracticeQuizTask,
+    publishScheduledGroupActivityTask,
+    endExpiredMicroLearningTask,
+    endExpiredGroupActivityTask,
+  }
+
   // mock context with user including all required properties
   const userOneCtx = {
     user: {
@@ -99,6 +122,7 @@ export async function testInitialization(
     },
     prisma,
     hatchet,
+    tasks,
     emitter,
     redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
     pubSub: { publish: jest.fn(), subscribe: jest.fn() },
@@ -197,7 +221,22 @@ export async function initializePrisma() {
     const emitter = new EventEmitter()
 
     // create new instance of Hatchet for test context
-    const hatchet = {} as Hatchet // TODO: once actually required, set up required components and Hatchet
+    const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
+    const hatchet = Hatchet.init({
+      token: process.env.HATCHET_CLIENT_TOKEN,
+      log_level:
+        typeof process.env.HATCHET_LOG_LEVEL !== 'undefined' &&
+        validLogLevels.some(
+          (logLevel) => logLevel === process.env.HATCHET_LOG_LEVEL
+        )
+          ? (process.env.HATCHET_LOG_LEVEL as
+              | 'INFO'
+              | 'OFF'
+              | 'DEBUG'
+              | 'WARN'
+              | 'ERROR')
+          : 'INFO',
+    })
 
     return { prisma, hatchet, emitter }
   } catch (error) {

@@ -27,7 +27,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -64,7 +64,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -99,7 +99,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -198,7 +198,7 @@ services:
   postgres_diff:
     image: docker.io/library/postgres:15
     environment:
-      POSTGRES_USER: klicker
+      POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod
     ports:
@@ -213,7 +213,7 @@ services:
   postgres_lti:
     image: docker.io/library/postgres:15
     environment:
-      POSTGRES_USER: klicker
+      POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod-lti
     ports:
@@ -243,6 +243,9 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - klicker
+
   hatchet_rabbitmq:
     image: 'rabbitmq:3-management'
     hostname: 'rabbitmq'
@@ -260,6 +263,9 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    networks:
+      - klicker
+
   hatchet_migration:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:latest
     command: /hatchet/hatchet-migrate
@@ -268,13 +274,16 @@ services:
     depends_on:
       hatchet_postgres:
         condition: service_healthy
+    networks:
+      - klicker
+
   hatchet_setup_config:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:latest
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
     environment:
       DATABASE_URL: 'postgres://hatchet:hatchet@hatchet_postgres:5432/hatchet'
       SERVER_TASKQUEUE_RABBITMQ_URL: amqp://user:password@hatchet_rabbitmq:5672/
-      SERVER_AUTH_COOKIE_DOMAIN: localhost:8090
+      SERVER_AUTH_COOKIE_DOMAIN: localhost:8080
       SERVER_AUTH_COOKIE_INSECURE: 't'
       SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
       SERVER_GRPC_INSECURE: 't'
@@ -291,6 +300,9 @@ services:
         condition: service_healthy
       hatchet_postgres:
         condition: service_healthy
+    networks:
+      - klicker
+
   hatchet_engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:latest
     command: /hatchet/hatchet-engine --config /hatchet/config
@@ -309,11 +321,14 @@ services:
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
+    networks:
+      - klicker
+
   hatchet_dashboard:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:latest
     command: sh ./entrypoint.sh --config /hatchet/config
     ports:
-      - 8090:80
+      - 8080:80
     restart: on-failure
     depends_on:
       hatchet_setup_config:
@@ -325,6 +340,8 @@ services:
     volumes:
       - hatchet_certs:/hatchet/certs
       - hatchet_config:/hatchet/config
+    networks:
+      - klicker
 
   # redis instance to support live quiz execution
   redis_exec:
