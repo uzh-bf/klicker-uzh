@@ -1985,50 +1985,6 @@ export async function enableGamification(
   return course
 }
 
-// TODO: once all available activity endings have been migrated to scheduled tasks, remove this function and the associated cronjob
-export async function endExpiredActivities(ctx: Context) {
-  // // ! Set group activity status to ended for all published group activities that have ended
-  // const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
-  //   where: {
-  //     status: DB.PublicationStatus.PUBLISHED,
-  //     scheduledEndAt: {
-  //       lte: new Date(),
-  //     },
-  //   },
-  // })
-
-  // const updatedGroupActivitiesToEnd = await Promise.all(
-  //   groupActivitiesToEnd.map((group) =>
-  //     ctx.prisma.groupActivity.update({
-  //       where: {
-  //         id: group.id,
-  //       },
-  //       data: {
-  //         status: DB.PublicationStatus.ENDED,
-  //       },
-  //     })
-  //   )
-  // )
-
-  // if (updatedGroupActivitiesToEnd.length !== 0) {
-  //   await sendTeamsNotifications(
-  //     'graphql/endGroupActivitiesCronjob',
-  //     `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
-  //   )
-  // }
-
-  // updatedGroupActivitiesToEnd.forEach((activity) => {
-  //   ctx.pubSub.publish('groupActivityEnded', activity)
-  //   ctx.pubSub.publish('singleGroupActivityEnded', activity)
-  //   ctx.emitter.emit('invalidate', {
-  //     typename: 'GroupActivity',
-  //     id: activity.id,
-  //   })
-  // })
-
-  return true
-}
-
 export async function getCourseActivities(
   { courseId }: { courseId: string },
   ctx: ContextWithUser

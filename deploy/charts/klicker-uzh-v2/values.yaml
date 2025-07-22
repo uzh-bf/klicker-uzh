@@ -39,7 +39,6 @@ vapid:
 cron:
   dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
   pushNotifications: "*/5 * * * *" # runs every 5 minutes
-  activityEndings: "*/5 * * * *" # runs every 5 minutes
   runningRandomGroups: "5 0 * * *" # running daily at midnight (UTC)
   finalRandomGroups: "10 0 * * *" # running daily at midnight (UTC)
   updateWeeklyTimelineEntries: "15 0 * * *" # running daily at midnight (UTC

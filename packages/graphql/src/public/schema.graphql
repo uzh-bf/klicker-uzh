@@ -1613,7 +1613,6 @@ type Mutation {
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
-  endExpiredActivities: Boolean!
   endGroupActivity(id: String!): GroupActivity
   endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
