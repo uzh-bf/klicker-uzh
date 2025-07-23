@@ -34,32 +34,9 @@ afterAll(async () => {
   await prisma.$disconnect()
 })
 
-function getExpectedResponse(
-  numberLiveQuizzes: number,
-  numberPracticeQuizzes: number,
-  numberMicroLearnings: number,
-  isGamificationEnabled: boolean
-) {
+function getExpectedResponse(isGamificationEnabled: boolean) {
   let response = {
     activityTypes: [
-      {
-        id: 'LIVE_QUIZZES',
-        title: `Live Quiz Overview (${numberLiveQuizzes})`,
-        olatConfigurationKey: 'live-quizzes',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'PRACTICE_QUIZZES',
-        title: `Practice Quiz Overview (${numberPracticeQuizzes})`,
-        olatConfigurationKey: 'practice-quizzes',
-        isSubselectionRequired: false,
-      },
-      {
-        id: 'MICRO_LEARNINGS',
-        title: `Micro Learning Overview (${numberMicroLearnings})`,
-        olatConfigurationKey: 'micro-learnings',
-        isSubselectionRequired: false,
-      },
       {
         id: 'MANAGE_ACCOUNT',
         title: 'Manage Account',
@@ -76,30 +53,25 @@ function getExpectedResponse(
     timestamp: '',
   }
 
-  if (numberLiveQuizzes !== 0) {
-    response.activityTypes.push({
-      id: 'LIVE_QUIZ',
-      title: 'Live Quiz',
-      olatConfigurationKey: 'live-quiz',
-      isSubselectionRequired: true,
-    })
-  }
-  if (numberPracticeQuizzes !== 0) {
-    response.activityTypes.push({
-      id: 'PRACTICE_QUIZ',
-      title: 'Practice Quiz',
-      olatConfigurationKey: 'practice-quiz',
-      isSubselectionRequired: true,
-    })
-  }
-  if (numberMicroLearnings !== 0) {
-    response.activityTypes.push({
-      id: 'MICRO_LEARNING',
-      title: 'Micro Learning',
-      olatConfigurationKey: 'micro-learning',
-      isSubselectionRequired: true,
-    })
-  }
+  response.activityTypes.push({
+    id: 'LIVE_QUIZ',
+    title: `Live Quiz`,
+    olatConfigurationKey: 'live-quiz',
+    isSubselectionRequired: true,
+  })
+  response.activityTypes.push({
+    id: 'PRACTICE_QUIZ',
+    title: 'Practice Quiz',
+    olatConfigurationKey: 'practice-quiz',
+    isSubselectionRequired: true,
+  })
+  response.activityTypes.push({
+    id: 'MICRO_LEARNING',
+    title: 'Micro Learning',
+    olatConfigurationKey: 'micro-learning',
+    isSubselectionRequired: true,
+  })
+
   if (isGamificationEnabled) {
     response.activityTypes.push({
       id: 'COURSE_LEADERBOARD',
@@ -112,10 +84,13 @@ function getExpectedResponse(
 }
 
 function getExpectedTitles(n: number, prefix: string, course: Course) {
-  return Array.from(
-    { length: n },
-    (_, i) => `${prefix} ${i + 1} for ${course.name}`
-  )
+  return [
+    'Overview',
+    ...Array.from(
+      { length: n },
+      (_, i) => `${prefix} ${i + 1} for ${course.name}`
+    ),
+  ]
 }
 
 describe('OLAT-API /api/configuration/courses', () => {
@@ -227,24 +202,6 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
     const response_body_expected = {
       activityTypes: [
         {
-          id: 'LIVE_QUIZZES',
-          isEmailTransferRequired: false,
-          olatConfigurationKey: 'live-quizzes',
-          path: '/liveQuizzes',
-        },
-        {
-          id: 'PRACTICE_QUIZZES',
-          isEmailTransferRequired: false,
-          olatConfigurationKey: 'practice-quizzes',
-          path: '/practiceQuizzes',
-        },
-        {
-          id: 'MICRO_LEARNINGS',
-          isEmailTransferRequired: false,
-          olatConfigurationKey: 'micro-learnings',
-          path: '/microLearnings',
-        },
-        {
           id: 'MANAGE_ACCOUNT',
           isEmailTransferRequired: true,
           olatConfigurationKey: 'manage-account',
@@ -260,19 +217,19 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
           id: 'LIVE_QUIZ',
           isEmailTransferRequired: false,
           olatConfigurationKey: 'live-quiz',
-          path: '/liveQuiz',
+          path: '/liveQuizzes',
         },
         {
           id: 'PRACTICE_QUIZ',
           isEmailTransferRequired: false,
           olatConfigurationKey: 'practice-quiz',
-          path: '/quiz',
+          path: '/practiceQuizzes',
         },
         {
           id: 'MICRO_LEARNING',
           isEmailTransferRequired: false,
           olatConfigurationKey: 'micro-learning',
-          path: '/microlearning',
+          path: '/microLearnings',
         },
         {
           id: 'COURSE_LEADERBOARD',
@@ -365,9 +322,6 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
 
     courses.forEach(async (course) => {
       const courseId = course.course.id
-      const numberLiveQuizzes = course.numberLiveQuizzes
-      const numberPracticeQuizzes = course.numberPracticeQuizzes
-      const numberMicroLearnings = course.numberMicroLearnings
       const isGamificationEnabled = course.isGamificationEnabled
 
       let response = await request(app)
@@ -378,13 +332,7 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
           identityMappingIdentifier: course.course.owner.providerAccountId,
         })
 
-      let response_body_expected = getExpectedResponse(
-        numberLiveQuizzes,
-        numberPracticeQuizzes,
-        numberMicroLearnings,
-        isGamificationEnabled
-      )
-
+      let response_body_expected = getExpectedResponse(isGamificationEnabled)
       expect(response.status).toBe(StatusCode.SUCCESS)
       expect(response.body).toHaveProperty('activityTypes')
       expect(response.body).toHaveProperty('timestamp')
@@ -602,9 +550,6 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
     ]) {
       const courseId = course.id
       const activityTypesGeneral = [
-        'live-quizzes',
-        'practice-quizzes',
-        'micro-learnings',
         'manage-account',
         'docs',
         'course-leaderboard',

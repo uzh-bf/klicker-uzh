@@ -166,7 +166,7 @@ function CourseOverviewHeader({
                       label: t('manage.course.linkLTIDocsLabel'),
                     }),
                     getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes/overview`,
                       onSuccess: onSuccessToast,
                       t,
                       name: course.name,

@@ -108,15 +108,6 @@ export async function getCourseActivityTypes(
   const practiceQuizzes = course.practiceQuizzes ?? []
   const microLearnings = course.microLearnings ?? []
 
-  const mapOverview: Record<
-    string,
-    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
-  > = {
-    'live-quizzes': liveQuizzes,
-    'practice-quizzes': practiceQuizzes,
-    'micro-learnings': microLearnings,
-  }
-
   const mapSubselection: Record<
     string,
     LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
@@ -129,28 +120,14 @@ export async function getCourseActivityTypes(
 
   const availableActivityTypes = activityTypes.flatMap(
     ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
-      // Overview activities: show count in title
-      if (olatConfigurationKey in mapOverview) {
-        const count = mapOverview[olatConfigurationKey]!.length || 0
+      // Subselection activities: only include if they have items
+      if (olatConfigurationKey in mapSubselection) {
         return {
           id,
-          title: `${title} (${count})`,
+          title,
           olatConfigurationKey,
           isSubselectionRequired,
         }
-      }
-
-      // Subselection activities: only include if they have items
-      if (olatConfigurationKey in mapSubselection) {
-        const count = mapSubselection[olatConfigurationKey]!.length || 0
-        return count > 0
-          ? {
-              id,
-              title,
-              olatConfigurationKey,
-              isSubselectionRequired,
-            }
-          : []
       }
 
       // Gamification activities: only include if gamification is enabled
@@ -229,5 +206,6 @@ export async function getActivities(
     id: activity.id,
     title: activity.name,
   }))
-  return activityDetails
+
+  return [{ id: 'overview', title: 'Overview' }, ...activityDetails]
 }

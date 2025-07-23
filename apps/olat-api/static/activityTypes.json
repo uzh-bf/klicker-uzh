@@ -1,29 +1,5 @@
 [
   {
-    "id": "LIVE_QUIZZES",
-    "title": "Live Quiz Overview",
-    "path": "/liveQuizzes",
-    "olatConfigurationKey": "live-quizzes",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
-    "id": "PRACTICE_QUIZZES",
-    "title": "Practice Quiz Overview",
-    "path": "/practiceQuizzes",
-    "olatConfigurationKey": "practice-quizzes",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
-    "id": "MICRO_LEARNINGS",
-    "title": "Micro Learning Overview",
-    "path": "/microLearnings",
-    "olatConfigurationKey": "micro-learnings",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
     "id": "MANAGE_ACCOUNT",
     "title": "Manage Account",
     "path": "/createAccount",
@@ -42,7 +18,7 @@
   {
     "id": "LIVE_QUIZ",
     "title": "Live Quiz",
-    "path": "/liveQuiz",
+    "path": "/liveQuizzes",
     "olatConfigurationKey": "live-quiz",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
@@ -50,7 +26,7 @@
   {
     "id": "PRACTICE_QUIZ",
     "title": "Practice Quiz",
-    "path": "/quiz",
+    "path": "/practiceQuizzes",
     "olatConfigurationKey": "practice-quiz",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
@@ -58,7 +34,7 @@
   {
     "id": "MICRO_LEARNING",
     "title": "Micro Learning",
-    "path": "/microlearning",
+    "path": "/microLearnings",
     "olatConfigurationKey": "micro-learning",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
