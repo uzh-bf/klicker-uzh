@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.74...v3.3.0-alpha.75) (2025-07-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure to show correct tooltip when hovering over scatter plot items on case study evaluation ([#4790](https://github.com/uzh-bf/klicker-uzh/issues/4790)) ([a8f104a](https://github.com/uzh-bf/klicker-uzh/commit/a8f104a8f1a4c155b7c64a6fdc07708f4751b68b))
+* **apps/func-incoming-responses:** make sure CORS expects https for local development ([a18849f](https://github.com/uzh-bf/klicker-uzh/commit/a18849fdc78e547cf0ac9888753bd6fc881c050d))
+* update database user to new username across entire app to be consistent with new development setup ([#4791](https://github.com/uzh-bf/klicker-uzh/issues/4791)) ([1fa4b5b](https://github.com/uzh-bf/klicker-uzh/commit/1fa4b5bf487558caaeebacc24be62dfa7b1758c8))
+
+
+### Enhancements
+
+* extend choices answer representation ([#4598](https://github.com/uzh-bf/klicker-uzh/issues/4598)) ([a025314](https://github.com/uzh-bf/klicker-uzh/commit/a025314b91c808099f1e8cfd112d15d81fd6a665))
+
 ## [3.3.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.73...v3.3.0-alpha.74) (2025-07-20)
 
 
