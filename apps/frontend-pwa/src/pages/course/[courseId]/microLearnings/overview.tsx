@@ -9,8 +9,8 @@ import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Layout from '../../../components/Layout'
-import LinkButton from '../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
+import LinkButton from '../../../../components/common/LinkButton'
 
 function CourseMicroLearnings({
   isInactive,
@@ -79,7 +79,7 @@ function CourseMicroLearnings({
             <LinkButton
               key={microlearning.id}
               icon={faBookOpenReader}
-              href={`/course/${course.id}/microlearning/${microlearning.id}`}
+              href={`/course/${course.id}/microLearnings/${microlearning.id}`}
               data={{ cy: `open-microlearning-${microlearning.name}` }}
               className={{ root: 'gap-1 text-base', icon: 'h-5 w-5' }}
             >
@@ -133,7 +133,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (result.data.getCoursePublishedMicroLearnings.length === 1) {
     return {
       redirect: {
-        destination: `/course/${course.id}/microlearning/${result.data.getCoursePublishedMicroLearnings[0].id}`,
+        destination: `/course/${course.id}/microLearnings/${result.data.getCoursePublishedMicroLearnings[0].id}`,
         permanent: false,
       },
     }

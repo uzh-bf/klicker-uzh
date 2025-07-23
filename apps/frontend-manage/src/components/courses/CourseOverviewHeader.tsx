@@ -180,7 +180,7 @@ function CourseOverviewHeader({
                       label: t('manage.course.linkLTIPracticeQuizzesLabel'),
                     }),
                     getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings/overview`,
                       onSuccess: onSuccessToast,
                       t,
                       name: course.name,

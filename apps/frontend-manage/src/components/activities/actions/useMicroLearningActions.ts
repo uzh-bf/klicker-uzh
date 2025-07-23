@@ -63,7 +63,7 @@ function useMicroLearningActions({
       options: { duration: 4000 },
     })
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${microLearning.courseId}/microlearning/${microLearning.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
   const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
 
   const actions = useMemo(
