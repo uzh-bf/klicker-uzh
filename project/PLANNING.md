@@ -416,9 +416,10 @@ With the dual-mode implementation in place, we need comprehensive integration te
 
 ### Epic 4: Permission System v3.0 - Operation Processing Implementation
 
-**Status**: Planning
+**Status**: In Progress
 **Priority**: Critical
 **Created**: 2025-05-30
+**Updated**: 2025-07-23
 **Dependencies**: Epic 3 and Epic 3A (must be completed first)
 **Parent Epic**: Epic 1 (Sharing System Performance Optimization)
 
@@ -434,6 +435,7 @@ With operations being created in the PendingPermissionOperation table, we need t
 4. Add comprehensive error handling and retry mechanisms
 5. Ensure idempotent operation processing
 6. Maintain data consistency throughout processing
+7. Build observability and monitoring alongside implementation
 
 #### Technical Specification
 
@@ -443,11 +445,15 @@ With operations being created in the PendingPermissionOperation table, we need t
    - Main processing loop with configurable batch size
    - SELECT FOR UPDATE SKIP LOCKED for concurrent processing
    - Operation type dispatcher
-   - Error handling and retry logic
-   - Metrics and logging
+   - Error handling and retry logic with exponential backoff and jitter
+   - Comprehensive metrics and logging from day one
+   - Consider using Bull/BullMQ for enhanced reliability
 
-2. **Operation Type Processors**:
-   - `EXPAND_GROUP_TO_USER_OPERATIONS`: Expands group permissions to individual user operations
+2. **Operation Type Processors** (Priority Order):
+   - `EXPAND_GROUP_TO_USER_OPERATIONS`: Expands group permissions to individual user operations (implement first - highest impact)
+   - `EXPAND_GROUP_TO_USER_GRANT_OPERATIONS`: Grant-specific group expansion
+   - `EXPAND_GROUP_TO_USER_UPDATE_OPERATIONS`: Update-specific group expansion
+   - `EXPAND_GROUP_TO_USER_REVOKE_OPERATIONS`: Revoke-specific group expansion
    - `PROCESS_USER_ELEMENT_ACCESS`: Computes user permissions for elements
    - `PROCESS_USER_COURSE_ACCESS`: Computes user permissions for courses
    - `PROCESS_USER_*_ACCESS`: Similar processors for all object types
@@ -459,24 +465,57 @@ With operations being created in the PendingPermissionOperation table, we need t
    - Dependency tracking through `parentOperationId`
    - Priority-based processing order
    - Completion tracking and cleanup
+   - Operation coalescing to reduce redundant work
 
 4. **Transaction Management**:
    - Small transaction boundaries per operation
    - Rollback handling for failed operations
    - Consistency guarantees
+   - Consider batching multiple operations where safe
+
+5. **Error Handling & Resilience**:
+   - Circuit breakers for consistently failing operations
+   - Exponential backoff with jitter for retries
+   - Dead letter queue for operations that exceed retry limit
+   - Cascading failure handling for parent-child operations
 
 **Processing Flow**:
 ```
 1. Fetch batch of operations (SELECT FOR UPDATE SKIP LOCKED)
 2. For each operation:
+   - Check circuit breaker status
    - Begin transaction
    - Process based on type
    - Generate child operations if needed
    - Update operation status
    - Commit or rollback
-3. Handle errors with exponential backoff
-4. Clean up completed operations
+3. Handle errors with exponential backoff and jitter
+4. Monitor processing lag (creation vs processing rate)
+5. Clean up completed operations after retention period
 ```
+
+#### Implementation Considerations
+
+**Eventual Consistency UX**:
+- Add UI indicators for "Permission updates in progress"
+- Consider optimistic UI updates
+- WebSocket notifications when processing completes
+
+**Operation Table Management**:
+- Implement operation coalescing for same user/object combinations
+- Automatic cleanup of completed operations after configurable retention
+- Monitor table growth as key metric
+
+**Hybrid Approach Considerations**:
+- Consider combining with Solution 1A (Group Permission Splitting) for immediate impact
+- Implement incremental updates to avoid creating unnecessary operations
+
+**Monitoring & Observability** (implement alongside, not after):
+- Operation processing rate vs creation rate (lag indicator)
+- P95/P99 processing times by operation type
+- Failed operation alerts with automatic remediation
+- Queue depth monitoring
+- Circuit breaker status tracking
 
 #### Success Criteria
 
@@ -487,6 +526,9 @@ With operations being created in the PendingPermissionOperation table, we need t
 - [ ] Performance meets requirements (1000+ users without timeout)
 - [ ] Idempotency is maintained across retries
 - [ ] Comprehensive test coverage for all scenarios
+- [ ] Operation lag remains under 5 seconds during normal load
+- [ ] Monitoring dashboards show real-time system health
+- [ ] Recovery tools available for consistency checking and replay
 
 ### Epic 5: Permission System v3.0 - Migration and Rollout Strategy
 
