@@ -8,10 +8,10 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Layout from '../../../components/Layout'
-import LinkButton from '../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
+import LinkButton from '../../../../components/common/LinkButton'
 
-function CoursePracticeQuizzes({
+function PracticeQuizOverview({
   isInactive,
   courseId,
   participantToken,
@@ -81,7 +81,7 @@ function CoursePracticeQuizzes({
             <LinkButton
               key={quiz.id}
               icon={faBookOpenReader}
-              href={`/course/${course.id}/quiz/${quiz.id}`}
+              href={`/course/${course.id}/practiceQuizzes/${quiz.id}`}
               data={{ cy: `open-practice-quiz-${quiz.name}` }}
               className={{ root: 'gap-1 text-base', icon: 'h-5 w-5' }}
             >
@@ -129,7 +129,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (quizzes.length === 1) {
     return {
       redirect: {
-        destination: `/course/${course.id}/quiz/${quizzes[0].id}`,
+        destination: `/course/${course.id}/practiceQuizzes/${quizzes[0].id}`,
         permanent: false,
       },
     }
@@ -162,4 +162,4 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 }
 
-export default CoursePracticeQuizzes
+export default PracticeQuizOverview

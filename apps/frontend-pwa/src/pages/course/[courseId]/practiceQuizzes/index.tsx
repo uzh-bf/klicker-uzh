@@ -1,14 +1,11 @@
 import { GetServerSidePropsContext } from 'next'
 
-function PracticeQuizRedirect() {
+function PracticeQuizOverviewRedirected() {
   return null
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (
-    typeof ctx.params?.courseId !== 'string' ||
-    typeof ctx.params?.id !== 'string'
-  ) {
+  if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
         destination: '/404',
@@ -19,10 +16,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `/course/${ctx.params.courseId}/practiceQuizzes/${ctx.params.id}`,
+      destination: `/course/${ctx.params.courseId}/practiceQuizzes/overview`,
       permanent: false,
     },
   }
 }
 
-export default PracticeQuizRedirect
+export default PracticeQuizOverviewRedirected

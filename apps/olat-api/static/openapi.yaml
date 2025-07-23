@@ -229,9 +229,6 @@ components:
           - live-quiz
           - practice-quiz
           - micro-learning
-          - live-quizzes
-          - practice-quizzes
-          - micro-learnings
           - course-leaderboard
           - manage-account
           - docs
@@ -299,12 +296,12 @@ components:
       properties:
         id:
           type: string
-          example: LIVE_QUIZZES
+          example: LIVE_QUIZ
           description: Unique identifier for the activity type.
         title:
           type: string
-          example: Live Quiz Overview (5)
-          description: Title of activity (may include count in parentheses for overview types).
+          example: Live Quiz 
+          description: Title of activity.
         olatConfigurationKey:
           type: string
           example: live-quizzes
