@@ -454,6 +454,7 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
 
 describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => {
   test('Valid', async () => {
+    // TODO: we need to fix these tests to be consistent with new naming
     const courses = [
       {
         course: courseOne,

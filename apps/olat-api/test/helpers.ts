@@ -151,13 +151,13 @@ export async function createLiveQuiz(
 export async function createPracticeQuiz(
   prisma: PrismaClient,
   course: Course,
-  i: number,
+  ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
   return await prisma.practiceQuiz.create({
     data: {
-      name: `Practice Quiz ${i} for ${course.name}`,
-      displayName: `Practice Quiz ${i} for ${course.name}`,
+      name: `Practice Quiz ${ix} for ${course.name}`,
+      displayName: `Practice Quiz ${ix} for ${course.name}`,
       description: '',
       courseId: course.id,
       ownerId: course.owner.id,
@@ -165,6 +165,8 @@ export async function createPracticeQuiz(
         create: elements.map((element, index) => ({
           order: index,
           type: ElementStackType.PRACTICE_QUIZ,
+          availableFrom:
+            ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined, // one week in the future
           elements: {
             create: [
               {
@@ -189,17 +191,17 @@ export async function createPracticeQuiz(
 export async function createMicroLearning(
   prisma: PrismaClient,
   course: Course,
-  i: number,
+  ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
   return await prisma.microLearning.create({
     data: {
-      name: `Micro Learning ${i} for ${course.name}`,
-      displayName: `Micro Learning ${i} for ${course.name}`,
+      name: `Micro Learning ${ix} for ${course.name}`,
+      displayName: `Micro Learning ${ix} for ${course.name}`,
       description: '',
       courseId: course.id,
-      scheduledStartAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // one week ago
-      scheduledEndAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // two weeks in future
+      scheduledStartAt: new Date(Date.now() - ix * 7 * 24 * 60 * 60 * 1000), // ix * one week ago
+      scheduledEndAt: new Date(Date.now() + ix * 14 * 24 * 60 * 60 * 1000), // ix * two weeks in future
       ownerId: course.owner.id,
       stacks: {
         create: elements.map((element, index) => ({

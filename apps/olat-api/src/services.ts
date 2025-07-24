@@ -4,6 +4,7 @@ import {
   PracticeQuiz,
   PrismaClient,
 } from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
 import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
@@ -197,6 +198,7 @@ export async function getActivities(
           ? {
               where: { isDeleted: false },
               select: { id: true, name: true },
+              orderBy: { name: 'asc' }, // order alphabetically by name
             }
           : false,
       practiceQuizzes:
@@ -204,6 +206,7 @@ export async function getActivities(
           ? {
               where: { isDeleted: false },
               select: { id: true, name: true },
+              orderBy: { availableFrom: 'asc', name: 'asc' }, // order by availability date and then alphabetically by name
             }
           : false,
       microLearnings:
@@ -211,21 +214,41 @@ export async function getActivities(
           ? {
               where: { isDeleted: false },
               select: { id: true, name: true },
+              orderBy: { scheduledStartAt: 'asc', name: 'asc' }, // order by scheduled start date and then alphabetically by name
             }
           : false,
     },
   })
   if (!course) return null
 
-  const activities =
-    course.liveQuizzes ?? course.practiceQuizzes ?? course.microLearnings ?? []
-
-  const activityDetails = activities.map((activity) => ({
-    id: activity.id,
-    'title-de': activity.name,
-    'title-en': activity.name,
-    'title-fr': activity.name,
-    'title-it': activity.name,
+  const liveQuizzes = (course.liveQuizzes ?? []).map((lq) => ({
+    id: lq.id,
+    'title-de': lq.name,
+    'title-en': lq.name,
+    'title-fr': lq.name,
+    'title-it': lq.name,
+  }))
+  const practiceQuizzes = (course.practiceQuizzes ?? []).map((pq) => ({
+    id: pq.id,
+    'title-de': pq.availableFrom
+      ? `${pq.name} (verfügbar ab ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-en': pq.availableFrom
+      ? `${pq.name} (available from ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-fr': pq.availableFrom
+      ? `${pq.name} (disponible à partir du ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-it': pq.availableFrom
+      ? `${pq.name} (disponibile da ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+  }))
+  const microLearnings = (course.microLearnings ?? []).map((ml) => ({
+    id: ml.id,
+    'title-de': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Ende: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-en': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - End: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-fr': `${ml.name} (Début: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fin: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-it': `${ml.name} (Inizio: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fine: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
   }))
 
   return [
@@ -236,6 +259,8 @@ export async function getActivities(
       'title-fr': "Vue d'ensemble",
       'title-it': 'Panoramica',
     },
-    ...activityDetails,
+    ...liveQuizzes,
+    ...practiceQuizzes,
+    ...microLearnings,
   ]
 }
