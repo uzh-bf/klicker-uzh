@@ -457,7 +457,7 @@ function getExpectedTitles(
       return `Live Quiz ${ix + 1} for ${course.name}`
     } else if (activityType === 'PRACTICE_QUIZ') {
       const availableFrom =
-        ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined // consistent with test seed
+        ix > 0 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined // consistent with test seed
 
       const name = `Practice Quiz ${ix + 1} for ${course.name}`
       if (!availableFrom) {
@@ -476,10 +476,10 @@ function getExpectedTitles(
       }
     } else if (activityType === 'MICRO_LEARNING') {
       const scheduledStartAt = new Date(
-        Date.now() - ix * 7 * 24 * 60 * 60 * 1000
+        Date.now() - (ix + 1) * 7 * 24 * 60 * 60 * 1000
       ) // consistent with test seed
       const scheduledEndAt = new Date(
-        Date.now() + ix * 14 * 24 * 60 * 60 * 1000
+        Date.now() + (ix + 1) * 14 * 24 * 60 * 60 * 1000
       ) // consistent with test seed
 
       const name = `Micro Learning ${ix + 1} for ${course.name}`
