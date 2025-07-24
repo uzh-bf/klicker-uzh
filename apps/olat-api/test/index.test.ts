@@ -1,4 +1,6 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
+import { ActivityType } from '@klicker-uzh/types'
+import dayjs from 'dayjs'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import app from '../src/index.js'
@@ -98,13 +100,6 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
     })
   }
   return response
-}
-
-function getExpectedTitles(n: number, prefix: string, course: Course) {
-  return Array.from(
-    { length: n },
-    (_, i) => `${prefix} ${i + 1} for ${course.name}`
-  )
 }
 
 describe('OLAT-API /api/configuration/courses', () => {
@@ -452,88 +447,448 @@ describe('OLAT-API /api/configuration/course/:courseId/activityTypes', () => {
   })
 })
 
+function getExpectedTitles(
+  n: number,
+  activityType: ActivityType,
+  course: Course,
+  language: 'de' | 'en' | 'fr' | 'it' = 'de'
+) {
+  return Array.from({ length: n }, (_, ix) => {
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      return `Live Quiz ${ix + 1} for ${course.name}`
+    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+      const availableFrom =
+        ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined // consistent with test seed
+
+      const name = `Practice Quiz ${ix + 1} for ${course.name}`
+      if (!availableFrom) {
+        return name
+      }
+
+      switch (language) {
+        case 'de':
+          return `${name} (verfügbar ab ${dayjs(availableFrom).format('DD.MM.YYYY')})`
+        case 'en':
+          return `${name} (available from ${dayjs(availableFrom).format('DD.MM.YYYY')})`
+        case 'fr':
+          return `${name} (disponible à partir du ${dayjs(availableFrom).format('DD.MM.YYYY')})`
+        case 'it':
+          return `${name} (disponibile da ${dayjs(availableFrom).format('DD.MM.YYYY')})`
+      }
+    } else if (activityType === ActivityType.MICRO_LEARNING) {
+      const scheduledStartAt = new Date(
+        Date.now() - ix * 7 * 24 * 60 * 60 * 1000
+      ) // consistent with test seed
+      const scheduledEndAt = new Date(
+        Date.now() + ix * 14 * 24 * 60 * 60 * 1000
+      ) // consistent with test seed
+
+      const name = `Micro Learning ${ix + 1} for ${course.name}`
+      const scheduledStart = dayjs(scheduledStartAt).format('DD.MM.YYYY')
+      const scheduledEnd = dayjs(scheduledEndAt).format('DD.MM.YYYY')
+      switch (language) {
+        case 'de':
+          return `${name} (Start: ${scheduledStart} - Ende: ${scheduledEnd})`
+        case 'en':
+          return `${name} (Start: ${scheduledStart} - End: ${scheduledEnd})`
+        case 'fr':
+          return `${name} (Début: ${scheduledStart} - Fin: ${scheduledEnd})`
+        case 'it':
+          return `${name} (Inizio: ${scheduledStart} - Fine: ${scheduledEnd})`
+      }
+    }
+
+    // fallback
+    return `${activityType} ${ix + 1} for ${course.name}`
+  })
+}
+
 describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => {
   test('Valid', async () => {
-    // TODO: we need to fix these tests to be consistent with new naming
     const courses = [
       {
         course: courseOne,
         owner: userOne,
         activityTypeKey: 'live-quiz',
-        titles: getExpectedTitles(3, 'Live Quiz', courseOne),
+        titlesDE: getExpectedTitles(3, ActivityType.LIVE_QUIZ, courseOne, 'de'),
+        titlesEN: getExpectedTitles(3, ActivityType.LIVE_QUIZ, courseOne, 'en'),
+        titlesFR: getExpectedTitles(3, ActivityType.LIVE_QUIZ, courseOne, 'fr'),
+        titlesIT: getExpectedTitles(3, ActivityType.LIVE_QUIZ, courseOne, 'it'),
       },
       {
         course: courseOne,
         owner: userOne,
         activityTypeKey: 'practice-quiz',
-        titles: getExpectedTitles(2, 'Practice Quiz', courseOne),
+        titlesDE: getExpectedTitles(
+          2,
+          ActivityType.PRACTICE_QUIZ,
+          courseOne,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          2,
+          ActivityType.PRACTICE_QUIZ,
+          courseOne,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          2,
+          ActivityType.PRACTICE_QUIZ,
+          courseOne,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          2,
+          ActivityType.PRACTICE_QUIZ,
+          courseOne,
+          'it'
+        ),
       },
       {
         course: courseOne,
         owner: userOne,
         activityTypeKey: 'micro-learning',
-        titles: getExpectedTitles(1, 'Micro Learning', courseOne),
+        titlesDE: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseOne,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseOne,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseOne,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseOne,
+          'it'
+        ),
       },
       {
         course: courseTwo,
         owner: userOne,
         activityTypeKey: 'live-quiz',
-        titles: getExpectedTitles(0, 'Live Quiz', courseTwo),
+        titlesDE: getExpectedTitles(0, ActivityType.LIVE_QUIZ, courseTwo, 'de'),
+        titlesEN: getExpectedTitles(0, ActivityType.LIVE_QUIZ, courseTwo, 'en'),
+        titlesFR: getExpectedTitles(0, ActivityType.LIVE_QUIZ, courseTwo, 'fr'),
+        titlesIT: getExpectedTitles(0, ActivityType.LIVE_QUIZ, courseTwo, 'it'),
       },
       {
         course: courseTwo,
         activityTypeKey: 'practice-quiz',
-        titles: getExpectedTitles(1, 'Practice Quiz', courseTwo),
+        titlesDE: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseTwo,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseTwo,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseTwo,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseTwo,
+          'it'
+        ),
       },
       {
         course: courseTwo,
         activityTypeKey: 'micro-learning',
-        titles: getExpectedTitles(2, 'Micro Learning', courseTwo),
+        titlesDE: getExpectedTitles(
+          2,
+          ActivityType.MICRO_LEARNING,
+          courseTwo,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          2,
+          ActivityType.MICRO_LEARNING,
+          courseTwo,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          2,
+          ActivityType.MICRO_LEARNING,
+          courseTwo,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          2,
+          ActivityType.MICRO_LEARNING,
+          courseTwo,
+          'it'
+        ),
       },
       {
         course: courseThree,
         activityTypeKey: 'live-quiz',
-        titles: getExpectedTitles(2, 'Live Quiz', courseThree),
+        titlesDE: getExpectedTitles(
+          2,
+          ActivityType.LIVE_QUIZ,
+          courseThree,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          2,
+          ActivityType.LIVE_QUIZ,
+          courseThree,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          2,
+          ActivityType.LIVE_QUIZ,
+          courseThree,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          2,
+          ActivityType.LIVE_QUIZ,
+          courseThree,
+          'it'
+        ),
       },
       {
         course: courseThree,
         activityTypeKey: 'practice-quiz',
-        titles: getExpectedTitles(1, 'Practice Quiz', courseThree),
+        titlesDE: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseThree,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseThree,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseThree,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          1,
+          ActivityType.PRACTICE_QUIZ,
+          courseThree,
+          'it'
+        ),
       },
       {
         course: courseThree,
         activityTypeKey: 'micro-learning',
-        titles: getExpectedTitles(1, 'Micro Learning', courseThree),
+        titlesDE: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseThree,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseThree,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseThree,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          1,
+          ActivityType.MICRO_LEARNING,
+          courseThree,
+          'it'
+        ),
       },
       {
         course: courseFour,
         activityTypeKey: 'live-quiz',
-        titles: getExpectedTitles(0, 'Live Quiz', courseFour),
+        titlesDE: getExpectedTitles(
+          0,
+          ActivityType.LIVE_QUIZ,
+          courseFour,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          0,
+          ActivityType.LIVE_QUIZ,
+          courseFour,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          0,
+          ActivityType.LIVE_QUIZ,
+          courseFour,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          0,
+          ActivityType.LIVE_QUIZ,
+          courseFour,
+          'it'
+        ),
       },
       {
         course: courseFour,
         activityTypeKey: 'practice-quiz',
-        titles: getExpectedTitles(0, 'Practice Quiz', courseFour),
+        titlesDE: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFour,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFour,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFour,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFour,
+          'it'
+        ),
       },
       {
         course: courseFour,
         activityTypeKey: 'micro-learning',
-        titles: getExpectedTitles(0, 'Micro Learning', courseFour),
+        titlesDE: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFour,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFour,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFour,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFour,
+          'it'
+        ),
       },
       {
         course: courseFive,
         activityTypeKey: 'live-quiz',
-        titles: getExpectedTitles(1, 'Live Quiz', courseFive),
+        titlesDE: getExpectedTitles(
+          1,
+          ActivityType.LIVE_QUIZ,
+          courseFive,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          1,
+          ActivityType.LIVE_QUIZ,
+          courseFive,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          1,
+          ActivityType.LIVE_QUIZ,
+          courseFive,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          1,
+          ActivityType.LIVE_QUIZ,
+          courseFive,
+          'it'
+        ),
       },
       {
         course: courseFive,
         activityTypeKey: 'practice-quiz',
-        titles: getExpectedTitles(0, 'Practice Quiz', courseFive),
+        titlesDE: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFive,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFive,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFive,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          0,
+          ActivityType.PRACTICE_QUIZ,
+          courseFive,
+          'it'
+        ),
       },
       {
         course: courseFive,
         activityTypeKey: 'micro-learning',
-        titles: getExpectedTitles(0, 'Micro Learning', courseFive),
+        titlesDE: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFive,
+          'de'
+        ),
+        titlesEN: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFive,
+          'en'
+        ),
+        titlesFR: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFive,
+          'fr'
+        ),
+        titlesIT: getExpectedTitles(
+          0,
+          ActivityType.MICRO_LEARNING,
+          courseFive,
+          'it'
+        ),
       },
     ]
 
@@ -553,16 +908,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
       expect(response.body).toHaveProperty('timestamp')
       expect(
         response.body.activities.map((activity: any) => activity['title-de'])
-      ).toEqual(['Übersicht', ...course.titles])
+      ).toEqual(['Übersicht', ...course.titlesDE])
       expect(
         response.body.activities.map((activity: any) => activity['title-en'])
-      ).toEqual(['Overview', ...course.titles])
+      ).toEqual(['Overview', ...course.titlesEN])
       expect(
         response.body.activities.map((activity: any) => activity['title-fr'])
-      ).toEqual(["Vue d'ensemble", ...course.titles])
+      ).toEqual(["Vue d'ensemble", ...course.titlesFR])
       expect(
         response.body.activities.map((activity: any) => activity['title-it'])
-      ).toEqual(['Panoramica', ...course.titles])
+      ).toEqual(['Panoramica', ...course.titlesIT])
     }
 
     for (const course of [
