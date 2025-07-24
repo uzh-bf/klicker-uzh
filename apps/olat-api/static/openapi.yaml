@@ -298,19 +298,19 @@ components:
           type: string
           example: LIVE_QUIZ
           description: Unique identifier for the activity type.
-        title-de:
+        title_de:
           type: string
           example: Live Quiz
           description: Title of activity (German).
-        title-en:
+        title_en:
           type: string
           example: Live Quiz
           description: Title of activity (English).
-        title-fr:
+        title_fr:
           type: string
           example: Live Quiz
           description: Title of activity (French).
-        title-it:
+        title_it:
           type: string
           example: Live Quiz
           description: Title of activity (Italian).
@@ -336,19 +336,19 @@ components:
           format: uuid
           example: 123e4567-e89b-12d3-a456-426614174000
           description: Activity UUID.
-        title-de:
+        title_de:
           type: string
           example: Live Quiz 1
           description: Title of the activity (German).
-        title-en:
+        title_en:
           type: string
           example: Live Quiz 1
           description: Title of the activity (English).
-        title-fr:
+        title_fr:
           type: string
           example: Live Quiz 1
           description: Title of the activity (French).
-        title-it:
+        title_it:
           type: string
           example: Live Quiz 1
           description: Title of the activity (Italian).

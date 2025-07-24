@@ -120,10 +120,10 @@ export async function getCourseActivityTypes(
   const availableActivityTypes = activityTypes.flatMap(
     ({
       id,
-      'title-de': titleDE,
-      'title-en': titleEN,
-      'title-fr': titleFR,
-      'title-it': titleIT,
+      title_de: titleDE,
+      title_en: titleEN,
+      title_fr: titleFR,
+      title_it: titleIT,
       olatConfigurationKey,
       isSubselectionRequired,
     }) => {
@@ -131,10 +131,10 @@ export async function getCourseActivityTypes(
       if (olatConfigurationKey in mapSubselection) {
         return {
           id,
-          'title-de': titleDE,
-          'title-en': titleEN,
-          'title-fr': titleFR,
-          'title-it': titleIT,
+          title_de: titleDE,
+          title_en: titleEN,
+          title_fr: titleFR,
+          title_it: titleIT,
           olatConfigurationKey,
           isSubselectionRequired,
         }
@@ -145,10 +145,10 @@ export async function getCourseActivityTypes(
         return isGamificationEnabled
           ? {
               id,
-              'title-de': titleDE,
-              'title-en': titleEN,
-              'title-fr': titleFR,
-              'title-it': titleIT,
+              title_de: titleDE,
+              title_en: titleEN,
+              title_fr: titleFR,
+              title_it: titleIT,
               olatConfigurationKey,
               isSubselectionRequired,
             }
@@ -158,10 +158,10 @@ export async function getCourseActivityTypes(
       // All other activities: always include
       return {
         id,
-        'title-de': titleDE,
-        'title-en': titleEN,
-        'title-fr': titleFR,
-        'title-it': titleIT,
+        title_de: titleDE,
+        title_en: titleEN,
+        title_fr: titleFR,
+        title_it: titleIT,
         olatConfigurationKey,
         isSubselectionRequired,
       }
@@ -228,41 +228,41 @@ export async function getActivities(
 
   const liveQuizzes = (course.liveQuizzes ?? []).map((lq) => ({
     id: lq.id,
-    'title-de': lq.name,
-    'title-en': lq.name,
-    'title-fr': lq.name,
-    'title-it': lq.name,
+    title_de: lq.name,
+    title_en: lq.name,
+    title_fr: lq.name,
+    title_it: lq.name,
   }))
   const practiceQuizzes = (course.practiceQuizzes ?? []).map((pq) => ({
     id: pq.id,
-    'title-de': pq.availableFrom
+    title_de: pq.availableFrom
       ? `${pq.name} (verfügbar ab ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
       : pq.name,
-    'title-en': pq.availableFrom
+    title_en: pq.availableFrom
       ? `${pq.name} (available from ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
       : pq.name,
-    'title-fr': pq.availableFrom
+    title_fr: pq.availableFrom
       ? `${pq.name} (disponible à partir du ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
       : pq.name,
-    'title-it': pq.availableFrom
+    title_it: pq.availableFrom
       ? `${pq.name} (disponibile da ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
       : pq.name,
   }))
   const microLearnings = (course.microLearnings ?? []).map((ml) => ({
     id: ml.id,
-    'title-de': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Ende: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
-    'title-en': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - End: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
-    'title-fr': `${ml.name} (Début: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fin: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
-    'title-it': `${ml.name} (Inizio: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fine: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_de: `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Ende: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_en: `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - End: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_fr: `${ml.name} (Début: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fin: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_it: `${ml.name} (Inizio: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fine: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
   }))
 
   return [
     {
       id: 'overview',
-      'title-de': 'Übersicht',
-      'title-en': 'Overview',
-      'title-fr': "Vue d'ensemble",
-      'title-it': 'Panoramica',
+      title_de: 'Übersicht',
+      title_en: 'Overview',
+      title_fr: "Vue d'ensemble",
+      title_it: 'Panoramica',
     },
     ...liveQuizzes,
     ...practiceQuizzes,
