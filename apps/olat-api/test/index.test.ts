@@ -101,13 +101,10 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
 }
 
 function getExpectedTitles(n: number, prefix: string, course: Course) {
-  return [
-    'Overview',
-    ...Array.from(
-      { length: n },
-      (_, i) => `${prefix} ${i + 1} for ${course.name}`
-    ),
-  ]
+  return Array.from(
+    { length: n },
+    (_, i) => `${prefix} ${i + 1} for ${course.name}`
+  )
 }
 
 describe('OLAT-API /api/configuration/courses', () => {
@@ -555,16 +552,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
       expect(response.body).toHaveProperty('timestamp')
       expect(
         response.body.activities.map((activity: any) => activity['title-de'])
-      ).toEqual(course.titles)
+      ).toEqual(['Übersicht', ...course.titles])
       expect(
         response.body.activities.map((activity: any) => activity['title-en'])
-      ).toEqual(course.titles)
+      ).toEqual(['Overview', ...course.titles])
       expect(
         response.body.activities.map((activity: any) => activity['title-fr'])
-      ).toEqual(course.titles)
+      ).toEqual(["Vue d'ensemble", ...course.titles])
       expect(
         response.body.activities.map((activity: any) => activity['title-it'])
-      ).toEqual(course.titles)
+      ).toEqual(['Panoramica', ...course.titles])
     }
 
     for (const course of [
