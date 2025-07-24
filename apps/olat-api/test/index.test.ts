@@ -77,9 +77,9 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
       {
         id: 'MICRO_LEARNING',
         'title-de': 'Microlearning',
-        'title-en': 'Micro Learning',
-        'title-fr': 'Micro Learning',
-        'title-it': 'Micro Learning',
+        'title-en': 'Microlearning',
+        'title-fr': 'Microlearning',
+        'title-it': 'Microlearning',
         olatConfigurationKey: 'micro-learning',
         isSubselectionRequired: true,
       },
@@ -482,7 +482,7 @@ function getExpectedTitles(
         Date.now() + (ix + 1) * 14 * 24 * 60 * 60 * 1000
       ) // consistent with test seed
 
-      const name = `Micro Learning ${ix + 1} for ${course.name}`
+      const name = `Microlearning ${ix + 1} for ${course.name}`
       const scheduledStart = dayjs(scheduledStartAt).format('DD.MM.YYYY')
       const scheduledEnd = dayjs(scheduledEndAt).format('DD.MM.YYYY')
       switch (language) {

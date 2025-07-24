@@ -46,9 +46,9 @@
   {
     "id": "MICRO_LEARNING",
     "title-de": "Microlearning",
-    "title-en": "Micro Learning",
-    "title-fr": "Micro Learning",
-    "title-it": "Micro Learning",
+    "title-en": "Microlearning",
+    "title-fr": "Microlearning",
+    "title-it": "Microlearning",
     "path": "/microLearnings",
     "olatConfigurationKey": "micro-learning",
     "isSubselectionRequired": true,

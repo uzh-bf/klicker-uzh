@@ -196,8 +196,8 @@ export async function createMicroLearning(
 ) {
   return await prisma.microLearning.create({
     data: {
-      name: `Micro Learning ${ix} for ${course.name}`,
-      displayName: `Micro Learning ${ix} for ${course.name}`,
+      name: `Microlearning ${ix} for ${course.name}`,
+      displayName: `Microlearning ${ix} for ${course.name}`,
       description: '',
       courseId: course.id,
       scheduledStartAt: new Date(Date.now() - ix * 7 * 24 * 60 * 60 * 1000), // ix * one week ago
