@@ -1370,6 +1370,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@scalar/express-api-reference':
         specifier: 0.8.7
         version: 0.8.7
