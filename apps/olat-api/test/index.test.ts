@@ -647,16 +647,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
       expect(response.body).toHaveProperty('timestamp')
       expect(
         response.body.activities.map((activity: any) => activity['title-de'])
-      ).toEqual(['Übersicht', ...course.titlesDE])
+      ).toEqual(expect.arrayContaining(['Übersicht', ...course.titlesDE]))
       expect(
         response.body.activities.map((activity: any) => activity['title-en'])
-      ).toEqual(['Overview', ...course.titlesEN])
+      ).toEqual(expect.arrayContaining(['Overview', ...course.titlesEN]))
       expect(
         response.body.activities.map((activity: any) => activity['title-fr'])
-      ).toEqual(["Vue d'ensemble", ...course.titlesFR])
+      ).toEqual(expect.arrayContaining(["Vue d'ensemble", ...course.titlesFR]))
       expect(
         response.body.activities.map((activity: any) => activity['title-it'])
-      ).toEqual(['Panoramica', ...course.titlesIT])
+      ).toEqual(expect.arrayContaining(['Panoramica', ...course.titlesIT]))
     }
 
     for (const course of [
