@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
 
-function CourseMicroLearnings({
+function MicroLearningsOverview({
   isInactive,
   courseId,
   participantToken,
@@ -31,7 +31,7 @@ function CourseMicroLearnings({
   })
 
   const { data, loading } = useQuery(GetCoursePublishedMicroLearningsDocument, {
-    variables: { courseId: courseId },
+    variables: { courseId },
     skip: isInactive,
   })
 
@@ -108,7 +108,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   const apolloClient = initializeApollo()
-
   const result = await apolloClient.query({
     query: GetCoursePublishedMicroLearningsDocument,
     variables: {
@@ -166,4 +165,4 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 }
 
-export default CourseMicroLearnings
+export default MicroLearningsOverview

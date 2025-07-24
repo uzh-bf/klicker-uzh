@@ -119,12 +119,23 @@ export async function getCourseActivityTypes(
   const activityKeysGamification = ['course-leaderboard']
 
   const availableActivityTypes = activityTypes.flatMap(
-    ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
+    ({
+      id,
+      'title-de': titleDE,
+      'title-en': titleEN,
+      'title-fr': titleFR,
+      'title-it': titleIT,
+      olatConfigurationKey,
+      isSubselectionRequired,
+    }) => {
       // Subselection activities: only include if they have items
       if (olatConfigurationKey in mapSubselection) {
         return {
           id,
-          title,
+          'title-de': titleDE,
+          'title-en': titleEN,
+          'title-fr': titleFR,
+          'title-it': titleIT,
           olatConfigurationKey,
           isSubselectionRequired,
         }
@@ -135,7 +146,10 @@ export async function getCourseActivityTypes(
         return isGamificationEnabled
           ? {
               id,
-              title,
+              'title-de': titleDE,
+              'title-en': titleEN,
+              'title-fr': titleFR,
+              'title-it': titleIT,
               olatConfigurationKey,
               isSubselectionRequired,
             }
@@ -145,7 +159,10 @@ export async function getCourseActivityTypes(
       // All other activities: always include
       return {
         id,
-        title,
+        'title-de': titleDE,
+        'title-en': titleEN,
+        'title-fr': titleFR,
+        'title-it': titleIT,
         olatConfigurationKey,
         isSubselectionRequired,
       }
@@ -204,8 +221,20 @@ export async function getActivities(
 
   const activityDetails = activities.map((activity) => ({
     id: activity.id,
-    title: activity.name,
+    'title-de': activity.name,
+    'title-en': activity.name,
+    'title-fr': activity.name,
+    'title-it': activity.name,
   }))
 
-  return [{ id: 'overview', title: 'Overview' }, ...activityDetails]
+  return [
+    {
+      id: 'overview',
+      'title-de': 'Übersicht',
+      'title-en': 'Overview',
+      'title-fr': "Vue d'ensemble",
+      'title-it': 'Panoramica',
+    },
+    ...activityDetails,
+  ]
 }

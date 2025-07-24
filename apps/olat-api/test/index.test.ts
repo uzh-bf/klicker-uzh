@@ -39,45 +39,74 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
     activityTypes: [
       {
         id: 'MANAGE_ACCOUNT',
-        title: 'Manage Account',
+        'title-de': 'Konto verwalten',
+        'title-en': 'Manage Account',
+        'title-fr': 'Gérer le compte',
+        'title-it': "Gestire l'account",
+        path: '/createAccount',
         olatConfigurationKey: 'manage-account',
         isSubselectionRequired: false,
+        isEmailTransferRequired: true,
       },
       {
         id: 'DOCS',
-        title: 'Documentation',
+        'title-de': 'Dokumentation',
+        'title-en': 'Documentation',
+        'title-fr': 'Documentation',
+        'title-it': 'Documentazione',
+        path: '/docs',
         olatConfigurationKey: 'docs',
         isSubselectionRequired: false,
+        isEmailTransferRequired: false,
+      },
+      {
+        id: 'LIVE_QUIZ',
+        'title-de': 'Live Quiz',
+        'title-en': 'Live Quiz',
+        'title-fr': 'Live Quiz',
+        'title-it': 'Live Quiz',
+        path: '/liveQuizzes',
+        olatConfigurationKey: 'live-quiz',
+        isSubselectionRequired: true,
+        isEmailTransferRequired: false,
+      },
+      {
+        id: 'PRACTICE_QUIZ',
+        'title-de': 'Übungsquiz',
+        'title-en': 'Practice Quiz',
+        'title-fr': 'Practice Quiz',
+        'title-it': 'Practice Quiz',
+        path: '/practiceQuizzes',
+        olatConfigurationKey: 'practice-quiz',
+        isSubselectionRequired: true,
+        isEmailTransferRequired: false,
+      },
+      {
+        id: 'MICRO_LEARNING',
+        'title-de': 'Microlearning',
+        'title-en': 'Micro Learning',
+        'title-fr': 'Micro Learning',
+        'title-it': 'Micro Learning',
+        path: '/microLearnings',
+        olatConfigurationKey: 'micro-learning',
+        isSubselectionRequired: true,
+        isEmailTransferRequired: false,
       },
     ],
     timestamp: '',
   }
 
-  response.activityTypes.push({
-    id: 'LIVE_QUIZ',
-    title: `Live Quiz`,
-    olatConfigurationKey: 'live-quiz',
-    isSubselectionRequired: true,
-  })
-  response.activityTypes.push({
-    id: 'PRACTICE_QUIZ',
-    title: 'Practice Quiz',
-    olatConfigurationKey: 'practice-quiz',
-    isSubselectionRequired: true,
-  })
-  response.activityTypes.push({
-    id: 'MICRO_LEARNING',
-    title: 'Micro Learning',
-    olatConfigurationKey: 'micro-learning',
-    isSubselectionRequired: true,
-  })
-
   if (isGamificationEnabled) {
     response.activityTypes.push({
       id: 'COURSE_LEADERBOARD',
-      title: 'Course Leaderboard',
+      'title-de': 'Kurs-Rangliste',
+      'title-en': 'Course Leaderboard',
+      'title-fr': 'Classement du cours',
+      'title-it': 'Classifica del corso',
+      path: '/',
       olatConfigurationKey: 'course-leaderboard',
       isSubselectionRequired: false,
+      isEmailTransferRequired: false,
     })
   }
   return response
@@ -537,7 +566,16 @@ describe('OLAT-API /api/configuration/course/:courseId/:activityTypeKey', () => 
       expect(response.body).toHaveProperty('activities')
       expect(response.body).toHaveProperty('timestamp')
       expect(
-        response.body.activities.map((activity: any) => activity.title)
+        response.body.activities.map((activity: any) => activity['title-de'])
+      ).toEqual(course.titles)
+      expect(
+        response.body.activities.map((activity: any) => activity['title-en'])
+      ).toEqual(course.titles)
+      expect(
+        response.body.activities.map((activity: any) => activity['title-fr'])
+      ).toEqual(course.titles)
+      expect(
+        response.body.activities.map((activity: any) => activity['title-it'])
       ).toEqual(course.titles)
     }
 
