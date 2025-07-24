@@ -1,0 +1,19 @@
+meta {
+  name: getActivityTypesOLAT
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:3030/api/configuration/activityTypes
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-API-Key: {{OLAT_API_KEY}}
+}
+
+body:form-urlencoded {
+  identityMappingIdentifier: 29440fb7-5347-4244-a83a-7ce8379d80e4@eduid
+}
