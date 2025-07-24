@@ -161,12 +161,12 @@ export async function createPracticeQuiz(
       description: '',
       courseId: course.id,
       ownerId: course.owner.id,
+      availableFrom:
+        ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined, // one week in the future
       stacks: {
         create: elements.map((element, index) => ({
           order: index,
           type: ElementStackType.PRACTICE_QUIZ,
-          availableFrom:
-            ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined, // one week in the future
           elements: {
             create: [
               {
