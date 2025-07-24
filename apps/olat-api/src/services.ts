@@ -205,16 +205,21 @@ export async function getActivities(
         activityTypeKey === 'practice-quiz'
           ? {
               where: { isDeleted: false },
-              select: { id: true, name: true },
-              orderBy: { availableFrom: 'asc', name: 'asc' }, // order by availability date and then alphabetically by name
+              select: { id: true, name: true, availableFrom: true },
+              orderBy: [{ availableFrom: 'asc' }, { name: 'asc' }], // order by availability date and then alphabetically by name
             }
           : false,
       microLearnings:
         activityTypeKey === 'micro-learning'
           ? {
               where: { isDeleted: false },
-              select: { id: true, name: true },
-              orderBy: { scheduledStartAt: 'asc', name: 'asc' }, // order by scheduled start date and then alphabetically by name
+              select: {
+                id: true,
+                name: true,
+                scheduledStartAt: true,
+                scheduledEndAt: true,
+              },
+              orderBy: [{ scheduledStartAt: 'asc' }, { name: 'asc' }], // order by scheduled start date and then alphabetically by name
             }
           : false,
     },
