@@ -43,10 +43,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
         'title-en': 'Manage Account',
         'title-fr': 'Gérer le compte',
         'title-it': "Gestire l'account",
-        path: '/createAccount',
         olatConfigurationKey: 'manage-account',
         isSubselectionRequired: false,
-        isEmailTransferRequired: true,
       },
       {
         id: 'DOCS',
@@ -54,10 +52,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
         'title-en': 'Documentation',
         'title-fr': 'Documentation',
         'title-it': 'Documentazione',
-        path: '/docs',
         olatConfigurationKey: 'docs',
         isSubselectionRequired: false,
-        isEmailTransferRequired: false,
       },
       {
         id: 'LIVE_QUIZ',
@@ -65,10 +61,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
         'title-en': 'Live Quiz',
         'title-fr': 'Live Quiz',
         'title-it': 'Live Quiz',
-        path: '/liveQuizzes',
         olatConfigurationKey: 'live-quiz',
         isSubselectionRequired: true,
-        isEmailTransferRequired: false,
       },
       {
         id: 'PRACTICE_QUIZ',
@@ -76,10 +70,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
         'title-en': 'Practice Quiz',
         'title-fr': 'Practice Quiz',
         'title-it': 'Practice Quiz',
-        path: '/practiceQuizzes',
         olatConfigurationKey: 'practice-quiz',
         isSubselectionRequired: true,
-        isEmailTransferRequired: false,
       },
       {
         id: 'MICRO_LEARNING',
@@ -87,10 +79,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
         'title-en': 'Micro Learning',
         'title-fr': 'Micro Learning',
         'title-it': 'Micro Learning',
-        path: '/microLearnings',
         olatConfigurationKey: 'micro-learning',
         isSubselectionRequired: true,
-        isEmailTransferRequired: false,
       },
     ],
     timestamp: '',
@@ -103,10 +93,8 @@ function getExpectedResponse(isGamificationEnabled: boolean) {
       'title-en': 'Course Leaderboard',
       'title-fr': 'Classement du cours',
       'title-it': 'Classifica del corso',
-      path: '/',
       olatConfigurationKey: 'course-leaderboard',
       isSubselectionRequired: false,
-      isEmailTransferRequired: false,
     })
   }
   return response
