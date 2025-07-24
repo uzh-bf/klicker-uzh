@@ -30,7 +30,6 @@ query GetSingleCourse($courseId: String!) {
     isShared
     isRemovable
 
-    # TODO: update here to use more efficient query method as well -> details no longer needed
     liveQuizzesInfo {
       ...ActivityInfoData
     }
