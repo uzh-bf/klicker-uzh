@@ -11,7 +11,6 @@ import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
-  USER_ID_TEST,
 } from './constants.js'
 import * as DATA_TEST from './data/TEST.js'
 import {
@@ -103,6 +102,8 @@ export const PARTICIPANT_GROUP_IDS = [
   '278057ff-f1c2-49a0-9ab1-bcbc4c6473b7',
   '11c06c89-0cb4-4d8e-b052-b711f327b8c4',
 ]
+
+const USER_ID_TEST = '73c018c2-d7ad-4844-84b0-814e33420423'
 
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)

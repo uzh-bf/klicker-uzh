@@ -14,6 +14,11 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityDetails {
+  id: String!
+  stacks: [ActivityInfoStack!]!
+}
+
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
@@ -59,7 +64,6 @@ type ActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   sharingType: SharingType!
-  stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String
   type: ActivityType!
@@ -2074,6 +2078,7 @@ type PushSubscription {
 }
 
 type Query {
+  activityDetails(activityId: String!, activityType: ActivityType): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!

@@ -1232,7 +1232,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           blocks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1248,7 +1248,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1264,7 +1264,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1280,7 +1280,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1339,20 +1339,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = liveQuiz.blocks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      timeLimit: block.timeLimit,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: liveQuiz.id,
       templateId: liveQuiz.templateInfo?.id ?? null,
@@ -1365,10 +1351,9 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: liveQuiz.blocks.length,
       numOfElements: liveQuiz.blocks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: liveQuiz.areInstancesOutdated,
@@ -1403,19 +1388,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = practiceQuiz.stacks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: practiceQuiz.id,
       templateId: practiceQuiz.templateInfo?.id ?? null,
@@ -1428,11 +1400,10 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: practiceQuiz.stacks.length,
       numOfElements: practiceQuiz.stacks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
       automaticPublicationAt: practiceQuiz.availableFrom,
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: practiceQuiz.areInstancesOutdated,
@@ -1467,19 +1438,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = microLearning.stacks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: microLearning.id,
       templateId: microLearning.templateInfo?.id ?? null,
@@ -1492,12 +1450,11 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: microLearning.stacks.length,
       numOfElements: microLearning.stacks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
       scheduledStartAt: microLearning.scheduledStartAt,
       scheduledEndAt: microLearning.scheduledEndAt,
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: microLearning.areInstancesOutdated,
@@ -1533,19 +1490,6 @@ export async function getCourseData(
         permission,
       })
 
-      const stacks = groupActivity.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: groupActivity.id,
         templateId: groupActivity.templateInfo?.id ?? null,
@@ -1558,14 +1502,13 @@ export async function getCourseData(
         courseStartDate: course.startDate,
         numOfStacks: groupActivity.stacks.length,
         numOfElements: groupActivity.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
         scheduledStartAt: groupActivity.scheduledStartAt,
         scheduledEndAt: groupActivity.scheduledEndAt,
         groupDeadlineDate: course.groupDeadlineDate,
         numOfParticipantGroups: course._count.participantGroups,
-        stacks,
         permissionLevel: permission.permissionLevel,
         derivedAccess: permission.derived,
         areInstancesOutdated: groupActivity.areInstancesOutdated,

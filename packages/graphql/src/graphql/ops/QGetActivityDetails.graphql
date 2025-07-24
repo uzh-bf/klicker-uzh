@@ -1,0 +1,5 @@
+query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
+  activityDetails(activityId: $activityId, activityType: $activityType) {
+    ...ActivityDetailsData
+  }
+}

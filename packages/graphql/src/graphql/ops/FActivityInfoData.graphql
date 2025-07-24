@@ -15,17 +15,6 @@ fragment ActivityInfoData on ActivityInfo {
   groupDeadlineDate
   numOfParticipantGroups
 
-  stacks {
-    id
-    numOfParticipants
-    timeLimit
-    elements {
-      id
-      name
-      type
-    }
-  }
-
   name
   displayName
 

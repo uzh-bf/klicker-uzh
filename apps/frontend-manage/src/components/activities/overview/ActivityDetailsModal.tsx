@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
+  GetActivityDetailsDocument,
   GetOutdatedElementInstancesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -27,12 +28,21 @@ function ActivityDetailsModal({
 }) {
   const t = useTranslations()
 
+  // fetch activity details
+  const { data: activityDetails, loading } = useQuery(
+    GetActivityDetailsDocument,
+    { variables: { activityId: activity.id, activityType: activity.type } }
+  )
+  const stacks = activityDetails?.activityDetails?.stacks ?? []
+
+  // check which instances are outdated
   const { data } = useQuery(GetOutdatedElementInstancesDocument, {
     variables: {
-      instanceIds: activity.stacks.flatMap((stack) =>
+      instanceIds: stacks.flatMap((stack) =>
         stack.elements.map((instance) => instance.id)
       ),
     },
+    skip: !activityDetails,
   })
   const outdatedInstances = useMemo(
     () =>
@@ -50,6 +60,7 @@ function ActivityDetailsModal({
   return (
     <Modal
       open
+      loading={loading}
       title={t('manage.activities.activityDetails')}
       onClose={onClose}
       className={{ content: 'w-96 min-w-96 max-w-96' }}
@@ -76,7 +87,7 @@ function ActivityDetailsModal({
         className="flex flex-col items-center gap-4 overflow-x-auto overflow-y-hidden"
         data-cy="activity-details-modal"
       >
-        {activity.stacks.map((stack, index) => (
+        {stacks.map((stack, index) => (
           <div
             key={stack.id}
             className="w-full border-b border-black pb-4 last:border-r-0 last:pr-0"

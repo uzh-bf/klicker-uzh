@@ -17,7 +17,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
-import { ActivityInfo } from './activities.js'
+import { ActivityDetails, ActivityInfo } from './activities.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -257,6 +257,109 @@ export const Query = builder.queryType({
         type: [Course],
         resolve: async (_, __, ctx) => {
           return await CourseService.getUserCourses(ctx)
+        },
+      }),
+
+      activityDetails: t.withAuth(asUser).field({
+        nullable: true,
+        type: ActivityDetails,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          // if not logged in as a user, return null
+          if (!ctx.user?.sub) return null
+
+          // live quiz activity
+          if (args.activityType === ActivityTypeEnum.LIVE_QUIZ) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  liveQuizId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get live quiz details
+            const liveQuiz = await ActivityService.getLiveQuizDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return liveQuiz
+          }
+
+          // practice quiz activity
+          else if (args.activityType === ActivityTypeEnum.PRACTICE_QUIZ) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get practice quiz details
+            const practiceQuiz = await ActivityService.getPracticeQuizDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return practiceQuiz
+          }
+
+          // micro learning activity
+          else if (args.activityType === ActivityTypeEnum.MICRO_LEARNING) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get micro learning details
+            const microLearning = await ActivityService.getMicroLearningDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return microLearning
+          }
+
+          // group activity
+          else if (args.activityType === ActivityTypeEnum.GROUP_ACTIVITY) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get group activity details
+            const groupActivity = await ActivityService.getGroupActivityDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return groupActivity
+          }
+
+          return null
         },
       }),
 
