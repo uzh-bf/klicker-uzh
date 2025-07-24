@@ -1370,9 +1370,15 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@scalar/express-api-reference':
         specifier: 0.8.7
         version: 0.8.7
+      dayjs:
+        specifier: 1.11.13
+        version: 1.11.13
       express:
         specifier: 4.21.1
         version: 4.21.1

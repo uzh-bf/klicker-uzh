@@ -696,7 +696,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the microlearning can be answered through the activity preview
@@ -732,7 +732,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the microlearning can be answered through the activity preview
@@ -990,7 +990,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the scheduled microlearning is visible to lecturers

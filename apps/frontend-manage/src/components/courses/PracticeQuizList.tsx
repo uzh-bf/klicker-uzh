@@ -21,14 +21,14 @@ function PracticeQuizList({
         <QRCodePopover
           triggerStyle="basic"
           triggerText={t('manage.general.qrCode')}
-          relHref={`/course/${courseId}/practiceQuizzes`}
+          relHref={`/course/${courseId}/practiceQuizzes/overview`}
           data={{ cy: `qr-link-microlearning-list` }}
         />
         <Button
           basic
           onClick={async () => {
             try {
-              const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes`
+              const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/overview`
               console.log(link)
               await navigator.clipboard.writeText(link)
             } catch (e) {

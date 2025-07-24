@@ -9,7 +9,9 @@
   ],
   "dependencies": {
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@scalar/express-api-reference": "0.8.7",
+    "dayjs": "1.11.13",
     "express": "4.21.1",
     "express-rate-limit": "7.5.0",
     "graphql": "16.9.0",

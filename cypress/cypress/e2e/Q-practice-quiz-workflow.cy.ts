@@ -930,7 +930,7 @@ describe('Different practice quiz workflows', function () {
 
       // visit the activity preview with the manager cookie being active
       cy.visit(
-        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`
       )
 
       // respond to the questions in the draft practice quiz (same functionality as for students when it's running)
@@ -988,7 +988,7 @@ describe('Different practice quiz workflows', function () {
 
       // visit the activity preview with the manager cookie being active
       cy.visit(
-        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`
       )
 
       // respond to the questions in the running practice quiz, previous answers should not persist
@@ -1114,7 +1114,7 @@ describe('Different practice quiz workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`
         )
 
         // verify that the scheduled practice quiz is visible to lecturers

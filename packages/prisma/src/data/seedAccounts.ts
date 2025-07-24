@@ -21,7 +21,7 @@ export async function seedAccounts(prisma: Prisma.PrismaClient) {
       user: { connect: { id: standardUser.id } },
       type: 'oauth',
       provider: 'eduid',
-      providerAccountId: '29440fb7-5347-4244-a83a-7ce8379d80e4',
+      providerAccountId: '29440fb7-5347-4244-a83a-7ce8379d80e4@eduid.ch',
     },
     update: {},
   })

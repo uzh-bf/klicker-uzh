@@ -59,7 +59,7 @@ function CourseCollapsible({
               <LinkButton
                 key={element.id}
                 icon={faBookOpenReader}
-                href={`/course/${courseId}/quiz/${element.id}`}
+                href={`/course/${courseId}/practiceQuizzes/${element.id}`}
                 data={{ cy: `practice-quiz-${element.displayName}` }}
                 onClick={() => {
                   resetPracticeQuizLocalStorage(element.id)

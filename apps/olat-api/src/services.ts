@@ -4,6 +4,7 @@ import {
   PracticeQuiz,
   PrismaClient,
 } from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
 import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
@@ -24,10 +25,8 @@ export async function getCourses(provider: string, providerAccountId: string) {
       user: {
         select: {
           courses: {
-            select: {
-              id: true,
-              name: true,
-            },
+            where: { isArchived: false },
+            select: { id: true, name: true },
           },
         },
       },
@@ -96,9 +95,9 @@ export async function getCourseActivityTypes(
     where: { id: courseID, ownerId: account.userId },
     select: {
       isGamificationEnabled: true,
-      liveQuizzes: true,
-      practiceQuizzes: true,
-      microLearnings: true,
+      liveQuizzes: { where: { isDeleted: false } },
+      practiceQuizzes: { where: { isDeleted: false } },
+      microLearnings: { where: { isDeleted: false } },
     },
   })
   if (!course) return null
@@ -107,15 +106,6 @@ export async function getCourseActivityTypes(
   const liveQuizzes = course.liveQuizzes ?? []
   const practiceQuizzes = course.practiceQuizzes ?? []
   const microLearnings = course.microLearnings ?? []
-
-  const mapOverview: Record<
-    string,
-    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
-  > = {
-    'live-quizzes': liveQuizzes,
-    'practice-quizzes': practiceQuizzes,
-    'micro-learnings': microLearnings,
-  }
 
   const mapSubselection: Record<
     string,
@@ -128,29 +118,26 @@ export async function getCourseActivityTypes(
   const activityKeysGamification = ['course-leaderboard']
 
   const availableActivityTypes = activityTypes.flatMap(
-    ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
-      // Overview activities: show count in title
-      if (olatConfigurationKey in mapOverview) {
-        const count = mapOverview[olatConfigurationKey]!.length || 0
+    ({
+      id,
+      'title-de': titleDE,
+      'title-en': titleEN,
+      'title-fr': titleFR,
+      'title-it': titleIT,
+      olatConfigurationKey,
+      isSubselectionRequired,
+    }) => {
+      // Subselection activities: only include if they have items
+      if (olatConfigurationKey in mapSubselection) {
         return {
           id,
-          title: `${title} (${count})`,
+          'title-de': titleDE,
+          'title-en': titleEN,
+          'title-fr': titleFR,
+          'title-it': titleIT,
           olatConfigurationKey,
           isSubselectionRequired,
         }
-      }
-
-      // Subselection activities: only include if they have items
-      if (olatConfigurationKey in mapSubselection) {
-        const count = mapSubselection[olatConfigurationKey]!.length || 0
-        return count > 0
-          ? {
-              id,
-              title,
-              olatConfigurationKey,
-              isSubselectionRequired,
-            }
-          : []
       }
 
       // Gamification activities: only include if gamification is enabled
@@ -158,7 +145,10 @@ export async function getCourseActivityTypes(
         return isGamificationEnabled
           ? {
               id,
-              title,
+              'title-de': titleDE,
+              'title-en': titleEN,
+              'title-fr': titleFR,
+              'title-it': titleIT,
               olatConfigurationKey,
               isSubselectionRequired,
             }
@@ -168,7 +158,10 @@ export async function getCourseActivityTypes(
       // All other activities: always include
       return {
         id,
-        title,
+        'title-de': titleDE,
+        'title-en': titleEN,
+        'title-fr': titleFR,
+        'title-it': titleIT,
         olatConfigurationKey,
         isSubselectionRequired,
       }
@@ -203,31 +196,76 @@ export async function getActivities(
       liveQuizzes:
         activityTypeKey === 'live-quiz'
           ? {
+              where: { isDeleted: false },
               select: { id: true, name: true },
+              orderBy: { name: 'asc' }, // order alphabetically by name
             }
           : false,
       practiceQuizzes:
         activityTypeKey === 'practice-quiz'
           ? {
-              select: { id: true, name: true },
+              where: { isDeleted: false },
+              select: { id: true, name: true, availableFrom: true },
+              orderBy: [{ availableFrom: 'asc' }, { name: 'asc' }], // order by availability date and then alphabetically by name
             }
           : false,
       microLearnings:
         activityTypeKey === 'micro-learning'
           ? {
-              select: { id: true, name: true },
+              where: { isDeleted: false },
+              select: {
+                id: true,
+                name: true,
+                scheduledStartAt: true,
+                scheduledEndAt: true,
+              },
+              orderBy: [{ scheduledStartAt: 'asc' }, { name: 'asc' }], // order by scheduled start date and then alphabetically by name
             }
           : false,
     },
   })
   if (!course) return null
 
-  const activities =
-    course.liveQuizzes ?? course.practiceQuizzes ?? course.microLearnings ?? []
-
-  const activityDetails = activities.map((activity) => ({
-    id: activity.id,
-    title: activity.name,
+  const liveQuizzes = (course.liveQuizzes ?? []).map((lq) => ({
+    id: lq.id,
+    'title-de': lq.name,
+    'title-en': lq.name,
+    'title-fr': lq.name,
+    'title-it': lq.name,
   }))
-  return activityDetails
+  const practiceQuizzes = (course.practiceQuizzes ?? []).map((pq) => ({
+    id: pq.id,
+    'title-de': pq.availableFrom
+      ? `${pq.name} (verfügbar ab ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-en': pq.availableFrom
+      ? `${pq.name} (available from ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-fr': pq.availableFrom
+      ? `${pq.name} (disponible à partir du ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    'title-it': pq.availableFrom
+      ? `${pq.name} (disponibile da ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+  }))
+  const microLearnings = (course.microLearnings ?? []).map((ml) => ({
+    id: ml.id,
+    'title-de': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Ende: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-en': `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - End: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-fr': `${ml.name} (Début: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fin: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    'title-it': `${ml.name} (Inizio: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fine: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+  }))
+
+  return [
+    {
+      id: 'overview',
+      'title-de': 'Übersicht',
+      'title-en': 'Overview',
+      'title-fr': "Vue d'ensemble",
+      'title-it': 'Panoramica',
+    },
+    ...liveQuizzes,
+    ...practiceQuizzes,
+    ...microLearnings,
+  ]
 }

@@ -11,7 +11,7 @@ info:
     url: https://www.gnu.org/licenses/agpl-3.0.html
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3030
     description: Local development server
   - url: https://olat-api.klicker-qa.bf-app.ch
     description: QA server
@@ -121,7 +121,7 @@ paths:
   /api/configuration/course/{courseID}/activityTypes:
     post:
       summary: Get course activity types
-      description: Returns activity types available for a specific course, including counts and availability based on course settings.
+      description: Returns activity types available for a specific course.
       tags:
         - Configuration
       parameters:
@@ -229,9 +229,6 @@ components:
           - live-quiz
           - practice-quiz
           - micro-learning
-          - live-quizzes
-          - practice-quizzes
-          - micro-learnings
           - course-leaderboard
           - manage-account
           - docs
@@ -274,7 +271,7 @@ components:
       properties:
         id:
           type: string
-          example: LIVE_QUIZZES
+          example: LIVE_QUIZ
           description: Unique identifier for the activity type.
         path:
           type: string
@@ -282,7 +279,7 @@ components:
           description: Path to the activity type for the LTI-URL.
         olatConfigurationKey:
           type: string
-          example: live-quizzes
+          example: live-quiz
           description: Configuration key used in OLAT for this activity type.
         isEmailTransferRequired:
           type: boolean
@@ -299,15 +296,27 @@ components:
       properties:
         id:
           type: string
-          example: LIVE_QUIZZES
+          example: LIVE_QUIZ
           description: Unique identifier for the activity type.
-        title:
+        title-de:
           type: string
-          example: Live Quiz Overview (5)
-          description: Title of activity (may include count in parentheses for overview types).
+          example: Live Quiz
+          description: Title of activity (German).
+        title-en:
+          type: string
+          example: Live Quiz
+          description: Title of activity (English).
+        title-fr:
+          type: string
+          example: Live Quiz
+          description: Title of activity (French).
+        title-it:
+          type: string
+          example: Live Quiz
+          description: Title of activity (Italian).
         olatConfigurationKey:
           type: string
-          example: live-quizzes
+          example: live-quiz
           description: Configuration key used in OLAT for this activity type.
         isSubselectionRequired:
           type: boolean
@@ -327,10 +336,22 @@ components:
           format: uuid
           example: 123e4567-e89b-12d3-a456-426614174000
           description: Activity UUID.
-        title:
+        title-de:
           type: string
-          example: Week 1 Quiz
-          description: Title of the activity.
+          example: Live Quiz 1
+          description: Title of the activity (German).
+        title-en:
+          type: string
+          example: Live Quiz 1
+          description: Title of the activity (English).
+        title-fr:
+          type: string
+          example: Live Quiz 1
+          description: Title of the activity (French).
+        title-it:
+          type: string
+          example: Live Quiz 1
+          description: Title of the activity (Italian).
       required:
         - id
         - title
