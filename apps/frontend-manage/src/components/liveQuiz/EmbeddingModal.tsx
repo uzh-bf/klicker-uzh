@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetLiveQuizEmbeddingInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -53,16 +53,14 @@ function HMACLink({
 function EmbeddingModal({
   onClose,
   quizId,
-  elements,
 }: {
   onClose: () => void
   quizId: string
-  elements?: { id: number; name: string }[]
 }) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
-  const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
+  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
     skip: !open,
   })
@@ -70,7 +68,7 @@ function EmbeddingModal({
   return (
     <Modal
       open
-      loading={loading || !data?.liveQuizHMAC}
+      loading={loading}
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       onClose={onClose}
       primaryLabel={t('shared.generic.close')}
@@ -105,20 +103,20 @@ function EmbeddingModal({
           <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
           <HMACLink
             quizId={quizId}
-            hmac={data?.liveQuizHMAC ?? ''}
+            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
             params=""
             identifier="generic-evaluation"
           />
         </div>
-        {elements?.map((element, ix) => {
+        {data?.getLiveQuizEmbeddingInfo?.instances?.map((instance, ix) => {
           return (
-            <div key={element.id}>
+            <div key={instance.id}>
               <div className="line-clamp-1 font-bold">
-                {ix + 1} {element.name}
+                {ix + 1} {instance.name}
               </div>
               <HMACLink
                 quizId={quizId}
-                hmac={data?.liveQuizHMAC ?? ''}
+                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
                 params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
                 identifier={`question-${ix}`}
               />
@@ -131,7 +129,7 @@ function EmbeddingModal({
           </div>
           <HMACLink
             quizId={quizId}
-            hmac={data?.liveQuizHMAC ?? ''}
+            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
             params={`leaderboard=true&hideControls=true`}
             identifier="leaderboard"
           />

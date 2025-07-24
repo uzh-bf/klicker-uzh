@@ -46,6 +46,7 @@ import {
 import {
   Feedback,
   LiveQuiz,
+  LiveQuizEmbeddingInfo,
   LiveQuizInfo,
   LiveQuizSummary,
 } from './liveQuiz.js'
@@ -703,17 +704,15 @@ export const Query = builder.queryType({
         ),
       }),
 
-      liveQuizHMAC: t.withAuth(asUser).field({
+      getLiveQuizEmbeddingInfo: t.withAuth(asUser).field({
         nullable: true,
-        type: 'String',
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        type: LiveQuizEmbeddingInfo,
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await LiveQuizService.getLiveQuizHMAC(args, ctx)
+            return await LiveQuizService.getLiveQuizEmbeddingInfo(args, ctx)
           }
         ),
       }),
