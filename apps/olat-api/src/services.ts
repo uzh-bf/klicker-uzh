@@ -24,10 +24,8 @@ export async function getCourses(provider: string, providerAccountId: string) {
       user: {
         select: {
           courses: {
-            select: {
-              id: true,
-              name: true,
-            },
+            where: { isArchived: false },
+            select: { id: true, name: true },
           },
         },
       },
@@ -96,9 +94,9 @@ export async function getCourseActivityTypes(
     where: { id: courseID, ownerId: account.userId },
     select: {
       isGamificationEnabled: true,
-      liveQuizzes: true,
-      practiceQuizzes: true,
-      microLearnings: true,
+      liveQuizzes: { where: { isDeleted: false } },
+      practiceQuizzes: { where: { isDeleted: false } },
+      microLearnings: { where: { isDeleted: false } },
     },
   })
   if (!course) return null
@@ -197,18 +195,21 @@ export async function getActivities(
       liveQuizzes:
         activityTypeKey === 'live-quiz'
           ? {
+              where: { isDeleted: false },
               select: { id: true, name: true },
             }
           : false,
       practiceQuizzes:
         activityTypeKey === 'practice-quiz'
           ? {
+              where: { isDeleted: false },
               select: { id: true, name: true },
             }
           : false,
       microLearnings:
         activityTypeKey === 'micro-learning'
           ? {
+              where: { isDeleted: false },
               select: { id: true, name: true },
             }
           : false,

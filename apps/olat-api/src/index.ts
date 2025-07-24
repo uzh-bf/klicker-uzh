@@ -189,7 +189,7 @@ app.post('/api/configuration/courses', (req: Request, res: Response) => {
 
       res.set('Content-Type', 'application/json')
       return res.status(StatusCode.SUCCESS).json({
-        courses: courses,
+        courses,
         timestamp: new Date().toISOString(),
       })
     })
