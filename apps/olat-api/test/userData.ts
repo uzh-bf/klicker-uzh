@@ -59,3 +59,15 @@ export const courseFive: Course = {
   owner: userTwo,
   name: 'Test Course Five',
 }
+
+export const courseArchivedOne: Course = {
+  id: uuidv4(),
+  owner: userOne,
+  name: 'Archived Course One',
+}
+
+export const courseArchivedTwo: Course = {
+  id: uuidv4(),
+  owner: userTwo,
+  name: 'Archived Course Two',
+}
