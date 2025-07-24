@@ -2238,13 +2238,17 @@ export async function deleteLiveQuiz(
   }
 }
 
-export async function getLiveQuizHMAC(
+export async function getLiveQuizEmbeddingInfo(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
+    where: { id },
+    include: {
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
     },
   })
 
@@ -2254,7 +2258,14 @@ export async function getLiveQuizHMAC(
   hmacEncoder.update(quiz.namespace + quiz.id)
   const quizHmac = hmacEncoder.digest('hex')
 
-  return quizHmac
+  const instances = quiz.blocks.flatMap((block) =>
+    block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+    }))
+  )
+
+  return { id: quiz.id, hmac: quizHmac, instances }
 }
 
 // compute the average of all feedbacks that were given within the last 10 minutes

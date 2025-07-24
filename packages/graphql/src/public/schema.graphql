@@ -14,6 +14,11 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityDetails {
+  id: String!
+  stacks: [ActivityInfoStack!]!
+}
+
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
@@ -59,7 +64,6 @@ type ActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   sharingType: SharingType!
-  stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String
   type: ActivityType!
@@ -1491,6 +1495,17 @@ enum LiveQuizAccessMode {
   RESTRICTED
 }
 
+type LiveQuizEmbeddingInfo {
+  hmac: String!
+  id: ID!
+  instances: [LiveQuizEmbeddingInfoElement!]
+}
+
+type LiveQuizEmbeddingInfoElement {
+  id: Int!
+  name: String!
+}
+
 type LiveQuizInfo {
   id: ID!
   name: String!
@@ -2074,6 +2089,7 @@ type PushSubscription {
 }
 
 type Query {
+  activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
@@ -2123,6 +2139,7 @@ type Query {
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
+  getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
@@ -2153,7 +2170,6 @@ type Query {
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
-  liveQuizHMAC(id: String!): String
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]

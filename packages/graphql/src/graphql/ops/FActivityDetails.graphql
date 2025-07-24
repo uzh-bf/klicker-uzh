@@ -1,0 +1,14 @@
+fragment ActivityDetailsData on ActivityDetails {
+  id
+
+  stacks {
+    id
+    numOfParticipants
+    timeLimit
+    elements {
+      id
+      name
+      type
+    }
+  }
+}

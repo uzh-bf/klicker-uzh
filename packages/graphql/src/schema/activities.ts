@@ -67,8 +67,6 @@ export interface IActivityInfo {
   groupDeadlineDate?: Date | null
   numOfParticipantGroups?: number | null
 
-  stacks: IActivityInfoStack[]
-
   permissionLevel: DB.PermissionLevel
   derivedAccess: boolean
   areInstancesOutdated: boolean
@@ -125,8 +123,6 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
       nullable: true,
     }),
 
-    stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
-
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     derivedAccess: t.exposeBoolean('derivedAccess'),
     areInstancesOutdated: t.exposeBoolean('areInstancesOutdated'),
@@ -179,5 +175,20 @@ export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
       type: 'Date',
       nullable: true,
     }),
+  }),
+})
+
+export interface IActivityDetails {
+  id: string
+  stacks: IActivityInfoStack[]
+}
+
+export const ActivityDetailsRef =
+  builder.objectRef<IActivityDetails>('ActivityDetails')
+export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
+  name: 'ActivityDetails',
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
   }),
 })

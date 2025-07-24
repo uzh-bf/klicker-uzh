@@ -236,4 +236,33 @@ export const LiveQuizSummary = LiveQuizSummaryRef.implement({
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
   }),
 })
+
+export interface ILiveQuizEmbeddingInfo {
+  id: string
+  hmac: string
+  instances: { id: number; name: string }[]
+}
+export const LiveQuizEmbeddingInfoElementRef = builder.objectRef<
+  ILiveQuizEmbeddingInfo['instances'][number]
+>('LiveQuizEmbeddingInfoElement')
+export const LiveQuizEmbeddingInfoElement =
+  LiveQuizEmbeddingInfoElementRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+    }),
+  })
+
+export const LiveQuizEmbeddingInfoRef =
+  builder.objectRef<ILiveQuizEmbeddingInfo>('LiveQuizEmbeddingInfo')
+export const LiveQuizEmbeddingInfo = LiveQuizEmbeddingInfoRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    hmac: t.exposeString('hmac'),
+    instances: t.expose('instances', {
+      type: [LiveQuizEmbeddingInfoElementRef],
+      nullable: true,
+    }),
+  }),
+})
 // #endregion

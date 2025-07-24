@@ -26,7 +26,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               blocks: {
-                include: { elements: { orderBy: { order: 'asc' } } },
+                include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
               // _count: { select: { permissions: true } }, // ? shared user counts left out for efficiency on activity list
@@ -37,7 +37,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               stacks: {
-                include: { elements: { orderBy: { order: 'asc' } } },
+                include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
               // _count: { select: { permissions: true } },
@@ -48,7 +48,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               course: { select: { id: true, name: true, startDate: true } },
               templateInfo: { select: { id: true } },
               stacks: {
-                include: { elements: { orderBy: { order: 'asc' } } },
+                include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
               // _count: { select: { permissions: true } },
@@ -61,7 +61,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
               },
               templateInfo: { select: { id: true } },
               stacks: {
-                include: { elements: { orderBy: { order: 'asc' } } },
+                include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
               // _count: { select: { permissions: true } },
@@ -109,20 +109,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
         return []
       }
 
-      const stacks = object.liveQuiz.blocks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        timeLimit: block.timeLimit,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: object.liveQuiz.id,
         templateId: object.liveQuiz.templateInfo?.id ?? null,
@@ -135,10 +121,9 @@ export async function getUserActivities(ctx: ContextWithUser) {
         courseStartDate: object.liveQuiz.course?.startDate,
         numOfStacks: object.liveQuiz.blocks.length,
         numOfElements: object.liveQuiz.blocks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
-        stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.liveQuiz.areInstancesOutdated,
@@ -158,19 +143,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
         return []
       }
 
-      const stacks = object.practiceQuiz.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: object.practiceQuiz.id,
         templateId: object.practiceQuiz.templateInfo?.id ?? null,
@@ -183,11 +155,10 @@ export async function getUserActivities(ctx: ContextWithUser) {
         courseStartDate: object.practiceQuiz.course?.startDate,
         numOfStacks: object.practiceQuiz.stacks.length,
         numOfElements: object.practiceQuiz.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
         automaticPublicationAt: object.practiceQuiz.availableFrom,
-        stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.practiceQuiz.areInstancesOutdated,
@@ -207,19 +178,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
         return []
       }
 
-      const stacks = object.microLearning.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: object.microLearning.id,
         templateId: object.microLearning.templateInfo?.id ?? null,
@@ -232,12 +190,11 @@ export async function getUserActivities(ctx: ContextWithUser) {
         courseStartDate: object.microLearning.course?.startDate,
         numOfStacks: object.microLearning.stacks.length,
         numOfElements: object.microLearning.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
         scheduledStartAt: object.microLearning.scheduledStartAt,
         scheduledEndAt: object.microLearning.scheduledEndAt,
-        stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.microLearning.areInstancesOutdated,
@@ -257,19 +214,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
         return []
       }
 
-      const stacks = object.groupActivity.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: object.groupActivity.id,
         templateId: object.groupActivity.templateInfo?.id ?? null,
@@ -282,7 +226,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         courseStartDate: object.groupActivity.course?.startDate,
         numOfStacks: object.groupActivity.stacks.length,
         numOfElements: object.groupActivity.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
         scheduledStartAt: object.groupActivity.scheduledStartAt,
@@ -290,7 +234,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
         groupDeadlineDate: object.groupActivity.course.groupDeadlineDate,
         numOfParticipantGroups:
           object.groupActivity.course._count.participantGroups,
-        stacks,
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.groupActivity.areInstancesOutdated,
@@ -356,4 +299,144 @@ export async function getUserActivities(ctx: ContextWithUser) {
       return -new Date(activity.updatedAt).getTime()
     }
   )
+}
+
+export async function getLiveQuizDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  const stacks = liveQuiz.blocks.map((block) => ({
+    id: block.id,
+    numOfParticipants: block.elements[0]
+      ? block.elements[0].results.total +
+        block.elements[0].anonymousResults.total
+      : 0,
+    timeLimit: block.timeLimit,
+    elements: block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+      type: instance.elementType,
+    })),
+  }))
+
+  return { id: liveQuiz.id, stacks }
+}
+
+export async function getPracticeQuizDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+    include: {
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const stacks = practiceQuiz.stacks.map((block) => ({
+    id: block.id,
+    numOfParticipants: block.elements[0]
+      ? block.elements[0].results.total +
+        block.elements[0].anonymousResults.total
+      : 0,
+    elements: block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+      type: instance.elementType,
+    })),
+  }))
+
+  return { id: practiceQuiz.id, stacks }
+}
+
+export async function getMicroLearningDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+    include: {
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  const stacks = microLearning.stacks.map((block) => ({
+    id: block.id,
+    numOfParticipants: block.elements[0]
+      ? block.elements[0].results.total +
+        block.elements[0].anonymousResults.total
+      : 0,
+    elements: block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+      type: instance.elementType,
+    })),
+  }))
+
+  return { id: microLearning.id, stacks }
+}
+
+export async function getGroupActivityDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+    include: {
+      course: {
+        include: { _count: { select: { participantGroups: true } } },
+      },
+      stacks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  const stacks = groupActivity.stacks.map((block) => ({
+    id: block.id,
+    numOfParticipants: block.elements[0]
+      ? block.elements[0].results.total +
+        block.elements[0].anonymousResults.total
+      : 0,
+    elements: block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+      type: instance.elementType,
+    })),
+  }))
+
+  return { id: groupActivity.id, stacks }
 }
