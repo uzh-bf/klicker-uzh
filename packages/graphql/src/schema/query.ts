@@ -266,7 +266,7 @@ export const Query = builder.queryType({
         type: ActivityDetails,
         args: {
           activityId: t.arg.string({ required: true }),
-          activityType: t.arg({ type: ActivityType, required: false }),
+          activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve: async (_, args, ctx) => {
           // if not logged in as a user, return null

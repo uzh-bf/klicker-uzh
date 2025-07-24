@@ -62,7 +62,7 @@ function EmbeddingModal({
   const [showExplanation, setShowExplanation] = useState(false)
   const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
-    skip: !open,
+    fetchPolicy: 'cache-and-network',
   })
 
   return (

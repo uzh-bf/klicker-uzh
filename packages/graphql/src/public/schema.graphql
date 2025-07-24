@@ -2089,7 +2089,7 @@ type PushSubscription {
 }
 
 type Query {
-  activityDetails(activityId: String!, activityType: ActivityType): ActivityDetails
+  activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!

@@ -3387,7 +3387,7 @@ export type Query = {
 
 export type QueryActivityDetailsArgs = {
   activityId: Scalars['String']['input'];
-  activityType?: InputMaybe<ActivityType>;
+  activityType: ActivityType;
 };
 
 
