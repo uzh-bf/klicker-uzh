@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.75...v3.3.0-alpha.76) (2025-07-24)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure that institutional affiliations are created correctly on first login ([#4798](https://github.com/uzh-bf/klicker-uzh/issues/4798)) ([abc6045](https://github.com/uzh-bf/klicker-uzh/commit/abc60459005c8901481a5ec09a54b7b56de228c0))
+
+
+### Enhancements
+
+* **apps/olat-api:** update OLAT API with new structure for activity overview ([#4796](https://github.com/uzh-bf/klicker-uzh/issues/4796)) ([7a2fed0](https://github.com/uzh-bf/klicker-uzh/commit/7a2fed04b16d85c42b24ee6830c0f30228ae473a))
+
 ## [3.3.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.74...v3.3.0-alpha.75) (2025-07-23)
 
 
