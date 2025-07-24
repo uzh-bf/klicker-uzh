@@ -4,7 +4,7 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions, Profile } from 'next-auth'
-import NextAuth from 'next-auth'
+import NextAuth, { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
@@ -18,6 +18,10 @@ export interface ExtendedProfile extends Profile {
   swissEduIDLinkedAffiliation?: string[]
   swissEduIDLinkedAffiliationMail?: string[]
   swissEduIDLinkedAffiliationUniqueID?: string[]
+}
+
+export interface ExtendedAccount extends Account {
+  affiliationIds?: string[]
 }
 
 export interface ExtendedUser {
@@ -71,6 +75,36 @@ function generateRandomString(length: number) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength))
   }
   return result
+}
+
+async function createUserAffiliations(
+  userId: string,
+  affiliationIds?: string[]
+) {
+  // if affiliations are present, add corresponding accounts for the user
+  if (affiliationIds && affiliationIds.length > 0) {
+    for (const affiliationId of affiliationIds) {
+      // get provider as the string between @ and .ch
+      const provider = affiliationId.split('@')[1].split('.')[0]
+
+      // upsert accounts for every affiliation
+      await prisma.account.upsert({
+        where: {
+          provider_providerAccountId: {
+            provider,
+            providerAccountId: affiliationId,
+          },
+        },
+        create: {
+          provider,
+          providerAccountId: affiliationId,
+          user: { connect: { id: userId } },
+          type: 'affiliation',
+        },
+        update: {},
+      })
+    }
+  }
 }
 
 const EduIDProvider: Provider | null =
@@ -235,6 +269,7 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (userAccount) {
+          // existing user login
           const user = await prisma.user.update({
             where: { id: userAccount.userId },
             data: {
@@ -250,33 +285,11 @@ export const authOptions: NextAuthOptions = {
             },
           })
 
-          // if affiliations are present, add corresponding accounts for the user
-          if (
-            profileData.swissEduIDLinkedAffiliationUniqueID &&
-            profileData.swissEduIDLinkedAffiliationUniqueID.length > 0
-          ) {
-            for (const affiliationId of profileData.swissEduIDLinkedAffiliationUniqueID) {
-              // get provider as the string between @ and .ch
-              const provider = affiliationId.split('@')[1].split('.')[0]
-
-              // upsert accounts for every affiliation
-              await prisma.account.upsert({
-                where: {
-                  provider_providerAccountId: {
-                    provider,
-                    providerAccountId: affiliationId,
-                  },
-                },
-                create: {
-                  provider,
-                  providerAccountId: affiliationId,
-                  user: { connect: { id: user.id } },
-                  type: 'affiliation',
-                },
-                update: {},
-              })
-            }
-          }
+          // upsert affiliations for existing user
+          await createUserAffiliations(
+            user.id,
+            profileData.swissEduIDLinkedAffiliationUniqueID
+          )
 
           if (user.firstLogin) {
             await sendTeamsNotifications(
@@ -306,6 +319,25 @@ export const authOptions: NextAuthOptions = {
         token.catalystInstitutional = userData.catalystInstitutional
         token.catalystIndividual = userData.catalystIndividual
         token.role = userData.role
+
+        // handle the affiliation creation after the creation of the actual user
+        if (
+          profileData &&
+          profileData.swissEduIDLinkedAffiliationUniqueID &&
+          userData.id
+        ) {
+          try {
+            await createUserAffiliations(
+              userData.id,
+              profileData.swissEduIDLinkedAffiliationUniqueID
+            )
+          } catch (error) {
+            console.error(
+              'Error creating user affiliations in JWT callback:',
+              error
+            )
+          }
+        }
       }
 
       return token
