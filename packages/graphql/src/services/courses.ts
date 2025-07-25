@@ -840,6 +840,11 @@ export async function updateCourseSettings(
           : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+      // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
+      groupAssignmentPoolEntries:
+        !isGroupCreationEnabled && !containsGroups
+          ? { deleteMany: {} }
+          : undefined,
     },
   })
 
