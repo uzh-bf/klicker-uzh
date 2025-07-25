@@ -2505,9 +2505,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No anonymous responses have been submitted for elements in this microlearning yet.',
       anonResponsesToMicroLearning:
         '{number} anonymous response(s) have been submitted for elements in this microlearning.',
-      noStartedInstancesLoosingAccess:
+      noStartedInstancesLosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
-      startedInstancesLoosingAccess:
+      startedInstancesLosingAccess:
         '{number} group(s) have started the group activity but have not submitted any results yet. They will lose access to the group activity.',
       noSubmissionsToActivity:
         'There are no submissions for this group activity yet.',

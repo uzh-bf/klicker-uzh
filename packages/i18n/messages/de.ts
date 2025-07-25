@@ -2547,9 +2547,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für dieses Microlearning wurden noch keine anonymen Antworten abgesendet.',
       anonResponsesToMicroLearning:
         '{number} anonyme Antwort(en) für diese Aktivität wurden abgesendet.',
-      noStartedInstancesLoosingAccess:
+      noStartedInstancesLosingAccess:
         'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht abgesendet haben.',
-      startedInstancesLoosingAccess:
+      startedInstancesLosingAccess:
         '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate abgesendet. Sie verlieren den Zugriff auf die Gruppenaktivität.',
       noSubmissionsToActivity:
         'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
