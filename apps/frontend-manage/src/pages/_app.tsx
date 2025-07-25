@@ -1,14 +1,14 @@
 import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
-import { getMessageFallback, onError } from '@klicker-uzh/i18n'
+import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { NextIntlClientProvider } from 'next-intl'
+import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -36,6 +36,11 @@ function App({ Component, pageProps }: AppProps) {
     }
   }, [])
 
+  // ensure locale is one of the supported locales
+  const validLocale = routing.locales.includes(locale as Locale)
+    ? (locale as (typeof routing.locales)[number])
+    : routing.defaultLocale
+
   return (
     <div
       id="__app"
@@ -45,7 +50,7 @@ function App({ Component, pageProps }: AppProps) {
         <NextIntlClientProvider
           timeZone="Europe/Zurich"
           messages={pageProps.messages}
-          locale={locale}
+          locale={validLocale}
           onError={onError}
           getMessageFallback={getMessageFallback}
         >

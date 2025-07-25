@@ -1,6 +1,5 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useTranslations } from 'next-intl'
 
 function getLTIAccessLink({
   t,
@@ -9,7 +8,7 @@ function getLTIAccessLink({
   onSuccess,
   label,
 }: {
-  t: ReturnType<typeof useTranslations>
+  t: any
   name: string
   href: string
   onSuccess: () => void
