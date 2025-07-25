@@ -84,6 +84,15 @@ function CourseOverviewPage() {
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
+          containsActivities={
+            (course.liveQuizzesInfo?.length || 0) > 0 ||
+            (course.practiceQuizzesInfo?.length || 0) > 0 ||
+            (course.microLearningsInfo?.length || 0) > 0 ||
+            (course.groupActivitiesInfo?.length || 0) > 0
+          }
+          containsGroups={
+            !!course.numOfParticipantGroups && course.numOfParticipantGroups > 0
+          }
         />
       </div>
 

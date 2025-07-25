@@ -39,6 +39,8 @@ interface CourseOverviewHeaderProps {
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
+  containsActivities: boolean
+  containsGroups: boolean
 }
 
 function CourseOverviewHeader({
@@ -46,6 +48,8 @@ function CourseOverviewHeader({
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
+  containsActivities,
+  containsGroups,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
 
@@ -206,6 +210,8 @@ function CourseOverviewHeader({
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
+          containsActivities={containsActivities}
+          containsGroups={containsGroups}
           onModalClose={() => setCourseSettingsModal(false)}
           onSubmit={async (
             values: CourseManipulationFormData,

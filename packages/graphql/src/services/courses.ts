@@ -787,7 +787,20 @@ export async function updateCourseSettings(
   ctx: ContextWithUser
 ) {
   // verify that no past dates are modified or enabled gamification / group creation settings are disabled
-  const course = await ctx.prisma.course.findUnique({ where: { id } })
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          liveQuizzes: { where: { isDeleted: false } },
+          practiceQuizzes: { where: { isDeleted: false } },
+          microLearnings: { where: { isDeleted: false } },
+          groupActivities: { where: { isDeleted: false } },
+          participantGroups: true,
+        },
+      },
+    },
+  })
 
   if (!course) return null
 
@@ -795,6 +808,12 @@ export async function updateCourseSettings(
   const newGroupDeadlinePast = groupDeadlineDate
     ? groupDeadlineDate < new Date()
     : false
+  const containsActivities =
+    course._count.liveQuizzes > 0 ||
+    course._count.practiceQuizzes > 0 ||
+    course._count.microLearnings > 0 ||
+    course._count.groupActivities > 0
+  const containsGroups = course._count.participantGroups > 0
 
   const updatedCourse = await ctx.prisma.course.update({
     where: {
@@ -807,16 +826,18 @@ export async function updateCourseSettings(
       color: color ?? undefined,
       startDate: currentStartDatePast || !startDate ? undefined : startDate,
       endDate: endDate ?? undefined,
+      // only enable group creation or disable it if there are no groups
       isGroupCreationEnabled:
-        course.isGroupCreationEnabled || !isGroupCreationEnabled
-          ? undefined
-          : isGroupCreationEnabled,
+        isGroupCreationEnabled || !containsGroups
+          ? (isGroupCreationEnabled ?? false)
+          : undefined,
       groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
+      // only enable gamification or disable it if there are no activities or groups
       isGamificationEnabled:
-        course.isGamificationEnabled || !isGamificationEnabled
-          ? undefined
-          : isGamificationEnabled,
+        isGamificationEnabled || (!containsActivities && !containsGroups)
+          ? (isGamificationEnabled ?? false)
+          : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
     },

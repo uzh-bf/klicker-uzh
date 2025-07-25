@@ -26,6 +26,8 @@ interface CourseManipulationModalProps {
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
+  containsActivities?: boolean
+  containsGroups?: boolean
   onModalClose: () => void
   onSubmit: (
     values: CourseManipulationFormData,
@@ -54,6 +56,8 @@ function CourseManipulationModal({
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
+  containsActivities = false,
+  containsGroups = false,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
@@ -352,7 +356,10 @@ function CourseManipulationModal({
                     <FormikSwitchField
                       required
                       labelLeft
-                      disabled={initialValues?.isGamificationEnabled}
+                      disabled={
+                        initialValues?.isGamificationEnabled &&
+                        (containsActivities || containsGroups)
+                      }
                       name="isGamificationEnabled"
                       label={t('shared.generic.gamification')}
                       tooltip={t('manage.courseList.gamificationTooltip')}
@@ -366,7 +373,8 @@ function CourseManipulationModal({
                       labelLeft
                       disabled={
                         !values.isGamificationEnabled ||
-                        initialValues?.isGroupCreationEnabled
+                        (initialValues?.isGroupCreationEnabled &&
+                          containsGroups)
                       }
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
