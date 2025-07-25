@@ -26,3 +26,6 @@ export function getMessageFallback({
     return `Dear developer, please fix this message: ${path}. Error: ${error.message}`
   }
 }
+
+// re-export routing configuration
+export { routing } from './routing'
