@@ -2326,9 +2326,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupDeadlineChangedToPast:
         'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
       gamificationGroupsFixed:
-        'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
+        'Gamification and group creation are enabled for this course. These settings cannot be disabled once gamified activities or participant groups exist. Initially disabled options can be enabled later.',
       gamificationFixed:
-        'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+        'Gamification is enabled for this course. This setting cannot be disabled once gamified activities are assigned. Initially disabled options can be enabled later.',
       openPreview: 'Open Preview',
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
