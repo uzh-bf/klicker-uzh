@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.76...v3.3.0-alpha.77) (2025-07-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** make sure lti-token is properly removed after setting participant token cookie ([#4801](https://github.com/uzh-bf/klicker-uzh/issues/4801)) ([4b6faa8](https://github.com/uzh-bf/klicker-uzh/commit/4b6faa8835fc8a3f02c608aa452a41ec4e80396e))
+
+
+### Refactors
+
+* separate query for activity details view and embedding modals from activity list ([#4799](https://github.com/uzh-bf/klicker-uzh/issues/4799)) ([93ef543](https://github.com/uzh-bf/klicker-uzh/commit/93ef543c6e014e5db45c9a2aee1acb6759e5d717))
+
 ## [3.3.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.75...v3.3.0-alpha.76) (2025-07-24)
 
 
