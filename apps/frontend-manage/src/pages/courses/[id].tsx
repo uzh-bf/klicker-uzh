@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
 import {
   faCrown,
+  faList,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -9,7 +10,7 @@ import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
-import { Prose, TabContent, Tabs } from '@uzh-bf/design-system'
+import { Button, Prose, TabContent, Tabs } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -17,6 +18,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
+import CourseCalendarView from '../../components/courses/CourseCalendarView'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
 import GroupActivityList from '../../components/courses/GroupActivityList'
 import LiveQuizList from '../../components/courses/LiveQuizList'
@@ -29,6 +31,7 @@ function CourseOverviewPage() {
   const [tabValue, setTabValue] = useState('liveQuizzes')
   const [gamificationTabValue, setGamificationTabValue] =
     useState('ind-leaderboard')
+  const [calendarView, showCalendarView] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -157,93 +160,123 @@ function CourseOverviewPage() {
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:flex-row">
-        <Tabs
-          defaultValue="liveQuizzes"
-          value={tabValue}
-          onValueChange={(newValue: string) => setTabValue(newValue)}
-          tabs={[
-            {
-              id: 'tab-liveQuizzes',
-              value: 'liveQuizzes',
-              label: t('manage.general.liveQuizzes'),
-              data: { cy: 'tab-liveQuizzes' },
-            },
-            {
-              id: 'tab-practiceQuizzes',
-              value: 'practiceQuizzes',
-              label: (
-                <div className="flex flex-row items-center gap-2.5">
-                  <span>{t('shared.generic.practiceQuizzes')}</span>
-                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-                </div>
-              ),
-              data: { cy: 'tab-practiceQuizzes' },
-            },
-            {
-              id: 'tab-microLearnings',
-              value: 'microLearnings',
-              label: (
-                <div className="flex flex-row items-center gap-2.5">
-                  <span>{t('shared.generic.microlearnings')}</span>
-                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-                </div>
-              ),
-              data: { cy: 'tab-microLearnings' },
-            },
-            {
-              id: 'tab-groupActivities',
-              value: 'groupActivities',
-              label: (
-                <div className="flex flex-row items-center gap-2.5">
-                  <span>{t('shared.generic.groupActivities')}</span>
-                  <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
-                </div>
-              ),
-              data: { cy: 'tab-groupActivities' },
-            },
-          ]}
-          className={{ root: 'flex-1 basis-3/5' }}
-        >
-          <TabContent
-            key="content-liveQuizzes"
-            value="liveQuizzes"
-            className={{ root: 'overflow-y-auto px-0 py-1' }}
+        {calendarView ? (
+          // TODO: extract this to a separate components
+          <div className="flex flex-1 basis-3/5 flex-col">
+            <Button
+              basic
+              onClick={() => showCalendarView(false)}
+              className={{
+                root: 'text-primary-100 hover:text-primary-100 float-right mb-1 h-7 w-max px-2 py-0 text-sm',
+              }}
+            >
+              <Button.Icon icon={faList} />
+              <Button.Label>{t('manage.course.backToListView')}</Button.Label>
+            </Button>
+            <CourseCalendarView course={course} />
+          </div>
+        ) : (
+          <Tabs
+            defaultValue="liveQuizzes"
+            value={tabValue}
+            onValueChange={(newValue: string) => setTabValue(newValue)}
+            tabs={[
+              {
+                id: 'tab-liveQuizzes',
+                value: 'liveQuizzes',
+                label: t('manage.general.liveQuizzes'),
+                data: { cy: 'tab-liveQuizzes' },
+              },
+              {
+                id: 'tab-practiceQuizzes',
+                value: 'practiceQuizzes',
+                label: (
+                  <div className="flex flex-row items-center gap-2.5">
+                    <span>{t('shared.generic.practiceQuizzes')}</span>
+                    <FontAwesomeIcon
+                      icon={faCrown}
+                      className="text-orange-400"
+                    />
+                  </div>
+                ),
+                data: { cy: 'tab-practiceQuizzes' },
+              },
+              {
+                id: 'tab-microLearnings',
+                value: 'microLearnings',
+                label: (
+                  <div className="flex flex-row items-center gap-2.5">
+                    <span>{t('shared.generic.microlearnings')}</span>
+                    <FontAwesomeIcon
+                      icon={faCrown}
+                      className="text-orange-400"
+                    />
+                  </div>
+                ),
+                data: { cy: 'tab-microLearnings' },
+              },
+              {
+                id: 'tab-groupActivities',
+                value: 'groupActivities',
+                label: (
+                  <div className="flex flex-row items-center gap-2.5">
+                    <span>{t('shared.generic.groupActivities')}</span>
+                    <FontAwesomeIcon
+                      icon={faCrown}
+                      className="text-orange-400"
+                    />
+                  </div>
+                ),
+                data: { cy: 'tab-groupActivities' },
+              },
+            ]}
+            className={{ root: 'flex-1 basis-3/5' }}
           >
-            <LiveQuizList
-              courseId={course.id}
-              liveQuizzes={course.liveQuizzesInfo ?? []}
-            />
-          </TabContent>
-          <TabContent
-            key="content-practiceQuizzes"
-            value="practiceQuizzes"
-            className={{ root: 'px-0 py-1' }}
-          >
-            <PracticeQuizList
-              courseId={course.id}
-              practiceQuizzes={course.practiceQuizzesInfo ?? []}
-            />
-          </TabContent>
-          <TabContent
-            key="content-microlearnings"
-            value="microLearnings"
-            className={{ root: 'px-0 py-1' }}
-          >
-            <MicroLearningList
-              courseId={course.id}
-              microLearnings={course.microLearningsInfo ?? []}
-            />
-          </TabContent>
-          <TabContent
-            key="content-groupActivities"
-            value="groupActivities"
-            className={{ root: 'px-0 py-1' }}
-          >
-            <GroupActivityList
-              groupActivities={course.groupActivitiesInfo ?? []}
-            />
-          </TabContent>
-        </Tabs>
+            <TabContent
+              key="content-liveQuizzes"
+              value="liveQuizzes"
+              className={{ root: 'overflow-y-auto px-0 py-1' }}
+            >
+              <LiveQuizList
+                courseId={course.id}
+                liveQuizzes={course.liveQuizzesInfo ?? []}
+                openCalendarView={() => showCalendarView(true)}
+              />
+            </TabContent>
+            <TabContent
+              key="content-practiceQuizzes"
+              value="practiceQuizzes"
+              className={{ root: 'px-0 py-1' }}
+            >
+              <PracticeQuizList
+                courseId={course.id}
+                practiceQuizzes={course.practiceQuizzesInfo ?? []}
+                openCalendarView={() => showCalendarView(true)}
+              />
+            </TabContent>
+            <TabContent
+              key="content-microlearnings"
+              value="microLearnings"
+              className={{ root: 'px-0 py-1' }}
+            >
+              <MicroLearningList
+                courseId={course.id}
+                microLearnings={course.microLearningsInfo ?? []}
+                openCalendarView={() => showCalendarView(true)}
+              />
+            </TabContent>
+            <TabContent
+              key="content-groupActivities"
+              value="groupActivities"
+              className={{ root: 'px-0 py-1' }}
+            >
+              <GroupActivityList
+                groupActivities={course.groupActivitiesInfo ?? []}
+                openCalendarView={() => showCalendarView(true)}
+              />
+            </TabContent>
+          </Tabs>
+        )}
 
         {data?.course?.isGamificationEnabled && (
           <CourseGamificationInfos

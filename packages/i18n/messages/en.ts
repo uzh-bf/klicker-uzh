@@ -151,6 +151,8 @@ export default {
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
+      startNoun: 'Start',
+      end: 'End',
       continue: 'Continue',
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -372,6 +374,10 @@ export default {
       selected: 'Selected',
       seconds: 'seconds',
       moreInformation: 'More information',
+      today: 'Today',
+      month: 'Month',
+      week: 'Week',
+      day: 'Day',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -396,6 +402,12 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'PQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -2429,6 +2441,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nQuestions: '{number} questions',
       courseQRDescription:
         'Share this link or QR code with your course participants to allow them to join.',
+      calendarView: 'Calendar View',
+      backToListView: 'Back to List View',
+      calendarAllDay: 'All day',
+      calendarMore: 'more',
+      calendarNoEntries: 'No entries',
+      calendarCourseStart: 'Course Start',
+      calendarCourseEnd: 'Course End',
+      calendarCourseGroupFormationDeadline: 'Group Formation Deadline',
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
