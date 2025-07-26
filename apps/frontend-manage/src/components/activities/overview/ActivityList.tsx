@@ -9,10 +9,12 @@ function ActivityList({
   activities,
   noActivities,
   hideActivityType = false,
+  highlightedActivity,
 }: {
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
+  highlightedActivity: string | null
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -60,6 +62,7 @@ function ActivityList({
               : undefined
           }
           hideType={hideActivityType}
+          highlightedActivity={highlightedActivity}
         />
       ))}
     </div>

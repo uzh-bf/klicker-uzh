@@ -87,40 +87,6 @@ export const PARTICIPANT_IDS = [
   'b687a300-b5e7-43dd-a49e-aea9ff30aadc',
 ]
 
-// uuids for 30 calendar course participants
-export const CALENDAR_PARTICIPANT_IDS = [
-  '8fa1eb83-ea49-4cfe-a4f6-d26c6f597c87',
-  'e28b489d-4025-4863-a663-c824cd1eac52',
-  'c6a11324-990a-43cd-8da0-59a5a81679a0',
-  'd5be1b09-2ad8-401e-8ef4-7ec79769c9a8',
-  'a38de162-86b6-40a3-8b2f-7879f2b5b303',
-  '042b0d20-58cd-40a7-8b68-f519b1d6f081',
-  '6c9f29a7-8afd-445e-acbc-df2a4d559dba',
-  '33221258-252e-4a1c-b7c8-74b5054f99fc',
-  'de7ce132-257c-4381-8f33-d287f0c32da4',
-  '6426a34a-684c-44c8-8f94-36bbec1cb352',
-  'cc1154f3-2d15-4f4d-b2a7-41164685acd2',
-  'bfd3cf44-af77-4214-8318-438a7aaa4ced',
-  '396219f1-ed9a-4ce5-bc65-27a73d197dfe',
-  '2746d84d-b260-4ec6-b8df-551d200debd9',
-  '5797655b-02d0-480d-b82c-383d45d5c8db',
-  '840fa9bd-af54-46c7-91ff-051015733239',
-  '01c3e8d4-c6fb-449e-a3ff-230b29d76313',
-  'bb62f32e-59be-4a5a-843d-4c6ae0af680d',
-  '36dc1926-1ae6-47e1-b2d9-e69772f35971',
-  'faffd556-be32-4769-8b9f-cf7603dd2788',
-  'bd095691-ee24-486d-9e2f-a5e54bcd447a',
-  'bc431bb1-ba04-400a-99ab-1da5ecfe2640',
-  'fe833947-d430-4dc1-85ce-e923bffc15ee',
-  '71df5cbd-48db-4136-a422-a2aa8f4bcbd9',
-  '289468fe-4d72-413f-8d59-c4d6e83237ae',
-  '3c1fb9ff-ac47-4667-a616-57406c267200',
-  '66f3884a-160a-44f6-b94a-950defcd170e',
-  '4885b893-666b-4ab8-a379-1688b2a9a63a',
-  'fcde9d62-eb35-42a9-b903-79e8a5994cb4',
-  'f0a75a56-1582-4550-994f-7e5c13bb9fdd',
-]
-
 // uuids for 14 participant groups
 export const PARTICIPANT_GROUP_IDS = [
   '9c4940c1-87ca-47a7-afc4-cd85656df3e7',
@@ -695,21 +661,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                     order: 0,
                     type: Prisma.ElementInstanceType.LIVE_QUIZ,
                     elementType: Prisma.ElementType.SC,
-                    elementData: {
-                      id: Math.floor(Math.random() * 1000000),
-                      name: `Question for ${quizData.name}`,
-                      content: `What is the most important aspect of ${quizData.name.toLowerCase()}?`,
-                      explanation: 'This tests understanding of key concepts.',
-                      options: {
-                        hasSampleSolution: true,
-                        choices: [
-                          { value: 'Strategic planning', correct: true },
-                          { value: 'Technology adoption', correct: false },
-                          { value: 'Cost reduction', correct: false },
-                          { value: 'Market analysis', correct: false },
-                        ],
-                      },
-                    },
+                    elementData: processElementData(questionsTest[0]!),
                     options: {
                       basePoints: 25,
                       pointsMultiplier: quizData.pointsMultiplier,
@@ -723,7 +675,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                     },
                     element: {
                       connect: {
-                        id: questionsTest[0]!.id, // Use first available question
+                        id: questionsTest[0]!.id,
                       },
                     },
                     owner: {

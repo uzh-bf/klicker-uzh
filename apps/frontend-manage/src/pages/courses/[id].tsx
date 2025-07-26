@@ -32,6 +32,9 @@ function CourseOverviewPage() {
   const [gamificationTabValue, setGamificationTabValue] =
     useState('ind-leaderboard')
   const [calendarView, showCalendarView] = useState(false)
+  const [highlightedActivity, setHighlightedActivity] = useState<string | null>(
+    null
+  )
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -173,7 +176,12 @@ function CourseOverviewPage() {
               <Button.Icon icon={faList} />
               <Button.Label>{t('manage.course.backToListView')}</Button.Label>
             </Button>
-            <CourseCalendarView course={course} />
+            <CourseCalendarView
+              course={course}
+              setActivityList={setTabValue}
+              switchToListView={() => showCalendarView(false)}
+              setHighlightedActivity={setHighlightedActivity}
+            />
           </div>
         ) : (
           <Tabs
@@ -241,6 +249,7 @@ function CourseOverviewPage() {
                 courseId={course.id}
                 liveQuizzes={course.liveQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
+                highlightedActivity={highlightedActivity}
               />
             </TabContent>
             <TabContent
@@ -252,6 +261,7 @@ function CourseOverviewPage() {
                 courseId={course.id}
                 practiceQuizzes={course.practiceQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
+                highlightedActivity={highlightedActivity}
               />
             </TabContent>
             <TabContent
@@ -263,6 +273,7 @@ function CourseOverviewPage() {
                 courseId={course.id}
                 microLearnings={course.microLearningsInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
+                highlightedActivity={highlightedActivity}
               />
             </TabContent>
             <TabContent
@@ -273,6 +284,7 @@ function CourseOverviewPage() {
               <GroupActivityList
                 groupActivities={course.groupActivitiesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
+                highlightedActivity={highlightedActivity}
               />
             </TabContent>
           </Tabs>

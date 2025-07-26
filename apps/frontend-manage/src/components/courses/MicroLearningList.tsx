@@ -11,10 +11,12 @@ function MicroLearningList({
   courseId,
   microLearnings,
   openCalendarView,
+  highlightedActivity,
 }: {
   courseId: string
   microLearnings: ActivityInfo[]
   openCalendarView: () => void
+  highlightedActivity: string | null
 }) {
   const t = useTranslations()
 
@@ -63,9 +65,10 @@ function MicroLearningList({
       {microLearnings && microLearnings.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
+            hideActivityType
             activities={microLearnings}
             noActivities={false}
-            hideActivityType
+            highlightedActivity={highlightedActivity}
           />
         </div>
       ) : (

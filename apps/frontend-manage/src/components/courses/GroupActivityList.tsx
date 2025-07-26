@@ -8,9 +8,11 @@ import ActivityListLegend from '../activities/overview/ActivityListLegend'
 function GroupActivityList({
   groupActivities,
   openCalendarView,
+  highlightedActivity,
 }: {
   groupActivities: ActivityInfo[]
   openCalendarView: () => void
+  highlightedActivity: string | null
 }) {
   const t = useTranslations()
 
@@ -35,9 +37,10 @@ function GroupActivityList({
       {groupActivities && groupActivities.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
+            hideActivityType
             activities={groupActivities}
             noActivities={false}
-            hideActivityType
+            highlightedActivity={highlightedActivity}
           />
         </div>
       ) : (

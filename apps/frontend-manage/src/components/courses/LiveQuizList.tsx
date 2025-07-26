@@ -11,10 +11,12 @@ function LiveQuizList({
   courseId,
   liveQuizzes,
   openCalendarView,
+  highlightedActivity,
 }: {
   courseId: string
   liveQuizzes: ActivityInfo[]
   openCalendarView: () => void
+  highlightedActivity: string | null
 }) {
   const t = useTranslations()
 
@@ -63,9 +65,10 @@ function LiveQuizList({
       {liveQuizzes && liveQuizzes.length > 0 ? (
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
+            hideActivityType
             activities={liveQuizzes}
             noActivities={false}
-            hideActivityType
+            highlightedActivity={highlightedActivity}
           />
         </div>
       ) : (

@@ -16,7 +16,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useRef, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react'
 
 const COLORS = {
   courseStart: 'hsl(142 60% 40%)', // Stronger, darker green
@@ -37,7 +37,17 @@ const TEXT_COLORS = {
   groupActivity: 'black',
 }
 
-function ShadcnStyledFullCalendar({ course }: { course: Course }) {
+function CourseCalendarView({
+  course,
+  setActivityList,
+  switchToListView,
+  setHighlightedActivity,
+}: {
+  course: Course
+  setActivityList: Dispatch<SetStateAction<string>>
+  switchToListView: () => void
+  setHighlightedActivity: Dispatch<SetStateAction<string | null>>
+}) {
   const t = useTranslations()
   const calendarRef = useRef<FullCalendar>(null)
   const [currentView, setCurrentView] = useState('timeGridWeek')
@@ -88,7 +98,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
         : startDate
 
       calendarEvents.push({
-        id: `${activity.id}-available`,
+        id: `${activity.id}__${activity.type}__available`,
         title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
         start: allDayStart.toISOString().split('T')[0],
         end: allDayStart.toISOString().split('T')[0],
@@ -105,7 +115,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
 
       calendarEvents.push({
-        id: `${activity.id}-start`,
+        id: `${activity.id}__${activity.type}__start`,
         title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
         start: startDate.toISOString(),
         end: new Date(startDate.getTime() + 2 * 60 * 60 * 1000).toISOString(),
@@ -148,7 +158,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       }
 
       calendarEvents.push({
-        id: `${activity.id}-available`,
+        id: `${activity.id}__${activity.type}__available`,
         title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
         start: allDayStart.toISOString().split('T')[0],
         end: new Date(adjustedEnd).toISOString().split('T')[0],
@@ -169,19 +179,13 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
 
       calendarEvents.push({
-        id: `${activity.id}-start`,
+        id: `${activity.id}__${activity.type}__start`,
         title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
         start: startDate.toISOString(),
         end: startEndTime.toISOString(),
         backgroundColor: color,
         borderColor: color,
         textColor,
-        // TODO: potentially this will be helpful onClick
-        //   extendedProps: {
-        //     activityId: activity.id,
-        //     activityType: type,
-        //     eventType: 'start',
-        //   },
       })
 
       // end event
@@ -195,18 +199,13 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
 
       calendarEvents.push({
-        id: `${activity.id}-end`,
-        title: `${t('shared.generic.end')} ${activity.name}: (${endTime})`,
+        id: `${activity.id}__${activity.type}__end`,
+        title: `${t('shared.generic.end')} ${activity.name}: ${endTime}`,
         start: endStartTime.toISOString(),
         end: endDate.toISOString(),
         backgroundColor: color,
         borderColor: color,
         textColor,
-        // extendedProps: {
-        //   activityId: activity.id,
-        //   activityType: activity.type,
-        //   eventType: 'end',
-        // },
       })
     }
   }
@@ -231,7 +230,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Course end date (red)
+    // course end date (red)
     if (course.endDate) {
       calendarEvents.push({
         id: 'course-end',
@@ -245,7 +244,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Group formation deadline (red)
+    // group formation deadline (red)
     if (course.groupDeadlineDate) {
       calendarEvents.push({
         id: 'group-deadline',
@@ -259,7 +258,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Live quizzes - color 1
+    // live quizzes - color 1
     if (course.liveQuizzesInfo) {
       course.liveQuizzesInfo.forEach((quiz) => {
         addActivityEvents(
@@ -271,7 +270,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Practice quizzes (only in calendar) - color 2
+    // practice quizzes (only in calendar) - color 2
     if (course.practiceQuizzesInfo) {
       course.practiceQuizzesInfo.forEach((quiz) => {
         addActivityEvents(
@@ -283,7 +282,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Microlearnings (all day and start & end entries) - color 3
+    // microlearnings (all day and start & end entries) - color 3
     if (course.microLearningsInfo) {
       course.microLearningsInfo.forEach((microLearning) => {
         addActivityEvents(
@@ -295,7 +294,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
       })
     }
 
-    // Group activities (all day and start & end entries) - color 4
+    // group activities (all day and start & end entries) - color 4
     if (course.groupActivitiesInfo) {
       course.groupActivitiesInfo.forEach((groupActivity) => {
         addActivityEvents(
@@ -309,7 +308,8 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
 
     return calendarEvents
   }, [course, t])
-  // Handler functions for custom toolbar
+
+  // handler functions for custom toolbar
   const handlePrev = () => {
     const calendarApi = calendarRef.current?.getApi()
     if (calendarApi) {
@@ -374,7 +374,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
             }}
           >
             <Button.Icon icon={faCalendarDays} />
-            <Button.Label>Month</Button.Label>
+            <Button.Label>{t('shared.generic.month')}</Button.Label>
           </Button>
           <Button
             onClick={() => handleViewChange('timeGridWeek')}
@@ -384,7 +384,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
             }}
           >
             <Button.Icon icon={faCalendarWeek} />
-            <Button.Label>Week</Button.Label>
+            <Button.Label>{t('shared.generic.week')}</Button.Label>
           </Button>
           <Button
             onClick={() => handleViewChange('timeGridDay')}
@@ -394,7 +394,7 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
             }}
           >
             <Button.Icon icon={faCalendarDay} />
-            <Button.Label>Day</Button.Label>
+            <Button.Label>{t('shared.generic.day')}</Button.Label>
           </Button>
         </div>
       </div>
@@ -438,13 +438,12 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
             info.el.style.opacity = '1'
             info.el.style.borderColor = info.event.borderColor || 'hsl(0 0% 0%)'
 
-            // fix text rendering for time grid events
+            // allow multi-line text rendering for time grid events
             if (info.view.type.includes('timeGrid')) {
               info.el.style.fontSize = '12px'
               info.el.style.padding = '2px 6px'
               info.el.style.overflow = 'hidden'
-              info.el.style.textOverflow = 'ellipsis'
-              info.el.style.whiteSpace = 'nowrap'
+              info.el.style.whiteSpace = 'normal'
               info.el.style.fontWeight = '500'
               info.el.style.lineHeight = '1.2'
               info.el.style.backgroundColor = bgColor
@@ -452,9 +451,20 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
             }
           }}
           eventClick={(info) => {
-            console.log('Event clicked:', info.event.title)
-            // TODO: open activity list and highlight clicked activity
-            alert(`Clicked on event: ${info.event.title}`)
+            const activityId = info.event._def.publicId.split('__')[0]
+            const activityType = info.event._def.publicId.split('__')[1]
+            switchToListView()
+            setHighlightedActivity(activityId)
+
+            if (activityType === ActivityType.LiveQuiz) {
+              setActivityList('liveQuizzes')
+            } else if (activityType === ActivityType.PracticeQuiz) {
+              setActivityList('practiceQuizzes')
+            } else if (activityType === ActivityType.MicroLearning) {
+              setActivityList('microLearnings')
+            } else if (activityType === ActivityType.GroupActivity) {
+              setActivityList('groupActivities')
+            }
           }}
           datesSet={(info) => {
             // Update title when dates change (navigation)
@@ -468,4 +478,4 @@ function ShadcnStyledFullCalendar({ course }: { course: Course }) {
   )
 }
 
-export default ShadcnStyledFullCalendar
+export default CourseCalendarView
