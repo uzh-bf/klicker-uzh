@@ -346,13 +346,25 @@ function CourseCalendarView({
       {/* custom toolbar */}
       <div className="mb-4 flex flex-row items-center justify-between gap-4">
         <div className="flex flex-shrink-0 items-center gap-1">
-          <Button onClick={handlePrev} className={{ root: 'h-8 w-8' }}>
+          <Button
+            onClick={handlePrev}
+            className={{ root: 'h-8 w-8' }}
+            data-cy="calendar-prev"
+          >
             <Button.Icon withoutLabel icon={faChevronLeft} />
           </Button>
-          <Button onClick={handleNext} className={{ root: 'mr-1 h-8 w-8' }}>
+          <Button
+            onClick={handleNext}
+            className={{ root: 'mr-1 h-8 w-8' }}
+            data-cy="calendar-next"
+          >
             <Button.Icon withoutLabel icon={faChevronRight} />
           </Button>
-          <Button onClick={handleToday} className={{ root: 'h-8' }}>
+          <Button
+            onClick={handleToday}
+            className={{ root: 'h-8' }}
+            data-cy="calendar-today"
+          >
             <Button.Label>Today</Button.Label>
           </Button>
         </div>
@@ -370,6 +382,7 @@ function CourseCalendarView({
             className={{
               root: 'hover:bg-accent/50 h-8 rounded-none border-0 px-3',
             }}
+            data={{ cy: 'calendar-month-view' }}
           >
             <Button.Icon icon={faCalendarDays} />
             <Button.Label>{t('shared.generic.month')}</Button.Label>
@@ -380,6 +393,7 @@ function CourseCalendarView({
             className={{
               root: 'hover:bg-accent/50 h-8 rounded-none border-0 px-3',
             }}
+            data={{ cy: 'calendar-week-view' }}
           >
             <Button.Icon icon={faCalendarWeek} />
             <Button.Label>{t('shared.generic.week')}</Button.Label>
@@ -390,6 +404,7 @@ function CourseCalendarView({
             className={{
               root: 'hover:bg-accent/50 h-8 rounded-none border-0 px-3',
             }}
+            data={{ cy: 'calendar-day-view' }}
           >
             <Button.Icon icon={faCalendarDay} />
             <Button.Label>{t('shared.generic.day')}</Button.Label>
