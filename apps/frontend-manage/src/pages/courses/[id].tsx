@@ -164,7 +164,6 @@ function CourseOverviewPage() {
 
       <div className="mt-4 flex flex-col gap-4 lg:flex-row">
         {calendarView ? (
-          // TODO: extract this to a separate components
           <div className="flex flex-1 basis-3/5 flex-col">
             <Button
               basic

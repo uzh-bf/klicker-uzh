@@ -64,8 +64,6 @@ function CourseCalendarView({
     }
   }
 
-  console.log(course)
-
   // helper function to add events for activities with duration
   const addActivityEvents = (
     activity: ActivityInfo,
