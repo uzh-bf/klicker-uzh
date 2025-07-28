@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/util'
 import Prisma from '../../dist/index.js'
 import {
+  COURSE_ID_CALENDAR,
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
@@ -297,6 +298,27 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  await prisma.course.upsert(
+    prepareCourse({
+      id: COURSE_ID_CALENDAR,
+      name: 'Digital Innovation & Analytics',
+      displayName: 'Digital Innovation & Analytics',
+      description:
+        'An advanced course exploring digital transformation, data analytics, AI, and innovation strategies. Features comprehensive calendar-based learning with diverse activity schedules.',
+      isGamificationEnabled: true,
+      ownerId: USER_ID_TEST,
+      color: '#8B5CF6',
+      pinCode: 742638291,
+      startDate: new Date('2025-07-01T00:00'),
+      endDate: new Date('2025-08-31T23:59'),
+      isGroupCreationEnabled: true,
+      groupDeadlineDate: new Date('2025-07-15T23:59'),
+      maxGroupSize: 4,
+      preferredGroupSize: 3,
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+    })
+  )
+
   const questionsTest: (Prisma.Element & {
     answerCollection?:
       | (Prisma.AnswerCollection & { entries: Prisma.AnswerCollectionEntry[] })
@@ -580,6 +602,115 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         update: {},
       })
     }
+  }
+
+  // create calendar course live quizzes with diverse scheduling patterns
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const currentDate = today
+
+  const calendarLiveQuizzes = [
+    {
+      id: 'bdde8a26-1dca-4a30-93ab-accd52849cef',
+      name: 'Digital Transformation Kickoff',
+      displayName: 'Digital Transformation Kickoff Session',
+      description:
+        'Introduction to digital transformation concepts and methodologies.',
+      status: Prisma.PublicationStatus.DRAFT,
+      pointsMultiplier: 1.5,
+    },
+    {
+      id: '3ce1b871-809a-4f7a-b3de-e238a4e6e3bc',
+      name: 'Data Analytics Deep Dive',
+      displayName: 'Data Analytics Workshop',
+      description:
+        'Comprehensive exploration of data analytics techniques and tools.',
+      status: Prisma.PublicationStatus.DRAFT,
+      pointsMultiplier: 2.0,
+    },
+  ]
+
+  for (const quizData of calendarLiveQuizzes) {
+    const liveQuiz = await prisma.liveQuiz.upsert({
+      where: {
+        id: quizData.id,
+      },
+      create: {
+        id: quizData.id,
+        name: quizData.name,
+        displayName: quizData.displayName,
+        description: quizData.description,
+        isModerationEnabled: true,
+        isLiveQAEnabled: true,
+        isConfusionFeedbackEnabled: true,
+        isGamificationEnabled: true,
+        status: quizData.status,
+        pointsMultiplier: quizData.pointsMultiplier,
+        defaultPoints: 25,
+        defaultCorrectPoints: 50,
+        maxBonusPoints: 20,
+        timeToZeroBonus: 180,
+        blocks: {
+          create: [
+            {
+              order: 0,
+              timeLimit: 120,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    type: Prisma.ElementInstanceType.LIVE_QUIZ,
+                    elementType: Prisma.ElementType.SC,
+                    elementData: processElementData(questionsTest[0]!),
+                    options: {
+                      basePoints: 25,
+                      pointsMultiplier: quizData.pointsMultiplier,
+                    },
+                    results: { choices: Array(4).fill(0), total: 0 },
+                    anonymousResults: { choices: Array(4).fill(0), total: 0 },
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        Prisma.ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: {
+                      connect: {
+                        id: questionsTest[0]!.id,
+                      },
+                    },
+                    owner: {
+                      connect: {
+                        id: USER_ID_TEST,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        owner: {
+          connect: {
+            id: USER_ID_TEST,
+          },
+        },
+        course: {
+          connect: {
+            id: COURSE_ID_CALENDAR,
+          },
+        },
+      },
+      update: {},
+    })
+
+    // recompute derived permissions for the live quiz
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: liveQuiz.id,
+        userId: USER_ID_TEST,
+      },
+      prisma
+    )
   }
 
   // create participants
@@ -1137,6 +1268,256 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
       },
     },
+  })
+
+  // Create calendar course group activities with diverse scheduling patterns
+  const calendarGroupActivityId1 = 'f8a5868e-1a18-47f2-b8f3-ccc8c1cea9f4'
+  const calendarGroupActivity1 = await prisma.groupActivity.upsert({
+    where: {
+      id: calendarGroupActivityId1,
+    },
+    create: {
+      id: calendarGroupActivityId1,
+      name: 'Digital Innovation Challenge',
+      displayName: 'Digital Innovation Team Challenge',
+      description: `A comprehensive 10-day innovation project where teams will analyze digital transformation case studies, develop innovative solutions, and present their findings. Runs from 14 days ago to 4 days ago.`,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      // 14 days ago to 4 days ago
+      scheduledStartAt: new Date(
+        currentDate.getTime() - 14 * 24 * 60 * 60 * 1000
+      ),
+      scheduledEndAt: new Date(currentDate.getTime() - 4 * 24 * 60 * 60 * 1000),
+      parameters: {},
+      pointsMultiplier: 2.5,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({
+            activityId: calendarGroupActivityId1,
+          }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_CALENDAR,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const calendarGroupActivityId2 = 'c82187e5-a8ce-414e-9cd4-6e8243a1898e'
+  const calendarGroupActivity2 = await prisma.groupActivity.upsert({
+    where: {
+      id: calendarGroupActivityId2,
+    },
+    create: {
+      id: calendarGroupActivityId2,
+      name: 'AI Strategy Workshop',
+      displayName: 'AI Implementation Strategy Workshop',
+      description: `A short but intensive 3-day workshop focused on developing AI implementation strategies. Teams worked collaboratively from 9 to 7 days ago.`,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      // 9 days ago to 7 days ago
+      scheduledStartAt: new Date(
+        currentDate.getTime() - 9 * 24 * 60 * 60 * 1000
+      ),
+      scheduledEndAt: new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+      parameters: {},
+      pointsMultiplier: 1.8,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({
+            activityId: calendarGroupActivityId2,
+          }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards: [flashcards[0]!],
+            questions: questionsTest.slice(0, 3),
+            contentElements: [contentElements[0]!],
+            courseId: COURSE_ID_CALENDAR,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const calendarGroupActivityId3 = '1f660806-5588-4255-aec6-18024f6a41e8'
+  const calendarGroupActivity3 = await prisma.groupActivity.upsert({
+    where: {
+      id: calendarGroupActivityId3,
+    },
+    create: {
+      id: calendarGroupActivityId3,
+      name: 'Data Analytics Project',
+      displayName: 'Collaborative Data Analytics Project',
+      description: `An extended 2-week data analytics project where teams will analyze real-world datasets and develop comprehensive reports. Runs from 2 days from now to 14 days from now.`,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      // 2 days from now to 14 days from now
+      scheduledStartAt: new Date(
+        currentDate.getTime() + 2 * 24 * 60 * 60 * 1000
+      ),
+      scheduledEndAt: new Date(
+        currentDate.getTime() + 14 * 24 * 60 * 60 * 1000
+      ),
+      parameters: {},
+      pointsMultiplier: 3.0,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({
+            activityId: calendarGroupActivityId3,
+          }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards: flashcards.slice(0, 2),
+            questions: questionsTest.slice(0, 5),
+            contentElements: contentElements.slice(0, 2),
+            courseId: COURSE_ID_CALENDAR,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const calendarGroupActivityId4 = '3555a344-ae47-421d-b8ac-17507fcfea75'
+  const calendarGroupActivity4 = await prisma.groupActivity.upsert({
+    where: {
+      id: calendarGroupActivityId4,
+    },
+    create: {
+      id: calendarGroupActivityId4,
+      name: 'Quick Innovation Sprint',
+      displayName: 'Quick Innovation Sprint',
+      description: `A rapid 6-hour innovation sprint session where teams tackle specific challenges. Scheduled for 2 days ago from 9 AM to 3 PM.`,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(
+        currentDate.getTime() - 2 * 24 * 60 * 60 * 1000
+      ), // 2 days ago
+      scheduledEndAt: new Date(
+        currentDate.getTime() - 2 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
+      ), // 2 days ago + 6 hours
+      parameters: {},
+      pointsMultiplier: 1.5,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({
+            activityId: calendarGroupActivityId4,
+          }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards: [flashcards[0]!],
+            questions: questionsTest.slice(0, 2),
+            contentElements: [contentElements[0]!],
+            courseId: COURSE_ID_CALENDAR,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const calendarGroupActivityId5 = 'c1542840-7402-4a56-aac7-cdf91d545604'
+  const calendarGroupActivity5 = await prisma.groupActivity.upsert({
+    where: {
+      id: calendarGroupActivityId5,
+    },
+    create: {
+      id: calendarGroupActivityId5,
+      name: 'Digital Marketing Campaign',
+      displayName: 'Digital Marketing Campaign Design',
+      description: `A week-long project to design and present a comprehensive digital marketing campaign. Running 9-13 days from now.`,
+      status: Prisma.PublicationStatus.SCHEDULED,
+      scheduledStartAt: new Date(
+        currentDate.getTime() + 9 * 24 * 60 * 60 * 1000
+      ), // 9 days from now
+      scheduledEndAt: new Date(
+        currentDate.getTime() + 13 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000
+      ), // 13 days from now + 9 hours
+      parameters: {},
+      pointsMultiplier: 2.2,
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({
+            activityId: calendarGroupActivityId5,
+          }),
+        ],
+      },
+      stacks: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards: flashcards.slice(0, 3),
+            questions: questionsTest.slice(0, 4),
+            contentElements: contentElements.slice(0, 2),
+            courseId: COURSE_ID_CALENDAR,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+    },
+    update: {},
   })
 
   // extract the ids of the correct answer options to the selection question
@@ -1905,6 +2286,279 @@ Once this microlearning is published, it will be immediately accessible
     update: {},
   })
 
+  // create calendar course practice quizzes with diverse scheduling
+  const calendarPracticeQuizId1 = '7c5a84ef-ad0f-423d-8061-484401cd38c2'
+  const calendarPracticeQuiz1 = await prisma.practiceQuiz.upsert({
+    where: {
+      id: calendarPracticeQuizId1,
+    },
+    create: {
+      id: calendarPracticeQuizId1,
+      name: 'Digital Transformation Fundamentals',
+      displayName: 'Digital Transformation Practice Quiz',
+      description:
+        'Comprehensive practice quiz covering digital transformation concepts. Available since 2 weeks ago.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 1.5,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      availableFrom: new Date(currentDate.getTime() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+      resetTimeDays: 7,
+      orderType: Prisma.ElementOrderType.SEQUENTIAL,
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 5),
+            questions: asyncActivityQuestions.slice(0, 8),
+            contentElements: contentElements.slice(0, 2),
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.PRACTICE_QUIZ,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const calendarPracticeQuizId2 = '31ff1123-86ed-4284-95eb-dca8b793b3ad'
+  const calendarPracticeQuiz2 = await prisma.practiceQuiz.upsert({
+    where: {
+      id: calendarPracticeQuizId2,
+    },
+    create: {
+      id: calendarPracticeQuizId2,
+      name: 'Data Analytics Mastery',
+      displayName: 'Data Analytics Practice Challenge',
+      description:
+        'Advanced practice quiz focusing on data analytics techniques. Higher difficulty with bonus point opportunities. Available since 11 days ago.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 2.0,
+      status: Prisma.PublicationStatus.SCHEDULED,
+      availableFrom: new Date(currentDate.getTime() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+      resetTimeDays: 3,
+      orderType: Prisma.ElementOrderType.SEQUENTIAL,
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 3),
+            questions: asyncActivityQuestions.slice(3, 10),
+            contentElements: [contentElements[1]!],
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.PRACTICE_QUIZ,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  // Create calendar course microlearnings with diverse scheduling patterns
+  const calendarMicrolearning1Id = '532d2483-0e39-4da4-951a-7f8c00e75600'
+  const calendarMicrolearning1 = await prisma.microLearning.upsert({
+    where: {
+      id: calendarMicrolearning1Id,
+    },
+    create: {
+      id: calendarMicrolearning1Id,
+      name: 'AI Ethics Daily',
+      displayName: 'Daily AI Ethics Insights',
+      description:
+        'Short daily sessions on AI ethics and responsible AI development. 1-hour daily commitments for 5 days starting 10 days ago.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 1.2,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(
+        currentDate.getTime() - 10 * 24 * 60 * 60 * 1000
+      ), // 10 days ago
+      scheduledEndAt: new Date(
+        currentDate.getTime() - 6 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000
+      ), // 6 days ago + 1 hour
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 4),
+            questions: asyncActivityQuestions.slice(0, 6),
+            contentElements: [contentElements[0]!],
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.MICRO_LEARNING,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const calendarMicrolearning2Id = '0e51701e-e849-4478-b6dd-8e27cf21ae2d'
+  const calendarMicrolearning2 = await prisma.microLearning.upsert({
+    where: {
+      id: calendarMicrolearning2Id,
+    },
+    create: {
+      id: calendarMicrolearning2Id,
+      name: 'Innovation Weekend Intensive',
+      displayName: 'Weekend Innovation Deep Dive',
+      description:
+        'Intensive weekend learning session covering innovation methodologies. 6-hour sessions on today and tomorrow.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 2.5,
+      status: Prisma.PublicationStatus.SCHEDULED,
+      scheduledStartAt: new Date(currentDate.getTime()),
+      scheduledEndAt: new Date(
+        currentDate.getTime() + 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
+      ), // Tomorrow + 6 hours
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 6),
+            questions: asyncActivityQuestions.slice(0, 12),
+            contentElements: contentElements.slice(0, 3),
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.MICRO_LEARNING,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const calendarMicroLearning3Id = 'e5de398b-3c01-4cac-98fc-51b4593e1719'
+  const calendarMicrolearning3 = await prisma.microLearning.upsert({
+    where: {
+      id: calendarMicroLearning3Id,
+    },
+    create: {
+      id: calendarMicroLearning3Id,
+      name: 'Agile Learning Path',
+      displayName: 'Comprehensive Agile Learning Journey',
+      description:
+        'Extended learning path covering agile methodologies over 10 days. Flexible scheduling from 4 days from now to 14 days from now.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 1.8,
+      status: Prisma.PublicationStatus.SCHEDULED,
+      scheduledStartAt: new Date(
+        currentDate.getTime() + 4 * 24 * 60 * 60 * 1000
+      ), // 4 days from now
+      scheduledEndAt: new Date(
+        currentDate.getTime() +
+          14 * 24 * 60 * 60 * 1000 +
+          23 * 60 * 60 * 1000 +
+          59 * 60 * 1000
+      ), // 14 days from now + 23:59
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 8),
+            questions: asyncActivityQuestions.slice(0, 15),
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.MICRO_LEARNING,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const calendarMicrolearning4Id = 'a4d6f5ca-9d81-4f94-be71-1b62c85eb745'
+  const calendarMicrolearning4 = await prisma.microLearning.upsert({
+    where: {
+      id: calendarMicrolearning4Id,
+    },
+    create: {
+      id: calendarMicrolearning4Id,
+      name: 'Digital Marketing Quick Bites',
+      displayName: 'Bite-sized Digital Marketing Sessions',
+      description:
+        'Short 2-hour sessions on digital marketing trends and strategies. Running 11-13 days from now.',
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_CALENDAR,
+        },
+      },
+      pointsMultiplier: 1.3,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(
+        currentDate.getTime() + 11 * 24 * 60 * 60 * 1000 + 13 * 60 * 60 * 1000
+      ), // 11 days from now + 13:00
+      scheduledEndAt: new Date(
+        currentDate.getTime() + 13 * 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000
+      ), // 13 days from now + 15:00
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards.slice(0, 3),
+            questions: asyncActivityQuestions.slice(0, 5),
+            contentElements: [contentElements[2]!],
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_CALENDAR,
+            activityType: ActivityType.MICRO_LEARNING,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
   // update derived permissions for all test courses
   await recomputeDerivedPermissions(
     {
@@ -1923,6 +2577,13 @@ Once this microlearning is published, it will be immediately accessible
   await recomputeDerivedPermissions(
     {
       courseId: COURSE_ID_TEST3,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      courseId: COURSE_ID_CALENDAR,
       userId: USER_ID_TEST,
     },
     prisma

@@ -156,6 +156,7 @@ function Activities() {
                 <ActivityList
                   activities={filteredActivities}
                   noActivities={dataActivities?.userActivities?.length === 0}
+                  highlightedActivity={null}
                 />
               )}
             </div>

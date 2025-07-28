@@ -153,6 +153,8 @@ export default {
       submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
+      startNoun: 'Start',
+      end: 'Ende',
       continue: 'Weiter',
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
@@ -374,6 +376,10 @@ export default {
       selected: 'Ausgewählt',
       seconds: 'Sekunden',
       moreInformation: 'Mehr Informationen',
+      today: 'Heute',
+      month: 'Monat',
+      week: 'Woche',
+      day: 'Tag',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -398,6 +404,12 @@ export default {
       CASE_STUDY: 'Fallstudie',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'ÜQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -2472,6 +2484,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nQuestions: '{number} Fragen',
       courseQRDescription:
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
+      calendarView: 'Kalenderansicht',
+      backToListView: 'Zurück zur Listenansicht',
+      calendarAllDay: 'Ganztägig',
+      calendarMore: 'weitere',
+      calendarNoEntries: 'Keine Einträge',
+      calendarCourseStart: 'Kursstart',
+      calendarCourseEnd: 'Kursende',
+      calendarCourseGroupFormationDeadline: 'Gruppenbildungs-Deadline',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
