@@ -29,7 +29,7 @@ const PEOPLE: {
   },
   {
     name: 'Patrick Aldover',
-    role: 'Project Developer',
+    role: 'Project Maintainer',
     info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/patrick-aldover.html',
     github: 'https://github.com/jabbadizzleCode',
   },
