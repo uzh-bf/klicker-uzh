@@ -76,6 +76,11 @@ export async function getUserActivities(ctx: ContextWithUser) {
     return null
   }
 
+  // console.log(
+  //   'This is the user',
+  //   user.objects[2]?.liveQuiz.blocks[0]?.elements[0].elementData.options ??
+  //     'No elements found'
+  // )
   // map the activities to a unified format
   const activities = user.objects.flatMap((object) => {
     const isOwner = object.permissionLevel === DB.PermissionLevel.OWNER
@@ -319,6 +324,11 @@ export async function getLiveQuizDetails(
     return null
   }
 
+  const defaultPoints = liveQuiz.defaultPoints
+  const defaultCorrectPoints = liveQuiz.defaultCorrectPoints
+  const defaultMaxBonusPoints = liveQuiz.maxBonusPoints
+  const pointsMultiplier = liveQuiz.pointsMultiplier
+
   const stacks = liveQuiz.blocks.map((block) => ({
     id: block.id,
     numOfParticipants: block.elements[0]
@@ -326,14 +336,103 @@ export async function getLiveQuizDetails(
         block.elements[0].anonymousResults.total
       : 0,
     timeLimit: block.timeLimit,
-    elements: block.elements.map((instance) => ({
-      id: instance.id,
-      name: instance.elementData.name,
-      type: instance.elementType,
-    })),
+    stackPoints: block.elements.reduce((elementSum, instance) => {
+      if (
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      ) {
+        // no points awarded
+        return elementSum
+      }
+
+      const { elementData } = instance
+
+      const hasBasePoints = elementData.basePoints
+      const pointsMultiplier = elementData.pointsMultiplier
+      const hasSampleSolution =
+        'hasSampleSolution' in elementData.options
+          ? ((elementData.options as { hasSampleSolution?: boolean })
+              .hasSampleSolution ?? false)
+          : false
+
+      const basePoints = hasBasePoints ? defaultPoints : 0
+      const correctnessPoints = hasSampleSolution ? defaultCorrectPoints : 0
+      const maxBonusPoints = hasSampleSolution ? defaultMaxBonusPoints : 0
+
+      const totalPoints =
+        basePoints + pointsMultiplier * (correctnessPoints + maxBonusPoints)
+
+      return elementSum + totalPoints
+    }, 0),
+    elements: block.elements.map((instance) => {
+      const isContentOrFlashcard =
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      const { elementData } = instance
+
+      const hasBasePoints = elementData.basePoints
+      const pointsMultiplier = elementData.pointsMultiplier
+      const hasSampleSolution =
+        'hasSampleSolution' in elementData.options
+          ? ((elementData.options as { hasSampleSolution?: boolean })
+              .hasSampleSolution ?? false)
+          : false
+
+      const basePoints = isContentOrFlashcard
+        ? 0
+        : hasBasePoints
+          ? defaultPoints
+          : 0
+      const correctnessPoints = isContentOrFlashcard
+        ? 0
+        : hasSampleSolution
+          ? pointsMultiplier * defaultCorrectPoints
+          : 0
+      const bonusPoints = isContentOrFlashcard
+        ? 0
+        : hasSampleSolution
+          ? pointsMultiplier * defaultMaxBonusPoints
+          : 0
+      const totalPoints = basePoints + (correctnessPoints + bonusPoints)
+      return {
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+        pointsMultiplier: pointsMultiplier,
+        basePoints: basePoints,
+        correctnessPoints: correctnessPoints,
+        bonusPoints: bonusPoints,
+        totalPoints: totalPoints,
+        instance: instance,
+      }
+    }),
   }))
 
-  return { id: liveQuiz.id, stacks }
+  const metadata = {
+    name: liveQuiz.name,
+    displayName: liveQuiz.displayName,
+    type: ActivityType.LIVE_QUIZ,
+    pointsMultiplier: pointsMultiplier,
+    totalBasePoints: stacks.reduce(
+      (sum, stack) =>
+        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
+      0
+    ),
+    totalCorrectnessPoints: stacks.reduce(
+      (sum, stack) =>
+        sum +
+        stack.elements.reduce((elSum, el) => elSum + el.correctnessPoints, 0),
+      0
+    ),
+    totalBonusPoints: stacks.reduce(
+      (sum, stack) =>
+        sum + stack.elements.reduce((elSum, el) => elSum + el.bonusPoints, 0),
+      0
+    ),
+    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+  }
+
+  return { id: liveQuiz.id, metadata, stacks }
 }
 
 export async function getPracticeQuizDetails(
@@ -354,20 +453,75 @@ export async function getPracticeQuizDetails(
     return null
   }
 
+  const pointsMultiplier = practiceQuiz.pointsMultiplier
+
   const stacks = practiceQuiz.stacks.map((block) => ({
     id: block.id,
     numOfParticipants: block.elements[0]
       ? block.elements[0].results.total +
         block.elements[0].anonymousResults.total
       : 0,
-    elements: block.elements.map((instance) => ({
-      id: instance.id,
-      name: instance.elementData.name,
-      type: instance.elementType,
-    })),
+    stackPoints: block.elements.reduce((elementSum, instance) => {
+      if (
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      ) {
+        // no points awarded
+        return elementSum
+      }
+
+      const { elementData } = instance
+
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const maxPoints = pointsMultiplier * 10
+
+      return elementSum + maxPoints
+    }, 0),
+    elements: block.elements.map((instance) => {
+      const isContentOrFlashcard =
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      const { elementData } = instance
+
+      const hasBasePoints = elementData.basePoints
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const basePoints = isContentOrFlashcard
+        ? 0
+        : hasBasePoints
+          ? pointsMultiplier * 10
+          : 0
+      const totalPoints = basePoints
+      return {
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+        pointsMultiplier: pointsMultiplier,
+        basePoints: basePoints,
+        correctnessPoints: null,
+        bonusPoints: null,
+        totalPoints: totalPoints,
+        instance: instance,
+      }
+    }),
   }))
 
-  return { id: practiceQuiz.id, stacks }
+  const metadata = {
+    name: practiceQuiz.name,
+    displayName: practiceQuiz.displayName,
+    type: ActivityType.PRACTICE_QUIZ,
+    pointsMultiplier: pointsMultiplier,
+    totalBasePoints: stacks.reduce(
+      (sum, stack) =>
+        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
+      0
+    ),
+    totalCorrectnessPoints: null,
+    totalBonusPoints: null,
+    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+  }
+  return { id: practiceQuiz.id, metadata, stacks }
 }
 
 export async function getMicroLearningDetails(
@@ -388,20 +542,75 @@ export async function getMicroLearningDetails(
     return null
   }
 
+  const pointsMultiplier = microLearning.pointsMultiplier
+
   const stacks = microLearning.stacks.map((block) => ({
     id: block.id,
     numOfParticipants: block.elements[0]
       ? block.elements[0].results.total +
         block.elements[0].anonymousResults.total
       : 0,
-    elements: block.elements.map((instance) => ({
-      id: instance.id,
-      name: instance.elementData.name,
-      type: instance.elementType,
-    })),
+    stackPoints: block.elements.reduce((elementSum, instance) => {
+      if (
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      ) {
+        // no points awarded
+        return elementSum
+      }
+
+      const { elementData } = instance
+
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const maxPoints = pointsMultiplier * 10
+
+      return elementSum + maxPoints
+    }, 0),
+    elements: block.elements.map((instance) => {
+      const isContentOrFlashcard =
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      const { elementData } = instance
+
+      const hasBasePoints = elementData.basePoints
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const basePoints = isContentOrFlashcard
+        ? 0
+        : hasBasePoints
+          ? pointsMultiplier * 10
+          : 0
+      const totalPoints = basePoints
+      return {
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+        pointsMultiplier: pointsMultiplier,
+        basePoints: basePoints,
+        correctnessPoints: null,
+        bonusPoints: null,
+        totalPoints: totalPoints,
+        instance: instance,
+      }
+    }),
   }))
 
-  return { id: microLearning.id, stacks }
+  const metadata = {
+    name: microLearning.name,
+    displayName: microLearning.displayName,
+    type: ActivityType.MICRO_LEARNING,
+    pointsMultiplier: pointsMultiplier,
+    totalBasePoints: stacks.reduce(
+      (sum, stack) =>
+        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
+      0
+    ),
+    totalCorrectnessPoints: null,
+    totalBonusPoints: null,
+    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+  }
+  return { id: microLearning.id, metadata, stacks }
 }
 
 export async function getGroupActivityDetails(
@@ -425,18 +634,74 @@ export async function getGroupActivityDetails(
     return null
   }
 
+  const pointsMultiplier = groupActivity.pointsMultiplier
+
   const stacks = groupActivity.stacks.map((block) => ({
     id: block.id,
     numOfParticipants: block.elements[0]
       ? block.elements[0].results.total +
         block.elements[0].anonymousResults.total
       : 0,
-    elements: block.elements.map((instance) => ({
-      id: instance.id,
-      name: instance.elementData.name,
-      type: instance.elementType,
-    })),
+    stackPoints: block.elements.reduce((elementSum, instance) => {
+      if (
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      ) {
+        // no points awarded
+        return elementSum
+      }
+
+      const { elementData } = instance
+
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const maxPoints = pointsMultiplier * 10
+
+      return elementSum + maxPoints
+    }, 0),
+    elements: block.elements.map((instance) => {
+      const isContentOrFlashcard =
+        instance.elementType === DB.ElementType.CONTENT ||
+        instance.elementType === DB.ElementType.FLASHCARD
+      const { elementData } = instance
+
+      const hasBasePoints = elementData.basePoints
+      const pointsMultiplier = elementData.pointsMultiplier
+
+      const basePoints = isContentOrFlashcard
+        ? 0
+        : hasBasePoints
+          ? pointsMultiplier * 25
+          : 0
+      const totalPoints = basePoints
+      return {
+        id: instance.id,
+        name: instance.elementData.name,
+        type: instance.elementType,
+        pointsMultiplier: pointsMultiplier,
+        basePoints: basePoints,
+        correctnessPoints: null,
+        bonusPoints: null,
+        totalPoints: totalPoints,
+        instance: instance,
+      }
+    }),
   }))
 
-  return { id: groupActivity.id, stacks }
+  const metadata = {
+    name: groupActivity.name,
+    displayName: groupActivity.displayName,
+    type: ActivityType.GROUP_ACTIVITY,
+    pointsMultiplier: pointsMultiplier,
+    totalBasePoints: stacks.reduce(
+      (sum, stack) =>
+        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
+      0
+    ),
+    totalCorrectnessPoints: null,
+    totalBonusPoints: null,
+    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+  }
+
+  return { id: groupActivity.id, metadata, stacks }
 }

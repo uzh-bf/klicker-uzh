@@ -103,7 +103,7 @@ export const PARTICIPANT_GROUP_IDS = [
   '11c06c89-0cb4-4d8e-b052-b711f327b8c4',
 ]
 
-const USER_ID_TEST = '73c018c2-d7ad-4844-84b0-814e33420423'
+const USER_ID_TEST = '76047345-3801-4628-ae7b-adbebcfe8821'
 
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)

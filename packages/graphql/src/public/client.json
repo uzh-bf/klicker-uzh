@@ -162,7 +162,7 @@
    "createActivityTemplate": "bddac53e278ccf95547c5048e6af744e646f0df940efe7a4b0bdcd0b610c7641",
    "GetActiveUserCourses": "9cc3e708e82b00190023517f6e286006c23c92a82e75028873d15d15c9047037",
    "GetActivityAnalytics": "bcbe895236bd0027e2db37d5884645cfa3230e90a7ce6de893783c5fdc54fa1b",
-   "GetActivityDetails": "a753dbabc0e3936139250889507d8c7b93b173b7b3b67d449654e36caa6826fa",
+   "GetActivityDetails": "c32e9d30c3e29fe9ebc3a031bfbf3bd1a17264ab15bc8873dcc3e009685cb4a5",
    "GetActivityTemplate": "76e5a05b34e721087d416156dd847e6b73ff89f8e81f4627cb8dea4a36d2fb00",
    "GetAnswerCollectionCatalogInfo": "c3c4b1990cc245dbf1c006da6cf8269c622981c251eac3a0392b47d87000bc46",
    "GetAnswerCollectionsElements": "c0fb446d39dcf0abfa86bc00dbecb29dffa8716cbd5dca352c3d87140eb2f374",

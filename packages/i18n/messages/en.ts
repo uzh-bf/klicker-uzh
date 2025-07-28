@@ -1017,6 +1017,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
+      elementPreviewRedirect: 'Open preview in a new tab',
+      pointsOverviewDescription: 'Points Overview',
+      elementTypDescription: 'Type',
+      elementPreviewDescription: 'Preview',
+      basePointsDescription: 'Base Points',
+      correctnessPointsDescription: 'Correctness Points',
+      bonusPointsDescription: 'Bonus Points',
+      totalPointsDescription: 'Total Points',
+      pointTypeDescription: 'Point Type',
+      pointAmountDescription: 'Amount',
+      pointsMultiplierDescription: 'Multiplier',
     },
     admin: {
       pageName: 'Admin Panel',

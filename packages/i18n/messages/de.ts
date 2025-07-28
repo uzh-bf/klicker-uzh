@@ -1018,6 +1018,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
+      elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
+      pointsOverviewDescription: 'Punkteübersicht',
+      elementTypDescription: 'Typ',
+      elementPreviewDescription: 'Vorschau',
+      basePointsDescription: 'Basis-Punkte',
+      correctnessPointsDescription: 'Korrektheits-Punkte',
+      bonusPointsDescription: 'Bonus-Punkte',
+      totalPointsDescription: 'Gesamtpunkte',
+      pointTypeDescription: 'Punkttyp',
+      pointAmountDescription: 'Menge',
+      pointsMultiplierDescription: 'Multiplikator',
     },
     admin: {
       pageName: 'Admin-Panel',
