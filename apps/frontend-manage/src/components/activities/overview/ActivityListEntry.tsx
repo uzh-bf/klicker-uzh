@@ -38,10 +38,12 @@ function ActivityListEntry({
   activity,
   highlighted = false,
   hideType = false,
+  highlightedActivity,
 }: {
   activity: ActivityInfo
   highlighted?: boolean
   hideType?: boolean
+  highlightedActivity: string | null
 }) {
   const t = useTranslations()
   const [showDetails, setShowDetails] = useState<boolean>(false)
@@ -98,7 +100,9 @@ function ActivityListEntry({
       <div
         className={twMerge(
           'flex flex-row items-start justify-between rounded-md border border-solid px-4 py-3 shadow-sm transition-all hover:shadow-md',
-          highlighted && 'border-primary-100 bg-orange-50'
+          highlighted && 'border-primary-100 bg-orange-50',
+          highlightedActivity === activity.id &&
+            'border-primary-100 bg-orange-100'
         )}
         data-cy={`activity-${activity.type}-${activity.name}`}
       >

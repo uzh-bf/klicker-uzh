@@ -668,6 +668,18 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.0)
+      '@fullcalendar/daygrid':
+        specifier: 6.1.18
+        version: 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/interaction':
+        specifier: 6.1.18
+        version: 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/react':
+        specifier: 6.1.18
+        version: 6.1.18(@fullcalendar/core@6.1.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@fullcalendar/timegrid':
+        specifier: 6.1.18
+        version: 6.1.18(@fullcalendar/core@6.1.18)
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -707,6 +719,9 @@ importers:
       formik:
         specifier: 2.4.6
         version: 2.4.6(react@19.1.0)
+      fullcalendar:
+        specifier: 6.1.18
+        version: 6.1.18
       generate-password:
         specifier: 1.7.1
         version: 1.7.1
@@ -4571,6 +4586,41 @@ packages:
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ~1 || ~6
       react: '>=16.3'
+
+  '@fullcalendar/core@6.1.18':
+    resolution: {integrity: sha512-cD7XtZIZZ87Cg2+itnpsONCsZ89VIfLLDZ22pQX4IQVWlpYUB3bcCf878DhWkqyEen6dhi5ePtBoqYgm5K+0fQ==}
+
+  '@fullcalendar/daygrid@6.1.18':
+    resolution: {integrity: sha512-s452Zle1SdMEzZDw+pDczm8m3JLIZzS9ANMThXTnqeqJewW1gqNFYas18aHypJSgF9Fh9rDJjTSUw04BpXB/Mg==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
+
+  '@fullcalendar/interaction@6.1.18':
+    resolution: {integrity: sha512-f/mD5RTjzw+Q6MGTMZrLCgIrQLIUUO9NV/58aM2J6ZBQZeRlNizDqmqldqyG+j49zj2vFhUfZibPrVKWm5yA4Q==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
+
+  '@fullcalendar/list@6.1.18':
+    resolution: {integrity: sha512-XPZI50mq3HXyDQ5sT3jmqQUuwG8zQb5H14dQIUAmOHAIFRA3WpkxlzrXO0U1SrosvGySMPyyNNxvMKI1Q/jL7A==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
+
+  '@fullcalendar/multimonth@6.1.18':
+    resolution: {integrity: sha512-4WSqtheJgWQMcJZjDDwTCYHe1JWTGZyJdCbIs84DuKbwZWH96g07Kr/3xDwsxiHgVX0iFlwljtkp2OmtMxQoDA==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
+
+  '@fullcalendar/react@6.1.18':
+    resolution: {integrity: sha512-Jwvb+T+/1yGZKe+UYXn0id022HJm0Fq2X/PGFvVh/QRYAI/6xPMRvJrwercBkToxf6LjqYXrDO+/NhRN6IDlmg==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
+      react: ^16.7.0 || ^17 || ^18 || ^19
+      react-dom: ^16.7.0 || ^17 || ^18 || ^19
+
+  '@fullcalendar/timegrid@6.1.18':
+    resolution: {integrity: sha512-T/ouhs+T1tM8JcW7Cjx+KiohL/qQWKqvRITwjol8ktJ1e1N/6noC40/obR1tyolqOxMRWHjJkYoj9fUqfoez9A==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.18
 
   '@graphql-codegen/add@5.0.3':
     resolution: {integrity: sha512-SxXPmramkth8XtBlAHu4H4jYcYXM/o3p01+psU+0NADQowA8jtYkK6MW5rV6T+CxkEaNZItfSmZRPgIuypcqnA==}
@@ -11329,6 +11379,9 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  fullcalendar@6.1.18:
+    resolution: {integrity: sha512-jwZrCleBhY78j+uBf97FW2rgzjH6nmCpfx0p0m+XSNPZrKWbsk759ri1QWXS3PoISrHjcU5wFM4dRPP9inp5Pg==}
+
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
@@ -15263,6 +15316,9 @@ packages:
     resolution: {integrity: sha512-JyhErpYOvBV1hEPwIxc/fHWXPfnEGdRKxc8gFdAZ7XV4tlzyzG847XAyEZqoDnynP88akM4eaHcSOzNcLWFguw==}
     peerDependencies:
       preact: '>=10'
+
+  preact@10.12.1:
+    resolution: {integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==}
 
   preact@10.25.4:
     resolution: {integrity: sha512-jLdZDb+Q+odkHJ+MpW/9U5cODzqnB+fy2EiHSZES7ldV5LK7yjlVzTp7R8Xy6W6y75kfK8iWYtFVH7lvjwrCMA==}
@@ -21967,6 +22023,38 @@ snapshots:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       prop-types: 15.8.1
       react: 19.1.0
+
+  '@fullcalendar/core@6.1.18':
+    dependencies:
+      preact: 10.12.1
+
+  '@fullcalendar/daygrid@6.1.18(@fullcalendar/core@6.1.18)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+
+  '@fullcalendar/interaction@6.1.18(@fullcalendar/core@6.1.18)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+
+  '@fullcalendar/list@6.1.18(@fullcalendar/core@6.1.18)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+
+  '@fullcalendar/multimonth@6.1.18(@fullcalendar/core@6.1.18)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+      '@fullcalendar/daygrid': 6.1.18(@fullcalendar/core@6.1.18)
+
+  '@fullcalendar/react@6.1.18(@fullcalendar/core@6.1.18)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
+  '@fullcalendar/timegrid@6.1.18(@fullcalendar/core@6.1.18)':
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+      '@fullcalendar/daygrid': 6.1.18(@fullcalendar/core@6.1.18)
 
   '@graphql-codegen/add@5.0.3(graphql@16.9.0)':
     dependencies:
@@ -30278,6 +30366,15 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  fullcalendar@6.1.18:
+    dependencies:
+      '@fullcalendar/core': 6.1.18
+      '@fullcalendar/daygrid': 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/interaction': 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/list': 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/multimonth': 6.1.18(@fullcalendar/core@6.1.18)
+      '@fullcalendar/timegrid': 6.1.18(@fullcalendar/core@6.1.18)
+
   function-bind@1.1.2: {}
 
   function.prototype.name@1.1.8:
@@ -35321,6 +35418,8 @@ snapshots:
     dependencies:
       preact: 10.25.4
       pretty-format: 3.8.0
+
+  preact@10.12.1: {}
 
   preact@10.25.4: {}
 

@@ -59,7 +59,7 @@ function ActivityActions({
           className={{
             viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
             item: 'py-0.5 text-sm',
-            trigger: 'h-8 w-8 border-none text-sm',
+            trigger: 'h-8 w-8 border-none bg-transparent text-sm',
           }}
         />
       )}
