@@ -2546,8 +2546,6 @@ type User {
   firstLogin: Boolean!
   id: ID!
   locale: LocaleType!
-  loginToken: String
-  loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
   privatePreview: Boolean!
   publicPreview: Boolean!

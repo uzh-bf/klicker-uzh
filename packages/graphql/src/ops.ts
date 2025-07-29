@@ -4230,8 +4230,6 @@ export type User = {
   firstLogin: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   locale: LocaleType;
-  loginToken?: Maybe<Scalars['String']['output']>;
-  loginTokenExpiresAt?: Maybe<Scalars['Date']['output']>;
   mediaFiles?: Maybe<Array<MediaFile>>;
   privatePreview: Scalars['Boolean']['output'];
   publicPreview: Scalars['Boolean']['output'];

@@ -84,8 +84,6 @@ model User {
   lastLoginAt         DateTime?
   deletionToken       String?
   deletionRequestedAt DateTime?
-  loginToken          String?
-  loginTokenExpiresAt DateTime?
 
   locale Locale @default(en)
 
