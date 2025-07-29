@@ -151,6 +151,8 @@ export default {
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
+      startNoun: 'Start',
+      end: 'End',
       continue: 'Continue',
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -372,6 +374,10 @@ export default {
       selected: 'Selected',
       seconds: 'seconds',
       moreInformation: 'More information',
+      today: 'Today',
+      month: 'Month',
+      week: 'Week',
+      day: 'Day',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -396,6 +402,12 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'PQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -2340,9 +2352,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupDeadlineChangedToPast:
         'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
       gamificationGroupsFixed:
-        'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
+        'Gamification and group creation are enabled for this course. These settings cannot be disabled once gamified activities or participant groups exist. Initially disabled options can be enabled later.',
       gamificationFixed:
-        'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+        'Gamification is enabled for this course. This setting cannot be disabled once gamified activities are assigned. Initially disabled options can be enabled later.',
       openPreview: 'Open Preview',
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
@@ -2443,6 +2455,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nQuestions: '{number} questions',
       courseQRDescription:
         'Share this link or QR code with your course participants to allow them to join.',
+      calendarView: 'Calendar View',
+      backToListView: 'Back to List View',
+      calendarAllDay: 'All day',
+      calendarMore: 'more',
+      calendarNoEntries: 'No entries',
+      calendarCourseStart: 'Course Start',
+      calendarCourseEnd: 'Course End',
+      calendarCourseGroupFormationDeadline: 'Group Formation Deadline',
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
@@ -2519,9 +2539,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No anonymous responses have been submitted for elements in this microlearning yet.',
       anonResponsesToMicroLearning:
         '{number} anonymous response(s) have been submitted for elements in this microlearning.',
-      noStartedInstancesLoosingAccess:
+      noStartedInstancesLosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
-      startedInstancesLoosingAccess:
+      startedInstancesLosingAccess:
         '{number} group(s) have started the group activity but have not submitted any results yet. They will lose access to the group activity.',
       noSubmissionsToActivity:
         'There are no submissions for this group activity yet.',

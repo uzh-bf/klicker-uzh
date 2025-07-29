@@ -81,8 +81,8 @@ function GroupActivityEndingModal({
         <ConfirmationItem
           label={
             summary.numOfStartedInstances === 0
-              ? t('manage.course.noStartedInstancesLoosingAccess')
-              : t('manage.course.startedInstancesLoosingAccess', {
+              ? t('manage.course.noStartedInstancesLosingAccess')
+              : t('manage.course.startedInstancesLosingAccess', {
                   number: summary.numOfStartedInstances,
                 })
           }

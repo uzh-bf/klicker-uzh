@@ -39,6 +39,8 @@ interface CourseOverviewHeaderProps {
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
+  containsActivities: boolean
+  containsGroups: boolean
 }
 
 function CourseOverviewHeader({
@@ -46,6 +48,8 @@ function CourseOverviewHeader({
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
+  containsActivities,
+  containsGroups,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
 
@@ -64,6 +68,53 @@ function CourseOverviewHeader({
       type: 'success',
       message: t('manage.course.linkLTICopied'),
     })
+
+  const ltiDropdownItems = user?.catalyst
+    ? [
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTILeaderboardLabel'),
+        }),
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTIDocsLabel'),
+        }),
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes/overview`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTILiveQuizzesLabel'),
+        }),
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes/overview`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTIPracticeQuizzesLabel'),
+        }),
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings/overview`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTIMicroLearningsLabel'),
+        }),
+        getLTIAccessLink({
+          href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
+          onSuccess: onSuccessToast,
+          t,
+          name: course.name,
+          label: t('manage.course.linkLTIAccountManagement'),
+        }),
+      ]
+    : []
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -148,54 +199,7 @@ function CourseOverviewHeader({
                 <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
               </>
             }
-            items={[
-              user?.catalyst
-                ? [
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTILeaderboardLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIDocsLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes/overview`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTILiveQuizzesLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes/overview`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIPracticeQuizzesLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings/overview`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIMicroLearningsLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIAccountManagement'),
-                    }),
-                  ]
-                : [],
-            ].flat()}
+            items={ltiDropdownItems}
           />
         )}
       </div>
@@ -206,6 +210,8 @@ function CourseOverviewHeader({
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
+          containsActivities={containsActivities}
+          containsGroups={containsGroups}
           onModalClose={() => setCourseSettingsModal(false)}
           onSubmit={async (
             values: CourseManipulationFormData,

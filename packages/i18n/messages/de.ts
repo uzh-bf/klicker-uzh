@@ -153,6 +153,8 @@ export default {
       submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
+      startNoun: 'Start',
+      end: 'Ende',
       continue: 'Weiter',
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
@@ -374,6 +376,10 @@ export default {
       selected: 'Ausgewählt',
       seconds: 'Sekunden',
       moreInformation: 'Mehr Informationen',
+      today: 'Heute',
+      month: 'Monat',
+      week: 'Woche',
+      day: 'Tag',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -398,6 +404,12 @@ export default {
       CASE_STUDY: 'Fallstudie',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'ÜQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -2382,9 +2394,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupDeadlineChangedToPast:
         'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Funktion auf der Gruppenübersicht.',
       gamificationGroupsFixed:
-        'Gamifizierung und Gruppenbildung werden für diesen Kurs aktiviert. Diese Einstellungen können nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte oder Teilnehmergruppen gebildet wurden. Wenn diese Optionen nicht initial aktiviert sind, können sie später aktiviert werden.',
+        'Gamifizierung und Gruppenbildung sind für diesen Kurs aktiviert. Diese Einstellungen können später nicht deaktiviert werden, falls gamifizierte Aktivitäten oder Gruppen vorhanden sind. Initial deaktivierte Optionen können später aktiviert werden.',
       gamificationFixed:
-        'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
+        'Gamifizierung ist für diesen Kurs aktiviert. Diese Einstellung kann später nicht deaktiviert werden, falls gamifizierte Aktivitäten vorhanden sind. Initial deaktivierte Optionen können später aktiviert werden.',
       openPreview: 'Vorschau öffnen',
       openEvaluation: 'Evaluation öffnen',
       archiveOnlyPastCourses:
@@ -2486,6 +2498,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nQuestions: '{number} Fragen',
       courseQRDescription:
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
+      calendarView: 'Kalenderansicht',
+      backToListView: 'Zurück zur Listenansicht',
+      calendarAllDay: 'Ganztägig',
+      calendarMore: 'weitere',
+      calendarNoEntries: 'Keine Einträge',
+      calendarCourseStart: 'Kursstart',
+      calendarCourseEnd: 'Kursende',
+      calendarCourseGroupFormationDeadline: 'Gruppenbildungs-Deadline',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
@@ -2553,14 +2573,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endMicroLearning: 'Microlearning beenden',
       endMicroLearningMessage:
         'Bitte bestätigen Sie, dass Sie dieses Microlearning beenden möchten. Beachten Sie, dass nach dem Beenden des Microlearnings keine weiteren Abgaben mehr akzeptiert werden.',
-      noStartedInstancesLoosingAccess:
-        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
-      startedInstancesLoosingAccess:
-        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate eingereicht. Sie verlieren den Zugriff auf die Gruppenaktivität.',
+      noResponsesToMicroLearning:
+        'Bisher haben keine angemeldeten Teilnehmenden Antworten für Elemente in diesem Microlearning abgesendet.',
+      responsesToMicroLearning:
+        '{number} Antwort(en) von angemeldeten Teilnehmenden wurden für Elemente in diesem Microlearning abgesendet.',
+      noAnonResponsesToMicroLearning:
+        'Für dieses Microlearning wurden noch keine anonymen Antworten abgesendet.',
+      anonResponsesToMicroLearning:
+        '{number} anonyme Antwort(en) für diese Aktivität wurden abgesendet.',
+      noStartedInstancesLosingAccess:
+        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht abgesendet haben.',
+      startedInstancesLosingAccess:
+        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate abgesendet. Sie verlieren den Zugriff auf die Gruppenaktivität.',
       noSubmissionsToActivity:
         'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
       unaffectedSubmissions:
-        '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
+        '{number} Gruppen haben ihre Resultate erfolgreich abgesendet und sind nicht vom Beenden der Gruppenaktivität betroffen.',
       startGroupActivityNow: 'Gruppenaktivität jetzt starten',
       startGroupActivityNowMessage:
         'Bitte bestätigen Sie, dass Sie die Gruppenaktivität jetzt starten möchten. Beachten Sie, dass eine Gruppenaktivität nach dem Starten nicht mehr bearbeitet werden kann.',
@@ -2754,6 +2782,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben die Nutzergruppe wurde erfolgreich verlassen.',
       leaveGroupError:
         'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      deleteGroupSuccess: 'Die Nutzergruppe wurde erfolgreich gelöscht.',
+      deleteGroupError:
+        'Beim Löschen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      confirmDeleteGroup:
+        'Bitte überprüfen Sie die Auswirkungen der Löschung dieser Nutzergruppe "{groupName}" sorgfältig und bestätigen Sie diese, bevor Sie die Löschung abschließen.',
+      resolveGroupConfirmation:
+        'Durch die Auflösung dieser Gruppe werden alle Mitglieder und Admins entfernt.',
+      revokeDirectPermissionsConfirmation:
+        'Alle direkt der Gruppe erteilten Berechtigungen werden widerrufen, alle Gruppenmitglieder verlieren den Zugriff auf die entsprechenden Objekte.',
+      irreversibleActionConfirmation:
+        'Diese Aktion ist irreversibel und kann nicht rückgängig gemacht werden.',
       availableActions: 'Verfügbare Aktionen',
       promoteUserToAdmin: 'Beförderung Mitglied zu Admin',
       demoteAdminToMember: 'Herabstufung Admin zu Mitglied',

@@ -640,16 +640,6 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="course-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
-    )
     cy.get('[data-cy="toggle-group-creation-enabled"]').click()
     cy.get('[data-cy="toggle-group-creation-enabled"]').should(
       'have.attr',

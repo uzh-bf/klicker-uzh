@@ -6,7 +6,7 @@ title: Live Quiz
 
 ![Live Quiz Evaluation](/img/live_quiz/lq_evaluation.png)
 
-Live Quizzes in KlickerUZH involve real-time interaction during lectures to foster engagement between the lecturer and students. Multiple question blocks are activated at different intervals, allowing students to provide answers in real-time. Lecturers can view aggregated and anonymous student responses on the dashboard.
+Live Quizzes in KlickerUZH involve real-time interaction during lectures to foster engagement between the lecturer and students. Multiple question blocks are activated at different intervals, allowing students to provide answers in real-time. Lecturers can view aggregated and anonymous student responses in the evaluation view.
 
 ## How can I create a Live Quiz?
 
@@ -26,30 +26,29 @@ Live Quizzes in KlickerUZH involve real-time interaction during lectures to fost
   title="KlickerUZH - Live Quiz Preparation"
 ></iframe>
 
-**Add a description:**
+<br />
+<br />
 
-1. Name: The name of the Live Quiz allows the user to distinguish the particular quiz from others. It is therefore only visible to the users themselves.
-2. Display Name: This name will be shown to the participants while the Live Quiz is being performed.
-3. Description: A description of the Live Quiz can optionally be added and will be displayed to the participants at the beginning of the live quiz.
+**Add the necessary metadata:**
+
+1. **Name:** The name of the Live Quiz allows the user to distinguish the particular quiz from others. It is therefore not visible to students participating in the quiz. For recurring courses, we recommend adding information like the semester or lecture week to the name.
+2. **Display Name:** The display name is shown to participants during the quiz execution.
+3. **Description:** Optionally, a description can be added to the live quiz, which will be shown to participants at the beginning of the live quiz and before the first block is opened.
 
 **Adjust the settings:**
 
-4. Course: In this field, the Live Q&A can optionally be assigned to a course. If you wish to do this and need help creating a course, please review the [tutorial on course management](/tutorials/course_management/).
-5. Multiplier: The multiplier is a factor with which the points are multiplied when a question is answered. A factor above 1 is only used if gamification is activated.
-6. Gamification: The slider can be used to decide whether gamification should be applied to the respective Live Quiz. Note that gamified Live Quizzes should only be used in gamified courses.
+4. **Course:** If desired, the Live Quiz can be assigned to a course. This is useful for organizing quizzes within a specific course context and allows KlickerUZH to directly display ongoing live quizzes to all participants of the course in the student app. Additionally, courses form the basis for the gamification framework in KlickerUZH (course leaderboard, course points, etc.) - more information can be found in the [gamification overview](/gamification/overview/).
+5. **Multiplier:** When assigned to a gamified course, a multiplier can be set for the Live Quiz. The selected factor will be applied to all points (except for base points) collected in the Live Quiz and, if defined, combined with the multiplier of the question. For more information on the distributed points, please refer to the [grading logic overview](/gamification/grading_logic).
+6. **Advanced Live Quiz Settings:** If desired, the different points distributed during a live quiz can be customized through the settings dialog that opens when clicking on the corresponding icon. Customized grading logic is only supported in gamified live quizzes. More information can be found in the [grading logic overview](/gamification/grading_logic).
+7. **Audience Interaction:** You can already choose which audience interaction components should be enabled at the start of the Live Quiz. All settings can be modified at any time during the quiz execution.
 
 **Create blocks using existing questions:**
 
-For this step, existing questions are required. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
-
-7. There are multiple options how to add a question to a block:
-   7.1. Drag: The desired question can be added to a specific block by simply dragging the question onto the plus sign below the desired block.
-   7.2. Select: It is also possible to select one or more questions and insert them into the desired block by clicking on the yellow boxes that appear after selecting the questions.
-   In this way questions can be grouped and/or stacked for sequential presentation.
-
-**End of preparation:**
-
-8. With a click on Create your first Live Quiz is prepared!
+8. In the final step, you can add your prepared questions to the Live Quiz using one of the following two methods. Questions in the same block will become available to students at the same time, while questions in different blocks will be released sequentially at the lecturer's discretion. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
+   1. **Drag & Drop:** To add a new question to an existing block, simply drag the question onto the plus sign below the desired block. Similarly, you may also drag questions onto the "Add new block" button to create a new block with the question.
+   2. **Select Questions:** Select one or more questions that should be added to the Live Quiz. The wizard will automatically display all different options for adding the selected questions to the Live Quiz. You can either add them to an existing block or create one or multiple new blocks with the selected questions.
+9. Optionally, you can add a **countdown** to the blocks, which will be displayed to the students during the quiz execution. Started blocks will be closed automatically after the countdown has expired.
+10. Finally, confirm the creation and your Live Quiz is prepared!
 
 ## How can I execute a Live Quiz?
 
@@ -69,21 +68,30 @@ For this step, existing questions are required. If you need help with creating q
   title="KlickerUZH - Live Quiz Execution"
 ></iframe>
 
-The prepared Live Quiz can be found under "Live Quizzes". Here it is possible to edit the quiz before it is started. Once the live quiz is started, it can no longer be edited. Also note that once Live Quizzes are closed, they cannot be reopened.
+<br />
+<br />
 
-Once the quiz is stared, there are the following steps to take:
+All prepared Live Quizzes can be found in the activity list (menu entry "Activities"). Here you can edit your planned quizzes, delete unwanted activities, or start a Live Quiz. Once a Live Quiz is started, it can no longer be edited. Also note that once Live Quizzes are closed, they cannot be reopened, since they contain results submitted by all participating students that should not be overwritten, but can be duplicated to be executed again.
 
-1. QR Code: To share the QR code, you can either click on "Present QR code" and copy the link (recommended) or take a screenshot of the QR code and share it.
-2. Start first/next block: In order for the participants to see the particular block of questions, click the Start first/next block button.
-3. Activate Feedback: If the feedback option is activated, in addition to answering the question, participants also have the possibility to provide feedback on the speed and difficulty of the question.
-4. Activate Live Q&A: If the Live Q&A is activated, participants can ask follow-up questions they may have and provide written feedback. For more details on the Live Q&A, review the dedicated [tutorial section](/tutorials/live_qa/).
-5. Audience view: Under Audience view the view of the participants can be seen.
-6. Evaluation: Under Evaluation the results and the number of participants for each block and question can be viewed. The display of the results can be customized to the user's preferences. The user can choose between a table or a bar chart to show results, the font size can be adjusted and lastly the solutions can be presented directly in the result chart.
-7. Leaderboard: Only participants who are signed in can appear on the leaderboard and earn points.
+Once the Live Quiz has been started, the following actions can be performed on the **lecturer cockpit**:
+
+1. **QR Code:** For students to be able to access your live quiz, you can display either a direct QR code for this particular quiz or a QR Code and link to all active live quizzes in your account (redirects to the active live quiz if there is only one). This information can also be accessed **ahead of the quiz execution** through the available actions on the activity list.
+2. **Start first / next block:** In order for the participants to see the next set of questions, open the corresponding block by clicking the "Start first/next block" button. Once all students have answered, you can close the block at the same place. If a countdown is set for the block, it will automatically close when the countdown expires.
+3. **Activate Feedback:** If the feedback option is activated, in addition to answering the question, participants also have the possibility to provide feedback on the speed and difficulty of the lecture. Their inputs will be displayed in aggregated form directly in the cockpit and are available as a timeline on the evaluation view after the quiz has ended. For more information, please refer to the [Live Q&A and Feedback tutorial](/tutorials/live_qa/).
+4. **Activate Live Q&A:** If the Live Q&A is activated, participants can ask follow-up questions they may have and provide written feedback. For more details on the Live Q&A, review the dedicated [tutorial section](/tutorials/live_qa/).
+5. **End / Abort Live Quiz:** Once the last block has finished you can **end** the Live Quiz. Thereby, students will no longer be able to submit feedback or questions. The evaluation view of completed quizzes can be accessed through the activity list, and contains the final live quiz leaderboard, all submitted Live Q&A questions, as well as a timeline of all feedback in addition to the question evaluations. If you choose to **abort** your live quiz, please make sure to carefully review the mentioned consequences.
+
+Additionally, you can access the following important views directly from the lecturer cockpit:
+
+- **Audience View:** Access the view of your students for ongoing quizzes.
+- **Lecturer View:** In large lecture settings, where teaching assistants can answer Live Q&A submissions, a filtered view of only pinned Live Q&A submissions and the aggregated feedback on speed and difficulty **is provided through the lecturer view**.
+- **Evaluation:** On the lecturer cockpit, you can access the continuously updated evaluation view of the Live Quiz, allowing you to discuss incoming results, display correct answer options or the optionally defined explanation. For gamified Live Quizzes, the evaluation view also contains the leaderboard of the quiz.
 
 ## How can I edit a Live Quiz?
 
-It is possible to edit a Live Quiz only before it has been started. Once the quiz is started, it can no longer be edited. To edit elements in a live quiz, simply edit the element and keep the option to update the instances in all activities checked.
+Like all other activities in KlickerUZH, Live Quizzes can be edited as long as they are in their **draft** state. Once the quiz is started, its content can no longer be modified, since student submissions might be affected by the changes. The name and display name of the Live Quiz may be changed at any time, using the pencil icon next to the activity name.
+
+To edit the content of a Live Quiz, open the actions dropdown and select the corresponding option. KlickerUZH will then automatically redirect you back to the library and open the familiar activity wizard already used during creation with all information pre-filled. After making any changes to the metadata of the quiz, its settings or the contained questions, **make sure to save your changes** in the last step of the wizard.
 
 ## How can participants join a Live Quiz?
 
@@ -103,7 +111,16 @@ It is possible to edit a Live Quiz only before it has been started. Once the qui
   title="KlickerUZH - Join Live Quiz"
 ></iframe>
 
-Once the live quiz is started, click on the QR code button in the top bar of the quiz page. You can send the direct link to your participants or show them the QR code (Present QR code displays the QR code on a separate page).
+<br />
+<br />
+
+For your students to be able to join your Live Quiz, they may use one of the following possibilities:
+
+- **Direct QR Code:** Either through the lecturer cockpit (as described in the section on the [quiz execution](/tutorials/live_quiz/#how-can-i-execute-a-live-quiz)) or before starting the quiz through the corresponding action, you can access the direct QR code for the quiz under consideration. You may either project this code or include it in your slides for students to scan it with their mobile devices.
+- **Account QR Code:** The same dialogs that contain the direct QR code also provide a QR code that displays a list of all currently running live quizzes in your account to students. If there is only one active live quiz, the QR code will redirect to this quiz. For courses with regular lectures we recommend using this QR code, as it does not require you to update it for each lecture.
+- **Course Participation:** If you assigned all your Live Quizzes to a KlickerUZH course and your students joined this course, active quizzes will be automatically displayed to them on the home screen of the KlickerUZH student app.
+
+<!-- TODO: update this section and re-publish it, once the dependency of gamification on the assignment of live quizzes to a gamified course has been removed.
 
 ## What should I look out for when creating a gamified Live Quiz?
 
@@ -114,4 +131,4 @@ In the following you can find our recommendations for a successful implementatio
 - Lecturer encouragement: Motivational encouragement from the lecturer is indeed crucial to foster student participation in gamified challenges.
 - Use countdowns: Use countdowns of, for example, 45 seconds to motivate students by creating a playful environment and giving them a guide through the quiz.
 - Try different question styles: Based on our experience, questions with a clear and not too easy answer work well. But we do encourage users to try different types of questions. For example, a guessing question with no obvious answer can activate students and make them engage more with the content.
-- Choose motivational rewards: When implementing gamification, careful consideration should be given to selecting appropriate rewards that align with students' interests and preferences. Rewards do not need to be costly but should be meaningful and incentivize students' engagement and participation (this could also be choosing a song that is played in the break, etc.)
+- Choose motivational rewards: When implementing gamification, careful consideration should be given to selecting appropriate rewards that align with students' interests and preferences. Rewards do not need to be costly but should be meaningful and incentivize students' engagement and participation (this could also be choosing a song that is played in the break, etc.) -->
