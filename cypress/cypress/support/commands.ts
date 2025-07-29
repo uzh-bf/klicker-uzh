@@ -91,7 +91,17 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
-const loginFactory = (tokenData) => {
+const loginFactory = (
+  tokenData: {
+    email: string
+    sub: string
+    role: 'ADMIN' | 'USER'
+    scope: 'ACCOUNT_OWNER'
+    catalystInstitutional: boolean
+    catalystIndividual: boolean
+  },
+  redirectUrl?: string
+) => {
   return () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
@@ -119,7 +129,7 @@ const loginFactory = (tokenData) => {
       })
     })
 
-    cy.visit(Cypress.env('URL_MANAGE'))
+    cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
   }
 }
 
@@ -133,6 +143,21 @@ Cypress.Commands.add(
     catalystInstitutional: true,
     catalystIndividual: true,
   })
+)
+
+Cypress.Commands.add(
+  'loginLecturerControl',
+  loginFactory(
+    {
+      email: 'lecturer@df.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8821',
+      role: 'ADMIN',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: true,
+      catalystIndividual: true,
+    },
+    Cypress.env('URL_CONTROL')
+  )
 )
 
 Cypress.Commands.add(
@@ -1298,6 +1323,7 @@ declare global {
       seed(): Chainable<void>
       cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
+      loginLecturerControl(): Chainable<void>
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
