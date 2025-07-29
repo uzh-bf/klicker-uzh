@@ -7,7 +7,6 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import dayjs from 'dayjs'
 import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
@@ -24,62 +23,6 @@ const COOKIE_SETTINGS: CookieOptions = {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
   sameSite: 'lax',
-}
-
-interface LoginUserTokenArgs {
-  shortname: string
-  token: string
-}
-
-export async function loginUserToken(
-  { shortname, token }: LoginUserTokenArgs,
-  ctx: Context
-) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
-  })
-
-  if (!user) {
-    await sendTeamsNotifications(
-      'graphql/loginUserToken',
-      `LOGIN FAILED: User with shortname ${shortname} not found.`
-    )
-    return null
-  }
-
-  const isLoginValid =
-    token === user.loginToken &&
-    dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
-
-  if (!isLoginValid) return null
-
-  ctx.prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-      scope: DB.UserLoginScope.SESSION_EXEC,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '4w',
-    }
-  )
-
-  ctx.res.cookie('next-auth.session-token', jwt, {
-    ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 30,
-  })
-
-  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
-
-  return user.id
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
@@ -443,37 +386,6 @@ export async function logoutTemporaryParticipant(
   })
 
   return true
-}
-
-export async function generateLoginToken(ctx: ContextWithUser) {
-  const expirationDate = dayjs().add(10, 'minute').toDate()
-  const loginToken = Math.floor(
-    100000000 + Math.random() * 900000000
-  ).toString()
-
-  const user = await ctx.prisma.user.update({
-    where: { id: ctx.user.sub },
-    data: { loginToken: loginToken, loginTokenExpiresAt: expirationDate },
-  })
-
-  return user
-}
-
-export async function getLoginToken(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  if (!user) return null
-
-  if (
-    !user.loginTokenExpiresAt ||
-    dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
-  ) {
-    return null
-  }
-
-  return user
 }
 
 export async function changeUserLocale(

@@ -1638,7 +1638,6 @@ type Mutation {
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   flagOutdatedElementInstances(elementId: Int!): Boolean
-  generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
@@ -1655,7 +1654,6 @@ type Mutation {
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID
-  loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
@@ -2141,7 +2139,6 @@ type Query {
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
-  getLoginToken: User
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
