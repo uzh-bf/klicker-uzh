@@ -1019,15 +1019,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementPreview: 'Element Preview: {element}',
       elementPreviewRedirect: 'Open preview in a new tab',
       pointsOverviewDescription: 'Points Overview',
-      elementTypDescription: 'Type',
+      elementTypeDescription: 'Type',
       elementPreviewDescription: 'Preview',
       basePointsDescription: 'Base Points',
       correctnessPointsDescription: 'Correctness Points',
       bonusPointsDescription: 'Bonus Points',
-      totalPointsDescription: 'Total Points',
+      totalPointsDescription: 'Maximum Achievable Points',
       pointTypeDescription: 'Point Type',
       pointAmountDescription: 'Amount',
       pointsMultiplierDescription: 'Multiplier',
+      sampleSolutionDescription: 'Sample Solution',
     },
     admin: {
       pageName: 'Admin Panel',
@@ -1083,6 +1084,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
+      activityDetailsNoInstanceSelected:
+        'Please select an element to view its details.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
