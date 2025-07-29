@@ -172,17 +172,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      loginUserToken: t.id({
-        nullable: true,
-        args: {
-          shortname: t.arg.string({ required: true }),
-          token: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AccountService.loginUserToken(args, ctx)
-        },
-      }),
-
       loginParticipant: t.id({
         nullable: true,
         args: {
@@ -882,14 +871,6 @@ export const Mutation = builder.mutationType({
         nullable: true,
         resolve: async (_, args, ctx) => {
           return await AccountService.logoutUser(args, ctx)
-        },
-      }),
-
-      generateLoginToken: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: User,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.generateLoginToken(ctx)
         },
       }),
 

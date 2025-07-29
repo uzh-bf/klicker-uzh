@@ -30,12 +30,6 @@ export const User = UserRef.implement({
     locale: t.expose('locale', { type: LocaleType }),
     role: t.expose('role', { type: UserRole }),
 
-    loginToken: t.exposeString('loginToken', { nullable: true }),
-    loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {
-      type: 'Date',
-      nullable: true,
-    }),
-
     catalyst: t.boolean({
       resolve: (user) => user.catalystInstitutional || user.catalystIndividual,
     }),

@@ -230,13 +230,6 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           onClick: () => router.push('/user/settings'),
           data: { cy: 'menu-user-settings' },
         },
-        {
-          key: 'token',
-          type: 'link',
-          label: t('manage.general.generateToken'),
-          onClick: () => router.push('/token'),
-          data: { cy: 'token-generation-page' },
-        },
         ...(user?.role === UserRole.Admin
           ? [
               {
