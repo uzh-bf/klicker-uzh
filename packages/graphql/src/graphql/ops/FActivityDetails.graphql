@@ -16,14 +16,11 @@ fragment ActivityDetailsData on ActivityDetails {
     timeLimit
     stackPoints
     elements {
-      id
-      name
-      type
-      pointsMultiplier
       basePoints
       correctnessPoints
       bonusPoints
       totalPoints
+      hasSampleSolution
       instance {
         id
         type

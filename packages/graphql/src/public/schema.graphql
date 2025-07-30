@@ -86,12 +86,9 @@ type ActivityInfoElement {
   basePoints: Int!
   bonusPoints: Int
   correctnessPoints: Int
-  id: Int!
+  hasSampleSolution: Boolean!
   instance: ElementInstance!
-  name: String!
-  pointsMultiplier: Int!
   totalPoints: Int!
-  type: ElementType!
 }
 
 type ActivityInfoStack {

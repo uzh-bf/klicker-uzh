@@ -76,11 +76,6 @@ export async function getUserActivities(ctx: ContextWithUser) {
     return null
   }
 
-  // console.log(
-  //   'This is the user',
-  //   user.objects[2]?.liveQuiz.blocks[0]?.elements[0].elementData.options ??
-  //     'No elements found'
-  // )
   // map the activities to a unified format
   const activities = user.objects.flatMap((object) => {
     const isOwner = object.permissionLevel === DB.PermissionLevel.OWNER
@@ -327,7 +322,7 @@ export async function getLiveQuizDetails(
   const defaultPoints = liveQuiz.defaultPoints
   const defaultCorrectPoints = liveQuiz.defaultCorrectPoints
   const defaultMaxBonusPoints = liveQuiz.maxBonusPoints
-  const pointsMultiplier = liveQuiz.pointsMultiplier
+  const pointsMultiplierActivity = liveQuiz.pointsMultiplier
 
   const stacks = liveQuiz.blocks.map((block) => ({
     id: block.id,
@@ -348,12 +343,12 @@ export async function getLiveQuizDetails(
       const { elementData } = instance
 
       const hasBasePoints = elementData.basePoints
-      const pointsMultiplier = elementData.pointsMultiplier
+      const pointsMultiplier = instance.options.pointsMultiplier ?? 1
       const hasSampleSolution =
-        'hasSampleSolution' in elementData.options
-          ? ((elementData.options as { hasSampleSolution?: boolean })
-              .hasSampleSolution ?? false)
-          : false
+        'hasSampleSolution' in elementData.options &&
+        ((elementData.options as { hasSampleSolution?: boolean })
+          .hasSampleSolution ??
+          false)
 
       const basePoints = hasBasePoints ? defaultPoints : 0
       const correctnessPoints = hasSampleSolution ? defaultCorrectPoints : 0
@@ -371,68 +366,109 @@ export async function getLiveQuizDetails(
       const { elementData } = instance
 
       const hasBasePoints = elementData.basePoints
-      const pointsMultiplier = elementData.pointsMultiplier
+      const pointsMultiplier = instance.options.pointsMultiplier ?? 1
       const hasSampleSolution =
-        'hasSampleSolution' in elementData.options
-          ? ((elementData.options as { hasSampleSolution?: boolean })
-              .hasSampleSolution ?? false)
-          : false
+        'hasSampleSolution' in elementData.options &&
+        ((elementData.options as { hasSampleSolution?: boolean })
+          .hasSampleSolution ??
+          false)
 
-      const basePoints = isContentOrFlashcard
-        ? 0
-        : hasBasePoints
-          ? defaultPoints
-          : 0
-      const correctnessPoints = isContentOrFlashcard
-        ? 0
-        : hasSampleSolution
+      const basePoints =
+        !isContentOrFlashcard && hasBasePoints ? defaultPoints : 0
+      const correctnessPoints =
+        !isContentOrFlashcard && hasSampleSolution
           ? pointsMultiplier * defaultCorrectPoints
           : 0
-      const bonusPoints = isContentOrFlashcard
-        ? 0
-        : hasSampleSolution
+      const bonusPoints =
+        !isContentOrFlashcard && hasSampleSolution
           ? pointsMultiplier * defaultMaxBonusPoints
           : 0
       const totalPoints = basePoints + (correctnessPoints + bonusPoints)
       return {
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-        pointsMultiplier: pointsMultiplier,
         basePoints: basePoints,
         correctnessPoints: correctnessPoints,
         bonusPoints: bonusPoints,
         totalPoints: totalPoints,
+        hasSampleSolution: hasSampleSolution,
         instance: instance,
       }
     }),
   }))
 
+  const {
+    totalBasePoints,
+    totalCorrectnessPoints,
+    totalBonusPoints,
+    totalPoints,
+  } = stacks.reduce(
+    (acc, stack) => {
+      for (const el of stack.elements) {
+        acc.totalBasePoints += el.basePoints
+        acc.totalCorrectnessPoints += el.correctnessPoints ?? 0
+        acc.totalBonusPoints += el.bonusPoints ?? 0
+      }
+      acc.totalPoints += stack.stackPoints
+      return acc
+    },
+    {
+      totalBasePoints: 0,
+      totalCorrectnessPoints: 0,
+      totalBonusPoints: 0,
+      totalPoints: 0,
+    }
+  )
+
   const metadata = {
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
     type: ActivityType.LIVE_QUIZ,
-    pointsMultiplier: pointsMultiplier,
-    totalBasePoints: stacks.reduce(
-      (sum, stack) =>
-        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
-      0
-    ),
-    totalCorrectnessPoints: stacks.reduce(
-      (sum, stack) =>
-        sum +
-        stack.elements.reduce((elSum, el) => elSum + el.correctnessPoints, 0),
-      0
-    ),
-    totalBonusPoints: stacks.reduce(
-      (sum, stack) =>
-        sum + stack.elements.reduce((elSum, el) => elSum + el.bonusPoints, 0),
-      0
-    ),
-    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+    pointsMultiplier: pointsMultiplierActivity,
+    totalBasePoints: totalBasePoints,
+    totalCorrectnessPoints: totalCorrectnessPoints,
+    totalBonusPoints: totalBonusPoints,
+    totalPoints: totalPoints,
   }
 
   return { id: liveQuiz.id, metadata, stacks }
+}
+
+function getAsynchronousActivityElementInstanceDetails(
+  instance: DB.ElementInstance,
+  isGroupActivity: boolean
+): {
+  basePoints: number
+  isContentOrFlashcard: boolean
+  hasSampleSolution: boolean
+} {
+  const isContentOrFlashcard =
+    instance.elementType === DB.ElementType.CONTENT ||
+    instance.elementType === DB.ElementType.FLASHCARD
+  const { elementData } = instance
+
+  const hasBasePoints = elementData.basePoints
+  const pointsMultiplier = !isContentOrFlashcard
+    ? 'pointsMultiplier' in elementData.options
+      ? ((elementData.options as { pointsMultiplier?: number })
+          .pointsMultiplier ?? 1)
+      : 1
+    : 1
+  const hasSampleSolution =
+    !isContentOrFlashcard &&
+    'hasSampleSolution' in elementData.options &&
+    ((elementData.options as { hasSampleSolution?: boolean })
+      .hasSampleSolution ??
+      false)
+
+  const defaultBasePoints = isGroupActivity ? 25 : 10
+  const basePoints =
+    !isContentOrFlashcard && hasBasePoints && hasSampleSolution
+      ? pointsMultiplier * defaultBasePoints
+      : 0
+  return {
+    basePoints,
+    isContentOrFlashcard,
+    hasSampleSolution,
+  }
 }
 
 export async function getPracticeQuizDetails(
@@ -453,7 +489,7 @@ export async function getPracticeQuizDetails(
     return null
   }
 
-  const pointsMultiplier = practiceQuiz.pointsMultiplier
+  const pointsMultiplierActivity = practiceQuiz.pointsMultiplier
 
   const stacks = practiceQuiz.stacks.map((block) => ({
     id: block.id,
@@ -462,64 +498,48 @@ export async function getPracticeQuizDetails(
         block.elements[0].anonymousResults.total
       : 0,
     stackPoints: block.elements.reduce((elementSum, instance) => {
-      if (
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      ) {
-        // no points awarded
-        return elementSum
-      }
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, false)
 
-      const { elementData } = instance
-
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const maxPoints = pointsMultiplier * 10
-
-      return elementSum + maxPoints
+      return isContentOrFlashcard ? elementSum : elementSum + basePoints
     }, 0),
     elements: block.elements.map((instance) => {
-      const isContentOrFlashcard =
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      const { elementData } = instance
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, false)
 
-      const hasBasePoints = elementData.basePoints
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const basePoints = isContentOrFlashcard
-        ? 0
-        : hasBasePoints
-          ? pointsMultiplier * 10
-          : 0
-      const totalPoints = basePoints
       return {
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-        pointsMultiplier: pointsMultiplier,
         basePoints: basePoints,
         correctnessPoints: null,
         bonusPoints: null,
-        totalPoints: totalPoints,
+        totalPoints: basePoints,
+        hasSampleSolution: hasSampleSolution,
         instance: instance,
       }
     }),
   }))
 
+  const { totalBasePoints, totalPoints } = stacks.reduce(
+    (acc, stack) => {
+      for (const el of stack.elements) {
+        acc.totalBasePoints += el.basePoints
+      }
+      acc.totalPoints += stack.stackPoints
+      return acc
+    },
+    {
+      totalBasePoints: 0,
+      totalPoints: 0,
+    }
+  )
   const metadata = {
     name: practiceQuiz.name,
     displayName: practiceQuiz.displayName,
     type: ActivityType.PRACTICE_QUIZ,
-    pointsMultiplier: pointsMultiplier,
-    totalBasePoints: stacks.reduce(
-      (sum, stack) =>
-        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
-      0
-    ),
+    pointsMultiplier: pointsMultiplierActivity,
+    totalBasePoints: totalBasePoints,
     totalCorrectnessPoints: null,
     totalBonusPoints: null,
-    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+    totalPoints: totalPoints,
   }
   return { id: practiceQuiz.id, metadata, stacks }
 }
@@ -542,7 +562,7 @@ export async function getMicroLearningDetails(
     return null
   }
 
-  const pointsMultiplier = microLearning.pointsMultiplier
+  const pointsMultiplierActivity = microLearning.pointsMultiplier
 
   const stacks = microLearning.stacks.map((block) => ({
     id: block.id,
@@ -551,64 +571,48 @@ export async function getMicroLearningDetails(
         block.elements[0].anonymousResults.total
       : 0,
     stackPoints: block.elements.reduce((elementSum, instance) => {
-      if (
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      ) {
-        // no points awarded
-        return elementSum
-      }
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, false)
 
-      const { elementData } = instance
-
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const maxPoints = pointsMultiplier * 10
-
-      return elementSum + maxPoints
+      return isContentOrFlashcard ? elementSum : elementSum + basePoints
     }, 0),
     elements: block.elements.map((instance) => {
-      const isContentOrFlashcard =
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      const { elementData } = instance
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, false)
 
-      const hasBasePoints = elementData.basePoints
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const basePoints = isContentOrFlashcard
-        ? 0
-        : hasBasePoints
-          ? pointsMultiplier * 10
-          : 0
-      const totalPoints = basePoints
       return {
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-        pointsMultiplier: pointsMultiplier,
         basePoints: basePoints,
         correctnessPoints: null,
         bonusPoints: null,
-        totalPoints: totalPoints,
+        totalPoints: basePoints,
+        hasSampleSolution: hasSampleSolution,
         instance: instance,
       }
     }),
   }))
 
+  const { totalBasePoints, totalPoints } = stacks.reduce(
+    (acc, stack) => {
+      for (const el of stack.elements) {
+        acc.totalBasePoints += el.basePoints
+      }
+      acc.totalPoints += stack.stackPoints
+      return acc
+    },
+    {
+      totalBasePoints: 0,
+      totalPoints: 0,
+    }
+  )
   const metadata = {
     name: microLearning.name,
     displayName: microLearning.displayName,
     type: ActivityType.MICRO_LEARNING,
-    pointsMultiplier: pointsMultiplier,
-    totalBasePoints: stacks.reduce(
-      (sum, stack) =>
-        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
-      0
-    ),
+    pointsMultiplier: pointsMultiplierActivity,
+    totalBasePoints: totalBasePoints,
     totalCorrectnessPoints: null,
     totalBonusPoints: null,
-    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+    totalPoints: totalPoints,
   }
   return { id: microLearning.id, metadata, stacks }
 }
@@ -634,7 +638,7 @@ export async function getGroupActivityDetails(
     return null
   }
 
-  const pointsMultiplier = groupActivity.pointsMultiplier
+  const pointsMultiplierActivity = groupActivity.pointsMultiplier
 
   const stacks = groupActivity.stacks.map((block) => ({
     id: block.id,
@@ -643,64 +647,48 @@ export async function getGroupActivityDetails(
         block.elements[0].anonymousResults.total
       : 0,
     stackPoints: block.elements.reduce((elementSum, instance) => {
-      if (
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      ) {
-        // no points awarded
-        return elementSum
-      }
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, true)
 
-      const { elementData } = instance
-
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const maxPoints = pointsMultiplier * 10
-
-      return elementSum + maxPoints
+      return isContentOrFlashcard ? elementSum : elementSum + basePoints
     }, 0),
     elements: block.elements.map((instance) => {
-      const isContentOrFlashcard =
-        instance.elementType === DB.ElementType.CONTENT ||
-        instance.elementType === DB.ElementType.FLASHCARD
-      const { elementData } = instance
+      const { basePoints, isContentOrFlashcard, hasSampleSolution } =
+        getAsynchronousActivityElementInstanceDetails(instance, true)
 
-      const hasBasePoints = elementData.basePoints
-      const pointsMultiplier = elementData.pointsMultiplier
-
-      const basePoints = isContentOrFlashcard
-        ? 0
-        : hasBasePoints
-          ? pointsMultiplier * 25
-          : 0
-      const totalPoints = basePoints
       return {
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-        pointsMultiplier: pointsMultiplier,
         basePoints: basePoints,
         correctnessPoints: null,
         bonusPoints: null,
         totalPoints: totalPoints,
+        hasSampleSolution: hasSampleSolution,
         instance: instance,
       }
     }),
   }))
 
+  const { totalBasePoints, totalPoints } = stacks.reduce(
+    (acc, stack) => {
+      for (const el of stack.elements) {
+        acc.totalBasePoints += el.basePoints
+      }
+      acc.totalPoints += stack.stackPoints
+      return acc
+    },
+    {
+      totalBasePoints: 0,
+      totalPoints: 0,
+    }
+  )
   const metadata = {
     name: groupActivity.name,
     displayName: groupActivity.displayName,
     type: ActivityType.GROUP_ACTIVITY,
-    pointsMultiplier: pointsMultiplier,
-    totalBasePoints: stacks.reduce(
-      (sum, stack) =>
-        sum + stack.elements.reduce((elSum, el) => elSum + el.basePoints, 0),
-      0
-    ),
+    pointsMultiplier: pointsMultiplierActivity,
+    totalBasePoints: totalBasePoints,
     totalCorrectnessPoints: null,
     totalBonusPoints: null,
-    totalPoints: stacks.reduce((sum, stack) => sum + stack.stackPoints, 0),
+    totalPoints: totalPoints,
   }
 
   return { id: groupActivity.id, metadata, stacks }

@@ -4,8 +4,10 @@ import {
   faArrowUpRightFromSquare,
   faBookOpen,
   faCheckCircle,
+  faCheckSquare,
   faExclamationTriangle,
   faUserGroup,
+  faXmarkSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -38,7 +40,11 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import StudentElementPreviewActivityDetails from '~/components/questions/manipulation/StudentElementPreviewActivityDetails'
+import StudentElementPreviewActivityDetails from '../../questions/manipulation/StudentElementPreviewActivityDetails'
+
+function validate(obj: any): number {
+  return obj !== null && typeof obj === 'number' ? obj : 0
+}
 
 function ActivityDetailsModal({
   activity,
@@ -60,7 +66,7 @@ function ActivityDetailsModal({
   const { data } = useQuery(GetOutdatedElementInstancesDocument, {
     variables: {
       instanceIds: stacks.flatMap((stack) =>
-        stack.elements.map((instance) => instance.id)
+        stack.elements.map((element) => element.instance.id)
       ),
     },
     skip: !activityDetails,
@@ -81,46 +87,47 @@ function ActivityDetailsModal({
 
   // State for selected radio button per stack
   const [selectedInstance, setSelectedInstance] = useState<string>(
-    stacks[0]?.elements[0]?.id.toString() ?? ''
+    stacks[0]?.elements[0]?.instance.id.toString() ?? ''
   )
 
   const selectedInstanceObj = useMemo(() => {
-    let foundInstance
-    let foundElement
-    let foundStackIndex = -1
-    stacks.some((stack, stackIndex) => {
-      const instance = stack.elements.find(
-        (instance) => String(instance.id) === selectedInstance
-      )
-      if (instance) {
-        foundInstance = instance.instance
-        foundElement = instance
-        foundStackIndex = stackIndex
-        return true // stop searching
-      }
-      return false
-    })
-    return foundInstance && foundElement
+    const instance = stacks
+      .flatMap((s) => s.elements)
+      .find((i) => String(i.instance.id) === selectedInstance)
+    return instance
       ? {
-          instance: foundInstance as ElementInstance,
-          stackIndex: foundStackIndex,
-          element: foundElement as ActivityInfoElement,
+          instance: instance.instance as ElementInstance,
+          element: instance as ActivityInfoElement,
         }
       : undefined
   }, [stacks, selectedInstance])
 
+  const metadata = !loading
+    ? activityDetails?.activityDetails?.metadata
+    : undefined
+  const pointMultiplierActivity = validate(metadata?.pointsMultiplier)
+  const basePointsActivity = validate(metadata?.totalBasePoints)
+  const correctnessPointsActivity = validate(metadata?.totalCorrectnessPoints)
+  const bonusPointsActivity = validate(metadata?.totalBonusPoints)
+  const totalPointsActivity = validate(metadata?.totalPoints)
+
+  const isLiveQuiz = metadata?.type === ActivityType.LiveQuiz
+  // TODO: wrapper
   return (
     <Modal
       open
       loading={loading}
       title={t('manage.activities.activityDetails')}
       onClose={onClose}
-      className={{ content: 'w-256 min-w-256 max-w-256' }}
+      className={{
+        content:
+          'w-full! h-[calc(100%-15rem)]! max-h-[calc(100%-15rem)] max-w-[calc(100%-15rem)] xl:overflow-hidden',
+      }}
       data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
       {outdatedInstances.length > 0 && (
-        <UserNotification type="warning" className={{ root: 'mb-2' }}>
+        <UserNotification type="warning" className={{ root: 'mb-4' }}>
           {t.rich(
             activity.status === PublicationStatus.Template
               ? 'manage.activities.instanceUpdateTemplate'
@@ -135,117 +142,104 @@ function ActivityDetailsModal({
           )}
         </UserNotification>
       )}
-      <div className="w-228 h-128 flex flex-row gap-4">
+      <div className="flex h-auto min-h-0 flex-col gap-4 xl:h-full xl:max-h-full xl:flex-row">
         <div
-          className="h-vh flex w-2/5 flex-col gap-4 overflow-x-auto overflow-y-auto pr-10"
+          className="flex min-h-0 w-full flex-col gap-4 xl:max-h-[calc(100vh-20rem)] xl:w-2/5 xl:overflow-y-auto xl:pr-10"
           data-cy="activity-details-modal"
         >
-          <ul className="">
+          <ul>
             <li>
               <span className="font-bold">
                 {t('manage.activityWizard.name')}:
               </span>{' '}
-              {activityDetails?.activityDetails?.metadata.name}
+              {metadata?.name}
             </li>
             <li>
               <span className="font-bold">
                 {t('manage.activityWizard.displayName')}:
               </span>{' '}
-              {activityDetails?.activityDetails?.metadata.displayName}
+              {metadata?.displayName}
             </li>
-            <li>
-              <h3 className="font-bold">
-                {t('manage.general.pointsOverviewDescription')}:
-              </h3>
-              <ShadcnTable>
-                <ShadcnTableHeader>
-                  <ShadcnTableRow>
-                    <ShadcnTableHead className="font-bold">
-                      {t('manage.general.pointTypeDescription')}
-                    </ShadcnTableHead>
-                    <ShadcnTableHead className="text-right font-bold">
-                      {t('manage.general.pointAmountDescription')}
-                    </ShadcnTableHead>
-                  </ShadcnTableRow>
-                </ShadcnTableHeader>
+          </ul>
+          <div className="flex flex-col">
+            <ShadcnTable className="mb-2">
+              <ShadcnTableHeader>
+                <ShadcnTableRow>
+                  <ShadcnTableHead className="font-bold">
+                    {t('manage.general.pointTypeDescription')}
+                  </ShadcnTableHead>
+                  <ShadcnTableHead className="text-right font-bold">
+                    {t('manage.general.pointAmountDescription')}
+                  </ShadcnTableHead>
+                </ShadcnTableRow>
+              </ShadcnTableHeader>
+              {isLiveQuiz ? (
                 <ShadcnTableBody>
                   <ShadcnTableRow>
                     <ShadcnTableCell>
-                      {t('manage.general.basePointsDescription')}{' '}
-                      {activityDetails?.activityDetails?.metadata.type !==
-                      ActivityType.LiveQuiz
-                        ? `(${t('manage.general.pointsMultiplierDescription')} ${activityDetails?.activityDetails?.metadata.pointsMultiplier}x)`
-                        : null}
+                      {t('manage.general.basePointsDescription')}
                     </ShadcnTableCell>
                     <ShadcnTableCell className="text-right">
-                      {
-                        activityDetails?.activityDetails?.metadata
-                          .totalBasePoints
-                      }{' '}
-                      P.
+                      {`${basePointsActivity} P.`}
                     </ShadcnTableCell>
                   </ShadcnTableRow>
-                  {activityDetails?.activityDetails?.metadata
-                    .totalCorrectnessPoints &&
-                  activityDetails?.activityDetails?.metadata
-                    .pointsMultiplier ? (
-                    <ShadcnTableRow>
-                      <ShadcnTableCell>
-                        {t('manage.general.correctnessPointsDescription')} (
-                        {t('manage.general.pointsMultiplierDescription')}{' '}
-                        {
-                          activityDetails?.activityDetails?.metadata
-                            .pointsMultiplier
-                        }
-                        x)
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="text-right">
-                        {
-                          activityDetails?.activityDetails?.metadata
-                            .totalCorrectnessPoints
-                        }{' '}
-                        P.
-                      </ShadcnTableCell>
-                    </ShadcnTableRow>
-                  ) : null}
-                  {activityDetails?.activityDetails?.metadata
-                    .totalBonusPoints &&
-                  activityDetails?.activityDetails?.metadata
-                    .pointsMultiplier ? (
-                    <ShadcnTableRow>
-                      <ShadcnTableCell>
-                        {t('manage.general.bonusPointsDescription')} (
-                        {t('manage.general.pointsMultiplierDescription')}{' '}
-                        {
-                          activityDetails?.activityDetails?.metadata
-                            .pointsMultiplier
-                        }
-                        x)
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="text-right">
-                        {
-                          activityDetails?.activityDetails?.metadata
-                            .totalBonusPoints
-                        }{' '}
-                        P.
-                      </ShadcnTableCell>
-                    </ShadcnTableRow>
-                  ) : null}
-                </ShadcnTableBody>
-                <ShadcnTableFooter>
                   <ShadcnTableRow>
-                    <ShadcnTableCell colSpan={1}>
-                      {t('manage.general.totalPointsDescription')}
+                    <ShadcnTableCell>
+                      {`${t('manage.general.correctnessPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${pointMultiplierActivity}x)`}`}
                     </ShadcnTableCell>
-                    <ShadcnTableCell className="text-right text-violet-500">
-                      {activityDetails?.activityDetails?.metadata.totalPoints}{' '}
-                      P.
+                    <ShadcnTableCell className="text-right">
+                      {`${correctnessPointsActivity} P.`}
                     </ShadcnTableCell>
                   </ShadcnTableRow>
-                </ShadcnTableFooter>
-              </ShadcnTable>
-            </li>
-          </ul>
+                  <ShadcnTableRow>
+                    <ShadcnTableCell>
+                      {`${t('manage.general.bonusPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${pointMultiplierActivity}x)`}`}
+                    </ShadcnTableCell>
+                    <ShadcnTableCell className="text-right">
+                      {`${bonusPointsActivity} P.`}
+                    </ShadcnTableCell>
+                  </ShadcnTableRow>
+                </ShadcnTableBody>
+              ) : null}
+              <ShadcnTableFooter>
+                <ShadcnTableRow>
+                  <ShadcnTableCell colSpan={1} className="font-bold">
+                    {isLiveQuiz ? (
+                      t('manage.general.totalPointsSynchronousDescription')
+                    ) : (
+                      <>
+                        {t('manage.general.totalPointsAsynchronousDescription')}
+                        <span className="font-normal">
+                          {` (${t(
+                            'manage.general.pointsMultiplierDescription'
+                          )} ${pointMultiplierActivity}x)`}
+                        </span>
+                      </>
+                    )}
+                  </ShadcnTableCell>
+                  <ShadcnTableCell className="text-uzh-darkgreen-100 text-right font-bold">
+                    {`${totalPointsActivity} P.`}
+                  </ShadcnTableCell>
+                </ShadcnTableRow>
+              </ShadcnTableFooter>
+            </ShadcnTable>
+            <div className="flex justify-end">
+              <Link
+                href={'https://www.klicker.uzh.ch/gamification/grading_logic/'}
+                passHref
+                legacyBehavior
+              >
+                <a
+                  className="text-primary-100 flex flex-row items-center gap-2 text-sm font-normal hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FontAwesomeIcon icon={faBookOpen} />
+                  {t('manage.general.gradingDescription')}
+                </a>
+              </Link>
+            </div>
+          </div>
           <Accordion type="multiple" className="w-full">
             <RadioGroup
               value={selectedInstance}
@@ -259,8 +253,8 @@ function ActivityDetailsModal({
                   className="m-0 w-full space-y-0 border-gray-300 p-2"
                 >
                   <div key={stack.id} className="w-full">
-                    <AccordionTrigger className="flex w-full flex-row items-center justify-between p-2">
-                      <span className="flex-1 font-bold">
+                    <AccordionTrigger className="flex w-full flex-row items-center justify-between p-2 hover:no-underline">
+                      <span className="flex-1 font-bold hover:underline">
                         {activity.type === ActivityType.LiveQuiz
                           ? t('shared.generic.blockN', {
                               number: index + 1,
@@ -269,9 +263,17 @@ function ActivityDetailsModal({
                               number: index + 1,
                             })}
                       </span>
-                      <div className="flex flex-row justify-end gap-3">
+                      <div className="flex flex-row items-center justify-end gap-3">
+                        {stack.elements.filter((element) =>
+                          outdatedInstances.includes(element.instance.id)
+                        ).length > 0 ? (
+                          <FontAwesomeIcon
+                            icon={faExclamationTriangle}
+                            className="text-uzh-red-100"
+                          />
+                        ) : null}
                         {stack.stackPoints !== null ? (
-                          <span className="text-violet-500">
+                          <span className="text-uzh-darkgreen-100">
                             {stack.stackPoints} P.
                           </span>
                         ) : null}
@@ -299,53 +301,53 @@ function ActivityDetailsModal({
                           number: stack.elements?.length,
                         })}
                       </div>
-                      {stack.elements.map((instance, instanceIx) => (
-                        <label
-                          key={instance.id}
-                          htmlFor={String(instance.id)}
-                          className={twMerge(
-                            'group relative mb-2 flex w-full cursor-pointer flex-row items-center gap-2 rounded border border-gray-300 bg-white px-4 py-3 transition-colors',
-                            'hover:border-blue-400'
-                          )}
-                        >
-                          <span className="relative mr-2 flex h-5 w-5 items-center justify-center">
-                            <RadioGroupItem
-                              value={String(instance.id)}
-                              id={String(instance.id)}
-                              className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                            />
-                            {/* Checkmark icon, only visible when checked */}
-                            <span className="pointer-events-none">
-                              <FontAwesomeIcon
-                                icon={faCheckCircle}
-                                className={twMerge(
-                                  'text-lg text-blue-500 transition-opacity duration-150',
-                                  selectedInstance === String(instance.id)
-                                    ? 'opacity-100'
-                                    : 'opacity-0'
-                                )}
+                      {stack.elements.map((element, instanceIx) => {
+                        const instance = element.instance
+                        const isSelectedInstance =
+                          selectedInstance === String(instance.id)
+                        return (
+                          <label
+                            key={instance.id}
+                            htmlFor={String(instance.id)}
+                            className={twMerge(
+                              'border-uzh-grey-40 mb-2 flex w-full cursor-pointer flex-row items-center gap-1 rounded border pb-3 pt-3 transition-colors',
+                              'hover:border-uzh-blue-60'
+                            )}
+                          >
+                            <div className="w-9/10 flex flex-row">
+                              <RadioGroupItem
+                                value={String(instance.id)}
+                                id={String(instance.id)}
+                                className="invisible cursor-pointer"
                               />
-                            </span>
-                          </span>
-                          <span className="flex flex-col">
-                            <span className="font-semibold">
-                              {instance.name} (
-                              {t(`shared.${instance.type}.short`)})
-                            </span>
-                            <span className="justify-left flex flex-row align-middle text-xs text-gray-500">
-                              <span className="text-violet-500">
-                                {instance.totalPoints} P.
+
+                              {isSelectedInstance ? (
+                                <FontAwesomeIcon
+                                  icon={faCheckCircle}
+                                  className={twMerge(
+                                    'text-uzh-blue-60 text-lg'
+                                  )}
+                                />
+                              ) : null}
+
+                              <span
+                                className={twMerge(
+                                  'line-clamp-1 font-semibold',
+                                  isSelectedInstance ? 'pl-2' : 'pl-6.5'
+                                )}
+                              >
+                                {`${t(`shared.${instance.elementData.type}.short`)}: ${instance.elementData.name}`}
                               </span>
-                            </span>
-                          </span>
-                          {outdatedInstances.includes(instance.id) ? (
-                            <FontAwesomeIcon
-                              icon={faExclamationTriangle}
-                              className="text-uzh-red-100 mr-1"
-                            />
-                          ) : null}
-                        </label>
-                      ))}
+                            </div>
+                            {outdatedInstances.includes(instance.id) ? (
+                              <FontAwesomeIcon
+                                icon={faExclamationTriangle}
+                                className={twMerge('text-uzh-red-100')}
+                              />
+                            ) : null}
+                          </label>
+                        )
+                      })}
                     </AccordionContent>
                   </div>
                 </AccordionItem>
@@ -353,21 +355,40 @@ function ActivityDetailsModal({
             </RadioGroup>
           </Accordion>
         </div>
-        {selectedInstanceObj && (
-          <div className="flex w-3/5 flex-col gap-4 overflow-y-auto pr-3">
-            <div>
+        {selectedInstanceObj &&
+        selectedInstanceObj.element &&
+        selectedInstanceObj.instance ? (
+          <div className="flex h-full min-h-0 w-full flex-col gap-4 xl:max-h-[calc(100vh-20rem)] xl:w-3/5 xl:overflow-y-auto xl:pr-3">
+            <div className="flex flex-col gap-2">
               <h3 className="text-2xl font-bold">
-                {selectedInstanceObj.element.name}
+                {selectedInstanceObj.element.instance.elementData.name}
               </h3>
               <ul className="font-bold">
                 <li>
-                  Typ:{' '}
+                  {`${t('manage.general.elementTypeDescription')}: `}
                   <span className="font-normal">
-                    {t(`shared.${selectedInstanceObj.element.type}.typeLabel`)}
+                    {t(
+                      `shared.${selectedInstanceObj.element.instance.elementData.type}.typeLabel`
+                    )}
                   </span>
                 </li>
                 <li>
-                  {t('manage.general.pointsOverviewDescription')}:
+                  {`${t('manage.general.sampleSolutionDescription')}: `}
+                  <span className="font-normal">
+                    {selectedInstanceObj.element.hasSampleSolution ? (
+                      <FontAwesomeIcon
+                        icon={faCheckSquare}
+                        className="text-uzh-darkgreen-100"
+                      />
+                    ) : (
+                      <FontAwesomeIcon
+                        icon={faXmarkSquare}
+                        className="text-uzh-red-100"
+                      />
+                    )}
+                  </span>
+                </li>
+                <li>
                   <ShadcnTable className="font-normal">
                     <ShadcnTableHeader>
                       <ShadcnTableRow>
@@ -379,62 +400,60 @@ function ActivityDetailsModal({
                         </ShadcnTableHead>
                       </ShadcnTableRow>
                     </ShadcnTableHeader>
-                    <ShadcnTableBody>
-                      <ShadcnTableRow>
-                        <ShadcnTableCell>
-                          {t('manage.general.basePointsDescription')}{' '}
-                          {activityDetails?.activityDetails?.metadata.type !==
-                          ActivityType.LiveQuiz
-                            ? `(${t('manage.general.pointsMultiplierDescription')} ${selectedInstanceObj.element.pointsMultiplier}x)`
-                            : null}
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="text-right">
-                          {selectedInstanceObj &&
-                            selectedInstanceObj.element &&
-                            selectedInstanceObj.element.basePoints}{' '}
-                          P.
-                        </ShadcnTableCell>
-                      </ShadcnTableRow>
-                      <ShadcnTableRow>
-                        <ShadcnTableCell>
-                          {t('manage.general.correctnessPointsDescription')} (
-                          {t('manage.general.pointsMultiplierDescription')}{' '}
-                          {selectedInstanceObj.element.pointsMultiplier}
-                          x)
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="text-right">
-                          {selectedInstanceObj &&
-                            selectedInstanceObj.element &&
-                            (selectedInstanceObj.element.correctnessPoints ??
-                              0)}{' '}
-                          P.
-                        </ShadcnTableCell>
-                      </ShadcnTableRow>
-                      <ShadcnTableRow>
-                        <ShadcnTableCell>
-                          {t('manage.general.bonusPointsDescription')} (
-                          {t('manage.general.pointsMultiplierDescription')}{' '}
-                          {selectedInstanceObj.element.pointsMultiplier}
-                          x)
-                        </ShadcnTableCell>
-                        <ShadcnTableCell className="text-right">
-                          {selectedInstanceObj &&
-                            selectedInstanceObj.element &&
-                            (selectedInstanceObj.element.bonusPoints ?? 0)}{' '}
-                          P.
-                        </ShadcnTableCell>
-                      </ShadcnTableRow>
-                    </ShadcnTableBody>
+                    {isLiveQuiz ? (
+                      <ShadcnTableBody>
+                        <ShadcnTableRow>
+                          <ShadcnTableCell>
+                            {t('manage.general.basePointsDescription')}
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="text-right">
+                            {`${selectedInstanceObj.element.basePoints} P.`}
+                          </ShadcnTableCell>
+                        </ShadcnTableRow>
+                        <ShadcnTableRow>
+                          <ShadcnTableCell>
+                            {`${t('manage.general.correctnessPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.elementData.pointsMultiplier)}x)`}`}
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="text-right">
+                            {`${selectedInstanceObj.element.correctnessPoints} P.`}
+                          </ShadcnTableCell>
+                        </ShadcnTableRow>
+                        <ShadcnTableRow>
+                          <ShadcnTableCell>
+                            {`${t('manage.general.bonusPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.elementData.pointsMultiplier)}x)`}`}
+                          </ShadcnTableCell>
+                          <ShadcnTableCell className="text-right">
+                            {`${selectedInstanceObj.element.bonusPoints} P.`}
+                          </ShadcnTableCell>
+                        </ShadcnTableRow>
+                      </ShadcnTableBody>
+                    ) : null}
+
                     <ShadcnTableFooter>
                       <ShadcnTableRow>
-                        <ShadcnTableCell colSpan={1}>
-                          {t('manage.general.totalPointsDescription')}
+                        <ShadcnTableCell colSpan={1} className="font-bold">
+                          {isLiveQuiz ? (
+                            t(
+                              'manage.general.totalPointsSynchronousDescription'
+                            )
+                          ) : (
+                            <>
+                              {t(
+                                'manage.general.totalPointsAsynchronousDescription'
+                              )}
+                              <span className="font-normal">
+                                {` (${t(
+                                  'manage.general.pointsMultiplierDescription'
+                                )} ${
+                                  selectedInstanceObj.element.instance
+                                    .elementData.pointsMultiplier
+                                }x)`}
+                              </span>
+                            </>
+                          )}
                         </ShadcnTableCell>
-                        <ShadcnTableCell className="text-right text-violet-500">
-                          {selectedInstanceObj &&
-                            selectedInstanceObj.element &&
-                            selectedInstanceObj.element.totalPoints}{' '}
-                          P.
+                        <ShadcnTableCell className="text-uzh-darkgreen-100 text-right font-bold">
+                          {selectedInstanceObj.element.totalPoints} P.
                         </ShadcnTableCell>
                       </ShadcnTableRow>
                     </ShadcnTableFooter>
@@ -464,41 +483,22 @@ function ActivityDetailsModal({
                   rel="noopener noreferrer"
                   className="text-primary-100 flex flex-row items-center gap-2 text-sm font-normal hover:underline"
                 >
-                  <div
-                    className={twMerge(
-                      'hover:text-primary-100 flex flex-row items-center justify-between gap-1.5 text-sm',
-                      outdatedInstances.includes(
-                        selectedInstanceObj.instance.id
-                      )
-                        ? 'bg-uzh-red-20'
-                        : ''
-                    )}
-                    data-cy={`stack-${selectedInstanceObj.stackIndex}-instance-${selectedInstanceObj.instance.id}`}
-                  >
-                    <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                    <span className="italic">
-                      {t('manage.general.elementPreviewRedirect')}
-                    </span>
-                  </div>
-                </a>
-              </Link>
-
-              <Link
-                href={'https://www.klicker.uzh.ch/gamification/grading_logic/'}
-                passHref
-                legacyBehavior
-              >
-                <a
-                  className="text-primary-100 flex flex-row items-center gap-2 text-sm font-normal hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FontAwesomeIcon icon={faBookOpen} />
-                  {t('manage.elements.scoringDocumentation')}
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                  {t('manage.general.elementPreviewRedirect')}
                 </a>
               </Link>
             </div>
           </div>
+        ) : (
+          <UserNotification type="info" className={{ root: 'h-max xl:w-3/5' }}>
+            {t.rich('manage.activities.activityDetailsNoInstanceSelected', {
+              b: (content) => <b>{content}</b>,
+              ul: (content) => <ul className="list-disc pl-4">{content}</ul>,
+              li: (content) => (
+                <li className="mt-0.5 last:hidden">{content}</li>
+              ),
+            })}
+          </UserNotification>
         )}
       </div>
     </Modal>

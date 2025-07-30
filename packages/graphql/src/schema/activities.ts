@@ -6,20 +6,16 @@ import {
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
-import { ElementType } from './elementData.js'
 import { PublicationStatus } from './practiceQuiz.js'
 import { ElementInstance, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 interface IActivityInfoElement {
-  id: number
-  name: string
-  type: DB.ElementType
-  pointsMultiplier: number
   basePoints: number
-  correctnessPoints: number | null
-  bonusPoints: number | null
+  correctnessPoints?: number | null
+  bonusPoints?: number | null
   totalPoints: number
+  hasSampleSolution: boolean
   instance: IElementInstance
 }
 
@@ -29,14 +25,11 @@ export const ActivityInfoElementRef = builder.objectRef<IActivityInfoElement>(
 export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
   name: 'ActivityInfoElement',
   fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: ElementType }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
     basePoints: t.exposeInt('basePoints'),
     correctnessPoints: t.exposeInt('correctnessPoints', { nullable: true }),
     bonusPoints: t.exposeInt('bonusPoints', { nullable: true }),
     totalPoints: t.exposeInt('totalPoints'),
+    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
     instance: t.expose('instance', {
       type: ElementInstance,
     }),
@@ -201,8 +194,8 @@ export interface IActivityDetailsMetadata {
   type: string
   pointsMultiplier: number
   totalBasePoints: number
-  totalCorrectnessPoints: number | null
-  totalBonusPoints: number | null
+  totalCorrectnessPoints?: number | null
+  totalBonusPoints?: number | null
   totalPoints: number
 }
 
