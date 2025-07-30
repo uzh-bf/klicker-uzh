@@ -42,6 +42,7 @@ import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import StudentElementPreviewActivityDetails from '../../questions/manipulation/StudentElementPreviewActivityDetails'
 
+// Validate function to ensure numeric values are correctly handled
 function validate(obj: any): number {
   return obj !== null && typeof obj === 'number' ? obj : 0
 }
@@ -112,7 +113,7 @@ function ActivityDetailsModal({
   const totalPointsActivity = validate(metadata?.totalPoints)
 
   const isLiveQuiz = metadata?.type === ActivityType.LiveQuiz
-  // TODO: wrapper
+
   return (
     <Modal
       open
