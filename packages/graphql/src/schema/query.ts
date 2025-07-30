@@ -158,14 +158,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLoginToken: t.withAuth(asUser).field({
-        nullable: true,
-        type: User,
-        resolve: async (_, ___, ctx) => {
-          return await AccountService.getLoginToken(ctx)
-        },
-      }),
-
       userTags: t.withAuth(asUser).field({
         nullable: true,
         type: [Tag],

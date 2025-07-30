@@ -1016,7 +1016,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalog: 'Catalog',
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',
-      generateToken: 'Generate login token',
       adminPanel: 'Admin Panel',
       '404Message':
         'The page you requested does not exist. Please return to the <link>library</link> or use the main menu at the top for further navigation.',

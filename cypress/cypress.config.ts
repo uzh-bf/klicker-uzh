@@ -1279,56 +1279,6 @@ export default defineConfig({
         },
         // #endregion
 
-        // ! Control Application
-        // #region
-        async verifyControlToken({ token }: { token: string }) {
-          const prisma = await connect()
-
-          try {
-            const user = await prisma.user.findUnique({
-              where: {
-                shortname: 'lecturer',
-                loginTokenExpiresAt: { gte: new Date() },
-              },
-            })
-
-            if (!user) {
-              console.log(user)
-              throw new Error(
-                'No user with the corresponding shortname and valid login token found.'
-              )
-            }
-
-            // remove any whitespaces from the token passed to the function
-            const sanitizedToken = token.replace(/\s/g, '')
-
-            return user.loginToken === sanitizedToken
-          } finally {
-            await prisma.$disconnect()
-          }
-        },
-        async getControlToken() {
-          const prisma = await connect()
-
-          try {
-            const user = await prisma.user.findUnique({
-              where: {
-                shortname: 'lecturer',
-                loginTokenExpiresAt: { gte: new Date() },
-              },
-            })
-
-            if (!user) {
-              return null
-            }
-
-            return user.loginToken
-          } finally {
-            await prisma.$disconnect()
-          }
-        },
-        // #endregion
-
         // ! Course Management / PINs
         // #region
         async getCoursePin({ courseName }: { courseName: string }) {
