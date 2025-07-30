@@ -8,6 +8,17 @@ enum PermissionLevel {
     OWNER // (derived permissions only)
 }
 
+enum PermissionPropagationStatus {
+    PENDING // propagation is in progress
+    FAILED // propagation has failed
+    COMPLETED // propagation has been completed
+}
+
+enum PendingPermissionEntryStatus {
+    PENDING // entry is pending and will be processed by Hatchet
+    CANCELLED // entry has failed and will not be processed
+}
+
 model UserGroup {
     id   Int    @id @default(autoincrement())
     name String
@@ -31,6 +42,9 @@ model Permission {
     id              Int             @id @default(autoincrement())
     permissionLevel PermissionLevel
 
+    // status of the propagation of the permissions
+    propagationStatus PermissionPropagationStatus @default(PENDING)
+
     // user or user group requesting access
     user   User?   @relation("DirectlySharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     userId String? @db.Uuid
@@ -41,8 +55,9 @@ model Permission {
     // define if only minimal permissions should be propagated or if the explicitly granted
     // permission level should be propagated according to the permission scheme
     // & link all permissions that are derived from this permission to it
-    propagation        Boolean             @default(false)
+    propagation        Boolean                  @default(false)
     derivedPermissions DerivedPermission[]
+    pendingPermissions PendingPermissionEntry[]
 
     // shared objects
     catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -165,6 +180,54 @@ model AccessRequest {
     @@index([practiceQuizId, objectAdminOrOwnerId])
     @@index([microLearningId, objectAdminOrOwnerId])
     @@index([groupActivityId, objectAdminOrOwnerId])
+}
+
+// table to keep track of all permission propagation tasks that are currently scheduled to be processed by Hatchet
+model PendingPermissionEntry {
+    id Int @id @default(autoincrement())
+
+    status               PendingPermissionEntryStatus @default(PENDING)
+    updateAccessRequests Boolean                      @default(false) // whether access requests as well
+
+    directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    directPermissionId Int? // permission for which the propagation is scheduled (if any)
+
+    // shared objects
+    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    catalogCollectionId String?            @db.Uuid
+
+    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    answerCollectionId Int?
+
+    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    elementId Int?
+
+    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    courseId String? @db.Uuid
+
+    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    liveQuizId String?   @db.Uuid
+
+    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    practiceQuizId String?       @db.Uuid
+
+    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    microLearningId String?        @db.Uuid
+
+    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    groupActivityId String?        @db.Uuid
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([directPermissionId, catalogCollectionId])
+    @@unique([directPermissionId, answerCollectionId])
+    @@unique([directPermissionId, elementId])
+    @@unique([directPermissionId, courseId])
+    @@unique([directPermissionId, liveQuizId])
+    @@unique([directPermissionId, practiceQuizId])
+    @@unique([directPermissionId, microLearningId])
+    @@unique([directPermissionId, groupActivityId])
 }
 
 // derived permissions that have been computed based on the user's direct permissions on parent objects or user group permissions
@@ -329,9 +392,10 @@ model CatalogCollection {
     // users / user groups that are allowed to import / request elements from this collection (read access)
     // users / user groups that are allowed to add elements to this collection (write access)
     // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)
-    directPermissions Permission[]
-    permissions       DerivedPermission[]
-    accessRequests    AccessRequest[]
+    directPermissions  Permission[]
+    permissions        DerivedPermission[]
+    pendingPermissions PendingPermissionEntry[]
+    accessRequests     AccessRequest[]
 
     // link to the join-table containing all associated objects
     objectAssignments CatalogCollectionAssignment[]

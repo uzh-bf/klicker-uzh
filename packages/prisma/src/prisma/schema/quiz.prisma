@@ -42,6 +42,7 @@ model PracticeQuiz {
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
+  pendingPermissions PendingPermissionEntry[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]
@@ -114,6 +115,7 @@ model LiveQuiz {
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
+  pendingPermissions PendingPermissionEntry[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]
@@ -164,6 +166,7 @@ model MicroLearning {
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
+  pendingPermissions PendingPermissionEntry[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]
@@ -269,6 +272,7 @@ model GroupActivity {
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
+  pendingPermissions PendingPermissionEntry[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]

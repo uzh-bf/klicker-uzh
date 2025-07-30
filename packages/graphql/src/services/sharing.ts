@@ -1,3 +1,4 @@
+import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityLogModificationFieldType,
@@ -411,7 +412,8 @@ export async function createCatalogCollection(
     // trigger a recomputation of the corresponding derived permission for this new collection
     await recomputeDerivedPermissions(
       { catalogCollectionId: newCollection.id, userId: ctx.user.sub },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     return newCollection
@@ -1772,7 +1774,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             catalogCollectionId: pendingRequest.catalogCollectionId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.answerCollectionId !== null) {
         await recomputeDerivedPermissions(
@@ -1781,7 +1784,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             answerCollectionId: pendingRequest.answerCollectionId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.elementId !== null) {
         await recomputeDerivedPermissions(
@@ -1790,7 +1794,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             elementId: pendingRequest.elementId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.courseId !== null) {
         await recomputeDerivedPermissions(
@@ -1799,7 +1804,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             courseId: pendingRequest.courseId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.liveQuizId !== null) {
         await recomputeDerivedPermissions(
@@ -1808,7 +1814,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             liveQuizId: pendingRequest.liveQuizId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.practiceQuizId !== null) {
         await recomputeDerivedPermissions(
@@ -1817,7 +1824,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             practiceQuizId: pendingRequest.practiceQuizId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.microLearningId !== null) {
         await recomputeDerivedPermissions(
@@ -1826,7 +1834,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             microLearningId: pendingRequest.microLearningId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       } else if (pendingRequest.groupActivityId !== null) {
         await recomputeDerivedPermissions(
@@ -1835,7 +1844,8 @@ export async function resolveObjectSharingRequest(
             updateAccessRequests,
             groupActivityId: pendingRequest.groupActivityId,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       }
     },
@@ -1999,7 +2009,8 @@ export async function changeObjectPermissionLevel(
               userId: affectedUserId,
               updateAccessRequests,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof answerCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2008,22 +2019,26 @@ export async function changeObjectPermissionLevel(
               userId: affectedUserId,
               updateAccessRequests,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof elementId !== 'undefined') {
           await recomputeDerivedPermissions(
             { elementId, userId: affectedUserId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof courseId !== 'undefined') {
           await recomputeDerivedPermissions(
             { courseId, userId: affectedUserId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof liveQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { liveQuizId, userId: affectedUserId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof practiceQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2032,7 +2047,8 @@ export async function changeObjectPermissionLevel(
               userId: affectedUserId,
               updateAccessRequests,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof microLearningId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2041,7 +2057,8 @@ export async function changeObjectPermissionLevel(
               userId: affectedUserId,
               updateAccessRequests,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof groupActivityId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2050,7 +2067,8 @@ export async function changeObjectPermissionLevel(
               userId: affectedUserId,
               updateAccessRequests,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         }
       }
@@ -2240,7 +2258,8 @@ export async function revokeObjectAccess(
               userId: affectedUserId,
               updateAccessRequests: false,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof answerCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2249,22 +2268,26 @@ export async function revokeObjectAccess(
               userId: affectedUserId,
               updateAccessRequests: false,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof elementId !== 'undefined') {
           await recomputeDerivedPermissions(
             { elementId, userId: affectedUserId, updateAccessRequests: false },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof courseId !== 'undefined') {
           await recomputeDerivedPermissions(
             { courseId, userId: affectedUserId, updateAccessRequests: false },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof liveQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { liveQuizId, userId: affectedUserId, updateAccessRequests: false },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof practiceQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2273,7 +2296,8 @@ export async function revokeObjectAccess(
               userId: affectedUserId,
               updateAccessRequests: false,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof microLearningId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2282,7 +2306,8 @@ export async function revokeObjectAccess(
               userId: affectedUserId,
               updateAccessRequests: false,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof groupActivityId !== 'undefined') {
           await recomputeDerivedPermissions(
@@ -2291,7 +2316,8 @@ export async function revokeObjectAccess(
               userId: affectedUserId,
               updateAccessRequests: false,
             },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         }
       }
@@ -2476,7 +2502,8 @@ export async function transferCatalogCollectionOwnership(
         userId: newOwner.id,
         updateAccessRequests: true,
       },
-      prisma
+      prisma,
+      ctx.hatchet
     )
     await recomputeDerivedPermissions(
       {
@@ -2484,7 +2511,8 @@ export async function transferCatalogCollectionOwnership(
         userId: ctx.user.sub,
         updateAccessRequests: false,
       },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     return updated
@@ -2995,7 +3023,8 @@ export async function transferAnswerCollectionOwnership(
         userId: newOwner.id,
         updateAccessRequests: true,
       },
-      prisma
+      prisma,
+      ctx.hatchet
     )
     await recomputeDerivedPermissions(
       {
@@ -3003,7 +3032,8 @@ export async function transferAnswerCollectionOwnership(
         userId: ctx.user.sub,
         updateAccessRequests: false,
       },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     return updated
@@ -3106,11 +3136,13 @@ export async function transferElementOwnership(
     // trigger recomputation of derived permissions for the element for both users
     await recomputeDerivedPermissions(
       { elementId: id, userId: newOwner.id, updateAccessRequests: true },
-      prisma
+      prisma,
+      ctx.hatchet
     )
     await recomputeDerivedPermissions(
       { elementId: id, userId: ctx.user.sub, updateAccessRequests: false },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     return updated
@@ -3214,11 +3246,13 @@ export async function transferCourseOwnership(
       // trigger recomputation of derived permissions for the course for both users
       await recomputeDerivedPermissions(
         { courseId: id, userId: newOwner.id, updateAccessRequests: true },
-        prisma
+        prisma,
+        ctx.hatchet
       )
       await recomputeDerivedPermissions(
         { courseId: id, userId: ctx.user.sub, updateAccessRequests: false },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -3324,11 +3358,13 @@ export async function transferLiveQuizOwnership(
       // trigger recomputation of derived permissions for the live quiz for both users
       await recomputeDerivedPermissions(
         { liveQuizId: id, userId: newOwner.id, updateAccessRequests: true },
-        prisma
+        prisma,
+        ctx.hatchet
       )
       await recomputeDerivedPermissions(
         { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -3434,7 +3470,8 @@ export async function transferPracticeQuizOwnership(
       // trigger recomputation of derived permissions for the practice quiz for both users
       await recomputeDerivedPermissions(
         { practiceQuizId: id, userId: newOwner.id, updateAccessRequests: true },
-        prisma
+        prisma,
+        ctx.hatchet
       )
       await recomputeDerivedPermissions(
         {
@@ -3442,7 +3479,8 @@ export async function transferPracticeQuizOwnership(
           userId: ctx.user.sub,
           updateAccessRequests: false,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -3552,7 +3590,8 @@ export async function transferMicroLearningOwnership(
           userId: newOwner.id,
           updateAccessRequests: true,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
       await recomputeDerivedPermissions(
         {
@@ -3560,7 +3599,8 @@ export async function transferMicroLearningOwnership(
           userId: ctx.user.sub,
           updateAccessRequests: false,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -3670,7 +3710,8 @@ export async function transferGroupActivityOwnership(
           userId: newOwner.id,
           updateAccessRequests: true,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
       await recomputeDerivedPermissions(
         {
@@ -3678,7 +3719,8 @@ export async function transferGroupActivityOwnership(
           userId: ctx.user.sub,
           updateAccessRequests: false,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -4115,42 +4157,50 @@ export async function shareObject(
         if (typeof catalogCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
             { catalogCollectionId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof answerCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
             { answerCollectionId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof elementId !== 'undefined') {
           await recomputeDerivedPermissions(
             { elementId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof courseId !== 'undefined') {
           await recomputeDerivedPermissions(
             { courseId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof liveQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { liveQuizId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof practiceQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { practiceQuizId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof microLearningId !== 'undefined') {
           await recomputeDerivedPermissions(
             { microLearningId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof groupActivityId !== 'undefined') {
           await recomputeDerivedPermissions(
             { groupActivityId, userId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         }
 
@@ -4382,42 +4432,50 @@ export async function shareObject(
         if (typeof catalogCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
             { catalogCollectionId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof answerCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
             { answerCollectionId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof elementId !== 'undefined') {
           await recomputeDerivedPermissions(
             { elementId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof courseId !== 'undefined') {
           await recomputeDerivedPermissions(
             { courseId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof liveQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { liveQuizId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof practiceQuizId !== 'undefined') {
           await recomputeDerivedPermissions(
             { practiceQuizId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof microLearningId !== 'undefined') {
           await recomputeDerivedPermissions(
             { microLearningId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (typeof groupActivityId !== 'undefined') {
           await recomputeDerivedPermissions(
             { groupActivityId, updateAccessRequests },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         }
 
@@ -4578,7 +4636,8 @@ export async function copyAnswerCollectionToAccount(
     // trigger recomputation of derived permissions for the object within the transaction
     await recomputeDerivedPermissions(
       { answerCollectionId: newCollection.id, userId: ctx.user.sub },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     return newCollection
@@ -4689,7 +4748,8 @@ export async function copyElementToAccount(
     // trigger recomputation of derived permissions for the object
     await recomputeDerivedPermissions(
       { elementId: newElement.id, userId: ctx.user.sub },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     // if an answer collection is linked to the element, recompute the corresponding derived permissions
@@ -4699,7 +4759,8 @@ export async function copyElementToAccount(
           answerCollectionId: newElement.answerCollectionId,
           userId: ctx.user.sub,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     }
 
@@ -4795,7 +4856,8 @@ export async function importAnswerCollection(
     // trigger recomputation of derived permissions for the object within the transaction
     await recomputeDerivedPermissions(
       { answerCollectionId: collection.id, userId: ctx.user.sub },
-      prisma
+      prisma,
+      ctx.hatchet
     )
 
     // set audit log entry (granted read permissions)
@@ -5886,7 +5948,8 @@ export function withPermission<TSource, TArgs, TReturn>(
 // #region
 async function recomputePermissionsUserGroupMember(
   { permissions, userId }: { permissions: DB.Permission[]; userId: string },
-  prisma: PrismaTransactionClient
+  prisma: PrismaTransactionClient,
+  hatchet: HatchetClient
 ) {
   // trigger a derived permission recomputation for all objects that were shared with this group and this user
   for (const permission of permissions) {
@@ -5896,7 +5959,8 @@ async function recomputePermissionsUserGroupMember(
           catalogCollectionId: permission.catalogCollectionId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.answerCollectionId !== null) {
       await recomputeDerivedPermissions(
@@ -5904,7 +5968,8 @@ async function recomputePermissionsUserGroupMember(
           answerCollectionId: permission.answerCollectionId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.elementId !== null) {
       await recomputeDerivedPermissions(
@@ -5912,7 +5977,8 @@ async function recomputePermissionsUserGroupMember(
           elementId: permission.elementId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.courseId !== null) {
       await recomputeDerivedPermissions(
@@ -5920,7 +5986,8 @@ async function recomputePermissionsUserGroupMember(
           courseId: permission.courseId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.liveQuizId !== null) {
       await recomputeDerivedPermissions(
@@ -5928,7 +5995,8 @@ async function recomputePermissionsUserGroupMember(
           liveQuizId: permission.liveQuizId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.practiceQuizId !== null) {
       await recomputeDerivedPermissions(
@@ -5936,7 +6004,8 @@ async function recomputePermissionsUserGroupMember(
           practiceQuizId: permission.practiceQuizId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.microLearningId !== null) {
       await recomputeDerivedPermissions(
@@ -5944,7 +6013,8 @@ async function recomputePermissionsUserGroupMember(
           microLearningId: permission.microLearningId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     } else if (permission.groupActivityId !== null) {
       await recomputeDerivedPermissions(
@@ -5952,7 +6022,8 @@ async function recomputePermissionsUserGroupMember(
           groupActivityId: permission.groupActivityId,
           userId,
         },
-        prisma
+        prisma,
+        hatchet
       )
     }
   }
@@ -6220,7 +6291,8 @@ export async function leaveUserGroup(
       // trigger a derived permission recomputation for all objects that were shared with this group and this user
       await recomputePermissionsUserGroupMember(
         { permissions: updated.permissions, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updated
@@ -6268,42 +6340,50 @@ export async function deleteUserGroup(
         if (permission.catalogCollectionId !== null) {
           await recomputeDerivedPermissions(
             { catalogCollectionId: permission.catalogCollectionId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.answerCollectionId !== null) {
           await recomputeDerivedPermissions(
             { answerCollectionId: permission.answerCollectionId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.elementId !== null) {
           await recomputeDerivedPermissions(
             { elementId: permission.elementId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.courseId !== null) {
           await recomputeDerivedPermissions(
             { courseId: permission.courseId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.liveQuizId !== null) {
           await recomputeDerivedPermissions(
             { liveQuizId: permission.liveQuizId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.practiceQuizId !== null) {
           await recomputeDerivedPermissions(
             { practiceQuizId: permission.practiceQuizId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.microLearningId !== null) {
           await recomputeDerivedPermissions(
             { microLearningId: permission.microLearningId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         } else if (permission.groupActivityId !== null) {
           await recomputeDerivedPermissions(
             { groupActivityId: permission.groupActivityId },
-            prisma
+            prisma,
+            ctx.hatchet
           )
         }
       }
@@ -6467,7 +6547,8 @@ export async function removeUserFromGroup(
       // trigger a derived permission recomputation for all objects that were shared with this group and this user
       await recomputePermissionsUserGroupMember(
         { permissions: updatedUserGroup.permissions, userId },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }
@@ -6666,7 +6747,8 @@ export async function addUserToUserGroup(
       // recompute all permissions for the newly added user for objects shared with the group
       await recomputePermissionsUserGroupMember(
         { permissions: updatedUserGroup.permissions, userId },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }

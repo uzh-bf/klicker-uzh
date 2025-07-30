@@ -353,13 +353,14 @@ export async function manipulatePracticeQuiz(
       // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
+          await recomputeDerivedPermissions({ elementId }, prisma, ctx.hatchet)
         }
       }
 
       await recomputeDerivedPermissions(
         { practiceQuizId: upsertedQuiz.id },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return upsertedQuiz
@@ -621,7 +622,11 @@ export async function deletePracticeQuiz(
 
         // update derived permissions for this practice quiz (after soft deletion)
         // this function call automatically includes permission updates for all linked elements
-        await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
+        await recomputeDerivedPermissions(
+          { practiceQuizId: quiz.id },
+          prisma,
+          ctx.hatchet
+        )
 
         return quiz
       },
@@ -669,7 +674,8 @@ export async function removePracticeQuiz(
       // recompute derived permissions for the user and the practice quiz
       await recomputeDerivedPermissions(
         { practiceQuizId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }

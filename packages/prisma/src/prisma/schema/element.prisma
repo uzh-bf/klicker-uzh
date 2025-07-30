@@ -51,6 +51,7 @@ model Element {
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
+  pendingPermissions PendingPermissionEntry[]
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]

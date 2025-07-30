@@ -444,8 +444,13 @@ export async function manipulateQuestion(
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(
-    { elementId: question.id, userId: ctx.user.sub },
-    ctx.prisma
+    {
+      elementId: question.id,
+      userId: ctx.user.sub,
+      ownerPermission: question.ownerId === ctx.user.sub,
+    },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // if the answer collection linked to the question has changed, recompute the derived permissions for the removed answer collection
@@ -456,7 +461,8 @@ export async function manipulateQuestion(
   ) {
     await recomputeDerivedPermissions(
       { answerCollectionId: questionPrev.answerCollectionId },
-      ctx.prisma
+      ctx.prisma,
+      ctx.hatchet
     )
   }
 
@@ -599,13 +605,14 @@ export async function deleteElement(
       })
 
       // update derived permissions for element
-      await recomputeDerivedPermissions({ elementId: id }, prisma)
+      await recomputeDerivedPermissions({ elementId: id }, prisma, ctx.hatchet)
 
       // update derived permissions on the linked answer collection (if defined) -> derived permissions
       if (originalElement.answerCollectionId !== null) {
         await recomputeDerivedPermissions(
           { answerCollectionId: originalElement.answerCollectionId },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       }
 
@@ -691,7 +698,8 @@ export async function removeElement(
       // recompute derived permissions for the element
       await recomputeDerivedPermissions(
         { elementId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }
@@ -1709,7 +1717,11 @@ export async function updateElementInstances(
 
     // recompute the derived permissions for all touched answer collections
     for (const id of uniqueTouchedAnswerCollectionIds) {
-      await recomputeDerivedPermissions({ answerCollectionId: id }, ctx.prisma)
+      await recomputeDerivedPermissions(
+        { answerCollectionId: id },
+        ctx.prisma,
+        ctx.hatchet
+      )
     }
   }
 

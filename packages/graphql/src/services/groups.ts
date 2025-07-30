@@ -1094,14 +1094,15 @@ export async function manipulateGroupActivity(
       // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
+          await recomputeDerivedPermissions({ elementId }, prisma, ctx.hatchet)
         }
       }
 
       // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
       await recomputeDerivedPermissions(
         { groupActivityId: upsertedActivity.id },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return upsertedActivity
@@ -1948,7 +1949,8 @@ export async function deleteGroupActivity(
         // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
           { groupActivityId: updatedActivity.id },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return updatedActivity
@@ -1995,7 +1997,8 @@ export async function removeGroupActivity(
 
       await recomputeDerivedPermissions(
         { groupActivityId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }

@@ -68,8 +68,13 @@ export async function createAnswerCollection(
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
-      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
-      prisma
+      {
+        answerCollectionId: newCollection.id,
+        userId: ctx.user.sub,
+        ownerPermission: true,
+      },
+      prisma,
+      ctx.hatchet
     )
 
     return newCollection
@@ -126,8 +131,13 @@ export async function duplicateAnswerCollection(
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
-      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
-      prisma
+      {
+        answerCollectionId: newCollection.id,
+        userId: ctx.user.sub,
+        ownerPermission: true,
+      },
+      prisma,
+      ctx.hatchet
     )
 
     return newCollection
@@ -545,7 +555,8 @@ export async function deleteAnswerCollection(
       // (required, since some users will retain derived access through linked elements)
       await recomputeDerivedPermissions(
         { answerCollectionId: updatedAnswerCollection.id },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return updatedAnswerCollection
@@ -656,7 +667,8 @@ export async function removeAnswerCollection(
         // trigger recomputation of derived permissions
         await recomputeDerivedPermissions(
           { answerCollectionId: id, userId: ctx.user.sub },
-          prisma
+          prisma,
+          ctx.hatchet
         )
       },
       { timeout: 60000 }

@@ -4,7 +4,8 @@
  * - Re-exports all `recomputeXxxPermissions` functions across entities and `updateAccessRequestInstances`.
  */
 
-import { recomputeAnswerCollectionPermissions } from './permissions/answerCollection.js'
+import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import { recomputeAnswerCollectionPermissions } from './permissions/answerCollectionDispatcher.js'
 import { recomputeCatalogCollectionPermissions } from './permissions/catalog.js'
 import { recomputeCoursePermissions } from './permissions/course.js'
 import { recomputeElementPermissions } from './permissions/element.js'
@@ -52,8 +53,11 @@ export * from './permissions/util.js'
  * @param prisma - Prisma transaction client for database operations
  * @returns Promise that resolves when the permission recomputation completes
  */
+// TODO: fix the props of this function that typescript only accepts one object ID and one of the two booleans to be set
 export async function recomputeDerivedPermissions(
   {
+    // if a direct permission was created, pass the corresponding ID
+    directPermissionId,
     // object ids - exactly one must be defined
     catalogCollectionId,
     answerCollectionId,
@@ -63,11 +67,14 @@ export async function recomputeDerivedPermissions(
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    // flag to signal that a derived ownership permission should be created (no need for hatchet task creation)
+    ownerPermission = false,
     // optional user to limit the required recomputation
     userId,
     // optional flag to update the access requests for the object under consideration
     updateAccessRequests = false,
   }: {
+    directPermissionId?: number
     catalogCollectionId?: string
     answerCollectionId?: number
     elementId?: number
@@ -77,7 +84,6 @@ export async function recomputeDerivedPermissions(
     microLearningId?: string
     groupActivityId?: string
     userId?: string
-    updateAccessRequests?: boolean
   } & (
     | { catalogCollectionId: string }
     | { answerCollectionId: number }
@@ -87,17 +93,29 @@ export async function recomputeDerivedPermissions(
     | { practiceQuizId: string }
     | { microLearningId: string }
     | { groupActivityId: string }
-  ),
-  prisma: PrismaTransactionClient
+  ) &
+    (
+      | { ownerPermission?: boolean; updateAccessRequests?: never }
+      | { ownerPermission?: never; updateAccessRequests?: boolean }
+    ),
+  prisma: PrismaTransactionClient,
+  hatchet: HatchetClient
 ) {
-  if (typeof catalogCollectionId !== 'undefined') {
+  if (typeof answerCollectionId !== 'undefined') {
+    await recomputeAnswerCollectionPermissions(
+      {
+        id: answerCollectionId,
+        userId,
+        directPermissionId,
+        updateAccessRequests,
+        ownerPermission,
+      },
+      prisma,
+      hatchet
+    )
+  } else if (typeof catalogCollectionId !== 'undefined') {
     await recomputeCatalogCollectionPermissions(
       { id: catalogCollectionId, userId, updateAccessRequests },
-      prisma
-    )
-  } else if (typeof answerCollectionId !== 'undefined') {
-    await recomputeAnswerCollectionPermissions(
-      { id: answerCollectionId, userId, updateAccessRequests },
       prisma
     )
   } else if (typeof elementId !== 'undefined') {

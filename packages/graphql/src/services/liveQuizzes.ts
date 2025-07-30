@@ -683,11 +683,15 @@ export async function manipulateLiveQuiz(
       // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
+          await recomputeDerivedPermissions({ elementId }, prisma, ctx.hatchet)
         }
       }
 
-      await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, prisma)
+      await recomputeDerivedPermissions(
+        { liveQuizId: upsertedQuiz.id },
+        prisma,
+        ctx.hatchet
+      )
       return upsertedQuiz
     },
     { timeout: 60000 }
@@ -735,7 +739,8 @@ export async function removeLiveQuiz(
 
       await recomputeDerivedPermissions(
         { liveQuizId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }
@@ -2267,7 +2272,11 @@ export async function deleteLiveQuiz(
 
         // update derived permissions for this live quiz (after soft deletion)
         // this function call automatically includes permission updates for all linked elements
-        await recomputeDerivedPermissions({ liveQuizId: quiz.id }, prisma)
+        await recomputeDerivedPermissions(
+          { liveQuizId: quiz.id },
+          prisma,
+          ctx.hatchet
+        )
 
         return quiz
       },

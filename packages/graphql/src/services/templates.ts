@@ -541,8 +541,10 @@ export async function createActivityTemplate(
           {
             liveQuizId: template.id,
             userId: ctx.user.sub,
+            ownerPermission: true,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return template
@@ -632,8 +634,10 @@ export async function createActivityTemplate(
           {
             practiceQuizId: template.id,
             userId: ctx.user.sub,
+            ownerPermission: true,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return template
@@ -723,8 +727,10 @@ export async function createActivityTemplate(
           {
             microLearningId: template.id,
             userId: ctx.user.sub,
+            ownerPermission: true,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return template
@@ -823,8 +829,10 @@ export async function createActivityTemplate(
           {
             groupActivityId: template.id,
             userId: ctx.user.sub,
+            ownerPermission: true,
           },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return template
@@ -1893,8 +1901,9 @@ export async function createLiveQuizFromTemplate(
 
       // trigger recomputation of the derived permissions for the new activity
       await recomputeDerivedPermissions(
-        { liveQuizId: quiz.id, userId: ctx.user.sub },
-        prisma
+        { liveQuizId: quiz.id, userId: ctx.user.sub, ownerPermission: true },
+        prisma,
+        ctx.hatchet
       )
 
       return quiz

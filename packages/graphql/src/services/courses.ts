@@ -732,8 +732,10 @@ export async function createCourse(
         {
           courseId: newCourse.id,
           userId: ctx.user.sub,
+          ownerPermission: true,
         },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return newCourse
@@ -1069,7 +1071,11 @@ export async function deleteCourse(
       // trigger a recomputation of all permissions related to the live quizzes of the course
       // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
       for (const liveQuiz of course.liveQuizzes) {
-        await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
+        await recomputeDerivedPermissions(
+          { liveQuizId: liveQuiz.id },
+          prisma,
+          ctx.hatchet
+        )
       }
 
       // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
@@ -1095,7 +1101,7 @@ export async function deleteCourse(
       ]
 
       for (const elementId of elementIds) {
-        await recomputeDerivedPermissions({ elementId }, prisma)
+        await recomputeDerivedPermissions({ elementId }, prisma, ctx.hatchet)
       }
 
       return deleted
@@ -1143,7 +1149,8 @@ export async function removeCourse(
       // recompute derived permissions for the user on the course
       await recomputeDerivedPermissions(
         { courseId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }

@@ -344,13 +344,14 @@ export async function manipulateMicroLearning(
       // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
+          await recomputeDerivedPermissions({ elementId }, prisma, ctx.hatchet)
         }
       }
 
       await recomputeDerivedPermissions(
         { microLearningId: upsertedMicrolearning.id },
-        prisma
+        prisma,
+        ctx.hatchet
       )
 
       return upsertedMicrolearning
@@ -716,7 +717,8 @@ export async function deleteMicroLearning(
         // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
           { microLearningId: updated.id },
-          prisma
+          prisma,
+          ctx.hatchet
         )
 
         return updated
@@ -765,7 +767,8 @@ export async function removeMicroLearning(
       // recompute derived permissions for this microlearning and user
       await recomputeDerivedPermissions(
         { microLearningId: id, userId: ctx.user.sub },
-        prisma
+        prisma,
+        ctx.hatchet
       )
     },
     { timeout: 60000 }

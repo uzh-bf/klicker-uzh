@@ -1209,8 +1209,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: questionSC.id, userId: ctx.user.sub },
-    ctx.prisma
+    { elementId: questionSC.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create multiple choice demo question
@@ -1274,8 +1275,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: questionMC.id, userId: ctx.user.sub },
-    ctx.prisma
+    { elementId: questionMC.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create KPRIM demo question
@@ -1337,8 +1339,13 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: questionKPRIM.id, userId: ctx.user.sub },
-    ctx.prisma
+    {
+      elementId: questionKPRIM.id,
+      userId: ctx.user.sub,
+      ownerPermission: true,
+    },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create Numerical demo question
@@ -1374,8 +1381,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: questionNR.id, userId: ctx.user.sub },
-    ctx.prisma
+    { elementId: questionNR.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create Free Text demo question
@@ -1409,8 +1417,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: questionFT.id, userId: ctx.user.sub },
-    ctx.prisma
+    { elementId: questionFT.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create demo Flashcard
@@ -1439,8 +1448,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: flashcard.id, userId: ctx.user.sub },
-    ctx.prisma
+    { elementId: flashcard.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   // create demo content element
@@ -1467,8 +1477,13 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { elementId: contentElement.id, userId: ctx.user.sub },
-    ctx.prisma
+    {
+      elementId: contentElement.id,
+      userId: ctx.user.sub,
+      ownerPermission: true,
+    },
+    ctx.prisma,
+    ctx.hatchet
   )
 
   const blockData = [
@@ -1559,7 +1574,8 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
   await recomputeDerivedPermissions(
-    { liveQuizId: liveQuiz.id, userId: ctx.user.sub },
-    ctx.prisma
+    { liveQuizId: liveQuiz.id, userId: ctx.user.sub, ownerPermission: true },
+    ctx.prisma,
+    ctx.hatchet
   )
 }
