@@ -11,7 +11,7 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 
 ![Practice Quiz](/img/practice_quiz/pq_olat_view.png)
 
-The Practice Quiz activity consists of longer question sets that specifically target modules or topics and that can be embedded within Learning Management Systems (LMS) like OpenOLAT. These learning activities have no restrictions on when or how often they can be completed. Furthermore, the questions within each set can be shown in sequence, shuffled, or ordered based on the date of the last response. When using gamification, the time frame in which points can be collected from responding to the questions can be customized to, e.g., once a week or day.
+Practice Quizzes are designed to contain longer question sets that specifically target modules or topics and that can be embedded within Learning Management Systems (LMS) like OpenOLAT or Moodle. These learning activities have no restrictions on when or how often they can be completed. Furthermore, the questions within each set can be shown in sequence or based on the student's last response sorted according to a spaced repetition logic. When using gamification, the time frame in which points can be collected from responding to the questions can be customized to, for example, once a week.
 
 ## How can I create a Practice Quiz?
 
@@ -31,37 +31,51 @@ The Practice Quiz activity consists of longer question sets that specifically ta
   title="KlickerUZH - Prepare Practice Quiz"
 ></iframe>
 
-**Add a description:**
+<br />
+<br />
 
-1. Name: The name of the practice quiz allows the user to distinguish the particular activity from others. It is therefore only visible to the users themselves.
-2. Display Name: This name will be shown to the participants while the practice quiz is being performed.
-3. Description: A description of the practice quiz can optionally be added and will be displayed to the participants at the beginning of the quiz.
+**Add the necessary metadata:**
+
+1. **Name:** The name of the Practice Quiz allows the user to distinguish the particular quiz from others. It is therefore not visible to students participating in the activity. For recurring courses, we recommend adding information like the semester or lecture week to the name.
+2. **Display Name:** The display name is shown to participants when the Practice Quiz is available.
+3. **Description:** Optionally, a description can be added to the Practice Quiz, which will be shown to participants at the beginning of the activity.
 
 **Adjust the settings:**
 
-4. Course: In this field, the practice quiz has to be assigned to a course. Note that this is different from the Live Quiz, which can be run independently of a course. If you need help creating a course, please review the [tutorial on course management](/tutorials/course_management/).
-5. Multiplier: The multiplier is a factor with which the awarded points are multiplied when a question is answered. This field is only available if the practice quiz is included in a gamified course and participants collect points for correct answers.
-6. Repetition interval: practice quizzes are characterized by their spaced repetition. Here, the period is chosen after which the participants can repeat the Quiz.
-7. Order: The order in which the questions are to be solved by the participants is selected here. It is possible to choose between the following setups: Last response first, sequential or shuffled.
-8. Availability (optional): Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication). If the chosen date lies in the future and the practice quiz is published before, it will be available to students per the set start date. Should you not wish to use this option, simply leave the field value at its default value and the practice quiz will become available at the moment you publish it on the course overview after creation.
+4. **Course:** In contrast to live quizzes, Practice Quizzes need to be assigned to an active course. This is necessary for students to be able to access the Practice Quiz through the student app or an LMS integration. If you need help creating a course, please review the [tutorial on course management](/tutorials/course_management).
+5. **Multiplier:** When assigned to a gamified course, a multiplier can be set for the Practice Quiz. The selected factor will be applied to all points collected in the activity and, if defined, combined with the multiplier of the question. For more information on the distributed points, please refer to the [grading logic overview](/gamification/grading_logic).
+6. **Repetition interval:** Practice Quizzes are characterized by their spaced repetition, while repetitions are incentivized through additional points. The repetition interval describes the period (in days) after which the participants can repeat a specific question and collect points for it again. Independent of points and the repetition interval, the questions can be answered as often as desired.
+7. **Order:** The order in which the questions are to be solved by the participants is selected here. You can choose between a simple sequential ordering, where all elements will be shown in the order you add them to the activity, or a spaced repetition logic, where the element stacks are ordered according to a student's previous responses to maximize knowledge retention and the learning process. Elements inside a stack will always be shown in sequence, independent of the selected order.
 
 **Choose your questions:**
 
-For this step, existing questions are required. Note that microlearnings and practice quizzes support all element types except from free-text questions, as long as a valid sample solution is specified. If you need help with creating questions or content elements / flashcards, please review the [tutorial on element management](/tutorials/element_management/).
-When adding questions, you can choose to have one or multiple questions per stack. It makes sense to have several questions per stack if you provide your students with a task / case study that builds up and the questions are connected. Stacks in practice quizzes can optionally be ordered according to a spaced repetition logic based on the student’s individual responses, while questions within a stack will always be shown in sequence.
+8. In the final step, you can add your prepared questions to the Practice Quiz using one of the following two methods. Note that Microlearnings and Practice Quizzes support all element types, as long as a valid sample solution is specified (where applicable and except for free-text questions). Questions in the same stack will be shown to the students underneath each other, while questions in different stacks will be displayed sequentially after answering all elements in the preceding stack. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
+   1. **Drag & Drop:** To add a new question to an existing stack, simply drag the question onto the plus sign beneath the desired stack. Similarly, you may also drag questions onto the "New stack" button to create a new stack with the question.
+   2. **Select Questions:** Select one or more questions that should be added to the Practice Quiz. The wizard will automatically display all different options for adding the selected questions to the activity. You can either add them to an existing stack or create one or multiple new stacks with the selected questions.
+   3. **Ordering:** To order individual elements within a certain stack or move entire stacks (mainly for sequentially ordered practice quizzes), please use the provided arrows.
+9. Optionally, you can add a **title** and **description** to each stack individually, which will be displayed to the students above the questions contained in the stack. This allows you to create comprehensive cases with questions that require an introduction and build up on each other.
+10. Finally, confirm the creation and your Practice Quiz is prepared!
 
-There are multiple options to add a question to a stack:
+## How can I edit a Practice Quiz?
 
-9. Drag & Drop: The desired question can be added to a specific stack by simply dragging the question onto the plus sign below the desired stack.
-10. Arrows: With the help of the arrows, the arrangement of the questions can be put in the desired order.
-11. Select: It is also possible to select one or more questions (with the checkboxes next to them) and insert them into the desired stack or stacks by clicking on the yellow boxes that appear on selection. In this way, questions can be grouped and/or stacked for sequential presentation.
-12. Ordering: To order individual elements within a certain stack or move entire stacks (mainly for sequentially ordered practice quizzes), please use the provided arrows.
+Like all other activities in KlickerUZH, Practice Quizzes can be edited as long as they are in their **draft** state. If an automated publication at a future date is chosen during publishing, Practice Quizzes will remain in the **scheduled** state until the start date is reached, when their status automatically changes to **published**. While scheduled, Practice Quizzes can still be unpublished to the draft state and edited. Once a Practice Quiz is published, its content can no longer be modified, since student submissions might be affected by the changes. The name and display name of the Practice Quiz may be changed at any time, using the pencil icon next to the activity name.
 
-**End of preparation:**
+To edit the content of a Practice Quiz, open the actions dropdown and select the corresponding option. KlickerUZH will then automatically redirect you back to the library and open the familiar activity wizard already used during creation with all information pre-filled. After making any changes to the metadata of the quiz, its settings or the contained elements, **make sure to save your changes** in the last step of the wizard.
 
-13. With a click on Create your first practice quiz is prepared!
+Beyond simply opening the editing wizard from the actions menu on any Practice Quiz activity, KlickerUZH also offers you several other options as part of the activity actions. You can...
 
-## How can I publish a Practice Quiz and make it accessible to participants?
+- ...open the **activity preview** of the Practice Quiz where you can inspect and even submit test answers before publishing it.
+- ...copy the **access link** and provide it to your participants.
+- ...copy the access link to integrate the Practice Quiz into your learning management system (e.g. OLAT or Moodle) through LTI. For more information on the LTI integration, please refer to the [LTI integration tutorial](/tutorials/lti_integration/).
+- ...**edit** your Practice Quiz before publishing it.
+- ...**duplicate** the Practice Quiz, independent of the status.
+- ...**publish** it. You will be asked to choose between an immediate publication or a scheduled publication at a future date; for more information, refer to the section on [publishing Practice Quizzes](/tutorials/practice_quiz/#how-can-i-publish-a-practice-quiz-and-access-the-results).
+- ...access the **activity evaluation** of the Practice Quiz, which is available as soon as the Practice Quiz is published and accessible to students.
+- ...**share** access to your Practice Quiz with other users of KlickerUZH.
+- ...**view comments** that were submitted by you or other users of KlickerUZH for this Practice Quiz.
+- ...**delete** your Practice Quiz with certain restrictions.
+
+## How can I publish a Practice Quiz and access the results?
 
 <iframe
   id="kmsembed-0_afublry9"
@@ -79,30 +93,35 @@ There are multiple options to add a question to a stack:
   title="KlickerUZH - Publish Practice Quiz"
 ></iframe>
 
-1. After you create a practice quiz, you can find it under Courses. Then select the course to which you added the quiz.
-2. In the course you have multiple options. You can...
-   - ...copy the access link and provide it to your participants.
-   - ...edit your quiz before publishing it.
-   - ...publish it. Not that publishing a practice quiz or microlearning makes the item visible to all participants. This process cannot be undone. Changes to the content of an item cannot be made after publishing.
-   - ...delete your quiz.
-3. After publishing your practice quiz, your participants can see it in their account by joining the course. In the app, the practice quiz is displayed to the participants as shown in the screenshots below.
+<br />
+<br />
+
+1. After a Practice Quiz has been created, it will appear both in the **activities list** under the corresponding menu entry and in the **course overview** of the course it has been assigned to.
+2. After navigating to the corresponding entry in the lists, you can **publish** it. Note that you can choose between an immediate or a scheduled publication:
+   - **Immediate publication:** The Practice Quiz will be published immediately and become available to all participants of the course. This action is irreversible.
+   - **Scheduled publication:** With the scheduled publication, you can choose a future date and time at which the Practice Quiz will be automatically published. This allows you to prepare the quiz in advance and ensure that it is available to students at the right time without manual intervention. While the Practice Quiz is still in the scheduled state (before the scheduled publication date), it can still be unpublished and edited.
+3. Once a **published** Practice Quiz becomes available, all participants who joined your KlickerUZH course can access it through the KlickerUZH app. Alternatively, you can always also share the direct access link to the Practice Quiz.
+
+Independent of the publication mode, when switching the activity to the "Published" state, all stacks contained in the Practice Quiz will be automatically appended to the course practice pool available to all your students through the KlickerUZH app. This pool allows students to practice the content of all published Practice Quizzes efficiently, making use of an established spaced repetition algorithm.
+
+KlickerUZH allows you to inspect the results of a Practice Quiz through the **activity evaluation** as soon as it is published and thereby accessible to students. For more details, please check out the section on the [practice quiz evaluation](/tutorials/practice_quiz/#how-can-i-see-the-results-of-a-practice-quiz), since this functionality is shared between these two activity types.
 
 ## How can I see the results of a Practice Quiz?
 
 ![](/img/practice_quiz/activity_evaluation.png)
 
-KlickerUZH allows you to inspect the results of a practice quiz as soon as it is published and thereby accessible to students. To open this view, simply navigate to the corresponding activity on the course overview and choose "Other actions" > "Open evaluation". Depending on the question type, the evaluation will suggest different visualizations.
+KlickerUZH allows you to inspect the results of a practice quiz as soon as it is published and thereby accessible to students. To open this view, simply navigate to the corresponding activity on the course overview and choose "Open evaluation". Depending on the question type, the evaluation will suggest different visualizations.
 
 Anonymous submissions and answers by logged in participants are combined in the evaluation view. Similar to the live quiz evaluation, you can choose to display the sample solution (if specified) and additional statistics for certain question types. To get further insights into the performance of your students, please check out the learning analytics functionalities of KlickerUZH.
 
-Independent of the question type, the evaluation view will always offer you the possibility to display the results in a tabular format. In this view, you can also export the results to the specific question as a CSV file for further analysis.
+Independent of the question type, the evaluation view will almost always offer you the possibility to display the results in a tabular format. In this view, you can also export the results to a specific question as a CSV file for further analysis.
 
-## Can I inspect a Practice Quiz before it is available to participants?
+## How can I inspect a Practice Quiz before it is available to participants (activity preview)?
 
-Yes, KlickerUZH offers an **activity preview** feature for practice quizzes and microlearnings. You can find this preview by navigating to the corresponding activity on the course overview and selecting "Other actions" > "Open preview". The activity preview will be available for draft, scheduled and published practice quizzes.
+KlickerUZH offers an **activity preview** feature for practice quizzes and microlearnings. You can find this preview by navigating to the corresponding activity on the course overview or activities list and selecting the "Open preview" function from the actions dropdown. The activity preview is available for draft, scheduled, and published practice quizzes.
 
 The practice quiz preview does not only allow you to inspect the content of the activity and the included questions, but also supports most interaction functionalities. This means that you can answer the included questions, observe the automated grading logic and inspect the optionally provided answer feedbacks. However, note that submitted answers are only graded by the system and stored locally on your computer. None of them will appear in the activity evaluation or be visible to participants. By resetting your answers in the preview, you can solve the questions in the quiz as often as you like.
 
-![](/img/practice_quiz/pq_activity_preview.png)
+![Practice Quiz Activity Preview](/img/practice_quiz/pq_activity_preview.png)
 
-Please also note that the activity preview link only works when you are logged in as a lecturer and are not logged with a student account at the same time. Sharing preview links is currently not supported.
+**Important:** Please note that the activity preview link only works when you are logged in with your lecturer account and are **not logged in with a student account** at the same time. Sharing preview links is currently not supported.
