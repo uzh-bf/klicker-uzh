@@ -660,7 +660,7 @@ export async function getGroupActivityDetails(
         basePoints: basePoints,
         correctnessPoints: null,
         bonusPoints: null,
-        totalPoints: totalPoints,
+        totalPoints: basePoints,
         hasSampleSolution: hasSampleSolution,
         instance: instance,
       }
