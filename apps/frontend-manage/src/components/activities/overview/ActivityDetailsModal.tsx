@@ -143,7 +143,10 @@ function ActivityDetailsModal({
           )}
         </UserNotification>
       )}
-      <div className="flex h-auto min-h-0 flex-col gap-4 xl:h-full xl:max-h-full xl:flex-row">
+      <div
+        className="flex h-auto min-h-0 flex-col gap-4 xl:h-full xl:max-h-full xl:flex-row"
+        data-cy="activity-details-modal"
+      >
         <div
           className="flex min-h-0 w-full flex-col gap-4 xl:max-h-[calc(100vh-20rem)] xl:w-2/5 xl:overflow-y-auto xl:pr-10"
           data-cy="activity-details-modal"
@@ -314,6 +317,7 @@ function ActivityDetailsModal({
                               'border-uzh-grey-40 mb-2 flex w-full cursor-pointer flex-row items-center gap-1 rounded border pb-3 pt-3 transition-colors',
                               'hover:border-uzh-blue-60'
                             )}
+                            data-cy={`stack-${index}-instance-${instanceIx}`}
                           >
                             <div className="w-9/10 flex flex-row">
                               <RadioGroupItem
