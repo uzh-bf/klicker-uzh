@@ -121,6 +121,7 @@ function FeedbackSearchAndFilters({
                 trigger={<FontAwesomeIcon icon={faFilter} />}
                 items={filter.map((filter) => {
                   return {
+                    id: `feedback-channel-filter-${filter.label}`,
                     type: 'checkbox',
                     label: filter.label,
                     selected: filter.checked,

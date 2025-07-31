@@ -38,6 +38,7 @@ function ActivityActions({
       {availableActions.length > 1 && (
         <Dropdown
           items={availableActions.slice(1).map((action) => ({
+            id: action.label,
             label: (
               <div
                 className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 ${

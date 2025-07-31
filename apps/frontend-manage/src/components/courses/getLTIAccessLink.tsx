@@ -15,6 +15,7 @@ function getLTIAccessLink({
   label?: string
 }) {
   return {
+    id: `copy-lti-link-${name}`,
     label: (
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
