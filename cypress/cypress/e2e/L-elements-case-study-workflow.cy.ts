@@ -20,6 +20,8 @@ type CriterionDataType = {
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
     Cypress.automation('remote:debugger:protocol', {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },

@@ -1098,7 +1098,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noCourseAssigned: 'Kein Kurs zugewiesen',
       actionsLegend: 'Aktionen für Aktivitäten',
       activityDetailsNoInstanceSelected:
-        'Bitte wählen Sie ein Element aus, um dessen Details anzuzeigen.',
+        'Bitte wählen Sie ein Element aus einem Block, um eine Vorschau und die entsprechende Bepunktung einzusehen.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1499,7 +1499,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       closeWizard: 'Wizard schliessen',
       name: 'Name',
       displayName: 'Anzeigename',
-      activityType: 'Aktivitätstyp',
       multiplierDefault: 'Default: 1x',
       multiplier1: 'Einfach (1x)',
       multiplier2: 'Doppelt (2x)',

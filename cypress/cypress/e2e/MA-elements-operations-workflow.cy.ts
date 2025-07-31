@@ -7,6 +7,8 @@ const currentYear = new Date().getFullYear()
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
     Cypress.automation('remote:debugger:protocol', {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },

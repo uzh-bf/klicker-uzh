@@ -60,5 +60,10 @@
     "microLearningDisplayName": "Micro Learning Quiz (Display)",
     "pseudonym": "klickerMaster",
     "pseudonym2": "klickerAmateur"
+  },
+  "details": {
+    "name": "Live Quiz Activity Details",
+    "displayName": "Live Quiz Activity Details (Display)",
+    "courseName": "Testkurs"
   }
 }

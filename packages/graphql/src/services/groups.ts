@@ -38,7 +38,7 @@ import {
   updateSelectionResults,
 } from './stacks.js'
 
-const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
+export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
   {

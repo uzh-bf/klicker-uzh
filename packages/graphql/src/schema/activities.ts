@@ -11,7 +11,7 @@ import { ElementInstance, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 interface IActivityInfoElement {
-  basePoints: number
+  basePoints?: number | null
   correctnessPoints?: number | null
   bonusPoints?: number | null
   totalPoints: number
@@ -25,7 +25,7 @@ export const ActivityInfoElementRef = builder.objectRef<IActivityInfoElement>(
 export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
   name: 'ActivityInfoElement',
   fields: (t) => ({
-    basePoints: t.exposeInt('basePoints'),
+    basePoints: t.exposeInt('basePoints', { nullable: true }),
     correctnessPoints: t.exposeInt('correctnessPoints', { nullable: true }),
     bonusPoints: t.exposeInt('bonusPoints', { nullable: true }),
     totalPoints: t.exposeInt('totalPoints'),
@@ -191,9 +191,8 @@ export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
 export interface IActivityDetailsMetadata {
   name: string
   displayName: string
-  type: string
   pointsMultiplier: number
-  totalBasePoints: number
+  totalBasePoints?: number | null
   totalCorrectnessPoints?: number | null
   totalBonusPoints?: number | null
   totalPoints: number
@@ -214,9 +213,8 @@ export const ActivityDetailsMetadata = builder.objectType(
     fields: (t) => ({
       name: t.exposeString('name'),
       displayName: t.exposeString('displayName'),
-      type: t.exposeString('type'),
       pointsMultiplier: t.exposeInt('pointsMultiplier'),
-      totalBasePoints: t.exposeInt('totalBasePoints'),
+      totalBasePoints: t.exposeInt('totalBasePoints', { nullable: true }),
       totalCorrectnessPoints: t.exposeInt('totalCorrectnessPoints', {
         nullable: true,
       }),

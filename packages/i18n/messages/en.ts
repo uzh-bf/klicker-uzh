@@ -1097,7 +1097,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
       activityDetailsNoInstanceSelected:
-        'Please select an element to view its details.',
+        'Please select an element from a block to view a preview and the corresponding scoring.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1495,7 +1495,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       closeWizard: 'Close wizard',
       name: 'Name',
       displayName: 'Display Name',
-      activityType: 'Activity Type',
       multiplierDefault: 'Default: 1x',
       multiplier1: 'Simple (1x)',
       multiplier2: 'Double (2x)',

@@ -33,7 +33,7 @@ function ChoiceFeedback({
         <FontAwesomeIcon icon={feedback.correct ? faCheck : faX} />
       </div>
       <div
-        className="py-2 text-gray-700"
+        className="py-2 pr-3 text-gray-700"
         data-cy={`sc-${elementIx}-feedback-${choiceIx}`}
       >
         <Markdown content={feedback.feedback ?? undefined} />

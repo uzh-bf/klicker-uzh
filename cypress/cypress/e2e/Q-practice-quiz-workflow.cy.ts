@@ -8,6 +8,8 @@ const currentYear = new Date().getFullYear()
 describe('Different practice quiz workflows', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
     Cypress.automation('remote:debugger:protocol', {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
@@ -1542,7 +1544,7 @@ describe('Different practice quiz workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -2666,71 +2668,11 @@ describe('Different practice quiz workflows', function () {
   // #region
   it('Create a practice quiz', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="library"]').click()
-
-    // create practice quiz
-    cy.get('[data-cy="create-practice-quiz"]').click()
-    cy.get('[data-cy="cancel-activity-creation"]').click()
-    cy.get('[data-cy="create-practice-quiz"]').click()
-
-    // Step 1: Name
-    cy.get('[data-cy="insert-practice-quiz-name"]')
-      .click()
-      .type(this.data.running.name)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 2: Display name and description
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-practice-quiz-display-name"]')
-      .click()
-      .type(this.data.running.displayName)
-    cy.get('[data-cy="insert-practice-quiz-description"]')
-      .realClick()
-      .type(this.data.running.description)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 3: Settings
-    cy.selectOption('[data-cy="select-course"]', this.data.course)
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
-    cy.get('[data-cy="select-multiplier"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
-    cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
-    cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier2
-    )
-    cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
-    cy.get('[data-cy="select-order"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
-    cy.get('[data-cy="select-order"]').click()
-    cy.get(
-      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSEQUENTIAL}"]`
-    ).click()
-    cy.get('[data-cy="select-order"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.practiceQuizSEQUENTIAL)
-    cy.get('[data-cy="select-order"]').click()
-    cy.get(
-      `[data-cy="select-order-${messages.manage.activityWizard.practiceQuizSPACED_REPETITION}"]`
-    ).click()
-    cy.get('[data-cy="select-order"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 4: Create stacks
-    cy.createStacks({
+    cy.createPracticeQuiz({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
       stacks: [
         {
           elements: [
@@ -2749,51 +2691,37 @@ describe('Different practice quiz workflows', function () {
         },
       ],
     })
-
-    // end the practice quiz creation
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(
-      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.name}"]`
-    ).should('exist')
-    cy.get(`[data-cy="status-${this.data.running.name}-DRAFT"]`).should('exist')
   })
 
   it('Check points calculation for practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
-      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.name}"]`
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.details.name}"]`
     ).should('exist')
 
-    cy.get(`[data-cy="activity-name-${this.data.running.name}"]`).click()
-    cy.assertAsynchronousActivityPoints(100)
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertAsynchronousActivityPoints({ totalPoints: 100 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]')
-      .first()
-      .contains('20 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]')
-      .first()
-      .contains('80 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('80 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
     cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints(20)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
 
     cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints(0)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
 
     cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints(0)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -2801,50 +2729,15 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
 
     cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints(20)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
 
     cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints(20)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
 
     cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints(20)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
-
-  it('Cleanup: Delete the practice quiz used for the full cycle test', function () {
-    cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
-
-    cy.get(
-      `[data-cy="activity-PRACTICE_QUIZ-${this.data.running.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="actions-PRACTICE_QUIZ-${this.data.running.name}"]`
-    ).click()
-    cy.get(`[data-cy="delete-practice-quiz-${this.data.running.name}"]`).click()
-
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.findByText(this.data.running.name).should('not.exist')
-  })
-
-  it('Cleanup (DB): Hard delete soft-deleted micro learning directly in database', function () {
-    cy.loginLecturer()
-    cy.wait(2000)
-    cy.task('removeSoftDeletedPracticeQuiz', {
-      mlName: this.data.running.name,
-    }).then((result: boolean) => {
-      // check if the query was successful
-      if (result === false) {
-        throw new Error(
-          'No soft deleted practice quiz with this name has been found'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-  })
-
   // #endregion
 })
