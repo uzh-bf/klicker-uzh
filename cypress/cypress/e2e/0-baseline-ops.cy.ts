@@ -6,6 +6,10 @@ describe('Test fundamental UI interactions and baseline operations', function ()
 
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

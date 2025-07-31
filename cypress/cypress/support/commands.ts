@@ -1317,6 +1317,38 @@ Cypress.Commands.add(
   }
 )
 
+Cypress.Commands.add(
+  'assertActivityPoints',
+  (basePoints, correctnessPoints, bonusPoints, totalPoints) => {
+    cy.get('[data-cy="base-points-activity"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-activity"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-activity"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add(
+  'assertInstancePoints',
+  (basePoints, correctnessPoints, bonusPoints, totalPoints) => {
+    cy.get('[data-cy="base-points-instance"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-instance"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-instance"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add('assertAsynchronousActivityPoints', (totalPoints) => {
+  cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+})
+
+Cypress.Commands.add('assertAsynchronousInstancePoints', (totalPoints) => {
+  cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+})
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -1500,6 +1532,20 @@ declare global {
         verifyDisabled,
       }: VerifyCaseStudyInputsArgs): Chainable<void>
       selectOption(selector: string, optionText: string): Chainable<void>
+      assertActivityPoints(
+        basePoints: number,
+        correctnessPoints: number,
+        bonusPoints: number,
+        totalPoints: number
+      ): Chainable<void>
+      assertInstancePoints(
+        basePoints: number,
+        correctnessPoints: number,
+        bonusPoints: number,
+        totalPoints: number
+      ): Chainable<void>
+      assertAsynchronousActivityPoints(totalPoints: number): Chainable<void>
+      assertAsynchronousInstancePoints(totalPoints: number): Chainable<void>
     }
   }
 }

@@ -4,6 +4,10 @@ import { getDatetimeValidationString } from './helpers'
 describe('Test course creation and editing functionalities', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

@@ -4,6 +4,10 @@ import { getDatetimeValidationString } from './helpers'
 describe('Feature test for activity logs', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

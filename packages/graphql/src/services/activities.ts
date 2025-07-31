@@ -368,11 +368,12 @@ export async function getLiveQuizDetails(
       const hasBasePoints = elementData.basePoints
       const pointsMultiplier = instance.options.pointsMultiplier ?? 1
       const hasSampleSolution =
+        !isContentOrFlashcard &&
         'hasSampleSolution' in elementData.options &&
         ((elementData.options as { hasSampleSolution?: boolean })
           .hasSampleSolution ??
           false)
-
+      console.log('MULTI', pointsMultiplier)
       const basePoints =
         !isContentOrFlashcard && hasBasePoints ? defaultPoints : 0
       const correctnessPoints =
@@ -446,12 +447,8 @@ function getAsynchronousActivityElementInstanceDetails(
   const { elementData } = instance
 
   const hasBasePoints = elementData.basePoints
-  const pointsMultiplier = !isContentOrFlashcard
-    ? 'pointsMultiplier' in elementData.options
-      ? ((elementData.options as { pointsMultiplier?: number })
-          .pointsMultiplier ?? 1)
-      : 1
-    : 1
+  const pointsMultiplier = instance.options.pointsMultiplier ?? 1
+
   const hasSampleSolution =
     !isContentOrFlashcard &&
     'hasSampleSolution' in elementData.options &&

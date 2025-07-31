@@ -3,6 +3,10 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

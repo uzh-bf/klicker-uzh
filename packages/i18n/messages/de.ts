@@ -1499,6 +1499,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       closeWizard: 'Wizard schliessen',
       name: 'Name',
       displayName: 'Anzeigename',
+      activityType: 'Aktivitätstyp',
       multiplierDefault: 'Default: 1x',
       multiplier1: 'Einfach (1x)',
       multiplier2: 'Doppelt (2x)',

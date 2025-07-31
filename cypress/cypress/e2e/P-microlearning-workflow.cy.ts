@@ -21,6 +21,10 @@ const extensionDate = getDatetimeValidationString(8, '15') + ', 18:50'
 describe('Different microlearning workflows', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -1962,28 +1966,29 @@ describe('Different microlearning workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-1"]').contains(
       data.MCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-2"]').contains(
       data.KPML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-3"]').contains(
       data.NRML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-4"]').contains(
       data.FTML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-5"]').contains(
       data.SEML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-6"]').contains(
       data.CSML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-7"]').contains(
       data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="close-activity-details-modal"]').click()
@@ -3325,5 +3330,209 @@ describe('Different microlearning workflows', function () {
       cy.get(`[data-cy="close-share-object"]`).click()
     })
   })
+  // #endregion
+
+  // ! Part 6: Activity Details Points
+  // #region
+  it('Create a micro learning', function () {
+    // Start creation
+    cy.loginLecturer()
+    cy.get('[data-cy="create-microlearning"]').click()
+    cy.get('[data-cy="cancel-activity-creation"]').click()
+    cy.get('[data-cy="create-microlearning"]').click()
+
+    // Step 1: Name
+    cy.get('[data-cy="insert-microlearning-name"]')
+      .click()
+      .type(this.data.running.name)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 2: Display name and description
+    cy.get('[data-cy="back-activity-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-microlearning-display-name"]')
+      .click()
+      .type(this.data.running.displayName)
+    cy.get('[data-cy="insert-microlearning-description"]')
+      .realClick()
+      .type(this.data.running.description)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 3: Settings
+    cy.selectOption('[data-cy="select-course"]', this.data.course)
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
+
+    // set the start date to 2 months in the past at 12:30 (default is start of next month)
+    cy.setDatetime('select-start-date', 'availability-section-header', {
+      monthDelta: -3,
+      day: 10,
+      hour: 12,
+      minute: 30,
+      validation: startDate1,
+    })
+
+    // set the end date to 2 months in the future at 14:00 (default is start of next month)
+    cy.setDatetime('select-end-date', 'availability-section-header', {
+      monthDelta: 1,
+      day: 20,
+      hour: 14,
+      minute: 0,
+      validation: endDate1,
+    })
+
+    // select multiplier
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.activityWizard.multiplier1)
+    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
+    ).realClick()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier2
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // Step 4: Create stacks
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
+    cy.createStacks({
+      stacks: [
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.FC.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+
+    // add displayname and description to stacks
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="stack-0-displayname"]')
+      .click()
+      .type(this.data.stack.title1)
+    cy.get('[data-cy="stack-0-displayname"]').should(
+      'have.value',
+      this.data.stack.title1
+    )
+    cy.get('[data-cy="close-stack-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="stack-1-displayname"]')
+      .click()
+      .type(this.data.stack.title2)
+    cy.get('[data-cy="stack-1-displayname"]').should(
+      'have.value',
+      this.data.stack.title2
+    )
+    cy.get('[data-cy="close-stack-description"]').click()
+
+    // finalize microlearning creation
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="back-activity-creation"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // navigate to list of microlearnings and check status
+    cy.get('[data-cy="open-activity-overview"]').click()
+  })
+
+  it('Check points calculation for micro learning', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.running.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="activity-name-${this.data.running.name}"]`).click()
+    cy.assertAsynchronousActivityPoints(80)
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]')
+      .first()
+      .contains('20 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]')
+      .first()
+      .contains('60 P.')
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertAsynchronousInstancePoints(20)
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertAsynchronousInstancePoints(0)
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertAsynchronousInstancePoints(0)
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.FTML.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertAsynchronousInstancePoints(20)
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertAsynchronousInstancePoints(20)
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertAsynchronousInstancePoints(20)
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
+
+  it('Cleanup: Delete the micro learning used for the full cycle test', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="activities"]`).click()
+
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.running.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.running.name}"]`
+    ).click()
+    cy.get(`[data-cy="delete-microlearning-${this.data.running.name}"]`).click()
+
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.running.name).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted micro learning directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedMicrolearning', {
+      mlName: this.data.running.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted microlearning with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   // #endregion
 })

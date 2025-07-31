@@ -25,6 +25,9 @@ fragment ActivityDetailsData on ActivityDetails {
         id
         type
         elementType
+        options {
+          pointsMultiplier
+        }
         ...ElementData
       }
     }

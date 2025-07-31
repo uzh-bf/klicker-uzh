@@ -3,6 +3,10 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

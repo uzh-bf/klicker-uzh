@@ -20,6 +20,10 @@ type CriterionDataType = {
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

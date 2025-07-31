@@ -4,6 +4,10 @@ import { AvatarOptions } from '../../../packages/shared-components/src/constants
 describe('Login / Logout workflows for lecturer and students', () => {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

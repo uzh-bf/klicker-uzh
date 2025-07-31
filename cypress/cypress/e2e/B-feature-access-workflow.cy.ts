@@ -3,6 +3,10 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
   before(() => {
     cy.seed()
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

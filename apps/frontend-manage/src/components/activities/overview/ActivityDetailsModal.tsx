@@ -42,9 +42,26 @@ import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import StudentElementPreviewActivityDetails from '../../questions/manipulation/StudentElementPreviewActivityDetails'
 
-// Validate function to ensure numeric values are correctly handled
+// Ensure numeric values are correctly handled
 function validate(obj: any): number {
   return obj !== null && typeof obj === 'number' ? obj : 0
+}
+
+// Get the display name for the activity type
+function getActivityTypeDisplay(type: string | undefined) {
+  switch (type) {
+    case ActivityType.MicroLearning:
+      return 'Micro Learning'
+    case ActivityType.LiveQuiz:
+      return 'Live Quiz'
+    case ActivityType.PracticeQuiz:
+      return 'Practice Quiz'
+    case ActivityType.GroupActivity:
+      return 'Group Activity'
+    // add other cases as needed
+    default:
+      return type
+  }
 }
 
 function ActivityDetailsModal({
@@ -143,14 +160,8 @@ function ActivityDetailsModal({
           )}
         </UserNotification>
       )}
-      <div
-        className="flex h-auto min-h-0 flex-col gap-4 xl:h-full xl:max-h-full xl:flex-row"
-        data-cy="activity-details-modal"
-      >
-        <div
-          className="flex min-h-0 w-full flex-col gap-4 xl:max-h-[calc(100vh-20rem)] xl:w-2/5 xl:overflow-y-auto xl:pr-10"
-          data-cy="activity-details-modal"
-        >
+      <div className="flex h-auto min-h-0 flex-col gap-4 xl:h-full xl:max-h-full xl:flex-row">
+        <div className="flex min-h-0 w-full flex-col gap-4 xl:max-h-[calc(100vh-20rem)] xl:w-2/5 xl:overflow-y-auto xl:pr-10">
           <ul>
             <li>
               <span className="font-bold">
@@ -163,6 +174,12 @@ function ActivityDetailsModal({
                 {t('manage.activityWizard.displayName')}:
               </span>{' '}
               {metadata?.displayName}
+            </li>
+            <li>
+              <span className="font-bold">
+                {t('manage.activityWizard.activityType')}:
+              </span>{' '}
+              {getActivityTypeDisplay(metadata?.type)}
             </li>
           </ul>
           <div className="flex flex-col">
@@ -183,7 +200,10 @@ function ActivityDetailsModal({
                     <ShadcnTableCell>
                       {t('manage.general.basePointsDescription')}
                     </ShadcnTableCell>
-                    <ShadcnTableCell className="text-right">
+                    <ShadcnTableCell
+                      className="text-right"
+                      data-cy="base-points-activity"
+                    >
                       {`${basePointsActivity} P.`}
                     </ShadcnTableCell>
                   </ShadcnTableRow>
@@ -191,7 +211,10 @@ function ActivityDetailsModal({
                     <ShadcnTableCell>
                       {`${t('manage.general.correctnessPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${pointMultiplierActivity}x)`}`}
                     </ShadcnTableCell>
-                    <ShadcnTableCell className="text-right">
+                    <ShadcnTableCell
+                      className="text-right"
+                      data-cy="correctness-points-activity"
+                    >
                       {`${correctnessPointsActivity} P.`}
                     </ShadcnTableCell>
                   </ShadcnTableRow>
@@ -199,7 +222,10 @@ function ActivityDetailsModal({
                     <ShadcnTableCell>
                       {`${t('manage.general.bonusPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${pointMultiplierActivity}x)`}`}
                     </ShadcnTableCell>
-                    <ShadcnTableCell className="text-right">
+                    <ShadcnTableCell
+                      className="text-right"
+                      data-cy="bonus-points-activity"
+                    >
                       {`${bonusPointsActivity} P.`}
                     </ShadcnTableCell>
                   </ShadcnTableRow>
@@ -221,7 +247,10 @@ function ActivityDetailsModal({
                       </>
                     )}
                   </ShadcnTableCell>
-                  <ShadcnTableCell className="text-uzh-darkgreen-100 text-right font-bold">
+                  <ShadcnTableCell
+                    className="text-uzh-darkgreen-100 text-right font-bold"
+                    data-cy="total-points-activity"
+                  >
                     {`${totalPointsActivity} P.`}
                   </ShadcnTableCell>
                 </ShadcnTableRow>
@@ -257,7 +286,10 @@ function ActivityDetailsModal({
                   className="m-0 w-full space-y-0 border-gray-300 p-2"
                 >
                   <div key={stack.id} className="w-full">
-                    <AccordionTrigger className="flex w-full flex-row items-center justify-between p-2 hover:no-underline">
+                    <AccordionTrigger
+                      className="flex w-full flex-row items-center justify-between p-2 hover:no-underline"
+                      data-cy={`activity-details-accordion-trigger-${index}`}
+                    >
                       <span className="flex-1 font-bold hover:underline">
                         {activity.type === ActivityType.LiveQuiz
                           ? t('shared.generic.blockN', {
@@ -411,23 +443,32 @@ function ActivityDetailsModal({
                           <ShadcnTableCell>
                             {t('manage.general.basePointsDescription')}
                           </ShadcnTableCell>
-                          <ShadcnTableCell className="text-right">
+                          <ShadcnTableCell
+                            className="text-right"
+                            data-cy="base-points-instance"
+                          >
                             {`${selectedInstanceObj.element.basePoints} P.`}
                           </ShadcnTableCell>
                         </ShadcnTableRow>
                         <ShadcnTableRow>
                           <ShadcnTableCell>
-                            {`${t('manage.general.correctnessPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.elementData.pointsMultiplier)}x)`}`}
+                            {`${t('manage.general.correctnessPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.options?.pointsMultiplier)}x)`}`}
                           </ShadcnTableCell>
-                          <ShadcnTableCell className="text-right">
+                          <ShadcnTableCell
+                            className="text-right"
+                            data-cy="correctness-points-instance"
+                          >
                             {`${selectedInstanceObj.element.correctnessPoints} P.`}
                           </ShadcnTableCell>
                         </ShadcnTableRow>
                         <ShadcnTableRow>
                           <ShadcnTableCell>
-                            {`${t('manage.general.bonusPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.elementData.pointsMultiplier)}x)`}`}
+                            {`${t('manage.general.bonusPointsDescription')}${` (${t('manage.general.pointsMultiplierDescription')} ${validate(selectedInstanceObj.element.instance.options?.pointsMultiplier)}x)`}`}
                           </ShadcnTableCell>
-                          <ShadcnTableCell className="text-right">
+                          <ShadcnTableCell
+                            className="text-right"
+                            data-cy="bonus-points-instance"
+                          >
                             {`${selectedInstanceObj.element.bonusPoints} P.`}
                           </ShadcnTableCell>
                         </ShadcnTableRow>
@@ -450,14 +491,17 @@ function ActivityDetailsModal({
                                 {` (${t(
                                   'manage.general.pointsMultiplierDescription'
                                 )} ${
-                                  selectedInstanceObj.element.instance
-                                    .elementData.pointsMultiplier
+                                  selectedInstanceObj.element.instance.options
+                                    ?.pointsMultiplier
                                 }x)`}
                               </span>
                             </>
                           )}
                         </ShadcnTableCell>
-                        <ShadcnTableCell className="text-uzh-darkgreen-100 text-right font-bold">
+                        <ShadcnTableCell
+                          className="text-uzh-darkgreen-100 text-right font-bold"
+                          data-cy="total-points-instance"
+                        >
                           {selectedInstanceObj.element.totalPoints} P.
                         </ShadcnTableCell>
                       </ShadcnTableRow>
