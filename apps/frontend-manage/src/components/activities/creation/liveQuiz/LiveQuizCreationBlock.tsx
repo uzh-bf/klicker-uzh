@@ -84,7 +84,7 @@ function LiveQuizCreationBlock({
         isOver: !!monitor.isOver(),
       }),
     }),
-    []
+    [block]
   )
 
   return (

@@ -101,7 +101,7 @@ function StackBlockCreation({
         isOver: !!monitor.isOver(),
       }),
     }),
-    []
+    [stack]
   )
 
   const FTQuestionNoSLCount = highlightFTNoSL
