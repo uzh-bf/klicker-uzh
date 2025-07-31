@@ -673,16 +673,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                         Prisma.ElementInstanceType.LIVE_QUIZ
                       ),
                     },
-                    element: {
-                      connect: {
-                        id: questionsTest[0]!.id,
-                      },
-                    },
-                    owner: {
-                      connect: {
-                        id: USER_ID_TEST,
-                      },
-                    },
+                    element: { connect: { id: questionsTest[0]!.id } },
+                    owner: { connect: { id: USER_ID_TEST } },
                   },
                 ],
               },
@@ -1542,17 +1534,24 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       } else if (element.elementType === Prisma.ElementType.SC) {
         return {
           ...baseDecisions,
-          choicesResponse: [1],
+          choicesResponse: [{ ix: 1, selected: true }],
         }
       } else if (element.elementType === Prisma.ElementType.MC) {
         return {
           ...baseDecisions,
-          choicesResponse: [1, 2],
+          choicesResponse: [
+            { ix: 1, selected: true },
+            { ix: 2, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.KPRIM) {
         return {
           ...baseDecisions,
-          choicesResponse: [0, 1, 3],
+          choicesResponse: [
+            { ix: 0, selected: true },
+            { ix: 1, selected: true },
+            { ix: 3, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
         return {
@@ -1597,17 +1596,26 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       } else if (element.elementType === Prisma.ElementType.SC) {
         return {
           ...baseDecisions,
-          choicesResponse: [0, 2],
+          choicesResponse: [
+            { ix: 0, selected: true },
+            { ix: 2, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.MC) {
         return {
           ...baseDecisions,
-          choicesResponse: [0, 2],
+          choicesResponse: [
+            { ix: 0, selected: true },
+            { ix: 2, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.KPRIM) {
         return {
           ...baseDecisions,
-          choicesResponse: [0, 2],
+          choicesResponse: [
+            { ix: 0, selected: true },
+            { ix: 2, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
         return {
@@ -1651,17 +1659,24 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       } else if (element.elementType === Prisma.ElementType.SC) {
         return {
           ...baseDecisions,
-          choicesResponse: [1],
+          choicesResponse: [{ ix: 1, selected: true }],
         }
       } else if (element.elementType === Prisma.ElementType.MC) {
         return {
           ...baseDecisions,
-          choicesResponse: [1, 2],
+          choicesResponse: [
+            { ix: 1, selected: true },
+            { ix: 2, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.KPRIM) {
         return {
           ...baseDecisions,
-          choicesResponse: [0, 1, 3],
+          choicesResponse: [
+            { ix: 0, selected: true },
+            { ix: 1, selected: true },
+            { ix: 3, selected: true },
+          ],
         }
       } else if (element.elementType === Prisma.ElementType.FREE_TEXT) {
         return {

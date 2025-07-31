@@ -9,7 +9,7 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 
 ## What is a Microlearning?
 
-Microlearning offers short learning units with a limited number of questions, published at specific intervals to counteract the forgetting curve. Students can test themselves, refresh their knowledge, and integrate learning into their everyday lives regardless of time and place.
+Microlearning offers short learning units with a limited number of questions, available to participants only during pre-defined intervals to counteract the forgetting curve. Students can test themselves, refresh their knowledge, and integrate learning into their everyday lives regardless of time and place.
 
 ## How can I create a Microlearning?
 
@@ -29,35 +29,55 @@ Microlearning offers short learning units with a limited number of questions, pu
   title="KlickerUZH - Prepare Microlearning"
 ></iframe>
 
-**Add a description:**
+<br />
+<br />
 
-1. Name: The name of the microlearning allows the user to distinguish the particular activity from others. It is therefore only visible to the users themselves.
-2. Display Name: This name will be shown to the participants while the microlearning is being performed.
-3. Description: A description of the microlearning can optionally be added and will be displayed to the participants at the beginning of the activity.
+To create a Microlearning, navigate to the library and use the corresponding button at the top of the page. This opens the Microlearning wizard, which will guide you through the process of creating a Microlearning step by step. The different components / settings are explained in the following sections.
+
+**Add the necessary metadata:**
+
+1. **Name:** The name of the Microlearning allows the user to distinguish the particular quiz from others. It is therefore not visible to students participating in the activity. For recurring courses, we recommend adding information like the semester or lecture week to the name.
+2. **Display Name:** The display name is shown to participants while the Microlearning is available.
+3. **Description:** Optionally, a description can be added to the Microlearning, which will be shown to participants at the beginning of the activity.
 
 **Adjust the settings:**
 
-4. Course: In this field, the microlearning has to be assigned to a course. Note that this is different from the Live Quiz, which can be run independently of a course. If you need help creating a course, please review the [tutorial on course management](/tutorials/course_management).
-5. Start/End date: Microlearnings are limited in time. These fields determine the starting and ending points at which the participants have access to the activity.
-6. Multiplier: The multiplier is a factor with which the points are multiplied when a question is answered. A factor above 1 is only used if gamification is activated .
+4. **Course:** In contrast to live quizzes, Microlearnings need to be assigned to an active course. This is necessary for students to be able to access the Microlearning through the student app or an LMS integration. If you need help creating a course, please review the [tutorial on course management](/tutorials/course_management).
+5. **Start/End Dates:** Microlearnings are only available during a limited timeframe once published. Please choose corresponding dates and times for the start and end of the activity here.
+6. **Multiplier:** When assigned to a gamified course, a multiplier can be set for the Microlearning. The selected factor will be applied to all points collected in the activity and, if defined, combined with the multiplier of the question. For more information on the distributed points, please refer to the [grading logic overview](/gamification/grading_logic).
 
 **Choose your questions:**
 
-For this step, existing questions are required. Note that microlearning and Practice Quizzes support all element types except from free-text questions, as long as a valid sample solution is specified. If you need help with creating questions or content elements / flashcards, please review the [tutorial on element management](/tutorials/element_management/).
-When adding questions, you can choose to have one or multiple questions per stack. It makes sense to have several questions per stack if you provide your students with a task / case study that builds up and the questions are connected.
+7. In the final step, you can add your prepared questions to the Microlearning using one of the following two methods. Note that Microlearnings and Practice Quizzes support all element types, as long as a valid sample solution is specified (where applicable and except for free-text questions). Questions in the same stack will be shown to the students underneath each other, while questions in different stacks will be displayed sequentially after answering all elements in the preceding stack. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
+   1. **Drag & Drop:** To add a new question to an existing stack, simply drag the question onto the plus sign beneath the desired stack. Similarly, you may also drag questions onto the "New stack" button to create a new stack with the question.
+   2. **Select Questions:** Select one or more questions that should be added to the Microlearning. The wizard will automatically display all different options for adding the selected questions to the activity. You can either add them to an existing stack or create one or multiple new stacks with the selected questions.
+   3. **Ordering:** To order individual elements within a certain stack or move entire stacks (mainly for sequentially ordered practice quizzes), please use the provided arrows.
+8. Optionally, you can add a **title** and **description** to each stack individually, which will be displayed to the students above the questions contained in the stack. This allows you to create comprehensive cases with questions that require an introduction and build up on each other.
+9. Finally, confirm the creation and your Microlearning is prepared!
 
-There are multiple options to add a question to a stack:
+## How can I edit a Microlearning?
 
-7. Drag & Drop: The desired question can be added to a specific stack by simply dragging the question onto the plus sign below the desired stack.
-8. Arrows: With the help of the arrows, the arrangement of the questions can be put in the desired order.
-9. Select: It is also possible to select one or more questions (with the checkboxes next to them) and insert them into the desired stack or stacks by clicking on the yellow boxes that appear on selection. In this way, questions can be grouped and/or stacked for sequential presentation.
-10. Ordering: To order individual elements within a certain stack or move entire stacks (mainly for sequentially ordered practice quizzes), please use the provided arrows.
+Like all other activities in KlickerUZH, Microlearnings can be edited as long as they are in their **draft** state. Once published, microlearnings will remain in the **scheduled** state until the start date is reached, when their status automatically changes to **published**. While scheduled, microlearnings can still be unpublished to the draft state and edited. Once a microlearning is published, its content can no longer be modified, since student submissions might be affected by the changes. The name and display name of the Microlearning may be changed at any time, using the pencil icon next to the activity name.
 
-**End of preparation:**
+To edit the content of a Microlearning, open the actions dropdown and select the corresponding option. KlickerUZH will then automatically redirect you back to the library and open the familiar activity wizard already used during creation with all information pre-filled. After making any changes to the metadata of the quiz, its settings or the contained elements, **make sure to save your changes** in the last step of the wizard.
 
-11. With a click on Create your first microlearning is prepared!
+Beyond opening the editing wizard from the actions menu on any microlearning activity, KlickerUZH also offers you several other options as part of the activity actions:
 
-## How can I publish a Microlearning and make it accessible to participants?
+- Open the **activity preview** of the Microlearning where you can inspect and even submit test answers before publishing it.
+- Copy the **access link** and provide it to your participants.
+- Copy the access link to integrate the microlearning into your learning management system (e.g. OLAT or Moodle) through LTI. For more information on the LTI integration, please refer to the [LTI integration tutorial](/tutorials/lti_integration/).
+- **Extend** the duration of your microlearning, while it is still running.
+- **End** your microlearning immediately, which will change its status to "Ended" and prevent further submissions.
+- **Duplicate** the microlearning, independent of the status.
+- **Publish** it. Note that the publishing process makes the microlearning available to all participants after the scheduled start date. Until then, the microlearning will be in a "Scheduled" state and can be unpublished and edited again. The change from the scheduled state to the "Published" state is performed automatically at the scheduled start date and is irreversible.
+- **Unpublish** scheduled microlearnings.
+- Access the **activity evaluation** of the microlearning, which is available as soon as the microlearning is published and accessible to students.
+- **Convert** any completed microlearning into a practice quiz, making it available to students outside of the scheduled time frame for repetition and review ahead of examinations.
+- **Share** access to your microlearning with other users of KlickerUZH.
+- **View comments** that were submitted by you or other users of KlickerUZH for this microlearning.
+- **Delete** your microlearning with certain restrictions.
+
+## How can I publish a Microlearning and access the results?
 
 <iframe
   id="kmsembed-0_5wx8eehl"
@@ -75,26 +95,23 @@ There are multiple options to add a question to a stack:
   title="KlickerUZH - Publish Microlearning"
 ></iframe>
 
-1. After you create a microlearning, you can find it under Courses. Then select the course to which you added the activity.
-2. In the course you have multiple options. You can...
-   - ...copy the access link and provide it to your participants.
-   - ...copy the access link to integrate the microlearning into your learning management system through LTI.
-   - ...edit your microlearning before publishing it.
-   - ...extend the duration of your microlearning, while it is still running.
-   - ...publish it. Note that the publishing process makes the microlearning available to all participants after the scheduled start date. Until then, the microlearning will have a "Scheduled" state and can be unpublished and edited again. The change from the scheduled state to the "Published" state is performed automatically at the scheduled start date and is irreversible.
-   - ...delete your microlearning with certain restrictions.
-3. After publishing your microlearning, your participants can see it in their account by joining the course. In the app, the microlearning is displayed to the participants as shown in the screenshots below.
+<br />
+<br />
 
-## How can I see the results of a Microlearning?
+1. Once a Microlearning has been created, it will appear both in the **activities list** under the corresponding menu entry and in the **course overview** of the course it has been assigned to.
+2. After navigating to the corresponding entry in the lists, you can **publish** it. Note that the publishing process makes the microlearning available to all participants after the scheduled start date. Until then, the microlearning will be in a "Scheduled" state and can be unpublished and edited again. The change from the scheduled state to the "Published" state is performed automatically at the scheduled start date and is irreversible.
+3. Once a **published** microlearning becomes available, all participants who joined your KlickerUZH course can access it through their home screen and will be notified through a push notification, if they have installed the KlickerUZH app. Alternatively, you can always also share the direct access link to the microlearning.
 
-KlickerUZH allows you to inspect the results of a microlearning through the **activity evaluation** as soon as it is published and thereby accessible to students. For more details, please check out the section on [practice quiz evaluation](/tutorials/practice_quiz/#how-can-i-see-the-results-of-a-practice-quiz), since this functionality is shared between these two activity types.
+KlickerUZH allows you to inspect the results of a microlearning through the **activity evaluation** as soon as it is published and thereby accessible to students. For more details, please check out the section on the [practice quiz evaluation](/tutorials/practice_quiz/#how-can-i-see-the-results-of-a-practice-quiz), since this functionality is shared between these two activity types.
 
-## Can I inspect a Microlearning before it is available to participants?
+## How can I inspect a Microlearning before it is available to participants (activity preview)?
 
-Yes, KlickerUZH offers an **activity preview** feature for practice quizzes and microlearnings. You can find this preview by navigating to the corresponding activity on the course overview and selecting "Other actions" > "Open preview". The activity preview will be available for draft, scheduled and published microlearnings.
+:::warning
+Please note that the activity preview link only works when you are logged in with your lecturer account and are **not logged in with a student account** at the same time. Sharing preview links is currently not supported.
+:::
+
+KlickerUZH offers an **activity preview** feature for practice quizzes and microlearnings. You can find this preview by navigating to the corresponding activity on the course overview or activities list and selecting the "Open preview" function from the actions dropdown. The activity preview is available for draft, scheduled, published, and ended microlearnings.
 
 The microlearning preview does not only allow you to inspect the content of the activity and the included questions, but also supports most interaction functionalities. This means that you can answer the included questions, observe the automated grading logic and inspect the optionally provided answer feedbacks. However, note that submitted answers are only graded by the system and stored locally on your computer. None of them will appear in the activity evaluation or be visible to participants.
 
-![](/img/microlearning/ml_activity_preview.png)
-
-Please also note that the activity preview link only works when you are logged in as a lecturer and are not logged with a student account at the same time. Sharing preview links is currently not supported.
+![Microlearning Activity Preview](/img/microlearning/ml_activity_preview.png)

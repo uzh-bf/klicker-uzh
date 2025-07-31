@@ -111,7 +111,6 @@ function GroupActivityStackClues({
               <StackBlockCreation
                 singleStackMode
                 stackIx={0}
-                key={`stack-${values.stack.elements.map((e) => e.id).join('-')}`}
                 stack={values.stack}
                 acceptedTypes={acceptedTypes}
                 replace={(_, newValue) => setFieldValue('stack', newValue)}

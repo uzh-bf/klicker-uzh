@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.77...v3.3.0-alpha.78) (2025-07-31)
+
+
+### Features
+
+* add new calendar view for course activities ([#4804](https://github.com/uzh-bf/klicker-uzh/issues/4804)) ([e49a08c](https://github.com/uzh-bf/klicker-uzh/commit/e49a08c73f8ae115edcc19ebc6a63dfc88c0df86))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add correct dependencies to dnd drop context to avoid loosing stack or block metadata ([#4812](https://github.com/uzh-bf/klicker-uzh/issues/4812)) ([f30c65c](https://github.com/uzh-bf/klicker-uzh/commit/f30c65c879fdf55d3fcae5a4001624992e97cceb))
+* **packages/prisma:** update seed of group activity decisions to be consistent with new choices response structure ([1094258](https://github.com/uzh-bf/klicker-uzh/commit/10942583e1dde5c4fec5f9585eeb31e8d393708d))
+* resolve typing issues with next-intl based translations across frontend apps ([#4803](https://github.com/uzh-bf/klicker-uzh/issues/4803)) ([5c989a4](https://github.com/uzh-bf/klicker-uzh/commit/5c989a41371fc57644502ced311f51fec4787c7e))
+
+
+### Enhancements
+
+* allow disabling gamification and group creation as long as no activities were assigned to the course and no participant groups created ([#4802](https://github.com/uzh-bf/klicker-uzh/issues/4802)) ([adc8b4f](https://github.com/uzh-bf/klicker-uzh/commit/adc8b4f67530ae4bfe15e17228e28b030260e2df))
+* **apps/control-frontend:** change login method for frontend-control to Edu-ID ([#4807](https://github.com/uzh-bf/klicker-uzh/issues/4807)) ([bd96045](https://github.com/uzh-bf/klicker-uzh/commit/bd96045f0b0680cb0dab1d54c008e30a9e2612d7))
+* **apps/docs:** introduce documentation on participant group management and update group activity documentation ([#4810](https://github.com/uzh-bf/klicker-uzh/issues/4810)) ([f28ecb1](https://github.com/uzh-bf/klicker-uzh/commit/f28ecb173dffc228c01fc94ebd4f4de750707d38))
+* **apps/docs:** rework documentation for answer collections, live quiz and live q&a ([#4805](https://github.com/uzh-bf/klicker-uzh/issues/4805)) ([cbf945f](https://github.com/uzh-bf/klicker-uzh/commit/cbf945f976079792b68108f09a70609a647aefa0))
+* **apps/docs:** update documentation for microlearnings and practice quizzes ([#4809](https://github.com/uzh-bf/klicker-uzh/issues/4809)) ([3bb11eb](https://github.com/uzh-bf/klicker-uzh/commit/3bb11ebc650e609b4c72dfd7833ace21dead2c4c))
+* **apps/frontend-manage:** allow to choose language of live quiz embedding links ([#4811](https://github.com/uzh-bf/klicker-uzh/issues/4811)) ([00a5f29](https://github.com/uzh-bf/klicker-uzh/commit/00a5f2927ad83f9676bae400a490f36edf25e7a5))
+
 ## [3.3.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.76...v3.3.0-alpha.77) (2025-07-25)
 
 

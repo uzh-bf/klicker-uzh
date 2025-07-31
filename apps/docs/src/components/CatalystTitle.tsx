@@ -6,7 +6,7 @@ function CatalystTitle({ title }: { title: string }) {
     <div className="-mb-4 flex flex-row flex-wrap items-center justify-between md:-space-y-2">
       <h1>{title}</h1>
       <a href="/catalyst" className="w-max">
-        <div className="bg-linear-to-r h-12 w-full rounded-md from-pink-500 via-red-500 to-yellow-500 p-0.5">
+        <div className="bg-linear-to-r h-12 w-full rounded from-pink-500 via-red-500 to-yellow-500 p-0.5">
           <div className="flex-flow flex h-full w-full items-center justify-center gap-2 rounded bg-white px-3 py-1 text-black">
             <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
             <div className="hover:text-uzh-blue-100">

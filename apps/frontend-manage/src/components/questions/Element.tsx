@@ -269,6 +269,7 @@ function Element({
             {availableActions.length > 3 && (
               <Dropdown
                 items={availableActions.slice(2).map((action) => ({
+                  id: `action-${element.id}-${action.label}`,
                   label: (
                     <div
                       className={twMerge(
