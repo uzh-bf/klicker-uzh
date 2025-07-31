@@ -16,6 +16,7 @@ module.exports = {
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
+      'tutorials/participant_group_management',
       'tutorials/group_activity',
       // 'tutorials/activity_templates',
     ],

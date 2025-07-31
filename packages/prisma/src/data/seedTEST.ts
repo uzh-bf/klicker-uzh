@@ -617,7 +617,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description:
         'Introduction to digital transformation concepts and methodologies.',
       status: Prisma.PublicationStatus.DRAFT,
-      pointsMultiplier: 1.5,
+      pointsMultiplier: 2,
     },
     {
       id: '3ce1b871-809a-4f7a-b3de-e238a4e6e3bc',
@@ -626,7 +626,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description:
         'Comprehensive exploration of data analytics techniques and tools.',
       status: Prisma.PublicationStatus.DRAFT,
-      pointsMultiplier: 2.0,
+      pointsMultiplier: 3,
     },
   ]
 
@@ -663,7 +663,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                     elementType: Prisma.ElementType.SC,
                     elementData: processElementData(questionsTest[0]!),
                     options: {
-                      basePoints: 25,
+                      basePoints: true,
                       pointsMultiplier: quizData.pointsMultiplier,
                     },
                     results: { choices: Array(4).fill(0), total: 0 },
@@ -673,16 +673,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                         Prisma.ElementInstanceType.LIVE_QUIZ
                       ),
                     },
-                    element: {
-                      connect: {
-                        id: questionsTest[0]!.id,
-                      },
-                    },
-                    owner: {
-                      connect: {
-                        id: USER_ID_TEST,
-                      },
-                    },
+                    element: { connect: { id: questionsTest[0]!.id } },
+                    owner: { connect: { id: USER_ID_TEST } },
                   },
                 ],
               },
