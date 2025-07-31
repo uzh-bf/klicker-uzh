@@ -1587,7 +1587,7 @@ describe('Create and solve a group activity', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -2873,11 +2873,11 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 450 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]')
-      .first()
-      .contains('450 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains(
+      '450 P.'
+    )
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)

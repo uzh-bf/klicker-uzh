@@ -1968,7 +1968,7 @@ describe('Different microlearning workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -3388,15 +3388,11 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 80 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]')
-      .first()
-      .contains('20 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]')
-      .first()
-      .contains('60 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('60 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)

@@ -1490,7 +1490,7 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1528,7 +1528,7 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1589,12 +1589,12 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(
       this.data.liveQuiz.newSCTitle
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1624,8 +1624,8 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
@@ -1774,8 +1774,8 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="activity-name-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
@@ -1917,7 +1917,7 @@ describe('Different live-quiz workflows', function () {
   // #region
   function verifyLiveQuizDetailsModalContent(activityName: string, data: any) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -3499,15 +3499,12 @@ describe('Different live-quiz workflows', function () {
       totalPoints: 730,
     })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
-
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]')
-      .first()
-      .contains('70 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]')
-      .first()
-      .contains('660 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('70 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains(
+      '660 P.'
+    )
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MC.title)
