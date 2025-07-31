@@ -24,11 +24,10 @@ type ActivityDetailsMetadata {
   displayName: String!
   name: String!
   pointsMultiplier: Int!
-  totalBasePoints: Int!
+  totalBasePoints: Int
   totalBonusPoints: Int
   totalCorrectnessPoints: Int
   totalPoints: Int!
-  type: String!
 }
 
 type ActivityEvaluation {
@@ -83,7 +82,7 @@ type ActivityInfo {
 }
 
 type ActivityInfoElement {
-  basePoints: Int!
+  basePoints: Int
   bonusPoints: Int
   correctnessPoints: Int
   hasSampleSolution: Boolean!

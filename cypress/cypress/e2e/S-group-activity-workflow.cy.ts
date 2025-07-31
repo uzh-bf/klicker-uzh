@@ -25,6 +25,8 @@ const synchronousEndDate = getDatetimeValidationString(3, '20') + ', 14:00'
 describe('Create and solve a group activity', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
     Cypress.automation('remote:debugger:protocol', {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
@@ -2823,174 +2825,53 @@ describe('Create and solve a group activity', function () {
 
   // ! Part 6: Activity Details Points
   // #region
-  it('Create a group activity', function () {
+  it('Create a group activity to check the activity preview', function () {
     cy.loginLecturer()
-
-    // Step 1: Name
-    cy.get('[data-cy="create-group-activity"]').click()
-    cy.get('[data-cy="insert-groupactivity-name"]')
-      .click()
-      .type(this.data.activity.name)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 2: Display name and description
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="insert-groupactivity-display-name"]')
-      .click()
-      .type(this.data.activity.displayName)
-    cy.get('[data-cy="insert-groupactivity-description"]')
-      .realClick()
-      .type(this.data.activity.task)
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 3: Settings
-    cy.selectOption('[data-cy="select-course"]', this.data.course)
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(this.data.course)
-    cy.get('[data-cy="select-multiplier"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
-    cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
-    cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier2
-    )
-
-    // set the start date of the group activity to 2 months in the future at 12:30
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: 1,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: startDate1,
+    cy.createGroupActivity({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      task: this.data.details.task,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
+      scheduledStartDate: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: synchronousStartDate,
+      }, // 2 months in the future at 12:30
+      scheduledEndDate: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: synchronousEndDate,
+      }, // 3 months in the future at 14:00
+      clues: this.data.synchronous.clues,
+      stack: {
+        elements: [
+          this.data.SCML.title,
+          this.data.MCML.title,
+          this.data.KPML.title,
+          this.data.NRML.title,
+          this.data.FTML.title,
+          this.data.SEML.title,
+          this.data.CSML.title,
+        ],
+      },
     })
-
-    // set the end date of the group activity to 3 months in the future at 14:00
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 2,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: endDate1,
-    })
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 4: Clues
-    // 1) Text clue
-    cy.get('[data-cy="add-group-activity-clue"]').click()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-name"]')
-      .click()
-      .type(this.data.activity.clues[0].name)
-    cy.get('[data-cy="group-activity-clue-display-name"]')
-      .click()
-      .type(this.data.activity.clues[0].displayName)
-    cy.get('[data-cy="group-activity-string-clue-value"]')
-      .click()
-      .type(this.data.activity.clues[0].content)
-    cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(this.data.activity.clues[0].name).should('exist')
-    cy.findByText(this.data.activity.clues[0].content).should('exist')
-
-    // 2) Numerical clue
-    cy.get('[data-cy="add-group-activity-clue"]').click()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]')
-      .click()
-      .type(this.data.activity.clues[1].name)
-    cy.get('[data-cy="group-activity-clue-display-name"]')
-      .click()
-      .type(this.data.activity.clues[1].displayName)
-    cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(this.data.activity.clues[1].content)
-    )
-    cy.get('[data-cy="group-activity-number-clue-unit"]')
-      .click()
-      .type(this.data.activity.clues[1].unit)
-    cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(this.data.activity.clues[1].name).should('exist')
-    cy.findByText(
-      this.data.activity.clues[1].content +
-        ' ' +
-        this.data.activity.clues[1].unit
-    ).should('exist')
-
-    // 3) Numerical clue without unit
-    cy.get('[data-cy="add-group-activity-clue"]').click()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]')
-      .click()
-      .type(this.data.activity.clues[2].name)
-    cy.get('[data-cy="group-activity-clue-display-name"]')
-      .click()
-      .type(this.data.activity.clues[2].displayName)
-    cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(this.data.activity.clues[2].content)
-    )
-    cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(this.data.activity.clues[2].name).should('exist')
-    cy.findByText(this.data.activity.clues[2].content).should('exist')
-
-    // Step 4: Questions / Elements
-    cy.createStacks({
-      stacks: [
-        {
-          elements: [
-            this.data.SCML.title,
-            this.data.MCML.title,
-            this.data.KPML.title,
-            this.data.NRML.title,
-            this.data.FTML.title,
-            this.data.SEML.title,
-            this.data.CSML.title,
-          ],
-        },
-      ],
-    })
-
-    cy.get('[data-cy="back-activity-creation"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // check if the created group activity exists
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.findByText(this.data.activity.name).should('exist')
   })
 
   it('Check points calculation for group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(
-      `[data-cy="activity-GROUP_ACTIVITY-${this.data.running.name}"]`
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.details.name}"]`
     ).should('exist')
 
-    cy.get(`[data-cy="activity-name-${this.data.running.name}"]`).click()
-    cy.assertAsynchronousActivityPoints(450)
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertAsynchronousActivityPoints({ totalPoints: 450 })
 
     cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
 
@@ -3007,64 +2888,27 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CSML.title)
 
     cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints(100)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 100 })
 
     cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints(50)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
 
     cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints(50)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
 
     cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertAsynchronousInstancePoints(150)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 150 })
 
     cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertAsynchronousInstancePoints(50)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
 
     cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertAsynchronousInstancePoints(0)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
 
     cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertAsynchronousInstancePoints(50)
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
-
-  it('Cleanup: Delete the group activity used for the full cycle test', function () {
-    cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
-
-    cy.get(
-      `[data-cy="activity-GROUP_ACTIVITY-${this.data.running.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="actions-GROUP_ACTIVITY-${this.data.running.name}"]`
-    ).click()
-    cy.get(
-      `[data-cy="delete-group-activity-${this.data.running.name}"]`
-    ).click()
-
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.findByText(this.data.running.name).should('not.exist')
-  })
-
-  it('Cleanup (DB): Hard delete soft-deleted micro learning directly in database', function () {
-    cy.loginLecturer()
-    cy.wait(2000)
-    cy.task('removeSoftDeletedGroupActivity', {
-      mlName: this.data.running.name,
-    }).then((result: boolean) => {
-      // check if the query was successful
-      if (result === false) {
-        throw new Error(
-          'No soft deleted group activity with this name has been found'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
-  })
-
   // #endregion
 })

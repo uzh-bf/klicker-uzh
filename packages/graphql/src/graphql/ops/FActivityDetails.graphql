@@ -3,7 +3,6 @@ fragment ActivityDetailsData on ActivityDetails {
   metadata {
     name
     displayName
-    type
     pointsMultiplier
     totalBasePoints
     totalCorrectnessPoints

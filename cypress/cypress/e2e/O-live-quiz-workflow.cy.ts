@@ -4,6 +4,8 @@ import { getDatetimeValidationString } from './helpers'
 describe('Different live-quiz workflows', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
     Cypress.automation('remote:debugger:protocol', {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
@@ -3445,56 +3447,12 @@ describe('Different live-quiz workflows', function () {
   // #region
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="create-live-quiz"]').click()
-
-    // Step 1: Name
-    cy.get('[data-cy="insert-live-quiz-name"]').type(
-      this.data.course2.quiz.name
-    )
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 2: Display name and description
-    cy.get('[data-cy="insert-live-display-name"]').type(
-      this.data.course2.quiz.displayName
-    )
-    cy.get('[data-cy="insert-live-description"]')
-      .realClick()
-      .type(this.data.course2.quiz.description)
-    cy.get('[data-cy="insert-live-description"]')
-      .realClick()
-      .contains(this.data.course2.quiz.description)
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 3: Settings
-    cy.get('[data-cy="select-course"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.liveQuizNoCourse)
-    cy.get('[data-cy="select-multiplier"]').should('not.exist')
-    cy.selectOption('[data-cy="select-course"]', this.data.course1.name)
-    cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
-    cy.get('[data-cy="select-multiplier"]').should('exist')
-    cy.selectOption('[data-cy="select-course"]', this.data.course2.name)
-    cy.get('[data-cy="select-course"]').contains(this.data.course2.name)
-    cy.get('[data-cy="select-multiplier"]').should('not.exist')
-    cy.selectOption('[data-cy="select-course"]', this.data.course1.name)
-    cy.get('[data-cy="select-course"]').contains(this.data.course1.name)
-    cy.get('[data-cy="select-multiplier"]').should('exist')
-    cy.get('[data-cy="select-multiplier"]')
-      .should('exist')
-      .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
-    cy.get(
-      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
-    cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.activityWizard.multiplier2
-    )
-    cy.get('[data-cy="set-liveqa-enabled"]').click()
-    cy.get('[data-cy="next-or-submit"]').click()
-
-    // Step 4: Questions
-    cy.createStacks({
-      stacks: [
+    cy.createLiveQuiz({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
+      blocks: [
         {
           elements: [
             this.data.SC.title,
@@ -3519,24 +3477,27 @@ describe('Different live-quiz workflows', function () {
           ],
         },
       ],
-      type: 'block',
     })
-    cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(
-      `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
+      'exist'
+    )
   })
 
   it('Check points calculation for live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
-    cy.get(
-      `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).should('exist')
+    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
+      'exist'
+    )
 
-    cy.get(`[data-cy="activity-name-${this.data.course2.quiz.name}"]`).click()
-    cy.assertActivityPoints(130, 60, 540, 730)
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertActivityPoints({
+      basePoints: 130,
+      correctnessPoints: 60,
+      bonusPoints: 540,
+      totalPoints: 730,
+    })
 
     cy.get('[data-cy="activity-details-accordion-trigger-0"]').first().click()
     cy.get('[data-cy="activity-details-accordion-trigger-1"]').first().click()
@@ -3558,28 +3519,68 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
     cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertInstancePoints(10, 0, 0, 10)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 10,
+    })
 
     cy.get('[data-cy="stack-0-instance-7"]').click()
-    cy.assertInstancePoints(0, 0, 0, 0)
+    cy.assertInstancePoints({
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 0,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -3590,63 +3591,62 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
     cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-3"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-4"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-5"]').click()
-    cy.assertInstancePoints(10, 10, 90, 110)
+    cy.assertInstancePoints({
+      basePoints: 10,
+      correctnessPoints: 10,
+      bonusPoints: 90,
+      totalPoints: 110,
+    })
 
     cy.get('[data-cy="stack-1-instance-6"]').click()
-    cy.assertInstancePoints(0, 0, 0, 0)
+    cy.assertInstancePoints({
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      totalPoints: 0,
+    })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
-  })
-
-  it('Cleanup: Delete the live quiz used for the full cycle test', function () {
-    cy.loginLecturer()
-    cy.get(`[data-cy="activities"]`).click()
-
-    cy.get(
-      `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="actions-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
-    ).click()
-    cy.get(
-      `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
-    ).click()
-
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-    cy.findByText(this.data.course2.quiz.name).should('not.exist')
-  })
-
-  it('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', function () {
-    cy.loginLecturer()
-    cy.wait(2000)
-    cy.task('removeSoftDeletedLiveQuiz', {
-      lqName: this.data.course2.quiz.name,
-    }).then((result: boolean) => {
-      // check if the query was successful
-      if (result === false) {
-        throw new Error(
-          'No soft deleted live quiz with this name has been found'
-        )
-      }
-
-      // dummy action
-      cy.visit(Cypress.env('URL_MANAGE'))
-    })
   })
   // #endregion
 })
