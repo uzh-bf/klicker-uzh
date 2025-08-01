@@ -3445,7 +3445,7 @@ describe('Different live-quiz workflows', function () {
 
   // ! Part 6: Activity Details Points
   // #region
-  it('Create live quiz in a gamified course and validate that points are shown correctly', function () {
+  it('Create a live quiz in a gamified course and validate that points are shown correctly', function () {
     cy.loginLecturer()
     cy.createLiveQuiz({
       name: this.data.details.name,

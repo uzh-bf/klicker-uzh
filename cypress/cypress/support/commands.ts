@@ -1386,6 +1386,20 @@ Cypress.Commands.add(
   }
 )
 
+Cypress.Commands.add('assertNoActivityPoints', () => {
+  cy.get('[data-cy="base-points-activity"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-activity"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-activity"]').should('not.exist')
+  cy.get('[data-cy="total-points-activity"]').should('not.exist')
+})
+
+Cypress.Commands.add('assertNoInstancePoints', () => {
+  cy.get('[data-cy="base-points-instance"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-instance"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-instance"]').should('not.exist')
+  cy.get('[data-cy="total-points-instance"]').should('not.exist')
+})
+
 interface TotalPointsArgs {
   totalPoints: number
 }
@@ -1601,6 +1615,8 @@ declare global {
         bonusPoints,
         totalPoints,
       }: AssertInstancePointsArgs): Chainable<void>
+      assertNoActivityPoints(): Chainable<void>
+      assertNoInstancePoints(): Chainable<void>
       assertAsynchronousActivityPoints({
         totalPoints,
       }: TotalPointsArgs): Chainable<void>
