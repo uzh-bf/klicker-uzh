@@ -232,8 +232,7 @@ function ActivityDetailsModal({
           )}
         </div>
       ) : (
-        // TODO: display error message
-        <UserNotification type="error" message="TODO" />
+        <UserNotification type="error" message={t('shared.generic.error')} />
       )}
     </Modal>
   )
