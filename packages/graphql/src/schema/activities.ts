@@ -188,41 +188,18 @@ export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
   }),
 })
 
-export interface IActivityDetailsMetadata {
+export interface IActivityDetails {
+  id: string
   name: string
   displayName: string
+  arePointsAwarded: boolean
   pointsMultiplier: number
   totalBasePoints?: number | null
   totalCorrectnessPoints?: number | null
   totalBonusPoints?: number | null
   totalPoints: number
-}
-
-export interface IActivityDetails {
-  id: string
-  metadata: IActivityDetailsMetadata
   stacks: IActivityInfoStack[]
 }
-
-export const ActivityDetailsMetadataRef =
-  builder.objectRef<IActivityDetailsMetadata>('ActivityDetailsMetadata')
-export const ActivityDetailsMetadata = builder.objectType(
-  ActivityDetailsMetadataRef,
-  {
-    name: 'ActivityDetailsMetadata',
-    fields: (t) => ({
-      name: t.exposeString('name'),
-      displayName: t.exposeString('displayName'),
-      pointsMultiplier: t.exposeInt('pointsMultiplier'),
-      totalBasePoints: t.exposeInt('totalBasePoints', { nullable: true }),
-      totalCorrectnessPoints: t.exposeInt('totalCorrectnessPoints', {
-        nullable: true,
-      }),
-      totalBonusPoints: t.exposeInt('totalBonusPoints', { nullable: true }),
-      totalPoints: t.exposeInt('totalPoints'),
-    }),
-  }
-)
 
 export const ActivityDetailsRef =
   builder.objectRef<IActivityDetails>('ActivityDetails')
@@ -230,7 +207,16 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
   name: 'ActivityDetails',
   fields: (t) => ({
     id: t.exposeString('id'),
-    metadata: t.expose('metadata', { type: ActivityDetailsMetadata }),
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    totalBasePoints: t.exposeInt('totalBasePoints', { nullable: true }),
+    totalCorrectnessPoints: t.exposeInt('totalCorrectnessPoints', {
+      nullable: true,
+    }),
+    totalBonusPoints: t.exposeInt('totalBonusPoints', { nullable: true }),
+    totalPoints: t.exposeInt('totalPoints'),
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
   }),
 })
