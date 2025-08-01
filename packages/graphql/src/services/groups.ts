@@ -38,7 +38,7 @@ import {
   updateSelectionResults,
 } from './stacks.js'
 
-const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
+export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
   {
@@ -594,7 +594,7 @@ export async function manualRandomGroupAssignments(
     const updatedCourse = await ctx.prisma.course.update({
       where: { id: courseId },
       data: {
-        groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
+        groupDeadlineDate: new Date(),
         randomAssignmentFinalized: true,
         participantGroups: { create: newGroups },
         groupAssignmentPoolEntries: { deleteMany: {} },

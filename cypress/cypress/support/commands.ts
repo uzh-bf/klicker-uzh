@@ -766,12 +766,19 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
+  multiplier?: string
   blocks: { elements: string[] }[]
 }
 
 Cypress.Commands.add(
   'createLiveQuiz',
-  ({ name, displayName, courseName, blocks }: CreateLiveQuizArgs) => {
+  ({
+    name,
+    displayName,
+    courseName,
+    multiplier,
+    blocks,
+  }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
 
     // Step 1: Name
@@ -789,7 +796,14 @@ Cypress.Commands.add(
         .contains(messages.manage.activityWizard.liveQuizNoCourse)
       cy.selectOption('[data-cy="select-course"]', courseName)
       cy.get('[data-cy="select-course"]').contains(courseName)
+
+      if (multiplier) {
+        cy.get('[data-cy="select-multiplier"]').realClick()
+        cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
+        cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+      }
     }
+
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Blocks & Questions
@@ -918,6 +932,7 @@ interface CreatePracticeQuizArgs {
   displayName: string
   description?: string
   courseName: string
+  multiplier?: string
   stacks: StackType[]
 }
 
@@ -928,6 +943,7 @@ Cypress.Commands.add(
     displayName,
     description,
     courseName,
+    multiplier,
     stacks,
   }: CreatePracticeQuizArgs) => {
     cy.get('[data-cy="create-practice-quiz"]').click()
@@ -951,6 +967,11 @@ Cypress.Commands.add(
     // Step 3: Settings
     cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    if (multiplier) {
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Stacks
@@ -1317,6 +1338,86 @@ Cypress.Commands.add(
   }
 )
 
+interface AssertActivityPointsArgs {
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertActivityPoints',
+  ({
+    basePoints,
+    correctnessPoints,
+    bonusPoints,
+    totalPoints,
+  }: AssertActivityPointsArgs) => {
+    cy.get('[data-cy="base-points-activity"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-activity"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-activity"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+  }
+)
+
+interface AssertInstancePointsArgs {
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertInstancePoints',
+  ({
+    basePoints,
+    correctnessPoints,
+    bonusPoints,
+    totalPoints,
+  }: AssertInstancePointsArgs) => {
+    cy.get('[data-cy="base-points-instance"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-instance"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-instance"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add('assertNoActivityPoints', () => {
+  cy.get('[data-cy="base-points-activity"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-activity"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-activity"]').should('not.exist')
+  cy.get('[data-cy="total-points-activity"]').should('not.exist')
+})
+
+Cypress.Commands.add('assertNoInstancePoints', () => {
+  cy.get('[data-cy="base-points-instance"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-instance"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-instance"]').should('not.exist')
+  cy.get('[data-cy="total-points-instance"]').should('not.exist')
+})
+
+interface TotalPointsArgs {
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertAsynchronousActivityPoints',
+  ({ totalPoints }: TotalPointsArgs) => {
+    cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add(
+  'assertAsynchronousInstancePoints',
+  ({ totalPoints }: TotalPointsArgs) => {
+    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  }
+)
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -1434,6 +1535,7 @@ declare global {
         name,
         displayName,
         courseName,
+        multiplier,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       convertLiveQuizToTemplate({
@@ -1461,6 +1563,7 @@ declare global {
         displayName,
         description,
         courseName,
+        multiplier,
         stacks,
       }: CreatePracticeQuizArgs): Chainable<void>
       createMicroLearning({
@@ -1500,6 +1603,26 @@ declare global {
         verifyDisabled,
       }: VerifyCaseStudyInputsArgs): Chainable<void>
       selectOption(selector: string, optionText: string): Chainable<void>
+      assertActivityPoints({
+        basePoints,
+        correctnessPoints,
+        bonusPoints,
+        totalPoints,
+      }: AssertActivityPointsArgs): Chainable<void>
+      assertInstancePoints({
+        basePoints,
+        correctnessPoints,
+        bonusPoints,
+        totalPoints,
+      }: AssertInstancePointsArgs): Chainable<void>
+      assertNoActivityPoints(): Chainable<void>
+      assertNoInstancePoints(): Chainable<void>
+      assertAsynchronousActivityPoints({
+        totalPoints,
+      }: TotalPointsArgs): Chainable<void>
+      assertAsynchronousInstancePoints({
+        totalPoints,
+      }: TotalPointsArgs): Chainable<void>
     }
   }
 }

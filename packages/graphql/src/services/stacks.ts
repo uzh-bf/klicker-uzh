@@ -75,7 +75,7 @@ type ExistingInstanceType = DB.ElementInstance & {
   } | null
 }
 
-const POINTS_PER_INSTANCE = 10
+export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 

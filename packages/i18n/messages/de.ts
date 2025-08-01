@@ -1029,6 +1029,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
+      elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
+      elementTypeDescription: 'Typ',
+      elementPreviewDescription: 'Vorschau',
+      basePointsDescription: 'Basis-Punkte',
+      correctnessPointsDescription: 'Korrektheits-Punkte',
+      bonusPointsDescription: 'Bonus-Punkte',
+      totalPointsSynchronousDescription: 'Maximal Erreichbare Punkte',
+      totalPointsAsynchronousDescription: 'Erreichbare Punkte',
+      pointTypeDescription: 'Punkttyp',
+      pointAmountDescription: 'Menge',
+      pointsMultiplierDescription: 'Multiplikator',
+      sampleSolutionDescription: 'Musterlösung',
+      gradingDescription: 'Dokumentation',
     },
     admin: {
       pageName: 'Admin-Panel',
@@ -1084,6 +1097,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität konnte nicht geändert werden.',
       noCourseAssigned: 'Kein Kurs zugewiesen',
       actionsLegend: 'Aktionen für Aktivitäten',
+      activityDetailsNoInstanceSelected:
+        'Bitte wählen Sie ein Element aus einem Block, um eine Vorschau und die entsprechende Bepunktung einzusehen.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

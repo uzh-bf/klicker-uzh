@@ -6,14 +6,17 @@ import {
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
-import { ElementType } from './elementData.js'
 import { PublicationStatus } from './practiceQuiz.js'
+import { ElementInstance, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 interface IActivityInfoElement {
-  id: number
-  name: string
-  type: DB.ElementType
+  basePoints?: number | null
+  correctnessPoints?: number | null
+  bonusPoints?: number | null
+  totalPoints: number
+  hasSampleSolution: boolean
+  instance: IElementInstance
 }
 
 export const ActivityInfoElementRef = builder.objectRef<IActivityInfoElement>(
@@ -22,9 +25,14 @@ export const ActivityInfoElementRef = builder.objectRef<IActivityInfoElement>(
 export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
   name: 'ActivityInfoElement',
   fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: ElementType }),
+    basePoints: t.exposeInt('basePoints', { nullable: true }),
+    correctnessPoints: t.exposeInt('correctnessPoints', { nullable: true }),
+    bonusPoints: t.exposeInt('bonusPoints', { nullable: true }),
+    totalPoints: t.exposeInt('totalPoints'),
+    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+    instance: t.expose('instance', {
+      type: ElementInstance,
+    }),
   }),
 })
 
@@ -32,6 +40,7 @@ interface IActivityInfoStack {
   id: number
   numOfParticipants?: number | null
   timeLimit?: number | null
+  stackPoints?: number | null
   elements: IActivityInfoElement[]
 }
 
@@ -43,6 +52,7 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
     id: t.exposeInt('id'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
+    stackPoints: t.exposeInt('stackPoints', { nullable: true }),
     elements: t.expose('elements', { type: [ActivityInfoElement] }),
   }),
 })
@@ -180,6 +190,14 @@ export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
 
 export interface IActivityDetails {
   id: string
+  name: string
+  displayName: string
+  arePointsAwarded: boolean
+  pointsMultiplier: number
+  totalBasePoints?: number | null
+  totalCorrectnessPoints?: number | null
+  totalBonusPoints?: number | null
+  totalPoints: number
   stacks: IActivityInfoStack[]
 }
 
@@ -189,6 +207,16 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
   name: 'ActivityDetails',
   fields: (t) => ({
     id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    totalBasePoints: t.exposeInt('totalBasePoints', { nullable: true }),
+    totalCorrectnessPoints: t.exposeInt('totalCorrectnessPoints', {
+      nullable: true,
+    }),
+    totalBonusPoints: t.exposeInt('totalBonusPoints', { nullable: true }),
+    totalPoints: t.exposeInt('totalPoints'),
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
   }),
 })

@@ -1028,6 +1028,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
+      elementPreviewRedirect: 'Open preview in a new tab',
+      elementTypeDescription: 'Type',
+      elementPreviewDescription: 'Preview',
+      basePointsDescription: 'Base Points',
+      correctnessPointsDescription: 'Correctness Points',
+      bonusPointsDescription: 'Bonus Points',
+      totalPointsSynchronousDescription: 'Maximum Achievable Points',
+      totalPointsAsynchronousDescription: 'Achievable Points',
+      pointTypeDescription: 'Point Type',
+      pointAmountDescription: 'Amount',
+      pointsMultiplierDescription: 'Multiplier',
+      sampleSolutionDescription: 'Sample Solution',
+      gradingDescription: 'Documentation',
     },
     admin: {
       pageName: 'Admin Panel',
@@ -1083,6 +1096,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
+      activityDetailsNoInstanceSelected:
+        'Please select an element from a block to view a preview and the corresponding scoring.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

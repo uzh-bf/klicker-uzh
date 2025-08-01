@@ -15,8 +15,16 @@ type Achievement {
 }
 
 type ActivityDetails {
+  arePointsAwarded: Boolean!
+  displayName: String!
   id: String!
+  name: String!
+  pointsMultiplier: Int!
   stacks: [ActivityInfoStack!]!
+  totalBasePoints: Int
+  totalBonusPoints: Int
+  totalCorrectnessPoints: Int
+  totalPoints: Int!
 }
 
 type ActivityEvaluation {
@@ -71,15 +79,19 @@ type ActivityInfo {
 }
 
 type ActivityInfoElement {
-  id: Int!
-  name: String!
-  type: ElementType!
+  basePoints: Int
+  bonusPoints: Int
+  correctnessPoints: Int
+  hasSampleSolution: Boolean!
+  instance: ElementInstance!
+  totalPoints: Int!
 }
 
 type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  stackPoints: Int
   timeLimit: Int
 }
 
