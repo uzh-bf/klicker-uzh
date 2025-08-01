@@ -24,19 +24,20 @@ export async function getCourses(provider: string, providerAccountId: string) {
     select: {
       user: {
         select: {
-          courses: {
-            where: { isArchived: false },
-            select: { id: true, name: true },
+          // find all shared non-archived courses (permission level irrelevant - read permissions are sufficient)
+          objects: {
+            where: { courseId: { not: null }, course: { isArchived: false } },
+            select: { course: { select: { id: true, name: true } } },
           },
         },
       },
     },
   })
 
-  const courses = account?.user?.courses ?? []
-  if (courses.length === 0) {
-    return []
-  }
+  const courses =
+    account?.user?.objects
+      .map((object) => object.course)
+      .filter((course) => !!course) ?? []
 
   return courses.map((course) => ({
     id: course.id,
@@ -85,14 +86,15 @@ export async function getCourseActivityTypes(
         providerAccountId: providerAccountId,
       },
     },
-    select: {
-      userId: true,
-    },
+    select: { userId: true },
   })
   if (!account) return null
 
   const course = await prisma.course.findUnique({
-    where: { id: courseID, ownerId: account.userId },
+    where: {
+      id: courseID,
+      permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
+    },
     select: {
       isGamificationEnabled: true,
       liveQuizzes: { where: { isDeleted: false } },
@@ -184,14 +186,15 @@ export async function getActivities(
         providerAccountId: providerAccountId,
       },
     },
-    select: {
-      userId: true,
-    },
+    select: { userId: true },
   })
   if (!account) return null
 
   const course = await prisma.course.findUnique({
-    where: { id: courseID, ownerId: account.userId },
+    where: {
+      id: courseID,
+      permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
+    },
     select: {
       liveQuizzes:
         activityTypeKey === 'live-quiz'
