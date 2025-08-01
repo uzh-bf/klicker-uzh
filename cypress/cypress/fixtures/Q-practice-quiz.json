@@ -37,6 +37,9 @@
   "details": {
     "name": "Practice Quiz Activity Details",
     "displayName": "Practice Quiz Activity Details (Display)",
-    "courseName": "Testkurs"
+    "courseName": "Testkurs",
+    "nameNonGamified": "Non-Gamified Practice Quiz Details",
+    "displayNameNonGamified": "Non-Gamified Practice Quiz Details (Display)",
+    "courseNonGamified": "Non-Gamified Course"
   }
 }

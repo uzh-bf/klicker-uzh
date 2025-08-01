@@ -1,14 +1,15 @@
 fragment ActivityDetailsData on ActivityDetails {
   id
-  metadata {
-    name
-    displayName
-    pointsMultiplier
-    totalBasePoints
-    totalCorrectnessPoints
-    totalBonusPoints
-    totalPoints
-  }
+  name
+  displayName
+
+  arePointsAwarded
+  pointsMultiplier
+  totalBasePoints
+  totalCorrectnessPoints
+  totalBonusPoints
+  totalPoints
+
   stacks {
     id
     numOfParticipants

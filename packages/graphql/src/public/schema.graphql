@@ -15,15 +15,12 @@ type Achievement {
 }
 
 type ActivityDetails {
-  id: String!
-  metadata: ActivityDetailsMetadata!
-  stacks: [ActivityInfoStack!]!
-}
-
-type ActivityDetailsMetadata {
+  arePointsAwarded: Boolean!
   displayName: String!
+  id: String!
   name: String!
   pointsMultiplier: Int!
+  stacks: [ActivityInfoStack!]!
   totalBasePoints: Int
   totalBonusPoints: Int
   totalCorrectnessPoints: Int

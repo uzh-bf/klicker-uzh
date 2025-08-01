@@ -2666,7 +2666,7 @@ describe('Different practice quiz workflows', function () {
 
   // ! Part 6: Activity Details Points
   // #region
-  it('Create a practice quiz', function () {
+  it('Create a practice quiz in a gamified course and validate that points are shown correctly', function () {
     cy.loginLecturer()
     cy.createPracticeQuiz({
       name: this.data.details.name,
@@ -2692,11 +2692,6 @@ describe('Different practice quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
-  })
-
-  it('Check points calculation for practice quiz', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.details.name}"]`
     ).should('exist')
@@ -2736,6 +2731,81 @@ describe('Different practice quiz workflows', function () {
 
     cy.get('[data-cy="stack-1-instance-2"]').click()
     cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
+
+  it('Create a practice quiz in a non-gamified course and validate that no points are shown', function () {
+    cy.loginLecturer()
+    cy.createPracticeQuiz({
+      name: this.data.details.nameNonGamified,
+      displayName: this.data.details.displayNameNonGamified,
+      courseName: this.data.details.courseNonGamified,
+      stacks: [
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.FC.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="activity-PRACTICE_QUIZ-${this.data.details.nameNonGamified}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="activity-name-${this.data.details.nameNonGamified}"]`
+    ).click()
+    cy.assertNoActivityPoints()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+      'not.contain',
+      '20 P.'
+    )
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+      'not.contain',
+      '80 P.'
+    )
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertNoInstancePoints()
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })

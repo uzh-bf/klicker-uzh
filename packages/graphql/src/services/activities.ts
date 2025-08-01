@@ -310,6 +310,7 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {
+      course: true,
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -321,6 +322,7 @@ export async function getLiveQuizDetails(
     return null
   }
 
+  const arePointsAwarded = liveQuiz.isGamificationEnabled
   const defaultPoints = liveQuiz.defaultPoints
   const defaultCorrectPoints = liveQuiz.defaultCorrectPoints
   const defaultMaxBonusPoints = liveQuiz.maxBonusPoints
@@ -328,12 +330,6 @@ export async function getLiveQuizDetails(
 
   const stacks = liveQuiz.blocks.map((block) => {
     const elements = block.elements.map((instance) => {
-      const hasBasePoints =
-        instance.elementType !== DB.ElementType.FLASHCARD &&
-        instance.elementType !== DB.ElementType.CONTENT &&
-        (instance.options.basePoints ?? false)
-      const pointsMultiplier = instance.options.pointsMultiplier ?? 1
-
       const { elementData } = instance
       const hasSampleSolution =
         'options' in elementData &&
@@ -341,6 +337,23 @@ export async function getLiveQuizDetails(
         ((elementData.options as { hasSampleSolution?: boolean })
           .hasSampleSolution ??
           false)
+
+      if (!arePointsAwarded) {
+        return {
+          basePoints: 0,
+          correctnessPoints: 0,
+          bonusPoints: 0,
+          totalPoints: 0,
+          hasSampleSolution,
+          instance,
+        }
+      }
+
+      const hasBasePoints =
+        instance.elementType !== DB.ElementType.FLASHCARD &&
+        instance.elementType !== DB.ElementType.CONTENT &&
+        (instance.options.basePoints ?? false)
+      const pointsMultiplier = instance.options.pointsMultiplier ?? 1
 
       const basePoints = hasBasePoints ? defaultPoints : 0
       const correctnessPoints = hasSampleSolution
@@ -368,7 +381,9 @@ export async function getLiveQuizDetails(
           block.elements[0].anonymousResults.total
         : 0,
       timeLimit: block.timeLimit,
-      stackPoints: elements.reduce((acc, el) => acc + el.totalPoints, 0),
+      stackPoints: arePointsAwarded
+        ? elements.reduce((acc, el) => acc + el.totalPoints, 0)
+        : null,
       elements,
     }
   })
@@ -378,41 +393,52 @@ export async function getLiveQuizDetails(
     totalCorrectnessPoints,
     totalBonusPoints,
     totalPoints,
-  } = stacks.reduce(
-    (acc, stack) => {
-      for (const el of stack.elements) {
-        acc.totalBasePoints += el.basePoints
-        acc.totalCorrectnessPoints += el.correctnessPoints
-        acc.totalBonusPoints += el.bonusPoints
+  } = arePointsAwarded
+    ? stacks.reduce(
+        (acc, stack) => {
+          for (const el of stack.elements) {
+            acc.totalBasePoints += el.basePoints
+            acc.totalCorrectnessPoints += el.correctnessPoints
+            acc.totalBonusPoints += el.bonusPoints
+          }
+          acc.totalPoints += stack.stackPoints ?? 0
+          return acc
+        },
+        {
+          totalBasePoints: 0,
+          totalCorrectnessPoints: 0,
+          totalBonusPoints: 0,
+          totalPoints: 0,
+        }
+      )
+    : {
+        totalBasePoints: 0,
+        totalCorrectnessPoints: 0,
+        totalBonusPoints: 0,
+        totalPoints: 0,
       }
-      acc.totalPoints += stack.stackPoints
-      return acc
-    },
-    {
-      totalBasePoints: 0,
-      totalCorrectnessPoints: 0,
-      totalBonusPoints: 0,
-      totalPoints: 0,
-    }
-  )
 
-  const metadata = {
+  return {
+    id: liveQuiz.id,
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
+    arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalBasePoints,
     totalCorrectnessPoints,
     totalBonusPoints,
     totalPoints,
+    stacks,
   }
-
-  return { id: liveQuiz.id, metadata, stacks }
 }
 
-function getAsynchronousActivityElementInstanceDetails(
-  instance: DB.ElementInstance,
+function getAsynchronousActivityElementInstanceDetails({
+  instance,
+  isGroupActivity,
+}: {
+  instance: DB.ElementInstance
   isGroupActivity: boolean
-): { points: number; hasSampleSolution: boolean } {
+}): { points: number; hasSampleSolution: boolean } {
   // check if question has sample solution (type checking relevant for content and flashcard)
   const { elementData } = instance
   const hasSampleSolution =
@@ -435,9 +461,11 @@ function getAsynchronousActivityElementInstanceDetails(
 function getAsyncActivityPointsElements({
   stack,
   isGroupActivity = false,
+  arePointsAwarded,
 }: {
   stack: DB.ElementStack & { elements: DB.ElementInstance[] }
   isGroupActivity?: boolean
+  arePointsAwarded: boolean
 }) {
   const { elements, stackPoints } = stack.elements.reduce<{
     elements: {
@@ -448,8 +476,19 @@ function getAsyncActivityPointsElements({
     stackPoints: number
   }>(
     (acc, instance) => {
-      const { points, hasSampleSolution } =
-        getAsynchronousActivityElementInstanceDetails(instance, isGroupActivity)
+      const { points, hasSampleSolution } = arePointsAwarded
+        ? getAsynchronousActivityElementInstanceDetails({
+            instance,
+            isGroupActivity,
+          })
+        : {
+            points: 0,
+            hasSampleSolution:
+              ('options' in instance.elementData &&
+                'hasSampleSolution' in instance.elementData.options &&
+                instance.elementData.options.hasSampleSolution) ??
+              false,
+          }
       acc.elements.push({ totalPoints: points, hasSampleSolution, instance })
       acc.stackPoints += points
       return acc
@@ -463,7 +502,7 @@ function getAsyncActivityPointsElements({
       ? stack.elements[0].results.total +
         stack.elements[0].anonymousResults.total
       : 0,
-    stackPoints,
+    stackPoints: arePointsAwarded ? stackPoints : null,
     elements,
   }
 }
@@ -475,6 +514,7 @@ export async function getPracticeQuizDetails(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id },
     include: {
+      course: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -486,23 +526,28 @@ export async function getPracticeQuizDetails(
     return null
   }
 
+  const arePointsAwarded = practiceQuiz.course.isGamificationEnabled
   const pointsMultiplierActivity = practiceQuiz.pointsMultiplier
   const stacks = practiceQuiz.stacks.map((stack) =>
-    getAsyncActivityPointsElements({ stack })
+    getAsyncActivityPointsElements({ stack, arePointsAwarded })
   )
 
-  const totalPoints = stacks.reduce((acc, stack) => {
-    acc += stack.stackPoints
-    return acc
-  }, 0)
+  const totalPoints = arePointsAwarded
+    ? stacks.reduce((acc, stack) => {
+        acc += stack.stackPoints ?? 0
+        return acc
+      }, 0)
+    : 0
 
-  const metadata = {
+  return {
+    id: practiceQuiz.id,
     name: practiceQuiz.name,
     displayName: practiceQuiz.displayName,
+    arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalPoints,
+    stacks,
   }
-  return { id: practiceQuiz.id, metadata, stacks }
 }
 
 export async function getMicroLearningDetails(
@@ -512,6 +557,7 @@ export async function getMicroLearningDetails(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: { id },
     include: {
+      course: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -522,26 +568,30 @@ export async function getMicroLearningDetails(
   if (!microLearning) {
     return null
   }
-
+  const arePointsAwarded = microLearning.course.isGamificationEnabled
   const pointsMultiplierActivity = microLearning.pointsMultiplier
   const stacks = microLearning.stacks.map((stack) =>
-    getAsyncActivityPointsElements({ stack })
+    getAsyncActivityPointsElements({ stack, arePointsAwarded })
   )
 
-  const totalPoints = stacks.reduce((acc, stack) => {
-    acc += stack.stackPoints
-    return acc
-  }, 0)
+  const totalPoints = arePointsAwarded
+    ? stacks.reduce((acc, stack) => {
+        acc += stack.stackPoints ?? 0
+        return acc
+      }, 0)
+    : 0
 
-  const metadata = {
+  return {
+    id: microLearning.id,
     name: microLearning.name,
     displayName: microLearning.displayName,
+    arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,
     totalBonusPoints: null,
     totalPoints,
+    stacks,
   }
-  return { id: microLearning.id, metadata, stacks }
 }
 
 export async function getGroupActivityDetails(
@@ -565,24 +615,32 @@ export async function getGroupActivityDetails(
     return null
   }
 
+  const arePointsAwarded = groupActivity.course.isGamificationEnabled
   const pointsMultiplierActivity = groupActivity.pointsMultiplier
   const stacks = groupActivity.stacks.map((stack) =>
-    getAsyncActivityPointsElements({ stack, isGroupActivity: true })
+    getAsyncActivityPointsElements({
+      stack,
+      isGroupActivity: true,
+      arePointsAwarded,
+    })
   )
 
-  const totalPoints = stacks.reduce((acc, stack) => {
-    acc += stack.stackPoints
-    return acc
-  }, 0)
+  const totalPoints = arePointsAwarded
+    ? stacks.reduce((acc, stack) => {
+        acc += stack.stackPoints ?? 0
+        return acc
+      }, 0)
+    : 0
 
-  const metadata = {
+  return {
+    id: groupActivity.id,
     name: groupActivity.name,
     displayName: groupActivity.displayName,
+    arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,
     totalBonusPoints: null,
     totalPoints,
+    stacks,
   }
-
-  return { id: groupActivity.id, metadata, stacks }
 }

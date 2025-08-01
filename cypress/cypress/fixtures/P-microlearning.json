@@ -57,6 +57,9 @@
   "details": {
     "name": "Microlearning Activity Details",
     "displayName": "Microlearning Activity Details (Display)",
-    "courseName": "Testkurs"
+    "courseName": "Testkurs",
+    "nameNonGamified": "Non-Gamified Microlearning Details",
+    "displayNameNonGamified": "Non-Gamified Microlearning Details (Display)",
+    "courseNonGamified": "Non-Gamified Course"
   }
 }

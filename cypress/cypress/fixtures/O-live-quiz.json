@@ -64,6 +64,11 @@
   "details": {
     "name": "Live Quiz Activity Details",
     "displayName": "Live Quiz Activity Details (Display)",
-    "courseName": "Testkurs"
+    "courseName": "Testkurs",
+    "nameNonGamified": "Non-Gamified Live Quiz Details",
+    "displayNameNonGamified": "Non-Gamified Live Quiz Details (Display)",
+    "courseNonGamified": "Non-Gamified Course",
+    "nameNoCourse": "Live Quiz Details without Course",
+    "displayNameNoCourse": "Live Quiz Details without Course (Display)"
   }
 }
