@@ -3445,7 +3445,7 @@ describe('Different live-quiz workflows', function () {
 
   // ! Part 6: Activity Details Points
   // #region
-  it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
+  it('Create live quiz in a gamified course and validate that points are shown correctly', function () {
     cy.loginLecturer()
     cy.createLiveQuiz({
       name: this.data.details.name,
@@ -3479,14 +3479,6 @@ describe('Different live-quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
-    cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
-      'exist'
-    )
-  })
-
-  it('Check points calculation for live quiz', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
       'exist'
     )
@@ -3642,7 +3634,239 @@ describe('Different live-quiz workflows', function () {
       bonusPoints: 0,
       totalPoints: 0,
     })
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
 
+  it('Create live quiz in a non-gamified course and validate that no points are shown', function () {
+    cy.loginLecturer()
+    cy.createLiveQuiz({
+      name: this.data.details.nameNonGamified,
+      displayName: this.data.details.displayNameNonGamified,
+      courseName: this.data.details.courseNonGamified,
+      blocks: [
+        {
+          elements: [
+            this.data.SC.title,
+            this.data.MC.title,
+            this.data.KP.title,
+            this.data.NR.title,
+            this.data.FT.title,
+            this.data.SE.title,
+            this.data.CS.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+            this.data.SEML.title,
+            this.data.CSML.title,
+            this.data.CT2.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNonGamified}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="activity-name-${this.data.details.nameNonGamified}"]`
+    ).click()
+    cy.assertNoActivityPoints()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+      'not.contain',
+      '70 P.'
+    )
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+      'not.contain',
+      '660 P.'
+    )
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KP.title)
+    cy.get('[data-cy="stack-0-instance-3"]').contains(this.data.NR.title)
+    cy.get('[data-cy="stack-0-instance-4"]').contains(this.data.FT.title)
+    cy.get('[data-cy="stack-0-instance-5"]').contains(this.data.SE.title)
+    cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
+    cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-3"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-4"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-5"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-6"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-7"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
+    cy.get('[data-cy="stack-1-instance-4"]').contains(this.data.SEML.title)
+    cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
+    cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-3"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-4"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-5"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-6"]').click()
+    cy.assertNoInstancePoints()
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
+
+  it('Create live quiz without course assignment and validate that no points are shown', function () {
+    cy.loginLecturer()
+    cy.createLiveQuiz({
+      name: this.data.details.nameNoCourse,
+      displayName: this.data.details.displayNameNoCourse,
+      blocks: [
+        {
+          elements: [
+            this.data.SC.title,
+            this.data.MC.title,
+            this.data.KP.title,
+            this.data.NR.title,
+            this.data.FT.title,
+            this.data.SE.title,
+            this.data.CS.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+            this.data.SEML.title,
+            this.data.CSML.title,
+            this.data.CT2.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNoCourse}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="activity-name-${this.data.details.nameNoCourse}"]`
+    ).click()
+    cy.assertNoActivityPoints()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+      'not.contain',
+      '70 P.'
+    )
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+      'not.contain',
+      '660 P.'
+    )
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KP.title)
+    cy.get('[data-cy="stack-0-instance-3"]').contains(this.data.NR.title)
+    cy.get('[data-cy="stack-0-instance-4"]').contains(this.data.FT.title)
+    cy.get('[data-cy="stack-0-instance-5"]').contains(this.data.SE.title)
+    cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
+    cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-3"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-4"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-5"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-6"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-7"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
+    cy.get('[data-cy="stack-1-instance-4"]').contains(this.data.SEML.title)
+    cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
+    cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-3"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-4"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-5"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-6"]').click()
+    cy.assertNoInstancePoints()
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
   // #endregion
