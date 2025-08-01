@@ -327,7 +327,7 @@ function SuspendedGroupView({
                 <Form className="flex flex-row items-center gap-1.5">
                   <FormikTextareaField
                     name="content"
-                    className={{ input: 'text-sm' }}
+                    className={{ input: 'bg-white text-sm' }}
                     data={{ cy: 'group-message-textarea' }}
                   />
                   <Button
