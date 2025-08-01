@@ -29,6 +29,11 @@ RUN echo '#!/bin/bash\n\
   sleep 2\n\
   done\n\
   \n\
+  # Build the types package\n\
+  echo "Building types package..."\n\
+  cd /usr/src/app/packages/types\n\
+  pnpm run build\n\
+  \n\
   # Build the utils package\n\
   echo "Building util package..."\n\
   cd /usr/src/app/packages/util\n\
