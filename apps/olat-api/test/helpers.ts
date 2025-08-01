@@ -1,9 +1,7 @@
 import {
-  Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
-  PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
 import {
@@ -11,6 +9,7 @@ import {
   ElementInstanceResults,
   ElementOptionsNumerical,
 } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { expect } from 'vitest'
 import {
   Course,
@@ -34,8 +33,10 @@ export async function createElements(
   user: User
 ) {
   const elements = []
+
   for (let i = 1; i <= n; i++) {
-    const element: Element = await prisma.element.create({
+    // create the element in the database
+    const element = await prisma.element.create({
       data: {
         type: ElementType.NUMERICAL,
         name: `Element ${i}`,
@@ -56,32 +57,18 @@ export async function createElements(
       },
     })
 
-    // permissions
-    await prisma.derivedPermission.upsert({
-      where: {
-        elementId_userId: {
-          elementId: element.id,
-          userId: user.id,
-        },
-      },
-      create: {
-        permissionLevel: PermissionLevel.OWNER,
-        element: {
-          connect: { id: element.id },
-        },
-        user: {
-          connect: { id: user.id },
-        },
-      },
-      update: {
-        permissionLevel: PermissionLevel.OWNER,
-      },
-    })
+    // recompute the derived permissions for the element owner
+    await recomputeDerivedPermissions(
+      { elementId: element.id, userId: user.id },
+      prisma
+    )
+
     elements.push({
       id: element.id,
       type: element.type as ElementType,
     })
   }
+
   return elements
 }
 
@@ -94,7 +81,8 @@ export async function createCourse(
   const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // one week ago
   const defaultEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // two weeks in future
 
-  return await prisma.course.create({
+  // create course in the database
+  const dbCourse = await prisma.course.create({
     data: {
       id: course.id,
       name: course.name,
@@ -109,6 +97,12 @@ export async function createCourse(
       isArchived,
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { courseId: dbCourse.id, userId: course.owner.id },
+    prisma
+  )
 }
 
 export async function createLiveQuiz(
@@ -117,7 +111,8 @@ export async function createLiveQuiz(
   i: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.liveQuiz.create({
+  // create a live quiz in the database
+  const dbLiveQuiz = await prisma.liveQuiz.create({
     data: {
       name: `Live Quiz ${i} for ${course.name}`,
       displayName: `Live Quiz ${i} for ${course.name}`,
@@ -146,6 +141,14 @@ export async function createLiveQuiz(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { liveQuizId: dbLiveQuiz.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbLiveQuiz
 }
 
 export async function createPracticeQuiz(
@@ -154,7 +157,8 @@ export async function createPracticeQuiz(
   ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.practiceQuiz.create({
+  // create a practice quiz in the database
+  const dbPracticeQuiz = await prisma.practiceQuiz.create({
     data: {
       name: `Practice Quiz ${ix} for ${course.name}`,
       displayName: `Practice Quiz ${ix} for ${course.name}`,
@@ -186,6 +190,14 @@ export async function createPracticeQuiz(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { practiceQuizId: dbPracticeQuiz.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbPracticeQuiz
 }
 
 export async function createMicroLearning(
@@ -194,7 +206,8 @@ export async function createMicroLearning(
   ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.microLearning.create({
+  // create a microlearning in the database
+  const dbMicroLearning = await prisma.microLearning.create({
     data: {
       name: `Microlearning ${ix} for ${course.name}`,
       displayName: `Microlearning ${ix} for ${course.name}`,
@@ -226,6 +239,14 @@ export async function createMicroLearning(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { microLearningId: dbMicroLearning.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbMicroLearning
 }
 
 export async function testInitialization(prisma: PrismaClient) {
@@ -254,7 +275,7 @@ export async function testInitialization(prisma: PrismaClient) {
   )
   expect(actualEmails).toHaveLength(2)
 
-  const res = await Promise.all(
+  await Promise.all(
     [userOne, userTwo].map(async (user) => {
       let userPrisma = await prisma.user.findUnique({
         where: { id: user.id },
