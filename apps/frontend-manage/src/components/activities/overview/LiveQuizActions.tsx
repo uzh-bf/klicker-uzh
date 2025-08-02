@@ -237,12 +237,6 @@ function LiveQuizActions({
             key={liveQuiz.id}
             onClose={() => setEmbeddingModal(false)}
             quizId={liveQuiz.id}
-            elements={liveQuiz.stacks.flatMap((stack) =>
-              stack.elements.map((instance) => ({
-                id: instance.id,
-                name: instance.name,
-              }))
-            )}
           />
         )}
 

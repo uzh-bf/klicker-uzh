@@ -8,11 +8,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ConfusionSection from './ConfusionSection'
 
-interface Props {
+function ConfusionCharts({
+  confusionValues,
+}: {
   confusionValues?: ConfusionSummary
-}
-
-function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
+}): React.ReactElement {
   const t = useTranslations()
   const router = useRouter()
 

@@ -8,6 +8,7 @@ import {
   type CaseStudySolutionInput as CaseStudySolutionInputType,
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
+  type ChoicesResponse as ChoicesResponseType,
   type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
@@ -63,7 +64,11 @@ import {
   SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
-import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
+import {
+  CaseStudyCaseResponse,
+  ChoicesResponse,
+  PublicationStatus,
+} from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- QUESTION INPUTS -----
@@ -165,7 +170,10 @@ export const ResponseInputRef =
   builder.inputRef<ResponseInputType>('ResponseInput')
 export const ResponseInput = ResponseInputRef.implement({
   fields: (t) => ({
-    choices: t.intList({ required: false }),
+    choices: t.field({
+      type: [ChoicesResponse],
+      required: false,
+    }),
     value: t.string({ required: false }),
     selection: t.intList({ required: false }),
     assessment: t.field({
@@ -326,15 +334,41 @@ export const TemplateBlockInput = TemplateBlockInputRef.implement({
   }),
 })
 
+interface IElementInstanceVersionInfo {
+  id: number
+  newTitle: string
+  newSampleSolution: boolean
+}
+export const ElementInstanceVersionInfoRef =
+  builder.objectRef<IElementInstanceVersionInfo>('ElementInstanceVersionInfo')
+export const ElementInstanceVersionInfo =
+  ElementInstanceVersionInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      newTitle: t.exposeString('newTitle'),
+      newSampleSolution: t.exposeBoolean('newSampleSolution'),
+    }),
+  })
+
 // #endregion
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
+export const ChoicesResponseObject = builder
+  .objectRef<ChoicesResponseType>('ChoicesResponseObject')
+  .implement({
+    fields: (t) => ({
+      ix: t.exposeInt('ix'),
+      selected: t.exposeBoolean('selected'),
+    }),
+  })
 export const SingleQuestionResponseChoices = builder
   .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
   .implement({
     fields: (t) => ({
-      choices: t.exposeIntList('choices'),
+      choices: t.expose('choices', {
+        type: [ChoicesResponseObject],
+      }),
     }),
   })
 
@@ -842,6 +876,21 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+interface IElementSummary {
+  sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access
+  retainsDerivedAccess: boolean // = true if the element is used in activity with admin / owner access -> retain derived access
+  derivedAccessToResources: boolean // = true if the element leads to derived access to resources
+}
+export const ElementSummaryRef =
+  builder.objectRef<IElementSummary>('ElementSummary')
+export const ElementSummary = ElementSummaryRef.implement({
+  fields: (t) => ({
+    sharedElementActivityUse: t.exposeBoolean('sharedElementActivityUse'),
+    retainsDerivedAccess: t.exposeBoolean('retainsDerivedAccess'),
+    derivedAccessToResources: t.exposeBoolean('derivedAccessToResources'),
+  }),
+})
+
 interface IArchivedElementList {
   success?: boolean
   partialSuccess?: boolean
@@ -877,7 +926,8 @@ export const ArchivedElement = builder
   })
 // #endregion
 
-export interface IElementInstance extends DB.ElementInstance {
+export interface IElementInstance
+  extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
 }
 export const ElementInstanceRef =

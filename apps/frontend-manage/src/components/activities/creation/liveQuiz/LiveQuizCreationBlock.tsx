@@ -1,19 +1,25 @@
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
   faArrowRight,
   faCircleExclamation,
-  faGears,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Element,
+  ElementInstanceVersionInfo,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
+import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../../questions/Element'
 import DropElementsStack from '../DropElementsStack'
+import { OutdatedInstancesRefetchFunction } from '../InstanceUpdateOption'
 import PasteSelectionButton from '../PasteSelectionButton'
 import WizardElementList from '../WizardElementList'
 import {
@@ -21,7 +27,7 @@ import {
   ElementBlockFormValues,
 } from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
-import LiveQuizBlockSettingsModal from './LiveQuizBlockSettingsModal'
+import LiveQuizCountdownModal from './LiveQuizCountdownModal'
 
 interface LiveQuizCreationBlockProps {
   blockIx: number
@@ -34,6 +40,8 @@ interface LiveQuizCreationBlockProps {
   selection?: Record<number, Element>
   resetSelection?: () => void
   error?: ElementBlockErrorValues[]
+  outdatedInstances: ElementInstanceVersionInfo[]
+  refetchOutdatedInstances: OutdatedInstancesRefetchFunction
 }
 
 function LiveQuizCreationBlock({
@@ -47,6 +55,8 @@ function LiveQuizCreationBlock({
   selection,
   resetSelection,
   error,
+  outdatedInstances,
+  refetchOutdatedInstances,
 }: LiveQuizCreationBlockProps): React.ReactElement {
   const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
@@ -74,7 +84,7 @@ function LiveQuizCreationBlock({
         isOver: !!monitor.isOver(),
       }),
     }),
-    []
+    [block]
   )
 
   return (
@@ -108,7 +118,7 @@ function LiveQuizCreationBlock({
           <Button
             basic
             className={{
-              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
+              root: 'hover:text-primary-100 px-1 hover:bg-transparent disabled:hover:bg-transparent',
             }}
             disabled={numOfBlocks === 1 || blockIx === 0}
             onClick={() => move(blockIx, blockIx !== 0 ? blockIx - 1 : blockIx)}
@@ -123,7 +133,7 @@ function LiveQuizCreationBlock({
           <Button
             basic
             className={{
-              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
+              root: 'hover:text-primary-100 px-1 hover:bg-transparent disabled:hover:bg-transparent',
             }}
             disabled={numOfBlocks === 1 || blockIx === numOfBlocks - 1}
             onClick={() =>
@@ -142,13 +152,16 @@ function LiveQuizCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
+              root: twMerge(
+                'hover:text-primary-100 px-1 hover:bg-transparent',
+                block.timeLimit && 'font-bold text-orange-400'
+              ),
             }}
-            data={{ cy: `open-block-${blockIx}-settings` }}
+            data={{ cy: `open-block-${blockIx}-countdown` }}
           >
             <Button.Icon
               withoutLabel
-              icon={faGears}
+              icon={faClock}
               className={{ root: 'h-3.5 w-3.5' }}
             />
           </Button>
@@ -178,6 +191,8 @@ function LiveQuizCreationBlock({
         selectionActive={
           (selection && Object.keys(selection).length > 0) ?? false
         }
+        outdatedInstances={outdatedInstances}
+        refetchOutdatedInstances={refetchOutdatedInstances}
       />
 
       {selection && !isEmpty(selection) && (
@@ -196,7 +211,7 @@ function LiveQuizCreationBlock({
         index={blockIx}
       />
       {openSettings && (
-        <LiveQuizBlockSettingsModal
+        <LiveQuizCountdownModal
           onClose={() => setOpenSettings(false)}
           block={block}
           index={blockIx}

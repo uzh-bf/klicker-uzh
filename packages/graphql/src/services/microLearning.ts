@@ -217,6 +217,7 @@ export async function manipulateMicroLearning(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
 
   // in EDIT mode - check which instances and stacks should be removed
@@ -251,6 +252,7 @@ export async function manipulateMicroLearning(
     pointsMultiplier: multiplier,
     scheduledStartAt: dayjs(startDate).toDate(),
     scheduledEndAt: dayjs(endDate).toDate(),
+    areInstancesOutdated: anyInstanceOutdated,
     stacks: {
       create: stacks.map((stack) => {
         return {

@@ -91,7 +91,17 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
-const loginFactory = (tokenData) => {
+const loginFactory = (
+  tokenData: {
+    email: string
+    sub: string
+    role: 'ADMIN' | 'USER'
+    scope: 'ACCOUNT_OWNER'
+    catalystInstitutional: boolean
+    catalystIndividual: boolean
+  },
+  redirectUrl?: string
+) => {
   return () => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
@@ -119,7 +129,7 @@ const loginFactory = (tokenData) => {
       })
     })
 
-    cy.visit(Cypress.env('URL_MANAGE'))
+    cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
   }
 }
 
@@ -133,6 +143,21 @@ Cypress.Commands.add(
     catalystInstitutional: true,
     catalystIndividual: true,
   })
+)
+
+Cypress.Commands.add(
+  'loginLecturerControl',
+  loginFactory(
+    {
+      email: 'lecturer@df.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8821',
+      role: 'ADMIN',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: true,
+      catalystIndividual: true,
+    },
+    Cypress.env('URL_CONTROL')
+  )
 )
 
 Cypress.Commands.add(
@@ -707,9 +732,20 @@ Cypress.Commands.add(
 
     cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
     cy.get(`[data-cy="confirm-deletion-final"]`).click()
-    cy.get(`[data-cy="confirm-other-users-access"]`).click()
-    cy.get(`[data-cy="confirm-derived-access"]`).click()
-    cy.get(`[data-cy="confirm-dependency-access"]`).click()
+
+    // only click confirmation buttons if they exist
+    cy.get('body').then(($body) => {
+      if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-other-users-access"]`).click()
+      }
+      if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-derived-access"]`).click()
+      }
+      if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
+        cy.get(`[data-cy="confirm-dependency-access"]`).click()
+      }
+    })
+
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
     cy.wait(500)
   }
@@ -730,12 +766,19 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
+  multiplier?: string
   blocks: { elements: string[] }[]
 }
 
 Cypress.Commands.add(
   'createLiveQuiz',
-  ({ name, displayName, courseName, blocks }: CreateLiveQuizArgs) => {
+  ({
+    name,
+    displayName,
+    courseName,
+    multiplier,
+    blocks,
+  }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
 
     // Step 1: Name
@@ -753,7 +796,14 @@ Cypress.Commands.add(
         .contains(messages.manage.activityWizard.liveQuizNoCourse)
       cy.selectOption('[data-cy="select-course"]', courseName)
       cy.get('[data-cy="select-course"]').contains(courseName)
+
+      if (multiplier) {
+        cy.get('[data-cy="select-multiplier"]').realClick()
+        cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
+        cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+      }
     }
+
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Blocks & Questions
@@ -882,6 +932,7 @@ interface CreatePracticeQuizArgs {
   displayName: string
   description?: string
   courseName: string
+  multiplier?: string
   stacks: StackType[]
 }
 
@@ -892,6 +943,7 @@ Cypress.Commands.add(
     displayName,
     description,
     courseName,
+    multiplier,
     stacks,
   }: CreatePracticeQuizArgs) => {
     cy.get('[data-cy="create-practice-quiz"]').click()
@@ -915,6 +967,11 @@ Cypress.Commands.add(
     // Step 3: Settings
     cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    if (multiplier) {
+      cy.get('[data-cy="select-multiplier"]').realClick()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Stacks
@@ -1281,12 +1338,93 @@ Cypress.Commands.add(
   }
 )
 
+interface AssertActivityPointsArgs {
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertActivityPoints',
+  ({
+    basePoints,
+    correctnessPoints,
+    bonusPoints,
+    totalPoints,
+  }: AssertActivityPointsArgs) => {
+    cy.get('[data-cy="base-points-activity"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-activity"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-activity"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+  }
+)
+
+interface AssertInstancePointsArgs {
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertInstancePoints',
+  ({
+    basePoints,
+    correctnessPoints,
+    bonusPoints,
+    totalPoints,
+  }: AssertInstancePointsArgs) => {
+    cy.get('[data-cy="base-points-instance"]').contains(`${basePoints} P.`)
+    cy.get('[data-cy="correctness-points-instance"]').contains(
+      `${correctnessPoints} P.`
+    )
+    cy.get('[data-cy="bonus-points-instance"]').contains(`${bonusPoints} P.`)
+    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add('assertNoActivityPoints', () => {
+  cy.get('[data-cy="base-points-activity"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-activity"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-activity"]').should('not.exist')
+  cy.get('[data-cy="total-points-activity"]').should('not.exist')
+})
+
+Cypress.Commands.add('assertNoInstancePoints', () => {
+  cy.get('[data-cy="base-points-instance"]').should('not.exist')
+  cy.get('[data-cy="correctness-points-instance"]').should('not.exist')
+  cy.get('[data-cy="bonus-points-instance"]').should('not.exist')
+  cy.get('[data-cy="total-points-instance"]').should('not.exist')
+})
+
+interface TotalPointsArgs {
+  totalPoints: number
+}
+
+Cypress.Commands.add(
+  'assertAsynchronousActivityPoints',
+  ({ totalPoints }: TotalPointsArgs) => {
+    cy.get('[data-cy="total-points-activity"]').contains(`${totalPoints} P.`)
+  }
+)
+
+Cypress.Commands.add(
+  'assertAsynchronousInstancePoints',
+  ({ totalPoints }: TotalPointsArgs) => {
+    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  }
+)
+
 declare global {
   namespace Cypress {
     interface Chainable {
       seed(): Chainable<void>
       cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
+      loginLecturerControl(): Chainable<void>
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
@@ -1397,6 +1535,7 @@ declare global {
         name,
         displayName,
         courseName,
+        multiplier,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       convertLiveQuizToTemplate({
@@ -1424,6 +1563,7 @@ declare global {
         displayName,
         description,
         courseName,
+        multiplier,
         stacks,
       }: CreatePracticeQuizArgs): Chainable<void>
       createMicroLearning({
@@ -1463,6 +1603,26 @@ declare global {
         verifyDisabled,
       }: VerifyCaseStudyInputsArgs): Chainable<void>
       selectOption(selector: string, optionText: string): Chainable<void>
+      assertActivityPoints({
+        basePoints,
+        correctnessPoints,
+        bonusPoints,
+        totalPoints,
+      }: AssertActivityPointsArgs): Chainable<void>
+      assertInstancePoints({
+        basePoints,
+        correctnessPoints,
+        bonusPoints,
+        totalPoints,
+      }: AssertInstancePointsArgs): Chainable<void>
+      assertNoActivityPoints(): Chainable<void>
+      assertNoInstancePoints(): Chainable<void>
+      assertAsynchronousActivityPoints({
+        totalPoints,
+      }: TotalPointsArgs): Chainable<void>
+      assertAsynchronousInstancePoints({
+        totalPoints,
+      }: TotalPointsArgs): Chainable<void>
     }
   }
 }

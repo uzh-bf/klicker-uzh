@@ -99,7 +99,7 @@ export default {
     login: {
       installButton: 'Install Now',
     },
-    activity: {
+    comments: {
       title: 'Comments',
       viewComments: 'View Comments',
       noActivity: 'No activity yet',
@@ -151,6 +151,8 @@ export default {
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
+      startNoun: 'Start',
+      end: 'End',
       continue: 'Continue',
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -370,6 +372,12 @@ export default {
       objects: 'Objects',
       pseudonym: 'Pseudonym',
       selected: 'Selected',
+      seconds: 'seconds',
+      moreInformation: 'More information',
+      today: 'Today',
+      month: 'Month',
+      week: 'Week',
+      day: 'Day',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -394,6 +402,12 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'PQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -825,6 +839,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pseudonymSelection: 'Pseudonym Selection',
       avatarExplanation:
         'If you wish, you can select your <b>avatar</b> for the live quiz here.',
+      noQuizTitle: 'No Live Quiz Available',
+      noQuizDescription:
+        'There is currently no running live quiz available under this link. Please check your link or contact your instructor.',
+      refreshPage: 'Refresh Page',
     },
     feedbacks: {
       title: 'Feedback Channel',
@@ -998,7 +1016,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalog: 'Catalog',
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',
-      generateToken: 'Generate login token',
       adminPanel: 'Admin Panel',
       '404Message':
         'The page you requested does not exist. Please return to the <link>library</link> or use the main menu at the top for further navigation.',
@@ -1011,6 +1028,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
+      elementPreviewRedirect: 'Open preview in a new tab',
+      elementTypeDescription: 'Type',
+      elementPreviewDescription: 'Preview',
+      basePointsDescription: 'Base Points',
+      correctnessPointsDescription: 'Correctness Points',
+      bonusPointsDescription: 'Bonus Points',
+      totalPointsSynchronousDescription: 'Maximum Achievable Points',
+      totalPointsAsynchronousDescription: 'Achievable Points',
+      pointTypeDescription: 'Point Type',
+      pointAmountDescription: 'Amount',
+      pointsMultiplierDescription: 'Multiplier',
+      sampleSolutionDescription: 'Sample Solution',
+      gradingDescription: 'Documentation',
     },
     admin: {
       pageName: 'Admin Panel',
@@ -1043,6 +1073,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
       lastModifiedAt: 'Last modified at {date}',
+      instancesOutdated: 'Activity contains outdated elements',
+      instanceUpdateDraftScheduled:
+        'For some of the elements included in this activity, newer versions are available in the library. This happens when you modify an element with the activity already being published or without having the instance updates in activities activate.<ul><li>To update outdated versions of elements, <b>edit the activity</b> and choose the instances you would like to update in the last step of the wizard.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in draft and scheduled activities.</li><li>To get a list of all outdated instances, please check out the activity information by clicking on the activity title in the overview.</li></ul>',
+      instanceUpdateTemplate:
+        'For some of the elements included in this template, newer versions are available in the library. This happens when you modify an elements without enabling updates in templates.<ul><li>To update outdated versions of elements, re-create the template.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in templates.</li><li>To get a list of all outdated instances, please check out the template information by clicking on the template title in the overview.</li></ul>',
       automaticPublicationAt: 'Automatic publication at {date}',
       availability: 'Availability: {startDate} - {endDate}',
       removeActivity: 'Remove Activity',
@@ -1061,6 +1096,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the activity could not be changed. Please try again later.',
       noCourseAssigned: 'No course assigned',
       actionsLegend: 'Actions Legend',
+      activityDetailsNoInstanceSelected:
+        'Please select an element from a block to view a preview and the corresponding scoring.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1194,27 +1231,35 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
-        'We could not find any questions that meet the desired criteria. Please try other filters or create a new question.',
+        'We could not find any questions that meet the desired criteria.',
+      activeFiltersWarning:
+        'There are currently active filters that might affect the elements shown here. To view all elements (except archived ones), please <reset>reset</reset> the filters or update them on the right side.',
       deleteElement: 'Delete element',
       confirmDeletion:
         'Please confirm the following consequences of deleting the element <b>{name}</b>.',
       elementDeletionFinal:
         'The deletion of an element is irreversible and deleted elements cannot be restored. The element will not be removed from existing activities.',
       elementDeletionOtherUsers:
-        'If other users with shared access to the element use it in activities, access for these users will remain.',
+        'Other users are using this element in activities. They will retain access to the element.',
       elementDeletionDerivedAccessHint:
-        'If the element is used in an activity that you own or have admin access to, it cannot be completely deleted for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its deletion. Once the associated activity is deleted, the element will be automatically deleted as well.',
+        'You are using the element in an activity for which you have at least admin access. For technical reasons, the element cannot be completely deleted. You will automatically receive a derived permission on the element after its deletion. Once the associated activity is deleted, the element will be automatically deleted as well.',
       elementDeletionDependencyAccess:
         'Derived access rights to included resources will be automatically revoked.',
+      elementDeletionOtherUsersNotApplicable:
+        'The element is not used by other users in activities.',
+      elementDeletionDerivedAccessNotApplicable:
+        'You are not using the element in any activity. The element can be completely deleted.',
+      elementDeletionDependencyAccessNotApplicable:
+        'No derived resources are affected by the deletion of the element.',
       removeElement: 'Remove Element',
       confirmElementRemoval:
         'Please confirm the following consequences of removing the element <b>{name}</b> from your user account.',
       elementRemovalFinal:
         'The removal of this element from your account is irreversible and cannot be undone.',
       elementRemovalDerivedAccessHint:
-        'If the element is used in an activity that you own or have admin access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the element after triggering its removal. Once the associated activity is deleted, the element will be automatically removed as well.',
-      elementRemovalDependencyAccess:
-        'Derived access rights to included resources will be automatically revoked.',
+        'You are using the element in an activity for which you have at least admin access. For technical reasons, the element cannot be completely removed. You will automatically receive a derived permission on the element after its deletion. Once the associated activity is deleted, the element will be automatically removed as well.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'You are not using the element in any activity. The element can be completely removed.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
@@ -1230,6 +1275,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
       restoreFromArchiveFailed:
         'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
+      showFeedbacksExplanation: 'Show answer feedbacks & explanation',
+      showExplanation: 'Show explanation',
+      showFeedbacksExplanationTooltip:
+        'View a preview of how the explanation and answer feedbacks will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
+      showExplanationTooltip:
+        'View a preview of how the explanation will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
     },
     tags: {
       deleteTag: 'Delete tag',
@@ -1453,11 +1504,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementCreated: 'Element has been created successfully',
       openPreview: 'Open preview',
       openOverview: 'Open overview',
-      createNewElement: 'Create another element',
+      createAnotherActivity: 'Create another activity',
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
-      blockSettingsTitle: 'Settings Block {blockIx}',
+      blockCountdownTitle: 'Countdown Block {blockIx}',
       timeLimit: 'Time limit',
       noTimeLimit: 'No time limit',
       optionalTimeLimit: 'Optional time limit',
@@ -1481,6 +1532,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       stackDescriptionPlaceholder: 'Enter description here...',
       stackFTQuestionsNoSL:
         'You included a free text question in without a sample solution in this stack. While this is possible for free text questions, please note that the participants will receive a default number of points for answering and no grading logic is applied.',
+      outdatedElementsWarning:
+        'Your activity contains outdated versions of elements.',
+      updateAllElements: 'Update all Elements',
+      elementInstancesFrozen:
+        'When creating the activity, the content of the elements was frozen. When enabled, changes to elements are applied to draft activities.',
+      noInstanceUpdatePublishedActivities:
+        'No changes made to elements are applied to published activities (accessible to students).',
+      choiceOnDuplication:
+        "When duplicating an activity, you can choose whether to keep an activity's content unmodified or update the elements to their latest version.",
       microlearningTypes:
         'A microlearning can contain all available element types.',
       microlearningCreated:
@@ -2070,8 +2130,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No feedbacks match the current filter settings...',
       filterSolved: 'Resolved',
       filterOpen: 'Open',
+      filterPinned: 'Pinned',
       filterUnpinned: 'Unpinned',
+      filterPublished: 'Published',
       filterUnpublished: 'Unpublished',
+      pinning: 'Pinning',
+      visibility: 'Visibility',
       sortByVotes: 'Sort by votes',
       sortByTime: 'Sort by time',
       answersGiven: '{number} answer(s) given',
@@ -2094,6 +2158,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confusionDifficultyTooltip:
         'The display below illustrates the aggregated feedback of the students regarding the currently perceived difficulty of the content being taught.',
       skipCooldown: 'Skip cooldown',
+      deleteFeedback: 'Delete Feedback',
+      deleteFeedbackMessage:
+        'Are you sure you want to delete this feedback: "{feedback}"?',
+      moderationTip: 'Alternative to deletion',
+      moderationTipMessage:
+        'You can enable moderation to hide selected feedbacks from the student view without deleting them permanently.',
+      confirmDeleteFeedback:
+        'I understand that this action will permanently delete the feedback.',
+      disableModerationTitle: 'Disable Moderation',
+      disableModerationMessage:
+        'You are about to disable moderation. This will automatically publish {count} unpublished feedback(s).',
+      autoPublishWarning: 'Auto-Publish Warning',
+      autoPublishWarningMessage:
+        'These will become visible to all students immediately.',
+      confirmDisableModeration:
+        'I understand that moderation will be disabled.',
+      confirmPublishUnpublished:
+        'I confirm that all {count} unpublished feedback(s) should be published.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -2270,9 +2352,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupDeadlineChangedToPast:
         'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
       gamificationGroupsFixed:
-        'Gamification and group creation will be enabled for this course. These settings cannot be deactivated again after the course has been created, since it might contain gamified activities or participant groups might have been formed. If these options are not activated initially, they can be enabled later on.',
+        'Gamification and group creation are enabled for this course. These settings cannot be disabled once gamified activities or participant groups exist. Initially disabled options can be enabled later.',
       gamificationFixed:
-        'Gamification will be enabled for this course. This setting cannot be deactivated again after the course has been created, since it might contain gamified activities. If this option is not activated initially, it can be enabled later on.',
+        'Gamification is enabled for this course. This setting cannot be disabled once gamified activities are assigned. Initially disabled options can be enabled later.',
       openPreview: 'Open Preview',
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
@@ -2373,6 +2455,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nQuestions: '{number} questions',
       courseQRDescription:
         'Share this link or QR code with your course participants to allow them to join.',
+      calendarView: 'Calendar View',
+      backToListView: 'Back to List View',
+      calendarAllDay: 'All day',
+      calendarMore: 'more',
+      calendarNoEntries: 'No entries',
+      calendarCourseStart: 'Course Start',
+      calendarCourseEnd: 'Course End',
+      calendarCourseGroupFormationDeadline: 'Group Formation Deadline',
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
@@ -2449,9 +2539,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No anonymous responses have been submitted for elements in this microlearning yet.',
       anonResponsesToMicroLearning:
         '{number} anonymous response(s) have been submitted for elements in this microlearning.',
-      noStartedInstancesLoosingAccess:
+      noStartedInstancesLosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
-      startedInstancesLoosingAccess:
+      startedInstancesLosingAccess:
         '{number} group(s) have started the group activity but have not submitted any results yet. They will lose access to the group activity.',
       noSubmissionsToActivity:
         'There are no submissions for this group activity yet.',

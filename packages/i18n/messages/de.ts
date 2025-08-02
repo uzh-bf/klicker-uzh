@@ -100,7 +100,7 @@ export default {
     login: {
       installButton: 'Jetzt installieren',
     },
-    activity: {
+    comments: {
       title: 'Kommentare',
       viewComments: 'Kommentare anzeigen',
       noActivity: 'Noch keine Aktivität',
@@ -153,6 +153,8 @@ export default {
       submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
+      startNoun: 'Start',
+      end: 'Ende',
       continue: 'Weiter',
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
@@ -372,6 +374,12 @@ export default {
       objects: 'Objekte',
       pseudonym: 'Pseudonym',
       selected: 'Ausgewählt',
+      seconds: 'Sekunden',
+      moreInformation: 'Mehr Informationen',
+      today: 'Heute',
+      month: 'Monat',
+      week: 'Woche',
+      day: 'Tag',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -396,6 +404,12 @@ export default {
       CASE_STUDY: 'Fallstudie',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
+    },
+    short: {
+      LIVE_QUIZ: 'LQ',
+      PRACTICE_QUIZ: 'ÜQ',
+      MICRO_LEARNING: 'ML',
+      GROUP_ACTIVITY: 'GA',
     },
     contentInput: {
       boldStyle:
@@ -828,6 +842,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pseudonymSelection: 'Pseudonym-Auswahl',
       avatarExplanation:
         'Falls sie möchten, können Sie hier Ihren <b>Avatar</b> für das Live-Quiz auswählen.',
+      noQuizTitle: 'Kein Live-Quiz verfügbar',
+      noQuizDescription:
+        'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
+      refreshPage: 'Seite aktualisieren',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
@@ -999,7 +1017,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalog: 'Katalog',
       mediaLibrary: 'Mediathek',
       userGroups: 'Benutzergruppen',
-      generateToken: 'Login-Token generieren',
       adminPanel: 'Admin-Panel',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zur <link>Bibliothek</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -1012,6 +1029,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
+      elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
+      elementTypeDescription: 'Typ',
+      elementPreviewDescription: 'Vorschau',
+      basePointsDescription: 'Basis-Punkte',
+      correctnessPointsDescription: 'Korrektheits-Punkte',
+      bonusPointsDescription: 'Bonus-Punkte',
+      totalPointsSynchronousDescription: 'Maximal Erreichbare Punkte',
+      totalPointsAsynchronousDescription: 'Erreichbare Punkte',
+      pointTypeDescription: 'Punkttyp',
+      pointAmountDescription: 'Menge',
+      pointsMultiplierDescription: 'Multiplikator',
+      sampleSolutionDescription: 'Musterlösung',
+      gradingDescription: 'Dokumentation',
     },
     admin: {
       pageName: 'Admin-Panel',
@@ -1044,6 +1074,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
       lastModifiedAt: 'Zuletzt bearbeitet am {date}',
+      instancesOutdated: 'Aktivität enthält veraltete Elemente',
+      instanceUpdateDraftScheduled:
+        'Für einige der in dieser Aktivität enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, während die Aktivität bereits veröffentlicht ist oder ohne die Aktualisierungen in Aktivitäten zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, <b>bearbeiten Sie die Aktivität</b> und wählen Sie die Instanzen aus, die Sie im letzten Schritt des Assistenten aktualisieren möchten.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Entwurfs- und geplanten Aktivitäten enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Aktivitätsinformationen, indem Sie auf den Titel der Aktivität in der Übersicht klicken.</li></ul>',
+      instanceUpdateTemplate:
+        'Für einige der in dieser Vorlage enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, ohne die Aktualisierungen in Vorlagen zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, erstellen Sie die Vorlage erneut.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Vorlagen enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Übersicht, indem Sie auf den Titel der Vorlage in der Liste klicken.</li></ul>',
       automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
       availability: 'Verfügbarkeit: {startDate} - {endDate}',
       removeActivity: 'Aktivität entfernen',
@@ -1062,6 +1097,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Aktivität konnte nicht geändert werden.',
       noCourseAssigned: 'Kein Kurs zugewiesen',
       actionsLegend: 'Aktionen für Aktivitäten',
+      activityDetailsNoInstanceSelected:
+        'Bitte wählen Sie ein Element aus einem Block, um eine Vorschau und die entsprechende Bepunktung einzusehen.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1195,27 +1232,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
       noQuestionsWarning:
-        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage.',
+        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen.',
+      activeFiltersWarning:
+        'Aktuell sind Filter aktiv, welche die angezeigten Elemente beeinflussen können. Um alle Elemente (ausser archivierte) anzuzeigen, können Sie die Filter <reset>zurücksetzen</reset> oder verändern Sie diese auf der rechten Seite.',
       deleteElement: 'Element löschen',
       confirmDeletion:
         'Bitte bestätigen Sie die folgenden Folgen der Löschung des Elementes <b>{name}</b>.',
       elementDeletionFinal:
         'Die Löschung eines Elements is unwiderruflich und gelöschte Elemente können nicht wiederhergestellt werden. Das Element wird durch die Löschung nicht aus bestehenden Aktivitäten entfernt.',
       elementDeletionOtherUsers:
-        'Falls andere Nutzer mit geteiltem Zugriff auf das Element dieses in Aktivitäten einsetzen, bleibt der Zugriff für diese Nutzer bestehen.',
+        'Andere Nutzer setzen dieses Element in Aktivitäten ein. Der Zugriff für diese Nutzer bleibt bestehen.',
       elementDeletionDerivedAccessHint:
-        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig gelöscht werden. In diesem Fall werden Sie nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig gelöscht werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls gelöscht.',
       elementDeletionDependencyAccess:
         'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+      elementDeletionOtherUsersNotApplicable:
+        'Das Element wird nicht von anderen Nutzern in Aktivitäten verwendet.',
+      elementDeletionDerivedAccessNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig gelöscht werden.',
+      elementDeletionDependencyAccessNotApplicable:
+        'Keine abgeleiteten Ressourcen sind durch die Löschung des Elements betroffen.',
       removeElement: 'Element entfernen',
       confirmElementRemoval:
         'Bitte bestätigen Sie die folgenden Effekte der Entfernung des Elementes <b>{name}</b> aus Ihrem Nutzerkonto.',
       elementRemovalFinal:
         'Die Entfernung dieses Elements aus Ihrem Konto ist unwiderruflich und kann nicht rückgängig gemacht werden.',
       elementRemovalDerivedAccessHint:
-        'Wird das Element in einer Aktivität verwendet, welche Ihnen gehört bzw. auf welche Sie Admin-Zugriff haben, kann das Element aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall werden Sie nach der Entfernung automatisch eine abgeleitete Berechtigung auf dem Element erhalten. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
-      elementRemovalDependencyAccess:
-        'Von diesem Element abgeleitete Zugriffsrechte auf beinhaltete Ressourcen werden automatisch widerrufen.',
+        'Sie nutzen das Element in einer Aktivität, für welche Sie mindestens Admin-Zugriff haben. Aus technischen Gründen kann das Element nicht vollständig entfernt werden. Sie erhalten nach der Löschung automatisch eine abgeleitete Berechtigung auf dem Element. Sobald die zugehörige Aktivität gelöscht wird, wird das Element automatisch ebenfalls entfernt.',
+      elementRemovalDerivedAccessHintNotApplicable:
+        'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig entfernt werden.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
@@ -1231,6 +1276,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Einige Elemente konnten erfolgreich aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
       restoreFromArchiveFailed:
         'Keine Elemente konnten aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
+      showExplanation: 'Erklärung anzeigen',
+      showFeedbacksExplanationTooltip:
+        'Eine Vorschau, wie die Erklärung und die Antwort-Feedbacks in <b>asynchronen Aktivitäten</b> angezeigt werden, nachdem ein Schüler auf das Element reagiert hat.',
+      showExplanationTooltip:
+        'Eine Vorschau, wie die Erklärung in <b>asynchronen Aktivitäten</b> angezeigt wird, nachdem ein Schüler auf das Element reagiert hat.',
     },
     tags: {
       deleteTag: 'Tag löschen',
@@ -1457,11 +1508,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementCreated: 'Element erfolgreich erstellt',
       openPreview: 'Vorschau öffnen',
       openOverview: 'Übersicht öffnen',
-      createNewElement: 'Weiteres Element erstellen',
+      createAnotherActivity: 'Weitere Aktivität erstellen',
       enterContentHere: 'Inhalt hier eingeben…',
       questionsDragDrop: 'Fügen Sie mittels Drag&Drop Fragen hinzu.',
       newQuestion: 'Neue Frage',
-      blockSettingsTitle: 'Einstellungen Block {blockIx}',
+      blockCountdownTitle: 'Countdown Block {blockIx}',
       timeLimit: 'Zeit-Limit',
       noTimeLimit: 'Kein Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',
@@ -1486,6 +1537,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       stackDescriptionPlaceholder: 'Beschreibung hier eingeben…',
       stackFTQuestionsNoSL:
         'Sie haben eine Freitext-Frage in diesem Stack ohne Musterlösung genutzt. Während dies Freitext-Fragen möglich ist, beachten Sie bitte, dass die Teilnehmenden eine Standardpunktzahl für die Beantwortung erhalten und keine Bewertungslogik angewendet wird.',
+      outdatedElementsWarning:
+        'Ihre Aktivität enthält veraltete Versionen von Elementen.',
+      updateAllElements: 'Alle Elemente aktualisieren',
+      elementInstancesFrozen:
+        'Beim Erstellen der Aktivität wurde der Inhalt der Elemente eingefroren. Wenn aktiviert, werden Änderungen an Elementen auf Aktivitäten mit Entwurf-Status angewendet.',
+      noInstanceUpdatePublishedActivities:
+        'Keine Änderungen an Elementen werden auf veröffentlichte Aktivitäten angewendet (für Teilnehmende zugänglich).',
+      choiceOnDuplication:
+        'Beim Duplizieren einer Aktivität können Sie wählen, ob der Inhalt der Aktivität unverändert bleiben oder die Elemente auf die neueste Version aktualisiert werden sollen.',
       microlearningTypes:
         'Microlearnings können alle verfügbaren Elemente enthalten.',
       microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
@@ -2104,8 +2164,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
       filterSolved: 'Gelöst',
       filterOpen: 'Offen',
+      filterPinned: 'Gepinnt',
       filterUnpinned: 'Ungepinnt',
+      filterPublished: 'Veröffentlicht',
       filterUnpublished: 'Unveröffentlicht',
+      pinning: 'Pinning',
+      visibility: 'Sichtbarkeit',
       sortByVotes: 'Nach Stimmen sortieren',
       sortByTime: 'Nach Zeitpunkt sortieren',
       answersGiven: '{number} Antwort(en) gegeben',
@@ -2128,6 +2192,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confusionDifficultyTooltip:
         'Die untenstehende Anzeige illustriert die aggregierten Feedbacks der Studierenden bezüglich der aktuell empfundenen Schwierigkeit des vermittelten Inhalts.',
       skipCooldown: 'Cooldown überspringen',
+      deleteFeedback: 'Feedback löschen',
+      deleteFeedbackMessage:
+        'Sind Sie sicher, dass Sie dieses Feedback löschen möchten: "{feedback}"?',
+      moderationTip: 'Alternative zum Löschen',
+      moderationTipMessage:
+        'Sie können die Moderation aktivieren, um ausgewählte Feedbacks vor der Studierendenansicht zu verstecken, ohne sie dauerhaft zu löschen.',
+      confirmDeleteFeedback:
+        'Ich verstehe, dass diese Aktion das Feedback dauerhaft löscht.',
+      disableModerationTitle: 'Moderation deaktivieren',
+      disableModerationMessage:
+        'Sie sind dabei, die Moderation zu deaktivieren. Dies wird automatisch {count} unveröffentlichte(s) Feedback(s) veröffentlichen.',
+      autoPublishWarning: 'Auto-Veröffentlichung Warnung',
+      autoPublishWarningMessage:
+        'Diese werden sofort für alle Studierende sichtbar.',
+      confirmDisableModeration:
+        'Ich verstehe, dass die Moderation deaktiviert wird.',
+      confirmPublishUnpublished:
+        'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -2312,9 +2394,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupDeadlineChangedToPast:
         'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Funktion auf der Gruppenübersicht.',
       gamificationGroupsFixed:
-        'Gamifizierung und Gruppenbildung werden für diesen Kurs aktiviert. Diese Einstellungen können nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte oder Teilnehmergruppen gebildet wurden. Wenn diese Optionen nicht initial aktiviert sind, können sie später aktiviert werden.',
+        'Gamifizierung und Gruppenbildung sind für diesen Kurs aktiviert. Diese Einstellungen können später nicht deaktiviert werden, falls gamifizierte Aktivitäten oder Gruppen vorhanden sind. Initial deaktivierte Optionen können später aktiviert werden.',
       gamificationFixed:
-        'Gamifizierung wird für diesen Kurs aktiviert. Diese Einstellung kann nach der Erstellung des Kurses nicht mehr deaktiviert werden, da der Kurs gamifizierte Aktivitäten enthalten könnte. Wenn diese Option nicht initial aktiviert ist, kann sie später aktiviert werden.',
+        'Gamifizierung ist für diesen Kurs aktiviert. Diese Einstellung kann später nicht deaktiviert werden, falls gamifizierte Aktivitäten vorhanden sind. Initial deaktivierte Optionen können später aktiviert werden.',
       openPreview: 'Vorschau öffnen',
       openEvaluation: 'Evaluation öffnen',
       archiveOnlyPastCourses:
@@ -2416,6 +2498,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nQuestions: '{number} Fragen',
       courseQRDescription:
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
+      calendarView: 'Kalenderansicht',
+      backToListView: 'Zurück zur Listenansicht',
+      calendarAllDay: 'Ganztägig',
+      calendarMore: 'weitere',
+      calendarNoEntries: 'Keine Einträge',
+      calendarCourseStart: 'Kursstart',
+      calendarCourseEnd: 'Kursende',
+      calendarCourseGroupFormationDeadline: 'Gruppenbildungs-Deadline',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
@@ -2483,14 +2573,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endMicroLearning: 'Microlearning beenden',
       endMicroLearningMessage:
         'Bitte bestätigen Sie, dass Sie dieses Microlearning beenden möchten. Beachten Sie, dass nach dem Beenden des Microlearnings keine weiteren Abgaben mehr akzeptiert werden.',
-      noStartedInstancesLoosingAccess:
-        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht eingereicht haben.',
-      startedInstancesLoosingAccess:
-        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate eingereicht. Sie verlieren den Zugriff auf die Gruppenaktivität.',
+      noResponsesToMicroLearning:
+        'Bisher haben keine angemeldeten Teilnehmenden Antworten für Elemente in diesem Microlearning abgesendet.',
+      responsesToMicroLearning:
+        '{number} Antwort(en) von angemeldeten Teilnehmenden wurden für Elemente in diesem Microlearning abgesendet.',
+      noAnonResponsesToMicroLearning:
+        'Für dieses Microlearning wurden noch keine anonymen Antworten abgesendet.',
+      anonResponsesToMicroLearning:
+        '{number} anonyme Antwort(en) für diese Aktivität wurden abgesendet.',
+      noStartedInstancesLosingAccess:
+        'Es gibt keine Gruppen, die die Gruppenaktivität gestartet haben, aber ihre Resultate noch nicht abgesendet haben.',
+      startedInstancesLosingAccess:
+        '{number} Gruppe(n) haben die Gruppenaktivität gestartet, aber noch keine Resultate abgesendet. Sie verlieren den Zugriff auf die Gruppenaktivität.',
       noSubmissionsToActivity:
         'Es gibt noch keine Abgaben für diese Gruppenaktivität.',
       unaffectedSubmissions:
-        '{number} Gruppen haben ihre Resultate erfolgreich eingereicht und sind nicht vom Beenden der Gruppenaktivität betroffen.',
+        '{number} Gruppen haben ihre Resultate erfolgreich abgesendet und sind nicht vom Beenden der Gruppenaktivität betroffen.',
       startGroupActivityNow: 'Gruppenaktivität jetzt starten',
       startGroupActivityNowMessage:
         'Bitte bestätigen Sie, dass Sie die Gruppenaktivität jetzt starten möchten. Beachten Sie, dass eine Gruppenaktivität nach dem Starten nicht mehr bearbeitet werden kann.',
@@ -2684,6 +2782,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben die Nutzergruppe wurde erfolgreich verlassen.',
       leaveGroupError:
         'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      deleteGroupSuccess: 'Die Nutzergruppe wurde erfolgreich gelöscht.',
+      deleteGroupError:
+        'Beim Löschen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      confirmDeleteGroup:
+        'Bitte überprüfen Sie die Auswirkungen der Löschung dieser Nutzergruppe "{groupName}" sorgfältig und bestätigen Sie diese, bevor Sie die Löschung abschließen.',
+      resolveGroupConfirmation:
+        'Durch die Auflösung dieser Gruppe werden alle Mitglieder und Admins entfernt.',
+      revokeDirectPermissionsConfirmation:
+        'Alle direkt der Gruppe erteilten Berechtigungen werden widerrufen, alle Gruppenmitglieder verlieren den Zugriff auf die entsprechenden Objekte.',
+      irreversibleActionConfirmation:
+        'Diese Aktion ist irreversibel und kann nicht rückgängig gemacht werden.',
       availableActions: 'Verfügbare Aktionen',
       promoteUserToAdmin: 'Beförderung Mitglied zu Admin',
       demoteAdminToMember: 'Herabstufung Admin zu Mitglied',

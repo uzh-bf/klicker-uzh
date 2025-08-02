@@ -30,7 +30,6 @@ const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
 const USER_ID_TEST6 = '8509238a-cb2e-4d50-832e-971cdf2f9e55'
 const USER_ID_TEST7 = '2437de71-b552-48c8-865a-1d9c12fb7975'
-const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 const COURSE_ID_TEST = 'b8b1305e-bfe8-458b-bf26-9082fdca953f'
 const COURSE_ID_TEST2 = 'e364455a-8eab-428b-b939-21b556e4ab82'
 const COURSE_ID_TEST3 = 'efd54f15-ba92-4291-8ea8-911f365ae10b'
@@ -1274,56 +1273,6 @@ export default defineConfig({
             })
 
             return !!user
-          } finally {
-            await prisma.$disconnect()
-          }
-        },
-        // #endregion
-
-        // ! Control Application
-        // #region
-        async verifyControlToken({ token }: { token: string }) {
-          const prisma = await connect()
-
-          try {
-            const user = await prisma.user.findUnique({
-              where: {
-                shortname: 'lecturer',
-                loginTokenExpiresAt: { gte: new Date() },
-              },
-            })
-
-            if (!user) {
-              console.log(user)
-              throw new Error(
-                'No user with the corresponding shortname and valid login token found.'
-              )
-            }
-
-            // remove any whitespaces from the token passed to the function
-            const sanitizedToken = token.replace(/\s/g, '')
-
-            return user.loginToken === sanitizedToken
-          } finally {
-            await prisma.$disconnect()
-          }
-        },
-        async getControlToken() {
-          const prisma = await connect()
-
-          try {
-            const user = await prisma.user.findUnique({
-              where: {
-                shortname: 'lecturer',
-                loginTokenExpiresAt: { gte: new Date() },
-              },
-            })
-
-            if (!user) {
-              return null
-            }
-
-            return user.loginToken
           } finally {
             await prisma.$disconnect()
           }

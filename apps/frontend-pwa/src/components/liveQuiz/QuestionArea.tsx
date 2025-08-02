@@ -125,11 +125,14 @@ function QuestionArea({
         (type === ElementType.Kprim && input.type === ElementType.Kprim)) &&
       typeof input.response !== 'undefined'
     ) {
-      const choicesIdxs = Object.entries(input.response)
-        .map(([key, value]) => (value === true ? parseInt(key) : undefined))
-        .filter((choice) => typeof choice !== 'undefined')
+      const responseList = Object.entries(input.response)
+        .filter(([, value]) => value)
+        .map(([key, value]) => ({
+          ix: parseInt(key),
+          selected: value,
+        }))
 
-      handleNewResponse(type, instanceId, choicesIdxs)
+      handleNewResponse(type, instanceId, responseList)
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&

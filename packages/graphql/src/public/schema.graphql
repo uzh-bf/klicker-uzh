@@ -14,6 +14,19 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityDetails {
+  arePointsAwarded: Boolean!
+  displayName: String!
+  id: String!
+  name: String!
+  pointsMultiplier: Int!
+  stacks: [ActivityInfoStack!]!
+  totalBasePoints: Int
+  totalBonusPoints: Int
+  totalCorrectnessPoints: Int
+  totalPoints: Int!
+}
+
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
@@ -35,6 +48,7 @@ type ActivityFeedback {
 }
 
 type ActivityInfo {
+  areInstancesOutdated: Boolean!
   automaticPublicationAt: Date
   courseId: String
   courseName: String
@@ -58,7 +72,6 @@ type ActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   sharingType: SharingType!
-  stacks: [ActivityInfoStack!]!
   status: PublicationStatus!
   templateId: String
   type: ActivityType!
@@ -66,15 +79,19 @@ type ActivityInfo {
 }
 
 type ActivityInfoElement {
-  id: Int!
-  name: String!
-  type: ElementType!
+  basePoints: Int
+  bonusPoints: Int
+  correctnessPoints: Int
+  hasSampleSolution: Boolean!
+  instance: ElementInstance!
+  totalPoints: Int!
 }
 
 type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  stackPoints: Int
   timeLimit: Int
 }
 
@@ -626,6 +643,16 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
+input ChoicesResponse {
+  ix: Int!
+  selected: Boolean!
+}
+
+type ChoicesResponseObject {
+  ix: Int!
+  selected: Boolean!
+}
+
 type ClassAchievementInstance {
   id: Int!
 }
@@ -923,6 +950,12 @@ enum ElementInstanceType {
   PRACTICE_QUIZ
 }
 
+type ElementInstanceVersionInfo {
+  id: Int!
+  newSampleSolution: Boolean!
+  newTitle: String!
+}
+
 type ElementOptionsAnswerCollection {
   entries: [ElementOptionsAnswerCollectionEntry!]
   id: Int!
@@ -964,6 +997,12 @@ enum ElementStatus {
   DRAFT
   READY
   REVIEW
+}
+
+type ElementSummary {
+  derivedAccessToResources: Boolean!
+  retainsDerivedAccess: Boolean!
+  sharedElementActivityUse: Boolean!
 }
 
 enum ElementType {
@@ -1248,7 +1287,7 @@ type GroupActivityClueInstance {
 
 type GroupActivityDecision {
   caseStudyResponse: [SingleQuestionResponseCaseStudyCase!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponseObject!]
   contentResponse: Boolean
   freeTextResponse: String
   instanceId: Int!
@@ -1468,6 +1507,17 @@ enum LiveQuizAccessMode {
   RESTRICTED
 }
 
+type LiveQuizEmbeddingInfo {
+  hmac: String!
+  id: ID!
+  instances: [LiveQuizEmbeddingInfoElement!]
+}
+
+type LiveQuizEmbeddingInfoElement {
+  id: Int!
+  name: String!
+}
+
 type LiveQuizInfo {
   id: ID!
   name: String!
@@ -1599,7 +1649,7 @@ type Mutation {
   finalRandomGroupAssignments: Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
-  generateLoginToken: User
+  flagOutdatedElementInstances(elementId: Int!): Boolean
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
@@ -1616,7 +1666,6 @@ type Mutation {
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID
-  loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
@@ -2050,6 +2099,7 @@ type PushSubscription {
 }
 
 type Query {
+  activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
@@ -2094,17 +2144,19 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
+  getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
+  getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
-  getLoginToken: User
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
+  getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
@@ -2127,7 +2179,6 @@ type Query {
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
-  liveQuizHMAC(id: String!): String
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
@@ -2188,7 +2239,7 @@ enum ResponseCorrectnessType {
 
 input ResponseInput {
   assessment: [CaseStudyCaseResponse!]
-  choices: [Int!]
+  choices: [ChoicesResponse!]
   selection: [Int!]
   value: String
 }
@@ -2339,7 +2390,7 @@ type SingleQuestionResponseCaseStudyItem {
 }
 
 type SingleQuestionResponseChoices {
-  choices: [Int!]!
+  choices: [ChoicesResponseObject!]!
 }
 
 type SingleQuestionResponseContent {
@@ -2394,7 +2445,7 @@ enum StackFeedbackStatus {
 
 input StackResponseInput {
   caseStudyResponse: [CaseStudyCaseResponse!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponse!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
   freeTextResponse: String
@@ -2507,8 +2558,6 @@ type User {
   firstLogin: Boolean!
   id: ID!
   locale: LocaleType!
-  loginToken: String
-  loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
   privatePreview: Boolean!
   publicPreview: Boolean!

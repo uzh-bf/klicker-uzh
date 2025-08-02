@@ -48,7 +48,7 @@ function usePracticeQuizActions({
   const router = useRouter()
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/quiz/${practiceQuiz.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
   const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
   const onSuccessToast = () =>
@@ -197,7 +197,7 @@ function usePracticeQuizActions({
       },
       {
         id: 'activityLog',
-        label: t('shared.activity.viewComments'),
+        label: t('shared.comments.viewComments'),
         icon: faMessage,
         onClick: () => setActivityLogOpen(true),
         data: { cy: `view-activity-log-${practiceQuiz.name}` },

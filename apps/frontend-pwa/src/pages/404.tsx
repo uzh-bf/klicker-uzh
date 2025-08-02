@@ -15,7 +15,7 @@ function MissingPage() {
     <Layout className={{ body: 'h-full' }}>
       <div className="mx-auto my-auto flex flex-col items-center gap-6 text-center">
         <div className="flex flex-row items-center gap-4 text-2xl text-red-600 sm:gap-6 sm:text-3xl md:gap-8 md:text-4xl">
-          <FontAwesomeIcon icon={faBan} className="sm:h-18 h-14 md:h-20" />
+          <FontAwesomeIcon icon={faBan} size="2x" />
           <div>{t('shared.error.404')}</div>
         </div>
         {!dataParticipant?.self ||

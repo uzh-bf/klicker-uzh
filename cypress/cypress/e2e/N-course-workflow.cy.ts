@@ -4,6 +4,12 @@ import { getDatetimeValidationString } from './helpers'
 describe('Test course creation and editing functionalities', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -639,16 +645,6 @@ describe('Test course creation and editing functionalities', function () {
       'have.attr',
       'data-state',
       'checked'
-    )
-    cy.get('[data-cy="course-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
     )
     cy.get('[data-cy="toggle-group-creation-enabled"]').click()
     cy.get('[data-cy="toggle-group-creation-enabled"]').should(

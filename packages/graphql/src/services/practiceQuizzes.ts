@@ -236,6 +236,7 @@ export async function manipulatePracticeQuiz(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
 
   // in EDIT mode - check which instances and stacks should be removed
@@ -266,6 +267,7 @@ export async function manipulatePracticeQuiz(
     pointsMultiplier: multiplier,
     orderType: order,
     resetTimeDays: resetTimeDays,
+    areInstancesOutdated: anyInstanceOutdated,
     stacks: {
       create: stacks.map((stack) => ({
         type: DB.ElementStackType.PRACTICE_QUIZ,

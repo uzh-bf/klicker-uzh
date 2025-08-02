@@ -1,7 +1,15 @@
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import {
+  Element,
+  ElementType,
+  GetOutdatedElementInstancesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, Form, Formik } from 'formik'
+import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AddStackButton from '../AddStackButton'
 import CreationFormValidator from '../CreationFormValidator'
+import InstanceUpdateOption from '../InstanceUpdateOption'
 import WizardNavigation from '../WizardNavigation'
 import LiveQuizCreationBlock from './LiveQuizCreationBlock'
 import { LiveQuizWizardStepProps } from './LiveQuizWizard'
@@ -28,6 +36,32 @@ function LiveQuizQuestionsStep({
   selection,
   resetSelection,
 }: LiveQuizQuestionsStepProps) {
+  // get all instances of elements alongside with the included element version
+  const instanceVersionMap = useMemo(
+    () =>
+      formData.blocks.reduce<number[]>((acc, block) => {
+        block.elements
+          .filter((instance) => instance.existingInstanceId !== null)
+          .forEach((instance) => {
+            acc.push(instance.existingInstanceId!)
+          })
+        return acc
+      }, []),
+    [formData.blocks]
+  )
+
+  // query if any invalid element versions are used
+  const { data, loading, refetch } = useQuery(
+    GetOutdatedElementInstancesDocument,
+    {
+      variables: { instanceIds: instanceVersionMap },
+      skip: instanceVersionMap.length === 0 || activeStep !== 3,
+      fetchPolicy: 'network-only',
+    }
+  )
+  const outdatedInstances = data?.getOutdatedElementInstances ?? []
+  const showNotification = outdatedInstances.length > 0
+
   return (
     <Formik
       validateOnMount
@@ -36,7 +70,7 @@ function LiveQuizQuestionsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, errors }) => (
+      {({ values, setValues, isValid, isSubmitting, errors }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -44,13 +78,27 @@ function LiveQuizQuestionsStep({
             setStepValidity={setStepValidity}
           />
           <div className="flex h-full w-full flex-col justify-between gap-1">
+            {showNotification && (
+              <InstanceUpdateOption
+                values={values}
+                loading={loading}
+                outdatedInstances={outdatedInstances}
+                setValues={setValues}
+                refetch={refetch}
+              />
+            )}
             <div className="mt-1 md:mt-0 md:overflow-x-auto">
               <FieldArray name="blocks">
                 {({ push, remove, move, replace }) => (
-                  <div className="flex w-fit flex-row gap-4 overflow-x-auto">
+                  <div
+                    className={twMerge(
+                      'flex w-fit flex-row gap-4 overflow-x-auto',
+                      showNotification && 'h-40'
+                    )}
+                  >
                     {values.blocks.map((block, index) => (
                       <LiveQuizCreationBlock
-                        key={`stack-${index}-${block.elements.map((e) => e.id).join('-')}`}
+                        key={`stack-${index}`}
                         blockIx={index}
                         block={block}
                         numOfBlocks={values.blocks.length}
@@ -61,6 +109,8 @@ function LiveQuizQuestionsStep({
                         selection={selection}
                         resetSelection={resetSelection}
                         error={errors.blocks as any}
+                        outdatedInstances={outdatedInstances}
+                        refetchOutdatedInstances={refetch}
                       />
                     ))}
                     <AddStackButton

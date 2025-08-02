@@ -26,6 +26,7 @@ type LocalMicroLearningType = Pick<
   MicroLearning,
   'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
 > & {
+  courseId: string
   courseName: string
   isCompleted: boolean
 }
@@ -126,6 +127,7 @@ function useStudentOverviewSplit({
             displayName: micro.displayName,
             scheduledStartAt: micro.scheduledStartAt,
             scheduledEndAt: micro.scheduledEndAt,
+            courseId: course.id,
             courseName: course.displayName,
             isCompleted: participation.completedMicroLearnings?.includes(
               micro.id

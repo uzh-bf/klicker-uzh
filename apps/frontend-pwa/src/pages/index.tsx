@@ -210,7 +210,11 @@ function Index() {
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={micro.isCompleted ? '' : `/microlearning/${micro.id}/`}
+                  href={
+                    micro.isCompleted
+                      ? ''
+                      : `/course/${micro.courseId}/microLearnings/${micro.id}/`
+                  }
                   key={micro.id}
                   disabled={micro.isCompleted}
                   className={{

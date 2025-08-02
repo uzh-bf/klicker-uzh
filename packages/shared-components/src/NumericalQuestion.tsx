@@ -11,6 +11,7 @@ import NUMERICALAnswerOptions from './questions/NUMERICALAnswerOptions'
 import { validateNumericalResponse } from './utils/validateResponse'
 
 interface NumericalQuestionProps {
+  preview?: boolean
   content: string
   options: NumericalElementOptions
   response?: string
@@ -24,6 +25,7 @@ interface NumericalQuestionProps {
 }
 
 function NumericalQuestion({
+  preview = false,
   content,
   options,
   response,
@@ -70,7 +72,7 @@ function NumericalQuestion({
         />
       </div>
 
-      {evaluation && (
+      {evaluation && !preview ? (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -90,7 +92,7 @@ function NumericalQuestion({
             />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

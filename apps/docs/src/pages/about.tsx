@@ -28,6 +28,12 @@ const PEOPLE: {
     github: 'https://github.com/sjschlapbach',
   },
   {
+    name: 'Patrick Aldover',
+    role: 'Project Maintainer',
+    info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/patrick-aldover.html',
+    github: 'https://github.com/jabbadizzleCode',
+  },
+  {
     name: 'Johanna Braun',
     role: 'Head Teaching Center',
     imageUrl:
@@ -57,16 +63,20 @@ const PEOPLE: {
     github: 'https://github.com/TheHummel',
   },
   {
-    name: 'Julia Gut',
+    name: 'Ioannis Dougas',
     role: 'Contributor (Content)',
     imageUrl:
-      'https://www.df.uzh.ch/contacts/df/student-assistants/jgut/photo/Julia%20Gut.jpg.jpg',
-    info: 'https://www.df.uzh.ch/en/people/student-assistants/julia-gut.html',
+      'https://www.df.uzh.ch/contacts/df/student-assistants/idougas/photo/20221012_Dougas_Ioannis.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/ioannis-dougas.html',
   },
   {
     name: 'Selina De Pizzol',
     role: 'Contributor (Content)',
     info: 'https://www.df.uzh.ch/en/people/student-assistants/selina-de-pizzol.html',
+  },
+  {
+    name: 'Julia Gut',
+    role: 'Contributor (Content)',
   },
   {
     name: "Alessio D'Andrea",
@@ -78,7 +88,7 @@ const About = () => {
   return (
     <Layout>
       <div className="m-auto max-w-[1300px] p-8">
-        <H1>About KlickerUZH</H1>
+        <H1 className={{ root: 'mb-2' }}>About KlickerUZH</H1>
 
         <div className="mb-8">
           <p>
@@ -108,7 +118,7 @@ const About = () => {
           />
         </div>
 
-        <H2 className={{ root: 'mb-4' }}>Our Team</H2>
+        <H2 className={{ root: 'mb-2' }}>Our Team</H2>
         <p>
           The following people are actively involved in the KlickerUZH project
           and its continued development. If you have any questions or feedback,

@@ -4,21 +4,9 @@ on:
   pull_request:
     branches: [v3]
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,41 +26,62 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
+          # Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          model: 'claude-opus-4-20250514'
 
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            <role>
+            You are a senior software architect conducting a high-level code review. Your focus is on architectural decisions, security vulnerabilities, and performance implications rather than implementation details.
+            </role>
 
-            Be constructive and helpful in your feedback.
+            <instructions>
+            Review this pull request with a critical eye, focusing primarily on what needs improvement. We have other tools that handle implementation details, so concentrate on high-level concerns.
 
-          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
-          # use_sticky_comment: true
+            ## Review Priorities (in order of importance)
+            1. **Security vulnerabilities** - Identify any potential security risks, data exposure, authentication/authorization issues
+            2. **Architectural concerns** - Evaluate design patterns, modularity, scalability, maintainability, dependency management
+            3. **Performance implications** - Assess algorithmic complexity, potential bottlenecks, resource usage patterns
+            4. **Critical bugs** - Only flag bugs that could cause system failures or data corruption (not minor implementation issues)
 
-          # Optional: Customize review based on file types
-          # direct_prompt: |
-          #   Review this PR focusing on:
-          #   - For TypeScript files: Type safety and proper interface usage
-          #   - For API endpoints: Security, input validation, and error handling
-          #   - For React components: Performance, accessibility, and best practices
-          #   - For tests: Coverage, edge cases, and test quality
+            ## Review Format
+            Structure your review as follows:
 
-          # Optional: Different prompts for different authors
-          # direct_prompt: |
-          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
-          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
-          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
+            ### 🚨 Critical Issues
+            [List only issues that must be addressed before merging]
 
-          # Optional: Add specific tools for running tests or linting
-          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+            ### ⚠️ Important Concerns
+            [List significant issues that should be addressed soon]
 
-          # Optional: Skip review for certain conditions
-          # if: |
-          #   !contains(github.event.pull_request.title, '[skip-review]') &&
-          #   !contains(github.event.pull_request.title, '[WIP]')
+            ### 💭 Architectural Observations
+            [Brief notes on design decisions - both concerns and notable good patterns]
+
+            ### 📊 Performance Considerations
+            [Only if there are concerning performance implications]
+
+            Keep each point concise and actionable. Skip sections if no issues found.
+            </instructions>
+
+            <constraints>
+            - **Minimize positive feedback** - Only mention good architectural decisions if they're particularly noteworthy
+            - **Be direct** - Don't soften criticism unnecessarily
+            - **Skip implementation details** - Leave syntax, naming, formatting, and minor code quality issues to other tools
+            - **Focus on impact** - Prioritize issues by their potential system-wide effects
+            - **Provide actionable feedback** - Each point should clearly indicate what needs to change
+            - **No summaries** - Don't end with summary paragraphs about overall code quality
+            </constraints>
+
+            <output_tone>
+            Professional, direct, and focused on improvements. Think of this as a pre-production security and architecture audit rather than a general code review.
+            </output_tone>
+
+          # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          use_sticky_comment: true
+
+          # Add specific tools for running tests or linting
+          # allowed_tools: "Bash(pnpm run check),Bash(npm run lint),Bash(npm run typecheck)"
+
+        # Skip review for certain conditions
+        if: |
+          !contains(github.event.pull_request.title, '[skip-review]') &&
+          !contains(github.event.pull_request.title, 'WIP')

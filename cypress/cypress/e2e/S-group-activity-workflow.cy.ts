@@ -25,6 +25,12 @@ const synchronousEndDate = getDatetimeValidationString(3, '20') + ', 14:00'
 describe('Create and solve a group activity', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -1581,28 +1587,29 @@ describe('Create and solve a group activity', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-1"]').contains(
       data.MCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-2"]').contains(
       data.KPML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-3"]').contains(
       data.NRML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-4"]').contains(
       data.FTML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-5"]').contains(
       data.SEML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-6"]').contains(
       data.CSML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-7"]').contains(
       data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="close-activity-details-modal"]').click()
@@ -2813,6 +2820,95 @@ describe('Create and solve a group activity', function () {
       ).should('not.exist')
       cy.get(`[data-cy="close-share-object"]`).click()
     })
+  })
+  // #endregion
+
+  // ! Part 6: Activity Details Points
+  // #region
+  it('Create a group activity to check the activity preview', function () {
+    cy.loginLecturer()
+    cy.createGroupActivity({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      task: this.data.details.task,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
+      scheduledStartDate: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: synchronousStartDate,
+      }, // 2 months in the future at 12:30
+      scheduledEndDate: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: synchronousEndDate,
+      }, // 3 months in the future at 14:00
+      clues: this.data.synchronous.clues,
+      stack: {
+        elements: [
+          this.data.SCML.title,
+          this.data.MCML.title,
+          this.data.KPML.title,
+          this.data.NRML.title,
+          this.data.FTML.title,
+          this.data.SEML.title,
+          this.data.CSML.title,
+        ],
+      },
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+  })
+
+  it('Check points calculation for group activity', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.details.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertAsynchronousActivityPoints({ totalPoints: 450 })
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains(
+      '450 P.'
+    )
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
+    cy.get('[data-cy="stack-0-instance-3"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-0-instance-4"]').contains(this.data.FTML.title)
+    cy.get('[data-cy="stack-0-instance-5"]').contains(this.data.SEML.title)
+    cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CSML.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 100 })
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
+
+    cy.get('[data-cy="stack-0-instance-3"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 150 })
+
+    cy.get('[data-cy="stack-0-instance-4"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
+
+    cy.get('[data-cy="stack-0-instance-5"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+
+    cy.get('[data-cy="stack-0-instance-6"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
   // #endregion
 })

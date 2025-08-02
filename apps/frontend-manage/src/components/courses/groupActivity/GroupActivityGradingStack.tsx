@@ -99,9 +99,9 @@ function GroupActivityGradingStack({
           [elementId]: {
             type: type,
             response: decision.choicesResponse?.reduce(
-              (acc: Record<number, boolean>, choice: number) => ({
+              (acc: Record<number, boolean>, choice) => ({
                 ...acc,
-                [choice]: true,
+                [choice.ix]: true,
               }),
               responseObj
             ),

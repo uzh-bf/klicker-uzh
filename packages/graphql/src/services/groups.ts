@@ -38,7 +38,7 @@ import {
   updateSelectionResults,
 } from './stacks.js'
 
-const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
+export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
   {
@@ -594,7 +594,7 @@ export async function manualRandomGroupAssignments(
     const updatedCourse = await ctx.prisma.course.update({
       where: { id: courseId },
       data: {
-        groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
+        groupDeadlineDate: new Date(),
         randomAssignmentFinalized: true,
         participantGroups: { create: newGroups },
         groupAssignmentPoolEntries: { deleteMany: {} },
@@ -959,6 +959,7 @@ export async function manipulateGroupActivity(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
 
   // in EDIT mode - check which instances and stacks should be removed
@@ -992,6 +993,7 @@ export async function manipulateGroupActivity(
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
     pointsMultiplier: multiplier,
+    areInstancesOutdated: anyInstanceOutdated,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

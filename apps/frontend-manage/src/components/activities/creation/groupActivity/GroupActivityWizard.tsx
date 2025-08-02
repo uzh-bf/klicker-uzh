@@ -268,13 +268,15 @@ function GroupActivityWizard({
       ? {
           displayName: initialValues?.stacks[0].displayName ?? '',
           description: initialValues?.stacks[0].description ?? '',
-          elements: initialValues?.stacks[0].elements!.map((element) => {
+          elements: initialValues?.stacks[0].elements!.map((instance) => {
+            const [elementId, _] = instance.elementData.id.split('-v')
+
             return {
-              id: parseInt(element.elementData.id),
-              title: element.elementData.name,
-              type: element.elementData.type,
+              id: parseInt(elementId),
+              title: instance.elementData.name,
+              type: instance.elementData.type,
               hasSampleSolution: false,
-              existingInstanceId: element.id,
+              existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
             }
           }),

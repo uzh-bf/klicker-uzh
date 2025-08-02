@@ -89,7 +89,7 @@ function CompletionStep({
           >
             <Button.Icon icon={faSync} />
             <Button.Label>
-              {t('manage.activityWizard.createNewElement')}
+              {t('manage.activityWizard.createAnotherActivity')}
             </Button.Label>
           </Button>
         )}

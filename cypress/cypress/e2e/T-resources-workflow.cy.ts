@@ -3,6 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Create, edit and share answer collections', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {

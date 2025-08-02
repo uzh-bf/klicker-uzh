@@ -15,22 +15,12 @@ fragment ActivityInfoData on ActivityInfo {
   groupDeadlineDate
   numOfParticipantGroups
 
-  stacks {
-    id
-    numOfParticipants
-    timeLimit
-    elements {
-      id
-      name
-      type
-    }
-  }
-
   name
   displayName
 
   permissionLevel
   derivedAccess
+  areInstancesOutdated
   numSharedUsers
   isOwner
   isManager

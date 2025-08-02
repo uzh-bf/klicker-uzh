@@ -38,6 +38,7 @@ function ActivityActions({
       {availableActions.length > 1 && (
         <Dropdown
           items={availableActions.slice(1).map((action) => ({
+            id: action.label,
             label: (
               <div
                 className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 ${
@@ -59,7 +60,7 @@ function ActivityActions({
           className={{
             viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
             item: 'py-0.5 text-sm',
-            trigger: 'h-8 w-8 border-none text-sm',
+            trigger: 'h-8 w-8 border-none bg-transparent text-sm',
           }}
         />
       )}

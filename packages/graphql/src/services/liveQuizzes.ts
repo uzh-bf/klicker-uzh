@@ -409,9 +409,8 @@ export async function splitActivityInstances(
 
   // fetch instances that should be kept in the activity
   const persistentInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      id: { in: persistentInstanceIds },
-    },
+    where: { id: { in: persistentInstanceIds } },
+    include: { element: true },
   })
 
   // in DUPLICATION mode - instances that should be duplicated in the activity
@@ -442,6 +441,17 @@ export async function splitActivityInstances(
         },
       },
     },
+    include: { element: true },
+  })
+
+  // check if any of the persistent / duplication instances are outdated (w.r.t. the element version)
+  // -> only persistent and duplicated instances can be outdated, other instances are created from the current element
+  const allInstances = [...persistentInstances, ...duplicationInstances]
+  const anyInstanceOutdated = allInstances.some((instance) => {
+    const [_, instanceVersion] = instance.elementData.id.split('-v')
+    return (
+      instanceVersion && parseInt(instanceVersion) !== instance.element.version
+    )
   })
 
   // get the ids of all elements that should be used for instance creation
@@ -490,6 +500,7 @@ export async function splitActivityInstances(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   }
 }
 
@@ -552,6 +563,7 @@ export async function manipulateLiveQuiz(
     persistentInstanceOrderMap,
     duplicationInstances,
     elementMap,
+    anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
   // in EDIT mode - check which instances and blocks should be removed
@@ -589,6 +601,7 @@ export async function manipulateLiveQuiz(
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
+    areInstancesOutdated: anyInstanceOutdated,
     blocks: {
       create: blocks.map((block) => ({
         order: block.order,
@@ -1807,6 +1820,32 @@ export async function changeLiveQuizSettings(
   },
   ctx: ContextWithUser
 ) {
+  // check if moderation is being diabled
+  if (isModerationEnabled === false) {
+    // fetch all unpublished feedbacks for the quiz
+    const currentQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: { id },
+      include: {
+        feedbacks: {
+          where: { isPublished: false },
+          include: { responses: true },
+        },
+      },
+    })
+
+    if (currentQuiz?.isModerationEnabled && currentQuiz.feedbacks.length > 0) {
+      // auto-publish any unpublished feedbacks
+      await ctx.prisma.feedback.updateMany({
+        where: { liveQuizId: id, isPublished: false },
+        data: { isPublished: true },
+      })
+
+      currentQuiz.feedbacks.forEach((feedback) => {
+        ctx.pubSub.publish('feedbackAdded', feedback)
+      })
+    }
+  }
+
   const quiz = await ctx.prisma.liveQuiz.update({
     where: { id },
     data: {
@@ -1822,6 +1861,8 @@ export async function changeLiveQuizSettings(
     isLiveQAEnabled: quiz.isLiveQAEnabled,
     isConfusionFeedbackEnabled: quiz.isConfusionFeedbackEnabled,
   })
+
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
 
   return quiz
 }
@@ -2197,13 +2238,17 @@ export async function deleteLiveQuiz(
   }
 }
 
-export async function getLiveQuizHMAC(
+export async function getLiveQuizEmbeddingInfo(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
+    where: { id },
+    include: {
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
     },
   })
 
@@ -2213,7 +2258,14 @@ export async function getLiveQuizHMAC(
   hmacEncoder.update(quiz.namespace + quiz.id)
   const quizHmac = hmacEncoder.digest('hex')
 
-  return quizHmac
+  const instances = quiz.blocks.flatMap((block) =>
+    block.elements.map((instance) => ({
+      id: instance.id,
+      name: instance.elementData.name,
+    }))
+  )
+
+  return { id: quiz.id, hmac: quizHmac, instances }
 }
 
 // compute the average of all feedbacks that were given within the last 10 minutes

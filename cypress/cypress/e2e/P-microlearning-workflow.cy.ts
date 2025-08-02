@@ -21,6 +21,12 @@ const extensionDate = getDatetimeValidationString(8, '15') + ', 18:50'
 describe('Different microlearning workflows', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -696,7 +702,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the microlearning can be answered through the activity preview
@@ -732,7 +738,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the microlearning can be answered through the activity preview
@@ -990,7 +996,7 @@ describe('Different microlearning workflows', function () {
 
         // visit the activity preview with the manager cookie being active
         cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microlearning/${quiz.id}`
+          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/microLearnings/${quiz.id}`
         )
 
         // verify that the scheduled microlearning is visible to lecturers
@@ -1962,28 +1968,29 @@ describe('Different microlearning workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-1"]').contains(
       data.MCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-2"]').contains(
       data.KPML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-3"]').contains(
       data.NRML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-4"]').contains(
       data.FTML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-5"]').contains(
       data.SEML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-6"]').contains(
       data.CSML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-7"]').contains(
       data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="close-activity-details-modal"]').click()
@@ -3324,6 +3331,177 @@ describe('Different microlearning workflows', function () {
       ).should('not.exist')
       cy.get(`[data-cy="close-share-object"]`).click()
     })
+  })
+  // #endregion
+
+  // ! Part 6: Activity Details Points
+  // #region
+  it('Create a microlearning in a gamified course and validate that points are shown correctly', function () {
+    cy.loginLecturer()
+    cy.createMicroLearning({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
+      startDate: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      }, // 3 months in the future at 2:00
+      endDate: {
+        monthDelta: 1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      }, // 7 months in the future at 18:00
+      stacks: [
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.FC.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.details.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertAsynchronousActivityPoints({ totalPoints: 80 })
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('60 P.')
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.FTML.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
+
+  it('Create a microlearning in a non-gamified course and validate that no points are shown', function () {
+    cy.loginLecturer()
+    cy.createMicroLearning({
+      name: this.data.details.nameNonGamified,
+      displayName: this.data.details.displayNameNonGamified,
+      courseName: this.data.details.courseNonGamified,
+      startDate: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      }, // 3 months in the future at 2:00
+      endDate: {
+        monthDelta: 1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      }, // 7 months in the future at 18:00
+      stacks: [
+        {
+          elements: [
+            this.data.SCML.title,
+            this.data.FC.title,
+            this.data.CT.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.MCML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+          ],
+        },
+      ],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="activity-MICRO_LEARNING-${this.data.details.nameNonGamified}"]`
+    ).should('exist')
+
+    cy.get(
+      `[data-cy="activity-name-${this.data.details.nameNonGamified}"]`
+    ).click()
+    cy.assertNoActivityPoints()
+
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
+    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+      'not.contain',
+      '20 P.'
+    )
+    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+      'not.contain',
+      '60 P.'
+    )
+
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
+
+    cy.get('[data-cy="stack-0-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-0-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.FTML.title)
+
+    cy.get('[data-cy="stack-1-instance-0"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-1"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="stack-1-instance-2"]').click()
+    cy.assertNoInstancePoints()
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
   // #endregion
 })

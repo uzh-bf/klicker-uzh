@@ -15,6 +15,7 @@ import type {
   CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
+  ChoicesResponse,
   ContentElementData,
   ElementData,
   ElementInstanceResults,
@@ -74,7 +75,7 @@ type ExistingInstanceType = DB.ElementInstance & {
   } | null
 }
 
-const POINTS_PER_INSTANCE = 10
+export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
@@ -1651,13 +1652,10 @@ export function updateChoicesResults({
 
   updatedResults.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, ix) => ({
-      ...acc,
-      [ix]: acc[ix]! + 1,
-    }),
-    results.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, results.choices)
   updatedResults.total = results.total + 1
   return { results: updatedResults, modified: true }
 }
@@ -2172,13 +2170,10 @@ function computeAggregatedResponsesChoices({
   // update aggregated responses for choices
   newAggResponses.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, ix) => ({
-      ...acc,
-      [ix]: acc[ix]! + 1,
-    }),
-    newAggResponses.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, newAggResponses.choices)
   newAggResponses.total = newAggResponses.total + 1
 
   return newAggResponses
@@ -2877,13 +2872,12 @@ export async function respondToQuestion(
 
 // ! Element & Stack Response & Combination Logic
 // #region
-
 interface ElementResponseInput {
   instanceId: number
   type: DB.ElementType
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
-  choicesResponse?: number[] | null
+  choicesResponse?: ChoicesResponse[] | null
   numericalResponse?: number | null
   freeTextResponse?: string | null
   selectionResponse?: number[] | null

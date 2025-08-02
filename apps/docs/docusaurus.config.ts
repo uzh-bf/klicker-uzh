@@ -54,24 +54,13 @@ const config: Config = {
         },
         sitemap: {},
         theme: {
-          customCss: ['./src/css/custom.css'],
+          customCss: ['./src/custom.css'],
         },
       } satisfies Preset.Options,
     ],
   ],
   plugins: [
-    async function docusaurusTailwindPlugin(context, options) {
-      return {
-        name: 'tailwind-plugin',
-        configurePostCss(postcssOptions) {
-          postcssOptions.plugins = [require('@tailwindcss/postcss')]
-          return postcssOptions
-        },
-      }
-    },
-
     'docusaurus-plugin-matomo',
-
     [
       '@docusaurus/plugin-ideal-image',
       {

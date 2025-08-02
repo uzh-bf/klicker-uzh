@@ -1,0 +1,25 @@
+meta {
+  name: getCoursesOLAT
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{OLAT_API_URL}}/api/configuration/courses
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-API-Key: {{OLAT_API_KEY}}
+}
+
+body:json {
+  {
+    "identityMappingIdentifier": "29440fb7-5347-4244-a83a-7ce8379d80e4@eduid.ch"
+  }
+}
+
+body:form-urlencoded {
+  identityMappingIdentifier: 29440fb7-5347-4244-a83a-7ce8379d80e4@eduid
+}

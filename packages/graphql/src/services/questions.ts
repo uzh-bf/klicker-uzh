@@ -588,13 +588,14 @@ export async function deleteElement(
       // ! Once elements are hard deleted, the propagation to dependent resources (e.g. answer collections) need to be handled manually in this mutation
       // ! --> for comparison, check the hard and soft-deletion logic for all activity types (live quiz / practice quiz / microlearning / group activity)
       const element = await prisma.element.update({
-        where: { id: id },
+        where: { id },
         data: {
           isDeleted: true,
           answerCollection: { disconnect: true },
           answerCollectionItems: { set: [] },
           directPermissions: { deleteMany: {} }, // delete all direct permissions on the element
         },
+        include: { tags: true },
       })
 
       // update derived permissions for element
@@ -607,6 +608,27 @@ export async function deleteElement(
           prisma
         )
       }
+
+      // if the element was linked to any tags, check if the tags still have other questions linked to it
+      for (const tag of element.tags) {
+        const elementTag = await prisma.tag.findUnique({
+          where: { id: tag.id },
+          include: {
+            _count: { select: { questions: { where: { isDeleted: false } } } },
+          },
+        })
+
+        // if the tag has no other questions linked to it, delete it
+        if (elementTag?._count.questions === 0) {
+          await prisma.tag.delete({ where: { id: tag.id } })
+        }
+      }
+
+      // remove all tags from the soft-deleted element
+      await prisma.element.update({
+        where: { id },
+        data: { tags: { set: [] } },
+      })
 
       return { deletedElement: element, originalElement }
     },
@@ -1065,6 +1087,157 @@ export async function getInstanceUpdateActivities(
     ),
     prop('activityName')
   )
+}
+
+export async function getElementSummary(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const levels = [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER]
+  const element = await ctx.prisma.element.findUnique({
+    where: { id },
+    include: {
+      answerCollection: {
+        include: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: { not: DB.PermissionLevel.OWNER },
+            },
+          },
+        },
+      },
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              practiceQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: levels },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  const sharedElementActivityUse =
+    element.elementInstances.filter(
+      (instance) => instance.ownerId !== ctx.user.sub
+    ).length > 0
+  const retainsDerivedAccess = element.elementInstances.some(
+    (instance) =>
+      (instance.elementStack?.microLearning?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.practiceQuiz?.permissions.length ?? 0) > 0 ||
+      (instance.elementStack?.groupActivity?.permissions.length ?? 0) > 0 ||
+      (instance.elementBlock?.liveQuiz?.permissions.length ?? 0) > 0
+  )
+  const derivedAccessToResources =
+    (element.answerCollection?.permissions.length ?? 0) > 0
+
+  return {
+    sharedElementActivityUse,
+    retainsDerivedAccess,
+    derivedAccessToResources,
+  }
+}
+
+export async function getOutdatedElementInstances(
+  { instanceIds }: { instanceIds: number[] },
+  ctx: ContextWithUser
+) {
+  if (instanceIds.length === 0) {
+    return []
+  }
+
+  // fetch all used elements
+  const dbInstances = await ctx.prisma.elementInstance.findMany({
+    where: { id: { in: instanceIds }, element: { isDeleted: false } },
+    include: {
+      element: {
+        select: { id: true, version: true, name: true, options: true },
+      },
+    },
+  })
+
+  // check if any of the instances has an outdated element version
+  const { outdatedInstances } = dbInstances.reduce<{
+    outdatedInstances: {
+      id: number
+      newTitle: string
+      newSampleSolution: boolean
+    }[]
+  }>(
+    (acc, instance) => {
+      const [_, instanceVersion] = instance.elementData.id.split('-v')
+
+      if (
+        instanceVersion &&
+        instance.element &&
+        parseInt(instanceVersion) < instance.element.version
+      ) {
+        acc.outdatedInstances.push({
+          id: instance.id,
+          newTitle: instance.element.name,
+          newSampleSolution:
+            instance.element.options &&
+            'hasSampleSolution' in instance.element.options
+              ? (instance.element.options?.hasSampleSolution ?? false)
+              : false,
+        })
+      }
+
+      return acc
+    },
+    { outdatedInstances: [] }
+  )
+
+  return outdatedInstances
 }
 
 export async function updateElementInstances(
@@ -1540,5 +1713,104 @@ export async function updateElementInstances(
     }
   }
 
+  // mark all instances as outdated that are no longer in sync with the element version
+  await flagOutdatedElementInstances({ elementId }, ctx)
+
   return updatedInstances
+}
+
+export async function flagOutdatedElementInstances(
+  { elementId }: { elementId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the element to check the latest version
+  const element = await ctx.prisma.element.findUnique({
+    where: { id: elementId, isDeleted: false },
+  })
+
+  if (!element) {
+    return false
+  }
+
+  // fetch all element instances with outdated element versions
+  const outdatedInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      elementId,
+      NOT: {
+        elementData: {
+          path: ['id'],
+          equals: `${elementId}-v${element.version}`,
+        },
+      },
+      OR: [
+        { elementBlock: { liveQuiz: { isDeleted: false } } },
+        { elementStack: { microLearning: { isDeleted: false } } },
+        { elementStack: { practiceQuiz: { isDeleted: false } } },
+        { elementStack: { groupActivity: { isDeleted: false } } },
+      ],
+    },
+    include: {
+      elementBlock: { include: { liveQuiz: true } },
+      elementStack: {
+        include: {
+          microLearning: true,
+          practiceQuiz: true,
+          groupActivity: true,
+        },
+      },
+    },
+  })
+
+  for (const instance of outdatedInstances) {
+    // set the element instance version to outdated
+    await ctx.prisma.elementInstance.update({
+      where: { id: instance.id },
+      data: { isVersionOutdated: true },
+    })
+
+    // highlight on the activity that it contains outdated elements
+    if (instance.elementBlock?.liveQuizId) {
+      await ctx.prisma.liveQuiz.update({
+        where: { id: instance.elementBlock.liveQuizId },
+        data: { areInstancesOutdated: true },
+      })
+
+      ctx.emitter.emit('invalidate', {
+        typename: 'LiveQuiz',
+        id: instance.elementBlock.liveQuizId,
+      })
+    } else if (instance.elementStack?.microLearningId) {
+      await ctx.prisma.microLearning.update({
+        where: { id: instance.elementStack.microLearningId },
+        data: { areInstancesOutdated: true },
+      })
+
+      ctx.emitter.emit('invalidate', {
+        typename: 'MicroLearning',
+        id: instance.elementStack.microLearningId,
+      })
+    } else if (instance.elementStack?.practiceQuizId) {
+      await ctx.prisma.practiceQuiz.update({
+        where: { id: instance.elementStack.practiceQuizId },
+        data: { areInstancesOutdated: true },
+      })
+
+      ctx.emitter.emit('invalidate', {
+        typename: 'PracticeQuiz',
+        id: instance.elementStack.practiceQuizId,
+      })
+    } else if (instance.elementStack?.groupActivityId) {
+      await ctx.prisma.groupActivity.update({
+        where: { id: instance.elementStack.groupActivityId },
+        data: { areInstancesOutdated: true },
+      })
+
+      ctx.emitter.emit('invalidate', {
+        typename: 'GroupActivity',
+        id: instance.elementStack.groupActivityId,
+      })
+    }
+  }
+
+  return true
 }

@@ -16,13 +16,14 @@ module.exports = {
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
+      'tutorials/participant_group_management',
       'tutorials/group_activity',
-      'tutorials/activity_templates',
+      // 'tutorials/activity_templates',
     ],
     'Lecturer - Sharing': [
-      'tutorials/permissions_groups',
-      'tutorials/direct_sharing',
-      'tutorials/catalog_sharing',
+      // 'tutorials/permissions_groups',
+      // 'tutorials/direct_sharing',
+      // 'tutorials/catalog_sharing',
       'tutorials/delegated_access',
     ],
     'Lecturer - Integrations': [

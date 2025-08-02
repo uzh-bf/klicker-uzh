@@ -172,17 +172,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      loginUserToken: t.id({
-        nullable: true,
-        args: {
-          shortname: t.arg.string({ required: true }),
-          token: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await AccountService.loginUserToken(args, ctx)
-        },
-      }),
-
       loginParticipant: t.id({
         nullable: true,
         args: {
@@ -885,14 +874,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      generateLoginToken: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: User,
-        resolve: async (_, __, ctx) => {
-          return await AccountService.generateLoginToken(ctx)
-        },
-      }),
-
       deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: LiveQuiz,
@@ -1303,6 +1284,20 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
             return await QuestionService.updateElementInstances(args, ctx)
+          }
+        ),
+      }),
+
+      flagOutdatedElementInstances: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          elementId: t.arg.int({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await QuestionService.flagOutdatedElementInstances(args, ctx)
           }
         ),
       }),

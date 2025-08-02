@@ -1,6 +1,0 @@
-query GetLoginToken {
-  getLoginToken {
-    loginToken
-    loginTokenExpiresAt
-  }
-}

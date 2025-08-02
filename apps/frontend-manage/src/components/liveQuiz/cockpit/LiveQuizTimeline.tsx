@@ -131,16 +131,6 @@ function LiveQuizTimeline({
                 key={quizId}
                 onClose={() => setEmbedModalOpen(false)}
                 quizId={quizId}
-                elements={blocks
-                  ?.flatMap((block) => block.elements)
-                  .filter(
-                    (instance) =>
-                      typeof instance !== 'undefined' && instance !== null
-                  )
-                  .map((instance) => ({
-                    id: instance.id,
-                    name: instance.elementData.name,
-                  }))}
               />
             ) : null}
             <Button

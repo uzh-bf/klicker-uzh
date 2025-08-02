@@ -88,6 +88,8 @@ model ElementInstance {
   /// [PrismaElementResults]
   anonymousResults Json // contains the collection of gathered results by anonymous participants
 
+  isVersionOutdated Boolean @default(false) // flag to indicate if the element version has changed since the instance was created
+
   responses           QuestionResponse[]
   detailResponses     QuestionResponseDetail[]
   feedbacks           ElementFeedback[]

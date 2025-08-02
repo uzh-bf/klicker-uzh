@@ -787,7 +787,20 @@ export async function updateCourseSettings(
   ctx: ContextWithUser
 ) {
   // verify that no past dates are modified or enabled gamification / group creation settings are disabled
-  const course = await ctx.prisma.course.findUnique({ where: { id } })
+  const course = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          liveQuizzes: { where: { isDeleted: false } },
+          practiceQuizzes: { where: { isDeleted: false } },
+          microLearnings: { where: { isDeleted: false } },
+          groupActivities: { where: { isDeleted: false } },
+          participantGroups: true,
+        },
+      },
+    },
+  })
 
   if (!course) return null
 
@@ -795,6 +808,12 @@ export async function updateCourseSettings(
   const newGroupDeadlinePast = groupDeadlineDate
     ? groupDeadlineDate < new Date()
     : false
+  const containsActivities =
+    course._count.liveQuizzes > 0 ||
+    course._count.practiceQuizzes > 0 ||
+    course._count.microLearnings > 0 ||
+    course._count.groupActivities > 0
+  const containsGroups = course._count.participantGroups > 0
 
   const updatedCourse = await ctx.prisma.course.update({
     where: {
@@ -807,18 +826,25 @@ export async function updateCourseSettings(
       color: color ?? undefined,
       startDate: currentStartDatePast || !startDate ? undefined : startDate,
       endDate: endDate ?? undefined,
+      // only enable group creation or disable it if there are no groups
       isGroupCreationEnabled:
-        course.isGroupCreationEnabled || !isGroupCreationEnabled
-          ? undefined
-          : isGroupCreationEnabled,
+        isGroupCreationEnabled || !containsGroups
+          ? (isGroupCreationEnabled ?? false)
+          : undefined,
       groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
+      // only enable gamification or disable it if there are no activities or groups
       isGamificationEnabled:
-        course.isGamificationEnabled || !isGamificationEnabled
-          ? undefined
-          : isGamificationEnabled,
+        isGamificationEnabled || (!containsActivities && !containsGroups)
+          ? (isGamificationEnabled ?? false)
+          : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+      // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
+      groupAssignmentPoolEntries:
+        !isGroupCreationEnabled && !containsGroups
+          ? { deleteMany: {} }
+          : undefined,
     },
   })
 
@@ -1232,7 +1258,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           blocks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1248,7 +1274,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1264,7 +1290,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1280,7 +1306,7 @@ export async function getCourseData(
         where: { isDeleted: false },
         include: {
           stacks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
           permissions: {
@@ -1339,20 +1365,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = liveQuiz.blocks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      timeLimit: block.timeLimit,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: liveQuiz.id,
       templateId: liveQuiz.templateInfo?.id ?? null,
@@ -1365,12 +1377,12 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: liveQuiz.blocks.length,
       numOfElements: liveQuiz.blocks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
+      areInstancesOutdated: liveQuiz.areInstancesOutdated,
       numSharedUsers: liveQuiz._count.permissions - 1,
       isOwner,
       isManager,
@@ -1402,19 +1414,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = practiceQuiz.stacks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: practiceQuiz.id,
       templateId: practiceQuiz.templateInfo?.id ?? null,
@@ -1427,13 +1426,13 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: practiceQuiz.stacks.length,
       numOfElements: practiceQuiz.stacks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
       automaticPublicationAt: practiceQuiz.availableFrom,
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
+      areInstancesOutdated: practiceQuiz.areInstancesOutdated,
       numSharedUsers: practiceQuiz._count.permissions - 1,
       isOwner,
       isManager,
@@ -1465,19 +1464,6 @@ export async function getCourseData(
       permission,
     })
 
-    const stacks = microLearning.stacks.map((block) => ({
-      id: block.id,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-      elements: block.elements.map((instance) => ({
-        id: instance.id,
-        name: instance.elementData.name,
-        type: instance.elementType,
-      })),
-    }))
-
     return {
       id: microLearning.id,
       templateId: microLearning.templateInfo?.id ?? null,
@@ -1490,14 +1476,14 @@ export async function getCourseData(
       courseStartDate: course.startDate,
       numOfStacks: microLearning.stacks.length,
       numOfElements: microLearning.stacks.reduce(
-        (acc, block) => acc + block.elements.length,
+        (acc, block) => acc + block._count.elements,
         0
       ),
       scheduledStartAt: microLearning.scheduledStartAt,
       scheduledEndAt: microLearning.scheduledEndAt,
-      stacks,
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
+      areInstancesOutdated: microLearning.areInstancesOutdated,
       numSharedUsers: microLearning._count.permissions - 1,
       isOwner,
       isManager,
@@ -1530,19 +1516,6 @@ export async function getCourseData(
         permission,
       })
 
-      const stacks = groupActivity.stacks.map((block) => ({
-        id: block.id,
-        numOfParticipants: block.elements[0]
-          ? block.elements[0].results.total +
-            block.elements[0].anonymousResults.total
-          : 0,
-        elements: block.elements.map((instance) => ({
-          id: instance.id,
-          name: instance.elementData.name,
-          type: instance.elementType,
-        })),
-      }))
-
       return {
         id: groupActivity.id,
         templateId: groupActivity.templateInfo?.id ?? null,
@@ -1555,16 +1528,16 @@ export async function getCourseData(
         courseStartDate: course.startDate,
         numOfStacks: groupActivity.stacks.length,
         numOfElements: groupActivity.stacks.reduce(
-          (acc, block) => acc + block.elements.length,
+          (acc, block) => acc + block._count.elements,
           0
         ),
         scheduledStartAt: groupActivity.scheduledStartAt,
         scheduledEndAt: groupActivity.scheduledEndAt,
         groupDeadlineDate: course.groupDeadlineDate,
         numOfParticipantGroups: course._count.participantGroups,
-        stacks,
         permissionLevel: permission.permissionLevel,
         derivedAccess: permission.derived,
+        areInstancesOutdated: groupActivity.areInstancesOutdated,
         numSharedUsers: groupActivity._count.permissions - 1,
         isOwner,
         isManager,

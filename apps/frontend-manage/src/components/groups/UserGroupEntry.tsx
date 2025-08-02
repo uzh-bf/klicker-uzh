@@ -42,6 +42,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
           <Dropdown
             items={[
               {
+                id: 'view-edit-user-group',
                 label: (
                   <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5">
                     <FontAwesomeIcon
@@ -59,6 +60,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
               ...(!group.isOwner
                 ? [
                     {
+                      id: 'leave-user-group',
                       label: (
                         <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon
@@ -76,6 +78,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
               ...(group.isOwner
                 ? [
                     {
+                      id: 'delete-user-group',
                       label: (
                         <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600">
                           <FontAwesomeIcon

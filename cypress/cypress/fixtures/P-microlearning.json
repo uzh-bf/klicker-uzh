@@ -53,5 +53,13 @@
     "group2": "Group 2",
     "group3": "Group 3",
     "group4": "Group 4"
+  },
+  "details": {
+    "name": "Microlearning Activity Details",
+    "displayName": "Microlearning Activity Details (Display)",
+    "courseName": "Testkurs",
+    "nameNonGamified": "Non-Gamified Microlearning Details",
+    "displayNameNonGamified": "Non-Gamified Microlearning Details (Display)",
+    "courseNonGamified": "Non-Gamified Course"
   }
 }
