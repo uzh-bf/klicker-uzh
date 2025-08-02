@@ -64,8 +64,6 @@ function useMicroLearningActions({
     })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
-  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
-
   const actions = useMemo(
     () => [
       {
@@ -114,7 +112,10 @@ function useMicroLearningActions({
         label: t('manage.courseList.openEvaluation'),
         icon: faChartSimple,
         onClick: () => {
-          window.open(evaluationHref, '_blank')
+          window.open(
+            `${router.locale ? `/${router.locale}` : ''}/microLearning/${microLearning.id}/evaluation`,
+            '_blank'
+          )
         },
         data: { cy: `evaluation-microlearning-${microLearning.name}` },
       },
@@ -248,7 +249,6 @@ function useMicroLearningActions({
       microLearning.name,
       microLearning.courseId,
       href,
-      evaluationHref,
       setPublishModal,
       setExtensionModal,
       setEndingModal,

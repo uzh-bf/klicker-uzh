@@ -97,7 +97,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (!cookiesAvailable) {
       return {
         redirect: {
-          destination: `/editProfile?participantToken=${participantToken}`,
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
           permanent: false,
           query: { participantToken },
         },
@@ -106,7 +106,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       redirect: {
-        destination: `/editProfile`,
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile`,
         permanent: false,
       },
     }

@@ -96,7 +96,10 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.liveQuizEvaluation'),
         icon: faChartSimple,
         onClick: () => {
-          window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
+          window.open(
+            `${router.locale ? `/${router.locale}` : ''}/quizzes/${quiz.id}/evaluation`,
+            '_blank'
+          )
         },
         data: { cy: `live-quiz-evaluation-${quiz.name}` },
       },

@@ -49,7 +49,6 @@ function usePracticeQuizActions({
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
-  const evaluationHref = `/practiceQuiz/${practiceQuiz.id}/evaluation`
 
   const onSuccessToast = () =>
     toast({
@@ -106,7 +105,10 @@ function usePracticeQuizActions({
         label: t('manage.courseList.openEvaluation'),
         icon: faChartSimple,
         onClick: () => {
-          window.open(evaluationHref, '_blank')
+          window.open(
+            `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${practiceQuiz.id}/evaluation`,
+            '_blank'
+          )
         },
         data: { cy: `evaluation-practice-quiz-${practiceQuiz.name}` },
       },
@@ -209,7 +211,6 @@ function usePracticeQuizActions({
       practiceQuiz.name,
       practiceQuiz.courseId,
       href,
-      evaluationHref,
       router,
       setPublishModal,
       setSharingModal,

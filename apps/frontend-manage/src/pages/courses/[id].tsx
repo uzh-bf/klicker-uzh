@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
 import {
   faCrown,
   faList,
@@ -19,6 +18,7 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseCalendarView from '../../components/courses/CourseCalendarView'
+import CourseGamificationInfos from '../../components/courses/CourseGamificationInfos'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
 import GroupActivityList from '../../components/courses/GroupActivityList'
 import LiveQuizList from '../../components/courses/LiveQuizList'
