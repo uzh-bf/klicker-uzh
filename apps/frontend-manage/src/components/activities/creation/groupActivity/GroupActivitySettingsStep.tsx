@@ -48,7 +48,7 @@ function GroupActivitySettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, touched, isValid, isSubmitting, setTouched, setValues }) => (
+      {({ values, isValid, isSubmitting, setTouched, setValues }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -66,7 +66,7 @@ function GroupActivitySettingsStep({
             <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div
                 className={twMerge(
-                  'border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72',
+                  'border-border w-full rounded-md border border-solid p-2 shadow-md md:w-72',
                   typeof values.courseId !== 'undefined' && 'border-orange-400'
                 )}
               >
@@ -99,7 +99,7 @@ function GroupActivitySettingsStep({
                   <MultiplierSelector />
                 )}
               </div>
-              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+              <div className="border-border w-full rounded-md border border-solid p-2 shadow-md md:w-72">
                 <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faClock} />
                   <div

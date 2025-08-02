@@ -660,14 +660,18 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                   {
                     order: 0,
                     type: Prisma.ElementInstanceType.LIVE_QUIZ,
-                    elementType: Prisma.ElementType.SC,
+                    elementType: questionsTest[0]!.type,
                     elementData: processElementData(questionsTest[0]!),
                     options: {
                       basePoints: true,
                       pointsMultiplier: quizData.pointsMultiplier,
                     },
-                    results: { choices: Array(4).fill(0), total: 0 },
-                    anonymousResults: { choices: Array(4).fill(0), total: 0 },
+                    results: getInitialInstanceResults(
+                      processElementData(questionsTest[0]!)
+                    ),
+                    anonymousResults: getInitialInstanceResults(
+                      processElementData(questionsTest[0]!)
+                    ),
                     instanceStatistics: {
                       create: getInitialInstanceStatistics(
                         Prisma.ElementInstanceType.LIVE_QUIZ
