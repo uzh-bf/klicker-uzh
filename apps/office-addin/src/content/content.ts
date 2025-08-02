@@ -596,7 +596,7 @@ function isValidUrl(string: string): boolean {
   // Support both /sessions/ and /quizzes/ paths with flexible UUID validation (36 characters)
   // V1 pattern enhanced for better compatibility
   const urlPattern =
-    /^https:\/\/manage\.klicker\.uzh\.ch\/(sessions|quizzes)\/.{36}\/evaluation\?hmac=.{64}.*$/
+    /^https:\/\/manage\.klicker\.uzh\.ch(?:\/[a-z]{2})?\/(sessions|quizzes)\/.{36}\/evaluation\?hmac=.{64}.*$/
   return urlPattern.test(string)
 }
 
