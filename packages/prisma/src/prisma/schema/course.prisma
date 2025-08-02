@@ -7,6 +7,7 @@ model Course {
   name                  String
   displayName           String
   description           String?
+  language              Locale   @default(en)
   color                 String   @default("#eaa07d")
   startDate             DateTime
   endDate               DateTime

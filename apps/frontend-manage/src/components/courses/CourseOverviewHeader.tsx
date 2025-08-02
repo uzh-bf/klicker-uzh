@@ -232,6 +232,7 @@ function CourseOverviewHeader({
                   name: values.name,
                   displayName: values.displayName,
                   description: values.description,
+                  language: values.language,
                   color: values.color,
                   startDate: startDateUTC,
                   endDate: endDateUTC,

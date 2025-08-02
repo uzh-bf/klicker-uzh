@@ -22,7 +22,7 @@ import {
 } from './participant.js'
 import { IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
-import { type IUser, UserRef } from './user.js'
+import { type IUser, LocaleType, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -60,6 +60,7 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
+    language: t.expose('language', { type: LocaleType }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),

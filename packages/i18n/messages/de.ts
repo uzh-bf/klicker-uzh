@@ -278,7 +278,9 @@ export default {
       ok: 'OK',
       language: 'Sprache',
       english: 'Englisch',
+      en: 'Englisch',
       german: 'Deutsch',
+      de: 'Deutsch',
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
@@ -2350,6 +2352,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
       notificationEmailReq:
         'Bitte geben Sie eine E-Mail-Adresse für Kurs-spezifische Benachrichtigungen an.',
+      courseLanguage: 'Kurs-Sprache',
       startDate: 'Startdatum',
       startDateTooltip:
         'Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.',
@@ -2357,6 +2360,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endDateTooltip:
         'Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.',
       courseColor: 'Kursfarbe',
+      languageTooltip:
+        'Wählen Sie eine Sprache, welche beim Export von Kurs-Links, etc. als Standard verwendet werden soll. Studierende haben nach wie vor die Möglichkeit, die Sprache in der Studierenden-App zu ändern.',
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
       groupDeadlineFuture:
         'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
@@ -2392,7 +2397,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       preferredGroupSizeTooltip:
         'Die bevorzugte Anzahl Studierender in einer Gruppe. Nach Erstellen des Kurses kann diese Einstellung nicht mehr verändert werden. Wenn Studierende die automatisierte Gruppenbildungsfunktion wählen, wird der Algorithmus so viele Gruppen wie möglich mit dieser Grösse erstellen.',
       groupDeadlineChangedToPast:
-        'Die Deadline für die Gruppenbildung wurde in die Vergangenheit verschoben. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Funktion auf der Gruppenübersicht.',
+        'Die Deadline für die Gruppenbildung liegt in der Vergangenheit. Mit dieser Einstellung können Studierende keine Gruppen mehr erstellen oder zu welchen beitreten und Studierende, welche die automatische Gruppenbildung gewählt haben, werden innerhalb von eines Tages automatisch Gruppen zugewiesen, wenn möglich. Um die Gruppeneinteilung sofort zu finalisieren, nutzen Sie bitte die Funktion auf der Gruppenübersicht.',
       gamificationGroupsFixed:
         'Gamifizierung und Gruppenbildung sind für diesen Kurs aktiviert. Diese Einstellungen können später nicht deaktiviert werden, falls gamifizierte Aktivitäten oder Gruppen vorhanden sind. Initial deaktivierte Optionen können später aktiviert werden.',
       gamificationFixed:

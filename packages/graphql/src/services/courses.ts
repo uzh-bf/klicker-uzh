@@ -673,6 +673,7 @@ interface CreateCourseArgs {
   groupDeadlineDate?: Date | null
   maxGroupSize?: number | null
   preferredGroupSize?: number | null
+  language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled: boolean
 }
@@ -689,6 +690,7 @@ export async function createCourse(
     groupDeadlineDate,
     maxGroupSize,
     preferredGroupSize,
+    language,
     notificationEmail,
     isGamificationEnabled,
   }: CreateCourseArgs,
@@ -709,7 +711,8 @@ export async function createCourse(
         data: {
           name: name.trim(),
           displayName: displayName.trim(),
-          description: description,
+          description,
+          language,
           color: color ?? '#CCD5ED',
           startDate: startDate,
           endDate: endDate,
@@ -766,6 +769,7 @@ interface UpdateCourseSettingsArgs {
   endDate?: Date | null
   isGroupCreationEnabled?: boolean | null
   groupDeadlineDate?: Date | null
+  language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled?: boolean | null
 }
@@ -781,6 +785,7 @@ export async function updateCourseSettings(
     endDate,
     isGroupCreationEnabled,
     groupDeadlineDate,
+    language,
     notificationEmail,
     isGamificationEnabled,
   }: UpdateCourseSettingsArgs,
@@ -823,6 +828,7 @@ export async function updateCourseSettings(
       name: name ?? undefined,
       displayName: displayName ?? undefined,
       description: description ?? undefined,
+      language: language ?? DB.Locale.en,
       color: color ?? undefined,
       startDate: currentStartDatePast || !startDate ? undefined : startDate,
       endDate: endDate ?? undefined,
