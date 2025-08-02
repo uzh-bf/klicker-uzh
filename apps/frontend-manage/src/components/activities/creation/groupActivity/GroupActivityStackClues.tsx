@@ -183,7 +183,7 @@ function GroupActivityStackClues({
                                 errors.clues.length > ix &&
                                 errors.clues[ix]
                                 ? 'border-red-600'
-                                : 'border-uzh-grey-40'
+                                : 'border-border'
                             )}
                             data-cy={`groupActivity-clue-${clue.name}`}
                           >

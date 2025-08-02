@@ -232,7 +232,7 @@ function CaseStudyCasesFields({
                   </div>
                 )}
 
-                <hr className="border-uzh-grey-40 mt-4 w-full border-2" />
+                <hr className="border-border mt-4 w-full border-2" />
               </div>
             ))}
             {!inputsDisabled ? (

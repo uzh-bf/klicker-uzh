@@ -76,9 +76,9 @@ function CaseStudyOptions({
           setSelectedItems={setSelectedItems}
         />
       )}
-      <hr className="border-uzh-grey-40 my-2 w-full border-2" />
+      <hr className="border-border my-2 w-full border-2" />
       <CaseStudyCriteriaFields disabled={inputsDisabled} />
-      <hr className="border-uzh-grey-40 my-2 w-full border-2" />
+      <hr className="border-border my-2 w-full border-2" />
       <CaseStudyCasesFields
         inputsDisabled={inputsDisabled}
         setFieldTouched={setFieldTouched}

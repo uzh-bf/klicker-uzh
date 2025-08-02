@@ -63,7 +63,7 @@ function LiveQuizSettingsStep({
             <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div
                 className={twMerge(
-                  'border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-64',
+                  'border-border w-full rounded-md border border-solid p-2 shadow-md md:w-64',
                   values.isGamificationEnabled && 'border-orange-400'
                 )}
               >
@@ -116,7 +116,7 @@ function LiveQuizSettingsStep({
                   />
                 )}
               </div>
-              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-64">
+              <div className="border-border w-full rounded-md border border-solid p-2 shadow-md md:w-64">
                 <div className="mb-4 flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faUsers} />
                   <div className="text-lg font-bold">

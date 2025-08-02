@@ -172,7 +172,15 @@ function Element({
                   type="button"
                   onClick={() => {
                     if (!disabled) {
-                      setModificationModalOpen(true)
+                      const value = localStorage.getItem(
+                        `autosave-element-${element.id}`
+                      )
+
+                      if (value) {
+                        setShowRecoveryPrompt(true)
+                      } else {
+                        setModificationModalOpen(true)
+                      }
                     }
                   }}
                   data-cy={`element-title-${element.name}`}
