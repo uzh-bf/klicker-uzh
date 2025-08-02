@@ -209,7 +209,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   ) {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         permanent: false,
       },
     }

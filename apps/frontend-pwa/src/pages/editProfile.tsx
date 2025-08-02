@@ -92,7 +92,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (!participantToken) {
     return {
       redirect: {
-        destination: `/createAccount`,
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
         permanent: false,
       },
     }

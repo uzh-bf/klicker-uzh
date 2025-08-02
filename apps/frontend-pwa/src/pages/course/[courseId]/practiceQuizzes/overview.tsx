@@ -98,7 +98,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         statusCode: 302,
       },
     }
@@ -129,7 +129,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (quizzes.length === 1) {
     return {
       redirect: {
-        destination: `/course/${course.id}/practiceQuizzes/${quizzes[0].id}`,
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/practiceQuizzes/${quizzes[0].id}`,
         permanent: false,
       },
     }

@@ -12,7 +12,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   ) {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         permanent: false,
       },
     }
@@ -20,7 +20,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `/course/${ctx.params.courseId}/microLearnings/${ctx.params.id}/${ctx.params.ix}`,
+      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/microLearnings/${ctx.params.id}/${ctx.params.ix}`,
       permanent: false,
     },
   }

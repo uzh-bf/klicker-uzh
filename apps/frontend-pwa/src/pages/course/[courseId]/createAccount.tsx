@@ -8,7 +8,7 @@ function AccountCreationRedirect() {
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return {
     redirect: {
-      destination: `/createAccount`,
+      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
       permanent: false,
     },
   }
