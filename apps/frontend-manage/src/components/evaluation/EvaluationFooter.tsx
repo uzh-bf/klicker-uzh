@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
   ElementType,
+  LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
@@ -11,6 +12,7 @@ import {
 } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActiveStackType } from './ActivityEvaluation'
@@ -21,9 +23,7 @@ interface EvaluationFooterProps {
   currentInstance?: ElementInstanceEvaluation
   activeStack: ActiveStackType
   textSize: TextSizeType
-  setTextSize: Dispatch<{
-    type: string
-  }>
+  setTextSize: Dispatch<{ type: string }>
   showSolution: boolean
   setShowSolution: Dispatch<SetStateAction<boolean>>
   showExplanation: boolean
@@ -46,6 +46,7 @@ function EvaluationFooter({
   setChartType,
 }: EvaluationFooterProps) {
   const t = useTranslations()
+  const router = useRouter()
 
   const hasSolution = currentInstance?.hasSampleSolution ?? false
   const hasExplanation =
@@ -127,9 +128,7 @@ function EvaluationFooter({
             ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
                 contentPosition="popper"
-                className={{
-                  trigger: 'w-44 border-slate-400',
-                }}
+                className={{ trigger: 'w-44 border-slate-400' }}
                 items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
                   return {
                     label: t(item.label),
@@ -140,6 +139,25 @@ function EvaluationFooter({
                 value={chartType}
                 onChange={(newValue) => setChartType(newValue as ChartType)}
                 data={{ cy: 'change-chart-type' }}
+              />
+            ) : null}
+            {!router.query.hmac ? (
+              <Select
+                value={router.locale}
+                contentPosition="popper"
+                className={{ trigger: '-ml-3 w-20 border-slate-400 text-xl' }}
+                items={Object.values(LocaleType).map((language) => ({
+                  label: t(`shared.generic.${language}Flag`),
+                  shortLabel: t(`shared.generic.${language}FlagShort`),
+                  value: language,
+                }))}
+                onChange={(language) => {
+                  router.push(
+                    { pathname: router.pathname, query: router.query },
+                    undefined,
+                    { locale: language }
+                  )
+                }}
               />
             ) : null}
           </div>
