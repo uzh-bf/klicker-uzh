@@ -57,7 +57,6 @@ function CourseOverviewHeader({
   })
   const user = dataUser?.userProfile
 
-  // TODO: check if we should actually hide these links for non-catalyst users?!
   const ltiDropdownItems = [
     getLTIAccessLink({
       href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}`,
