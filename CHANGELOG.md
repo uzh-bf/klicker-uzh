@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.79...v3.3.0-alpha.80) (2025-08-03)
+
+
+### Enhancements
+
+* add flags for gamification and assessment on courses and activities (incl. migration, restrictions, UI components) ([#4819](https://github.com/uzh-bf/klicker-uzh/issues/4819)) ([bb7fb5f](https://github.com/uzh-bf/klicker-uzh/commit/bb7fb5f6816f073a68c3cd3061337324b011e55d))
+* **apps/docs:** update documentation of LTI integration with new functionalities ([#4820](https://github.com/uzh-bf/klicker-uzh/issues/4820)) ([3ce24dd](https://github.com/uzh-bf/klicker-uzh/commit/3ce24ddeaa00df67a65bf83bb33084191ba871a6))
+
 ## [3.3.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.78...v3.3.0-alpha.79) (2025-08-03)
 
 
