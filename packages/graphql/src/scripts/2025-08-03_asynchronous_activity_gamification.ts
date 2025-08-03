@@ -14,6 +14,10 @@ async function run() {
   // update the practice quizzes with the course's gamification status
   let pqCounter = 0
   for (const pq of practiceQuizzes) {
+    if (pq.isGamificationEnabled === pq.course.isGamificationEnabled) {
+      continue // skip if already set correctly
+    }
+
     console.log(
       `Practice Quiz ${++pqCounter}/${practiceQuizzes.length} - Gamification: ${String(pq.course.isGamificationEnabled)} (Course: ${pq.course.name})`
     )
@@ -35,6 +39,10 @@ async function run() {
   // update the microlearnings with the course's gamification status
   let mlCounter = 0
   for (const ml of microLearnings) {
+    if (ml.isGamificationEnabled === ml.course.isGamificationEnabled) {
+      continue // skip if already set correctly
+    }
+
     console.log(
       `Micro Learning ${++mlCounter}/${microLearnings.length} - Gamification: ${String(ml.course.isGamificationEnabled)} (Course: ${ml.course.name})`
     )
@@ -56,6 +64,10 @@ async function run() {
   // update the group activities with the course's gamification status
   let gaCounter = 0
   for (const ga of groupActivities) {
+    if (ga.isGamificationEnabled === ga.course.isGamificationEnabled) {
+      continue // skip if already set correctly
+    }
+
     console.log(
       `Group Activity ${++gaCounter}/${groupActivities.length} - Gamification: ${String(ga.course.isGamificationEnabled)} (Course: ${ga.course.name})`
     )
