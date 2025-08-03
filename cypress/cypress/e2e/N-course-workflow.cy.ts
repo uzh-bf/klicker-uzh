@@ -53,6 +53,17 @@ describe('Test course creation and editing functionalities', function () {
       .realClick()
       .type(this.data.course1.description)
 
+    // change the course language from the user default locale (english) to german
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.de)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
+
     // enter a course notification email (should be pre-filled with the user email)
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -146,6 +157,17 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-name"]').type(this.data.course2.name)
     cy.get('[data-cy="course-display-name"]').type(
       this.data.course2.displayName
+    )
+
+    // keep the course language as english
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
     )
 
     // enter a course notification email
@@ -543,6 +565,19 @@ describe('Test course creation and editing functionalities', function () {
       .clear()
       .type(this.data.course1.displayNameNew)
 
+    // check if the course language is set correctly
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
+
+    // change the course language to english
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+
     // check if the notification email is set correctly
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -628,6 +663,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-display-name"]').should(
       'have.value',
       this.data.course1.displayNameNew
+    )
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
     )
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',

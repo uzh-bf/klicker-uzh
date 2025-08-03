@@ -11,14 +11,12 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
