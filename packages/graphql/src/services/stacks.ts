@@ -2601,15 +2601,15 @@ async function updateLeaderboardOnQuestionResponse({
 
 export async function respondToQuestion(
   {
-    courseId,
     id,
+    courseId,
     response,
     answerTime,
     participation,
     skipTracking,
   }: {
-    courseId: string
     id: number
+    courseId: string
     response: ResponseInput
     answerTime: number
     participation: (DB.Participation & { participant: DB.Participant }) | null
@@ -2928,7 +2928,7 @@ async function respondToElement({
     const result = await respondToFlashcard(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         response: response.flashcardResponse!,
         answerTime,
         participation,
@@ -2963,7 +2963,7 @@ async function respondToElement({
     const result = await respondToContent(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         answerTime,
         participation,
         skipTracking,
@@ -2997,8 +2997,8 @@ async function respondToElement({
   ) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { choices: response.choicesResponse },
         answerTime,
         participation,
@@ -3026,8 +3026,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.NUMERICAL) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: String(response.numericalResponse) },
         answerTime,
         participation,
@@ -3055,8 +3055,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.FREE_TEXT) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: response.freeTextResponse },
         answerTime,
         participation,
@@ -3084,8 +3084,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
           selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
         },
@@ -3115,8 +3115,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.CASE_STUDY) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
           assessment: response.caseStudyResponse,
         },
