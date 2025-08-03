@@ -3,7 +3,6 @@ mutation ChangeLiveQuizSettings(
   $isLiveQAEnabled: Boolean
   $isConfusionFeedbackEnabled: Boolean
   $isModerationEnabled: Boolean
-  $isGamificationEnabled: Boolean
 ) {
   changeLiveQuizSettings(
     id: $id
