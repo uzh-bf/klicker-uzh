@@ -70,17 +70,12 @@ function Cockpit() {
 
   const {
     id,
+    name,
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
-    isGamificationEnabled,
-    namespace,
-    name,
-    displayName,
-    status,
     startedAt,
     course,
-    activeBlock,
     blocks,
     confusionSummary,
     feedbacks,
@@ -120,7 +115,6 @@ function Cockpit() {
         isLiveQAEnabled={isLiveQAEnabled}
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
-        isGamificationEnabled={isGamificationEnabled}
         quizId={id}
         liveQuizName={name}
       />

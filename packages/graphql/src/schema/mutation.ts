@@ -898,7 +898,6 @@ export const Mutation = builder.mutationType({
           isLiveQAEnabled: t.arg.boolean({ required: false }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: false }),
           isModerationEnabled: t.arg.boolean({ required: false }),
-          isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),

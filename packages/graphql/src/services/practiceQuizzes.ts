@@ -229,6 +229,16 @@ export async function manipulatePracticeQuiz(
     }
   }
 
+  // get the course to which the practice quiz should be assigned
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Course not found')
+  }
+
   // get required splits of instances based on provided stacks values
   const {
     persistentInstanceIds,
@@ -268,6 +278,8 @@ export async function manipulatePracticeQuiz(
     orderType: order,
     resetTimeDays: resetTimeDays,
     areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
     stacks: {
       create: stacks.map((stack) => ({
         type: DB.ElementStackType.PRACTICE_QUIZ,

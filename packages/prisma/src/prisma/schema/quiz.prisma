@@ -26,9 +26,10 @@ model PracticeQuiz {
   status           PublicationStatus @default(DRAFT)
   availableFrom    DateTime?
 
-  isDeleted Boolean @default(false)
-
-  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
 
@@ -77,6 +78,7 @@ model LiveQuiz {
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
   isGamificationEnabled      Boolean @default(false)
+  isAssessmentEnabled        Boolean @default(false)
   isDeleted                  Boolean @default(false)
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
@@ -143,6 +145,8 @@ model MicroLearning {
   scheduledEndAt   DateTime
 
   arePushNotificationsSent Boolean @default(false)
+  isGamificationEnabled    Boolean @default(false)
+  isAssessmentEnabled      Boolean @default(false)
   isDeleted                Boolean @default(false)
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this microlearning are outdated due to changes in the corresponding element
@@ -247,9 +251,10 @@ model GroupActivity {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
-  isDeleted Boolean @default(false)
-
-  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
 

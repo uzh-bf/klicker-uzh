@@ -210,6 +210,16 @@ export async function manipulateMicroLearning(
     }
   }
 
+  // get the course to which the microlearning should be assigned
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Course not found')
+  }
+
   // get required splits of instances based on provided stacks values
   const {
     persistentInstanceIds,
@@ -253,6 +263,8 @@ export async function manipulateMicroLearning(
     scheduledStartAt: dayjs(startDate).toDate(),
     scheduledEndAt: dayjs(endDate).toDate(),
     areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
     stacks: {
       create: stacks.map((stack) => {
         return {

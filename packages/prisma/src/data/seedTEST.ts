@@ -300,9 +300,31 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   await prisma.course.upsert(
     prepareCourse({
+      id: COURSE_ID_TEST3,
+      name: 'Assessment Course',
+      displayName: 'Assessment Course',
+      description:
+        'This is a course with assessment enabled (gamification disabled).',
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      ownerId: USER_ID_TEST,
+      color: '#166b16',
+      pinCode: 482748273,
+      startDate: new Date('2023-01-01T00:00'),
+      endDate: new Date('2030-01-01T23:59'),
+      isGroupCreationEnabled: false,
+      groupDeadlineDate: new Date('2025-01-01T00:01'),
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+    })
+  )
+
+  await prisma.course.upsert(
+    prepareCourse({
       id: COURSE_ID_CALENDAR,
-      name: 'Digital Innovation & Analytics',
-      displayName: 'Digital Innovation & Analytics',
+      name: 'Testkurs Calendar View',
+      displayName: 'Testkurs Calendar View',
       description:
         'An advanced course exploring digital transformation, data analytics, AI, and innovation strategies. Features comprehensive calendar-based learning with diverse activity schedules.',
       isGamificationEnabled: true,
@@ -612,8 +634,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const calendarLiveQuizzes = [
     {
       id: 'bdde8a26-1dca-4a30-93ab-accd52849cef',
-      name: 'Digital Transformation Kickoff',
-      displayName: 'Digital Transformation Kickoff Session',
+      name: 'Calendar Live Quiz 1',
+      displayName: 'Calendar Live Quiz 1',
       description:
         'Introduction to digital transformation concepts and methodologies.',
       status: Prisma.PublicationStatus.DRAFT,
@@ -621,8 +643,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     {
       id: '3ce1b871-809a-4f7a-b3de-e238a4e6e3bc',
-      name: 'Data Analytics Deep Dive',
-      displayName: 'Data Analytics Workshop',
+      name: 'Calendar Live Quiz 2',
+      displayName: 'Calendar Live Quiz 2',
       description:
         'Comprehensive exploration of data analytics techniques and tools.',
       status: Prisma.PublicationStatus.DRAFT,
@@ -632,9 +654,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   for (const quizData of calendarLiveQuizzes) {
     const liveQuiz = await prisma.liveQuiz.upsert({
-      where: {
-        id: quizData.id,
-      },
+      where: { id: quizData.id },
       create: {
         id: quizData.id,
         name: quizData.name,
@@ -685,16 +705,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             },
           ],
         },
-        owner: {
-          connect: {
-            id: USER_ID_TEST,
-          },
-        },
-        course: {
-          connect: {
-            id: COURSE_ID_CALENDAR,
-          },
-        },
+        owner: { connect: { id: USER_ID_TEST } },
+        course: { connect: { id: COURSE_ID_CALENDAR } },
       },
       update: {},
     })
@@ -1269,13 +1281,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // Create calendar course group activities with diverse scheduling patterns
   const calendarGroupActivityId1 = 'f8a5868e-1a18-47f2-b8f3-ccc8c1cea9f4'
   const calendarGroupActivity1 = await prisma.groupActivity.upsert({
-    where: {
-      id: calendarGroupActivityId1,
-    },
+    where: { id: calendarGroupActivityId1 },
     create: {
       id: calendarGroupActivityId1,
-      name: 'Digital Innovation Challenge',
-      displayName: 'Digital Innovation Team Challenge',
+      name: 'Calendar Group Activity 1',
+      displayName: 'Calendar Group Activity 1',
       description: `A comprehensive 10-day innovation project where teams will analyze digital transformation case studies, develop innovative solutions, and present their findings. Runs from 14 days ago to 4 days ago.`,
       status: Prisma.PublicationStatus.PUBLISHED,
       // 14 days ago to 4 days ago
@@ -1323,8 +1333,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: calendarGroupActivityId2,
-      name: 'AI Strategy Workshop',
-      displayName: 'AI Implementation Strategy Workshop',
+      name: 'Calendar Group Activity 2',
+      displayName: 'Calendar Group Activity 2',
       description: `A short but intensive 3-day workshop focused on developing AI implementation strategies. Teams worked collaboratively from 9 to 7 days ago.`,
       status: Prisma.PublicationStatus.PUBLISHED,
       // 9 days ago to 7 days ago
@@ -1372,8 +1382,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: calendarGroupActivityId3,
-      name: 'Data Analytics Project',
-      displayName: 'Collaborative Data Analytics Project',
+      name: 'Calendar Group Activity 3',
+      displayName: 'Calendar Group Activity 3',
       description: `An extended 2-week data analytics project where teams will analyze real-world datasets and develop comprehensive reports. Runs from 2 days from now to 14 days from now.`,
       status: Prisma.PublicationStatus.PUBLISHED,
       // 2 days from now to 14 days from now
@@ -1423,8 +1433,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: calendarGroupActivityId4,
-      name: 'Quick Innovation Sprint',
-      displayName: 'Quick Innovation Sprint',
+      name: 'Calendar Group Activity 4',
+      displayName: 'Calendar Group Activity 4',
       description: `A rapid 6-hour innovation sprint session where teams tackle specific challenges. Scheduled for 2 days ago from 9 AM to 3 PM.`,
       status: Prisma.PublicationStatus.PUBLISHED,
       scheduledStartAt: new Date(
@@ -1473,8 +1483,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     create: {
       id: calendarGroupActivityId5,
-      name: 'Digital Marketing Campaign',
-      displayName: 'Digital Marketing Campaign Design',
+      name: 'Calendar Group Activity 5',
+      displayName: 'Calendar Group Activity 5',
       description: `A week-long project to design and present a comprehensive digital marketing campaign. Running 9-13 days from now.`,
       status: Prisma.PublicationStatus.SCHEDULED,
       scheduledStartAt: new Date(
@@ -2313,8 +2323,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarPracticeQuizId1,
-      name: 'Digital Transformation Fundamentals',
-      displayName: 'Digital Transformation Practice Quiz',
+      name: 'Calendar Practice Quiz 1',
+      displayName: 'Calendar Practice Quiz 1',
       description:
         'Comprehensive practice quiz covering digital transformation concepts. Available since 2 weeks ago.',
       owner: {
@@ -2356,8 +2366,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarPracticeQuizId2,
-      name: 'Data Analytics Mastery',
-      displayName: 'Data Analytics Practice Challenge',
+      name: 'Calendar Practice Quiz 2',
+      displayName: 'Calendar Practice Quiz 2',
       description:
         'Advanced practice quiz focusing on data analytics techniques. Higher difficulty with bonus point opportunities. Available since 11 days ago.',
       owner: {
@@ -2400,8 +2410,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarMicrolearning1Id,
-      name: 'AI Ethics Daily',
-      displayName: 'Daily AI Ethics Insights',
+      name: 'Calendar Microlearning 1',
+      displayName: 'Calendar Microlearning 1',
       description:
         'Short daily sessions on AI ethics and responsible AI development. 1-hour daily commitments for 5 days starting 10 days ago.',
       owner: {
@@ -2446,8 +2456,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarMicrolearning2Id,
-      name: 'Innovation Weekend Intensive',
-      displayName: 'Weekend Innovation Deep Dive',
+      name: 'Calendar Microlearning 2',
+      displayName: 'Calendar Microlearning 2',
       description:
         'Intensive weekend learning session covering innovation methodologies. 6-hour sessions on today and tomorrow.',
       owner: {
@@ -2490,8 +2500,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarMicroLearning3Id,
-      name: 'Agile Learning Path',
-      displayName: 'Comprehensive Agile Learning Journey',
+      name: 'Calendar Microlearning 3',
+      displayName: 'Calendar Microlearning 3',
       description:
         'Extended learning path covering agile methodologies over 10 days. Flexible scheduling from 4 days from now to 14 days from now.',
       owner: {
@@ -2539,8 +2549,8 @@ Once this microlearning is published, it will be immediately accessible
     },
     create: {
       id: calendarMicrolearning4Id,
-      name: 'Digital Marketing Quick Bites',
-      displayName: 'Bite-sized Digital Marketing Sessions',
+      name: 'Calendar Microlearning 4',
+      displayName: 'Calendar Microlearning 4',
       description:
         'Short 2-hour sessions on digital marketing trends and strategies. Running 11-13 days from now.',
       owner: {

@@ -587,6 +587,19 @@ export async function manipulateLiveQuiz(
     blocksToDelete = blocks.map((block) => block.id)
   }
 
+  // fetch the course to which the live quiz should be linked regarding the gamification and assessment settings
+  const course = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: { id: courseId },
+        select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+      })
+    : null
+
+  const gamificationSetting = course
+    ? course.isGamificationEnabled
+    : isGamificationEnabled
+  const assessmentSetting = course ? course.isAssessmentEnabled : false
+
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -597,7 +610,8 @@ export async function manipulateLiveQuiz(
     defaultCorrectPoints: defaultCorrectPoints ?? undefined,
     maxBonusPoints: maxBonusPoints ?? undefined,
     timeToZeroBonus: timeToZeroBonus ?? undefined,
-    isGamificationEnabled,
+    isGamificationEnabled: gamificationSetting,
+    isAssessmentEnabled: assessmentSetting,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -1810,13 +1824,11 @@ export async function changeLiveQuizSettings(
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
-    isGamificationEnabled,
   }: {
     id: string
     isLiveQAEnabled?: boolean | null
     isConfusionFeedbackEnabled?: boolean | null
     isModerationEnabled?: boolean | null
-    isGamificationEnabled?: boolean | null
   },
   ctx: ContextWithUser
 ) {
@@ -1852,7 +1864,6 @@ export async function changeLiveQuizSettings(
       isLiveQAEnabled: isLiveQAEnabled ?? undefined,
       isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
       isModerationEnabled: isModerationEnabled ?? undefined,
-      isGamificationEnabled: isGamificationEnabled ?? undefined,
     },
   })
 

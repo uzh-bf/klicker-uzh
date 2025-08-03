@@ -10,12 +10,10 @@ mutation ChangeLiveQuizSettings(
     isLiveQAEnabled: $isLiveQAEnabled
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isModerationEnabled: $isModerationEnabled
-    isGamificationEnabled: $isGamificationEnabled
   ) {
     id
     isLiveQAEnabled
     isConfusionFeedbackEnabled
     isModerationEnabled
-    isGamificationEnabled
   }
 }
