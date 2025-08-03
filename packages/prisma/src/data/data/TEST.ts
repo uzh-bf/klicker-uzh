@@ -761,6 +761,7 @@ export const LIVE_QUIZZES = [
     displayName: 'Test mit Multiplier',
     description: 'Test description for test quiz with multiplier.',
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     pointsMultiplier: 2,
     blocks: [
       {
@@ -781,6 +782,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.DRAFT,
     defaultPoints: 50,
     defaultCorrectPoints: 100,
@@ -805,6 +807,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.TEMPLATE,
     defaultPoints: 50,
     defaultCorrectPoints: 100,
@@ -851,6 +854,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.SCHEDULED,
     blocks: [
       {
@@ -871,6 +875,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.DRAFT,
     blocks: [
       {

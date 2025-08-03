@@ -33,7 +33,6 @@ interface Props {
   isLiveQAEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isModerationEnabled: boolean
-  isGamificationEnabled: boolean
   subscribeToMore: (doc: SubscribeToMoreOptions) => any
 }
 
@@ -45,7 +44,6 @@ function AudienceInteraction({
   isLiveQAEnabled,
   isConfusionFeedbackEnabled,
   isModerationEnabled,
-  isGamificationEnabled,
   subscribeToMore,
 }: Props) {
   const t = useTranslations()
@@ -115,8 +113,8 @@ function AudienceInteraction({
             <Switch
               data={{ cy: 'toggle-qa' }}
               checked={isLiveQAEnabled}
-              onCheckedChange={(): void => {
-                changeQuizSettings({
+              onCheckedChange={async () => {
+                await changeQuizSettings({
                   variables: {
                     id: quizId,
                     isLiveQAEnabled: !isLiveQAEnabled,
@@ -136,7 +134,7 @@ function AudienceInteraction({
               data={{ cy: 'toggle-moderation' }}
               checked={isModerationEnabled}
               disabled={!isLiveQAEnabled}
-              onCheckedChange={(): void => {
+              onCheckedChange={async () => {
                 if (isModerationEnabled === true) {
                   // count unpublished feedbacks when disabling moderation and show confirmation modal if necessary
                   const unpublishedCount =
@@ -148,7 +146,7 @@ function AudienceInteraction({
                 }
 
                 // if no unpublished feedbacks, directly toggle moderation
-                changeQuizSettings({
+                await changeQuizSettings({
                   variables: {
                     id: quizId,
                     isModerationEnabled: !isModerationEnabled,
@@ -182,8 +180,8 @@ function AudienceInteraction({
             <FeedbackChannel
               liveQuizName={liveQuizName}
               feedbacks={feedbacks}
-              handleDeleteFeedback={(feedbackId: number): void => {
-                deleteFeedback({
+              handleDeleteFeedback={async (feedbackId: number) => {
+                await deleteFeedback({
                   variables: { id: feedbackId, liveQuizId: quizId },
                   optimisticResponse: {
                     deleteFeedback: {
@@ -217,8 +215,8 @@ function AudienceInteraction({
                 })
                 push(['trackEvent', 'Running Live Quiz', 'Feedback Deleted'])
               }}
-              handleDeleteFeedbackResponse={(responseId: number) => {
-                deleteFeedbackResponse({
+              handleDeleteFeedbackResponse={async (responseId: number) => {
+                await deleteFeedbackResponse({
                   variables: { id: responseId, liveQuizId: quizId },
                   update(cache, res) {
                     const updatedFeedback = res.data?.deleteFeedbackResponse
@@ -255,8 +253,11 @@ function AudienceInteraction({
                   'Feedback Response Deleted',
                 ])
               }}
-              handlePinFeedback={(feedbackId: number, isPinned: boolean) => {
-                pinFeedback({
+              handlePinFeedback={async (
+                feedbackId: number,
+                isPinned: boolean
+              ) => {
+                await pinFeedback({
                   variables: {
                     id: feedbackId,
                     isPinned,
@@ -270,11 +271,11 @@ function AudienceInteraction({
                   String(isPinned),
                 ])
               }}
-              handlePublishFeedback={(
+              handlePublishFeedback={async (
                 feedbackId: number,
                 isPublished: boolean
               ) => {
-                publishFeedback({
+                await publishFeedback({
                   variables: {
                     id: feedbackId,
                     isPublished,
@@ -288,11 +289,11 @@ function AudienceInteraction({
                   String(isPublished),
                 ])
               }}
-              handleResolveFeedback={(
+              handleResolveFeedback={async (
                 feedbackId: number,
                 isResolved: boolean
               ) => {
-                resolveFeedback({
+                await resolveFeedback({
                   variables: {
                     id: feedbackId,
                     isResolved,
@@ -306,11 +307,11 @@ function AudienceInteraction({
                   String(isResolved),
                 ])
               }}
-              handleRespondToFeedback={(
+              handleRespondToFeedback={async (
                 feedbackId: number,
                 response: string
               ) => {
-                respondToFeedback({
+                await respondToFeedback({
                   variables: {
                     id: feedbackId,
                     responseContent: response,
@@ -337,8 +338,8 @@ function AudienceInteraction({
           <Switch
             data={{ cy: 'toggle-gamification' }}
             checked={isConfusionFeedbackEnabled}
-            onCheckedChange={(): void => {
-              changeQuizSettings({
+            onCheckedChange={async () => {
+              await changeQuizSettings({
                 variables: {
                   id: quizId,
                   isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,

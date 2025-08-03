@@ -33,6 +33,7 @@ export interface MicroLearningWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  assessmentCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: MicroLearningFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: MicroLearningFormValues) => void
@@ -84,9 +85,10 @@ function MicroLearningWizard({
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -392,6 +394,7 @@ function MicroLearningWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

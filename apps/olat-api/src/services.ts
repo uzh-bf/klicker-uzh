@@ -104,18 +104,13 @@ export async function getCourseActivityTypes(
   })
   if (!course) return null
 
-  const isGamificationEnabled = course.isGamificationEnabled
-  const liveQuizzes = course.liveQuizzes ?? []
-  const practiceQuizzes = course.practiceQuizzes ?? []
-  const microLearnings = course.microLearnings ?? []
-
   const mapSubselection: Record<
     string,
     LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
   > = {
-    'live-quiz': liveQuizzes,
-    'practice-quiz': practiceQuizzes,
-    'micro-learning': microLearnings,
+    'live-quiz': course.liveQuizzes ?? [],
+    'practice-quiz': course.practiceQuizzes ?? [],
+    'micro-learning': course.microLearnings ?? [],
   }
   const activityKeysGamification = ['course-leaderboard']
 
@@ -144,7 +139,7 @@ export async function getCourseActivityTypes(
 
       // Gamification activities: only include if gamification is enabled
       if (activityKeysGamification.includes(olatConfigurationKey)) {
-        return isGamificationEnabled
+        return course.isGamificationEnabled
           ? {
               id,
               title_de: titleDE,

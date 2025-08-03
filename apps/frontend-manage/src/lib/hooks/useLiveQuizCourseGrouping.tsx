@@ -5,11 +5,13 @@ import { ElementSelectCourse } from '../../components/activities/ElementCreation
 interface useLiveQuizCourseGroupingProps {
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
+  assessmentCourses: ElementSelectCourse[]
 }
 
 function useLiveQuizCourseGrouping({
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
 }: useLiveQuizCourseGroupingProps): SelectGroup[] {
   const t = useTranslations()
 
@@ -24,6 +26,10 @@ function useLiveQuizCourseGrouping({
           },
         },
       ],
+    },
+    {
+      items: assessmentCourses,
+      label: t('shared.generic.assessment'),
     },
     {
       items: gamifiedCourses,

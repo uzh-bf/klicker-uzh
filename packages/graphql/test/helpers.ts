@@ -584,9 +584,13 @@ export async function seedCourse(
   {
     startDate,
     endDate,
+    isGamificationEnabled,
+    isAssessmentEnabled,
   }: {
     startDate?: Date
     endDate?: Date
+    isGamificationEnabled?: boolean
+    isAssessmentEnabled?: boolean
   },
   ctx: ContextWithUser
 ) {
@@ -601,6 +605,8 @@ export async function seedCourse(
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,
       groupDeadlineDate: endDate ?? defaultEndDate,
+      isGamificationEnabled,
+      isAssessmentEnabled,
       ownerId: ctx.user.sub,
     },
   })

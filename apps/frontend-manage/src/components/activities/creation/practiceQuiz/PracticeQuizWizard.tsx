@@ -34,6 +34,7 @@ export interface PracticeQuizWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  assessmentCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: PracticeQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: PracticeQuizFormValues) => void
@@ -96,9 +97,10 @@ function PracticeQuizWizard({
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -373,6 +375,7 @@ function PracticeQuizWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<PracticeQuizFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

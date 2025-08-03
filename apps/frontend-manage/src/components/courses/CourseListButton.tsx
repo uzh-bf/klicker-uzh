@@ -17,6 +17,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
@@ -33,6 +34,7 @@ interface CourseListButtonProps {
     | 'isArchived'
     | 'isManager'
     | 'isRemovable'
+    | 'isAssessmentEnabled'
   >
   onClick: () => void
   icon?: IconDefinition
@@ -127,6 +129,7 @@ function CourseListButton({
                   {t('shared.generic.ended')}
                 </Badge>
               )}
+              {course.isAssessmentEnabled && <AssessmentBadge />}
               {course.isArchived && (
                 <Badge>{t('shared.generic.archived')}</Badge>
               )}

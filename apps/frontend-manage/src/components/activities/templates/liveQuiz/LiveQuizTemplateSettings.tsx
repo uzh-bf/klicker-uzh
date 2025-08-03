@@ -47,6 +47,7 @@ function LiveQuizTemplateSettings({
             | 'id'
             | 'name'
             | 'isGamificationEnabled'
+            | 'isAssessmentEnabled'
             | 'isGroupCreationEnabled'
             | 'startDate'
             | 'endDate'
@@ -56,6 +57,7 @@ function LiveQuizTemplateSettings({
           label: course.name,
           value: course.id,
           isGamified: course.isGamificationEnabled,
+          isAssessmentEnabled: course.isAssessmentEnabled,
           isGroupCreationEnabled: course.isGroupCreationEnabled,
           startDate: course.startDate,
           endDate: course.endDate,
@@ -64,12 +66,14 @@ function LiveQuizTemplateSettings({
       ) ?? [],
     [dataCourses]
   )
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection,
+    })
   const groupedCourses = useLiveQuizCourseGrouping({
-    gamifiedCourses: gamifiedCourses ?? [],
-    nonGamifiedCourses: nonGamifiedCourses ?? [],
+    gamifiedCourses: gamifiedCourses,
+    nonGamifiedCourses: nonGamifiedCourses,
+    assessmentCourses: assessmentCourses,
   })
 
   return (

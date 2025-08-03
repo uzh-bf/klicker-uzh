@@ -3,6 +3,7 @@ query GetSingleCourse($courseId: String!) {
     id
     isArchived
     isGamificationEnabled
+    isAssessmentEnabled
     pinCode
     name
     displayName

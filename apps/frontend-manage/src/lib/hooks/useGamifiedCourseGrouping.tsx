@@ -5,15 +5,21 @@ import { ElementSelectCourse } from '../../components/activities/ElementCreation
 interface useGamifiedCourseGroupingProps {
   gamifiedCourses: ElementSelectCourse[]
   nonGamifiedCourses: ElementSelectCourse[]
+  assessmentCourses: ElementSelectCourse[]
 }
 
 function useGamifiedCourseGrouping({
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
 }: useGamifiedCourseGroupingProps): SelectGroup[] {
   const t = useTranslations()
 
   return [
+    {
+      items: assessmentCourses.map((course) => ({ ...course, disabled: true })),
+      label: t('shared.generic.assessment'),
+    },
     {
       items: gamifiedCourses,
       label: t('shared.generic.gamified'),

@@ -59,8 +59,10 @@ type ActivityInfo {
   displayName: String!
   groupDeadlineDate: Date
   id: String!
+  isAssessmentEnabled: Boolean
   isEditor: Boolean!
   isExecutor: Boolean!
+  isGamificationEnabled: Boolean
   isManager: Boolean!
   isOwner: Boolean!
   isRemovable: Boolean!
@@ -758,6 +760,7 @@ type Course {
   groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
+  isAssessmentEnabled: Boolean!
   isEditor: Boolean
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
@@ -1594,7 +1597,7 @@ type Mutation {
   changeElementStatus(elementId: Int!, status: ElementStatus!): Boolean
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, seedDemoElements: Boolean!, sendUpdates: Boolean!, shortname: String!): User
-  changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
+  changeLiveQuizSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): LiveQuiz
   changeParticipantLocale(locale: LocaleType!): Participant
   changePermissionLevel(objectId: String!, objectType: ObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!, propagation: Boolean!): Boolean!
   changeShortname(shortname: String!): User

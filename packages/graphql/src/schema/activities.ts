@@ -82,6 +82,9 @@ export interface IActivityInfo {
   permissionLevel: DB.PermissionLevel
   derivedAccess: boolean
   areInstancesOutdated: boolean
+  isGamificationEnabled?: boolean
+  isAssessmentEnabled?: boolean
+
   numSharedUsers?: number
   isOwner: boolean
   isManager: boolean
@@ -142,6 +145,13 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     derivedAccess: t.exposeBoolean('derivedAccess'),
     areInstancesOutdated: t.exposeBoolean('areInstancesOutdated'),
+    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled', {
+      nullable: true,
+    }),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
+      nullable: true,
+    }),
+
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner'),
     isManager: t.exposeBoolean('isManager'),

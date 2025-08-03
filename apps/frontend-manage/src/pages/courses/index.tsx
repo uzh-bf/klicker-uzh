@@ -45,7 +45,8 @@ function CourseSelectionPage() {
   }>({ open: false, courseId: null, courseName: null })
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument
+    GetUserCoursesDocument,
+    { fetchPolicy: 'cache-and-network' }
   )
 
   if (loadingCourses) {

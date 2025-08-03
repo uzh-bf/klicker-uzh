@@ -1,6 +1,5 @@
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import useGroupsCourseGrouping from '@lib/hooks/useGroupsCourseGrouping'
 import {
   FormikDatetimePicker,
   FormikSelectField,
@@ -9,6 +8,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import useGroupActivityCourseGrouping from '~/lib/hooks/useGroupActivityCourseGrouping'
 import CourseChangeMonitor from '../CourseChangeMonitor'
 import CreationFormValidator from '../CreationFormValidator'
 import DateChangeMonitor from '../DateChangeMonitor'
@@ -25,6 +25,7 @@ function GroupActivitySettingsStep({
   stepValidity,
   validationSchema,
   coursesWithGroups,
+  assessmentCoursesWithGroups,
   coursesWithoutGroups,
   setStepValidity,
   onPrevStep,
@@ -32,12 +33,10 @@ function GroupActivitySettingsStep({
   closeWizard,
 }: GroupActivityWizardStepProps) {
   const t = useTranslations()
-  const groupedCourses = useGroupsCourseGrouping({
+  const groupedCourses = useGroupActivityCourseGrouping({
     coursesWithGroups: coursesWithGroups ?? [],
-    coursesWithoutGroups:
-      coursesWithoutGroups?.map((course) => {
-        return { ...course, disabled: true }
-      }) ?? [],
+    assessmentCoursesWithGroups: assessmentCoursesWithGroups ?? [],
+    coursesWithoutGroups: coursesWithoutGroups ?? [],
   })
 
   return (

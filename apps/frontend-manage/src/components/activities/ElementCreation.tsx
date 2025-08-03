@@ -25,6 +25,7 @@ export type ElementSelectCourse = {
   label: string
   value: string
   isGamified: boolean
+  isAssessmentEnabled: boolean
   isGroupCreationEnabled: boolean
   startDate: Date
   endDate: Date
@@ -120,6 +121,7 @@ function ElementCreation({
             | 'id'
             | 'name'
             | 'isGamificationEnabled'
+            | 'isAssessmentEnabled'
             | 'isGroupCreationEnabled'
             | 'startDate'
             | 'endDate'
@@ -129,6 +131,7 @@ function ElementCreation({
           label: course.name,
           value: course.id,
           isGamified: course.isGamificationEnabled,
+          isAssessmentEnabled: course.isAssessmentEnabled,
           isGroupCreationEnabled: course.isGroupCreationEnabled,
           startDate: course.startDate,
           endDate: course.endDate,

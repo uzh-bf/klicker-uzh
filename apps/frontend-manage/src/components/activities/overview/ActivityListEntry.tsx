@@ -29,6 +29,7 @@ import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityDetailsModal from './ActivityDetailsModal'
 import ActivityNameChangeModal from './ActivityNameChangeModal'
+import AssessmentBadge from './AssessmentBadge'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
 import MicrolearningActions from './MicrolearningActions'
@@ -131,6 +132,9 @@ function ActivityListEntry({
                   data-cy={`change-activity-name-${activity.name}`}
                 />
               )}
+            {activity.isAssessmentEnabled && (
+              <AssessmentBadge className="ml-2" />
+            )}
 
             <ObjectPermissionLevel
               objectName={activity.name}

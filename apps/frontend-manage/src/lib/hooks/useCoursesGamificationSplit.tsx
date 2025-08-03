@@ -9,9 +9,15 @@ function useCoursesGamificationSplit({
     courseSelection?.reduce<{
       gamifiedCourses: ElementSelectCourse[]
       nonGamifiedCourses: ElementSelectCourse[]
+      assessmentCourses: ElementSelectCourse[]
     }>(
       (acc, course) => {
-        if (course.isGamified) {
+        if (course.isAssessmentEnabled) {
+          acc.assessmentCourses.push({
+            ...course,
+            data: { cy: `select-course-${course.label}` },
+          })
+        } else if (course.isGamified) {
           acc.gamifiedCourses.push({
             ...course,
             data: { cy: `select-course-${course.label}` },
@@ -24,8 +30,8 @@ function useCoursesGamificationSplit({
         }
         return acc
       },
-      { gamifiedCourses: [], nonGamifiedCourses: [] }
-    ) ?? { gamifiedCourses: [], nonGamifiedCourses: [] }
+      { gamifiedCourses: [], nonGamifiedCourses: [], assessmentCourses: [] }
+    ) ?? { gamifiedCourses: [], nonGamifiedCourses: [], assessmentCourses: [] }
   )
 }
 

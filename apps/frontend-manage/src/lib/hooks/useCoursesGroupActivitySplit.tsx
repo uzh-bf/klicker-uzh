@@ -1,6 +1,6 @@
 import { ElementSelectCourse } from '../../components/activities/ElementCreation'
 
-function useCoursesGroupsSplit({
+function useCoursesGroupActivitySplit({
   courseSelection,
 }: {
   courseSelection: ElementSelectCourse[]
@@ -8,10 +8,16 @@ function useCoursesGroupsSplit({
   return (
     courseSelection?.reduce<{
       coursesWithGroups: ElementSelectCourse[]
+      assessmentCoursesWithGroups: ElementSelectCourse[]
       coursesWithoutGroups: ElementSelectCourse[]
     }>(
       (acc, course) => {
-        if (course.isGroupCreationEnabled) {
+        if (course.isGroupCreationEnabled && course.isAssessmentEnabled) {
+          acc.assessmentCoursesWithGroups.push({
+            ...course,
+            data: { cy: `select-course-${course.label}` },
+          })
+        } else if (course.isGroupCreationEnabled) {
           acc.coursesWithGroups.push({
             ...course,
             data: { cy: `select-course-${course.label}` },
@@ -24,9 +30,17 @@ function useCoursesGroupsSplit({
         }
         return acc
       },
-      { coursesWithGroups: [], coursesWithoutGroups: [] }
-    ) ?? { coursesWithGroups: [], coursesWithoutGroups: [] }
+      {
+        coursesWithGroups: [],
+        assessmentCoursesWithGroups: [],
+        coursesWithoutGroups: [],
+      }
+    ) ?? {
+      coursesWithGroups: [],
+      assessmentCoursesWithGroups: [],
+      coursesWithoutGroups: [],
+    }
   )
 }
 
-export default useCoursesGroupsSplit
+export default useCoursesGroupActivitySplit

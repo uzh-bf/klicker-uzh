@@ -952,6 +952,16 @@ export async function manipulateGroupActivity(
     })
   }
 
+  // get the course to which the practice quiz should be assigned
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Course not found')
+  }
+
   // get required splits of instances based on provided stacks values
   const {
     persistentInstanceIds,
@@ -994,6 +1004,8 @@ export async function manipulateGroupActivity(
     scheduledEndAt: endDate,
     pointsMultiplier: multiplier,
     areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

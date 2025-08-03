@@ -143,7 +143,7 @@ function CourseOverviewPage() {
           </div>
           {t(`shared.generic.${course.language}`)}
         </div>
-        <div className="grid grid-cols-2">
+        <div className="grid h-max grid-cols-2">
           <div className="font-bold">{t('shared.generic.gamification')}</div>
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
@@ -218,6 +218,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.practiceQuizzes'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-practiceQuizzes' },
               },
               {
@@ -232,6 +239,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.microlearnings'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-microLearnings' },
               },
               {
@@ -246,6 +260,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.groupActivities'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
             ]}
