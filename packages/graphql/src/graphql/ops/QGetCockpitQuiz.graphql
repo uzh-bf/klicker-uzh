@@ -13,6 +13,7 @@ query GetCockpitQuiz($id: String!) {
     course {
       id
       displayName
+      language
     }
     blocks {
       id

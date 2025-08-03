@@ -134,7 +134,7 @@ function CourseOverviewPage() {
           <div className="font-bold">{t('shared.generic.courseDuration')}</div>
           {dayjs(course.startDate).format('DD.MM.YYYY')} -{' '}
           {dayjs(course.endDate).format('DD.MM.YYYY')}
-          <div className="font-bold">
+          <div className="line-clamp-1 font-bold">
             {t('manage.courseList.notificationEmail')}
           </div>
           {course.notificationEmail}
@@ -258,6 +258,7 @@ function CourseOverviewPage() {
             >
               <LiveQuizList
                 courseId={course.id}
+                courseLanguage={course.language}
                 liveQuizzes={course.liveQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
@@ -270,6 +271,7 @@ function CourseOverviewPage() {
             >
               <PracticeQuizList
                 courseId={course.id}
+                courseLanguage={course.language}
                 practiceQuizzes={course.practiceQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
@@ -282,6 +284,7 @@ function CourseOverviewPage() {
             >
               <MicroLearningList
                 courseId={course.id}
+                courseLanguage={course.language}
                 microLearnings={course.microLearningsInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}

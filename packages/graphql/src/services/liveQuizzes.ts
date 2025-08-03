@@ -2057,45 +2057,18 @@ export async function getLiveQuizEvaluation(
       isDeleted: false,
     },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        where: {
-          status: {
-            equals: DB.ElementBlockStatus.EXECUTED,
-          },
-        },
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        orderBy: { order: 'asc' },
+        where: { status: { equals: DB.ElementBlockStatus.EXECUTED } },
+        include: { elements: { orderBy: { order: 'asc' } } },
       },
       feedbacks: {
-        include: {
-          responses: true,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
+        include: { responses: true },
+        orderBy: { updatedAt: 'desc' },
       },
-      confusionFeedbacks: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
+      confusionFeedbacks: { orderBy: { createdAt: 'asc' } },
+      course: { select: { language: true } },
     },
   })
 
@@ -2151,6 +2124,7 @@ export async function getLiveQuizEvaluation(
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
+    courseLanguage: liveQuiz.course?.language,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED

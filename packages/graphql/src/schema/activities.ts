@@ -9,6 +9,7 @@ import { Course, ICourse } from './course.js'
 import { PublicationStatus } from './practiceQuiz.js'
 import { ElementInstance, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
+import { LocaleType } from './user.js'
 
 interface IActivityInfoElement {
   basePoints?: number | null
@@ -69,6 +70,7 @@ export interface IActivityInfo {
   courseId?: string | null
   courseName?: string | null
   courseStartDate?: Date | null
+  courseLanguage?: DB.Locale | null
   numOfStacks: number
   numOfElements: number
   automaticPublicationAt?: Date | null
@@ -108,6 +110,10 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     courseName: t.exposeString('courseName', { nullable: true }),
     courseStartDate: t.expose('courseStartDate', {
       type: 'Date',
+      nullable: true,
+    }),
+    courseLanguage: t.expose('courseLanguage', {
+      type: LocaleType,
       nullable: true,
     }),
 

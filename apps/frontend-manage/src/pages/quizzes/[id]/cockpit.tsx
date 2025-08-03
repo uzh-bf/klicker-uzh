@@ -92,8 +92,10 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
-          blocks={blocks ?? []}
+          quizId={id}
           quizName={name}
+          blocks={blocks ?? []}
+          language={course?.language ?? null}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
             router.push('/activities')
@@ -108,11 +110,6 @@ function Cockpit() {
               variables: { quizId: id, blockId },
             })
           }}
-          handleTogglePublicEvaluation={() =>
-            setEvaluationPublic(!isEvaluationPublic)
-          }
-          isEvaluationPublic={isEvaluationPublic}
-          quizId={id}
           startedAt={startedAt}
           loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />

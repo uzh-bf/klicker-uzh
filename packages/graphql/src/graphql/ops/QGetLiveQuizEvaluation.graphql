@@ -4,6 +4,7 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
     name
     displayName
     description
+    courseLanguage
 
     ...EvaluationResults
 

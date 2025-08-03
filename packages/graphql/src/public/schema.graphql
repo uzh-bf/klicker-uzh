@@ -30,6 +30,7 @@ type ActivityDetails {
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
+  courseLanguage: LocaleType
   description: String
   displayName: String
   feedbacks: [Feedback!]
@@ -51,6 +52,7 @@ type ActivityInfo {
   areInstancesOutdated: Boolean!
   automaticPublicationAt: Date
   courseId: String
+  courseLanguage: LocaleType
   courseName: String
   courseStartDate: Date
   derivedAccess: Boolean!

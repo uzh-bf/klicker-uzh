@@ -1,6 +1,7 @@
 import {
   ConfusionTimestep,
   Feedback,
+  LocaleType,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
@@ -36,6 +37,7 @@ interface ActivityEvaluationProps {
   courseId?: string | null
   activityId: string
   activityName: string
+  courseLanguage?: LocaleType | null
   stacks: StackEvaluation[]
   feedbacks?: Feedback[] | null
   confusionFeedbacks?: ConfusionTimestep[] | null
@@ -47,6 +49,7 @@ function ActivityEvaluation({
   courseId,
   activityId,
   activityName,
+  courseLanguage,
   stacks,
   feedbacks,
   confusionFeedbacks,
@@ -149,6 +152,7 @@ function ActivityEvaluation({
           <ElementEvaluation
             currentInstance={instanceResults[activeInstance]}
             activeInstance={activeInstance}
+            courseLanguage={courseLanguage}
             textSize={textSize}
             chartType={chartType}
             showSolution={

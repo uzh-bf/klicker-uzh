@@ -1381,6 +1381,7 @@ export async function getCourseData(
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: liveQuiz.blocks.length,
       numOfElements: liveQuiz.blocks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1430,6 +1431,7 @@ export async function getCourseData(
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: practiceQuiz.stacks.length,
       numOfElements: practiceQuiz.stacks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1480,6 +1482,7 @@ export async function getCourseData(
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: microLearning.stacks.length,
       numOfElements: microLearning.stacks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1532,6 +1535,7 @@ export async function getCourseData(
         courseId: course.id,
         courseName: course.name,
         courseStartDate: course.startDate,
+        courseLanguage: course.language,
         numOfStacks: groupActivity.stacks.length,
         numOfElements: groupActivity.stacks.reduce(
           (acc, block) => acc + block._count.elements,

@@ -43,6 +43,7 @@ function Evaluation() {
     <ActivityEvaluation
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
+      courseLanguage={evaluation?.courseLanguage}
       stacks={evaluation?.results ?? []}
       feedbacks={evaluation?.feedbacks}
       confusionFeedbacks={evaluation?.confusionFeedbacks}
