@@ -859,9 +859,7 @@ export async function updateCourseSettings(
 
 export async function getUserCourses(ctx: ContextWithUser) {
   const userCourses = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       objects: {
         where: { courseId: { not: null } },

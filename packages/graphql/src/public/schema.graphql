@@ -59,8 +59,10 @@ type ActivityInfo {
   displayName: String!
   groupDeadlineDate: Date
   id: String!
+  isAssessmentEnabled: Boolean
   isEditor: Boolean!
   isExecutor: Boolean!
+  isGamificationEnabled: Boolean
   isManager: Boolean!
   isOwner: Boolean!
   isRemovable: Boolean!

@@ -4,12 +4,7 @@ import {
   faTrashCan,
   IconDefinition,
 } from '@fortawesome/free-regular-svg-icons'
-import {
-  faCheck,
-  faLock,
-  faMessage,
-  faX,
-} from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
@@ -22,6 +17,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
@@ -133,12 +129,7 @@ function CourseListButton({
                   {t('shared.generic.ended')}
                 </Badge>
               )}
-              {course.isAssessmentEnabled && (
-                <Badge className="gap-2 bg-orange-600 hover:bg-orange-700">
-                  <FontAwesomeIcon icon={faLock} />
-                  {t('shared.generic.assessment')}
-                </Badge>
-              )}
+              {course.isAssessmentEnabled && <AssessmentBadge />}
               {course.isArchived && (
                 <Badge>{t('shared.generic.archived')}</Badge>
               )}

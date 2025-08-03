@@ -151,6 +151,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.liveQuiz.areInstancesOutdated,
+        isGamificationEnabled: object.liveQuiz.isGamificationEnabled,
+        isAssessmentEnabled: object.liveQuiz.isAssessmentEnabled,
         numSharedUsers: undefined, // object.liveQuiz._count.permissions - 1,
         isOwner,
         isManager,
@@ -187,6 +189,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.practiceQuiz.areInstancesOutdated,
+        isGamificationEnabled: object.practiceQuiz.isGamificationEnabled,
+        isAssessmentEnabled: object.practiceQuiz.isAssessmentEnabled,
         numSharedUsers: undefined, // object.practiceQuiz._count.permissions - 1,
         isOwner,
         isManager,
@@ -224,6 +228,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.microLearning.areInstancesOutdated,
+        isGamificationEnabled: object.microLearning.isGamificationEnabled,
+        isAssessmentEnabled: object.microLearning.isAssessmentEnabled,
         numSharedUsers: undefined, // object.microLearning._count.permissions - 1,
         isOwner,
         isManager,
@@ -264,6 +270,8 @@ export async function getUserActivities(ctx: ContextWithUser) {
         permissionLevel: object.permissionLevel,
         derivedAccess: object.derived,
         areInstancesOutdated: object.groupActivity.areInstancesOutdated,
+        isGamificationEnabled: object.groupActivity.isGamificationEnabled,
+        isAssessmentEnabled: object.groupActivity.isAssessmentEnabled,
         numSharedUsers: undefined, // object.groupActivity._count.permissions - 1,
         isOwner,
         isManager,
@@ -347,7 +355,8 @@ export async function getLiveQuizDetails(
     return null
   }
 
-  const arePointsAwarded = liveQuiz.isGamificationEnabled
+  const arePointsAwarded =
+    liveQuiz.isGamificationEnabled || liveQuiz.isAssessmentEnabled
   const defaultPoints = liveQuiz.defaultPoints
   const defaultCorrectPoints = liveQuiz.defaultCorrectPoints
   const defaultMaxBonusPoints = liveQuiz.maxBonusPoints
@@ -539,7 +548,6 @@ export async function getPracticeQuizDetails(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id },
     include: {
-      course: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -551,7 +559,8 @@ export async function getPracticeQuizDetails(
     return null
   }
 
-  const arePointsAwarded = practiceQuiz.course.isGamificationEnabled
+  const arePointsAwarded =
+    practiceQuiz.isGamificationEnabled || practiceQuiz.isAssessmentEnabled
   const pointsMultiplierActivity = practiceQuiz.pointsMultiplier
   const stacks = practiceQuiz.stacks.map((stack) =>
     getAsyncActivityPointsElements({ stack, arePointsAwarded })
@@ -582,7 +591,6 @@ export async function getMicroLearningDetails(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: { id },
     include: {
-      course: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -593,7 +601,8 @@ export async function getMicroLearningDetails(
   if (!microLearning) {
     return null
   }
-  const arePointsAwarded = microLearning.course.isGamificationEnabled
+  const arePointsAwarded =
+    microLearning.isGamificationEnabled || microLearning.isAssessmentEnabled
   const pointsMultiplierActivity = microLearning.pointsMultiplier
   const stacks = microLearning.stacks.map((stack) =>
     getAsyncActivityPointsElements({ stack, arePointsAwarded })
@@ -640,7 +649,8 @@ export async function getGroupActivityDetails(
     return null
   }
 
-  const arePointsAwarded = groupActivity.course.isGamificationEnabled
+  const arePointsAwarded =
+    groupActivity.isGamificationEnabled || groupActivity.isAssessmentEnabled
   const pointsMultiplierActivity = groupActivity.pointsMultiplier
   const stacks = groupActivity.stacks.map((stack) =>
     getAsyncActivityPointsElements({

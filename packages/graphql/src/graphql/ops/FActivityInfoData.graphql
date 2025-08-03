@@ -22,6 +22,9 @@ fragment ActivityInfoData on ActivityInfo {
   permissionLevel
   derivedAccess
   areInstancesOutdated
+  isGamificationEnabled
+  isAssessmentEnabled
+
   numSharedUsers
   isOwner
   isManager

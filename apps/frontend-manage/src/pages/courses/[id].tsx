@@ -143,7 +143,7 @@ function CourseOverviewPage() {
           </div>
           {t(`shared.generic.${course.language}`)}
         </div>
-        <div className="grid grid-cols-2">
+        <div className="grid h-max grid-cols-2">
           <div className="font-bold">{t('shared.generic.gamification')}</div>
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
