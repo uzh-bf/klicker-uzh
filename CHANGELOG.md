@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.78...v3.3.0-alpha.79) (2025-08-03)
+
+
+### Features
+
+* add possibility to set course language and update all student-facing links to respect this language (if defined) ([#4818](https://github.com/uzh-bf/klicker-uzh/issues/4818)) ([ae40b71](https://github.com/uzh-bf/klicker-uzh/commit/ae40b71242cc7b84b14c5e6c28102ab0fb504a3d))
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that locale is correctly handled for redirects and evaluation links ([#4816](https://github.com/uzh-bf/klicker-uzh/issues/4816)) ([c1484a7](https://github.com/uzh-bf/klicker-uzh/commit/c1484a72f6832f343fe07cd82a5fb1bd870a1969))
+* **apps/frontend-manage:** make sure to show element edit content recovery modal also on title click ([#4817](https://github.com/uzh-bf/klicker-uzh/issues/4817)) ([3b8df5b](https://github.com/uzh-bf/klicker-uzh/commit/3b8df5bc0e17f4c25f499f607308ede71582df22))
+* **apps/olat-api:** make sure that permissions on course are correctly validated during OLAT API request ([#4815](https://github.com/uzh-bf/klicker-uzh/issues/4815)) ([267bd07](https://github.com/uzh-bf/klicker-uzh/commit/267bd07a95543eb1d8d23acd0f0cd2291d4aacb2))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** extend activity details with student preview and gamification information ([#4806](https://github.com/uzh-bf/klicker-uzh/issues/4806)) ([4b05d3b](https://github.com/uzh-bf/klicker-uzh/commit/4b05d3b63b4d86a808230aa0e12100d09c9b4f29))
+
 ## [3.3.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.77...v3.3.0-alpha.78) (2025-07-31)
 
 
