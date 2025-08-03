@@ -172,6 +172,7 @@ function CourseOverviewHeader({
             viewport: 'z-10 bg-white',
             trigger: 'h-8',
           }}
+          align="end"
           trigger={
             <>
               <Button.Icon icon={faLink} />
