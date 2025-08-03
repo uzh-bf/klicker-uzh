@@ -26,11 +26,11 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Part 0: Preparation
   // #region
