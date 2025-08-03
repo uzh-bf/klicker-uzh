@@ -1,4 +1,7 @@
-import { FreeTextActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  FreeTextActivityEvaluationData,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
@@ -15,6 +18,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface FTEvaluationProps {
   instanceEvaluation: FreeTextActivityEvaluationData
+  courseLanguage?: LocaleType | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -24,6 +28,7 @@ interface FTEvaluationProps {
 
 function FTEvaluation({
   instanceEvaluation,
+  courseLanguage,
   textSize,
   chartType,
   showSolution,
@@ -64,6 +69,7 @@ function FTEvaluation({
               !isCollapsed && (
                 <FTSidebar
                   instance={instanceEvaluation}
+                  courseLanguage={courseLanguage}
                   textSize={textSize}
                   showSolution={showSolution}
                   type={type}

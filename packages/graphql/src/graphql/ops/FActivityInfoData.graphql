@@ -6,6 +6,7 @@ fragment ActivityInfoData on ActivityInfo {
   courseId
   courseName
   courseStartDate
+  courseLanguage
 
   numOfStacks
   numOfElements

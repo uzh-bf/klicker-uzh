@@ -1,4 +1,7 @@
-import { NumericalActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LocaleType,
+  NumericalActivityEvaluationData,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   ChartType,
   STATISTICS_ORDER,
@@ -6,6 +9,7 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
@@ -16,6 +20,7 @@ import Statistic from './Statistic'
 
 interface NRSidebarProps {
   instance: NumericalActivityEvaluationData
+  courseLanguage?: LocaleType | null
   chartType: ChartType
   textSize: TextSizeType
   showSolution: boolean
@@ -26,6 +31,7 @@ interface NRSidebarProps {
 
 function NRSidebar({
   instance,
+  courseLanguage,
   chartType,
   textSize,
   showSolution,
@@ -34,6 +40,7 @@ function NRSidebar({
   type,
 }: NRSidebarProps) {
   const t = useTranslations()
+  const router = useRouter()
   const [hideQR, setHideQR] = useLocalStorage<boolean>(
     `hide-qr-evaluation`,
     false
@@ -128,8 +135,11 @@ function NRSidebar({
           </div>
         )}
       </div>
-      {type === 'LiveQuiz' && !hideQR && (
-        <LiveQuizEvaluationQRCode setHideQR={setHideQR} />
+      {type === 'LiveQuiz' && !hideQR && !router.query.hmac && (
+        <LiveQuizEvaluationQRCode
+          setHideQR={setHideQR}
+          language={courseLanguage}
+        />
       )}
     </div>
   )

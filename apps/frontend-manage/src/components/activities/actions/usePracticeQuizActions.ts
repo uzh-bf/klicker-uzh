@@ -48,7 +48,7 @@ function usePracticeQuizActions({
   const router = useRouter()
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}${practiceQuiz.courseLanguage ? `/${practiceQuiz.courseLanguage}` : ''}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
 
   const onSuccessToast = () =>
     toast({

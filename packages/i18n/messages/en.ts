@@ -277,7 +277,13 @@ export default {
       ok: 'OK',
       language: 'Language',
       english: 'English',
+      en: 'English',
+      enFlag: '🇬🇧 English',
+      enFlagShort: '🇬🇧',
       german: 'German',
+      de: 'German',
+      deFlag: '🇩🇪 German',
+      deFlagShort: '🇩🇪',
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
@@ -2087,10 +2093,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
       qrCodeAccountLinkDescription:
-        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
+        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
       qrCodeDirectLinkTitle: 'Direct Link',
       qrCodeDirectLinkDescription:
-        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
@@ -2313,6 +2319,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       notificationEmailInvalid: 'Please enter a valid email address.',
       notificationEmailReq:
         'Please enter a course-specific notification email address.',
+      courseLanguage: 'Course Language',
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
@@ -2320,6 +2327,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
       courseColor: 'Course color',
+      languageTooltip:
+        'Choose a language that will be used as the default when exporting activity access links, etc. Students can still change the language in the student app.',
       courseCreationFailed: 'Failed to create course...',
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
@@ -2350,7 +2359,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       preferredGroupSizeTooltip:
         'The preferred number of students in a group. After the creation of the course, this setting cannot be modified anymore. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
       groupDeadlineChangedToPast:
-        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
+        'The group creation deadline is in the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
       gamificationGroupsFixed:
         'Gamification and group creation are enabled for this course. These settings cannot be disabled once gamified activities or participant groups exist. Initially disabled options can be enabled later.',
       gamificationFixed:
@@ -2472,6 +2481,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The link for accessing the item has been copied to the clipboard.',
       linkLTICopied:
         'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
+      linkLTIError:
+        'An error occurred while copying the LTI link. Please try again.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',

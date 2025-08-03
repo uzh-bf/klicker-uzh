@@ -134,32 +134,44 @@ function CourseOverviewPage() {
           <div className="font-bold">{t('shared.generic.courseDuration')}</div>
           {dayjs(course.startDate).format('DD.MM.YYYY')} -{' '}
           {dayjs(course.endDate).format('DD.MM.YYYY')}
+          <div className="line-clamp-1 font-bold">
+            {t('manage.courseList.notificationEmail')}
+          </div>
+          {course.notificationEmail}
+          <div className="font-bold">
+            {t('manage.courseList.courseLanguage')}
+          </div>
+          {t(`shared.generic.${course.language}`)}
+        </div>
+        <div className="grid grid-cols-2">
           <div className="font-bold">{t('shared.generic.gamification')}</div>
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
+          {course.isGamificationEnabled && (
+            <>
+              <div className="font-bold">
+                {t('manage.courseList.groupCreationEnabled')}
+              </div>
+              {course.isGroupCreationEnabled
+                ? t('shared.generic.enabled')
+                : t('shared.generic.disabled')}
+              {course.isGroupCreationEnabled && (
+                <>
+                  <div className="font-bold">
+                    {t('manage.courseList.groupCreationDeadline')}
+                  </div>
+                  {dayjs(course.groupDeadlineDate).format('DD.MM.YYYY')}
+                  <div className="font-bold">
+                    {t('shared.generic.groupSize')}
+                  </div>
+                  2 - {course.maxGroupSize} ({course.preferredGroupSize}{' '}
+                  {t('shared.generic.preferred')})
+                </>
+              )}
+            </>
+          )}
         </div>
-        {course.isGamificationEnabled && (
-          <div className="grid grid-cols-2">
-            <div className="font-bold">
-              {t('manage.courseList.groupCreationEnabled')}
-            </div>
-            {course.isGroupCreationEnabled
-              ? t('shared.generic.enabled')
-              : t('shared.generic.disabled')}
-            {course.isGroupCreationEnabled && (
-              <>
-                <div className="font-bold">
-                  {t('manage.courseList.groupCreationDeadline')}
-                </div>
-                {dayjs(course.groupDeadlineDate).format('DD.MM.YYYY')}
-                <div className="font-bold">{t('shared.generic.groupSize')}</div>
-                2 - {course.maxGroupSize} ({course.preferredGroupSize}{' '}
-                {t('shared.generic.preferred')})
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:flex-row">
@@ -246,6 +258,7 @@ function CourseOverviewPage() {
             >
               <LiveQuizList
                 courseId={course.id}
+                courseLanguage={course.language}
                 liveQuizzes={course.liveQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
@@ -258,6 +271,7 @@ function CourseOverviewPage() {
             >
               <PracticeQuizList
                 courseId={course.id}
+                courseLanguage={course.language}
                 practiceQuizzes={course.practiceQuizzesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
@@ -270,6 +284,7 @@ function CourseOverviewPage() {
             >
               <MicroLearningList
                 courseId={course.id}
+                courseLanguage={course.language}
                 microLearnings={course.microLearningsInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}

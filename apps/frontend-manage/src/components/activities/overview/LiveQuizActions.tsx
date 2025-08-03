@@ -228,6 +228,7 @@ function LiveQuizActions({
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
+            language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />
         )}

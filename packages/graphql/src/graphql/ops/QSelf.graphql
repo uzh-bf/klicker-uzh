@@ -5,6 +5,7 @@ query Self {
     scopeQuizId
     email
     username
+    locale
     avatar
     avatarSettings {
       skinTone

@@ -9,6 +9,7 @@ mutation CreateCourse(
   $groupDeadlineDate: Date!
   $maxGroupSize: Int!
   $preferredGroupSize: Int!
+  $language: LocaleType!
   $notificationEmail: String
   $isGamificationEnabled: Boolean!
 ) {
@@ -23,6 +24,7 @@ mutation CreateCourse(
     groupDeadlineDate: $groupDeadlineDate
     maxGroupSize: $maxGroupSize
     preferredGroupSize: $preferredGroupSize
+    language: $language
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
   ) {
@@ -37,6 +39,7 @@ mutation CreateCourse(
     groupDeadlineDate
     maxGroupSize
     preferredGroupSize
+    language
     notificationEmail
     isGamificationEnabled
   }

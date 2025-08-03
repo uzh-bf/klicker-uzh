@@ -1,6 +1,10 @@
-import { FreeTextActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  FreeTextActivityEvaluationData,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
@@ -8,13 +12,21 @@ import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 interface FTSidebarProps {
   instance: FreeTextActivityEvaluationData
+  courseLanguage?: LocaleType | null
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType
 }
 
-function FTSidebar({ instance, textSize, showSolution, type }: FTSidebarProps) {
+function FTSidebar({
+  instance,
+  courseLanguage,
+  textSize,
+  showSolution,
+  type,
+}: FTSidebarProps) {
   const t = useTranslations()
+  const router = useRouter()
   const [hideQR, setHideQR] = useLocalStorage<boolean>(
     `hide-qr-evaluation`,
     false
@@ -37,8 +49,11 @@ function FTSidebar({ instance, textSize, showSolution, type }: FTSidebarProps) {
           ))}
         </ul>
       </div>
-      {type === 'LiveQuiz' && !hideQR && (
-        <LiveQuizEvaluationQRCode setHideQR={setHideQR} />
+      {type === 'LiveQuiz' && !hideQR && !router.query.hmac && (
+        <LiveQuizEvaluationQRCode
+          setHideQR={setHideQR}
+          language={courseLanguage}
+        />
       )}
     </div>
   )

@@ -3380,11 +3380,11 @@ describe('Different live-quiz workflows', function () {
           args: {
             username: Cypress.env('STUDENT_USERNAME'),
             password: Cypress.env('STUDENT_PASSWORD'),
-            quizLink,
+            quizName: this.data.modes.displayName,
             messages,
           },
         },
-        ({ username, password, quizLink, messages }) => {
+        ({ username, password, quizName, messages }) => {
           // choose regular login
           cy.get('[data-cy="login-with-account"]').click()
           cy.get('[data-cy="username-field"]').type(username)
@@ -3393,9 +3393,7 @@ describe('Different live-quiz workflows', function () {
           cy.wait(1000) // wait for the live quiz to load
 
           // verify that the participant has been automatically redirected to the live quiz
-          cy.location('href').then((href) => {
-            expect(href).to.include(quizLink)
-          })
+          cy.get('[data-cy="header-page-title"]').contains(quizName)
 
           // verify that the correct account actions are available
           cy.get('[data-cy="header-avatar"]').click()

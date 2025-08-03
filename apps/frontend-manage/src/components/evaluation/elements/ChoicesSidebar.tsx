@@ -1,7 +1,11 @@
-import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesActivityEvaluationData,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
@@ -9,6 +13,7 @@ import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 interface ChoicesSidebarProps {
   instance: ChoicesActivityEvaluationData
+  courseLanguage?: LocaleType | null
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType
@@ -16,10 +21,12 @@ interface ChoicesSidebarProps {
 
 function ChoicesSidebar({
   instance,
+  courseLanguage,
   textSize,
   showSolution,
   type,
 }: ChoicesSidebarProps) {
+  const router = useRouter()
   const [hideQR, setHideQR] = useLocalStorage<boolean>(
     `hide-qr-evaluation`,
     false
@@ -87,8 +94,11 @@ function ChoicesSidebar({
           })}
         </div>
       </div>
-      {type === 'LiveQuiz' && !hideQR && (
-        <LiveQuizEvaluationQRCode setHideQR={setHideQR} />
+      {type === 'LiveQuiz' && !hideQR && !router.query.hmac && (
+        <LiveQuizEvaluationQRCode
+          setHideQR={setHideQR}
+          language={courseLanguage}
+        />
       )}
     </div>
   )

@@ -7,6 +7,7 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -20,26 +21,24 @@ import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
+  quizId: string
   blocks?: QuizTimelineBlock[]
   quizName: string
+  language?: LocaleType | null
   handleEndLiveQuiz: () => void
-  handleTogglePublicEvaluation: () => void
   handleOpenBlock: (blockId: number) => void
   handleCloseBlock: (blockId: number) => void
-  isEvaluationPublic?: boolean
-  quizId: string
   startedAt?: string
   loading?: boolean
 }
 
 function LiveQuizTimeline({
   quizId,
-  blocks = [],
   quizName,
+  blocks = [],
+  language,
   startedAt,
-  isEvaluationPublic = false,
   handleEndLiveQuiz,
-  handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
   loading,
@@ -296,7 +295,11 @@ function LiveQuizTimeline({
         />
       )}
       {qrModal && (
-        <LiveQuizQRModal quizId={quizId} onClose={() => setQRModal(false)} />
+        <LiveQuizQRModal
+          quizId={quizId}
+          language={language}
+          onClose={() => setQRModal(false)}
+        />
       )}
     </div>
   )

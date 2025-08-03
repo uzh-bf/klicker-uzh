@@ -25,7 +25,14 @@ export async function getUserActivities(ctx: ContextWithUser) {
           directPermission: true,
           liveQuiz: {
             include: {
-              course: { select: { id: true, name: true, startDate: true } },
+              course: {
+                select: {
+                  id: true,
+                  name: true,
+                  startDate: true,
+                  language: true,
+                },
+              },
               templateInfo: { select: { id: true } },
               blocks: {
                 include: { _count: { select: { elements: true } } },
@@ -36,7 +43,14 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           practiceQuiz: {
             include: {
-              course: { select: { id: true, name: true, startDate: true } },
+              course: {
+                select: {
+                  id: true,
+                  name: true,
+                  startDate: true,
+                  language: true,
+                },
+              },
               templateInfo: { select: { id: true } },
               stacks: {
                 include: { _count: { select: { elements: true } } },
@@ -47,7 +61,14 @@ export async function getUserActivities(ctx: ContextWithUser) {
           },
           microLearning: {
             include: {
-              course: { select: { id: true, name: true, startDate: true } },
+              course: {
+                select: {
+                  id: true,
+                  name: true,
+                  startDate: true,
+                  language: true,
+                },
+              },
               templateInfo: { select: { id: true } },
               stacks: {
                 include: { _count: { select: { elements: true } } },
@@ -120,6 +141,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.liveQuiz.status,
         courseId: object.liveQuiz.course?.id,
         courseName: object.liveQuiz.course?.name,
+        courseLanguage: object.liveQuiz.course?.language,
         courseStartDate: object.liveQuiz.course?.startDate,
         numOfStacks: object.liveQuiz.blocks.length,
         numOfElements: object.liveQuiz.blocks.reduce(
@@ -154,6 +176,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.practiceQuiz.status,
         courseId: object.practiceQuiz.course?.id,
         courseName: object.practiceQuiz.course?.name,
+        courseLanguage: object.practiceQuiz.course?.language,
         courseStartDate: object.practiceQuiz.course?.startDate,
         numOfStacks: object.practiceQuiz.stacks.length,
         numOfElements: object.practiceQuiz.stacks.reduce(
@@ -189,6 +212,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.microLearning.status,
         courseId: object.microLearning.course?.id,
         courseName: object.microLearning.course?.name,
+        courseLanguage: object.microLearning.course?.language,
         courseStartDate: object.microLearning.course?.startDate,
         numOfStacks: object.microLearning.stacks.length,
         numOfElements: object.microLearning.stacks.reduce(
@@ -225,6 +249,7 @@ export async function getUserActivities(ctx: ContextWithUser) {
         status: object.groupActivity.status,
         courseId: object.groupActivity.course?.id,
         courseName: object.groupActivity.course?.name,
+        courseLanguage: object.groupActivity.course?.language,
         courseStartDate: object.groupActivity.course?.startDate,
         numOfStacks: object.groupActivity.stacks.length,
         numOfElements: object.groupActivity.stacks.reduce(

@@ -11,14 +11,12 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
@@ -92,8 +90,10 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
-          blocks={blocks ?? []}
+          quizId={id}
           quizName={name}
+          blocks={blocks ?? []}
+          language={course?.language ?? null}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
             router.push('/activities')
@@ -108,11 +108,6 @@ function Cockpit() {
               variables: { quizId: id, blockId },
             })
           }}
-          handleTogglePublicEvaluation={() =>
-            setEvaluationPublic(!isEvaluationPublic)
-          }
-          isEvaluationPublic={isEvaluationPublic}
-          quizId={id}
           startedAt={startedAt}
           loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />

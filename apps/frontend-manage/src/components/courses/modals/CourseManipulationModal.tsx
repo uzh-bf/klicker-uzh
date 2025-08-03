@@ -1,10 +1,15 @@
 import { useQuery } from '@apollo/client'
-import { Course, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  LocaleType,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
   FormikDatePicker,
   FormikNumberField,
+  FormikSelectField,
   FormikSwitchField,
   FormikTextField,
   H3,
@@ -43,6 +48,7 @@ export interface CourseManipulationFormData {
   color: string
   startDate: Date
   endDate: Date
+  language: LocaleType
   notificationEmail: string
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
@@ -84,6 +90,7 @@ function CourseManipulationModal({
       .string()
       .required(t('manage.courseList.courseDisplayNameReq')),
     description: yup.string(),
+    language: yup.string().required(),
     color: yup.string().required(t('manage.courseList.courseColorReq')),
     startDate: yup
       .date()
@@ -222,6 +229,10 @@ function CourseManipulationModal({
             initialValues?.notificationEmail ??
             dataUser?.userProfile?.email ??
             '',
+          language:
+            initialValues?.language ??
+            dataUser?.userProfile?.locale ??
+            LocaleType.En,
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,
@@ -249,6 +260,7 @@ function CourseManipulationModal({
       >
         {({
           values,
+          touched,
           errors,
           isValid,
           isSubmitting,
@@ -334,6 +346,18 @@ function CourseManipulationModal({
                     className={{
                       root: 'w-max',
                     }}
+                  />
+                  <FormikSelectField
+                    required
+                    name="language"
+                    label={t('shared.generic.language')}
+                    tooltip={t('manage.courseList.languageTooltip')}
+                    items={Object.values(LocaleType).map((locale) => ({
+                      value: locale,
+                      label: t(`shared.generic.${locale}`),
+                    }))}
+                    className={{ root: 'w-full' }}
+                    data={{ cy: 'course-language' }}
                   />
                   <FormikTextField
                     required
@@ -445,6 +469,7 @@ function CourseManipulationModal({
                 </div>
               </div>
               {initialValues?.groupDeadlineDate &&
+                touched.groupCreationDeadline &&
                 values.groupCreationDeadline !== groupDeadlineDateInit &&
                 dayjs(values.groupCreationDeadline) < dayjs() && (
                   <UserNotification

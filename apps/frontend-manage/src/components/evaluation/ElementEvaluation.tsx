@@ -1,4 +1,7 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementInstanceEvaluation,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from './ActivityEvaluation'
@@ -15,6 +18,7 @@ import { TextSizeType } from './textSizes'
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
   activeInstance: number
+  courseLanguage?: LocaleType | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -26,6 +30,7 @@ interface ElementEvaluationProps {
 function ElementEvaluation({
   currentInstance,
   activeInstance,
+  courseLanguage,
   textSize,
   chartType,
   showSolution,
@@ -64,6 +69,7 @@ function ElementEvaluation({
                 'ChoicesActivityEvaluationData' && (
                 <ChoicesEvaluation
                   instanceEvaluation={currentInstance}
+                  courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
                   showSolution={showSolution}
@@ -75,6 +81,7 @@ function ElementEvaluation({
                 'NumericalActivityEvaluationData' && (
                 <NREvaluation
                   instanceEvaluation={currentInstance}
+                  courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
                   showSolution={showSolution}
@@ -86,6 +93,7 @@ function ElementEvaluation({
                 'FreeTextActivityEvaluationData' && (
                 <FTEvaluation
                   instanceEvaluation={currentInstance}
+                  courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
                   showSolution={showSolution}

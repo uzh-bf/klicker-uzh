@@ -8,6 +8,7 @@ mutation UpdateCourseSettings(
   $endDate: Date
   $isGroupCreationEnabled: Boolean
   $groupDeadlineDate: Date
+  $language: LocaleType!
   $notificationEmail: String
   $isGamificationEnabled: Boolean
 ) {
@@ -21,6 +22,7 @@ mutation UpdateCourseSettings(
     endDate: $endDate
     isGroupCreationEnabled: $isGroupCreationEnabled
     groupDeadlineDate: $groupDeadlineDate
+    language: $language
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
   ) {
@@ -33,6 +35,7 @@ mutation UpdateCourseSettings(
     endDate
     isGroupCreationEnabled
     groupDeadlineDate
+    language
     notificationEmail
     isGamificationEnabled
   }

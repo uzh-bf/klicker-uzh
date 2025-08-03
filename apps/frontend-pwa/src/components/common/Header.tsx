@@ -86,6 +86,7 @@ function Header({
               className={{
                 root: 'text-uzh-grey-60 m-0 line-clamp-1 text-xs md:text-sm',
               }}
+              data={{ cy: 'header-course-display-name' }}
             >
               {course.displayName}
             </H1>
@@ -93,6 +94,7 @@ function Header({
               className={{
                 root: 'm-0 line-clamp-1 text-sm md:text-base',
               }}
+              data={{ cy: 'header-page-title' }}
             >
               {title}
             </H2>

@@ -1316,6 +1316,7 @@ export const Mutation = builder.mutationType({
           groupDeadlineDate: t.arg({ type: 'Date', required: true }),
           maxGroupSize: t.arg.int({ required: true }),
           preferredGroupSize: t.arg.int({ required: true }),
+          language: t.arg({ type: LocaleType, required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: true },
@@ -1340,6 +1341,7 @@ export const Mutation = builder.mutationType({
           endDate: t.arg({ type: 'Date', required: false }),
           isGroupCreationEnabled: t.arg.boolean({ required: false }),
           groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          language: t.arg({ type: LocaleType, required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: false },

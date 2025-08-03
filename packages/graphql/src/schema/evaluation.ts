@@ -8,6 +8,7 @@ import {
 import builder from '../builder.js'
 import { CaseStudyCriterionLabels, ElementType } from './elementData.js'
 import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
+import { LocaleType } from './user.js'
 
 export interface IActivityEvaluation {
   id: string
@@ -15,6 +16,7 @@ export interface IActivityEvaluation {
   displayName?: string | null
   description?: string | null
   courseId?: string | null
+  courseLanguage?: DB.Locale | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -228,6 +230,10 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
+    courseLanguage: t.expose('courseLanguage', {
+      type: LocaleType,
+      nullable: true,
+    }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),
