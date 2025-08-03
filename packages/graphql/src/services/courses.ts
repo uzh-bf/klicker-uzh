@@ -927,15 +927,8 @@ export async function getActiveUserCourses(
     where: { id: ctx.user.sub },
     include: {
       courses: {
-        where: {
-          endDate: {
-            gte: new Date(),
-          },
-          isArchived: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        where: { endDate: { gte: new Date() }, isArchived: false },
+        orderBy: { createdAt: 'desc' },
       },
     },
   })

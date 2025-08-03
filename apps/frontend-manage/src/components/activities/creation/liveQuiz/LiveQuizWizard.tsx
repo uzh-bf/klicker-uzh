@@ -54,6 +54,7 @@ export interface LiveQuizWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  assessmentCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: LiveQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: LiveQuizFormValues) => void
@@ -108,9 +109,10 @@ function LiveQuizWizard({
   )
   const formRef = useRef<FormikProps<LiveQuizFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -421,6 +423,7 @@ function LiveQuizWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

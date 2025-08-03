@@ -27,6 +27,7 @@ function PracticeQuizSettingsStep({
   validationSchema,
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
   setStepValidity,
   onNextStep,
   onPrevStep,
@@ -37,6 +38,7 @@ function PracticeQuizSettingsStep({
   const groupedCourses = useGamifiedCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
+    assessmentCourses: assessmentCourses ?? [],
   })
 
   return (

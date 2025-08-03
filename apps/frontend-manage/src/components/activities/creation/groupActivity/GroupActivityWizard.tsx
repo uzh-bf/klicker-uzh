@@ -7,7 +7,6 @@ import {
   GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
-import useCoursesGroupsSplit from '@lib/hooks/useCoursesGroupsSplit'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
@@ -15,6 +14,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
+import useCoursesGroupActivitySplit from '~/lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ElementCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
@@ -36,6 +36,7 @@ export interface GroupActivityWizardStepProps {
   stepValidity: boolean[]
   validationSchema: any
   coursesWithGroups?: ElementSelectCourse[]
+  assessmentCoursesWithGroups?: ElementSelectCourse[]
   coursesWithoutGroups?: ElementSelectCourse[]
   onSubmit?: (newValues: GroupActivityFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
@@ -87,7 +88,11 @@ function GroupActivityWizard({
   )
   const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
 
-  const { coursesWithGroups, coursesWithoutGroups } = useCoursesGroupsSplit({
+  const {
+    coursesWithGroups,
+    assessmentCoursesWithGroups,
+    coursesWithoutGroups,
+  } = useCoursesGroupActivitySplit({
     courseSelection: courses,
   })
 
@@ -414,6 +419,7 @@ function GroupActivityWizard({
           stepValidity={stepValidity}
           validationSchema={settingsValidationSchema}
           coursesWithGroups={coursesWithGroups}
+          assessmentCoursesWithGroups={assessmentCoursesWithGroups}
           coursesWithoutGroups={coursesWithoutGroups}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<GroupActivityFormValues>) => {

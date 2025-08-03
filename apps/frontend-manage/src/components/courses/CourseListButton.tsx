@@ -4,7 +4,12 @@ import {
   faTrashCan,
   IconDefinition,
 } from '@fortawesome/free-regular-svg-icons'
-import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faLock,
+  faMessage,
+  faX,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
@@ -33,6 +38,7 @@ interface CourseListButtonProps {
     | 'isArchived'
     | 'isManager'
     | 'isRemovable'
+    | 'isAssessmentEnabled'
   >
   onClick: () => void
   icon?: IconDefinition
@@ -125,6 +131,12 @@ function CourseListButton({
                 <Badge className="gap-2 bg-green-700 hover:bg-green-800">
                   <FontAwesomeIcon icon={faCheck} />
                   {t('shared.generic.ended')}
+                </Badge>
+              )}
+              {course.isAssessmentEnabled && (
+                <Badge className="gap-2 bg-orange-600 hover:bg-orange-700">
+                  <FontAwesomeIcon icon={faLock} />
+                  {t('shared.generic.assessment')}
                 </Badge>
               )}
               {course.isArchived && (

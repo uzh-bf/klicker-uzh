@@ -58,7 +58,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
     await testCleanup(prisma)
   })
 
-  describe('Unit tests for user group creation and manipulation, including member management', () => {
+  describe('Unit tests for assessment settings on courses and activities', () => {
     // set default booleans for irrelevant interaction settings
     const isConfusionFeedbackEnabled = false
     const isLiveQAEnabled = false

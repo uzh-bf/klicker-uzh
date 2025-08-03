@@ -218,6 +218,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.practiceQuizzes'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-practiceQuizzes' },
               },
               {
@@ -232,6 +239,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.microlearnings'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-microLearnings' },
               },
               {
@@ -246,6 +260,13 @@ function CourseOverviewPage() {
                     />
                   </div>
                 ),
+                disabled: course.isAssessmentEnabled,
+                tooltip: course.isAssessmentEnabled
+                  ? t('manage.course.activityNotAvailableAssessment', {
+                      activityType: t('shared.generic.groupActivities'),
+                    })
+                  : undefined,
+                tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
             ]}

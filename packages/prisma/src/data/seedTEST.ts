@@ -254,7 +254,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date('2019-12-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
-      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+      notificationEmail: 'notifications@df.uzh.ch',
     })
   )
 
@@ -274,7 +274,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date('2024-01-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
-      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+      notificationEmail: 'notifications@df.uzh.ch',
     })
   )
 
@@ -294,7 +294,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date('2025-01-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
-      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+      notificationEmail: 'notifications@df.uzh.ch',
     })
   )
 
@@ -316,7 +316,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date('2025-01-01T00:01'),
       maxGroupSize: 5,
       preferredGroupSize: 3,
-      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+      notificationEmail: 'notifications@df.uzh.ch',
     })
   )
 
@@ -337,7 +337,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       groupDeadlineDate: new Date('2025-07-15T23:59'),
       maxGroupSize: 4,
       preferredGroupSize: 3,
-      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
+      notificationEmail: 'notifications@df.uzh.ch',
     })
   )
 

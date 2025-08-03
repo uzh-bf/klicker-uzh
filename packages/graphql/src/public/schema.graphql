@@ -758,6 +758,7 @@ type Course {
   groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
+  isAssessmentEnabled: Boolean!
   isEditor: Boolean
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!

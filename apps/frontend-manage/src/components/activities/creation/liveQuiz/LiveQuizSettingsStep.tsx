@@ -26,6 +26,7 @@ function LiveQuizSettingsStep({
   validationSchema,
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
   setStepValidity,
   onNextStep,
   onPrevStep,
@@ -36,6 +37,7 @@ function LiveQuizSettingsStep({
   const groupedCourses = useLiveQuizCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
+    assessmentCourses: assessmentCourses ?? [],
   })
 
   return (

@@ -28,6 +28,7 @@ function MicroLearningSettingsStep({
   validationSchema,
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
   setStepValidity,
   onNextStep,
   onPrevStep,
@@ -39,6 +40,7 @@ function MicroLearningSettingsStep({
   const groupedCourses = useGamifiedCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
+    assessmentCourses: assessmentCourses ?? [],
   })
 
   return (
