@@ -80,23 +80,11 @@ function Activities() {
       ) as typeof dataActivities.userActivities
     }
 
-    // apply status filters (if defined)
-    if (filters.status && filters.status.length > 0) {
-      filtered = filtered.filter((activity) =>
-        filters.status.includes(activity.status)
-      )
-    }
-
     // apply sharing type filters (if defined)
     if (filters.sharingType && filters.sharingType.length > 0) {
       filtered = filtered.filter((activity) =>
         filters.sharingType?.includes(activity.sharingType)
       )
-    }
-
-    // apply type filters (if defined)
-    if (typeof filters.type !== 'undefined') {
-      filtered = filtered.filter((activity) => activity.type === filters.type)
     }
 
     // apply course filters (if defined)
@@ -113,15 +101,7 @@ function Activities() {
     // }
 
     return filtered
-  }, [
-    dataActivities,
-    searchInput,
-    search,
-    filters.status,
-    filters.sharingType,
-    filters.type,
-    filters.course,
-  ])
+  }, [dataActivities, searchInput, search, filters.sharingType, filters.course])
 
   return (
     <Layout

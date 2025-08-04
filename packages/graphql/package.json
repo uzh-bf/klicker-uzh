@@ -86,7 +86,7 @@
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:graphql": "graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
+    "dev:graphql": "graphql-codegen --config codegen.ts --watch 'src/graphql/ops/*.graphql' --watch 'src/**.ts'",
     "dev:offline": "pnpm run dev",
     "dev:test": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
