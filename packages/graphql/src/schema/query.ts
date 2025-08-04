@@ -63,6 +63,7 @@ import {
   ActivitySummary,
   ElementStack,
   PracticeQuiz,
+  PublicationStatus,
   StackFeedback,
 } from './practiceQuiz.js'
 import {
@@ -240,8 +241,14 @@ export const Query = builder.queryType({
       userActivities: t.withAuth(asUser).field({
         nullable: true,
         type: [ActivityInfo],
-        resolve: async (_, __, ctx) => {
-          return await ActivityService.getUserActivities(ctx)
+        args: {
+          statusFilter: t.arg({ type: [PublicationStatus], required: true }),
+          activityTypeFilter: t.arg({ type: ActivityType, required: false }),
+          courseId: t.arg.string({ required: false }),
+          withoutCourse: t.arg.boolean({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivityService.getUserActivities(args, ctx)
         },
       }),
 

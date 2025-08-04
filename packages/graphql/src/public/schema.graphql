@@ -2198,7 +2198,7 @@ type Query {
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
-  userActivities: [ActivityInfo!]
+  userActivities(activityTypeFilter: ActivityType, courseId: String, statusFilter: [PublicationStatus!]!, withoutCourse: Boolean): [ActivityInfo!]
   userCourses: [Course!]
   userElements: [Element!]
   userLiveQuizzes: [LiveQuiz!]

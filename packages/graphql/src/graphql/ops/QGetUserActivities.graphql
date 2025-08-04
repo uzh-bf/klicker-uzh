@@ -1,5 +1,15 @@
-query GetUserActivities {
-  userActivities {
+query GetUserActivities(
+  $statusFilter: [PublicationStatus!]!
+  $activityTypeFilter: ActivityType
+  $courseId: String
+  $withoutCourse: Boolean
+) {
+  userActivities(
+    statusFilter: $statusFilter
+    activityTypeFilter: $activityTypeFilter
+    courseId: $courseId
+    withoutCourse: $withoutCourse
+  ) {
     ...ActivityInfoData
   }
 }

@@ -5,7 +5,26 @@ import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
-export async function getUserActivities(ctx: ContextWithUser) {
+export async function getUserActivities(
+  {
+    statusFilter,
+    activityTypeFilter,
+    courseId,
+    withoutCourse,
+  }: {
+    statusFilter: DB.PublicationStatus[]
+    activityTypeFilter?: ActivityType | null
+    courseId?: string | null
+    withoutCourse?: boolean | null
+  },
+  ctx: ContextWithUser
+) {
+  // TODO: REMOVE
+  console.log('Fetching user activities with status filter:', statusFilter)
+  console.log('Activity type filter:', activityTypeFilter)
+  console.log('Course ID:', courseId)
+  console.log('Without course:', withoutCourse)
+
   // fetch all activities that are available to the user
   const user = await ctx.prisma.user.findUnique({
     where: {

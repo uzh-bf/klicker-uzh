@@ -31,7 +31,15 @@ function Activities() {
   })
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
-    { fetchPolicy: 'cache-and-network' }
+    {
+      variables: {
+        statusFilter: filters.status,
+        activityTypeFilter: filters.type,
+        courseId: filters.course !== null ? filters.course : undefined,
+        withoutCourse: filters.course === null ? true : undefined,
+      },
+      fetchPolicy: 'cache-and-network',
+    }
   )
 
   // setup search
@@ -92,17 +100,17 @@ function Activities() {
     }
 
     // apply course filters (if defined)
-    if (typeof filters.course !== 'undefined') {
-      if (filters.course === null) {
-        // show activities with no course assigned
-        filtered = filtered.filter((activity) => !activity.courseName)
-      } else {
-        // show activities with the selected course
-        filtered = filtered.filter(
-          (activity) => activity.courseName === filters.course
-        )
-      }
-    }
+    // if (typeof filters.course !== 'undefined') {
+    //   if (filters.course === null) {
+    //     // show activities with no course assigned
+    //     filtered = filtered.filter((activity) => !activity.courseId)
+    //   } else {
+    //     // show activities with the selected course
+    //     filtered = filtered.filter(
+    //       (activity) => activity.courseId === filters.course
+    //     )
+    //   }
+    // }
 
     return filtered
   }, [
