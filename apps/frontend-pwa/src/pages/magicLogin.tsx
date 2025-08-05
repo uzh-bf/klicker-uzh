@@ -16,7 +16,7 @@ function MagicLogin() {
   const t = useTranslations()
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
-  const { token, username } = router.query
+  const { token } = router.query
 
   const [loginWithMagicLink] = useMutation(LoginParticipantMagicLinkDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {

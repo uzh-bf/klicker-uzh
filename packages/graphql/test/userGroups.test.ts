@@ -35,7 +35,6 @@ describe('Unit tests for user group management', () => {
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -54,14 +53,12 @@ describe('Unit tests for user group management', () => {
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
-      userFiveCtx: ctx5,
     } = await testInitialization(prisma, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
     userFourCtx = ctx4
-    userFiveCtx = ctx5
   })
 
   afterEach(async () => {

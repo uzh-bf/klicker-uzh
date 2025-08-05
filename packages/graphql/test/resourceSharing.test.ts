@@ -856,21 +856,20 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // add the answer collection to the top-level catalog collection
-    const assignmentPublic = await prisma.catalogCollectionAssignment.create({
+    await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         answerCollectionId: AC1!.id,
         access: ObjectAccess.PUBLIC,
       },
     })
-    const assignmentRestricted =
-      await prisma.catalogCollectionAssignment.create({
-        data: {
-          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-          answerCollectionId: AC2!.id,
-          access: ObjectAccess.RESTRICTED,
-        },
-      })
+    await prisma.catalogCollectionAssignment.create({
+      data: {
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC2!.id,
+        access: ObjectAccess.RESTRICTED,
+      },
+    })
 
     // when querying an invalid assignment, null should be returned
     const failure = await getAnswerCollectionCatalogInfo(
@@ -1682,7 +1681,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // derived permissions that are copies of direct permissions / resolved group permissions,
     // should not show up in the derived permissions query
-    const permission4 = await prisma.derivedPermission.create({
+    await prisma.derivedPermission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFive.id,

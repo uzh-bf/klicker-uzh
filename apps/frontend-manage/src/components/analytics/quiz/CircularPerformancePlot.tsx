@@ -13,7 +13,7 @@ function CircularPerformancePlot({
   colors: { correct: string; partial: string; incorrect: string }
 }) {
   const t = useTranslations()
-  const [activeIndex, setActiveIndex] = useState<number | undefined>()
+  const [_, setActiveIndex] = useState<number | undefined>()
   const data = [
     { name: t('manage.analytics.successRate'), value: rates.correctRate },
     { name: t('manage.analytics.partialErrorRate'), value: rates.partialRate },

@@ -51,7 +51,6 @@ describe('Unit tests for object access validation', () => {
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
-  let userSixCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -71,7 +70,6 @@ describe('Unit tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-      userSixCtx: ctx6,
     } = await testInitialization(prisma, emitter)
 
     userOneCtx = ctx1
@@ -79,7 +77,6 @@ describe('Unit tests for object access validation', () => {
     userThreeCtx = ctx3
     userFourCtx = ctx4
     userFiveCtx = ctx5
-    userSixCtx = ctx6
   })
 
   afterEach(async () => {
@@ -3538,7 +3535,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -3581,7 +3578,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,
@@ -4083,7 +4080,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -4126,7 +4123,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,

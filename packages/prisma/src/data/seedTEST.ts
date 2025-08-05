@@ -210,7 +210,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // assign answer collections to catalog collections, if defined in relation
-  const catalogAnswerCollectionAssignments = await Promise.all(
+  await Promise.all(
     DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {
       const collection = answerCollections.find(
         (ac) => ac.name === data.answerCollectionName
@@ -734,7 +734,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   }
 
   // create participants
-  const participantsTesting = await Promise.all(
+  await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participant.upsert(
         await prepareParticipant({
@@ -748,7 +748,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // create participations for all the first 30 participants
-  const participations = await Promise.all(
+  await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participation.upsert({
         where: {
@@ -785,7 +785,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     '38de3f21-abb8-4982-a51d-e654f62ebe34',
     'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
   ]
-  const singleParticipantGroups = await Promise.all(
+  await Promise.all(
     PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
       const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -816,7 +816,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // add the participants 30-50 to the random assignment pool
-  const randomAssignmentPool = await Promise.all(
+  await Promise.all(
     PARTICIPANT_IDS.slice(35).map(async (id) => {
       return prisma.groupAssignmentPoolEntry.upsert({
         where: {
@@ -843,7 +843,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // create leaderboard entries for the top 15
-  const leaderboardEntries = await Promise.all(
+  await Promise.all(
     PARTICIPANT_IDS.slice(0, 15).map(async (id, ix) => {
       return prisma.leaderboardEntry.upsert({
         where: {
@@ -881,7 +881,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   // create participant groups
-  const participantGroupsTesting = await Promise.all(
+  await Promise.all(
     PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
       const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -914,7 +914,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const participantsNoCourse = await Promise.all(
+  await Promise.all(
     [
       '908f84d0-fd32-4a99-8a9f-b4793288234d',
       'ec8385db-e951-47dc-9e86-e215b7e4c501',
@@ -930,7 +930,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const awardedPilotAchievements = await Promise.all(
+  await Promise.all(
     PARTICIPANT_IDS.map(async (participantId) => {
       await prisma.participantAchievementInstance.upsert({
         where: {
@@ -963,23 +963,26 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     DATA_TEST.AchievementIds['Dream Team'],
     DATA_TEST.AchievementIds['Team Spirit'],
     DATA_TEST.AchievementIds.Fearless,
-  ].map(async (achievementId) => {
-    await prisma.participantAchievementInstance.upsert({
-      where: {
-        participantId_achievementId: {
-          participantId: PARTICIPANT_IDS[0]!,
-          achievementId: achievementId,
+  ]
+  await Promise.all(
+    awardedAchievements.map(async (achievementId) => {
+      await prisma.participantAchievementInstance.upsert({
+        where: {
+          participantId_achievementId: {
+            participantId: PARTICIPANT_IDS[0]!,
+            achievementId: achievementId,
+          },
         },
-      },
-      create: {
-        participant: { connect: { id: PARTICIPANT_IDS[0] } },
-        achievement: { connect: { id: achievementId } },
-        achievedAt: new Date(),
-        achievedCount: 1,
-      },
-      update: {},
+        create: {
+          participant: { connect: { id: PARTICIPANT_IDS[0] } },
+          achievement: { connect: { id: achievementId } },
+          achievedAt: new Date(),
+          achievedCount: 1,
+        },
+        update: {},
+      })
     })
-  })
+  )
 
   // seed practice quiz
   const flashcards = (await prepareFlashcardsFromFile(
@@ -1005,7 +1008,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )) as Prisma.Element[]
 
   const groupActivityId1 = '99fe99d2-696c-46d7-b6ae-cf385879822a'
-  const groupActivityPublished = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: groupActivityId1 },
     create: {
       id: groupActivityId1,
@@ -1041,7 +1044,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityId2 = 'c3e2e776-87fe-4b59-95dd-ac1977a411ba'
-  const groupActivityScheduled = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: groupActivityId2 },
     create: {
       id: groupActivityId2,
@@ -1077,7 +1080,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityId3 = '07e9847d-32bb-44a1-af49-de11a2151a92'
-  const groupActivityDraft = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: groupActivityId3 },
     create: {
       id: groupActivityId3,
@@ -1113,7 +1116,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityId4 = '89f84817-2669-42bb-9ca2-d643fdf72926'
-  const groupActivityDraftPast = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: groupActivityId4 },
     create: {
       id: groupActivityId4,
@@ -1224,7 +1227,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // create calendar course group activities with diverse scheduling patterns
   const calendarGroupActivityId1 = 'f8a5868e-1a18-47f2-b8f3-ccc8c1cea9f4'
-  const calendarGroupActivity1 = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: calendarGroupActivityId1 },
     create: {
       id: calendarGroupActivityId1,
@@ -1264,7 +1267,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const calendarGroupActivityId2 = 'c82187e5-a8ce-414e-9cd4-6e8243a1898e'
-  const calendarGroupActivity2 = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: calendarGroupActivityId2 },
     create: {
       id: calendarGroupActivityId2,
@@ -1304,7 +1307,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const calendarGroupActivityId3 = '1f660806-5588-4255-aec6-18024f6a41e8'
-  const calendarGroupActivity3 = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: calendarGroupActivityId3 },
     create: {
       id: calendarGroupActivityId3,
@@ -1346,7 +1349,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const calendarGroupActivityId4 = '3555a344-ae47-421d-b8ac-17507fcfea75'
-  const calendarGroupActivity4 = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: calendarGroupActivityId4 },
     create: {
       id: calendarGroupActivityId4,
@@ -1388,7 +1391,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const calendarGroupActivityId5 = 'c1542840-7402-4a56-aac7-cdf91d545604'
-  const calendarGroupActivity5 = await prisma.groupActivity.upsert({
+  await prisma.groupActivity.upsert({
     where: { id: calendarGroupActivityId5 },
     create: {
       id: calendarGroupActivityId5,
@@ -1624,7 +1627,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1
-  const groupActivityInstance = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId,
     },
@@ -1646,7 +1649,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityInstanceId2 = 2
-  const groupActivityInstance2 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId2,
     },
@@ -1668,7 +1671,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityInstanceId3 = 3
-  const groupActivityInstance3 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId3,
     },
@@ -1691,7 +1694,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // seed group activity instance without results
   const groupActivityInstanceId4 = 4
-  const groupActivityInstance4 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId4,
     },
@@ -1800,7 +1803,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // seed group activity instance with decisions and results for partially graded and ended group activity
   const groupActivityInstanceId5 = 5
-  const groupActivityInstance5 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId5,
     },
@@ -1825,7 +1828,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   // seed group activity instance with decisions and results for graded and ended group activity
   const groupActivityInstanceId6 = 6
-  const groupActivityInstance6 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId6,
     },
@@ -1849,7 +1852,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const groupActivityInstanceId7 = 7
-  const groupActivityInstance7 = await prisma.groupActivityInstance.upsert({
+  await prisma.groupActivityInstance.upsert({
     where: {
       id: groupActivityInstanceId7,
     },
@@ -1882,7 +1885,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
-  const practiceQuiz = await prismaClient.practiceQuiz.upsert({
+  await prismaClient.practiceQuiz.upsert({
     where: { id: quizId },
     create: {
       id: quizId,
@@ -1917,7 +1920,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const quizId2 = '58cfd921-2bc1-40a4-a186-846626eb0591'
-  const practiceQuiz2 = await prismaClient.practiceQuiz.upsert({
+  await prismaClient.practiceQuiz.upsert({
     where: { id: quizId2 },
     create: {
       id: quizId2,
@@ -1950,7 +1953,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const quizId3 = '56e51ab4-89e3-4d9d-ae04-dd9e8869fbd2'
-  const practiceQuiz3 = await prismaClient.practiceQuiz.upsert({
+  await prismaClient.practiceQuiz.upsert({
     where: { id: quizId3 },
     create: {
       id: quizId3,
@@ -1983,7 +1986,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const microlearningId1 = 'd2f7fcbc-a54c-4518-b094-91d8adbd803f'
-  const microlearningPublished = await prismaClient.microLearning.upsert({
+  await prismaClient.microLearning.upsert({
     where: { id: microlearningId1 },
     create: {
       id: microlearningId1,
@@ -2020,7 +2023,7 @@ Mehr bla bla...
   })
 
   const microlearningId2 = '6a0b6674-5f9b-40fd-90a4-53d493c210ba'
-  const microlearningFuture = await prismaClient.microLearning.upsert({
+  await prismaClient.microLearning.upsert({
     where: { id: microlearningId2 },
     create: {
       id: microlearningId2,
@@ -2057,7 +2060,7 @@ Mehr bla bla...
   })
 
   const microlearningId3 = '71702826-e693-451d-ad64-ed763d973fcd'
-  const microlearningPast = await prismaClient.microLearning.upsert({
+  await prismaClient.microLearning.upsert({
     where: { id: microlearningId3 },
     create: {
       id: microlearningId3,
@@ -2090,7 +2093,7 @@ Mehr bla bla...
   })
 
   const microlearningId4 = '4a87f88d-5fb9-4eef-afce-9f5ed6edcc38'
-  const microlearningPastNoFT = await prismaClient.microLearning.upsert({
+  await prismaClient.microLearning.upsert({
     where: { id: microlearningId4 },
     create: {
       id: microlearningId4,
@@ -2125,7 +2128,7 @@ Mehr bla bla...
   })
 
   const microlearningId5 = 'ec13a44b-22ce-4edc-b419-e2d7c07024fe'
-  const microlearningDraft = await prismaClient.microLearning.upsert({
+  await prismaClient.microLearning.upsert({
     where: { id: microlearningId5 },
     create: {
       id: microlearningId5,
@@ -2161,7 +2164,7 @@ Once this microlearning is published, it will be immediately accessible
 
   // create calendar course practice quizzes with diverse scheduling
   const calendarPracticeQuizId1 = '7c5a84ef-ad0f-423d-8061-484401cd38c2'
-  const calendarPracticeQuiz1 = await prisma.practiceQuiz.upsert({
+  await prisma.practiceQuiz.upsert({
     where: { id: calendarPracticeQuizId1 },
     create: {
       id: calendarPracticeQuizId1,
@@ -2196,7 +2199,7 @@ Once this microlearning is published, it will be immediately accessible
   })
 
   const calendarPracticeQuizId2 = '31ff1123-86ed-4284-95eb-dca8b793b3ad'
-  const calendarPracticeQuiz2 = await prisma.practiceQuiz.upsert({
+  await prisma.practiceQuiz.upsert({
     where: { id: calendarPracticeQuizId2 },
     create: {
       id: calendarPracticeQuizId2,
@@ -2232,7 +2235,7 @@ Once this microlearning is published, it will be immediately accessible
 
   // Create calendar course microlearnings with diverse scheduling patterns
   const calendarMicrolearning1Id = '532d2483-0e39-4da4-951a-7f8c00e75600'
-  const calendarMicrolearning1 = await prisma.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: calendarMicrolearning1Id },
     create: {
       id: calendarMicrolearning1Id,
@@ -2270,7 +2273,7 @@ Once this microlearning is published, it will be immediately accessible
   })
 
   const calendarMicrolearning2Id = '0e51701e-e849-4478-b6dd-8e27cf21ae2d'
-  const calendarMicrolearning2 = await prisma.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: calendarMicrolearning2Id },
     create: {
       id: calendarMicrolearning2Id,
@@ -2306,7 +2309,7 @@ Once this microlearning is published, it will be immediately accessible
   })
 
   const calendarMicroLearning3Id = 'e5de398b-3c01-4cac-98fc-51b4593e1719'
-  const calendarMicrolearning3 = await prisma.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: calendarMicroLearning3Id },
     create: {
       id: calendarMicroLearning3Id,
@@ -2347,7 +2350,7 @@ Once this microlearning is published, it will be immediately accessible
   })
 
   const calendarMicrolearning4Id = 'a4d6f5ca-9d81-4f94-be71-1b62c85eb745'
-  const calendarMicrolearning4 = await prisma.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: calendarMicrolearning4Id },
     create: {
       id: calendarMicrolearning4Id,

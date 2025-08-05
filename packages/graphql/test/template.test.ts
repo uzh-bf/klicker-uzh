@@ -79,7 +79,7 @@ describe('Unit tests for template service', () => {
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
     // seed a number of minimal elements into the database
-    const elements = await Promise.all(
+    await Promise.all(
       questionsSLAF.map(async (question) => {
         const newElement = await prisma.element.create({
           data: {
@@ -612,7 +612,7 @@ describe('Unit tests for template service', () => {
     )
 
     // create activity template with answer collection (user 1)
-    const template = await prisma.activityTemplate.create({
+    await prisma.activityTemplate.create({
       data: {
         id: templateId,
         description: '',
@@ -853,7 +853,7 @@ describe('Unit tests for template service', () => {
     const activityId = 'a7b750a4-5fd9-4575-85f1-9f981206477f'
     const SEElementData = processElementData(SEQuestion)
     const CSElementData = processElementData(CSQuestion)
-    const LQ = await prisma.liveQuiz.create({
+    await prisma.liveQuiz.create({
       data: {
         id: activityId,
         name: 'Test Quiz',
@@ -1222,7 +1222,7 @@ describe('Unit tests for template service', () => {
     )
 
     // modify the answer collection entries used in the case study question (same answer collection, but options 2 & 3 instead of 1 & 2)
-    const CSQuestion4 = await prisma.element.update({
+    await prisma.element.update({
       where: { id: CSQuestion.id },
       data: {
         name: 'Updated Case Study Question 4',
@@ -1408,7 +1408,7 @@ describe('Unit tests for template service', () => {
     expect(res5).toBeTruthy()
 
     // add LQ2 to public catalog collection with public access rights -> should be accessible to everyone
-    const assignment2 = await prisma.catalogCollectionAssignment.upsert({
+    await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
           liveQuizId: activityId2,
@@ -1461,7 +1461,7 @@ describe('Unit tests for template service', () => {
     expect(res10).toBeTruthy()
 
     // add LQ3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
-    const assignment3 = await prisma.catalogCollectionAssignment.upsert({
+    await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
           liveQuizId: activityId3,

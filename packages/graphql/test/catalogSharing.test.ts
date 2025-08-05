@@ -131,24 +131,22 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalog3?.id).toBe(restrictedCatalog.id)
 
     // verify that the validation fails for user 2 without access to neither catalog collection
-    const { valid: valid4, catalogCollection: catalog4 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: publicCatalog.id,
-          minimumPermissionLevel: PermissionLevel.READ,
-        },
-        userTwoCtx
-      )
+    const { valid: valid4 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        minimumPermissionLevel: PermissionLevel.READ,
+      },
+      userTwoCtx
+    )
     expect(valid4).toBe(false)
 
-    const { valid: valid5, catalogCollection: catalog5 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: restrictedCatalog.id,
-          minimumPermissionLevel: PermissionLevel.WRITE,
-        },
-        userTwoCtx
-      )
+    const { valid: valid5 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: restrictedCatalog.id,
+        minimumPermissionLevel: PermissionLevel.WRITE,
+      },
+      userTwoCtx
+    )
     expect(valid5).toBe(false)
 
     // create explicit permissions for users 3 and 4 on the collections
@@ -212,24 +210,22 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalog8).not.toBeNull()
     expect(catalog8?.id).toBe(restrictedCatalog.id)
 
-    const { valid: failed1, catalogCollection: failedCatalog1 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: publicCatalog.id,
-          minimumPermissionLevel: PermissionLevel.ADMIN,
-        },
-        userThreeCtx
-      )
+    const { valid: failed1 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        minimumPermissionLevel: PermissionLevel.ADMIN,
+      },
+      userThreeCtx
+    )
     expect(failed1).toBe(false)
 
-    const { valid: failed2, catalogCollection: failedCatalog2 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: restrictedCatalog.id,
-          minimumPermissionLevel: PermissionLevel.OWNER,
-        },
-        userFourCtx
-      )
+    const { valid: failed2 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: restrictedCatalog.id,
+        minimumPermissionLevel: PermissionLevel.OWNER,
+      },
+      userFourCtx
+    )
     expect(failed2).toBe(false)
   })
 

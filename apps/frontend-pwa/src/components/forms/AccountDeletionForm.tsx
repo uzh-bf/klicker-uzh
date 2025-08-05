@@ -5,27 +5,18 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 function AccountDeletionForm() {
   const t = useTranslations()
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
     DeleteParticipantAccountDocument
   )
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
-
-  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window?.location?.search)
-    const redirectTo = urlParams?.get('redirect_to')
-    if (redirectTo) {
-      setDecodedRedirectPath(decodeURIComponent(redirectTo))
-    }
-  }, [])
 
   return (
     <div className="order-1 flex h-full flex-1 flex-col justify-between space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">

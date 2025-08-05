@@ -88,13 +88,12 @@ function ObjectSharingModal({
     })
 
   // mutation to revoke access for a certain permission
-  const { onPermissionRevocation, permissionRevoking } =
-    usePermissionRevocation({
-      objectId,
-      objectType,
-      catalogCollectionId,
-      onError: () => onRemovalFailure(),
-    })
+  const { onPermissionRevocation } = usePermissionRevocation({
+    objectId,
+    objectType,
+    catalogCollectionId,
+    onError: () => onRemovalFailure(),
+  })
 
   // mutation to create new permission entry for answer collection
   const { onShareObject } = useObjectSharing({

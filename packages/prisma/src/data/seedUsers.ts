@@ -9,7 +9,7 @@ import {
 import { prepareUser } from './helpers.js'
 
 export async function seedUsers(prisma: Prisma.PrismaClient) {
-  const standardUser = await prisma.user.upsert(
+  await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST,
       name: 'Lecturer',
@@ -24,7 +24,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const freeUser = await prisma.user.upsert(
+  await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST2,
       name: 'Free Tier User',
@@ -34,7 +34,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const individualProUser = await prisma.user.upsert(
+  await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST3,
       name: 'Individual Pro User',
@@ -47,7 +47,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const institutionalProUser = await prisma.user.upsert(
+  await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST4,
       name: 'Institutional Pro User',
@@ -60,7 +60,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const institutionalProUser2 = await prisma.user.upsert(
+  await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST5,
       name: 'Institutional Pro User 2',
