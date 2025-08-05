@@ -36,6 +36,9 @@ export async function getUserElements(
     type,
     hasSampleSolution,
     hasAnswerFeedbacks,
+    showOwned = true,
+    showShared = true,
+    showDependencies = true,
     showArchived,
     tagIds,
   }: {
@@ -43,6 +46,9 @@ export async function getUserElements(
     type?: DB.ElementType | null
     hasSampleSolution: boolean
     hasAnswerFeedbacks: boolean
+    showOwned?: boolean | null
+    showShared?: boolean | null
+    showDependencies?: boolean | null
     showArchived: boolean
     tagIds: number[]
   },
@@ -53,6 +59,26 @@ export async function getUserElements(
     include: {
       objects: {
         where: {
+          // depending on the shared access flags, determine the required access levels
+          permissionLevel:
+            showOwned && showShared
+              ? undefined
+              : {
+                  in: [
+                    ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
+                    ...(showShared
+                      ? [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.EXECUTE,
+                          DB.PermissionLevel.READ,
+                        ]
+                      : []),
+                  ],
+                },
+          // chose whether to include objects that are available through derived access
+          derived: showDependencies ? undefined : false,
+          // filters and search strings beside sharing filters
           elementId: { not: null },
           element: {
             status: status ? status : undefined,

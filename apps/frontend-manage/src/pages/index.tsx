@@ -12,6 +12,7 @@ import {
   ActivityType,
   Element,
   GetUserElementsDocument,
+  SharingType,
   ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -112,8 +113,11 @@ function Index() {
       type: filters.type,
       hasSampleSolution: filters.sampleSolution,
       hasAnswerFeedbacks: filters.answerFeedbacks,
+      showOwned: filters.sharingType.includes(SharingType.Owned),
+      showShared: filters.sharingType.includes(SharingType.Shared),
+      showDependencies: filters.sharingType.includes(SharingType.Dependency),
       showArchived: filters.archive,
-      tagIds: filters.tags.map((tag) => parseInt(tag, 10)),
+      tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
     },
     fetchPolicy: 'network-only',
   })

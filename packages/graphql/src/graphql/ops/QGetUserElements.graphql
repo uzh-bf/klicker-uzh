@@ -3,6 +3,9 @@ query GetUserElements(
   $type: ElementType
   $hasSampleSolution: Boolean!
   $hasAnswerFeedbacks: Boolean!
+  $showOwned: Boolean
+  $showShared: Boolean
+  $showDependencies: Boolean
   $showArchived: Boolean!
   $tagIds: [Int!]!
 ) {
@@ -11,6 +14,9 @@ query GetUserElements(
     type: $type
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
+    showOwned: $showOwned
+    showShared: $showShared
+    showDependencies: $showDependencies
     showArchived: $showArchived
     tagIds: $tagIds
   ) {

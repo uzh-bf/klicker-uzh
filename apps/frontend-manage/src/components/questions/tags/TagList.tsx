@@ -221,7 +221,13 @@ function TagList({
           {sharingTypesVisible && (
             <ul className="list-none">
               {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
-                if (!icons) return null
+                // do not show dependenccy filter, if shared elements are not shown
+                if (
+                  type === SharingType.Dependency &&
+                  !activeSharingTypes?.includes(SharingType.Shared)
+                ) {
+                  return null
+                }
 
                 return (
                   <TagItem

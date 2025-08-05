@@ -48,23 +48,6 @@ function filterQuestions(
     results = results.filter(({ tags }) => tags?.length === 0)
   }
 
-  // if either type or tags were selected, filter the results
-  if (filters.sharingType || filters.tags) {
-    results = results.filter(({ sharingType, tags }): boolean => {
-      // compare the sharing type and check whether the element fulfills any of them
-      if (
-        filters.sharingType &&
-        sharingType !== undefined &&
-        sharingType !== null &&
-        !filters.sharingType.includes(sharingType)
-      ) {
-        return false
-      }
-
-      return true
-    })
-  }
-
   return results
 }
 
