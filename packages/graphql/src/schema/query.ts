@@ -17,7 +17,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
-import { ActivityDetails, ActivityInfo } from './activities.js'
+import { ActivityDetails, UserActivityList } from './activities.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -249,7 +249,7 @@ export const Query = builder.queryType({
 
       userActivities: t.withAuth(asUser).field({
         nullable: true,
-        type: [ActivityInfo],
+        type: UserActivityList,
         args: {
           statusFilter: t.arg({ type: [PublicationStatus], required: false }),
           activityTypeFilter: t.arg({ type: ActivityType, required: false }),
@@ -259,6 +259,8 @@ export const Query = builder.queryType({
           showOwned: t.arg.boolean({ required: false }),
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ActivityService.getUserActivities(args, ctx)

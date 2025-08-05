@@ -64,7 +64,7 @@ function PracticeQuizPublishingModal({
                 refetchQueries: [
                   {
                     query: GetSingleCourseDocument,
-                    variables: { id: courseId },
+                    variables: { courseId },
                   },
                 ],
               })
@@ -103,7 +103,7 @@ function PracticeQuizPublishingModal({
                 refetchQueries: [
                   {
                     query: GetSingleCourseDocument,
-                    variables: { id: courseId },
+                    variables: { courseId },
                   },
                 ],
               })

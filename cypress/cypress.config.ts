@@ -1312,139 +1312,101 @@ export default defineConfig({
             const password = 'abcd'
             const hashedPassword = await bcrypt.hash(password, 12)
 
-            const user1 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST,
-              },
-              create: {
-                id: USER_ID_TEST,
-                name: 'Lecturer',
-                email: 'lecturer@df.uzh.ch',
-                shortname: 'lecturer',
-                catalystIndividual: true,
-                catalystInstitutional: true,
-                publicPreview: true,
-                privatePreview: true,
-                role: UserRole.ADMIN,
-                firstLogin: false,
-                logins: {
-                  create: {
-                    name: 'lecturer',
-                    password: hashedPassword,
-                    scope: UserLoginScope.FULL_ACCESS,
+            await Promise.all(
+              [
+                {
+                  id: USER_ID_TEST,
+                  name: 'Lecturer',
+                  email: 'lecturer@df.uzh.ch',
+                  shortname: 'lecturer',
+                  catalystIndividual: true,
+                  catalystInstitutional: true,
+                  publicPreview: true,
+                  privatePreview: true,
+                  role: UserRole.ADMIN,
+                  firstLogin: false,
+                  logins: {
+                    create: {
+                      name: 'lecturer',
+                      password: hashedPassword,
+                      scope: UserLoginScope.FULL_ACCESS,
+                    },
                   },
                 },
-              },
-              update: {},
-            })
-
-            const user2 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST2,
-              },
-              create: {
-                id: USER_ID_TEST2,
-                name: 'Free Tier User',
-                email: 'free@df.uzh.ch',
-                shortname: 'free',
-                catalystIndividual: false,
-                catalystInstitutional: false,
-                publicPreview: false,
-                privatePreview: false,
-                firstLogin: false,
-              },
-              update: {},
-            })
-
-            const user3 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST3,
-              },
-              create: {
-                id: USER_ID_TEST3,
-                name: 'Individual Pro User',
-                email: 'pro1@df.uzh.ch',
-                shortname: 'pro1',
-                catalystIndividual: true,
-                catalystInstitutional: false,
-                publicPreview: true,
-                privatePreview: true,
-                firstLogin: false,
-              },
-              update: {},
-            })
-
-            const user4 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST4,
-              },
-              create: {
-                id: USER_ID_TEST4,
-                name: 'Institutional Pro User',
-                email: 'pro2@df.uzh.ch',
-                shortname: 'pro2',
-                catalystIndividual: false,
-                catalystInstitutional: true,
-                publicPreview: true,
-                privatePreview: true,
-                firstLogin: false,
-              },
-              update: {},
-            })
-
-            const user5 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST5,
-              },
-              create: {
-                id: USER_ID_TEST5,
-                name: 'Institutional Pro User 2',
-                email: 'pro3@df.uzh.ch',
-                shortname: 'pro3',
-                catalystIndividual: false,
-                catalystInstitutional: true,
-                publicPreview: true,
-                privatePreview: true,
-                firstLogin: false,
-              },
-              update: {},
-            })
-
-            const user6 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST6,
-              },
-              create: {
-                id: USER_ID_TEST6,
-                name: 'Institutional Pro User 3',
-                email: 'pro4@df.uzh.ch',
-                shortname: 'pro4',
-                catalystIndividual: false,
-                catalystInstitutional: true,
-                publicPreview: true,
-                privatePreview: true,
-                firstLogin: false,
-              },
-              update: {},
-            })
-
-            const user7 = await prisma.user.upsert({
-              where: {
-                id: USER_ID_TEST7,
-              },
-              create: {
-                id: USER_ID_TEST7,
-                name: 'Institutional Pro User 4',
-                email: 'pro5@df.uzh.ch',
-                shortname: 'pro5',
-                catalystIndividual: false,
-                catalystInstitutional: true,
-                publicPreview: true,
-                privatePreview: true,
-                firstLogin: false,
-              },
-              update: {},
-            })
+                {
+                  id: USER_ID_TEST2,
+                  name: 'Free Tier User',
+                  email: 'free@df.uzh.ch',
+                  shortname: 'free',
+                  catalystIndividual: false,
+                  catalystInstitutional: false,
+                  publicPreview: false,
+                  privatePreview: false,
+                  firstLogin: false,
+                },
+                {
+                  id: USER_ID_TEST3,
+                  name: 'Individual Pro User',
+                  email: 'pro1@df.uzh.ch',
+                  shortname: 'pro1',
+                  catalystIndividual: true,
+                  catalystInstitutional: false,
+                  publicPreview: true,
+                  privatePreview: true,
+                  firstLogin: false,
+                },
+                {
+                  id: USER_ID_TEST4,
+                  name: 'Institutional Pro User',
+                  email: 'pro2@df.uzh.ch',
+                  shortname: 'pro2',
+                  catalystIndividual: false,
+                  catalystInstitutional: true,
+                  publicPreview: true,
+                  privatePreview: true,
+                  firstLogin: false,
+                },
+                {
+                  id: USER_ID_TEST5,
+                  name: 'Institutional Pro User 2',
+                  email: 'pro3@df.uzh.ch',
+                  shortname: 'pro3',
+                  catalystIndividual: false,
+                  catalystInstitutional: true,
+                  publicPreview: true,
+                  privatePreview: true,
+                  firstLogin: false,
+                },
+                {
+                  id: USER_ID_TEST6,
+                  name: 'Institutional Pro User 3',
+                  email: 'pro4@df.uzh.ch',
+                  shortname: 'pro4',
+                  catalystIndividual: false,
+                  catalystInstitutional: true,
+                  publicPreview: true,
+                  privatePreview: true,
+                  firstLogin: false,
+                },
+                {
+                  id: USER_ID_TEST7,
+                  name: 'Institutional Pro User 4',
+                  email: 'pro5@df.uzh.ch',
+                  shortname: 'pro5',
+                  catalystIndividual: false,
+                  catalystInstitutional: true,
+                  publicPreview: true,
+                  privatePreview: true,
+                  firstLogin: false,
+                },
+              ].map((userData) =>
+                prisma.user.upsert({
+                  where: { id: userData.id },
+                  create: userData,
+                  update: {},
+                })
+              )
+            )
 
             // ? Test course seeding
             const currentYear = new Date().getFullYear()
@@ -1585,128 +1547,6 @@ export default defineConfig({
               },
             })
 
-            const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
-            await prisma.liveQuiz.upsert({
-              where: { id: liveQuizId },
-              create: {
-                id: liveQuizId,
-                name: 'Seed Live Quiz',
-                displayName: 'Seed Live Quiz (Displayname)',
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                liveQuizId_userId: {
-                  liveQuizId: liveQuizId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                liveQuiz: { connect: { id: liveQuizId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
-            await prisma.microLearning.upsert({
-              where: {
-                id: microlearningId,
-              },
-              create: {
-                id: microlearningId,
-                name: 'Seed Microlearning',
-                displayName: 'Seed Microlearning (Displayname)',
-                scheduledStartAt: new Date('2020-01-01T00:00'),
-                scheduledEndAt: new Date('2050-01-01T23:59'),
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                microLearningId_userId: {
-                  microLearningId: microlearningId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                microLearning: { connect: { id: microlearningId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const practiceQuizId = '8ef0c8b3-b39d-4a3e-8219-c663a7a36063'
-            await prisma.practiceQuiz.upsert({
-              where: { id: practiceQuizId },
-              create: {
-                id: practiceQuizId,
-                name: 'Seed Practice Quiz',
-                displayName: 'Seed Practice Quiz (Displayname)',
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                practiceQuizId_userId: {
-                  practiceQuizId: practiceQuizId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                practiceQuiz: { connect: { id: practiceQuizId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
-            await prisma.groupActivity.upsert({
-              where: { id: groupActivityId },
-              create: {
-                id: groupActivityId,
-                name: 'Seed Group Activity',
-                displayName: 'Seed Group Activity (Displayname)',
-                scheduledStartAt: new Date('2020-01-01T00:00'),
-                scheduledEndAt: new Date('2050-01-01T23:59'),
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                groupActivityId_userId: {
-                  groupActivityId: groupActivityId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                groupActivity: { connect: { id: groupActivityId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
             // ? Seed participant accounts
             const participantPassword = await bcrypt.hash('abcdabcd', 12)
             await Promise.all(
@@ -1732,7 +1572,7 @@ export default defineConfig({
             )
 
             // ? Seed participant groups
-            const participantGroupsTesting = await Promise.all(
+            await Promise.all(
               PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
                 const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -1865,6 +1705,140 @@ export default defineConfig({
             )
 
             return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async seedActivities() {
+          const prisma = await connect()
+
+          try {
+            const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
+            await prisma.liveQuiz.upsert({
+              where: { id: liveQuizId },
+              create: {
+                id: liveQuizId,
+                name: 'Seed Live Quiz',
+                displayName: 'Seed Live Quiz (Displayname)',
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                liveQuizId_userId: {
+                  liveQuizId: liveQuizId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                liveQuiz: { connect: { id: liveQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
+            await prisma.microLearning.upsert({
+              where: {
+                id: microlearningId,
+              },
+              create: {
+                id: microlearningId,
+                name: 'Seed Microlearning',
+                displayName: 'Seed Microlearning (Displayname)',
+                scheduledStartAt: new Date('2020-01-01T00:00'),
+                scheduledEndAt: new Date('2050-01-01T23:59'),
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                microLearningId_userId: {
+                  microLearningId: microlearningId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                microLearning: { connect: { id: microlearningId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            const practiceQuizId = '8ef0c8b3-b39d-4a3e-8219-c663a7a36063'
+            await prisma.practiceQuiz.upsert({
+              where: { id: practiceQuizId },
+              create: {
+                id: practiceQuizId,
+                name: 'Seed Practice Quiz',
+                displayName: 'Seed Practice Quiz (Displayname)',
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                practiceQuizId_userId: {
+                  practiceQuizId: practiceQuizId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                practiceQuiz: { connect: { id: practiceQuizId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
+            await prisma.groupActivity.upsert({
+              where: { id: groupActivityId },
+              create: {
+                id: groupActivityId,
+                name: 'Seed Group Activity',
+                displayName: 'Seed Group Activity (Displayname)',
+                scheduledStartAt: new Date('2020-01-01T00:00'),
+                scheduledEndAt: new Date('2050-01-01T23:59'),
+                courseId: COURSE_ID_TEST,
+                ownerId: USER_ID_TEST,
+              },
+              update: {},
+            })
+            await prisma.derivedPermission.upsert({
+              where: {
+                groupActivityId_userId: {
+                  groupActivityId: groupActivityId,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                groupActivity: { connect: { id: groupActivityId } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: {
+                permissionLevel: PermissionLevel.OWNER,
+              },
+            })
+
+            return true
+          } catch (error) {
+            console.error('Error seeding activities:', error)
+            return null
           } finally {
             await prisma.$disconnect()
           }

@@ -198,6 +198,7 @@ function GroupActivityActions({
             onClose={() => setDeletionModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -206,6 +207,7 @@ function GroupActivityActions({
             onClose={() => setEndingModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {startingModal && (
@@ -216,6 +218,7 @@ function GroupActivityActions({
             groupDeadlineDate={groupActivity.groupDeadlineDate}
             numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 

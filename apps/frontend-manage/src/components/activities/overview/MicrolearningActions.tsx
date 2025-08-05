@@ -211,6 +211,7 @@ function MicrolearningActions({
             onClose={() => setEndingModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {extensionModal && (

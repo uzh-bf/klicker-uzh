@@ -1047,6 +1047,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pointsMultiplierDescription: 'Multiplikator',
       sampleSolutionDescription: 'Musterlösung',
       gradingDescription: 'Dokumentation',
+      showingResults:
+        '{start} bis {end} von {total} Ergebnissen werden angezeigt',
+      previousPage: 'Vorherige',
+      nextPage: 'Nächste',
     },
     admin: {
       pageName: 'Admin-Panel',

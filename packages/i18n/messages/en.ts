@@ -1046,6 +1046,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pointsMultiplierDescription: 'Multiplier',
       sampleSolutionDescription: 'Sample Solution',
       gradingDescription: 'Documentation',
+      showingResults: 'Showing {start} to {end} of {total} results',
+      previousPage: 'Previous',
+      nextPage: 'Next',
     },
     admin: {
       pageName: 'Admin Panel',

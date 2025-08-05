@@ -14,10 +14,12 @@ function GroupActivityEndingModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -71,7 +73,10 @@ function GroupActivityEndingModal({
       onClose={onClose}
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
-      onSubmit={async () => await endGroupActivity()}
+      onSubmit={async () => {
+        await endGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={endingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

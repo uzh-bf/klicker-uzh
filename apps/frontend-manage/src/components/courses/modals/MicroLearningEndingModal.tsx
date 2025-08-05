@@ -13,10 +13,12 @@ function MicroLearningEndingModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -79,7 +81,10 @@ function MicroLearningEndingModal({
       onClose={onClose}
       title={t('manage.course.endMicroLearning')}
       message={t('manage.course.endMicroLearningMessage')}
-      onSubmit={async () => await endMicroLearning()}
+      onSubmit={async () => {
+        await endMicroLearning()
+        await refetchActivities?.()
+      }}
       submitting={endingMicroLearning}
       confirmations={{}}
       confirmationsInitializing={summaryLoading}

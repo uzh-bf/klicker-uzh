@@ -7,6 +7,8 @@ query GetUserActivities(
   $showOwned: Boolean
   $showShared: Boolean
   $showDependencies: Boolean
+  $numEntries: Int
+  $offset: Int
 ) {
   userActivities(
     statusFilter: $statusFilter
@@ -17,7 +19,12 @@ query GetUserActivities(
     showOwned: $showOwned
     showShared: $showShared
     showDependencies: $showDependencies
+    numEntries: $numEntries
+    offset: $offset
   ) {
-    ...ActivityInfoData
+    numOfActivities
+    activities {
+      ...ActivityInfoData
+    }
   }
 }

@@ -9,17 +9,22 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Pagination from '~/components/common/Pagination'
 import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
 import Layout from '../components/Layout'
 
+// number of entries per page for pagination
+const PAGE_SIZE = 10
+
 function Activities() {
   const t = useTranslations()
   const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
@@ -32,10 +37,15 @@ function Activities() {
     course: undefined,
   })
 
+  // Reset pagination when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, searchString])
+
   // get available courses
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
 
-  // get user activities while respecting the corresponding filters
+  // get user activities while respecting the corresponding filters and pagination
   const {
     loading: loadingActivities,
     data: dataActivities,
@@ -50,9 +60,23 @@ function Activities() {
       showOwned: filters.sharingType.includes(SharingType.Owned),
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      numEntries: PAGE_SIZE,
+      offset: (currentPage - 1) * PAGE_SIZE,
     },
     fetchPolicy: 'network-only',
   })
+  const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
+  const activities = dataActivities?.userActivities?.activities || []
+
+  // Reset pagination if activities length changes and current page would be out of bounds
+  useEffect(() => {
+    if (loadingActivities) return
+
+    const maxPage = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage)
+    }
+  }, [loadingActivities, numOfActivities, currentPage])
 
   const filtersActive =
     filters.status.length > 0 ||
@@ -60,6 +84,9 @@ function Activities() {
     filters.sharingType.length !== 3 ||
     typeof filters.type !== 'undefined' ||
     typeof filters.course !== 'undefined'
+
+  // compute the number of total pagination pages
+  const totalPages = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
 
   return (
     <Layout
@@ -109,17 +136,27 @@ function Activities() {
               {loadingActivities ? (
                 <Loader />
               ) : (
-                <ActivityList
-                  activities={dataActivities?.userActivities ?? []}
-                  noActivities={
-                    !filtersActive &&
-                    dataActivities?.userActivities?.length === 0
-                  }
-                  highlightedActivity={null}
-                  refetchActivities={async () => {
-                    await refetchActivities()
-                  }}
-                />
+                <>
+                  <ActivityList
+                    activities={activities}
+                    noActivities={!filtersActive && numOfActivities === 0}
+                    highlightedActivity={null}
+                    refetchActivities={async () => {
+                      await refetchActivities()
+                    }}
+                  />
+
+                  {activities.length > 0 && totalPages > 1 && (
+                    <Pagination
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      numOfActivities={numOfActivities}
+                      PAGE_SIZE={PAGE_SIZE}
+                      className="mb-3"
+                    />
+                  )}
+                </>
               )}
             </div>
           </>

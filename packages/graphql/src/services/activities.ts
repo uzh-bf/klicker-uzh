@@ -60,6 +60,8 @@ export async function getUserActivities(
     showOwned = true,
     showShared = true,
     showDependencies = true,
+    numEntries,
+    offset,
   }: {
     statusFilter?: DB.PublicationStatus[] | null
     activityTypeFilter?: ActivityType | null
@@ -69,168 +71,172 @@ export async function getUserActivities(
     showOwned?: boolean | null
     showShared?: boolean | null
     showDependencies?: boolean | null
+    numEntries?: number | null
+    offset?: number | null
   },
   ctx: ContextWithUser
 ) {
+  // where clause needed for filtering the desired activities
+  const activityFilteringClause = {
+    // depending on the shared access flags, determine the required access levels
+    permissionLevel:
+      showOwned && showShared
+        ? undefined
+        : {
+            in: [
+              ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
+              ...(showShared
+                ? [
+                    DB.PermissionLevel.ADMIN,
+                    DB.PermissionLevel.WRITE,
+                    DB.PermissionLevel.EXECUTE,
+                    DB.PermissionLevel.READ,
+                  ]
+                : []),
+            ],
+          },
+    // chose whether to include dependencies or not
+    derived: showDependencies ? undefined : false,
+    OR: [
+      ...(!activityTypeFilter || activityTypeFilter === ActivityType.LIVE_QUIZ
+        ? [
+            {
+              liveQuizId: { not: null },
+              liveQuiz: {
+                status:
+                  statusFilter && statusFilter.length > 0
+                    ? { in: statusFilter }
+                    : undefined,
+                courseId: courseId
+                  ? { equals: courseId }
+                  : withoutCourse
+                    ? null
+                    : undefined,
+                OR: searchString
+                  ? [
+                      {
+                        name: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                      {
+                        displayName: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                    ]
+                  : undefined,
+              },
+            },
+          ]
+        : []),
+      ...(!withoutCourse &&
+      (!activityTypeFilter || activityTypeFilter === ActivityType.PRACTICE_QUIZ)
+        ? [
+            {
+              practiceQuizId: { not: null },
+              practiceQuiz: {
+                status:
+                  statusFilter && statusFilter.length > 0
+                    ? { in: statusFilter }
+                    : undefined,
+                courseId: courseId ?? undefined,
+                OR: searchString
+                  ? [
+                      {
+                        name: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                      {
+                        displayName: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                    ]
+                  : undefined,
+              },
+            },
+          ]
+        : []),
+      ...(!withoutCourse &&
+      (!activityTypeFilter ||
+        activityTypeFilter === ActivityType.MICRO_LEARNING)
+        ? [
+            {
+              microLearningId: { not: null },
+              microLearning: {
+                status:
+                  statusFilter && statusFilter.length > 0
+                    ? { in: statusFilter }
+                    : undefined,
+                courseId: courseId ?? undefined,
+                OR: searchString
+                  ? [
+                      {
+                        name: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                      {
+                        displayName: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                    ]
+                  : undefined,
+              },
+            },
+          ]
+        : []),
+      ...(!withoutCourse &&
+      (!activityTypeFilter ||
+        activityTypeFilter === ActivityType.GROUP_ACTIVITY)
+        ? [
+            {
+              groupActivityId: { not: null },
+              groupActivity: {
+                status:
+                  statusFilter && statusFilter.length > 0
+                    ? { in: statusFilter }
+                    : undefined,
+                courseId: courseId ?? undefined,
+                OR: searchString
+                  ? [
+                      {
+                        name: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                      {
+                        displayName: {
+                          contains: searchString,
+                          mode: 'insensitive' as DB.Prisma.QueryMode,
+                        },
+                      },
+                    ]
+                  : undefined,
+              },
+            },
+          ]
+        : []),
+    ],
+  }
+
   // fetch all activities that are available to the user
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
+      _count: { select: { objects: { where: activityFilteringClause } } },
       objects: {
-        where: {
-          // depending on the shared access flags, determine the required access levels
-          permissionLevel:
-            showOwned && showShared
-              ? undefined
-              : {
-                  in: [
-                    ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
-                    ...(showShared
-                      ? [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.WRITE,
-                          DB.PermissionLevel.EXECUTE,
-                          DB.PermissionLevel.READ,
-                        ]
-                      : []),
-                  ],
-                },
-          // chose whether to include dependencies or not
-          derived: showDependencies ? undefined : false,
-          OR: [
-            ...(!activityTypeFilter ||
-            activityTypeFilter === ActivityType.LIVE_QUIZ
-              ? [
-                  {
-                    liveQuizId: { not: null },
-                    liveQuiz: {
-                      status:
-                        statusFilter && statusFilter.length > 0
-                          ? { in: statusFilter }
-                          : undefined,
-                      courseId: courseId
-                        ? { equals: courseId }
-                        : withoutCourse
-                          ? null
-                          : undefined,
-                      OR: searchString
-                        ? [
-                            {
-                              name: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                            {
-                              displayName: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                          ]
-                        : undefined,
-                    },
-                  },
-                ]
-              : []),
-            ...(!withoutCourse &&
-            (!activityTypeFilter ||
-              activityTypeFilter === ActivityType.PRACTICE_QUIZ)
-              ? [
-                  {
-                    practiceQuizId: { not: null },
-                    practiceQuiz: {
-                      status:
-                        statusFilter && statusFilter.length > 0
-                          ? { in: statusFilter }
-                          : undefined,
-                      courseId: courseId ?? undefined,
-                      OR: searchString
-                        ? [
-                            {
-                              name: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                            {
-                              displayName: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                          ]
-                        : undefined,
-                    },
-                  },
-                ]
-              : []),
-            ...(!withoutCourse &&
-            (!activityTypeFilter ||
-              activityTypeFilter === ActivityType.MICRO_LEARNING)
-              ? [
-                  {
-                    microLearningId: { not: null },
-                    microLearning: {
-                      status:
-                        statusFilter && statusFilter.length > 0
-                          ? { in: statusFilter }
-                          : undefined,
-                      courseId: courseId ?? undefined,
-                      OR: searchString
-                        ? [
-                            {
-                              name: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                            {
-                              displayName: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                          ]
-                        : undefined,
-                    },
-                  },
-                ]
-              : []),
-            ...(!withoutCourse &&
-            (!activityTypeFilter ||
-              activityTypeFilter === ActivityType.GROUP_ACTIVITY)
-              ? [
-                  {
-                    groupActivityId: { not: null },
-                    groupActivity: {
-                      status:
-                        statusFilter && statusFilter.length > 0
-                          ? { in: statusFilter }
-                          : undefined,
-                      courseId: courseId ?? undefined,
-                      OR: searchString
-                        ? [
-                            {
-                              name: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                            {
-                              displayName: {
-                                contains: searchString,
-                                mode: 'insensitive' as DB.Prisma.QueryMode,
-                              },
-                            },
-                          ]
-                        : undefined,
-                    },
-                  },
-                ]
-              : []),
-          ],
-        },
+        where: activityFilteringClause,
         include: {
           directPermission: true,
           liveQuiz: {
@@ -301,6 +307,8 @@ export async function getUserActivities(
             },
           },
         },
+        take: numEntries ?? undefined,
+        skip: offset ?? undefined,
       },
     },
   })
@@ -518,7 +526,7 @@ export async function getUserActivities(
     [DB.PublicationStatus.GRADED]: 1,
   }
 
-  // Helper function to determine if a status is active or inactive
+  // helper function to determine if a status is active or inactive
   const isActiveStatus = (status: DB.PublicationStatus): boolean => {
     return (
       status === DB.PublicationStatus.PUBLISHED ||
@@ -528,22 +536,25 @@ export async function getUserActivities(
     )
   }
 
-  return sortBy(
-    activities,
-    // first order by active/inactive (active first)
-    (activity) => (isActiveStatus(activity.status) ? 0 : 1),
-    // then order by activity type
-    (activity) => activityTypeOrder[activity.type],
-    // then order by status within each group
-    (activity) => activityStatusOrder[activity.status] || 100,
-    // then by scheduled start date or updated date
-    (activity) => {
-      if (activity.scheduledStartAt) {
-        return -new Date(activity.scheduledStartAt).getTime()
+  return {
+    numOfActivities: user._count.objects,
+    activities: sortBy(
+      activities,
+      // first order by active/inactive (active first)
+      (activity) => (isActiveStatus(activity.status) ? 0 : 1),
+      // then order by activity type
+      (activity) => activityTypeOrder[activity.type],
+      // then order by status within each group
+      (activity) => activityStatusOrder[activity.status] || 100,
+      // then by scheduled start date or updated date
+      (activity) => {
+        if (activity.scheduledStartAt) {
+          return -new Date(activity.scheduledStartAt).getTime()
+        }
+        return -new Date(activity.updatedAt).getTime()
       }
-      return -new Date(activity.updatedAt).getTime()
-    }
-  )
+    ),
+  }
 }
 
 export async function getLiveQuizDetails(

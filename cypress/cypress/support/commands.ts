@@ -80,6 +80,19 @@ Cypress.Commands.add('seed', () => {
   cy.reload()
 })
 
+Cypress.Commands.add('seedActivities', () => {
+  // seed all required initial data directly into the database
+  cy.task('seedActivities').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error(
+        'Seeding of required activities into database was not successful!'
+      )
+    }
+  })
+  cy.reload()
+})
+
 Cypress.Commands.add('cleanup', () => {
   // delete all objects and clear entire database
   cy.task('cleanupDatabase').then((result: boolean) => {
@@ -1422,6 +1435,7 @@ declare global {
   namespace Cypress {
     interface Chainable {
       seed(): Chainable<void>
+      seedActivities(): Chainable<void>
       cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
       loginLecturerControl(): Chainable<void>

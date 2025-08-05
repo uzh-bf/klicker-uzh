@@ -239,7 +239,7 @@
    "GetTemplateInformation": "aeb7bf94e70eca123cbbf6699e75412126d9fb5232c05b092f19ba38edaf5ae4",
    "GetTemplatePreviewAnswerCollectionEntries": "469ba4ec08f5efb4a41c9f8ee8604f413bd7337b21a6cfdad934946fea0834b8",
    "GetUnassignedLiveQuizzes": "8efbb0afbb0826d5e237cbaa660f62c201d339b74d1907336bb8a0a5db519f73",
-   "GetUserActivities": "65d19c06c0dcd23bd240a979f0d2667cb417df1bc00f356e2e2053b9bdb0ea17",
+   "GetUserActivities": "ae4b3a2644d2cf3da14153b99254d0faa171a802b508143bfb98224ad286c37e",
    "GetUserActivitiesCourses": "b4e3f0233087484f55417643dbeef1bc21f952556e316c1cd5253992a38d4de4",
    "GetUserCourses": "142d77ca5b26296ee87c39996fc2c7d218c8ab8cd21d6b86cb04cc0334eaf1ba",
    "GetUserElements": "e453afbbf8c5b7b74fd0137b142aeda2f5e97443869c6c82435745a5a9a49f58",
