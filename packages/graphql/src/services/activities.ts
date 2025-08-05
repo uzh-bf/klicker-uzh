@@ -95,7 +95,7 @@ export async function getUserActivities(
                 : []),
             ],
           },
-    // chose whether to include dependencies or not
+    // chose whether to include objects that are available through derived access
     derived: showDependencies ? undefined : false,
     OR: [
       ...(!activityTypeFilter || activityTypeFilter === ActivityType.LIVE_QUIZ
