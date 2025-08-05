@@ -242,8 +242,9 @@ export const Query = builder.queryType({
           showOwned: t.arg.boolean({ required: false }),
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),
-          showArchived: t.arg.boolean({ required: true }),
           tagIds: t.arg.intList({ required: true }),
+          showUntagged: t.arg.boolean({ required: true }),
+          showArchived: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await QuestionService.getUserElements(args, ctx)

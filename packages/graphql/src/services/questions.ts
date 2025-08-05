@@ -39,8 +39,9 @@ export async function getUserElements(
     showOwned = true,
     showShared = true,
     showDependencies = true,
-    showArchived,
     tagIds,
+    showUntagged,
+    showArchived,
   }: {
     status?: DB.ElementStatus | null
     type?: DB.ElementType | null
@@ -49,8 +50,9 @@ export async function getUserElements(
     showOwned?: boolean | null
     showShared?: boolean | null
     showDependencies?: boolean | null
-    showArchived: boolean
     tagIds: number[]
+    showUntagged: boolean
+    showArchived: boolean
   },
   ctx: ContextWithUser
 ) {
@@ -84,6 +86,7 @@ export async function getUserElements(
             status: status ? status : undefined,
             type: type ? type : undefined,
             isArchived: showArchived ? undefined : false,
+            tags: showUntagged ? { none: {} } : undefined,
             AND: [
               ...(hasSampleSolution
                 ? [{ options: { path: ['hasSampleSolution'], equals: true } }]

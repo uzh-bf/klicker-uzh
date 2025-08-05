@@ -6,8 +6,9 @@ query GetUserElements(
   $showOwned: Boolean
   $showShared: Boolean
   $showDependencies: Boolean
-  $showArchived: Boolean!
   $tagIds: [Int!]!
+  $showUntagged: Boolean!
+  $showArchived: Boolean!
 ) {
   userElements(
     status: $status
@@ -17,8 +18,9 @@ query GetUserElements(
     showOwned: $showOwned
     showShared: $showShared
     showDependencies: $showDependencies
-    showArchived: $showArchived
     tagIds: $tagIds
+    showUntagged: $showUntagged
+    showArchived: $showArchived
   ) {
     __typename
 

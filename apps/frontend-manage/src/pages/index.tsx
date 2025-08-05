@@ -116,8 +116,9 @@ function Index() {
       showOwned: filters.sharingType.includes(SharingType.Owned),
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      showArchived: filters.archive,
       tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+      showUntagged: filters.untagged,
+      showArchived: filters.archive,
     },
     fetchPolicy: 'network-only',
   })

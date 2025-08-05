@@ -34,10 +34,11 @@ function ElementList({
   handleFilterReset,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
-  const { value: hideSurvey, setValue: setHideSurvey } = useStickyState(
-    'hideLecturerSurvey',
-    'false'
-  )
+  const {
+    value: hideSurvey,
+    setValue: setHideSurvey,
+    hasInitialized,
+  } = useStickyState('hideLecturerSurvey', 'false')
 
   if (!elements) {
     return <></>
@@ -108,7 +109,7 @@ function ElementList({
           tagfilter={tagfilter}
         />
       ))}
-      {hideSurvey === 'false' && (
+      {hasInitialized && hideSurvey === 'false' && (
         <div className="fixed bottom-11 w-[calc(100%-17rem)]">
           <div className="flex flex-row items-center justify-between rounded-md bg-orange-200 px-3 py-1.5">
             <div className="flex flex-row items-center gap-3">

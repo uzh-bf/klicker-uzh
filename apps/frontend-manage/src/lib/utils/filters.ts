@@ -44,10 +44,6 @@ function filterQuestions(
     results = index.search(filters.name) as Element[]
   }
 
-  if (filters.untagged) {
-    results = results.filter(({ tags }) => tags?.length === 0)
-  }
-
   return results
 }
 
