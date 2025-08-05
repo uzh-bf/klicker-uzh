@@ -37,11 +37,6 @@ function Activities() {
     course: undefined,
   })
 
-  // Reset pagination when filters or search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filters, searchString])
-
   // get available courses
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
 
@@ -68,7 +63,7 @@ function Activities() {
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
   const activities = dataActivities?.userActivities?.activities || []
 
-  // Reset pagination if activities length changes and current page would be out of bounds
+  // reset pagination if activities length changes and current page would be out of bounds
   useEffect(() => {
     if (loadingActivities) return
 
@@ -77,6 +72,11 @@ function Activities() {
       setCurrentPage(maxPage)
     }
   }, [loadingActivities, numOfActivities, currentPage])
+
+  // reset pagination when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, searchString])
 
   const filtersActive =
     filters.status.length > 0 ||
