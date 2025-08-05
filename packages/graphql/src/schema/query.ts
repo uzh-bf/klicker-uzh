@@ -75,6 +75,7 @@ import {
   InstanceUpdateActivityInfo,
   SortByType,
   Tag,
+  UserElementList,
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
@@ -234,7 +235,7 @@ export const Query = builder.queryType({
 
       userElements: t.withAuth(asUser).field({
         nullable: true,
-        type: [Element],
+        type: UserElementList,
         args: {
           status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ type: ElementType, required: false }),
@@ -249,6 +250,8 @@ export const Query = builder.queryType({
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
+          numEntries: t.arg.int({ required: true }),
+          offset: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await QuestionService.getUserElements(args, ctx)

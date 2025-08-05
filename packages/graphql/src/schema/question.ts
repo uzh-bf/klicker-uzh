@@ -881,6 +881,29 @@ export const Element = builder.unionType('Element', {
   },
 })
 
+export interface IUserElementList {
+  numOfElements: number
+  elements: (
+    | IChoicesElement
+    | INumericalElement
+    | IFreeTextElement
+    | IFlashcardElement
+    | IContentElement
+    | ISelectionElement
+    | ICaseStudyElement
+  )[]
+}
+
+export const UserElementListRef =
+  builder.objectRef<IUserElementList>('UserElementList')
+export const UserElementList = builder.objectType(UserElementListRef, {
+  name: 'UserElementList',
+  fields: (t) => ({
+    numOfElements: t.exposeInt('numOfElements'),
+    elements: t.expose('elements', { type: [Element] }),
+  }),
+})
+
 interface IElementSummary {
   sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access
   retainsDerivedAccess: boolean // = true if the element is used in activity with admin / owner access -> retain derived access

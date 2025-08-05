@@ -29,6 +29,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
+import Pagination from '~/components/common/Pagination'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
@@ -43,12 +44,15 @@ import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
 
+const PAGE_SIZE = 10
+
 function Index() {
   const router = useRouter()
   const t = useTranslations()
 
   const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
     ToggleIsArchivedDocument
   )
@@ -120,10 +124,31 @@ function Index() {
       sortByType: sort.by,
       sortByAsc: sort.asc,
       showArchived: filters.archive,
+      numEntries: PAGE_SIZE,
+      offset: (currentPage - 1) * PAGE_SIZE,
     },
     fetchPolicy: 'network-only',
   })
-  const elements = dataElements?.userElements ?? []
+  const numOfElements = dataElements?.userElements?.numOfElements || 0
+  const elements = dataElements?.userElements?.elements ?? []
+
+  // reset pagination if elements length changes and current page would be out of bounds
+  useEffect(() => {
+    if (loadingElements) return
+
+    const maxPage = Math.max(1, Math.ceil(numOfElements / PAGE_SIZE))
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage)
+    }
+  }, [loadingElements, numOfElements, currentPage])
+
+  // reset pagination when filters, sorting or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, sort, searchString])
+
+  // compute the number of total pagination pages
+  const totalPages = Math.max(1, Math.ceil(numOfElements / PAGE_SIZE))
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -549,48 +574,61 @@ function Index() {
                   <Loader />
                 </div>
               ) : (
-                <ElementList
-                  filtersActive={filtersActive}
-                  activityWizardOpen={!!creationMode}
-                  elements={elements}
-                  selectedQuestions={selectedElementContent}
-                  triggerSuccessToast={() =>
-                    toast({
-                      type: 'success',
-                      message: t('manage.elements.questionSavedSuccessfully'),
-                      options: { duration: 4000 },
-                    })
-                  }
-                  setSelectedQuestions={(id: number, data: Element) => {
-                    setSelectedQuestions((prev) => {
-                      return { ...prev, [id]: prev[id] ? undefined : data }
-                    })
-                  }}
-                  tagfilter={filters.tags}
-                  handleTagClick={(tagId: number) =>
-                    handleTagClick({
-                      valueOrId: tagId.toString(),
-                      isTypeTag: false,
-                      isStatusTag: false,
-                      isSharingTypeTag: false,
-                      isUntagged: false,
-                    })
-                  }
-                  unsetDeletedQuestion={(questionId: number) => {
-                    setSelectedQuestions((prev) => {
-                      if (prev[questionId]) {
-                        const newSelectedQuestions = { ...prev }
-                        delete newSelectedQuestions[questionId]
-                        return newSelectedQuestions
-                      }
-                      return prev
-                    })
-                  }}
-                  handleFilterReset={handleReset}
-                  refetchElements={async () => {
-                    await refetchElements()
-                  }}
-                />
+                <>
+                  <ElementList
+                    filtersActive={filtersActive}
+                    activityWizardOpen={!!creationMode}
+                    elements={elements}
+                    selectedQuestions={selectedElementContent}
+                    triggerSuccessToast={() =>
+                      toast({
+                        type: 'success',
+                        message: t('manage.elements.questionSavedSuccessfully'),
+                        options: { duration: 4000 },
+                      })
+                    }
+                    setSelectedQuestions={(id: number, data: Element) => {
+                      setSelectedQuestions((prev) => {
+                        return { ...prev, [id]: prev[id] ? undefined : data }
+                      })
+                    }}
+                    tagfilter={filters.tags}
+                    handleTagClick={(tagId: number) =>
+                      handleTagClick({
+                        valueOrId: tagId.toString(),
+                        isTypeTag: false,
+                        isStatusTag: false,
+                        isSharingTypeTag: false,
+                        isUntagged: false,
+                      })
+                    }
+                    unsetDeletedQuestion={(questionId: number) => {
+                      setSelectedQuestions((prev) => {
+                        if (prev[questionId]) {
+                          const newSelectedQuestions = { ...prev }
+                          delete newSelectedQuestions[questionId]
+                          return newSelectedQuestions
+                        }
+                        return prev
+                      })
+                    }}
+                    handleFilterReset={handleReset}
+                    refetchElements={async () => {
+                      await refetchElements()
+                    }}
+                  />
+
+                  {elements.length > 0 && totalPages > 1 && (
+                    <Pagination
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      numOfObjects={numOfElements}
+                      PAGE_SIZE={PAGE_SIZE}
+                      className="mb-3"
+                    />
+                  )}
+                </>
               )}
             </div>
           </>

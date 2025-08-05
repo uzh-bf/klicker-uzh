@@ -1293,7 +1293,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showExplanationTooltip:
         'Eine Vorschau, wie die Erklärung in <b>asynchronen Aktivitäten</b> angezeigt wird, nachdem ein Schüler auf das Element reagiert hat.',
       sampleSolutionUnavailableTypes:
-        'Musterlösungen können nur für Fragen erfasst werden. Inhaltselemenete und Lernkarten unterstützen keine Musterlösungen.',
+        'Musterlösungen können nur für Fragen erfasst werden. Inhaltselemente und Lernkarten unterstützen keine Musterlösungen.',
       answerFeedbacksUnavailableTypes:
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
     },

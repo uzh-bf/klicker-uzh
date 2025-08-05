@@ -46,6 +46,8 @@ export async function getUserElements(
     sortByType,
     sortByAsc,
     showArchived,
+    numEntries,
+    offset,
   }: {
     status?: DB.ElementStatus | null
     type?: DB.ElementType | null
@@ -60,71 +62,80 @@ export async function getUserElements(
     sortByType: SortByType
     sortByAsc: boolean
     showArchived: boolean
+    numEntries: number
+    offset: number
   },
   ctx: ContextWithUser
 ) {
+  // where clause needed for filtering the desired elements
+  const elementFilteringClause = {
+    // filter out objects where the user only has derived access to and they were deleted before
+    NOT: { derived: true, element: { isDeleted: true } },
+    // depending on the shared access flags, determine the required access levels
+    permissionLevel:
+      showOwned && showShared
+        ? undefined
+        : {
+            in: [
+              ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
+              ...(showShared
+                ? [
+                    DB.PermissionLevel.ADMIN,
+                    DB.PermissionLevel.WRITE,
+                    DB.PermissionLevel.EXECUTE,
+                    DB.PermissionLevel.READ,
+                  ]
+                : []),
+            ],
+          },
+    // chose whether to include objects that are available through derived access
+    derived: showDependencies ? undefined : false,
+    // filters and search strings beside sharing filters
+    elementId: { not: null },
+    element: {
+      status: status ? status : undefined,
+      type: type ? type : undefined,
+      isArchived: showArchived ? undefined : false,
+      tags: showUntagged ? { none: {} } : undefined,
+      AND: [
+        ...(hasSampleSolution
+          ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
+          : []),
+        ...(hasAnswerFeedbacks
+          ? [{ options: { path: ['hasAnswerFeedbacks'], equals: true } }]
+          : []),
+        ...(tagIds.length > 0
+          ? tagIds.map((id) => ({
+              tags: { some: { id } },
+            }))
+          : []),
+      ],
+      OR: searchString
+        ? [
+            {
+              name: {
+                contains: searchString,
+                mode: 'insensitive' as DB.Prisma.QueryMode,
+              },
+            },
+            {
+              content: {
+                contains: searchString,
+                mode: 'insensitive' as DB.Prisma.QueryMode,
+              },
+            },
+          ]
+        : undefined,
+    },
+  }
+
+  // fetch all elements that are available to the user
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
+      _count: { select: { objects: { where: elementFilteringClause } } },
       objects: {
-        where: {
-          // depending on the shared access flags, determine the required access levels
-          permissionLevel:
-            showOwned && showShared
-              ? undefined
-              : {
-                  in: [
-                    ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
-                    ...(showShared
-                      ? [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.WRITE,
-                          DB.PermissionLevel.EXECUTE,
-                          DB.PermissionLevel.READ,
-                        ]
-                      : []),
-                  ],
-                },
-          // chose whether to include objects that are available through derived access
-          derived: showDependencies ? undefined : false,
-          // filters and search strings beside sharing filters
-          elementId: { not: null },
-          element: {
-            status: status ? status : undefined,
-            type: type ? type : undefined,
-            isArchived: showArchived ? undefined : false,
-            tags: showUntagged ? { none: {} } : undefined,
-            AND: [
-              ...(hasSampleSolution
-                ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
-                : []),
-              ...(hasAnswerFeedbacks
-                ? [{ options: { path: ['hasAnswerFeedbacks'], equals: true } }]
-                : []),
-              ...(tagIds.length > 0
-                ? tagIds.map((id) => ({
-                    tags: { some: { id } },
-                  }))
-                : []),
-            ],
-            OR: searchString
-              ? [
-                  {
-                    name: {
-                      contains: searchString,
-                      mode: 'insensitive' as DB.Prisma.QueryMode,
-                    },
-                  },
-                  {
-                    content: {
-                      contains: searchString,
-                      mode: 'insensitive' as DB.Prisma.QueryMode,
-                    },
-                  },
-                ]
-              : undefined,
-          },
-        },
+        where: elementFilteringClause,
         include: {
           directPermission: true,
           element: {
@@ -184,46 +195,48 @@ export async function getUserElements(
               ]
             : []),
         ],
+        take: numEntries ?? undefined,
+        skip: offset ?? undefined,
       },
     },
   })
 
-  return (
-    user?.objects.flatMap((object) =>
-      // filter out objects where the user only has derived access to and they were deleted before
-      object.element !== null && !(object.derived && object.element.isDeleted)
-        ? {
-            ...object.element,
-            permissionLevel: object.permissionLevel,
-            derivedAccess: object.derived,
-            numSharedUsers: undefined, // object.element._count.permissions - 1,
-            isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
-            isManager:
-              object.permissionLevel === DB.PermissionLevel.OWNER ||
-              object.permissionLevel === DB.PermissionLevel.ADMIN,
-            isEditor:
-              object.permissionLevel === DB.PermissionLevel.OWNER ||
-              object.permissionLevel === DB.PermissionLevel.ADMIN ||
-              object.permissionLevel === DB.PermissionLevel.WRITE,
-            isImported:
-              object.permissionLevel === DB.PermissionLevel.OWNER &&
-              object.element.originalId !== null,
-            isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
-            // object can be removed, if the object is shared and the permission is not derived / granted through a user group
-            isRemovable:
-              object.permissionLevel !== DB.PermissionLevel.OWNER &&
-              !object.derived &&
-              object.directPermission?.userGroupId === null,
-            sharingType:
-              object.permissionLevel === DB.PermissionLevel.OWNER
-                ? SharingType.OWNED
-                : object.derived
-                  ? SharingType.DEPENDENCY
-                  : SharingType.SHARED,
-          }
-        : []
-    ) ?? []
-  )
+  if (!user) {
+    return null
+  }
+
+  return {
+    numOfElements: user._count.objects,
+    elements: user.objects.map((object) => ({
+      ...object.element!,
+      permissionLevel: object.permissionLevel,
+      derivedAccess: object.derived,
+      numSharedUsers: undefined, // object.element._count.permissions - 1,
+      isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+      isManager:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isEditor:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.WRITE,
+      isImported:
+        object.permissionLevel === DB.PermissionLevel.OWNER &&
+        object.element!.originalId !== null,
+      isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+      // object can be removed, if the object is shared and the permission is not derived / granted through a user group
+      isRemovable:
+        object.permissionLevel !== DB.PermissionLevel.OWNER &&
+        !object.derived &&
+        object.directPermission?.userGroupId === null,
+      sharingType:
+        object.permissionLevel === DB.PermissionLevel.OWNER
+          ? SharingType.OWNED
+          : object.derived
+            ? SharingType.DEPENDENCY
+            : SharingType.SHARED,
+    })),
+  }
 }
 
 export async function getSingleQuestion(

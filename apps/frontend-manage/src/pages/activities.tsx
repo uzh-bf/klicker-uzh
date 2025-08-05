@@ -152,7 +152,7 @@ function Activities() {
                       totalPages={totalPages}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
-                      numOfActivities={numOfActivities}
+                      numOfObjects={numOfActivities}
                       PAGE_SIZE={PAGE_SIZE}
                       className="mb-3"
                     />

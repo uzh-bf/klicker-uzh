@@ -12,6 +12,8 @@ query GetUserElements(
   $sortByType: SortByType!
   $sortByAsc: Boolean!
   $showArchived: Boolean!
+  $numEntries: Int!
+  $offset: Int!
 ) {
   userElements(
     status: $status
@@ -27,319 +29,324 @@ query GetUserElements(
     sortByType: $sortByType
     sortByAsc: $sortByAsc
     showArchived: $showArchived
+    numEntries: $numEntries
+    offset: $offset
   ) {
-    __typename
+    numOfElements
+    elements {
+      __typename
 
-    ... on ChoicesElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      options {
-        __typename
-        hasSampleSolution
-        hasAnswerFeedbacks
-        displayMode
-        choices {
-          ix
-          correct
-          feedback
-          value
-        }
-      }
-
-      tags {
+      ... on ChoicesElement {
         id
         name
-        order
-      }
-    }
+        status
+        type
+        content
 
-    ... on NumericalElement {
-      id
-      name
-      status
-      type
-      content
+        basePoints
+        pointsMultiplier
+        version
 
-      basePoints
-      pointsMultiplier
-      version
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
 
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
 
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      options {
-        __typename
-        hasSampleSolution
-        hasAnswerFeedbacks
-        placeholder
-        accuracy
-        unit
-        solutionRanges {
+        options {
           __typename
-          min
-          max
+          hasSampleSolution
+          hasAnswerFeedbacks
+          displayMode
+          choices {
+            ix
+            correct
+            feedback
+            value
+          }
         }
-        exactSolutions
-        restrictions {
-          __typename
-          min
-          max
-        }
-      }
 
-      tags {
-        id
-        name
-        order
-      }
-    }
-
-    ... on FreeTextElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      options {
-        __typename
-        hasSampleSolution
-        hasAnswerFeedbacks
-        solutions
-        restrictions {
-          __typename
-          maxLength
-        }
-      }
-
-      tags {
-        id
-        name
-        order
-      }
-    }
-
-    ... on SelectionElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      options {
-        __typename
-        hasSampleSolution
-        numberOfInputs
-      }
-
-      tags {
-        id
-        name
-        order
-      }
-    }
-
-    ... on CaseStudyElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      options {
-        __typename
-        hasSampleSolution
-        criteria {
+        tags {
           id
           name
           order
-          min
-          max
-          step
+        }
+      }
+
+      ... on NumericalElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        options {
+          __typename
+          hasSampleSolution
+          hasAnswerFeedbacks
+          placeholder
+          accuracy
           unit
-          labels {
+          solutionRanges {
+            __typename
             min
-            mid
+            max
+          }
+          exactSolutions
+          restrictions {
+            __typename
+            min
             max
           }
         }
-        cases {
+
+        tags {
           id
-          title
-          description
+          name
           order
         }
       }
 
-      tags {
+      ... on FreeTextElement {
         id
         name
-        order
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        options {
+          __typename
+          hasSampleSolution
+          hasAnswerFeedbacks
+          solutions
+          restrictions {
+            __typename
+            maxLength
+          }
+        }
+
+        tags {
+          id
+          name
+          order
+        }
       }
-    }
 
-    ... on FlashcardElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      tags {
+      ... on SelectionElement {
         id
         name
-        order
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        options {
+          __typename
+          hasSampleSolution
+          numberOfInputs
+        }
+
+        tags {
+          id
+          name
+          order
+        }
       }
-    }
 
-    ... on ContentElement {
-      id
-      name
-      status
-      type
-      content
-
-      basePoints
-      pointsMultiplier
-      version
-
-      isArchived
-      isDeleted
-      createdAt
-      updatedAt
-
-      derivedAccess
-      numSharedUsers
-      permissionLevel
-      isOwner
-      isManager
-      isEditor
-      isImported
-      isShared
-      isRemovable
-      sharingType
-
-      tags {
+      ... on CaseStudyElement {
         id
         name
-        order
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        options {
+          __typename
+          hasSampleSolution
+          criteria {
+            id
+            name
+            order
+            min
+            max
+            step
+            unit
+            labels {
+              min
+              mid
+              max
+            }
+          }
+          cases {
+            id
+            title
+            description
+            order
+          }
+        }
+
+        tags {
+          id
+          name
+          order
+        }
+      }
+
+      ... on FlashcardElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        tags {
+          id
+          name
+          order
+        }
+      }
+
+      ... on ContentElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        tags {
+          id
+          name
+          order
+        }
       }
     }
   }
