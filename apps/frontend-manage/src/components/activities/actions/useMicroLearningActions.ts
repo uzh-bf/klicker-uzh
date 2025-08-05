@@ -23,7 +23,6 @@ import {
   ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
@@ -41,6 +40,7 @@ function useMicroLearningActions({
   setExtensionModal,
   setSharingModal,
   setActivityLogOpen,
+  refetchActivities,
 }: {
   microLearning: ActivityInfo
   setPublishModal: Dispatch<SetStateAction<boolean>>
@@ -50,6 +50,7 @@ function useMicroLearningActions({
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -102,21 +103,18 @@ function useMicroLearningActions({
         id: 'openPreview',
         label: t('manage.courseList.openPreview'),
         icon: faMagnifyingGlass,
-        onClick: () => {
-          window.open(href, '_blank')
-        },
+        onClick: () => window.open(href, '_blank'),
         data: { cy: `open-microlearning-${microLearning.name}` },
       },
       {
         id: 'openEvaluation',
         label: t('manage.courseList.openEvaluation'),
         icon: faChartSimple,
-        onClick: () => {
+        onClick: () =>
           window.open(
             `${router.locale ? `/${router.locale}` : ''}/microLearning/${microLearning.id}/evaluation`,
             '_blank'
-          )
-        },
+          ),
         data: { cy: `evaluation-microlearning-${microLearning.name}` },
       },
       {
@@ -181,20 +179,17 @@ function useMicroLearningActions({
         id: 'analyticsMicroLearning',
         label: t('manage.courseList.activityAnalytics'),
         icon: faChartPie,
-        onClick: () => {
+        onClick: () =>
           router.push(
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
-          )
-        },
+          ),
         data: { cy: `open-analytics-async-activity` },
       },
       {
         id: 'shareMicroLearning',
         label: t('manage.course.shareMicroLearning'),
         icon: faShare,
-        onClick: () => {
-          setSharingModal(true)
-        },
+        onClick: () => setSharingModal(true),
         data: { cy: `share-microlearning-${microLearning.name}` },
       },
       {
@@ -209,9 +204,9 @@ function useMicroLearningActions({
                 query: GetSingleCourseDocument,
                 variables: { courseId: microLearning.courseId },
               },
-              { query: GetUserActivitiesDocument },
             ],
           })
+          await refetchActivities?.()
         },
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',

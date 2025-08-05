@@ -20,7 +20,6 @@ import {
   ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
@@ -36,6 +35,7 @@ function usePracticeQuizActions({
   setSharingModal,
   setRemovalModal,
   setActivityLogOpen,
+  refetchActivities,
 }: {
   practiceQuiz: ActivityInfo
   setPublishModal: Dispatch<SetStateAction<boolean>>
@@ -43,6 +43,7 @@ function usePracticeQuizActions({
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -95,21 +96,18 @@ function usePracticeQuizActions({
         id: 'openPreview',
         label: t('manage.courseList.openPreview'),
         icon: faMagnifyingGlass,
-        onClick: () => {
-          window.open(href, '_blank')
-        },
+        onClick: () => window.open(href, '_blank'),
         data: { cy: `open-practice-quiz-${practiceQuiz.name}` },
       },
       {
         id: 'openEvaluation',
         label: t('manage.courseList.openEvaluation'),
         icon: faChartSimple,
-        onClick: () => {
+        onClick: () =>
           window.open(
             `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${practiceQuiz.id}/evaluation`,
             '_blank'
-          )
-        },
+          ),
         data: { cy: `evaluation-practice-quiz-${practiceQuiz.name}` },
       },
       {
@@ -144,20 +142,17 @@ function usePracticeQuizActions({
         id: 'analyticsPracticeQuiz',
         label: t('manage.courseList.activityAnalytics'),
         icon: faChartPie,
-        onClick: () => {
+        onClick: () =>
           router.push(
             `/analytics/${practiceQuiz.courseId}/quizzes/${practiceQuiz.id}`
-          )
-        },
+          ),
         data: { cy: `open-analytics-async-activity` },
       },
       {
         id: 'sharePracticeQuiz',
         label: t('manage.course.sharePracticeQuiz'),
         icon: faShare,
-        onClick: () => {
-          setSharingModal(true)
-        },
+        onClick: () => setSharingModal(true),
         data: { cy: `share-practice-quiz-${practiceQuiz.name}` },
       },
       {
@@ -172,9 +167,9 @@ function usePracticeQuizActions({
                 query: GetSingleCourseDocument,
                 variables: { courseId: practiceQuiz.courseId },
               },
-              { query: GetUserActivitiesDocument },
             ],
           })
+          await refetchActivities?.()
         },
         data: { cy: `unpublish-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
@@ -183,9 +178,7 @@ function usePracticeQuizActions({
         id: 'removePracticeQuiz',
         label: t('manage.course.removePracticeQuiz'),
         icon: faX,
-        onClick: () => {
-          setRemovalModal(true)
-        },
+        onClick: () => setRemovalModal(true),
         data: { cy: `remove-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },

@@ -36,34 +36,23 @@ function Activities() {
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
 
   // get user activities while respecting the corresponding filters
-  const { loading: loadingActivities, data: dataActivities } = useQuery(
-    GetUserActivitiesDocument,
-    {
-      variables: {
-        statusFilter: filters.status,
-        activityTypeFilter: filters.type,
-        courseId: filters.course !== null ? filters.course : undefined,
-        withoutCourse: filters.course === null ? true : undefined,
-        searchString: searchString.trim() || undefined,
-        showOwned: filters.sharingType.includes(SharingType.Owned),
-        showShared: filters.sharingType.includes(SharingType.Shared),
-        showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      },
-      fetchPolicy: 'cache-and-network',
-    }
-  )
-
-  // const filteredActivities = useMemo(() => {
-  //   if (!dataActivities?.userActivities) return []
-
-  //   // apply sharing type filters (if defined)
-  //   let filtered = dataActivities.userActivities
-  //   filtered = filtered.filter((activity) =>
-  //     filters.sharingType?.includes(activity.sharingType)
-  //   )
-
-  //   return filtered
-  // }, [dataActivities, searchInput, filters.sharingType])
+  const {
+    loading: loadingActivities,
+    data: dataActivities,
+    refetch: refetchActivities,
+  } = useQuery(GetUserActivitiesDocument, {
+    variables: {
+      statusFilter: filters.status,
+      activityTypeFilter: filters.type,
+      courseId: filters.course !== null ? filters.course : undefined,
+      withoutCourse: filters.course === null ? true : undefined,
+      searchString: searchString.trim() || undefined,
+      showOwned: filters.sharingType.includes(SharingType.Owned),
+      showShared: filters.sharingType.includes(SharingType.Shared),
+      showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    },
+    fetchPolicy: 'network-only',
+  })
 
   const filtersActive =
     filters.status.length > 0 ||
@@ -127,6 +116,9 @@ function Activities() {
                     dataActivities?.userActivities?.length === 0
                   }
                   highlightedActivity={null}
+                  refetchActivities={async () => {
+                    await refetchActivities()
+                  }}
                 />
               )}
             </div>

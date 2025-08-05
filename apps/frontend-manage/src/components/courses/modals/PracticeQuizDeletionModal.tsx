@@ -3,7 +3,6 @@ import {
   DeletePracticeQuizDocument,
   GetPracticeQuizSummaryDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -14,10 +13,12 @@ function PracticeQuizDeletionModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -42,7 +43,6 @@ function PracticeQuizDeletionModal({
       // TODO: replace this with a more efficient cache update
       refetchQueries: [
         { query: GetSingleCourseDocument, variables: { courseId } },
-        { query: GetUserActivitiesDocument },
       ],
     }
   )
@@ -72,7 +72,10 @@ function PracticeQuizDeletionModal({
       onClose={onClose}
       title={t('manage.course.deletePracticeQuiz')}
       message={t('manage.course.deletePracticeQuizMessage')}
-      onSubmit={async () => await deletePracticeQuiz()}
+      onSubmit={async () => {
+        await deletePracticeQuiz()
+        await refetchActivities?.()
+      }}
       submitting={deletingPracticeQuiz}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

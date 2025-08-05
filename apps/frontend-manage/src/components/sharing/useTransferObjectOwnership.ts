@@ -6,7 +6,6 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   GetUserElementsDocument,
   GetUserLiveQuizzesDocument,
   ObjectType,
@@ -18,11 +17,13 @@ function useTransferObjectOwnership({
   objectId,
   catalogCollectionId,
   onError,
+  refetchActivities,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
+  refetchActivities?: () => Promise<void>
 }): {
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
@@ -70,24 +71,13 @@ function useTransferObjectOwnership({
               ]
             : []),
           ...(objectType === ObjectType.LiveQuiz
-            ? [
-                { query: GetUserLiveQuizzesDocument },
-                { query: GetUserActivitiesDocument },
-              ]
-            : []),
-          ...(objectType === ObjectType.PracticeQuiz
-            ? [{ query: GetUserActivitiesDocument }]
-            : []),
-          ...(objectType === ObjectType.MicroLearning
-            ? [{ query: GetUserActivitiesDocument }]
-            : []),
-          ...(objectType === ObjectType.GroupActivity
-            ? [{ query: GetUserActivitiesDocument }]
+            ? [{ query: GetUserLiveQuizzesDocument }]
             : []),
         ],
       })
 
       if (res.data?.transferObjectOwnership) {
+        await refetchActivities?.() // if an activity was shared, refetch the activities shown on the activity list
         return true
       } else {
         onError()

@@ -4,7 +4,6 @@ import {
   DeactivateLiveQuizBlockDocument,
   EndLiveQuizDocument,
   GetCockpitQuizDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -41,10 +40,7 @@ function Cockpit() {
           },
         })
       },
-      refetchQueries: [
-        { query: GetUserLiveQuizzesDocument },
-        { query: GetUserActivitiesDocument },
-      ],
+      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
     }
   )
 

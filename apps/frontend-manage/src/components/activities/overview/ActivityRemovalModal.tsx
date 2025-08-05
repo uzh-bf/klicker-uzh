@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
   ActivityType,
-  GetUserActivitiesDocument,
   ObjectType,
   RemoveObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,12 +15,14 @@ function ActivityRemovalModal({
   title,
   isModalOpen,
   setModalOpen,
+  refetchActivities,
 }: {
   activityId: string
   activityType: ActivityType
   title: string
   isModalOpen: boolean
   setModalOpen: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [confirmations, setConfirmations] = useState({
@@ -59,32 +60,32 @@ function ActivityRemovalModal({
               objectId: activityId,
               objectType: ObjectType.LiveQuiz,
             },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          await refetchActivities?.()
         } else if (activityType === ActivityType.PracticeQuiz) {
           await removeObject({
             variables: {
               objectId: activityId,
               objectType: ObjectType.PracticeQuiz,
             },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          await refetchActivities?.()
         } else if (activityType === ActivityType.MicroLearning) {
           await removeObject({
             variables: {
               objectId: activityId,
               objectType: ObjectType.MicroLearning,
             },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          await refetchActivities?.()
         } else if (activityType === ActivityType.GroupActivity) {
           await removeObject({
             variables: {
               objectId: activityId,
               objectType: ObjectType.GroupActivity,
             },
-            refetchQueries: [{ query: GetUserActivitiesDocument }],
           })
+          await refetchActivities?.()
         }
         setModalOpen(false)
       }}

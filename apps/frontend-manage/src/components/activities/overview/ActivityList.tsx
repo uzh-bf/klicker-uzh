@@ -10,11 +10,13 @@ function ActivityList({
   noActivities,
   hideActivityType = false,
   highlightedActivity,
+  refetchActivities,
 }: {
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
   highlightedActivity: string | null
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -63,6 +65,7 @@ function ActivityList({
           }
           hideType={hideActivityType}
           highlightedActivity={highlightedActivity}
+          refetchActivities={refetchActivities}
         />
       ))}
     </div>

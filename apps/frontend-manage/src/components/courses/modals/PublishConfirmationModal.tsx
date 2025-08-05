@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -26,6 +25,7 @@ interface PublishConfirmationModalProps {
   endAt: Date
   title: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }
 
 function PublishConfirmationModal({
@@ -36,6 +36,7 @@ function PublishConfirmationModal({
   endAt,
   title,
   courseId,
+  refetchActivities,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
@@ -45,7 +46,6 @@ function PublishConfirmationModal({
       variables: { id: activityId },
       // TODO: replace with proper cache update
       refetchQueries: [
-        { query: GetUserActivitiesDocument },
         { query: GetSingleCourseDocument, variables: { id: courseId } },
       ],
     }
@@ -56,7 +56,6 @@ function PublishConfirmationModal({
       variables: { id: activityId },
       // TODO: replace with proper cache update
       refetchQueries: [
-        { query: GetUserActivitiesDocument },
         { query: GetSingleCourseDocument, variables: { id: courseId } },
       ],
     }
@@ -74,6 +73,7 @@ function PublishConfirmationModal({
         } else if (activityType === ElementInstanceType.GroupActivity) {
           await publishGroupActivity()
         }
+        await refetchActivities?.()
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}

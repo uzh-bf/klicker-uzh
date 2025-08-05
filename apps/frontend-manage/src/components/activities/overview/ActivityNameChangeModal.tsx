@@ -3,7 +3,6 @@ import {
   ActivityType,
   ChangeActivityNameDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -17,6 +16,7 @@ interface ActivityNameChangeModalProps {
   displayName: string
   courseId?: string | null
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function ActivityNameChangeModal({
@@ -26,6 +26,7 @@ function ActivityNameChangeModal({
   displayName,
   courseId,
   onClose,
+  refetchActivities,
 }: ActivityNameChangeModalProps) {
   const t = useTranslations()
   const [changeActivityName] = useMutation(ChangeActivityNameDocument)
@@ -64,7 +65,6 @@ function ActivityNameChangeModal({
               displayName: values.displayName,
             },
             refetchQueries: [
-              { query: GetUserActivitiesDocument },
               ...(courseId
                 ? [
                     {
@@ -77,6 +77,7 @@ function ActivityNameChangeModal({
           })
 
           if (result.data?.changeActivityName) {
+            await refetchActivities?.()
             toast({
               type: 'success',
               message: t('manage.activities.activityNameChangeSuccess'),

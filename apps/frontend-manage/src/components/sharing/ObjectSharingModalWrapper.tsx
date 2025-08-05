@@ -13,6 +13,7 @@ interface ObjectSharingModalBaseProps {
   catalogCollectionId?: string
   isOwner: boolean
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 interface ObjectSharingModalIdProps extends ObjectSharingModalBaseProps {
@@ -33,6 +34,7 @@ function ObjectSharingModalWrapper({
   catalogCollectionId,
   isOwner,
   onClose,
+  refetchActivities,
 }: ObjectSharingModalIdProps | ObjectSharingModalUuidProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
 
@@ -62,6 +64,7 @@ function ObjectSharingModalWrapper({
           objectName={objectName}
           isTemplate={isTemplate}
           catalogCollectionId={catalogCollectionId}
+          refetchActivities={refetchActivities}
         />
       )}
     </>

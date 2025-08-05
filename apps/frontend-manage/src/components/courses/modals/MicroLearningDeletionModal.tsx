@@ -3,7 +3,6 @@ import {
   DeleteMicroLearningDocument,
   GetMicroLearningSummaryDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -14,10 +13,12 @@ function MicroLearningDeletionModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -41,7 +42,6 @@ function MicroLearningDeletionModal({
       },
       // TODO: replace with proper cache update
       refetchQueries: [
-        { query: GetUserActivitiesDocument },
         { query: GetSingleCourseDocument, variables: { courseId } },
       ],
     }
@@ -72,7 +72,10 @@ function MicroLearningDeletionModal({
       onClose={onClose}
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
-      onSubmit={async () => await deleteMicroLearning()}
+      onSubmit={async () => {
+        await deleteMicroLearning()
+        await refetchActivities?.()
+      }}
       submitting={deletingMicroLearning}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

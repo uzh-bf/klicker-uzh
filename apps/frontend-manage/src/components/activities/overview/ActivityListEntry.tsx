@@ -40,11 +40,13 @@ function ActivityListEntry({
   highlighted = false,
   hideType = false,
   highlightedActivity,
+  refetchActivities,
 }: {
   activity: ActivityInfo
   highlighted?: boolean
   hideType?: boolean
   highlightedActivity: string | null
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [showDetails, setShowDetails] = useState<boolean>(false)
@@ -220,6 +222,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                refetchActivities={refetchActivities}
               />
             ) : null}
             {activity.type === ActivityType.PracticeQuiz ? (
@@ -228,6 +231,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                refetchActivities={refetchActivities}
               />
             ) : null}
             {activity.type === ActivityType.MicroLearning ? (
@@ -236,6 +240,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                refetchActivities={refetchActivities}
               />
             ) : null}
             {activity.type === ActivityType.GroupActivity ? (
@@ -244,6 +249,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                refetchActivities={refetchActivities}
               />
             ) : null}
           </div>
@@ -293,6 +299,7 @@ function ActivityListEntry({
           type={activity.type}
           displayName={activity.displayName}
           onClose={() => setChangeName(false)}
+          refetchActivities={refetchActivities}
         />
       )}
 
