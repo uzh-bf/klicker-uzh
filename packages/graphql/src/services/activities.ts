@@ -5,39 +5,230 @@ import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
+export async function getUserActivitiesCourses(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      objects: {
+        where: {
+          courseId: { not: null },
+          course: { isArchived: false },
+        },
+        include: {
+          course: {
+            select: {
+              id: true,
+              name: true,
+              _count: {
+                select: {
+                  liveQuizzes: true,
+                  practiceQuizzes: true,
+                  microLearnings: true,
+                  groupActivities: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return (
+    user?.objects
+      .filter(
+        (object) =>
+          object.course!._count.liveQuizzes > 0 ||
+          object.course!._count.practiceQuizzes > 0 ||
+          object.course!._count.microLearnings > 0 ||
+          object.course!._count.groupActivities > 0
+      )
+      .map((object) => ({
+        id: object.courseId!,
+        name: object.course!.name,
+      })) ?? []
+  )
+}
+
 export async function getUserActivities(
   {
     statusFilter,
     activityTypeFilter,
     courseId,
     withoutCourse,
+    searchString,
+    showOwned,
+    showShared,
+    showDependencies,
   }: {
     statusFilter: DB.PublicationStatus[]
     activityTypeFilter?: ActivityType | null
     courseId?: string | null
     withoutCourse?: boolean | null
+    searchString?: string | null
+    showOwned: boolean
+    showShared: boolean
+    showDependencies: boolean
   },
   ctx: ContextWithUser
 ) {
-  // TODO: REMOVE
-  console.log('Fetching user activities with status filter:', statusFilter)
-  console.log('Activity type filter:', activityTypeFilter)
-  console.log('Course ID:', courseId)
-  console.log('Without course:', withoutCourse)
-
   // fetch all activities that are available to the user
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       objects: {
         where: {
+          // depending on the shared access flags, determine the required access levels
+          permissionLevel:
+            showOwned && showShared
+              ? undefined
+              : {
+                  in: [
+                    ...(showOwned ? [DB.PermissionLevel.OWNER] : []),
+                    ...(showShared
+                      ? [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.EXECUTE,
+                          DB.PermissionLevel.READ,
+                        ]
+                      : []),
+                  ],
+                },
+          // chose whether to include dependencies or not
+          derived: showDependencies ? undefined : false,
           OR: [
-            { liveQuizId: { not: null } },
-            { practiceQuizId: { not: null } },
-            { microLearningId: { not: null } },
-            { groupActivityId: { not: null } },
+            ...(!activityTypeFilter ||
+            activityTypeFilter === ActivityType.LIVE_QUIZ
+              ? [
+                  {
+                    liveQuizId: { not: null },
+                    liveQuiz: {
+                      status:
+                        statusFilter.length > 0
+                          ? { in: statusFilter }
+                          : undefined,
+                      courseId: courseId
+                        ? { equals: courseId }
+                        : withoutCourse
+                          ? null
+                          : undefined,
+                      OR: searchString
+                        ? [
+                            {
+                              name: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                            {
+                              displayName: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                          ]
+                        : undefined,
+                    },
+                  },
+                ]
+              : []),
+            ...(!withoutCourse &&
+            (!activityTypeFilter ||
+              activityTypeFilter === ActivityType.PRACTICE_QUIZ)
+              ? [
+                  {
+                    practiceQuizId: { not: null },
+                    practiceQuiz: {
+                      status:
+                        statusFilter.length > 0
+                          ? { in: statusFilter }
+                          : undefined,
+                      courseId: courseId ?? undefined,
+                      OR: searchString
+                        ? [
+                            {
+                              name: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                            {
+                              displayName: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                          ]
+                        : undefined,
+                    },
+                  },
+                ]
+              : []),
+            ...(!withoutCourse &&
+            (!activityTypeFilter ||
+              activityTypeFilter === ActivityType.MICRO_LEARNING)
+              ? [
+                  {
+                    microLearningId: { not: null },
+                    microLearning: {
+                      status:
+                        statusFilter.length > 0
+                          ? { in: statusFilter }
+                          : undefined,
+                      courseId: courseId ?? undefined,
+                      OR: searchString
+                        ? [
+                            {
+                              name: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                            {
+                              displayName: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                          ]
+                        : undefined,
+                    },
+                  },
+                ]
+              : []),
+            ...(!withoutCourse &&
+            (!activityTypeFilter ||
+              activityTypeFilter === ActivityType.GROUP_ACTIVITY)
+              ? [
+                  {
+                    groupActivityId: { not: null },
+                    groupActivity: {
+                      status:
+                        statusFilter.length > 0
+                          ? { in: statusFilter }
+                          : undefined,
+                      courseId: courseId ?? undefined,
+                      OR: searchString
+                        ? [
+                            {
+                              name: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                            {
+                              displayName: {
+                                contains: searchString,
+                                mode: 'insensitive' as DB.Prisma.QueryMode,
+                              },
+                            },
+                          ]
+                        : undefined,
+                    },
+                  },
+                ]
+              : []),
           ],
         },
         include: {

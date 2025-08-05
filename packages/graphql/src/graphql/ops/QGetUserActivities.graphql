@@ -3,12 +3,20 @@ query GetUserActivities(
   $activityTypeFilter: ActivityType
   $courseId: String
   $withoutCourse: Boolean
+  $searchString: String
+  $showOwned: Boolean!
+  $showShared: Boolean!
+  $showDependencies: Boolean!
 ) {
   userActivities(
     statusFilter: $statusFilter
     activityTypeFilter: $activityTypeFilter
     courseId: $courseId
     withoutCourse: $withoutCourse
+    searchString: $searchString
+    showOwned: $showOwned
+    showShared: $showShared
+    showDependencies: $showDependencies
   ) {
     ...ActivityInfoData
   }

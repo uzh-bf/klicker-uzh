@@ -1,0 +1,6 @@
+query GetUserActivitiesCourses {
+  getUserActivitiesCourses {
+    id
+    name
+  }
+}

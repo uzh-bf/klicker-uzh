@@ -29,6 +29,7 @@ import {
 import {
   Course,
   CourseLeaderboard,
+  CourseListEntry,
   CourseOverview,
   CourseStudentTimeline,
   CourseSummary,
@@ -238,6 +239,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getUserActivitiesCourses: t.withAuth(asUser).field({
+        nullable: true,
+        type: [CourseListEntry],
+        resolve: async (_, __, ctx) => {
+          return await ActivityService.getUserActivitiesCourses(ctx)
+        },
+      }),
+
       userActivities: t.withAuth(asUser).field({
         nullable: true,
         type: [ActivityInfo],
@@ -246,6 +255,10 @@ export const Query = builder.queryType({
           activityTypeFilter: t.arg({ type: ActivityType, required: false }),
           courseId: t.arg.string({ required: false }),
           withoutCourse: t.arg.boolean({ required: false }),
+          searchString: t.arg.string({ required: false }),
+          showOwned: t.arg.boolean({ required: true }),
+          showShared: t.arg.boolean({ required: true }),
+          showDependencies: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ActivityService.getUserActivities(args, ctx)

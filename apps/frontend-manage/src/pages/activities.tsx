@@ -1,15 +1,15 @@
 import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import {
+  GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField } from '@uzh-bf/design-system'
-import * as JsSearch from 'js-search'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
@@ -19,6 +19,8 @@ import Layout from '../components/Layout'
 function Activities() {
   const t = useTranslations()
   const [searchInput, setSearchInput] = useState('')
+  const [searchString, setSearchString] = useState('')
+
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
     sharingType: [
@@ -29,6 +31,11 @@ function Activities() {
     type: undefined,
     course: undefined,
   })
+
+  // get available courses
+  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
+
+  // TODO: handle sharing filters through backend as well
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
     {
@@ -37,71 +44,33 @@ function Activities() {
         activityTypeFilter: filters.type,
         courseId: filters.course !== null ? filters.course : undefined,
         withoutCourse: filters.course === null ? true : undefined,
+        searchString: searchString.trim() || undefined,
+        showOwned: filters.sharingType.includes(SharingType.Owned),
+        showShared: filters.sharingType.includes(SharingType.Shared),
+        showDependencies: filters.sharingType.includes(SharingType.Dependency),
       },
       fetchPolicy: 'cache-and-network',
     }
   )
 
-  // setup search
-  const search = useMemo(() => {
-    if (!dataActivities?.userActivities) {
-      return null
-    }
+  // const filteredActivities = useMemo(() => {
+  //   if (!dataActivities?.userActivities) return []
 
-    const search = new JsSearch.Search('id')
-    search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-    search.searchIndex = new JsSearch.UnorderedSearchIndex()
-    search.addIndex('name')
-    search.addIndex('displayName')
-    search.addDocuments(dataActivities.userActivities)
-    return search
-  }, [dataActivities?.userActivities])
+  //   // apply sharing type filters (if defined)
+  //   let filtered = dataActivities.userActivities
+  //   filtered = filtered.filter((activity) =>
+  //     filters.sharingType?.includes(activity.sharingType)
+  //   )
 
-  // extract all available courses from activities
-  const availableCourses = useMemo(() => {
-    if (!dataActivities?.userActivities) return []
+  //   return filtered
+  // }, [dataActivities, searchInput, filters.sharingType])
 
-    const courses = dataActivities.userActivities
-      .map((activity) => activity.courseName)
-      .filter((courseName): courseName is string => !!courseName) // filter out null/undefined and ensure type safety
-
-    // Remove duplicates and sort alphabetically
-    return Array.from(new Set(courses)).sort()
-  }, [dataActivities?.userActivities])
-
-  const filteredActivities = useMemo(() => {
-    if (!dataActivities?.userActivities) return []
-
-    // apply search filter (if defined)
-    let filtered = dataActivities.userActivities
-    if (searchInput.trim() !== '' && search !== null) {
-      filtered = search.search(
-        searchInput
-      ) as typeof dataActivities.userActivities
-    }
-
-    // apply sharing type filters (if defined)
-    if (filters.sharingType && filters.sharingType.length > 0) {
-      filtered = filtered.filter((activity) =>
-        filters.sharingType?.includes(activity.sharingType)
-      )
-    }
-
-    // apply course filters (if defined)
-    // if (typeof filters.course !== 'undefined') {
-    //   if (filters.course === null) {
-    //     // show activities with no course assigned
-    //     filtered = filtered.filter((activity) => !activity.courseId)
-    //   } else {
-    //     // show activities with the selected course
-    //     filtered = filtered.filter(
-    //       (activity) => activity.courseId === filters.course
-    //     )
-    //   }
-    // }
-
-    return filtered
-  }, [dataActivities, searchInput, search, filters.sharingType, filters.course])
+  const filtersActive =
+    filters.status.length > 0 ||
+    typeof filters.sharingType === 'undefined' ||
+    filters.sharingType.length !== 3 ||
+    typeof filters.type !== 'undefined' ||
+    typeof filters.course !== 'undefined'
 
   return (
     <Layout
@@ -114,7 +83,8 @@ function Activities() {
           <ActivityOverviewFilters
             filters={filters}
             setFilters={setFilters}
-            availableCourses={availableCourses}
+            availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
+            filtersActive={filtersActive}
           />
         </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
@@ -126,11 +96,20 @@ function Activities() {
                   value={searchInput}
                   onChange={(newValue: string) => {
                     setSearchInput(newValue)
+
+                    if (newValue.trim() === '') {
+                      setSearchString('')
+                    }
                   }}
                   icon={faMagnifyingGlass}
                   className={{
                     input: 'pl-8! h-10',
                     field: 'w-80 rounded-md pr-3',
+                  }}
+                  onEnter={() => setSearchString(searchInput)}
+                  onReset={() => {
+                    setSearchInput('')
+                    setSearchString('')
                   }}
                 />
                 {/* // TODO: introduce customized ordering for activity overview */}
@@ -142,8 +121,11 @@ function Activities() {
                 <Loader />
               ) : (
                 <ActivityList
-                  activities={filteredActivities}
-                  noActivities={dataActivities?.userActivities?.length === 0}
+                  activities={dataActivities?.userActivities ?? []}
+                  noActivities={
+                    !filtersActive &&
+                    dataActivities?.userActivities?.length === 0
+                  }
                   highlightedActivity={null}
                 />
               )}
