@@ -11,8 +11,8 @@ import Element from './Element'
 interface ElementListProps {
   filtersActive: boolean
   activityWizardOpen: boolean
-  setSelectedQuestions: (id: number, data: ElementType) => void
-  selectedQuestions: Record<number, ElementType>
+  setSelectedElements: (id: number, data: ElementType) => void
+  selectedElements: Record<number, ElementType>
   triggerSuccessToast: () => void
   elements?: ElementType[]
   tagfilter?: string[]
@@ -25,8 +25,8 @@ interface ElementListProps {
 function ElementList({
   filtersActive,
   activityWizardOpen,
-  setSelectedQuestions,
-  selectedQuestions,
+  setSelectedElements,
+  selectedElements,
   triggerSuccessToast,
   elements = [],
   tagfilter = [],
@@ -92,7 +92,7 @@ function ElementList({
           element={element}
           disabled={!element.isManager && activityWizardOpen}
           checkboxDisabled={!element.isManager}
-          checked={!!selectedQuestions[element.id]}
+          checked={!!selectedElements[element.id]}
           tags={element.tags || []}
           handleTagClick={handleTagClick}
           hasAnswerFeedbacks={
@@ -105,7 +105,7 @@ function ElementList({
               ? (element.options.hasSampleSolution ?? false)
               : true
           }
-          onCheck={() => setSelectedQuestions(element.id, element)}
+          onCheck={() => setSelectedElements(element.id, element)}
           triggerSuccessToast={triggerSuccessToast}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}

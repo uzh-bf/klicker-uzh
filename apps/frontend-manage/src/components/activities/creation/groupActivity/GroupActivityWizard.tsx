@@ -14,7 +14,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import useCoursesGroupActivitySplit from '~/lib/hooks/useCoursesGroupActivitySplit'
+import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ElementCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {

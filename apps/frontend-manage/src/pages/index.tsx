@@ -1,44 +1,30 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  faArchive,
-  faInbox,
-  faMagnifyingGlass,
-  faSortAsc,
-  faSortDesc,
-} from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useQuery } from '@apollo/client'
 import {
   ActivityType,
   Element,
   GetUserElementsDocument,
   SharingType,
-  SortByType,
-  ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  Checkbox,
-  Select,
-  TextField,
-  toast,
-  Tooltip,
-} from '@uzh-bf/design-system'
+import { Button, Checkbox, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
-import Pagination from '~/components/common/Pagination'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation from '../components/activities/ElementCreation'
-import Layout from '../components/Layout'
-import ElementList from '../components/questions/ElementList'
+import Pagination from '../components/common/Pagination'
+import ArchiveActionButtons from '../components/elements/ArchiveActionButtons'
+import ElementList from '../components/elements/ElementList'
+import ElementListSearch from '../components/elements/ElementListSearch'
+import ElementListSorting from '../components/elements/ElementListSorting'
 import ElementEditModal, {
   ElementEditMode,
-} from '../components/questions/manipulation/ElementEditModal'
-import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
-import TagList from '../components/questions/tags/TagList'
+} from '../components/elements/manipulation/ElementEditModal'
+import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
+import TagList from '../components/elements/tags/TagList'
+import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
@@ -50,31 +36,29 @@ function Index() {
   const router = useRouter()
   const t = useTranslations()
 
-  const [searchInput, setSearchInput] = useState('')
+  // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
-    ToggleIsArchivedDocument
-  )
 
+  // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
   )
-  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+  const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
 
-  const [selectedQuestions, setSelectedQuestions] = useState<
+  const [selectedElements, setSelectedElements] = useState<
     Record<number, Element | undefined>
   >({})
 
   const selectedElementContent = useMemo(
     () =>
       pickBy(
-        selectedQuestions,
+        selectedElements,
         (value) => typeof value !== 'undefined'
       ) as Record<number, Element>,
-    [selectedQuestions]
+    [selectedElements]
   )
 
   // initialize the sorting and filtering state from local storage (if available)
@@ -184,9 +168,9 @@ function Index() {
     }
   }, [router])
 
-  // once the activity wizard is opened, deselect all invalid questions
+  // once the activity wizard is opened, deselect all invalid elements
   useEffect(() => {
-    setSelectedQuestions((selection) => {
+    setSelectedElements((selection) => {
       if (!!creationMode) {
         return Object.fromEntries(
           Object.entries(selection).filter(
@@ -233,7 +217,7 @@ function Index() {
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as ActivityType}
             selection={selectedElementContent}
-            resetSelection={() => setSelectedQuestions({})}
+            resetSelection={() => setSelectedElements({})}
           />
         </>
       )}
@@ -296,22 +280,22 @@ function Index() {
                   <Checkbox
                     checked={
                       elements.length !== 0 &&
-                      Object.values(selectedQuestions).filter((value) => value)
+                      Object.values(selectedElements).filter((value) => value)
                         .length == elements.length
                     }
                     partial={
-                      Object.values(selectedQuestions).filter((value) => value)
+                      Object.values(selectedElements).filter((value) => value)
                         .length > 0
                     }
                     onCheck={() => {
-                      setSelectedQuestions((prev) => {
-                        let allQuestions = {}
+                      setSelectedElements((prev) => {
+                        let allElements = {}
 
                         if (elements) {
                           if (!isEmpty(selectedElementContent)) {
-                            // set questions after filtering to undefined
-                            // do not uncheck questions that are selected but not in the filtered set
-                            allQuestions = elements.reduce(
+                            // set elements after filtering to undefined
+                            // do not uncheck elements that are selected but not in the filtered set
+                            allElements = elements.reduce(
                               (acc, curr) => ({
                                 ...acc,
                                 [curr.id]: undefined,
@@ -319,8 +303,8 @@ function Index() {
                               {}
                             )
                           } else {
-                            // set all questions after filtering to their id and data
-                            allQuestions = elements.reduce(
+                            // set all elements after filtering to their id and data
+                            allElements = elements.reduce(
                               (acc, question) => ({
                                 ...acc,
                                 [question.id]: question,
@@ -330,222 +314,32 @@ function Index() {
                           }
                         }
 
-                        return { ...prev, ...allQuestions }
+                        return { ...prev, ...allElements }
                       })
                     }}
                     className={{ root: 'border-unset' }}
                   />
-                  {t('manage.questionPool.numSelected', {
+                  {/* {t('manage.questionPool.numSelected', {
                     count: Object.keys(selectedElementContent).length,
                     total: elements.length ?? 0,
-                  })}
+                  })} */}
                 </div>
 
-                <TextField
-                  placeholder={t('manage.general.searchPlaceholder')}
-                  value={searchInput}
-                  onChange={(newValue: string) => {
-                    setSearchInput(newValue)
-
-                    if (newValue.trim() === '') {
-                      setSearchString('')
-                    }
-                  }}
-                  icon={faMagnifyingGlass}
-                  className={{
-                    input: 'h-10 pl-8',
-                    field: 'w-64 rounded-md pr-3',
-                  }}
-                  onEnter={() => setSearchString(searchInput)}
-                  onReset={() => {
-                    setSearchInput('')
-                    setSearchString('')
-                  }}
-                  data={{ cy: 'elements-search-input' }}
+                <ElementListSearch setSearchString={setSearchString} />
+                <ElementListSorting
+                  sort={sort}
+                  handleSortByChange={handleSortByChange}
+                  handleSortOrderToggle={handleSortOrderToggle}
                 />
 
-                <div className="flex flex-row gap-1 pr-3">
-                  <Button
-                    disabled={!sort.by}
-                    onClick={() => {
-                      handleSortOrderToggle()
+                {Object.keys(selectedElements).length > 0 && (
+                  <ArchiveActionButtons
+                    selectedElements={selectedElements}
+                    setSelectedElements={setSelectedElements}
+                    refetchElements={async () => {
+                      await refetchElements()
                     }}
-                    className={{ root: 'h-10 rounded-md' }}
-                    data={{ cy: 'sort-order-question-pool-toggle' }}
-                  >
-                    <Button.Icon
-                      icon={sort.asc ? faSortAsc : faSortDesc}
-                      withoutLabel
-                    />
-                  </Button>
-                  <Select
-                    value={sort.by}
-                    onChange={(newSortBy) =>
-                      handleSortByChange(newSortBy as SortByType)
-                    }
-                    placeholder={t('manage.general.sortBy')}
-                    contentPosition="popper"
-                    items={[
-                      {
-                        value: SortByType.Title,
-                        label: t('manage.general.title'),
-                        data: { cy: 'sort-by-question-pool-title' },
-                      },
-                      {
-                        value: SortByType.Type,
-                        label: t('manage.general.elementType'),
-                        data: { cy: 'sort-by-question-pool-type' },
-                      },
-                      {
-                        value: SortByType.Created,
-                        label: t('manage.general.dateCreated'),
-                        data: { cy: 'sort-by-question-pool-created' },
-                      },
-                      {
-                        value: SortByType.Modified,
-                        label: t('manage.general.dateModified'),
-                        data: { cy: 'sort-by-question-pool-modified' },
-                      },
-                    ]}
-                    className={{ root: 'min-w-30', trigger: 'h-10' }}
-                    data={{ cy: 'sort-by-question-pool' }}
                   />
-                </div>
-
-                {Object.keys(selectedElementContent).length > 0 && (
-                  <>
-                    <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
-                      <Button
-                        disabled={toggelingArchive}
-                        className={{ root: 'ml-1 h-10' }}
-                        onClick={async () => {
-                          const { data } = await toggleIsArchived({
-                            variables: {
-                              elementIds: Object.keys(
-                                selectedElementContent
-                              ).map(Number),
-                              isArchived: true,
-                            },
-                            update: (cache, { data }) => {
-                              // if the request was not successful, do nothing
-                              if (
-                                !data?.toggleIsArchived ||
-                                data.toggleIsArchived.failure
-                              )
-                                return
-
-                              // check if request was successful
-                              const update = data?.toggleIsArchived
-                              if (!update) return
-
-                              // extract the ids of all elements that should now be marked as archived
-                              const updatedElementIds =
-                                update.elements?.map((element) => element.id) ??
-                                []
-                            },
-                          })
-
-                          if (data?.toggleIsArchived?.success) {
-                            await refetchElements()
-                            toast({
-                              type: 'success',
-                              message: t(
-                                'manage.questionPool.archivingSuccess'
-                              ),
-                              options: { duration: 3000 },
-                            })
-                            setSelectedQuestions({})
-                          } else if (data?.toggleIsArchived?.partialSuccess) {
-                            toast({
-                              type: 'warning',
-                              message: t(
-                                'manage.questionPool.archivingPartialSuccess'
-                              ),
-                              options: { duration: 8000 },
-                            })
-                            setSelectedQuestions({})
-                          } else if (data?.toggleIsArchived?.failure) {
-                            toast({
-                              type: 'error',
-                              message: t('manage.questionPool.archivingFailed'),
-                              options: { duration: 8000 },
-                            })
-                          }
-                        }}
-                        data={{ cy: 'move-to-archive' }}
-                      >
-                        <FontAwesomeIcon icon={faArchive} />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip
-                      tooltip={t('manage.questionPool.restoreFromArchive')}
-                    >
-                      <Button
-                        disabled={toggelingArchive}
-                        className={{ root: 'ml-1 h-10' }}
-                        onClick={async () => {
-                          const { data } = await toggleIsArchived({
-                            variables: {
-                              elementIds: Object.keys(
-                                selectedElementContent
-                              ).map(Number),
-                              isArchived: false,
-                            },
-                            update: (cache, { data }) => {
-                              // if the request was not successful, do nothing
-                              if (
-                                !data?.toggleIsArchived ||
-                                data.toggleIsArchived.failure
-                              )
-                                return
-
-                              // check if request was successful
-                              const updatedElements = data?.toggleIsArchived
-                              if (!updatedElements) return
-
-                              // extract the ids of all elements that should now be marked as archived
-                              const updatedElementIds =
-                                updatedElements.elements?.map(
-                                  (element) => element.id
-                                ) ?? []
-                            },
-                          })
-
-                          if (data?.toggleIsArchived?.success) {
-                            await refetchElements()
-                            toast({
-                              type: 'success',
-                              message: t(
-                                'manage.questionPool.restoreFromArchiveSuccess'
-                              ),
-                              options: { duration: 8000 },
-                            })
-                            setSelectedQuestions({})
-                          } else if (data?.toggleIsArchived?.partialSuccess) {
-                            toast({
-                              type: 'warning',
-                              message: t(
-                                'manage.questionPool.restoreFromArchivePartialSuccess'
-                              ),
-                              options: { duration: 8000 },
-                            })
-                            setSelectedQuestions({})
-                          } else if (data?.toggleIsArchived?.failure) {
-                            toast({
-                              type: 'error',
-                              message: t(
-                                'manage.questionPool.restoreFromArchiveFailed'
-                              ),
-                              options: { duration: 8000 },
-                            })
-                          }
-                        }}
-                        data={{ cy: 'restore-from-archive' }}
-                      >
-                        <FontAwesomeIcon icon={faInbox} />
-                      </Button>
-                    </Tooltip>
-                  </>
                 )}
               </div>
               <Button
@@ -558,7 +352,7 @@ function Index() {
                   if (value) {
                     setShowRecoveryPrompt(true)
                   } else {
-                    setIsQuestionCreationModalOpen(true)
+                    setIsElementCreationModalOpen(true)
                   }
                 }}
                 data={{ cy: 'create-question' }}
@@ -579,7 +373,7 @@ function Index() {
                     filtersActive={filtersActive}
                     activityWizardOpen={!!creationMode}
                     elements={elements}
-                    selectedQuestions={selectedElementContent}
+                    selectedElements={selectedElementContent}
                     triggerSuccessToast={() =>
                       toast({
                         type: 'success',
@@ -587,8 +381,8 @@ function Index() {
                         options: { duration: 4000 },
                       })
                     }
-                    setSelectedQuestions={(id: number, data: Element) => {
-                      setSelectedQuestions((prev) => {
+                    setSelectedElements={(id: number, data: Element) => {
+                      setSelectedElements((prev) => {
                         return { ...prev, [id]: prev[id] ? undefined : data }
                       })
                     }}
@@ -603,11 +397,11 @@ function Index() {
                       })
                     }
                     unsetDeletedQuestion={(questionId: number) => {
-                      setSelectedQuestions((prev) => {
+                      setSelectedElements((prev) => {
                         if (prev[questionId]) {
-                          const newSelectedQuestions = { ...prev }
-                          delete newSelectedQuestions[questionId]
-                          return newSelectedQuestions
+                          const newselectedElements = { ...prev }
+                          delete newselectedElements[questionId]
+                          return newselectedElements
                         }
                         return prev
                       })
@@ -635,9 +429,9 @@ function Index() {
         </div>
       </div>
 
-      {isQuestionCreationModalOpen && (
+      {isElementCreationModalOpen && (
         <ElementEditModal
-          handleSetIsOpen={setIsQuestionCreationModalOpen}
+          handleSetIsOpen={setIsElementCreationModalOpen}
           triggerSuccessToast={() =>
             toast({
               type: 'success',
@@ -645,7 +439,7 @@ function Index() {
               options: { duration: 4000 },
             })
           }
-          isOpen={isQuestionCreationModalOpen}
+          isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
           refetchElements={async () => {
             await refetchElements()
@@ -656,12 +450,12 @@ function Index() {
         <RecoveryPrompt
           onRecovery={() => {
             setShowRecoveryPrompt(false)
-            setIsQuestionCreationModalOpen(true)
+            setIsElementCreationModalOpen(true)
           }}
           onDiscard={() => {
             localStorage.removeItem('autosave-element-creation')
             setShowRecoveryPrompt(false)
-            setIsQuestionCreationModalOpen(true)
+            setIsElementCreationModalOpen(true)
           }}
         />
       )}

@@ -1,6 +1,6 @@
 import { ValidateAvailableLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSidePropsContext } from 'next'
-import { initializeApollo } from '~/lib/apollo'
+import { initializeApollo } from '../../../../lib/apollo'
 
 function CourseLiveQuiz() {
   return null

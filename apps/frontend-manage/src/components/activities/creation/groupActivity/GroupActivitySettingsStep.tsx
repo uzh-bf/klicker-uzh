@@ -8,7 +8,7 @@ import {
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import useGroupActivityCourseGrouping from '~/lib/hooks/useGroupActivityCourseGrouping'
+import useGroupActivityCourseGrouping from '../../../../lib/hooks/useGroupActivityCourseGrouping'
 import CourseChangeMonitor from '../CourseChangeMonitor'
 import CreationFormValidator from '../CreationFormValidator'
 import DateChangeMonitor from '../DateChangeMonitor'

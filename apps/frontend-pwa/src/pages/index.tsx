@@ -23,11 +23,11 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import useStudentOverviewSplit from '~/lib/hooks/useStudentOverviewSplit'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
+import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
 
 function Index() {
   const router = useRouter()

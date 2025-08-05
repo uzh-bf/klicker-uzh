@@ -17,7 +17,7 @@ export type QuestionPoolFilters = {
   answerFeedbacks: boolean
 }
 
-export type QuestionPoolSortType = {
+export type LibrarySortType = {
   asc: boolean
   by: SortByType
 }
@@ -35,7 +35,7 @@ enum QuestionPoolReducerActionType {
 
 type FilterSortType = {
   filters: QuestionPoolFilters
-  sort: QuestionPoolSortType
+  sort: LibrarySortType
 }
 
 type ReducerAction = {

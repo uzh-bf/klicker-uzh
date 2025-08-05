@@ -10,11 +10,11 @@ import { TextField } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import Pagination from '~/components/common/Pagination'
 import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
+import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
 
 // number of entries per page for pagination

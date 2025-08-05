@@ -10,7 +10,7 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
-import useCourseWeeklyDates from '~/lib/hooks/useCourseWeeklyDates'
+import useCourseWeeklyDates from '../../lib/hooks/useCourseWeeklyDates'
 import SuspendedCourseLeaderboard from './SuspendedCourseLeaderboard'
 
 dayjs.extend(customParseFormat)

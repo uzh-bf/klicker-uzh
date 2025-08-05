@@ -1,6 +1,6 @@
-import ElementEditForm from '../../questions/manipulation/ElementEditForm'
-import { ElementEditMode } from '../../questions/manipulation/ElementEditModal'
-import { ElementFormTypes } from '../../questions/manipulation/types'
+import ElementEditForm from '../../elements/manipulation/ElementEditForm'
+import { ElementEditMode } from '../../elements/manipulation/ElementEditModal'
+import { ElementFormTypes } from '../../elements/manipulation/types'
 import { ActivityTemplateElementFormValues } from './types'
 import useFormValuesFromElementInstance from './useFormValuesFromElementInstance'
 

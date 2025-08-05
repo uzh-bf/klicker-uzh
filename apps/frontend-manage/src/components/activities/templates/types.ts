@@ -1,5 +1,5 @@
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
-import { ElementFormTypes } from '../../questions/manipulation/types'
+import { ElementFormTypes } from '../../elements/manipulation/types'
 
 export type ActivityTemplateElementFormValues = {
   processed: boolean // boolean to signal that this instance has been processed / adapted if desired
