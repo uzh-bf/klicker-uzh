@@ -2,6 +2,7 @@ import {
   ElementStatus,
   ElementType,
   SharingType,
+  SortByType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
@@ -18,14 +19,7 @@ export type QuestionPoolFilters = {
 
 export type QuestionPoolSortType = {
   asc: boolean
-  by: SortyByType
-}
-
-export enum SortyByType {
-  TITLE = 'TITLE',
-  TYPE = 'TYPE',
-  CREATED = 'CREATED',
-  MODIFIED = 'MODIFIED',
+  by: SortByType
 }
 
 enum QuestionPoolReducerActionType {
@@ -53,7 +47,7 @@ type ReducerAction = {
   isUntagged?: boolean
   newValue?: boolean
   name?: string
-  by?: SortyByType
+  by?: SortByType
 }
 
 export const SORTING_FILTERING_INITIAL: FilterSortType = {
@@ -73,7 +67,7 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
   },
   sort: {
     asc: false,
-    by: SortyByType.MODIFIED,
+    by: SortByType.Modified,
   },
 }
 
@@ -230,7 +224,7 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
     ...state,
     handleReset: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.RESET }),
-    handleSortByChange: (by: SortyByType): void =>
+    handleSortByChange: (by: SortByType): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),

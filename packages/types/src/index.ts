@@ -31,6 +31,13 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
+export enum SortByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
+}
+
 export enum ActivityType {
   LIVE_QUIZ = 'LIVE_QUIZ',
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',

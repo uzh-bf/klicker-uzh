@@ -73,6 +73,7 @@ import {
   ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
+  SortByType,
   Tag,
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
@@ -245,6 +246,8 @@ export const Query = builder.queryType({
           showDependencies: t.arg.boolean({ required: false }),
           tagIds: t.arg.intList({ required: true }),
           showUntagged: t.arg.boolean({ required: true }),
+          sortByType: t.arg({ type: SortByType, required: true }),
+          sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {

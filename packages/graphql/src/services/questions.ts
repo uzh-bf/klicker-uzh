@@ -11,6 +11,7 @@ import {
   ActivityType,
   ElementManipulationInput,
   SharingType,
+  SortByType,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -42,6 +43,8 @@ export async function getUserElements(
     showDependencies = true,
     tagIds,
     showUntagged,
+    sortByType,
+    sortByAsc,
     showArchived,
   }: {
     status?: DB.ElementStatus | null
@@ -54,6 +57,8 @@ export async function getUserElements(
     showDependencies?: boolean | null
     tagIds: number[]
     showUntagged: boolean
+    sortByType: SortByType
+    sortByAsc: boolean
     showArchived: boolean
   },
   ctx: ContextWithUser
@@ -137,7 +142,48 @@ export async function getUserElements(
             },
           },
         },
-        orderBy: [{ element: { createdAt: 'desc' } }],
+        orderBy: [
+          ...(sortByType === SortByType.CREATED
+            ? [
+                {
+                  element: {
+                    createdAt: (sortByAsc
+                      ? 'asc'
+                      : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.MODIFIED
+            ? [
+                {
+                  element: {
+                    updatedAt: (sortByAsc
+                      ? 'asc'
+                      : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.TITLE
+            ? [
+                {
+                  element: {
+                    name: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          ...(sortByType === SortByType.TYPE
+            ? [
+                {
+                  element: {
+                    type: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+        ],
       },
     },
   })

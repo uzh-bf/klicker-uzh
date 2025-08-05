@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType as ActivityTypeEnum,
+  SortByType as SortByTypeEnum,
   type CaseStudyCaseInput as CaseStudyCaseInputType,
   type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
   type CaseStudyCriterionInput as CaseStudyCriterionInputType,
@@ -70,6 +71,10 @@ import {
   PublicationStatus,
 } from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
+
+export const SortByType = builder.enumType('SortByType', {
+  values: Object.values(SortByTypeEnum),
+})
 
 // ----- QUESTION INPUTS -----
 // #region

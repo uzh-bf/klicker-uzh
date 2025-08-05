@@ -3,7 +3,6 @@ import {
   faArchive,
   faInbox,
   faMagnifyingGlass,
-  faSort,
   faSortAsc,
   faSortDesc,
 } from '@fortawesome/free-solid-svg-icons'
@@ -13,6 +12,7 @@ import {
   Element,
   GetUserElementsDocument,
   SharingType,
+  SortByType,
   ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -29,7 +29,6 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
-import { processItems } from 'src/lib/utils/filters'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
@@ -42,19 +41,18 @@ import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
-  SortyByType,
 } from '../lib/hooks/useSortingAndFiltering'
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
 
+  const [searchInput, setSearchInput] = useState('')
+  const [searchString, setSearchString] = useState('')
   const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
     ToggleIsArchivedDocument
   )
 
-  const [searchInput, setSearchInput] = useState('')
-  const [searchString, setSearchString] = useState('')
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
@@ -119,10 +117,13 @@ function Index() {
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
       tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
       showUntagged: filters.untagged,
+      sortByType: sort.by,
+      sortByAsc: sort.asc,
       showArchived: filters.archive,
     },
     fetchPolicy: 'network-only',
   })
+  const elements = dataElements?.userElements ?? []
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -172,46 +173,15 @@ function Index() {
     })
   }, [creationMode])
 
-  const processedQuestions = useMemo(() => {
-    if (dataElements?.userElements) {
-      const items = processItems(dataElements?.userElements, sort)
-      return items
-    }
-  }, [dataElements?.userElements, sort])
-
-  const filtersActive = useMemo(
-    () =>
-      !!(
-        filters.tags.length > 0 ||
-        filters.type ||
-        filters.status ||
-        filters.sharingType?.length !== 3 ||
-        filters.sampleSolution ||
-        filters.answerFeedbacks ||
-        filters.untagged
-      ),
-    [
-      filters.tags,
-      filters.type,
-      filters.status,
-      filters.sharingType,
-      filters.sampleSolution,
-      filters.answerFeedbacks,
-      filters.untagged,
-    ]
+  const filtersActive = !!(
+    filters.tags.length > 0 ||
+    filters.type ||
+    filters.status ||
+    filters.sharingType?.length !== 3 ||
+    filters.sampleSolution ||
+    filters.answerFeedbacks ||
+    filters.untagged
   )
-
-  const sortIcon = useMemo(() => {
-    if (!sort.by) {
-      return faSort
-    }
-
-    if (sort.asc) {
-      return faSortAsc
-    }
-
-    return faSortDesc
-  }, [sort.by, sort.asc])
 
   return (
     <Layout
@@ -294,9 +264,9 @@ function Index() {
                 <div className="flex flex-col pr-0.5 text-xs">
                   <Checkbox
                     checked={
-                      processedQuestions?.length !== 0 &&
+                      elements.length !== 0 &&
                       Object.values(selectedQuestions).filter((value) => value)
-                        .length == processedQuestions?.length
+                        .length == elements.length
                     }
                     partial={
                       Object.values(selectedQuestions).filter((value) => value)
@@ -306,11 +276,11 @@ function Index() {
                       setSelectedQuestions((prev) => {
                         let allQuestions = {}
 
-                        if (processedQuestions) {
+                        if (elements) {
                           if (!isEmpty(selectedElementContent)) {
                             // set questions after filtering to undefined
                             // do not uncheck questions that are selected but not in the filtered set
-                            allQuestions = processedQuestions.reduce(
+                            allQuestions = elements.reduce(
                               (acc, curr) => ({
                                 ...acc,
                                 [curr.id]: undefined,
@@ -319,7 +289,7 @@ function Index() {
                             )
                           } else {
                             // set all questions after filtering to their id and data
-                            allQuestions = processedQuestions.reduce(
+                            allQuestions = elements.reduce(
                               (acc, question) => ({
                                 ...acc,
                                 [question.id]: question,
@@ -336,7 +306,7 @@ function Index() {
                   />
                   {t('manage.questionPool.numSelected', {
                     count: Object.keys(selectedElementContent).length,
-                    total: processedQuestions?.length ?? 0,
+                    total: elements.length ?? 0,
                   })}
                 </div>
 
@@ -372,33 +342,36 @@ function Index() {
                     className={{ root: 'h-10 rounded-md' }}
                     data={{ cy: 'sort-order-question-pool-toggle' }}
                   >
-                    <Button.Icon icon={sortIcon} withoutLabel />
+                    <Button.Icon
+                      icon={sort.asc ? faSortAsc : faSortDesc}
+                      withoutLabel
+                    />
                   </Button>
                   <Select
                     value={sort.by}
                     onChange={(newSortBy) =>
-                      handleSortByChange(newSortBy as SortyByType)
+                      handleSortByChange(newSortBy as SortByType)
                     }
                     placeholder={t('manage.general.sortBy')}
                     contentPosition="popper"
                     items={[
                       {
-                        value: SortyByType.TITLE,
+                        value: SortByType.Title,
                         label: t('manage.general.title'),
                         data: { cy: 'sort-by-question-pool-title' },
                       },
                       {
-                        value: SortyByType.TYPE,
+                        value: SortByType.Type,
                         label: t('manage.general.elementType'),
                         data: { cy: 'sort-by-question-pool-type' },
                       },
                       {
-                        value: SortyByType.CREATED,
+                        value: SortByType.Created,
                         label: t('manage.general.dateCreated'),
                         data: { cy: 'sort-by-question-pool-created' },
                       },
                       {
-                        value: SortyByType.MODIFIED,
+                        value: SortByType.Modified,
                         label: t('manage.general.dateModified'),
                         data: { cy: 'sort-by-question-pool-modified' },
                       },
@@ -440,23 +413,23 @@ function Index() {
                                 []
 
                               // fetch the previously returned value for the elements list
-                              const elements = cache.readQuery({
+                              const cachedElements = cache.readQuery({
                                 query: GetUserElementsDocument,
                               })
 
-                              if (elements?.userElements) {
+                              if (cachedElements?.userElements) {
                                 cache.writeQuery({
                                   query: GetUserElementsDocument,
                                   data: {
-                                    userElements: elements.userElements.map(
-                                      (obj) =>
+                                    userElements:
+                                      cachedElements.userElements.map((obj) =>
                                         updatedElementIds.includes(obj.id)
                                           ? {
                                               ...obj,
                                               isArchived: true,
                                             }
                                           : obj
-                                    ),
+                                      ),
                                   },
                                 })
                               }
@@ -527,23 +500,23 @@ function Index() {
                                 ) ?? []
 
                               // fetch the previously returned value for the elements list
-                              const elements = cache.readQuery({
+                              const cachedElements = cache.readQuery({
                                 query: GetUserElementsDocument,
                               })
 
-                              if (elements?.userElements) {
+                              if (cachedElements?.userElements) {
                                 cache.writeQuery({
                                   query: GetUserElementsDocument,
                                   data: {
-                                    userElements: elements.userElements.map(
-                                      (obj) =>
+                                    userElements:
+                                      cachedElements?.userElements.map((obj) =>
                                         updatedElementIds.includes(obj.id)
                                           ? {
                                               ...obj,
                                               isArchived: false,
                                             }
                                           : obj
-                                    ),
+                                      ),
                                   },
                                 })
                               }
@@ -615,7 +588,7 @@ function Index() {
                 <ElementList
                   filtersActive={filtersActive}
                   activityWizardOpen={!!creationMode}
-                  elements={processedQuestions}
+                  elements={elements}
                   selectedQuestions={selectedElementContent}
                   triggerSuccessToast={() =>
                     toast({

@@ -9,6 +9,8 @@ query GetUserElements(
   $showDependencies: Boolean
   $tagIds: [Int!]!
   $showUntagged: Boolean!
+  $sortByType: SortByType!
+  $sortByAsc: Boolean!
   $showArchived: Boolean!
 ) {
   userElements(
@@ -22,6 +24,8 @@ query GetUserElements(
     showDependencies: $showDependencies
     tagIds: $tagIds
     showUntagged: $showUntagged
+    sortByType: $sortByType
+    sortByAsc: $sortByAsc
     showArchived: $showArchived
   ) {
     __typename
