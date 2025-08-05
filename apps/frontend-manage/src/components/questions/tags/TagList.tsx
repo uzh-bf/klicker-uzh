@@ -65,13 +65,13 @@ interface TagListProps {
   answerFeedbacks: boolean
   handleReset: () => void
   handleTagClick: ({
-    tagName,
+    valueOrId,
     isTypeTag,
     isStatusTag,
     isSharingTypeTag,
     isUntagged,
   }: {
-    tagName: string
+    valueOrId: string
     isTypeTag: boolean
     isStatusTag: boolean
     isSharingTypeTag: boolean
@@ -148,7 +148,7 @@ function TagList({
               active={activeStatus === status}
               onClick={(): void =>
                 handleTagClick({
-                  tagName: status,
+                  valueOrId: status,
                   isTypeTag: false,
                   isStatusTag: true,
                   isSharingTypeTag: false,
@@ -176,15 +176,34 @@ function TagList({
                 text={t(`shared.${type as ElementType}.typeLabel`)}
                 icon={icons}
                 active={activeType === type}
-                onClick={(): void =>
+                onClick={(): void => {
+                  // if flashcards / content elements are selected -> disable sample solution
+                  if (
+                    (type === ElementType.Flashcard ||
+                      type === ElementType.Content) &&
+                    sampleSolution
+                  ) {
+                    toggleSampleSolutionFilter()
+                  }
+
+                  // if an element type different from SC, MC, KPRIM is selected -> disable answer feedbacks
+                  if (
+                    type !== ElementType.Sc &&
+                    type !== ElementType.Mc &&
+                    type !== ElementType.Kprim &&
+                    answerFeedbacks
+                  ) {
+                    toggleAnswerFeedbackFilter()
+                  }
+
                   handleTagClick({
-                    tagName: type,
+                    valueOrId: type,
                     isTypeTag: true,
                     isStatusTag: false,
                     isSharingTypeTag: false,
                     isUntagged: false,
                   })
-                }
+                }}
                 data={{ cy: `element-type-filter-${type}` }}
               />
             )
@@ -214,7 +233,7 @@ function TagList({
                     }
                     onClick={(): void =>
                       handleTagClick({
-                        tagName: type,
+                        valueOrId: type,
                         isTypeTag: false,
                         isStatusTag: false,
                         isSharingTypeTag: true,
@@ -253,16 +272,42 @@ function TagList({
       {gamificationTagsVisible && (
         <ul className="list-none">
           <TagItem
+            disabled={
+              activeType === ElementType.Flashcard ||
+              activeType === ElementType.Content
+            }
             text={t('shared.generic.sampleSolution')}
             icon={[faCheckCircleRegular, faCheckCircleSolid]}
             active={sampleSolution}
             onClick={toggleSampleSolutionFilter}
+            tooltip={
+              activeType === ElementType.Flashcard ||
+              activeType === ElementType.Content
+                ? t('manage.questionPool.sampleSolutionUnavailableTypes')
+                : undefined
+            }
+            data={{ cy: 'sample-solution-filter' }}
           />
           <TagItem
+            disabled={
+              activeType &&
+              activeType !== ElementType.Sc &&
+              activeType !== ElementType.Mc &&
+              activeType !== ElementType.Kprim
+            }
             text={t('manage.questionPool.answerFeedbacks')}
             icon={[faCommentDotsRegular, faCommentDotsSolid]}
             active={answerFeedbacks}
             onClick={toggleAnswerFeedbackFilter}
+            tooltip={
+              activeType &&
+              activeType !== ElementType.Sc &&
+              activeType !== ElementType.Mc &&
+              activeType !== ElementType.Kprim
+                ? t('manage.questionPool.answerFeedbacksUnavailableTypes')
+                : undefined
+            }
+            data={{ cy: 'answer-feedback-filter' }}
           />
         </ul>
       )}

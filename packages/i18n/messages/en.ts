@@ -1025,9 +1025,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       '404Message':
         'The page you requested does not exist. Please return to the <link>library</link> or use the main menu at the top for further navigation.',
       date: 'Date',
-      dateCreated: 'Date Created',
-      dateModified: 'Date Modified',
+      dateCreated: 'Creation Date',
+      dateModified: 'Modification Date',
       title: 'Title',
+      elementType: 'Element Type',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:
@@ -1289,6 +1290,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'View a preview of how the explanation and answer feedbacks will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
       showExplanationTooltip:
         'View a preview of how the explanation will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
+      sampleSolutionUnavailableTypes:
+        'Sample solutions can only be added to questions. Content elements and flashcards do not support sample solutions.',
+      answerFeedbacksUnavailableTypes:
+        'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
     },
     tags: {
       deleteTag: 'Delete tag',

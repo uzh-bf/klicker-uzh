@@ -1,5 +1,19 @@
-query GetUserElements {
-  userElements {
+query GetUserElements(
+  $status: ElementStatus
+  $type: ElementType
+  $hasSampleSolution: Boolean!
+  $hasAnswerFeedbacks: Boolean!
+  $showArchived: Boolean!
+  $tagIds: [Int!]!
+) {
+  userElements(
+    status: $status
+    type: $type
+    hasSampleSolution: $hasSampleSolution
+    hasAnswerFeedbacks: $hasAnswerFeedbacks
+    showArchived: $showArchived
+    tagIds: $tagIds
+  ) {
     __typename
 
     ... on ChoicesElement {

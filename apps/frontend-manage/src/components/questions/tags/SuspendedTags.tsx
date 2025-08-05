@@ -18,13 +18,13 @@ interface Props {
   showUntagged: boolean
   activeTags: string[]
   handleTagClick: ({
-    tagName,
+    valueOrId,
     isTypeTag,
     isStatusTag,
     isSharingTypeTag,
     isUntagged,
   }: {
-    tagName: string
+    valueOrId: string
     isTypeTag: boolean
     isStatusTag: boolean
     isSharingTypeTag: boolean
@@ -96,16 +96,16 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
             <UserTag
               key={tag.id}
               tag={tag}
-              handleTagClick={(tag: string) =>
+              handleTagClick={(tagId: number) =>
                 handleTagClick({
-                  tagName: tag,
+                  valueOrId: tagId.toString(),
                   isTypeTag: false,
                   isStatusTag: false,
                   isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
-              active={activeTags.includes(tag.name)}
+              active={activeTags.includes(tag.id.toString())}
               onMoveDown={
                 searchInput === '' && ix < data.userTags!.length - 1
                   ? async () =>
@@ -128,9 +128,9 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
         <UserTag
           key={'untagged-tag-trigger'}
           tag={{ id: 0, name: t('manage.questionPool.untagged'), order: 1 }}
-          handleTagClick={(tag: string) =>
+          handleTagClick={(tagId: number) =>
             handleTagClick({
-              tagName: tag,
+              valueOrId: tagId.toString(),
               isTypeTag: false,
               isStatusTag: false,
               isSharingTypeTag: false,

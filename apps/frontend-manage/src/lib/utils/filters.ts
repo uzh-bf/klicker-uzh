@@ -1,5 +1,4 @@
 import dayjs from 'dayjs'
-import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -45,69 +44,19 @@ function filterQuestions(
     results = index.search(filters.name) as Element[]
   }
 
-  // only reduce the shown questions to the non-archived ones, if the archive filter is not active
-  if (!filters.archive) {
-    results = results.filter(
-      ({ isArchived }): boolean =>
-        (typeof isArchived === 'undefined' && !filters.archive) ||
-        isArchived === false
-    )
-  }
-
-  // if a sample solution filter was selected, only show questions with a sample solution
-  if (filters.sampleSolution) {
-    results = results.filter(
-      (element) =>
-        'options' in element && element.options.hasSampleSolution === true
-    )
-  }
-
-  // if an answer feedback filter was selected, only show questions with answer feedbacks
-  if (filters.answerFeedbacks) {
-    results = results.filter(
-      (element) =>
-        'options' in element &&
-        element.options &&
-        'hasAnswerFeedbacks' in element.options &&
-        element.options.hasAnswerFeedbacks === true
-    )
-  }
-
   if (filters.untagged) {
     results = results.filter(({ tags }) => tags?.length === 0)
   }
 
   // if either type or tags were selected, filter the results
-  if (filters.type || filters.sharingType || filters.tags || filters.status) {
-    results = results.filter(({ type, sharingType, tags, status }): boolean => {
-      // compare the type selected and the type of each question
-      if (filters.type && type !== filters.type) {
-        return false
-      }
-
-      // compare the status selected and the status of each question
-      if (filters.status && status !== filters.status) {
-        return false
-      }
-
+  if (filters.sharingType || filters.tags) {
+    results = results.filter(({ sharingType, tags }): boolean => {
       // compare the sharing type and check whether the element fulfills any of them
       if (
         filters.sharingType &&
         sharingType !== undefined &&
         sharingType !== null &&
         !filters.sharingType.includes(sharingType)
-      ) {
-        return false
-      }
-
-      // compare the tags selected and check whether the question fulfills all of them
-      if (
-        filters.tags &&
-        !_every(
-          filters.tags,
-          (tag): boolean =>
-            tags?.map((t): string => t.name).includes(tag) ?? false
-        )
       ) {
         return false
       }
@@ -148,29 +97,6 @@ function sortQuestions(
       (a, b): number => factor * dayjs(a.updatedAt).diff(dayjs(b.updatedAt))
     )
   }
-
-  // TODO: if desired, fetch instances / number of instances as well and re-introduce this option
-  // if (sort.by === SortyByType.USED) {
-  //   return questions.sort((a, b): number => {
-  //     if (a.instances.length === 0 || b.instances.length === 0) {
-  //       if (a.instances.length === 0 && b.instances.length === 0) {
-  //         return 0
-  //       }
-
-  //       return factor * 1
-  //     }
-
-  //     // compare the dates of the latest created instances
-  //     // this allows us to sort by "last usage"
-  //     return (
-  //       factor *
-  //       subtractDates(
-  //         dayjs(a.instances[a.instances.length - 1].createdAt),
-  //         dayjs(b.instances[b.instances.length - 1].createdAt)
-  //       )
-  //     )
-  //   })
-  // }
 
   return questions
 }

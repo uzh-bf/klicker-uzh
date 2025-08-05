@@ -30,12 +30,49 @@ import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
-export async function getUserElements(ctx: ContextWithUser) {
+export async function getUserElements(
+  {
+    status,
+    type,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
+    showArchived,
+    tagIds,
+  }: {
+    status?: DB.ElementStatus | null
+    type?: DB.ElementType | null
+    hasSampleSolution: boolean
+    hasAnswerFeedbacks: boolean
+    showArchived: boolean
+    tagIds: number[]
+  },
+  ctx: ContextWithUser
+) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { elementId: { not: null } },
+        where: {
+          elementId: { not: null },
+          element: {
+            status: status ? status : undefined,
+            type: type ? type : undefined,
+            isArchived: showArchived ? undefined : false,
+            AND: [
+              ...(hasSampleSolution
+                ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
+                : []),
+              ...(hasAnswerFeedbacks
+                ? [{ options: { path: ['hasAnswerFeedbacks'], equals: true } }]
+                : []),
+              ...(tagIds.length > 0
+                ? tagIds.map((id) => ({
+                    tags: { some: { id } },
+                  }))
+                : []),
+            ],
+          },
+        },
         include: {
           directPermission: true,
           element: {

@@ -1029,6 +1029,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       dateCreated: 'Erstellungsdatum',
       dateModified: 'Änderungsdatum',
       title: 'Titel',
+      elementType: 'Elementtyp',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
       catalystRequired:
@@ -1291,6 +1292,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Eine Vorschau, wie die Erklärung und die Antwort-Feedbacks in <b>asynchronen Aktivitäten</b> angezeigt werden, nachdem ein Schüler auf das Element reagiert hat.',
       showExplanationTooltip:
         'Eine Vorschau, wie die Erklärung in <b>asynchronen Aktivitäten</b> angezeigt wird, nachdem ein Schüler auf das Element reagiert hat.',
+      sampleSolutionUnavailableTypes:
+        'Musterlösungen können nur für Fragen erfasst werden. Inhaltselemenete und Lernkarten unterstützen keine Musterlösungen.',
+      answerFeedbacksUnavailableTypes:
+        'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
     },
     tags: {
       deleteTag: 'Tag löschen',

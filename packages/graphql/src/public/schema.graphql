@@ -2206,7 +2206,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, numEntries: Int, offset: Int, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements: [Element!]
+  userElements(hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, showArchived: Boolean!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): [Element!]
   userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]

@@ -56,7 +56,7 @@ interface ElementProps {
   disabled: boolean
   checkboxDisabled?: boolean
   tags?: Tag[]
-  handleTagClick: (tagName: string) => void
+  handleTagClick: (tagId: number) => void
   onCheck: () => void
   triggerSuccessToast: () => void
   unsetDeletedQuestion: (questionId: number) => void
@@ -237,7 +237,10 @@ function Element({
           </div>
 
           {element.isArchived && (
-            <FontAwesomeIcon icon={faArchive} className="mr-3 mt-2" />
+            <Badge className="mt-1.25 mr-3 flex h-max flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faArchive} className="" />
+              <span>{t('shared.generic.archived')}</span>
+            </Badge>
           )}
 
           <SharingTypeBadge sharingType={element.sharingType} />

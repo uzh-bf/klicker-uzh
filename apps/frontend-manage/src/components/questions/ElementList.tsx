@@ -16,7 +16,7 @@ interface ElementListProps {
   triggerSuccessToast: () => void
   elements?: ElementType[]
   tagfilter?: string[]
-  handleTagClick: (tagName: string) => void
+  handleTagClick: (tagId: number) => void
   unsetDeletedQuestion: (questionId: number) => void
   handleFilterReset: () => void
 }

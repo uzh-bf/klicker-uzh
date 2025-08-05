@@ -36,7 +36,7 @@ import {
   LeaderboardEntry,
   StudentCourse,
 } from './course.js'
-import { ElementType } from './elementData.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -234,8 +234,16 @@ export const Query = builder.queryType({
       userElements: t.withAuth(asUser).field({
         nullable: true,
         type: [Element],
-        resolve: async (_, __, ctx) => {
-          return await QuestionService.getUserElements(ctx)
+        args: {
+          status: t.arg({ type: ElementStatus, required: false }),
+          type: t.arg({ type: ElementType, required: false }),
+          hasSampleSolution: t.arg.boolean({ required: true }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: true }),
+          showArchived: t.arg.boolean({ required: true }),
+          tagIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.getUserElements(args, ctx)
         },
       }),
 
