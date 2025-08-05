@@ -1,12 +1,12 @@
 query GetUserActivities(
-  $statusFilter: [PublicationStatus!]!
+  $statusFilter: [PublicationStatus!]
   $activityTypeFilter: ActivityType
   $courseId: String
   $withoutCourse: Boolean
   $searchString: String
-  $showOwned: Boolean!
-  $showShared: Boolean!
-  $showDependencies: Boolean!
+  $showOwned: Boolean
+  $showShared: Boolean
+  $showDependencies: Boolean
 ) {
   userActivities(
     statusFilter: $statusFilter

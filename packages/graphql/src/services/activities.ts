@@ -57,18 +57,18 @@ export async function getUserActivities(
     courseId,
     withoutCourse,
     searchString,
-    showOwned,
-    showShared,
-    showDependencies,
+    showOwned = true,
+    showShared = true,
+    showDependencies = true,
   }: {
-    statusFilter: DB.PublicationStatus[]
+    statusFilter?: DB.PublicationStatus[] | null
     activityTypeFilter?: ActivityType | null
     courseId?: string | null
     withoutCourse?: boolean | null
     searchString?: string | null
-    showOwned: boolean
-    showShared: boolean
-    showDependencies: boolean
+    showOwned?: boolean | null
+    showShared?: boolean | null
+    showDependencies?: boolean | null
   },
   ctx: ContextWithUser
 ) {
@@ -105,7 +105,7 @@ export async function getUserActivities(
                     liveQuizId: { not: null },
                     liveQuiz: {
                       status:
-                        statusFilter.length > 0
+                        statusFilter && statusFilter.length > 0
                           ? { in: statusFilter }
                           : undefined,
                       courseId: courseId
@@ -141,7 +141,7 @@ export async function getUserActivities(
                     practiceQuizId: { not: null },
                     practiceQuiz: {
                       status:
-                        statusFilter.length > 0
+                        statusFilter && statusFilter.length > 0
                           ? { in: statusFilter }
                           : undefined,
                       courseId: courseId ?? undefined,
@@ -173,7 +173,7 @@ export async function getUserActivities(
                     microLearningId: { not: null },
                     microLearning: {
                       status:
-                        statusFilter.length > 0
+                        statusFilter && statusFilter.length > 0
                           ? { in: statusFilter }
                           : undefined,
                       courseId: courseId ?? undefined,
@@ -205,7 +205,7 @@ export async function getUserActivities(
                     groupActivityId: { not: null },
                     groupActivity: {
                       status:
-                        statusFilter.length > 0
+                        statusFilter && statusFilter.length > 0
                           ? { in: statusFilter }
                           : undefined,
                       courseId: courseId ?? undefined,

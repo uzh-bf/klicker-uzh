@@ -251,14 +251,14 @@ export const Query = builder.queryType({
         nullable: true,
         type: [ActivityInfo],
         args: {
-          statusFilter: t.arg({ type: [PublicationStatus], required: true }),
+          statusFilter: t.arg({ type: [PublicationStatus], required: false }),
           activityTypeFilter: t.arg({ type: ActivityType, required: false }),
           courseId: t.arg.string({ required: false }),
           withoutCourse: t.arg.boolean({ required: false }),
           searchString: t.arg.string({ required: false }),
-          showOwned: t.arg.boolean({ required: true }),
-          showShared: t.arg.boolean({ required: true }),
-          showDependencies: t.arg.boolean({ required: true }),
+          showOwned: t.arg.boolean({ required: false }),
+          showShared: t.arg.boolean({ required: false }),
+          showDependencies: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ActivityService.getUserActivities(args, ctx)

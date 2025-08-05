@@ -70,19 +70,13 @@ async function submitLiveQuizForm({
           isModerationEnabled: values.isModerationEnabled,
         },
         refetchQueries: [
-          {
-            query: GetUserLiveQuizzesDocument,
-          },
-          {
-            query: GetUserActivitiesDocument,
-          },
+          { query: GetUserLiveQuizzesDocument },
+          { query: GetUserActivitiesDocument },
           ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
+                  variables: { courseId: values.courseId },
                 },
               ]
             : []),
@@ -111,19 +105,13 @@ async function submitLiveQuizForm({
           isModerationEnabled: values.isModerationEnabled,
         },
         refetchQueries: [
-          {
-            query: GetUserLiveQuizzesDocument,
-          },
-          {
-            query: GetUserActivitiesDocument,
-          },
+          { query: GetUserLiveQuizzesDocument },
+          { query: GetUserActivitiesDocument },
           ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
+                  variables: { courseId: values.courseId },
                 },
               ]
             : []),

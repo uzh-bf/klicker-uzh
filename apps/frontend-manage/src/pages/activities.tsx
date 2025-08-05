@@ -35,7 +35,7 @@ function Activities() {
   // get available courses
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
 
-  // TODO: handle sharing filters through backend as well
+  // get user activities while respecting the corresponding filters
   const { loading: loadingActivities, data: dataActivities } = useQuery(
     GetUserActivitiesDocument,
     {
