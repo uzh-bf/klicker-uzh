@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   DeleteElementDocument,
   GetElementSummaryDocument,
-  GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
@@ -16,12 +15,14 @@ function ElementDeletionModal({
   isModalOpen,
   setModalOpen,
   unsetDeletedQuestion,
+  refetchElements,
 }: {
   elementId: number
   title: string
   isModalOpen: boolean
   setModalOpen: Dispatch<SetStateAction<boolean>>
   unsetDeletedQuestion: (questionId: number) => void
+  refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
   const [confirmations, setConfirmations] = useState({
@@ -83,11 +84,9 @@ function ElementDeletionModal({
           variables: {
             id: elementId,
           },
-          refetchQueries: [
-            { query: GetUserElementsDocument },
-            { query: GetUserTagsDocument },
-          ],
+          refetchQueries: [{ query: GetUserTagsDocument }],
         })
+        await refetchElements()
         unsetDeletedQuestion(elementId)
         setModalOpen(false)
       }}

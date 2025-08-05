@@ -63,6 +63,7 @@ interface ElementProps {
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
+  refetchElements: () => Promise<void>
 }
 
 function Element({
@@ -78,6 +79,7 @@ function Element({
   hasAnswerFeedbacks,
   hasSampleSolution,
   tagfilter = [],
+  refetchElements,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
   const [isModificationModalOpen, setModificationModalOpen] = useState(false)
@@ -333,6 +335,7 @@ function Element({
           isOpen={isModificationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.EDIT}
+          refetchElements={refetchElements}
         />
       )}
       {isDuplicationModalOpen && (
@@ -342,6 +345,7 @@ function Element({
           isOpen={isDuplicationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.DUPLICATE}
+          refetchElements={refetchElements}
         />
       )}
       {isDeletionModalOpen && element.isManager && (
@@ -351,6 +355,7 @@ function Element({
           elementId={element.id}
           title={element.name}
           unsetDeletedQuestion={unsetDeletedQuestion}
+          refetchElements={refetchElements}
         />
       )}
       {isRemovalModalOpen && !element.isOwner && element.isRemovable && (
@@ -360,6 +365,7 @@ function Element({
           elementId={element.id}
           title={element.name}
           unsetDeletedQuestion={unsetDeletedQuestion}
+          refetchElements={refetchElements}
         />
       )}
       {isSharingModalOpen && element.isManager ? (
@@ -369,6 +375,7 @@ function Element({
           objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
           onClose={() => setSharingModalOpen(false)}
+          refetchElements={refetchElements}
         />
       ) : null}
 

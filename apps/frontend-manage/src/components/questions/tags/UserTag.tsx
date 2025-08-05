@@ -14,6 +14,7 @@ function UserTag({
   isStatic = false,
   onMoveDown,
   onMoveUp,
+  refetchElements,
 }: {
   tag: Tag
   handleTagClick: (tagId: number) => void
@@ -21,6 +22,7 @@ function UserTag({
   isStatic?: boolean
   onMoveUp?: () => void
   onMoveDown?: () => void
+  refetchElements: () => Promise<void>
 }) {
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -68,6 +70,7 @@ function UserTag({
               }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              refetchElements={refetchElements}
             />
           </div>
         )}

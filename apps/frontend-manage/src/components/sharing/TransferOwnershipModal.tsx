@@ -14,6 +14,7 @@ function TransferOwnershipModal({
   isTemplate = false,
   catalogCollectionId,
   refetchActivities,
+  refetchElements,
 }: {
   onClose: () => void
   objectId: number | string
@@ -22,6 +23,7 @@ function TransferOwnershipModal({
   isTemplate?: boolean
   catalogCollectionId?: string
   refetchActivities?: () => Promise<void>
+  refetchElements?: () => Promise<void>
 }) {
   const t = useTranslations()
 
@@ -37,6 +39,7 @@ function TransferOwnershipModal({
     catalogCollectionId,
     onError: onTransferFailure,
     refetchActivities,
+    refetchElements,
   })
 
   const activityTemplate =

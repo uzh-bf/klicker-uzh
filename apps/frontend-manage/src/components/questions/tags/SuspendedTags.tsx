@@ -5,16 +5,13 @@ import {
   Tag,
   UpdateTagOrderingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import useSortingAndFiltering, {
-  SORTING_FILTERING_INITIAL,
-} from '@lib/hooks/useSortingAndFiltering'
 import { TextField, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import UserTag from './UserTag'
 
-interface Props {
+interface SuspendedTagsProps {
   showUntagged: boolean
   activeTags: string[]
   handleTagClick: ({
@@ -30,37 +27,36 @@ interface Props {
     isSharingTypeTag: boolean
     isUntagged: boolean
   }) => void
+  refetchElements: () => Promise<void>
 }
 
-function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
+function SuspendedTags({
+  showUntagged,
+  activeTags,
+  handleTagClick,
+  refetchElements,
+}: SuspendedTagsProps) {
   const t = useTranslations()
-
-  const [searchInput, setSearchInput] = useState('')
 
   const { data, error } = useSuspenseQuery(GetUserTagsDocument)
   const [updateTagOrdering] = useMutation(UpdateTagOrderingDocument, {
     refetchQueries: [{ query: GetUserTagsDocument }],
   })
 
-  const { handleSearch } = useSortingAndFiltering(SORTING_FILTERING_INITIAL)
-
+  // setup search
+  const [searchQuery, setSearchQuery] = useState('')
   const filteredTags = useMemo(() => {
-    if (data?.userTags) {
+    if (data?.userTags && searchQuery) {
       const search = new JsSearch.Search('id')
       search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
       search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
       search.addIndex('name')
       search.addDocuments(data.userTags)
-
-      if (searchInput) {
-        return search.search(searchInput) as Tag[]
-      }
-
-      return data.userTags
+      return search.search(searchQuery) as Tag[]
     }
 
-    return []
-  }, [data?.userTags, searchInput])
+    return data?.userTags ?? []
+  }, [data?.userTags, searchQuery])
 
   if (error) {
     return <UserNotification type="error" message={error.message} />
@@ -79,16 +75,14 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
     <>
       <TextField
         placeholder={t('manage.general.searchPlaceholder')}
-        value={searchInput}
-        onChange={(newValue: string) => {
-          setSearchInput(newValue)
-          handleSearch(newValue)
-        }}
+        value={searchQuery}
+        onChange={(newValue) => setSearchQuery(newValue)}
         icon={faMagnifyingGlass}
         className={{
           input: 'pl-8! h-8 text-sm',
           field: 'rounded-md',
         }}
+        onReset={() => setSearchQuery('')}
       />
       <ul className="flex min-h-[4.7rem] list-none flex-col overflow-y-auto">
         {filteredTags.map(
@@ -107,7 +101,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               }
               active={activeTags.includes(tag.id.toString())}
               onMoveDown={
-                searchInput === '' && ix < data.userTags!.length - 1
+                searchQuery === '' && ix < data.userTags!.length - 1
                   ? async () =>
                       await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix + 1 },
@@ -115,18 +109,21 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
                   : undefined
               }
               onMoveUp={
-                searchInput === '' && ix > 0
+                searchQuery === '' && ix > 0
                   ? async () =>
                       await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix - 1 },
                       })
                   : undefined
               }
+              refetchElements={refetchElements}
             />
           )
         )}
         <UserTag
+          isStatic
           key={'untagged-tag-trigger'}
+          active={showUntagged}
           tag={{ id: 0, name: t('manage.questionPool.untagged'), order: 1 }}
           handleTagClick={(tagId: number) =>
             handleTagClick({
@@ -137,8 +134,7 @@ function SuspendedTags({ showUntagged, activeTags, handleTagClick }: Props) {
               isUntagged: true,
             })
           }
-          active={showUntagged}
-          isStatic
+          refetchElements={refetchElements}
         />
       </ul>
     </>

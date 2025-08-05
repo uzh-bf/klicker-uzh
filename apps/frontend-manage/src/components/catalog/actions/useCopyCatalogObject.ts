@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import {
   CopyCatalogObjectToAccountDocument,
   GetAnswerCollectionsInfoDocument,
-  GetUserElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -42,9 +41,6 @@ function useCopyCatalogObject({
         refetchQueries: [
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-          ...(objectType === ObjectType.Element
-            ? [{ query: GetUserElementsDocument }]
             : []),
         ],
       })

@@ -19,6 +19,7 @@ interface ElementListProps {
   handleTagClick: (tagId: number) => void
   unsetDeletedQuestion: (questionId: number) => void
   handleFilterReset: () => void
+  refetchElements: () => Promise<void>
 }
 
 function ElementList({
@@ -32,6 +33,7 @@ function ElementList({
   handleTagClick,
   unsetDeletedQuestion,
   handleFilterReset,
+  refetchElements,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
   const {
@@ -107,6 +109,7 @@ function ElementList({
           triggerSuccessToast={triggerSuccessToast}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
+          refetchElements={refetchElements}
         />
       ))}
       {hasInitialized && hideSurvey === 'false' && (

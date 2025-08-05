@@ -233,6 +233,9 @@ function Index() {
               toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
               handleToggleArchive={handleToggleArchive}
               isArchiveActive={filters.archive}
+              refetchElements={async () => {
+                await refetchElements()
+              }}
             />
           </div>
           <div className="md:hidden">
@@ -253,6 +256,9 @@ function Index() {
               toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
               handleToggleArchive={handleToggleArchive}
               isArchiveActive={filters.archive}
+              refetchElements={async () => {
+                await refetchElements()
+              }}
             />
           </div>
         </div>
@@ -411,32 +417,11 @@ function Index() {
                               const updatedElementIds =
                                 update.elements?.map((element) => element.id) ??
                                 []
-
-                              // fetch the previously returned value for the elements list
-                              const cachedElements = cache.readQuery({
-                                query: GetUserElementsDocument,
-                              })
-
-                              if (cachedElements?.userElements) {
-                                cache.writeQuery({
-                                  query: GetUserElementsDocument,
-                                  data: {
-                                    userElements:
-                                      cachedElements.userElements.map((obj) =>
-                                        updatedElementIds.includes(obj.id)
-                                          ? {
-                                              ...obj,
-                                              isArchived: true,
-                                            }
-                                          : obj
-                                      ),
-                                  },
-                                })
-                              }
                             },
                           })
 
                           if (data?.toggleIsArchived?.success) {
+                            await refetchElements()
                             toast({
                               type: 'success',
                               message: t(
@@ -498,32 +483,11 @@ function Index() {
                                 updatedElements.elements?.map(
                                   (element) => element.id
                                 ) ?? []
-
-                              // fetch the previously returned value for the elements list
-                              const cachedElements = cache.readQuery({
-                                query: GetUserElementsDocument,
-                              })
-
-                              if (cachedElements?.userElements) {
-                                cache.writeQuery({
-                                  query: GetUserElementsDocument,
-                                  data: {
-                                    userElements:
-                                      cachedElements?.userElements.map((obj) =>
-                                        updatedElementIds.includes(obj.id)
-                                          ? {
-                                              ...obj,
-                                              isArchived: false,
-                                            }
-                                          : obj
-                                      ),
-                                  },
-                                })
-                              }
                             },
                           })
 
                           if (data?.toggleIsArchived?.success) {
+                            await refetchElements()
                             toast({
                               type: 'success',
                               message: t(
@@ -623,6 +587,9 @@ function Index() {
                     })
                   }}
                   handleFilterReset={handleReset}
+                  refetchElements={async () => {
+                    await refetchElements()
+                  }}
                 />
               )}
             </div>
@@ -642,6 +609,9 @@ function Index() {
           }
           isOpen={isQuestionCreationModalOpen}
           mode={ElementEditMode.CREATE}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
         />
       )}
       {showRecoveryPrompt && (
@@ -658,7 +628,11 @@ function Index() {
         />
       )}
       <Suspense fallback={<div />}>
-        <SuspendedFirstLoginModal />
+        <SuspendedFirstLoginModal
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
       </Suspense>
     </Layout>
   )

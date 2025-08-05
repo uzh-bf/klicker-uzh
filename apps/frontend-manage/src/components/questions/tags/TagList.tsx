@@ -80,6 +80,7 @@ interface TagListProps {
   toggleSampleSolutionFilter: () => void
   toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
+  refetchElements: () => Promise<void>
 }
 
 function TagList({
@@ -98,6 +99,7 @@ function TagList({
   toggleSampleSolutionFilter,
   toggleAnswerFeedbackFilter,
   handleToggleArchive,
+  refetchElements,
 }: TagListProps): React.ReactElement {
   const t = useTranslations()
 
@@ -266,6 +268,7 @@ function TagList({
             showUntagged={showUntagged}
             activeTags={activeTags}
             handleTagClick={handleTagClick}
+            refetchElements={refetchElements}
           />
         </Suspense>
       )}

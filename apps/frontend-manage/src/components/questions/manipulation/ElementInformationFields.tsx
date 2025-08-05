@@ -3,7 +3,6 @@ import {
   ChangeElementStatusDocument,
   ElementStatus,
   GetSingleQuestionDocument,
-  GetUserElementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -28,6 +27,7 @@ interface ElementInformationFieldsProps {
   values: ElementFormTypes
   isSubmitting: boolean
   inputsDisabled?: boolean
+  refetchElements?: () => Promise<void>
 }
 
 function ElementInformationFields({
@@ -37,6 +37,7 @@ function ElementInformationFields({
   values,
   isSubmitting,
   inputsDisabled = false,
+  refetchElements,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -75,20 +76,6 @@ function ElementInformationFields({
                     const success = data?.changeElementStatus
                     if (!success) return
 
-                    // update element list
-                    cache.updateQuery(
-                      { query: GetUserElementsDocument },
-                      (data) => ({
-                        userElements: data?.userElements
-                          ? data.userElements.map((obj) =>
-                              obj.id === elementId
-                                ? { ...obj, status: newValue as ElementStatus }
-                                : obj
-                            )
-                          : [],
-                      })
-                    )
-
                     // update single question query
                     cache.updateQuery(
                       {
@@ -108,6 +95,7 @@ function ElementInformationFields({
                 })
               }
 
+              await refetchElements?.()
               setFieldValue('status', newValue as ElementStatus)
               setStatusSaving(false)
             }}

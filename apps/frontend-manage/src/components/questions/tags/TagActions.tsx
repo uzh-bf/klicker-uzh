@@ -16,6 +16,7 @@ interface TagActionsProps {
   setIsDeletionModalOpen?: (isDeletionModalOpen: boolean) => void
   onMoveUp?: () => void
   onMoveDown?: () => void
+  refetchElements: () => Promise<void>
 }
 
 function TagActions({
@@ -26,6 +27,7 @@ function TagActions({
   setIsDeletionModalOpen,
   onMoveUp,
   onMoveDown,
+  refetchElements,
 }: TagActionsProps) {
   return (
     <div className="hidden flex-row items-center text-black group-hover:flex">
@@ -86,6 +88,7 @@ function TagActions({
           id={tag.id}
           name={tag.name}
           onClose={() => setIsDeletionModalOpen(false)}
+          refetchElements={refetchElements}
         />
       ) : null}
     </div>

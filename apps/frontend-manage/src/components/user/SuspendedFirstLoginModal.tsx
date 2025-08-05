@@ -2,7 +2,6 @@ import { useLazyQuery, useMutation, useSuspenseQuery } from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
   CheckShortnameAvailableDocument,
-  GetUserElementsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -26,7 +25,11 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
-function SuspendedFirstLoginModal() {
+function SuspendedFirstLoginModal({
+  refetchElements,
+}: {
+  refetchElements: () => Promise<void>
+}) {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
   const [isShortnameAvailable, setIsShortnameAvailable] = useState<
@@ -108,8 +111,8 @@ function SuspendedFirstLoginModal() {
                 sendUpdates: values.sendProjectUpdates,
                 seedDemoElements: values.seedDemoElements ?? false,
               },
-              refetchQueries: [{ query: GetUserElementsDocument }],
             })
+            await refetchElements()
 
             if (!result) {
               setShowGenericError(true)

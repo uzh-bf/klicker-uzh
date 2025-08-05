@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetElementSummaryDocument,
-  GetUserElementsDocument,
   ObjectType,
   RemoveObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,12 +15,14 @@ function ElementRemovalModal({
   isModalOpen,
   setModalOpen,
   unsetDeletedQuestion,
+  refetchElements,
 }: {
   elementId: number
   title: string
   isModalOpen: boolean
   setModalOpen: Dispatch<SetStateAction<boolean>>
   unsetDeletedQuestion: (questionId: number) => void
+  refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
   const [confirmations, setConfirmations] = useState({
@@ -80,8 +81,8 @@ function ElementRemovalModal({
             objectId: String(elementId),
             objectType: ObjectType.Element,
           },
-          refetchQueries: [{ query: GetUserElementsDocument }],
         })
+        await refetchElements()
         unsetDeletedQuestion(elementId)
         setModalOpen(false)
       }}
