@@ -239,6 +239,7 @@ export const Query = builder.queryType({
           type: t.arg({ type: ElementType, required: false }),
           hasSampleSolution: t.arg.boolean({ required: true }),
           hasAnswerFeedbacks: t.arg.boolean({ required: true }),
+          searchString: t.arg.string({ required: false }),
           showOwned: t.arg.boolean({ required: false }),
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),

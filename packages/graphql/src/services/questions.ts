@@ -36,6 +36,7 @@ export async function getUserElements(
     type,
     hasSampleSolution,
     hasAnswerFeedbacks,
+    searchString,
     showOwned = true,
     showShared = true,
     showDependencies = true,
@@ -47,6 +48,7 @@ export async function getUserElements(
     type?: DB.ElementType | null
     hasSampleSolution: boolean
     hasAnswerFeedbacks: boolean
+    searchString?: string | null
     showOwned?: boolean | null
     showShared?: boolean | null
     showDependencies?: boolean | null
@@ -100,6 +102,22 @@ export async function getUserElements(
                   }))
                 : []),
             ],
+            OR: searchString
+              ? [
+                  {
+                    name: {
+                      contains: searchString,
+                      mode: 'insensitive' as DB.Prisma.QueryMode,
+                    },
+                  },
+                  {
+                    content: {
+                      contains: searchString,
+                      mode: 'insensitive' as DB.Prisma.QueryMode,
+                    },
+                  },
+                ]
+              : undefined,
           },
         },
         include: {

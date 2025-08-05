@@ -3,6 +3,7 @@ query GetUserElements(
   $type: ElementType
   $hasSampleSolution: Boolean!
   $hasAnswerFeedbacks: Boolean!
+  $searchString: String
   $showOwned: Boolean
   $showShared: Boolean
   $showDependencies: Boolean
@@ -15,6 +16,7 @@ query GetUserElements(
     type: $type
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
+    searchString: $searchString
     showOwned: $showOwned
     showShared: $showShared
     showDependencies: $showDependencies

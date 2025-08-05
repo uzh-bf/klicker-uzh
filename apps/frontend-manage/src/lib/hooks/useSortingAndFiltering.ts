@@ -10,7 +10,6 @@ export type QuestionPoolFilters = {
   untagged: boolean
   tags: string[]
   sharingType: SharingType[]
-  name: string | null
   status?: ElementStatus
   type?: ElementType
   sampleSolution: boolean
@@ -34,7 +33,6 @@ enum QuestionPoolReducerActionType {
   TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
   SORT_ORDER = 'SORT_ORDER',
   SORT_BY = 'SORT_BY',
-  SEARCH = 'SEARCH',
   SAMPLE_SOLUTION = 'SAMPLE_SOLUTION',
   ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
   RESET = 'RESET',
@@ -70,7 +68,6 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
     archive: false,
     untagged: false,
     tags: [],
-    name: null,
     sampleSolution: false,
     answerFeedbacks: false,
   },
@@ -194,15 +191,6 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         },
       }
 
-    case QuestionPoolReducerActionType.SEARCH:
-      return {
-        ...state,
-        filters: {
-          ...state.filters,
-          name: action.name!,
-        },
-      }
-
     case QuestionPoolReducerActionType.SAMPLE_SOLUTION:
       return {
         ...state,
@@ -242,8 +230,6 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
     ...state,
     handleReset: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.RESET }),
-    handleSearch: (name: string): void =>
-      dispatch({ type: QuestionPoolReducerActionType.SEARCH, name }),
     handleSortByChange: (by: SortyByType): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>

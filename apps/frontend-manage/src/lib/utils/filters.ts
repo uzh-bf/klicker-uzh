@@ -40,9 +40,9 @@ function filterQuestions(
   let results = [...questions]
 
   // if a title (query) was given, search the index with it
-  if (index && filters.name) {
-    results = index.search(filters.name) as Element[]
-  }
+  // if (index && filters.name) {
+  //   results = index.search(filters.name) as Element[]
+  // }
 
   return results
 }
@@ -82,15 +82,13 @@ function sortQuestions(
 
 export function processItems(
   items: Element[],
-  filters: QuestionPoolFilters,
-  sort: QuestionPoolSortType,
-  index: JsSearch.Search | null
+  sort: QuestionPoolSortType
 ): Element[] {
-  let processed = items
+  let processed = [...items]
 
-  if (filters) {
-    processed = filterQuestions(processed, filters, index)
-  }
+  // if (filters) {
+  //   processed = filterQuestions(processed, filters, index)
+  // }
 
   if (sort) {
     processed = sortQuestions(processed, sort)

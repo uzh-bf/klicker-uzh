@@ -29,7 +29,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
-import { buildIndex, processItems } from 'src/lib/utils/filters'
+import { processItems } from 'src/lib/utils/filters'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation from '../components/activities/ElementCreation'
 import Layout from '../components/Layout'
@@ -54,6 +54,7 @@ function Index() {
   )
 
   const [searchInput, setSearchInput] = useState('')
+  const [searchString, setSearchString] = useState('')
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
@@ -93,7 +94,6 @@ function Index() {
   const {
     filters,
     sort,
-    handleSearch,
     handleSortByChange,
     handleSortOrderToggle,
     handleTagClick,
@@ -113,6 +113,7 @@ function Index() {
       type: filters.type,
       hasSampleSolution: filters.sampleSolution,
       hasAnswerFeedbacks: filters.answerFeedbacks,
+      searchString: searchString.trim() || undefined,
       showOwned: filters.sharingType.includes(SharingType.Owned),
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
@@ -171,36 +172,12 @@ function Index() {
     })
   }, [creationMode])
 
-  const index = useMemo(() => {
-    if (dataElements?.userElements) {
-      const dataQuestionsFlatTags = dataElements.userElements.map(
-        (question) => ({
-          ...question,
-          tagsString: (question.tags ?? []).map((tag) => tag.name).join(' '),
-        })
-      )
-      return buildIndex('questions', dataQuestionsFlatTags, [
-        'name',
-        'content',
-        'createdAt',
-        'updatedAt',
-        'tagsString',
-      ])
-    }
-    return null
-  }, [dataElements?.userElements])
-
   const processedQuestions = useMemo(() => {
     if (dataElements?.userElements) {
-      const items = processItems(
-        dataElements?.userElements,
-        filters,
-        sort,
-        index
-      )
+      const items = processItems(dataElements?.userElements, sort)
       return items
     }
-  }, [dataElements?.userElements, filters, index, sort])
+  }, [dataElements?.userElements, sort])
 
   const filtersActive = useMemo(
     () =>
@@ -368,13 +345,22 @@ function Index() {
                   value={searchInput}
                   onChange={(newValue: string) => {
                     setSearchInput(newValue)
-                    handleSearch(newValue)
+
+                    if (newValue.trim() === '') {
+                      setSearchString('')
+                    }
                   }}
                   icon={faMagnifyingGlass}
                   className={{
                     input: 'h-10 pl-8',
-                    field: 'min-w-30 rounded-md pr-3',
+                    field: 'w-64 rounded-md pr-3',
                   }}
+                  onEnter={() => setSearchString(searchInput)}
+                  onReset={() => {
+                    setSearchInput('')
+                    setSearchString('')
+                  }}
+                  data={{ cy: 'elements-search-input' }}
                 />
 
                 <div className="flex flex-row gap-1 pr-3">
