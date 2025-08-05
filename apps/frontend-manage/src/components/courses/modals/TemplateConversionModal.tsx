@@ -10,7 +10,6 @@ import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
   CreateActivityTemplateDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -33,6 +32,7 @@ interface TemplateConversionModalProps {
   activityType: ActivityType
   onSuccess: () => void
   onError: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function TemplateConversionModal({
@@ -41,6 +41,7 @@ function TemplateConversionModal({
   activityType,
   onSuccess,
   onError,
+  refetchActivities,
 }: TemplateConversionModalProps) {
   const t = useTranslations()
   const [currentStep, setCurrentStep] = useState(0)
@@ -136,13 +137,11 @@ function TemplateConversionModal({
                 templateInstructions: values.instructions,
                 copyBeforeConversion: values.conversionType === 'copy',
               },
-              refetchQueries: [
-                { query: GetUserLiveQuizzesDocument },
-                { query: GetUserActivitiesDocument },
-              ],
+              refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
             })
 
             if (result.data?.createActivityTemplate) {
+              await refetchActivities?.()
               onSuccess()
               handleModalClose()
             } else {

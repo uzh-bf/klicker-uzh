@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   DeleteActivityTemplateDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -16,6 +15,7 @@ interface TemplateDeletionModalProps {
   onClose: () => void
   onSuccess: () => void
   onError: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function TemplateDeletionModal({
@@ -24,6 +24,7 @@ function TemplateDeletionModal({
   onClose,
   onSuccess,
   onError,
+  refetchActivities,
 }: TemplateDeletionModalProps) {
   const t = useTranslations()
   const [deleteActivityTemplate, { loading: deleting }] = useMutation(
@@ -34,10 +35,7 @@ function TemplateDeletionModal({
         activityType: activityType,
       },
       // TODO: update cache instead of triggering refetch query once combined activity overview is available
-      refetchQueries: [
-        { query: GetUserLiveQuizzesDocument },
-        { query: GetUserActivitiesDocument },
-      ],
+      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
     }
   )
 
@@ -60,6 +58,7 @@ function TemplateDeletionModal({
           const { data } = await deleteActivityTemplate()
 
           if (data?.deleteActivityTemplate) {
+            await refetchActivities?.()
             onSuccess()
             onClose()
           } else {

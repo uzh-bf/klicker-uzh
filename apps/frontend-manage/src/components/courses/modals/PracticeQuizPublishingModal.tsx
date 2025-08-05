@@ -4,7 +4,6 @@ import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
@@ -19,6 +18,7 @@ interface PracticeQuizPublishingModalProps {
   courseId: string
   courseStartDate: string
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function PracticeQuizPublishingModal({
@@ -27,6 +27,7 @@ function PracticeQuizPublishingModal({
   courseId,
   courseStartDate,
   onClose,
+  refetchActivities,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
@@ -56,18 +57,13 @@ function PracticeQuizPublishingModal({
             primary
             onClick={async () => {
               await publishPracticeQuiz({
-                variables: {
-                  id: elementId,
-                },
+                variables: { id: elementId },
                 // TODO: replace with cache update
                 refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { id: courseId },
-                  },
-                  { query: GetUserActivitiesDocument },
+                  { query: GetSingleCourseDocument, variables: { courseId } },
                 ],
               })
+              await refetchActivities?.()
               onClose()
             }}
             loading={practiceQuizPublishing}
@@ -100,13 +96,10 @@ function PracticeQuizPublishingModal({
                 },
                 // TODO: replace with cache update
                 refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { id: courseId },
-                  },
-                  { query: GetUserActivitiesDocument },
+                  { query: GetSingleCourseDocument, variables: { courseId } },
                 ],
               })
+              await refetchActivities?.()
               onClose()
             }}
             validationSchema={yup.object().shape({

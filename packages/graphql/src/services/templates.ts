@@ -92,7 +92,7 @@ export async function validateTemplateAccessible(
     [ActivityType.MICRO_LEARNING]: template?.microLearning ?? null,
     [ActivityType.GROUP_ACTIVITY]: template?.groupActivity ?? null,
   }
-  const [activityType, activity] = Object.entries(activityMap).find(
+  const [_, activity] = Object.entries(activityMap).find(
     ([_, value]) => value !== null
   ) || [null, null]
 

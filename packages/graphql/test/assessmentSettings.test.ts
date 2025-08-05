@@ -22,10 +22,6 @@ describe('Unit tests for assessment configuration functionalities', () => {
   let prisma: PrismaClient
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -39,19 +35,8 @@ describe('Unit tests for assessment configuration functionalities', () => {
   })
 
   beforeEach(async () => {
-    const {
-      userOneCtx: ctx1,
-      userTwoCtx: ctx2,
-      userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
-
+    const { userOneCtx: ctx1 } = await testInitialization(prisma, emitter)
     userOneCtx = ctx1
-    userTwoCtx = ctx2
-    userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
   })
 
   afterEach(async () => {

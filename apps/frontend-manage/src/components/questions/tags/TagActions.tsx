@@ -6,7 +6,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import TagDeletionModal from '../../courses/modals/TagDeletionModal'
 
 interface TagActionsProps {
@@ -28,8 +27,6 @@ function TagActions({
   onMoveUp,
   onMoveDown,
 }: TagActionsProps) {
-  const t = useTranslations()
-
   return (
     <div className="hidden flex-row items-center text-black group-hover:flex">
       {onMoveUp && (

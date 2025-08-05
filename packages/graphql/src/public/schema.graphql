@@ -809,6 +809,11 @@ type CourseLeaderboard {
   numOfActiveParticipants: Int!
 }
 
+type CourseListEntry {
+  id: ID!
+  name: String!
+}
+
 type CourseOverview {
   color: String
   description: String
@@ -2177,6 +2182,7 @@ type Query {
   getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard
   getTemplateInformation(activityId: String!, activityType: ActivityType!): ActivityTemplateMetadata
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
+  getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
@@ -2198,7 +2204,7 @@ type Query {
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
-  userActivities: [ActivityInfo!]
+  userActivities(activityTypeFilter: ActivityType, courseId: String, numEntries: Int, offset: Int, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
   userElements: [Element!]
   userLiveQuizzes: [LiveQuiz!]
@@ -2570,6 +2576,11 @@ type User {
   role: UserRole!
   sendProjectUpdates: Boolean!
   shortname: String!
+}
+
+type UserActivityList {
+  activities: [ActivityInfo!]!
+  numOfActivities: Int!
 }
 
 type UserGroup {

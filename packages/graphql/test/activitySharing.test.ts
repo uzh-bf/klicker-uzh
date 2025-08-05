@@ -412,14 +412,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
 
   it('Test that objects can be removed from the catalog collections with appropriate permissions', async () => {
     const { restrictedCatalog } = await seedCatalogCollections(userOneCtx)
-    const {
-      activityId1,
-      activityId2,
-      activityId3,
-      templateId1,
-      templateId2,
-      templateId3,
-    } = await seedLiveQuizTemplates(prisma)
+    const { activityId1, activityId2, activityId3 } =
+      await seedLiveQuizTemplates(prisma)
 
     // grant READ permissions on the first activity to user 2 -> cannot revoke / do anything
     await prisma.permission.create({
@@ -477,7 +471,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         liveQuizId: activityId2,
       },
     })
-    const assignment3 = await prisma.catalogCollectionAssignment.create({
+    await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         liveQuizId: activityId3,
@@ -495,7 +489,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         liveQuizId: activityId2,
       },
     })
-    const assignment6 = await prisma.catalogCollectionAssignment.create({
+    await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: restrictedCatalog.id,
         liveQuizId: activityId3,
@@ -3535,7 +3529,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // grant direct ADMIN permissions to user 2 on the live quiz and the anwer collection
-    const directPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         liveQuizId: liveQuiz.id,
@@ -5210,7 +5204,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // grant direct ADMIN permissions to user 2 on the activity and the anwer collection
-    const directPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         practiceQuizId: practiceQuiz.id,
@@ -7101,7 +7095,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // grant direct ADMIN permissions to user 2 on the activity and the anwer collection
-    const directPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         microLearningId: microLearning.id,
@@ -9010,7 +9004,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // grant direct ADMIN permissions to user 2 on the activity and the anwer collection
-    const directPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         groupActivityId: groupActivity.id,

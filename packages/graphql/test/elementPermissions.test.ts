@@ -7,7 +7,6 @@ import {
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -15,11 +14,6 @@ describe('Unit tests covering the creation of derived permissions for elements',
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -33,19 +27,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
   })
 
   beforeEach(async () => {
-    const {
-      userOneCtx: ctx1,
-      userTwoCtx: ctx2,
-      userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
-
-    userOneCtx = ctx1
-    userTwoCtx = ctx2
-    userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
+    await testInitialization(prisma, emitter)
   })
 
   afterEach(async () => {
@@ -199,7 +181,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
       },
     })
 
-    const directWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         elementId: element.id,
@@ -475,7 +457,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
     })
 
     // grant READ permissions to user group 1, WRITE permissions to user group 2
-    const groupPermission1 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
         elementId: element.id,
@@ -508,7 +490,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
       },
     })
 
-    const userFivePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFive.id,
         elementId: element.id,
@@ -931,7 +913,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         },
       },
     })
-    const userGroup1Permission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
         liveQuizId: activity.id,
@@ -949,7 +931,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         },
       },
     })
-    const userGroup2Permission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup2.id,
         liveQuizId: activity.id,
@@ -1062,14 +1044,14 @@ describe('Unit tests covering the creation of derived permissions for elements',
     const { element, activity } = await createActivityWithElement(prisma)
 
     // grant READ permissions to user 2, WRITE permissions to user 3, ADMIN permissions to users 4 and 5 on activity
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         liveQuizId: activity.id,
@@ -1106,7 +1088,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const elementREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFour.id,
         elementId: element.id,
@@ -1255,7 +1237,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         },
       },
     })
-    const userGroup1Permission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
         liveQuizId: activity.id,
@@ -1273,7 +1255,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         },
       },
     })
-    const userGroup2Permission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup2.id,
         liveQuizId: activity.id,
@@ -1703,21 +1685,21 @@ describe('Unit tests covering the creation of derived permissions for elements',
       await createElementWithAnswerCollection(prisma)
 
     // grant READ permissions to user 2, WRITE permissions to user 3, ADMIN permissions to user 4 on element
-    const elementREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         elementId: element.id,
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const elementWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         elementId: element.id,
         permissionLevel: PermissionLevel.WRITE,
       },
     })
-    const elementADMINPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFour.id,
         elementId: element.id,

@@ -80,11 +80,13 @@ function LiveQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  refetchActivities,
 }: {
   liveQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
@@ -177,7 +179,10 @@ function LiveQuizActions({
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
-            onDelete={onDelete}
+            onDelete={async () => {
+              await onDelete()
+              await refetchActivities?.()
+            }}
             deleting={deleting}
           />
         )}
@@ -201,6 +206,7 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
         {templateEditingModal && (
@@ -222,6 +228,7 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -249,6 +256,7 @@ function LiveQuizActions({
             isTemplate={isTemplate}
             isOwner={liveQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
 
@@ -259,6 +267,7 @@ function LiveQuizActions({
             title={liveQuiz.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -282,6 +291,7 @@ function LiveQuizActions({
                 message: t('manage.template.templateCreationError'),
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 

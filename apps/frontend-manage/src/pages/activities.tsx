@@ -1,24 +1,31 @@
 import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import {
+  GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { TextField } from '@uzh-bf/design-system'
-import * as JsSearch from 'js-search'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Pagination from '~/components/common/Pagination'
 import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
 import Layout from '../components/Layout'
 
+// number of entries per page for pagination
+const PAGE_SIZE = 10
+
 function Activities() {
   const t = useTranslations()
   const [searchInput, setSearchInput] = useState('')
+  const [searchString, setSearchString] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
     sharingType: [
@@ -29,91 +36,57 @@ function Activities() {
     type: undefined,
     course: undefined,
   })
-  const { loading: loadingActivities, data: dataActivities } = useQuery(
-    GetUserActivitiesDocument,
-    { fetchPolicy: 'cache-and-network' }
-  )
 
-  // setup search
-  const search = useMemo(() => {
-    if (!dataActivities?.userActivities) {
-      return null
+  // get available courses
+  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
+
+  // get user activities while respecting the corresponding filters and pagination
+  const {
+    loading: loadingActivities,
+    data: dataActivities,
+    refetch: refetchActivities,
+  } = useQuery(GetUserActivitiesDocument, {
+    variables: {
+      statusFilter: filters.status,
+      activityTypeFilter: filters.type,
+      courseId: filters.course !== null ? filters.course : undefined,
+      withoutCourse: filters.course === null ? true : undefined,
+      searchString: searchString.trim() || undefined,
+      showOwned: filters.sharingType.includes(SharingType.Owned),
+      showShared: filters.sharingType.includes(SharingType.Shared),
+      showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      numEntries: PAGE_SIZE,
+      offset: (currentPage - 1) * PAGE_SIZE,
+    },
+    fetchPolicy: 'network-only',
+  })
+  const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
+  const activities = dataActivities?.userActivities?.activities || []
+
+  // reset pagination if activities length changes and current page would be out of bounds
+  useEffect(() => {
+    if (loadingActivities) return
+
+    const maxPage = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage)
     }
+  }, [loadingActivities, numOfActivities, currentPage])
 
-    const search = new JsSearch.Search('id')
-    search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-    search.searchIndex = new JsSearch.UnorderedSearchIndex()
-    search.addIndex('name')
-    search.addIndex('displayName')
-    search.addDocuments(dataActivities.userActivities)
-    return search
-  }, [dataActivities?.userActivities])
+  // reset pagination when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, searchString])
 
-  // extract all available courses from activities
-  const availableCourses = useMemo(() => {
-    if (!dataActivities?.userActivities) return []
+  const filtersActive =
+    filters.status.length > 0 ||
+    typeof filters.sharingType === 'undefined' ||
+    filters.sharingType.length !== 3 ||
+    typeof filters.type !== 'undefined' ||
+    typeof filters.course !== 'undefined'
 
-    const courses = dataActivities.userActivities
-      .map((activity) => activity.courseName)
-      .filter((courseName): courseName is string => !!courseName) // filter out null/undefined and ensure type safety
-
-    // Remove duplicates and sort alphabetically
-    return Array.from(new Set(courses)).sort()
-  }, [dataActivities?.userActivities])
-
-  const filteredActivities = useMemo(() => {
-    if (!dataActivities?.userActivities) return []
-
-    // apply search filter (if defined)
-    let filtered = dataActivities.userActivities
-    if (searchInput.trim() !== '' && search !== null) {
-      filtered = search.search(
-        searchInput
-      ) as typeof dataActivities.userActivities
-    }
-
-    // apply status filters (if defined)
-    if (filters.status && filters.status.length > 0) {
-      filtered = filtered.filter((activity) =>
-        filters.status.includes(activity.status)
-      )
-    }
-
-    // apply sharing type filters (if defined)
-    if (filters.sharingType && filters.sharingType.length > 0) {
-      filtered = filtered.filter((activity) =>
-        filters.sharingType?.includes(activity.sharingType)
-      )
-    }
-
-    // apply type filters (if defined)
-    if (typeof filters.type !== 'undefined') {
-      filtered = filtered.filter((activity) => activity.type === filters.type)
-    }
-
-    // apply course filters (if defined)
-    if (typeof filters.course !== 'undefined') {
-      if (filters.course === null) {
-        // show activities with no course assigned
-        filtered = filtered.filter((activity) => !activity.courseName)
-      } else {
-        // show activities with the selected course
-        filtered = filtered.filter(
-          (activity) => activity.courseName === filters.course
-        )
-      }
-    }
-
-    return filtered
-  }, [
-    dataActivities,
-    searchInput,
-    search,
-    filters.status,
-    filters.sharingType,
-    filters.type,
-    filters.course,
-  ])
+  // compute the number of total pagination pages
+  const totalPages = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
 
   return (
     <Layout
@@ -126,7 +99,8 @@ function Activities() {
           <ActivityOverviewFilters
             filters={filters}
             setFilters={setFilters}
-            availableCourses={availableCourses}
+            availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
+            filtersActive={filtersActive}
           />
         </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
@@ -138,12 +112,22 @@ function Activities() {
                   value={searchInput}
                   onChange={(newValue: string) => {
                     setSearchInput(newValue)
+
+                    if (newValue.trim() === '') {
+                      setSearchString('')
+                    }
                   }}
                   icon={faMagnifyingGlass}
                   className={{
                     input: 'pl-8! h-10',
                     field: 'w-80 rounded-md pr-3',
                   }}
+                  onEnter={() => setSearchString(searchInput)}
+                  onReset={() => {
+                    setSearchInput('')
+                    setSearchString('')
+                  }}
+                  data={{ cy: 'activities-search-input' }}
                 />
                 {/* // TODO: introduce customized ordering for activity overview */}
               </div>
@@ -153,11 +137,27 @@ function Activities() {
               {loadingActivities ? (
                 <Loader />
               ) : (
-                <ActivityList
-                  activities={filteredActivities}
-                  noActivities={dataActivities?.userActivities?.length === 0}
-                  highlightedActivity={null}
-                />
+                <>
+                  <ActivityList
+                    activities={activities}
+                    noActivities={!filtersActive && numOfActivities === 0}
+                    highlightedActivity={null}
+                    refetchActivities={async () => {
+                      await refetchActivities()
+                    }}
+                  />
+
+                  {activities.length > 0 && totalPages > 1 && (
+                    <Pagination
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      numOfActivities={numOfActivities}
+                      PAGE_SIZE={PAGE_SIZE}
+                      className="mb-3"
+                    />
+                  )}
+                </>
               )}
             </div>
           </>

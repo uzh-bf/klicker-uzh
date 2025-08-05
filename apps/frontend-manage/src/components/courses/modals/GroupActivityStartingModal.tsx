@@ -18,6 +18,7 @@ interface GroupActivityStartingModalProps {
   courseId: string
   groupDeadlineDate: string
   numOfParticipantGroups: number
+  refetchActivities?: () => Promise<void>
 }
 
 function GroupActivityStartingModal({
@@ -27,6 +28,7 @@ function GroupActivityStartingModal({
   courseId,
   groupDeadlineDate,
   numOfParticipantGroups,
+  refetchActivities,
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
 
@@ -67,7 +69,10 @@ function GroupActivityStartingModal({
       onClose={onClose}
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
-      onSubmit={async () => await openGroupActivity()}
+      onSubmit={async () => {
+        await openGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={openingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={false}

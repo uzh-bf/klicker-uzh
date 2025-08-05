@@ -10,11 +10,13 @@ function ActivityList({
   noActivities,
   hideActivityType = false,
   highlightedActivity,
+  refetchActivities,
 }: {
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
   highlightedActivity: string | null
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -23,7 +25,7 @@ function ActivityList({
     return (
       <UserNotification
         data={{ cy: 'no-activities-message' }}
-        className={{ root: 'mt-2 text-sm' }}
+        className={{ root: 'text-base' }}
       >
         {t.rich('manage.activities.noActivitiesAvailable', {
           link: (text) => (
@@ -63,6 +65,7 @@ function ActivityList({
           }
           hideType={hideActivityType}
           highlightedActivity={highlightedActivity}
+          refetchActivities={refetchActivities}
         />
       ))}
     </div>

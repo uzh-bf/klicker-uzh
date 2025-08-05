@@ -1270,7 +1270,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
     // derived permissions that are copies of direct permissions / resolved group permissions,
     // should not show up in the derived permissions query
-    const permission4 = await prisma.derivedPermission.create({
+    await prisma.derivedPermission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFive.id,
@@ -1760,21 +1760,21 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant admin permissions to users 2 and 3, and write permissions to user 4 on the single choice question
-    const permission1 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userTwo.id,
         elementId: SC!.id,
       },
     })
-    const permission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userThree.id,
         elementId: SC!.id,
       },
     })
-    const permission3 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.WRITE,
         userId: userFour.id,
@@ -1784,21 +1784,21 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     await recomputeDerivedPermissions({ elementId: SC!.id }, prisma)
 
     // grant admin, write and read permissions to users 2, 3, and 4 on the multiple choice question
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userTwo.id,
         elementId: MC!.id,
       },
     })
-    const permission5 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.WRITE,
         userId: userThree.id,
         elementId: MC!.id,
       },
     })
-    const permission6 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFour.id,

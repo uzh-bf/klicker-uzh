@@ -1,5 +1,6 @@
 import {
   faCheckCircle as faCheckCircleRegular,
+  faCircleXmark,
   faClock as faClockRegular,
   faPenToSquare as faPenToSquareRegular,
 } from '@fortawesome/free-regular-svg-icons'
@@ -21,8 +22,10 @@ import {
   PublicationStatus,
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import TagHeader from '../../questions/tags/TagHeader'
 import TagItem from '../../questions/tags/TagItem'
 import { SHARING_TYPE_FILTERS } from '../../questions/tags/TagList'
@@ -45,7 +48,7 @@ const TYPE_ICONS = {
 
 export type ActivityOverviewFilterType = {
   status: PublicationStatus[]
-  sharingType?: SharingType[]
+  sharingType: SharingType[]
   type?: ActivityType
   course?: string | null // null means "unassigned", undefined means "all courses"
 }
@@ -54,10 +57,12 @@ function ActivityOverviewFilters({
   filters,
   setFilters,
   availableCourses = [],
+  filtersActive = false,
 }: {
   filters: ActivityOverviewFilterType
   setFilters: Dispatch<SetStateAction<ActivityOverviewFilterType>>
-  availableCourses?: string[]
+  availableCourses?: { id: string; name: string }[]
+  filtersActive: boolean
 }) {
   const t = useTranslations()
   const [statusVisible, setStatusVisible] = useState(true)
@@ -149,18 +154,22 @@ function ActivityOverviewFilters({
       />
       {sharingTypeVisible && (
         <ul className="list-none">
-          {[SharingType.Owned, SharingType.Shared, SharingType.Dependency].map(
-            (type) => (
-              <TagItem
-                key={type}
-                text={t(`manage.sharing.label${type as SharingType}`)}
-                icon={SHARING_TYPE_FILTERS[type]}
-                active={filters.sharingType?.includes(type) ?? false}
-                onClick={() => toggleSharingTypeFilter(type)}
-                data={{ cy: `sharing-filter-${type}` }}
-              />
-            )
-          )}
+          {[
+            SharingType.Owned,
+            SharingType.Shared,
+            ...(filters.sharingType.includes(SharingType.Shared)
+              ? [SharingType.Dependency]
+              : []),
+          ].map((type) => (
+            <TagItem
+              key={type}
+              text={t(`manage.sharing.label${type as SharingType}`)}
+              icon={SHARING_TYPE_FILTERS[type]}
+              active={filters.sharingType.includes(type)}
+              onClick={() => toggleSharingTypeFilter(type)}
+              data={{ cy: `sharing-filter-${type}` }}
+            />
+          ))}
         </ul>
       )}
 
@@ -189,35 +198,62 @@ function ActivityOverviewFilters({
         </ul>
       )}
 
-      <TagHeader
-        text={t('shared.generic.courses')}
-        state={coursesVisible}
-        setState={setCoursesVisible}
-      />
-      {coursesVisible && (
-        <ul className="list-none">
-          <TagItem
-            key="unassigned"
-            text={t('manage.activities.noCourseAssigned')}
-            icon={[faX, faX]}
-            active={filters.course === null}
-            onClick={() => toggleCourseFilter(null)}
-            data={{ cy: 'course-filter-unassigned' }}
+      {availableCourses.length > 0 && (
+        <>
+          <TagHeader
+            text={t('shared.generic.courses')}
+            state={coursesVisible}
+            setState={setCoursesVisible}
           />
-          {availableCourses.map((course) => (
-            <TagItem
-              key={course}
-              text={course}
-              icon={[faUserGroup, faUserGroup]}
-              active={filters.course === course}
-              onClick={() => toggleCourseFilter(course)}
-              data={{
-                cy: `course-filter-${course.toLowerCase().replace(/\s+/g, '-')}`,
-              }}
-            />
-          ))}
-        </ul>
+          {coursesVisible && (
+            <ul className="list-none">
+              <TagItem
+                key="unassigned"
+                text={t('manage.activities.noCourseAssigned')}
+                icon={[faX, faX]}
+                active={filters.course === null}
+                onClick={() => toggleCourseFilter(null)}
+                data={{ cy: 'course-filter-unassigned' }}
+              />
+              {availableCourses.map((course) => (
+                <TagItem
+                  key={course.id}
+                  text={course.name}
+                  icon={[faUserGroup, faUserGroup]}
+                  active={filters.course === course.id}
+                  onClick={() => toggleCourseFilter(course.id)}
+                  data={{
+                    cy: `course-filter-${course.name.toLowerCase().replace(/\s+/g, '-')}`,
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
+
+      <Button
+        className={{
+          root: twMerge('mt-2 h-8 text-sm', filtersActive && 'border-red-600'),
+        }}
+        disabled={!filtersActive}
+        onClick={() => {
+          setFilters({
+            status: [],
+            sharingType: [
+              SharingType.Owned,
+              SharingType.Shared,
+              SharingType.Dependency,
+            ],
+            type: undefined,
+            course: undefined,
+          })
+        }}
+        data={{ cy: 'reset-question-pool-filters' }}
+      >
+        <Button.Icon className={{ root: 'mr-1' }} icon={faCircleXmark} />
+        <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
+      </Button>
     </div>
   )
 }

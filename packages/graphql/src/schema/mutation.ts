@@ -1760,7 +1760,7 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
+        resolve: async (_, __, ___) => {
           return null
 
           // TODO: implement resolveActivityLogEntry

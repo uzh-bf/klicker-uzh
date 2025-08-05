@@ -4,7 +4,6 @@ import {
   ActivityType,
   EditActivityTemplateDocument,
   GetTemplateInformationDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -19,6 +18,7 @@ interface TemplateEditModalProps {
   onClose: () => void
   onSuccess: () => void
   onError: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function TemplateEditModal({
@@ -27,6 +27,7 @@ function TemplateEditModal({
   onClose,
   onSuccess,
   onError,
+  refetchActivities,
 }: TemplateEditModalProps) {
   const t = useTranslations()
 
@@ -88,13 +89,11 @@ function TemplateEditModal({
                   instructions: values.instructions,
                 },
                 // TODO: update cache instead of triggering refetch query once combined activity overview is available
-                refetchQueries: [
-                  { query: GetUserLiveQuizzesDocument },
-                  { query: GetUserActivitiesDocument },
-                ],
+                refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
               })
 
               if (result.data?.editActivityTemplate) {
+                await refetchActivities?.()
                 onSuccess()
                 onClose()
               } else {

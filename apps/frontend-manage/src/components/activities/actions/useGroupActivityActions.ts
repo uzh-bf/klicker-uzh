@@ -15,7 +15,6 @@ import {
   ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   UnpublishGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
@@ -33,6 +32,7 @@ function useGroupActivityActions({
   setExtensionModal,
   setSharingModal,
   setActivityLogOpen,
+  refetchActivities,
 }: {
   groupActivity: ActivityInfo
   setRemovalModal: Dispatch<SetStateAction<boolean>>
@@ -43,6 +43,7 @@ function useGroupActivityActions({
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -54,7 +55,6 @@ function useGroupActivityActions({
         id: groupActivity.id,
       },
       refetchQueries: [
-        { query: GetUserActivitiesDocument },
         {
           query: GetSingleCourseDocument,
           variables: { courseId: groupActivity.courseId! },
@@ -90,7 +90,10 @@ function useGroupActivityActions({
         id: 'unpublishGroupActivity',
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
-        onClick: () => unpublishGroupActivity(),
+        onClick: async () => {
+          await unpublishGroupActivity()
+          await refetchActivities?.()
+        },
         disabled: unpublishing,
         data: { cy: `unpublish-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
@@ -130,18 +133,14 @@ function useGroupActivityActions({
         id: 'shareGroupActivity',
         label: t('manage.course.shareGroupActivity'),
         icon: faShare,
-        onClick: () => {
-          setSharingModal(true)
-        },
+        onClick: () => setSharingModal(true),
         data: { cy: `share-group-activity-${groupActivity.name}` },
       },
       {
         id: 'removeGroupActivity',
         label: t('manage.course.removeGroupActivity'),
         icon: faX,
-        onClick: () => {
-          setRemovalModal(true)
-        },
+        onClick: () => setRemovalModal(true),
         data: { cy: `remove-group-activity-${groupActivity.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },

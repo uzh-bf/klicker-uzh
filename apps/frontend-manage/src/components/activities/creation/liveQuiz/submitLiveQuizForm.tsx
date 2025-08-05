@@ -1,6 +1,5 @@
 import {
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
@@ -70,19 +69,12 @@ async function submitLiveQuizForm({
           isModerationEnabled: values.isModerationEnabled,
         },
         refetchQueries: [
-          {
-            query: GetUserLiveQuizzesDocument,
-          },
-          {
-            query: GetUserActivitiesDocument,
-          },
+          { query: GetUserLiveQuizzesDocument },
           ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
+                  variables: { courseId: values.courseId },
                 },
               ]
             : []),
@@ -111,19 +103,12 @@ async function submitLiveQuizForm({
           isModerationEnabled: values.isModerationEnabled,
         },
         refetchQueries: [
-          {
-            query: GetUserLiveQuizzesDocument,
-          },
-          {
-            query: GetUserActivitiesDocument,
-          },
+          { query: GetUserLiveQuizzesDocument },
           ...(values.courseId !== 'no-course-selected'
             ? [
                 {
                   query: GetSingleCourseDocument,
-                  variables: {
-                    courseId: values.courseId,
-                  },
+                  variables: { courseId: values.courseId },
                 },
               ]
             : []),

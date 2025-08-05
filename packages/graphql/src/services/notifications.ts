@@ -1,4 +1,3 @@
-import * as DB from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 // import webpush, { WebPushError } from 'web-push'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -82,7 +81,7 @@ export async function unsubscribeFromPush(
   }
 }
 
-export async function sendPushNotifications(ctx: Context) {
+export async function sendPushNotifications(_ctx: Context) {
   if (
     !process.env.VAPID_PUBLIC_KEY ||
     !process.env.VAPID_PRIVATE_KEY ||
@@ -154,55 +153,55 @@ export async function sendPushNotifications(ctx: Context) {
 //TODO: how to address translation of the message when switching to multi language support?
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
-async function sendPushNotificationsToSubscribers(
-  microLearning: DB.MicroLearning & {
-    course: null | (DB.Course & { subscriptions: PushSubscription[] })
-  },
-  ctx: Context
-) {
-  // for (let sub of microLearning.course?.subscriptions ?? []) {
-  //   try {
-  //     const formattedDate = formatDate(microLearning.scheduledEndAt)
-  //     await webpush.sendNotification(
-  //       {
-  //         endpoint: sub.endpoint,
-  //         keys: {
-  //           auth: sub.auth,
-  //           p256dh: sub.p256dh,
-  //         },
-  //       },
-  //       JSON.stringify({
-  //         message: `Microlearning ${microLearning.displayName} for ${
-  //           microLearning.course?.displayName ?? ''
-  //         } is available until ${formattedDate.date} at ${formattedDate.time}.`,
-  //         title: `KlickerUZH - New Microlearning available for the course ${
-  //           microLearning.course?.name ?? ''
-  //         }`,
-  //       })
-  //     )
-  //   } catch (error) {
-  //     console.error(
-  //       'An error occured while trying to send the push notification: ',
-  //       error
-  //     )
-  //     if (error instanceof WebPushError && error.statusCode === 410) {
-  //       try {
-  //         // subscription has expired or is no longer valid
-  //         // remove it from the database
-  //         await ctx.prisma.pushSubscription.delete({
-  //           where: {
-  //             id: sub.id,
-  //           },
-  //         })
-  //       } catch (error) {
-  //         console.error(
-  //           'An error occured while trying to remove the expired subscription from the database: ',
-  //           error
-  //         )
-  //       }
-  //     } else {
-  //       throw error
-  //     }
-  // }
-  // }
-}
+// async function sendPushNotificationsToSubscribers(
+//   microLearning: DB.MicroLearning & {
+//     course: null | (DB.Course & { subscriptions: PushSubscription[] })
+//   },
+//   ctx: Context
+// ) {
+//   for (let sub of microLearning.course?.subscriptions ?? []) {
+//     try {
+//       const formattedDate = formatDate(microLearning.scheduledEndAt)
+//       await webpush.sendNotification(
+//         {
+//           endpoint: sub.endpoint,
+//           keys: {
+//             auth: sub.auth,
+//             p256dh: sub.p256dh,
+//           },
+//         },
+//         JSON.stringify({
+//           message: `Microlearning ${microLearning.displayName} for ${
+//             microLearning.course?.displayName ?? ''
+//           } is available until ${formattedDate.date} at ${formattedDate.time}.`,
+//           title: `KlickerUZH - New Microlearning available for the course ${
+//             microLearning.course?.name ?? ''
+//           }`,
+//         })
+//       )
+//     } catch (error) {
+//       console.error(
+//         'An error occured while trying to send the push notification: ',
+//         error
+//       )
+//       if (error instanceof WebPushError && error.statusCode === 410) {
+//         try {
+//           // subscription has expired or is no longer valid
+//           // remove it from the database
+//           await ctx.prisma.pushSubscription.delete({
+//             where: {
+//               id: sub.id,
+//             },
+//           })
+//         } catch (error) {
+//           console.error(
+//             'An error occured while trying to remove the expired subscription from the database: ',
+//             error
+//           )
+//         }
+//       } else {
+//         throw error
+//       }
+//     }
+//   }
+// }

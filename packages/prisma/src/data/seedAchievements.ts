@@ -29,6 +29,8 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  return achievements
 }
 
 const prismaClient = new Prisma.PrismaClient()

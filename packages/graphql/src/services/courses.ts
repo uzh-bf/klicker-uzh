@@ -260,7 +260,7 @@ export async function getCourseOverviewData(
         sum: number
         count: number
       }>(
-        (acc, group, ix) => {
+        (acc, group) => {
           const score = group.averageMemberScore + group.groupActivityScore
           return {
             mapped: [

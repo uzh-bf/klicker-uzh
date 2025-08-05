@@ -1,5 +1,30 @@
-query GetUserActivities {
-  userActivities {
-    ...ActivityInfoData
+query GetUserActivities(
+  $statusFilter: [PublicationStatus!]
+  $activityTypeFilter: ActivityType
+  $courseId: String
+  $withoutCourse: Boolean
+  $searchString: String
+  $showOwned: Boolean
+  $showShared: Boolean
+  $showDependencies: Boolean
+  $numEntries: Int
+  $offset: Int
+) {
+  userActivities(
+    statusFilter: $statusFilter
+    activityTypeFilter: $activityTypeFilter
+    courseId: $courseId
+    withoutCourse: $withoutCourse
+    searchString: $searchString
+    showOwned: $showOwned
+    showShared: $showShared
+    showDependencies: $showDependencies
+    numEntries: $numEntries
+    offset: $offset
+  ) {
+    numOfActivities
+    activities {
+      ...ActivityInfoData
+    }
   }
 }

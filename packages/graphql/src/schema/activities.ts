@@ -58,6 +58,21 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
   }),
 })
 
+export interface IUserActivityList {
+  numOfActivities: number
+  activities: IActivityInfo[]
+}
+
+export const UserActivityListRef =
+  builder.objectRef<IUserActivityList>('UserActivityList')
+export const UserActivityList = builder.objectType(UserActivityListRef, {
+  name: 'UserActivityList',
+  fields: (t) => ({
+    numOfActivities: t.exposeInt('numOfActivities'),
+    activities: t.expose('activities', { type: [ActivityInfo] }),
+  }),
+})
+
 export interface IActivityInfo {
   id: string
   templateId?: string | null

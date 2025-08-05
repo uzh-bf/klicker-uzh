@@ -13,10 +13,12 @@ function GroupActivityDeletionModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -71,7 +73,10 @@ function GroupActivityDeletionModal({
       onClose={onClose}
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
-      onSubmit={async () => await deleteGroupActivity()}
+      onSubmit={async () => {
+        await deleteGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={deletingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

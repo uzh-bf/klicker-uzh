@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteLiveQuizDocument,
-  GetUserActivitiesDocument,
   GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -19,17 +18,6 @@ function useDeleteLiveQuiz({ id }: { id: string }) {
           data: {
             userLiveQuizzes:
               data?.userLiveQuizzes?.filter((q) => q.id !== id) ?? [],
-          },
-        })
-
-        const data2 = cache.readQuery({
-          query: GetUserActivitiesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserActivitiesDocument,
-          data: {
-            userActivities:
-              data2?.userActivities?.filter((q) => q.id !== id) ?? [],
           },
         })
       },

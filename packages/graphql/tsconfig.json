@@ -18,6 +18,8 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     /* If transpiling with TypeScript: */
     "module": "NodeNext",
     "outDir": "dist",

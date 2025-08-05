@@ -74,11 +74,9 @@ function Index() {
     [selectedQuestions]
   )
 
-  const {
-    loading: loadingQuestions,
-    error: errorQuestions,
-    data: dataQuestions,
-  } = useQuery(GetUserElementsDocument)
+  const { loading: loadingQuestions, data: dataQuestions } = useQuery(
+    GetUserElementsDocument
+  )
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {

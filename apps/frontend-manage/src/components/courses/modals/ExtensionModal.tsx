@@ -3,7 +3,6 @@ import {
   ExtendGroupActivityDocument,
   ExtendMicroLearningDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDatetimePicker, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -19,6 +18,7 @@ interface ExtensionModalProps {
   title: string
   description: string
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function ExtensionModal({
@@ -29,6 +29,7 @@ function ExtensionModal({
   title,
   description,
   onClose,
+  refetchActivities,
 }: ExtensionModalProps) {
   const t = useTranslations()
   const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
@@ -74,13 +75,13 @@ function ExtensionModal({
                 },
                 // TODO: replace with proper cache update
                 refetchQueries: [
-                  { query: GetUserActivitiesDocument },
                   {
                     query: GetSingleCourseDocument,
                     variables: { courseId: courseId },
                   },
                 ],
               })
+              await refetchActivities?.()
             } else if (type === 'groupActivity') {
               await extendGroupActivity({
                 variables: {
@@ -97,13 +98,13 @@ function ExtensionModal({
                 },
                 // TODO: replace with proper cache update
                 refetchQueries: [
-                  { query: GetUserActivitiesDocument },
                   {
                     query: GetSingleCourseDocument,
                     variables: { courseId: courseId },
                   },
                 ],
               })
+              await refetchActivities?.()
             }
 
             setSubmitting(false)

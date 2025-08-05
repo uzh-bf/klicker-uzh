@@ -10,7 +10,6 @@ import {
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -18,11 +17,6 @@ describe('Unit tests covering the creation of derived permissions for activities
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -36,19 +30,7 @@ describe('Unit tests covering the creation of derived permissions for activities
   })
 
   beforeEach(async () => {
-    const {
-      userOneCtx: ctx1,
-      userTwoCtx: ctx2,
-      userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
-
-    userOneCtx = ctx1
-    userTwoCtx = ctx2
-    userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
+    await testInitialization(prisma, emitter)
   })
 
   afterEach(async () => {
@@ -203,21 +185,21 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     // grant READ permissions to user 2, WRITE permissions to user 3, ADMIN permissions to user 4 on activity
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.WRITE,
       },
     })
-    const activityADMINPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFour.id,
         liveQuizId: activity.id,
@@ -609,7 +591,7 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     // grant individual READ, WRITE and ADMIN access to users 2, 3, and 4 respectively
-    const individualPermissionUserTwo = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         liveQuizId: activity.id,
@@ -770,7 +752,6 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   it('LQ: Verify that minimum required permissions are correctly granted on activities for individual users', async () => {
     const {
-      course,
       activity,
       courseREADPermissions,
       courseWRITEPermissions,
@@ -854,7 +835,6 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   it('LQ: Verify that propagated permissions are correctly granted on activities for individual users', async () => {
     const {
-      course,
       activity,
       courseREADPermissions,
       courseWRITEPermissions,
@@ -1056,12 +1036,7 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   it('LQ: Verify that minimum required permissions are correctly granted on activities for user groups', async () => {
     const {
-      course,
       activity,
-      userGroup2,
-      userGroup3,
-      userGroup4,
-      userGroup5,
       groupREADPermissions,
       groupWRITEPermissions,
       groupADMINPermissions,
@@ -1144,12 +1119,7 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   it('LQ: Verify that propagated permissions are correctly granted on activities for user groups', async () => {
     const {
-      course,
       activity,
-      userGroup2,
-      userGroup3,
-      userGroup4,
-      userGroup5,
       groupREADPermissions,
       groupWRITEPermissions,
       groupADMINPermissions,
@@ -1554,7 +1524,7 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     // grant individual READ, WRITE, ADMIN, and EXECUTE permissions to user 2, 3, 4, and 5 on the course
-    const courseREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         courseId: course.id,
@@ -1562,7 +1532,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: true,
       },
     })
-    const courseWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         courseId: course.id,
@@ -1618,7 +1588,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: false,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFour.id,
         liveQuizId: activity.id,
@@ -1626,7 +1596,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: false,
       },
     })
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFive.id,
         liveQuizId: activity.id,
@@ -1794,7 +1764,7 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     // grant READ, WRITE, ADMIN, and EXECUTE permissions to the user groups on the course
-    const courseREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup2.id,
         courseId: course.id,
@@ -1802,7 +1772,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: true,
       },
     })
-    const courseWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup3.id,
         courseId: course.id,
@@ -1858,7 +1828,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: false,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup4.id,
         liveQuizId: activity.id,
@@ -1866,7 +1836,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         propagation: false,
       },
     })
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup5.id,
         liveQuizId: activity.id,
@@ -2683,10 +2653,7 @@ describe('Unit tests covering the creation of derived permissions for activities
     let userGroup3: UserGroup | null = null
     let userGroup4: UserGroup | null = null
     let userGroup5: UserGroup | null = null
-    let activityREADPermissions: Permission
-    let activityWRITEPermissions: Permission
     let activityADMINPermissions: Permission
-    let activityEXECUTEPermissions: Permission
     if (groupPermissions) {
       // create individual user groups for users 2, 3, 4, and 5
       userGroup2 = await prisma.userGroup.create({
@@ -2727,14 +2694,14 @@ describe('Unit tests covering the creation of derived permissions for activities
       })
 
       // grant READ, WRITE, ADMIN, and EXECUTE group permissions to user 2, 3, 4, and 5 on the activity
-      activityREADPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userGroupId: userGroup2?.id,
           liveQuizId: activity.id,
           permissionLevel: PermissionLevel.READ,
         },
       })
-      activityWRITEPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userGroupId: userGroup3?.id,
           liveQuizId: activity.id,
@@ -2748,7 +2715,7 @@ describe('Unit tests covering the creation of derived permissions for activities
           permissionLevel: PermissionLevel.ADMIN,
         },
       })
-      activityEXECUTEPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userGroupId: userGroup5?.id,
           liveQuizId: activity.id,
@@ -2757,14 +2724,14 @@ describe('Unit tests covering the creation of derived permissions for activities
       })
     } else {
       // grant individual READ, WRITE, ADMIN, and EXECUTE permissions to user 2, 3, 4, and 5 on the activity
-      activityREADPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userId: userTwo.id,
           liveQuizId: activity.id,
           permissionLevel: PermissionLevel.READ,
         },
       })
-      activityWRITEPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userId: userThree.id,
           liveQuizId: activity.id,
@@ -2778,7 +2745,7 @@ describe('Unit tests covering the creation of derived permissions for activities
           permissionLevel: PermissionLevel.ADMIN,
         },
       })
-      activityEXECUTEPermissions = await prisma.permission.create({
+      await prisma.permission.create({
         data: {
           userId: userFive.id,
           liveQuizId: activity.id,
@@ -3108,15 +3075,11 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   async function individualPermissionsCopyToDerived({
     prisma,
-    courseId,
-    elementId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
   }: {
     prisma: any
-    courseId: string
-    elementId: string
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
@@ -3311,27 +3274,21 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('PQ: Verify that owner and direct permissions are correctly copied into the derived permissions table', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity } = await createPracticeQuiz(prisma)
 
     await individualPermissionsCopyToDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       practiceQuizId: activity.id,
     })
   })
 
   async function groupPermissionsCopyDerived({
     prisma,
-    courseId,
-    elementId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
   }: {
     prisma: any
-    courseId: string
-    elementId: string
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
@@ -3402,7 +3359,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const activityEXECUTEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup5.id,
         practiceQuizId,
@@ -3564,12 +3521,10 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('PQ: Verify that group permissions are correctly expanded into individual derived permissions', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity } = await createPracticeQuiz(prisma)
 
     await groupPermissionsCopyDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       practiceQuizId: activity.id,
     })
   })
@@ -3577,7 +3532,6 @@ describe('Unit tests covering the creation of derived permissions for activities
   async function testCourseToActivityPermissionsPropagation({
     prisma,
     courseId,
-    elementId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
@@ -3585,7 +3539,6 @@ describe('Unit tests covering the creation of derived permissions for activities
   }: {
     prisma: any
     courseId: string
-    elementId: string
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
@@ -3772,24 +3725,22 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('PQ: Verify that minimum required permissions from course are granted on practice quiz', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       practiceQuizId: activity.id,
       propagation: false,
     })
   })
 
   it('PQ: Verify that propagated permissions from course are granted on practice quiz', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       practiceQuizId: activity.id,
       propagation: true,
     })
@@ -3797,21 +3748,19 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   async function testActivityToElementPermissionsPropagation({
     prisma,
-    courseId,
     elementId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
   }: {
     prisma: any
-    courseId: string
     elementId: string
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
   }) {
     // create direct individual permissions for users 2, 3, 4, and 5 on the activity
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         practiceQuizId,
@@ -3820,7 +3769,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         practiceQuizId,
@@ -3838,7 +3787,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const activityEXECUTEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFive.id,
         practiceQuizId,
@@ -3913,11 +3862,10 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('PQ: Verify that derived access to elements is granted for users with sufficient access on practice quiz', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { element, activity } = await createPracticeQuiz(prisma)
 
     await testActivityToElementPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       practiceQuizId: activity.id,
     })
@@ -3925,14 +3873,12 @@ describe('Unit tests covering the creation of derived permissions for activities
 
   async function testActivityToElementGroupPermissionsPropagation({
     prisma,
-    courseId,
     elementId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
   }: {
     prisma: any
-    courseId: string
     elementId: string
     practiceQuizId?: string
     microLearningId?: string
@@ -3977,7 +3923,7 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     // create direct individual permissions for users 2, 3, 4, and 5 on the activity
-    const activityREADPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup2.id,
         practiceQuizId,
@@ -3986,7 +3932,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const activityWRITEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup3.id,
         practiceQuizId,
@@ -4004,7 +3950,7 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const activityEXECUTEPermissions = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup5.id,
         practiceQuizId,
@@ -4086,11 +4032,10 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('PQ: Verify that derived access to elements is granted for user groups with sufficient access on practice quiz', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { element, activity } = await createPracticeQuiz(prisma)
 
     await testActivityToElementGroupPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       practiceQuizId: activity.id,
     })
@@ -4164,68 +4109,60 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('ML: Verify that owner and direct permissions are correctly copied into the derived permissions table', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { activity } = await createMicroLearning(prisma)
 
     await individualPermissionsCopyToDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       microLearningId: activity.id,
     })
   })
 
   it('ML: Verify that group permissions are correctly expanded into individual derived permissions', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { activity } = await createMicroLearning(prisma)
 
     await groupPermissionsCopyDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       microLearningId: activity.id,
     })
   })
 
   it('ML: Verify that minimum required permissions from course are granted on microlearning', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { activity, course } = await createMicroLearning(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       microLearningId: activity.id,
       propagation: false,
     })
   })
 
   it('ML: Verify that propagated permissions from course are granted on microlearning', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { activity, course } = await createMicroLearning(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       microLearningId: activity.id,
       propagation: true,
     })
   })
 
   it('ML: Verify that derived access to elements is granted for users with sufficient access on microlearning', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { element, activity } = await createMicroLearning(prisma)
 
     await testActivityToElementPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       microLearningId: activity.id,
     })
   })
 
   it('ML: Verify that derived access to elements is granted for user groups with sufficient access on microlearning', async () => {
-    const { element, activity, course } = await createMicroLearning(prisma)
+    const { element, activity } = await createMicroLearning(prisma)
 
     await testActivityToElementGroupPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       microLearningId: activity.id,
     })
@@ -4299,68 +4236,60 @@ describe('Unit tests covering the creation of derived permissions for activities
   }
 
   it('GA: Verify that owner and direct permissions are correctly copied into the derived permissions table', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { activity } = await createGroupActivity(prisma)
 
     await individualPermissionsCopyToDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       groupActivityId: activity.id,
     })
   })
 
   it('GA: Verify that group permissions are correctly expanded into individual derived permissions', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { activity } = await createGroupActivity(prisma)
 
     await groupPermissionsCopyDerived({
       prisma,
-      courseId: course.id,
-      elementId: element.id,
       groupActivityId: activity.id,
     })
   })
 
   it('GA: Verify that minimum required permissions from course are granted on group activity', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { activity, course } = await createGroupActivity(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       groupActivityId: activity.id,
       propagation: false,
     })
   })
 
   it('GA: Verify that propagated permissions from course are granted on group activity', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { activity, course } = await createGroupActivity(prisma)
 
     await testCourseToActivityPermissionsPropagation({
       prisma,
       courseId: course.id,
-      elementId: element.id,
       groupActivityId: activity.id,
       propagation: true,
     })
   })
 
   it('GA: Verify that derived access to elements is granted for users with sufficient access on group activity', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { element, activity } = await createGroupActivity(prisma)
 
     await testActivityToElementPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       groupActivityId: activity.id,
     })
   })
 
   it('GA: Verify that derived access to elements is granted for user groups with sufficient access on group activity', async () => {
-    const { element, activity, course } = await createGroupActivity(prisma)
+    const { element, activity } = await createGroupActivity(prisma)
 
     await testActivityToElementGroupPermissionsPropagation({
       prisma,
-      courseId: course.id,
       elementId: element.id,
       groupActivityId: activity.id,
     })

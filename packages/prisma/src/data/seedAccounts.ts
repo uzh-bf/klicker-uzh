@@ -25,4 +25,6 @@ export async function seedAccounts(prisma: Prisma.PrismaClient) {
     },
     update: {},
   })
+
+  return account
 }

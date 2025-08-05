@@ -63,11 +63,13 @@ function PracticeQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  refetchActivities,
 }: {
   practiceQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
@@ -109,6 +111,7 @@ function PracticeQuizActions({
     setSharingModal,
     setRemovalModal,
     setActivityLogOpen,
+    refetchActivities,
   })
 
   const availableActions = useAvailableActions({
@@ -140,6 +143,7 @@ function PracticeQuizActions({
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
             courseStartDate={practiceQuiz.courseStartDate}
+            refetchActivities={refetchActivities}
           />
         )}
         {deletionModal && (
@@ -147,6 +151,7 @@ function PracticeQuizActions({
             onClose={() => setDeletionModal(false)}
             activityId={practiceQuiz.id}
             courseId={practiceQuiz.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {sharingModal && practiceQuiz.isManager ? (
@@ -157,6 +162,7 @@ function PracticeQuizActions({
             isTemplate={isTemplate}
             isOwner={practiceQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
         {removalModal && practiceQuiz.isRemovable && (
@@ -166,6 +172,7 @@ function PracticeQuizActions({
             title={practiceQuiz.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
 

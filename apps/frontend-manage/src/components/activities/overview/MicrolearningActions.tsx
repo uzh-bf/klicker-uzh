@@ -79,11 +79,13 @@ function MicrolearningActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  refetchActivities,
 }: {
   microLearning: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
@@ -136,6 +138,7 @@ function MicrolearningActions({
     setExtensionModal,
     setSharingModal,
     setActivityLogOpen,
+    refetchActivities,
   })
 
   const availableActions = useAvailableActions({
@@ -168,6 +171,7 @@ function MicrolearningActions({
             isTemplate={isTemplate}
             isOwner={microLearning.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
         {publishModal && (
@@ -179,6 +183,7 @@ function MicrolearningActions({
             endAt={microLearning.scheduledEndAt}
             title={microLearning.name}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -189,6 +194,7 @@ function MicrolearningActions({
             title={microLearning.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
         {deletionModal && (
@@ -196,6 +202,7 @@ function MicrolearningActions({
             onClose={() => setDeletionModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -204,6 +211,7 @@ function MicrolearningActions({
             onClose={() => setEndingModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {extensionModal && (
@@ -215,6 +223,7 @@ function MicrolearningActions({
             title={t('manage.course.extendMicroLearning')}
             description={t('manage.course.extendMicroLearningDescription')}
             onClose={() => setExtensionModal(false)}
+            refetchActivities={refetchActivities}
           />
         )}
 

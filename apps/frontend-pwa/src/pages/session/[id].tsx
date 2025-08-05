@@ -84,10 +84,7 @@ function Index({ id }: { id: string }) {
     beforeFirstBlock,
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
-    isModerationEnabled,
     isGamificationEnabled,
-    namespace,
-    status,
     course,
   } = data.studentLiveQuiz
 

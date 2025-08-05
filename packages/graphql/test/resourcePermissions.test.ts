@@ -1,7 +1,6 @@
 import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -9,11 +8,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -27,19 +21,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
   })
 
   beforeEach(async () => {
-    const {
-      userOneCtx: ctx1,
-      userTwoCtx: ctx2,
-      userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
-
-    userOneCtx = ctx1
-    userTwoCtx = ctx2
-    userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
+    await testInitialization(prisma, emitter)
   })
 
   afterEach(async () => {
@@ -1083,7 +1065,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // create direct permissions with different permission levels for the answer collection
-    const directWritePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         answerCollectionId: answerCollection.id,
@@ -1091,7 +1073,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
 
-    const directAdminPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         answerCollectionId: answerCollection.id,
@@ -1663,7 +1645,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // grant individual WRITE permission for user 3
-    const individualPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         answerCollectionId: answerCollection.id,
