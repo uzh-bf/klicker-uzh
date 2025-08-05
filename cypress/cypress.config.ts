@@ -1572,7 +1572,7 @@ export default defineConfig({
             )
 
             // ? Seed participant groups
-            await Promise.all(
+            const participantGroupsTesting = await Promise.all(
               PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
                 const code = 100000 + Math.floor(Math.random() * 900000)
 

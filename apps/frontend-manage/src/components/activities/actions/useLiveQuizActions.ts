@@ -71,96 +71,81 @@ function useLiveQuizActions({
         id: 'editLiveQuiz',
         label: t('manage.liveQuizzes.editLiveQuiz'),
         icon: faPencil,
-        onClick: () => {
+        onClick: () =>
           router.push({
             pathname: '/',
             query: {
               elementId: quiz.id,
               editMode: ActivityType.LiveQuiz,
             },
-          })
-        },
+          }),
         data: { cy: `edit-live-quiz-${quiz.name}` },
       },
       {
         id: 'lecturerCockpit',
         label: t('manage.liveQuizzes.lecturerCockpit'),
         icon: faChalkboardUser,
-        onClick: () => {
-          router.push(`/quizzes/${quiz.id}/cockpit`)
-        },
+        onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
         data: { cy: `live-quiz-cockpit-${quiz.name}` },
       },
       {
         id: 'liveQuizEvaluation',
         label: t('manage.liveQuizzes.liveQuizEvaluation'),
         icon: faChartSimple,
-        onClick: () => {
+        onClick: () =>
           window.open(
             `${router.locale ? `/${router.locale}` : ''}/quizzes/${quiz.id}/evaluation`,
             '_blank'
-          )
-        },
+          ),
         data: { cy: `live-quiz-evaluation-${quiz.name}` },
       },
       {
         id: 'duplicateLiveQuiz',
         label: t('manage.liveQuizzes.duplicateLiveQuiz'),
         icon: faCopy,
-        onClick: () => {
+        onClick: () =>
           router.push({
             pathname: '/',
             query: {
               elementId: quiz.id,
               duplicationMode: ActivityType.LiveQuiz,
             },
-          })
-        },
+          }),
         data: { cy: `duplicate-live-quiz-${quiz.name}` },
       },
       {
         id: 'embeddingEvaluation',
         label: t('manage.liveQuizzes.embeddingEvaluation'),
         icon: faCode,
-        onClick: () => {
-          setEmbeddingModal(true)
-        },
+        onClick: () => setEmbeddingModal(true),
         data: { cy: `show-embedding-modal-${quiz.name}` },
       },
       {
         id: 'qrCode',
         label: t('manage.general.qrCode'),
         icon: faQrcode,
-        onClick: () => {
-          setQRModal(true)
-        },
+        onClick: () => setQRModal(true),
         data: { cy: `show-qr-modal-${quiz.name}` },
       },
       {
         id: 'editTemplate',
         label: t('manage.template.editTemplate'),
         icon: faPencil,
-        onClick: () => {
-          setTemplateEditingModal(true)
-        },
+        onClick: () => setTemplateEditingModal(true),
         data: { cy: `edit-template-${quiz.name}` },
       },
       {
         id: 'useTemplate',
         label: t('manage.catalog.useTemplate'),
         icon: faWpforms,
-        onClick: () => {
-          router.push(`/templates/${quiz.templateId}`)
-        },
+        onClick: () => router.push(`/templates/${quiz.templateId}`),
         data: { cy: `use-template-${quiz.name}` },
       },
       {
         id: 'deleteTemplate',
         label: t('manage.template.deleteTemplate'),
         icon: faTrashCan,
-        onClick: () => {
-          setTemplateDeletionModal(true)
-        },
+        onClick: () => setTemplateDeletionModal(true),
         data: { cy: `delete-template-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -168,31 +153,26 @@ function useLiveQuizActions({
         id: 'templateFromLiveQuiz',
         label: t('manage.template.convertOption'),
         icon: faFilePen,
-        onClick: () => {
+        onClick: () =>
           setConversionModal({
             open: true,
             activityId: quiz.id,
             activityType: ActivityType.LiveQuiz,
-          })
-        },
+          }),
         data: { cy: `template-from-live-quiz-${quiz.name}` },
       },
       {
         id: 'shareLiveQuiz',
         label: t('manage.liveQuizzes.shareLiveQuiz'),
         icon: faShare,
-        onClick: () => {
-          setSharingModal(true)
-        },
+        onClick: () => setSharingModal(true),
         data: { cy: `share-live-quiz-${quiz.name}` },
       },
       {
         id: 'removeLiveQuiz',
         label: t('manage.liveQuizzes.removeLiveQuiz'),
         icon: faX,
-        onClick: () => {
-          setRemovalModal(true)
-        },
+        onClick: () => setRemovalModal(true),
         data: { cy: `remove-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },

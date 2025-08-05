@@ -127,6 +127,7 @@ function Activities() {
                     setSearchInput('')
                     setSearchString('')
                   }}
+                  data={{ cy: 'activities-search-input' }}
                 />
                 {/* // TODO: introduce customized ordering for activity overview */}
               </div>

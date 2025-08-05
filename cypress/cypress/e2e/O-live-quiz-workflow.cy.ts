@@ -445,6 +445,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.name}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
     ).should('exist')
@@ -608,6 +611,9 @@ describe('Different live-quiz workflows', function () {
 
     //  start editing again and check if correct values were saved
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -685,6 +691,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -722,6 +731,9 @@ describe('Different live-quiz workflows', function () {
       .should('contain', this.data.SC.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
     ).should('exist')
@@ -730,6 +742,9 @@ describe('Different live-quiz workflows', function () {
   it('Cleanup: Delete the duplicated live quiz', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameDupl}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
     ).should('exist')
@@ -761,6 +776,9 @@ describe('Different live-quiz workflows', function () {
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -803,6 +821,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -923,6 +944,9 @@ describe('Different live-quiz workflows', function () {
     })
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course2.quiz.name}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
     ).should('exist')
@@ -1417,6 +1441,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course2.quiz.name}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
     ).should('exist')
@@ -1486,6 +1513,9 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1524,6 +1554,9 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1585,6 +1618,9 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1620,6 +1656,9 @@ describe('Different live-quiz workflows', function () {
 
     // open the overview and check its content
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1739,6 +1778,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz and check that the same questions are contained therein', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1768,6 +1810,9 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.duplicateName}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
     ).should('exist')
@@ -2061,6 +2106,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('exist')
       cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
     })
@@ -2176,6 +2224,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('exist')
       cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('not.exist')
     })
@@ -2282,6 +2333,9 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="activities"]').click()
     cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
       (quiz) => {
+        cy.get('[data-cy="activities-search-input"]')
+          .clear()
+          .type(`${quiz}{enter}`)
         cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('exist')
         cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
       }
@@ -2395,6 +2449,9 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="activities"]').click()
     cy.wrap([data.sharing.quiz1, data.sharing.quiz2, data.sharing.quiz3]).each(
       (quiz) => {
+        cy.get('[data-cy="activities-search-input"]')
+          .clear()
+          .type(`${quiz}{enter}`)
         cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('exist')
         cy.get(`[data-cy="change-activity-name-${quiz}"]`).should('exist')
       }
@@ -2519,6 +2576,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
     })
   }
@@ -2534,6 +2594,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
     })
   }
@@ -2549,6 +2612,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz3,
       data.sharing.quiz4,
     ]).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
     })
   }
@@ -2579,6 +2645,9 @@ describe('Different live-quiz workflows', function () {
       data.sharing.quiz4,
     ]
     cy.wrap(quizzes).each((quiz) => {
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
     })
   }
@@ -2657,7 +2726,7 @@ describe('Different live-quiz workflows', function () {
     verifyLiveQuizOwnerPermissions(this.data)
   })
 
-  it('Share the live quizzes individual with different users and different permissions', function () {
+  it('Share the live quizzes individually with different users and different permissions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
 
@@ -3126,6 +3195,9 @@ describe('Different live-quiz workflows', function () {
       cy.get('[data-cy="confirm-derived-access"]').click()
       cy.get('[data-cy="confirm-dependency-access"]').click()
       cy.get('[data-cy="confirmation-modal-confirm"]').click()
+      cy.get('[data-cy="activities-search-input"]')
+        .clear()
+        .type(`${quiz}{enter}`)
       cy.get(`[data-cy="activity-LIVE_QUIZ-${quiz}"]`).should('not.exist')
       cy.get('[data-cy="confirmation-modal-close"]').should('not.exist')
     })
@@ -3477,6 +3549,9 @@ describe('Different live-quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.details.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.details.name}"]`).should(
       'exist'
     )
@@ -3668,6 +3743,9 @@ describe('Different live-quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.details.nameNonGamified}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNonGamified}"]`
     ).should('exist')
@@ -3784,6 +3862,9 @@ describe('Different live-quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.details.nameNoCourse}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNoCourse}"]`
     ).should('exist')

@@ -57,15 +57,10 @@ function PracticeQuizPublishingModal({
             primary
             onClick={async () => {
               await publishPracticeQuiz({
-                variables: {
-                  id: elementId,
-                },
+                variables: { id: elementId },
                 // TODO: replace with cache update
                 refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { courseId },
-                  },
+                  { query: GetSingleCourseDocument, variables: { courseId } },
                 ],
               })
               await refetchActivities?.()
@@ -101,10 +96,7 @@ function PracticeQuizPublishingModal({
                 },
                 // TODO: replace with cache update
                 refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { courseId },
-                  },
+                  { query: GetSingleCourseDocument, variables: { courseId } },
                 ],
               })
               await refetchActivities?.()
