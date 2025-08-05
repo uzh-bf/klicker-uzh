@@ -112,7 +112,7 @@ const builder = new SchemaBuilder<{
     }),
   },
   zod: {
-    validationError: (zodError, args, context, info) => {
+    validationError: (zodError) => {
       return new GraphQLError(
         zodError.issues.map((issue) => issue.message).join(', ')
       )

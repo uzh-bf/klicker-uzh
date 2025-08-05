@@ -893,7 +893,7 @@ interface UserLoginProps {
 }
 
 export async function createUserLogin(
-  { password, name, scope }: UserLoginProps,
+  { password, name }: UserLoginProps,
   ctx: ContextWithUser
 ) {
   // verify that the user is account owner
