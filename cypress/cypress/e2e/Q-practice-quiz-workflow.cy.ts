@@ -228,14 +228,9 @@ describe('Different practice quiz workflows', function () {
     })
 
     // SC question without sample solution should be rejected
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`)
-      .contains(this.data.SC.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SC.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.SC.title)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
@@ -346,14 +341,9 @@ describe('Different practice quiz workflows', function () {
     )
 
     cy.get('[data-cy="drop-elements-add-stack"]').click()
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
-      .contains(this.data.SCML.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-9"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SCML.title,
+      target: 'drop-elements-stack-9',
     })
     cy.get('[data-cy="element-0-stack-9"]').contains(
       this.data.SCML.title.substring(0, 20)
@@ -1327,28 +1317,18 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="select-course"]').should('exist')
     cy.get('[data-cy="next-or-submit"]').click()
 
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.manipulation.newNRTitle}"]`)
-      .contains(this.data.manipulation.newNRTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-stack-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.manipulation.newNRTitle,
+      target: 'drop-elements-stack-0',
     })
     cy.get(`[data-cy="element-1-stack-0"]`).contains(
       this.data.manipulation.newNRTitle.substring(0, 20)
     )
 
-    const dataTransfer2 = new DataTransfer()
     cy.get(`[data-cy="drop-elements-add-stack"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.FTML2.title}"]`)
-      .contains(this.data.FTML2.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get(`[data-cy="drop-elements-stack-1"]`).trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.FTML2.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get(`[data-cy="element-0-stack-1"]`).contains(
       this.data.FTML2.title.substring(0, 20)

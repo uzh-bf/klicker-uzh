@@ -503,24 +503,13 @@ describe('Create and solve a group activity', function () {
     ).should('exist')
 
     // add another question to the group activity
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
-      .contains(this.data.SCML.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SCML.title,
+      target: 'drop-elements-stack-0',
     })
-
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`)
-      .contains(this.data.CT.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.CT.title,
+      target: 'drop-elements-stack-0',
     })
 
     // verify that the contained questions are correct

@@ -26,11 +26,11 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -1588,29 +1588,20 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]').should('exist')
 
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.liveQuiz.newSCTitle}"]`)
-      .contains(this.data.liveQuiz.newSCTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-block-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.liveQuiz.newSCTitle,
+      target: 'drop-elements-block-0',
     })
     cy.get(`[data-cy="element-1-block-0"]`).contains(
       this.data.liveQuiz.newSCTitle.substring(0, 20)
     )
 
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="drop-elements-add-block"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.MC2.title}"]`)
-      .contains(this.data.MC2.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get(`[data-cy="drop-elements-block-1"]`).trigger('drop', {
-      dataTransfer2,
+    cy.get('[data-cy="drop-elements-add-block"]').click()
+    cy.dragAndDropElement({
+      element: this.data.MC2.title,
+      target: 'drop-elements-block-1',
     })
+    cy.get(`[data-cy="element-0-block-1"]`).should('exist')
     cy.get(`[data-cy="element-0-block-1"]`).contains(
       this.data.MC2.title.substring(0, 20)
     )

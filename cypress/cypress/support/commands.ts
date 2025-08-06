@@ -884,6 +884,38 @@ Cypress.Commands.add(
   }
 )
 
+interface DragAndDropElementArgs {
+  element: string // the name of the element to be dragged
+  target: string // testing attribute of the dropping target
+}
+
+Cypress.Commands.add(
+  'dragAndDropElement',
+  ({ element, target }: DragAndDropElementArgs) => {
+    const dataTransfer = new DataTransfer()
+
+    // search for the element in the list (required due to pagination)
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${element}{enter}`)
+
+    // start dragging the element
+    cy.get(`[data-cy="element-item-${element}"]`)
+      .contains(element)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+
+    // drop the element on the target
+    cy.get(`[data-cy="${target}"]`).trigger('drop', {
+      dataTransfer,
+    })
+
+    // clear the element list search input to avoid any impact on other statements
+    cy.get('[data-cy="elements-search-input"]').clear()
+  }
+)
+
 interface StackType {
   elements: string[]
 }
@@ -904,14 +936,9 @@ function createStacks({
   type?: 'block' | 'stack'
 }) {
   cy.wrap(stacks[0].elements).each((element: string, ix) => {
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${element}"]`)
-      .contains(element)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-${type}-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element,
+      target: `drop-elements-${type}-0`,
     })
     cy.get(`[data-cy="element-${ix}-${type}-0"]`).contains(
       element.substring(0, 20)
@@ -922,15 +949,12 @@ function createStacks({
     cy.wrap(stacks.slice(1)).each((stack: { elements: string[] }, ix) => {
       cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
       cy.wrap(stack.elements).each((element: string, jx) => {
-        const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="element-item-${element}"]`)
-          .contains(element)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get(`[data-cy="drop-elements-${type}-${ix + 1}"]`).trigger('drop', {
-          dataTransfer,
+        cy.dragAndDropElement({
+          element,
+          target: `drop-elements-${type}-${ix + 1}`,
         })
+
+        // verify that the element was dropped correctly
         cy.get(`[data-cy="element-${jx}-${type}-${ix + 1}"]`).contains(
           element.substring(0, 20)
         )
@@ -1560,6 +1584,10 @@ declare global {
         copyBeforeConversion,
         resourceAccessRequired,
       }: ConvertLiveQuizToTemplateArgs): Chainable<void>
+      dragAndDropElement({
+        element,
+        target,
+      }: DragAndDropElementArgs): Chainable<void>
       createStacks({
         stacks,
         type,
