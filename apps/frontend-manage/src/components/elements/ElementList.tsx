@@ -12,12 +12,11 @@ interface ElementListProps {
   filtersActive: boolean
   activityWizardOpen: boolean
   setSelectedElements: (id: number, data: ElementType) => void
-  selectedElements: Record<number, ElementType>
+  selectedElements: Record<number, ElementType | undefined>
   triggerSuccessToast: () => void
   elements?: ElementType[]
   tagfilter?: string[]
   handleTagClick: (tagId: number) => void
-  unsetDeletedQuestion: (questionId: number) => void
   handleFilterReset: () => void
   refetchElements: () => Promise<void>
 }
@@ -31,7 +30,6 @@ function ElementList({
   elements = [],
   tagfilter = [],
   handleTagClick,
-  unsetDeletedQuestion,
   handleFilterReset,
   refetchElements,
 }: ElementListProps): React.ReactElement {
@@ -107,7 +105,6 @@ function ElementList({
           }
           onCheck={() => setSelectedElements(element.id, element)}
           triggerSuccessToast={triggerSuccessToast}
-          unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
           refetchElements={refetchElements}
         />

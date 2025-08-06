@@ -10,10 +10,10 @@ import { Button, Checkbox, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import { isEmpty, pickBy } from 'remeda'
+import { Suspense, useEffect, useState } from 'react'
+import { isEmpty } from 'remeda'
+import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import ElementCreation from '../components/activities/ElementCreation'
 import Pagination from '../components/common/Pagination'
 import ArchiveActionButtons from '../components/elements/ArchiveActionButtons'
 import ElementList from '../components/elements/ElementList'
@@ -51,15 +51,6 @@ function Index() {
   const [selectedElements, setSelectedElements] = useState<
     Record<number, Element | undefined>
   >({})
-
-  const selectedElementContent = useMemo(
-    () =>
-      pickBy(
-        selectedElements,
-        (value) => typeof value !== 'undefined'
-      ) as Record<number, Element>,
-    [selectedElements]
-  )
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
@@ -153,6 +144,24 @@ function Index() {
     }
   }, [filters, sort])
 
+  // when the shown elements change, make sure the selected elements are still valid
+  useEffect(() => {
+    setSelectedElements((prev) => {
+      const updatedSelection = { ...prev }
+      let changed = false
+
+      Object.keys(updatedSelection).forEach((id) => {
+        const numericalId = parseInt(id, 10)
+        if (!elements.some((el) => el.id === numericalId)) {
+          delete updatedSelection[numericalId]
+          changed = true
+        }
+      })
+      // Only update state if something actually changed to avoid render loop
+      return changed ? updatedSelection : prev
+    })
+  }, [elements])
+
   // on initial render, preload the pages that might be visited next
   useEffect((): void => {
     router.prefetch('/quizzes/running')
@@ -206,7 +215,7 @@ function Index() {
 
       {creationMode && (
         <>
-          <ElementCreation
+          <ActivityCreation
             creationMode={creationMode}
             closeWizard={() => {
               router.push('/')
@@ -216,7 +225,7 @@ function Index() {
             editMode={router.query.editMode as ActivityType}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElementContent}
+            selection={selectedElements}
             resetSelection={() => setSelectedElements({})}
           />
         </>
@@ -274,7 +283,7 @@ function Index() {
 
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
-            <div className="flex flex-none flex-row content-center items-end justify-between pb-3">
+            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1">
                 <div className="flex flex-col pr-0.5 text-xs">
                   <Checkbox
@@ -289,32 +298,23 @@ function Index() {
                     }
                     onCheck={() => {
                       setSelectedElements((prev) => {
-                        let allElements = {}
-
                         if (elements) {
-                          if (!isEmpty(selectedElementContent)) {
-                            // set elements after filtering to undefined
-                            // do not uncheck elements that are selected but not in the filtered set
-                            allElements = elements.reduce(
-                              (acc, curr) => ({
-                                ...acc,
-                                [curr.id]: undefined,
-                              }),
-                              {}
-                            )
-                          } else {
-                            // set all elements after filtering to their id and data
-                            allElements = elements.reduce(
-                              (acc, question) => ({
-                                ...acc,
-                                [question.id]: question,
-                              }),
-                              {}
-                            )
+                          if (!isEmpty(selectedElements)) {
+                            // if the selection is non-empty, reset it
+                            return {}
                           }
+
+                          // add all elements to the selection
+                          const allElements = elements.reduce<
+                            Record<number, Element>
+                          >((acc, element) => {
+                            acc[element.id] = element
+                            return acc
+                          }, {})
+                          return allElements
                         }
 
-                        return { ...prev, ...allElements }
+                        return prev
                       })
                     }}
                     className={{ root: 'border-unset' }}
@@ -356,9 +356,9 @@ function Index() {
                   }
                 }}
                 data={{ cy: 'create-question' }}
-                className={{ root: 'font-bold' }}
+                className={{ root: 'h-9 font-bold' }}
               >
-                {t('manage.questionPool.createQuestion')}
+                {t('manage.questionPool.createElement')}
               </Button>
             </div>
 
@@ -373,7 +373,7 @@ function Index() {
                     filtersActive={filtersActive}
                     activityWizardOpen={!!creationMode}
                     elements={elements}
-                    selectedElements={selectedElementContent}
+                    selectedElements={selectedElements}
                     triggerSuccessToast={() =>
                       toast({
                         type: 'success',
@@ -396,16 +396,6 @@ function Index() {
                         isUntagged: false,
                       })
                     }
-                    unsetDeletedQuestion={(questionId: number) => {
-                      setSelectedElements((prev) => {
-                        if (prev[questionId]) {
-                          const newselectedElements = { ...prev }
-                          delete newselectedElements[questionId]
-                          return newselectedElements
-                        }
-                        return prev
-                      })
-                    }}
                     handleFilterReset={handleReset}
                     refetchElements={async () => {
                       await refetchElements()

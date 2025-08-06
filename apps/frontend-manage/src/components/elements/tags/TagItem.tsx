@@ -22,7 +22,7 @@ function TagItem({
   tooltip,
   data,
 }: TagItemProps) {
-  const TagItem = (
+  const tagItemElement = (
     <li
       className={twMerge(
         'hover:text-primary-100 cursor-pointer px-2 py-0.5',
@@ -41,10 +41,10 @@ function TagItem({
 
   return tooltip ? (
     <Tooltip tooltip={tooltip} delay={700}>
-      {TagItem}
+      {tagItemElement}
     </Tooltip>
   ) : (
-    TagItem
+    tagItemElement
   )
 }
 

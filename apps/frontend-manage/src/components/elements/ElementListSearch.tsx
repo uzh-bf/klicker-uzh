@@ -23,10 +23,7 @@ function ElementListSearch({
         }
       }}
       icon={faMagnifyingGlass}
-      className={{
-        input: 'h-10 pl-8',
-        field: 'w-64 rounded-md pr-3',
-      }}
+      className={{ input: 'h-9 pl-8', field: 'w-64 rounded-md pr-3' }}
       onEnter={() => setSearchString(searchInput)}
       onReset={() => {
         setSearchInput('')

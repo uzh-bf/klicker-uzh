@@ -14,14 +14,12 @@ function ElementRemovalModal({
   title,
   isModalOpen,
   setModalOpen,
-  unsetDeletedQuestion,
   refetchElements,
 }: {
   elementId: number
   title: string
   isModalOpen: boolean
   setModalOpen: Dispatch<SetStateAction<boolean>>
-  unsetDeletedQuestion: (questionId: number) => void
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -83,7 +81,6 @@ function ElementRemovalModal({
           },
         })
         await refetchElements()
-        unsetDeletedQuestion(elementId)
         setModalOpen(false)
       }}
       submitting={removing}

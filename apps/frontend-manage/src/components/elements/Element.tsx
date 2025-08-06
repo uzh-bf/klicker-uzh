@@ -59,7 +59,6 @@ interface ElementProps {
   handleTagClick: (tagId: number) => void
   onCheck: () => void
   triggerSuccessToast: () => void
-  unsetDeletedQuestion: (questionId: number) => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -75,7 +74,6 @@ function Element({
   handleTagClick,
   onCheck,
   triggerSuccessToast,
-  unsetDeletedQuestion,
   hasAnswerFeedbacks,
   hasSampleSolution,
   tagfilter = [],
@@ -354,7 +352,6 @@ function Element({
           setModalOpen={setDeletionModalOpen}
           elementId={element.id}
           title={element.name}
-          unsetDeletedQuestion={unsetDeletedQuestion}
           refetchElements={refetchElements}
         />
       )}
@@ -364,7 +361,6 @@ function Element({
           setModalOpen={setRemovalModalOpen}
           elementId={element.id}
           title={element.name}
-          unsetDeletedQuestion={unsetDeletedQuestion}
           refetchElements={refetchElements}
         />
       )}

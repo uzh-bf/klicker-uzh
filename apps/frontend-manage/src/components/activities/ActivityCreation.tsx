@@ -33,18 +33,18 @@ export type ElementSelectCourse = {
   data?: { cy: string }
 }
 
-interface ElementCreationProps {
+interface ActivityCreationProps {
   creationMode: ActivityType
   closeWizard: () => void
   activityId?: string
   editMode?: ActivityType
   duplicationMode?: ActivityType
   conversionMode?: string
-  selection: Record<number, Element>
+  selection: Record<number, Element | undefined>
   resetSelection: () => void
 }
 
-function ElementCreation({
+function ActivityCreation({
   creationMode,
   closeWizard,
   activityId,
@@ -53,7 +53,7 @@ function ElementCreation({
   conversionMode,
   selection,
   resetSelection,
-}: ElementCreationProps) {
+}: ActivityCreationProps) {
   const t = useTranslations()
   const { data: dataLiveQuiz, loading: liveLoading } = useQuery(
     GetSingleLiveQuizDocument,
@@ -141,6 +141,14 @@ function ElementCreation({
     [dataCourses]
   )
 
+  const selectedElements = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(selection)
+        .filter(([_, value]) => typeof value !== 'undefined')
+        .map(([key, value]) => [key, { ...value! }])
+    )
+  }, [selection])
+
   if (
     (!errorCourses && loadingCourses) ||
     (activityId &&
@@ -183,6 +191,7 @@ function ElementCreation({
         resetTimeDays?: number
       })
     | undefined = undefined
+
   if (
     conversionMode === 'microLearningToPracticeQuiz' &&
     dataMicroLearning?.getSingleMicroLearning
@@ -219,7 +228,7 @@ function ElementCreation({
                   : dataLiveQuiz.liveQuiz
                 : undefined
             }
-            selection={selection}
+            selection={selectedElements}
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.LiveQuiz}
             duplicationMode={duplicationMode === ActivityType.LiveQuiz}
@@ -242,7 +251,7 @@ function ElementCreation({
                   : (dataMicroLearning.getSingleMicroLearning as MicroLearning)
                 : undefined
             }
-            selection={selection}
+            selection={selectedElements}
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.MicroLearning}
             duplicationMode={duplicationMode === ActivityType.MicroLearning}
@@ -266,7 +275,7 @@ function ElementCreation({
                   : (dataPracticeQuiz.getSinglePracticeQuiz as PracticeQuiz)
                 : initialDataPracticeQuiz
             }
-            selection={selection}
+            selection={selectedElements}
             resetSelection={resetSelection}
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
             editMode={editMode === ActivityType.PracticeQuiz}
@@ -278,7 +287,7 @@ function ElementCreation({
             title={t('shared.generic.groupActivity')}
             closeWizard={closeWizard}
             courses={courseSelection ?? []}
-            selection={selection}
+            selection={selectedElements}
             resetSelection={resetSelection}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
@@ -292,4 +301,4 @@ function ElementCreation({
   )
 }
 
-export default ElementCreation
+export default ActivityCreation

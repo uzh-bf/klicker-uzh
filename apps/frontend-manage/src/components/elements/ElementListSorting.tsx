@@ -17,16 +17,6 @@ function ElementListSorting({
 
   return (
     <div className="flex flex-row gap-1 pr-3">
-      <Button
-        disabled={!sort.by}
-        onClick={() => {
-          handleSortOrderToggle()
-        }}
-        className={{ root: 'h-10 rounded-md' }}
-        data={{ cy: 'sort-order-question-pool-toggle' }}
-      >
-        <Button.Icon icon={sort.asc ? faSortAsc : faSortDesc} withoutLabel />
-      </Button>
       <Select
         value={sort.by}
         onChange={(newSortBy) => handleSortByChange(newSortBy as SortByType)}
@@ -54,9 +44,19 @@ function ElementListSorting({
             data: { cy: 'sort-by-question-pool-modified' },
           },
         ]}
-        className={{ root: 'min-w-30', trigger: 'h-10' }}
+        className={{ root: 'w-46', trigger: 'h-9' }}
         data={{ cy: 'sort-by-question-pool' }}
       />
+      <Button
+        disabled={!sort.by}
+        onClick={() => {
+          handleSortOrderToggle()
+        }}
+        className={{ root: 'h-9 w-9 rounded-md' }}
+        data={{ cy: 'sort-order-question-pool-toggle' }}
+      >
+        <Button.Icon icon={sort.asc ? faSortAsc : faSortDesc} withoutLabel />
+      </Button>
     </div>
   )
 }

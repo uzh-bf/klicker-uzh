@@ -26,11 +26,11 @@ function ArchiveActionButtons({
   )
 
   return (
-    <>
+    <div className="flex flex-row items-center gap-1.5">
       <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
         <Button
           disabled={toggelingArchive}
-          className={{ root: 'ml-1 h-10' }}
+          className={{ root: 'h-9 w-9' }}
           onClick={async () => {
             const { data } = await toggleIsArchived({
               variables: {
@@ -38,19 +38,6 @@ function ArchiveActionButtons({
                   parseInt(key, 10)
                 ),
                 isArchived: true,
-              },
-              update: (cache, { data }) => {
-                // if the request was not successful, do nothing
-                if (!data?.toggleIsArchived || data.toggleIsArchived.failure)
-                  return
-
-                // check if request was successful
-                const update = data?.toggleIsArchived
-                if (!update) return
-
-                // extract the ids of all elements that should now be marked as archived
-                const updatedElementIds =
-                  update.elements?.map((element) => element.id) ?? []
               },
             })
 
@@ -85,7 +72,7 @@ function ArchiveActionButtons({
       <Tooltip tooltip={t('manage.questionPool.restoreFromArchive')}>
         <Button
           disabled={toggelingArchive}
-          className={{ root: 'ml-1 h-10' }}
+          className={{ root: 'h-9 w-9' }}
           onClick={async () => {
             const { data } = await toggleIsArchived({
               variables: {
@@ -93,19 +80,6 @@ function ArchiveActionButtons({
                   parseInt(key, 10)
                 ),
                 isArchived: false,
-              },
-              update: (cache, { data }) => {
-                // if the request was not successful, do nothing
-                if (!data?.toggleIsArchived || data.toggleIsArchived.failure)
-                  return
-
-                // check if request was successful
-                const updatedElements = data?.toggleIsArchived
-                if (!updatedElements) return
-
-                // extract the ids of all elements that should now be marked as archived
-                const updatedElementIds =
-                  updatedElements.elements?.map((element) => element.id) ?? []
               },
             })
 
@@ -139,7 +113,7 @@ function ArchiveActionButtons({
           <FontAwesomeIcon icon={faInbox} />
         </Button>
       </Tooltip>
-    </>
+    </div>
   )
 }
 
