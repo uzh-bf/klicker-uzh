@@ -1,0 +1,36 @@
+---
+title: Element Updates in Activities
+---
+
+As mentioned in our section on the [core concepts](/getting_started/core_concepts), all activities in KlickerUZH are centered around re-usable elements. This functionality is designed to minimize the effort required for you as a lecturer to conduct similar quizzes in different lectures over the years.
+
+However, as soon as elements are answered by students as part of an activity, making changes to them could lead to inconsistencies. For this reason, KlickerUZH **freezes** an element's content when it is included in an activity, separating the element's instance in the activity from the original element. As long as the activity is in a **draft or scheduled state**, the element instances in the activity can be **updated** to the latest version of the element, using the functionalities described below. Elements in **published or completed** activities **can no longer be modified**, since submitted student answers might otherwise become inconsistent with the new element content or answer options.
+
+While synchronous activities (Live Quizzes) and asynchronous activities (Microlearnings, Practice Quizzes, and Group Activities) use a slightly different phraseology, the update functionalities are implemented consistently across all activity types. The illustrations shown on this page mainly originate from the Live Quiz editing process.
+
+## How can elements become outdated in activities?
+
+Instances of elements in activities can become outdated in different ways. This list is not exhaustive and only serves as an overview of the most common scenarios for your reference. The mitigation strategies described in the following sections do not depend on how an instance became outdated.
+
+- Updating an element through the element editor in the library and deactivating the option to update all draft and scheduled activities in the last step causes the element instances in all activities to become outdated.
+- If an element is part of an ongoing/published activity (e.g. started live quiz), changes made to the corresponding element will not be applied to the activities. Aborting the activity will reset it to draft state, where outdated elements will be indicated and can be updated.
+- If a published/completed activity containing outdated element instances is duplicated, the original versions of the elements will be used in the new activity. During the creation process of the duplicate, you will have the option to update the elements to their latest versions or keep the original versions.
+
+## How can I make sure that changes to an element are reflected in activities?
+
+When editing an element that is used in activities that can be updated (i.e. draft or scheduled activities, activity templates), you will see a notification as shown below at the bottom of the element editing dialog. By default, all instances of the element will be updated to the latest version on save. If you do not want to update the instances of the element in the listed activities, you can deselect the corresponding option. In this case, the instances of the element in the activities will be marked as outdated and can be [updated later](/tutorials/element_updates_activities/#how-can-i-update-elements-in-specific-activities).
+
+![Element update notification on element editing dialog](/img/element_updates/element_edit_dialog_updates.png)
+
+## How can I update elements in specific activities?
+
+![Outdated activity notification](/img/element_updates/outdated_activity_notification.png)
+
+Whenever an activity contains outdated elements that can be updated, you will see a corresponding notification on the activity overview entry (displayed above). To update all elements or a selection of elements, follow these steps:
+
+1. Start **editing the activity** using the corresponding actions option. Note that if the activity is already scheduled, you may need to unpublish it first.
+2. Navigate through the activity manipulation wizard to the last step, where the elements in the activity are managed.
+3. Here, any outdated elements will be highlighted as shown in the screenshot below. **Click the refresh icon** on all elements you want to update to their latest version. Alternatively, you can also click the **"Update all Elements"** button to update all outdated elements in the activity at once.
+4. Please make sure to **save the activity** after updating the elements. The newest version of the elements will now be used in the activity.
+
+![Activity editor updates](/img/element_updates/activity_editor_updates.png)
