@@ -976,13 +976,12 @@ describe('Test course creation and editing functionalities', function () {
     cy.findByText(this.data.course2.name).should('not.exist')
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.deletion.qTitle })
     cy.deleteElement({ elementName: this.data.deletion.qTitle })
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.deletion.qTitle,
+      shouldExist: false,
+    })
   })
   // #endregion
 
@@ -995,8 +994,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1084,8 +1083,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1179,8 +1178,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1306,11 +1305,11 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
-      cy.get(`[data-cy="element-item-${title}"]`)
-        .get(`[data-cy="permission-level-${title}-ADMIN"]`)
-        .should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({
+        element: title,
+        contains: [messages.manage.sharing.permissionsADMIN],
+      })
     })
 
     // check that the answer collection is visible to the user
@@ -1400,8 +1399,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // verify that the user has no access to the answer collection

@@ -134,15 +134,14 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.SE.title,
+      contains: [
+        this.data.SE.content,
+        this.data.SE.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Verify that the correct content has been saved', function () {
@@ -172,12 +171,6 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that creation was successful and that preview is visible and correct', function () {
     cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.content
-    )
 
     // check that inputs are available
     for (let i = 1; i < this.data.SE.inputs; i++) {
@@ -547,9 +540,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.SE_INLINE.title}"]`).contains(
-      this.data.SE_INLINE.content
-    )
+    cy.validateElement({
+      element: this.data.SE_INLINE.title,
+      contains: [this.data.SE_INLINE.content, this.data.SE_INLINE.title],
+    })
   })
 
   it('Verify that a new answer collection was created when creating the selection question', function () {
@@ -618,9 +612,13 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.wait(500)
 
     // verify the changes were saved
-    cy.get(
-      `[data-cy="element-item-${this.data.SE_INLINE.titleEdited}"]`
-    ).contains(this.data.SE_INLINE.contentEdited)
+    cy.validateElement({
+      element: this.data.SE_INLINE.titleEdited,
+      contains: [
+        this.data.SE_INLINE.contentEdited,
+        this.data.SE_INLINE.titleEdited,
+      ],
+    })
   })
 
   it('Delete the inline created selection question', function () {

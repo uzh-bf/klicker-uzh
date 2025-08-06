@@ -26,11 +26,11 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Part 0: Preparation
   // #region
@@ -1529,7 +1529,7 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
 
     // modify single choice question
-    cy.get(`[data-cy="edit-element-${this.data.SC2.title}"]`).click()
+    cy.editElement({ element: this.data.SC2.title })
     cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -2085,8 +2085,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2200,8 +2200,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2310,8 +2310,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2423,8 +2423,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2602,8 +2602,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared live quizzes should no longer be visible

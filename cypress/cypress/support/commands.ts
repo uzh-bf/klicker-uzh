@@ -345,6 +345,52 @@ Cypress.Commands.add(
   }
 )
 
+interface ValidateElementArgs {
+  element: string // name / title of the element in question
+  shouldExist?: boolean // whether the element should exist or not (default: true)
+  contains?: string[] // optional array of strings that the element item should contain
+}
+
+Cypress.Commands.add(
+  'validateElement',
+  ({ element, shouldExist = true, contains }: ValidateElementArgs) => {
+    const elementSelector = `[data-cy="element-item-${element}"]`
+
+    // search for the element in the list (required due to pagination)
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${element}{enter}`)
+
+    // verify the element's existence / non-existence
+    if (shouldExist) {
+      cy.get(elementSelector).should('exist')
+    } else {
+      cy.get(elementSelector).should('not.exist')
+    }
+
+    // if the element should contain specific text, verify that
+    if (contains) {
+      contains.forEach((text) => {
+        cy.get(elementSelector).contains(text)
+      })
+    }
+
+    // clear the search input after validating the element
+    cy.get('[data-cy="elements-search-input"]').clear()
+  }
+)
+
+interface EditElementArgs {
+  element: string // name / title of the element in question
+}
+Cypress.Commands.add('editElement', ({ element }: EditElementArgs) => {
+  // search for the element in the list (required due to pagination)
+  cy.get('[data-cy="elements-search-input"]').clear().type(`${element}{enter}`)
+
+  // click the edit button for the element
+  cy.get(`[data-cy="edit-element-${element}"]`).click()
+})
+
 interface CreateChoicesQuestionArgs {
   name: string
   content: string
@@ -382,7 +428,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -414,7 +460,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -446,7 +492,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -501,7 +547,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -544,7 +590,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -590,7 +636,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -671,7 +717,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -700,7 +746,7 @@ Cypress.Commands.add(
 
     // check if the created flashcard is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -727,7 +773,7 @@ Cypress.Commands.add(
 
     // check if the created content element is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -739,6 +785,11 @@ interface DeleteElementArgs {
 Cypress.Commands.add(
   'deleteElement',
   ({ elementName, privatePreview = true }: DeleteElementArgs) => {
+    // find the element in the list (required due to pagination)
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${elementName}{enter}`)
+
     if (privatePreview) {
       cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
     }
@@ -761,6 +812,9 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="confirmation-modal-confirm"]').click()
     cy.wait(500)
+
+    // reset the search
+    cy.get('[data-cy="elements-search-input"]').clear()
   }
 )
 
@@ -1486,6 +1540,12 @@ declare global {
         objectType,
         permissionLevel,
       }: AddObjectToCatalogArgs): Chainable<void>
+      validateElement({
+        element,
+        shouldExist,
+        contains,
+      }: ValidateElementArgs): Chainable<void>
+      editElement({ element }: EditElementArgs): Chainable<void>
       createQuestionSC({
         name,
         content,

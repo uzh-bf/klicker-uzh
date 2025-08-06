@@ -100,15 +100,14 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.wait(1000)
 
     // verify that the item immediately appears in the question pool after saving it
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).contains(
-      this.data.SC.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).contains(
-      this.data.SC.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.SC.title,
+      contains: [
+        this.data.SC.content,
+        this.data.SC.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Check that values of single choice question are stored and loaded correctly', function () {
@@ -183,12 +182,10 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.wait(1000)
 
     // verify that the updated element immediately appears in the question pool after saving it
-    cy.get(`[data-cy="element-item-${this.data.SC.titleEdited}"]`).contains(
-      this.data.SC.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.SC.titleEdited}"]`).contains(
-      this.data.SC.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.SC.titleEdited,
+      contains: [this.data.SC.contentEdited, this.data.SC.titleEdited],
+    })
   })
 
   it('Edit the single choice question again and add answer feedbacks', function () {

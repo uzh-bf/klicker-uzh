@@ -1714,8 +1714,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1767,8 +1767,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1875,8 +1875,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1988,8 +1988,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2176,8 +2176,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared group activities should no longer be visible

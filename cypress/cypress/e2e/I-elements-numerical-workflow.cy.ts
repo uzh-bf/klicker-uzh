@@ -66,15 +66,14 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      this.data.NR.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      this.data.NR.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.NR.title,
+      contains: [
+        this.data.NR.content,
+        this.data.NR.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.NR.title}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains(
       `Min: ${this.data.NR.min}`
@@ -199,12 +198,10 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
-    cy.get(`[data-cy="element-item-${this.data.NR.titleEdited}"]`).contains(
-      this.data.NR.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.titleEdited}"]`).contains(
-      this.data.NR.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.NR.titleEdited,
+      contains: [this.data.NR.contentEdited, this.data.NR.titleEdited],
+    })
   })
 
   it('Check that edited Numerical question is stored and loaded correctly', function () {

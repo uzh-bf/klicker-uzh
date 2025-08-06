@@ -1234,7 +1234,7 @@ describe('Different practice quiz workflows', function () {
     cy.loginLecturer()
 
     // modify numerical question
-    cy.get(`[data-cy="edit-element-${this.data.NRML2.title}"]`).click()
+    cy.editElement({ element: this.data.NRML2.title })
     cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -1654,8 +1654,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1741,8 +1741,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1834,8 +1834,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1930,8 +1930,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2086,8 +2086,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared practice quizzes should no longer be visible

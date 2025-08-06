@@ -129,7 +129,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -272,7 +272,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC2.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC2.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE2.title,
       content: this.data.SE2.content,
@@ -415,7 +415,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC3.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC3.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE3.title,
       content: this.data.SE3.content,
@@ -1412,7 +1412,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.activity1.newElements.MC.title,
       this.data.activity1.newElements.KP.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
   })
 
@@ -2102,7 +2102,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.SE.title,
       this.data.CS.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
 
     // modified versions of elements (new elements) should have been created as new elements in the pool
@@ -2115,7 +2115,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.activity2.newElements.SE.title,
       this.data.activity2.newElements.CS.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
 
     // read permissions on the shared and used answer collections should have been granted automatically
@@ -2576,7 +2576,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginInstitutionalCatalyst()
 
     // verify that the content of the selection element has been stored correctly
-    cy.get(`[data-cy="edit-element-${this.data.activity3.SETitle}"]`).click()
+    cy.editElement({ element: this.data.activity3.SETitle })
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
     cy.get('[id="selection-0-field-0"]').click()
     cy.wrap(this.data.collection.options).each((value: string) => {
@@ -2585,7 +2585,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // verify that the content of the case study element has been stored correctly
-    cy.get(`[data-cy="edit-element-${this.data.activity3.CSTitle}"]`).click()
+    cy.editElement({ element: this.data.activity3.CSTitle })
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
     cy.wrap(this.data.collection2.options).each((item: string) => {
       cy.get('[data-cy="choose-case-study-items"]').contains(item) // verify that the correct items are available for assessment
