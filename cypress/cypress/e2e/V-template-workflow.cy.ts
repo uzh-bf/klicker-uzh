@@ -1343,7 +1343,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           'have.value',
           oldTitle
         )
-        cy.wait(1000) // wait for the form to be fully populated to avoid overlapping inputs
+        cy.wait(2000) // wait for the form to be fully populated to avoid overlapping inputs
 
         cy.get('[data-cy="insert-question-title"]')
           .click()
@@ -1354,8 +1354,6 @@ describe('Test all functionalities related to the creation, management, sharing 
           .clear()
           .type(newContent)
         cy.get('[data-cy="save-new-question"]').click()
-        cy.wait(500) // wait for element to be properly saved and UI to update
-
         cy.get('[data-cy="student-element-preview"]').contains(newContent)
         cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
       }
