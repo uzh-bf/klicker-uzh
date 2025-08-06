@@ -19,6 +19,7 @@ module.exports = {
       'tutorials/participant_group_management',
       'tutorials/group_activity',
       // 'tutorials/activity_templates',
+      'tutorials/element_updates_activities',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
