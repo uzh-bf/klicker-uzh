@@ -2207,7 +2207,6 @@ type Query {
   userActivities(activityTypeFilter: ActivityType, courseId: String, numEntries: Int, offset: Int, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
   userElements(hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
-  userLiveQuizzes: [LiveQuiz!]
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User

@@ -4,7 +4,6 @@ import {
   ActivityType,
   EditActivityTemplateDocument,
   GetTemplateInformationDocument,
-  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -88,8 +87,6 @@ function TemplateEditModal({
                   description: values.description,
                   instructions: values.instructions,
                 },
-                // TODO: update cache instead of triggering refetch query once combined activity overview is available
-                refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
               })
 
               if (result.data?.editActivityTemplate) {

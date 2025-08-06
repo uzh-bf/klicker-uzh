@@ -34297,26 +34297,6 @@
             "deprecationReason": null
           },
           {
-            "name": "userLiveQuizzes",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "LiveQuiz",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "userLogins",
             "description": null,
             "args": [],

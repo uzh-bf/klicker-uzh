@@ -244,7 +244,6 @@
    "GetUserCourses": "142d77ca5b26296ee87c39996fc2c7d218c8ab8cd21d6b86cb04cc0334eaf1ba",
    "GetUserElements": "5a275b6a7a434d88d55d3c4fd17e5544a3ed80157b53399d4461bdeaf0cf90f3",
    "GetUserGroupsUser": "c720d3ff1338c6a63f19f848126b5c30662b08d087d0250113db7549d80725bc",
-   "GetUserLiveQuizzes": "8fa939bfc975899f435995a9dfb0e9350adcd7b4aec0ec2b4be9f890b581e035",
    "GetUserLogins": "7b289235e4ea8e3fb2073ae175b1b900a77cb6c1aae9b12580cc08be825ad1aa",
    "GetUserMediaFiles": "af5513e8c56c1805060f0e2854a4ada90c4484d09481f2ba2a59136cb731cd63",
    "GetUserRunningLiveQuizzes": "756ada2de676dfd25fd4f9dd38e1255725a557ad945b379ea7e0a191df9135d0",

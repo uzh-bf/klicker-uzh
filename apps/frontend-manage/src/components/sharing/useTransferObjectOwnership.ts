@@ -6,7 +6,6 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   GetSingleCourseDocument,
-  GetUserLiveQuizzesDocument,
   ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -67,9 +66,6 @@ function useTransferObjectOwnership({
                   variables: { courseId: String(objectId) },
                 },
               ]
-            : []),
-          ...(objectType === ObjectType.LiveQuiz
-            ? [{ query: GetUserLiveQuizzesDocument }]
             : []),
         ],
       })

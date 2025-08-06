@@ -10,7 +10,6 @@ import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
   CreateActivityTemplateDocument,
-  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -137,7 +136,6 @@ function TemplateConversionModal({
                 templateInstructions: values.instructions,
                 copyBeforeConversion: values.conversionType === 'copy',
               },
-              refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
             })
 
             if (result.data?.createActivityTemplate) {

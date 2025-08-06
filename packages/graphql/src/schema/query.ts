@@ -521,14 +521,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      userLiveQuizzes: t.withAuth(asUser).field({
-        nullable: true,
-        type: [LiveQuiz],
-        resolve: async (_, __, ctx) => {
-          return await LiveQuizService.getUserLiveQuizzes(ctx)
-        },
-      }),
-
       cockpitQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,

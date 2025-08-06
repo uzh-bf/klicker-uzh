@@ -8,7 +8,6 @@ import {
 import {
   ActivityTemplate,
   CreateLiveQuizFromTemplateDocument,
-  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
@@ -513,7 +512,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       isGamificationEnabled: quizData.isGamificationEnabled,
                       blocks: processedBlocks,
                     },
-                    refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
                   })
 
                   const quizId = res?.createLiveQuizFromTemplate
