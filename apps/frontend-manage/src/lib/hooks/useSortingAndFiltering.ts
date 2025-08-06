@@ -2,6 +2,7 @@ import {
   ElementStatus,
   ElementType,
   SharingType,
+  SortByType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
@@ -10,25 +11,15 @@ export type QuestionPoolFilters = {
   untagged: boolean
   tags: string[]
   sharingType: SharingType[]
-  name: string | null
   status?: ElementStatus
   type?: ElementType
   sampleSolution: boolean
   answerFeedbacks: boolean
 }
 
-export type QuestionPoolSortType = {
+export type LibrarySortType = {
   asc: boolean
-  by: SortyByType
-}
-
-export enum SortyByType {
-  TITLE = 'TITLE',
-  TYPE = 'TYPE',
-  CREATED = 'CREATED',
-  MODIFIED = 'MODIFIED',
-  USED = 'USED',
-  UNDEFINED = 'UNDEFINED',
+  by: SortByType
 }
 
 enum QuestionPoolReducerActionType {
@@ -36,7 +27,6 @@ enum QuestionPoolReducerActionType {
   TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
   SORT_ORDER = 'SORT_ORDER',
   SORT_BY = 'SORT_BY',
-  SEARCH = 'SEARCH',
   SAMPLE_SOLUTION = 'SAMPLE_SOLUTION',
   ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
   RESET = 'RESET',
@@ -45,19 +35,19 @@ enum QuestionPoolReducerActionType {
 
 type FilterSortType = {
   filters: QuestionPoolFilters
-  sort: QuestionPoolSortType
+  sort: LibrarySortType
 }
 
 type ReducerAction = {
   type: QuestionPoolReducerActionType
-  tagName?: ElementType | ElementStatus | string
+  valueOrId?: ElementType | ElementStatus | string
   isTypeTag?: boolean
   isStatusTag?: boolean
   isSharingTypeTag?: boolean
   isUntagged?: boolean
   newValue?: boolean
   name?: string
-  by?: SortyByType
+  by?: SortByType
 }
 
 export const SORTING_FILTERING_INITIAL: FilterSortType = {
@@ -72,13 +62,12 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
     archive: false,
     untagged: false,
     tags: [],
-    name: null,
     sampleSolution: false,
     answerFeedbacks: false,
   },
   sort: {
     asc: false,
-    by: SortyByType.UNDEFINED,
+    by: SortByType.Modified,
   },
 }
 
@@ -99,20 +88,20 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
 
       // if the changed tag is a question type tag
       if (action.isTypeTag) {
-        if (state.filters.type === action.tagName) {
+        if (state.filters.type === action.valueOrId) {
           return { ...state, filters: { ...state.filters, type: undefined } }
         }
 
         // add the tag to active tags
         return {
           ...state,
-          filters: { ...state.filters, type: action.tagName as ElementType },
+          filters: { ...state.filters, type: action.valueOrId as ElementType },
         }
       }
 
       // if the changed tag is a question status tag
       if (action.isStatusTag) {
-        if (state.filters.status === action.tagName) {
+        if (state.filters.status === action.valueOrId) {
           return { ...state, filters: { ...state.filters, status: undefined } }
         }
 
@@ -121,7 +110,7 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
           ...state,
           filters: {
             ...state.filters,
-            status: action.tagName as ElementStatus,
+            status: action.valueOrId as ElementStatus,
           },
         }
       }
@@ -133,24 +122,24 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
           filters: {
             ...state.filters,
             sharingType: state.filters.sharingType.includes(
-              action.tagName as SharingType
+              action.valueOrId as SharingType
             )
               ? state.filters.sharingType.filter(
-                  (type): boolean => type !== action.tagName
+                  (type): boolean => type !== action.valueOrId
                 )
-              : [...state.filters.sharingType, action.tagName as SharingType],
+              : [...state.filters.sharingType, action.valueOrId as SharingType],
           },
         }
       }
 
       // remove the tag from active tags
-      if (action.tagName && state.filters.tags.includes(action.tagName)) {
+      if (action.valueOrId && state.filters.tags.includes(action.valueOrId)) {
         return {
           ...state,
           filters: {
             ...state.filters,
             tags: state.filters.tags.filter(
-              (tag): boolean => tag !== action.tagName
+              (tag): boolean => tag !== action.valueOrId
             ),
           },
         }
@@ -161,7 +150,7 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         ...state,
         filters: {
           ...state.filters,
-          tags: [...state.filters.tags, action.tagName!],
+          tags: [...state.filters.tags, action.valueOrId!],
           untagged: false,
         },
       }
@@ -193,15 +182,6 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         sort: {
           ...state.sort,
           by: action.by!,
-        },
-      }
-
-    case QuestionPoolReducerActionType.SEARCH:
-      return {
-        ...state,
-        filters: {
-          ...state.filters,
-          name: action.name!,
         },
       }
 
@@ -244,9 +224,7 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
     ...state,
     handleReset: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.RESET }),
-    handleSearch: (name: string): void =>
-      dispatch({ type: QuestionPoolReducerActionType.SEARCH, name }),
-    handleSortByChange: (by: SortyByType): void =>
+    handleSortByChange: (by: SortByType): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),
@@ -256,13 +234,13 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
         newValue: !state.filters.archive,
       }),
     handleTagClick: ({
-      tagName,
+      valueOrId,
       isTypeTag,
       isStatusTag,
       isSharingTypeTag,
       isUntagged,
     }: {
-      tagName: string
+      valueOrId: string
       isTypeTag: boolean
       isStatusTag: boolean
       isSharingTypeTag: boolean
@@ -270,7 +248,7 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
     }): void =>
       dispatch({
         type: QuestionPoolReducerActionType.TAG_CLICK,
-        tagName,
+        valueOrId,
         isTypeTag,
         isStatusTag,
         isSharingTypeTag,

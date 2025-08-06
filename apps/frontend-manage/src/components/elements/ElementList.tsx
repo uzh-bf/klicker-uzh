@@ -11,33 +11,34 @@ import Element from './Element'
 interface ElementListProps {
   filtersActive: boolean
   activityWizardOpen: boolean
-  setSelectedQuestions: (id: number, data: ElementType) => void
-  selectedQuestions: Record<number, ElementType>
+  setSelectedElements: (id: number, data: ElementType) => void
+  selectedElements: Record<number, ElementType | undefined>
   triggerSuccessToast: () => void
   elements?: ElementType[]
   tagfilter?: string[]
-  handleTagClick: (tagName: string) => void
-  unsetDeletedQuestion: (questionId: number) => void
+  handleTagClick: (tagId: number) => void
   handleFilterReset: () => void
+  refetchElements: () => Promise<void>
 }
 
 function ElementList({
   filtersActive,
   activityWizardOpen,
-  setSelectedQuestions,
-  selectedQuestions,
+  setSelectedElements,
+  selectedElements,
   triggerSuccessToast,
   elements = [],
   tagfilter = [],
   handleTagClick,
-  unsetDeletedQuestion,
   handleFilterReset,
+  refetchElements,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
-  const { value: hideSurvey, setValue: setHideSurvey } = useStickyState(
-    'hideLecturerSurvey',
-    'false'
-  )
+  const {
+    value: hideSurvey,
+    setValue: setHideSurvey,
+    hasInitialized,
+  } = useStickyState('hideLecturerSurvey', 'false')
 
   if (!elements) {
     return <></>
@@ -89,7 +90,7 @@ function ElementList({
           element={element}
           disabled={!element.isManager && activityWizardOpen}
           checkboxDisabled={!element.isManager}
-          checked={!!selectedQuestions[element.id]}
+          checked={!!selectedElements[element.id]}
           tags={element.tags || []}
           handleTagClick={handleTagClick}
           hasAnswerFeedbacks={
@@ -102,13 +103,13 @@ function ElementList({
               ? (element.options.hasSampleSolution ?? false)
               : true
           }
-          onCheck={() => setSelectedQuestions(element.id, element)}
+          onCheck={() => setSelectedElements(element.id, element)}
           triggerSuccessToast={triggerSuccessToast}
-          unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
+          refetchElements={refetchElements}
         />
       ))}
-      {hideSurvey === 'false' && (
+      {hasInitialized && hideSurvey === 'false' && (
         <div className="fixed bottom-11 w-[calc(100%-17rem)]">
           <div className="flex flex-row items-center justify-between rounded-md bg-orange-200 px-3 py-1.5">
             <div className="flex flex-row items-center gap-3">

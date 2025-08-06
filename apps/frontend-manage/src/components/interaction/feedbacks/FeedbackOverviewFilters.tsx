@@ -11,8 +11,8 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import TagHeader from '../../questions/tags/TagHeader'
-import TagItem from '../../questions/tags/TagItem'
+import TagHeader from '../../elements/tags/TagHeader'
+import TagItem from '../../elements/tags/TagItem'
 
 export interface FeedbackOverviewFilterProps {
   showResolved: boolean

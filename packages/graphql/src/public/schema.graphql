@@ -2206,8 +2206,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, numEntries: Int, offset: Int, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements: [Element!]
-  userLiveQuizzes: [LiveQuiz!]
+  userElements(hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
@@ -2432,6 +2431,13 @@ input SolutionRangeInput {
   min: Float
 }
 
+enum SortByType {
+  CREATED
+  MODIFIED
+  TITLE
+  TYPE
+}
+
 type StackEvaluation {
   instances: [ElementInstanceEvaluation!]!
   stackDescription: String
@@ -2581,6 +2587,11 @@ type User {
 type UserActivityList {
   activities: [ActivityInfo!]!
   numOfActivities: Int!
+}
+
+type UserElementList {
+  elements: [Element!]!
+  numOfElements: Int!
 }
 
 type UserGroup {

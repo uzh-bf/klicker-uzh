@@ -1,7 +1,8 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  DeleteLiveQuizDocument,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
@@ -18,7 +19,6 @@ import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
-import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
 import ActivityActions from './ActivityActions'
@@ -106,8 +106,11 @@ function LiveQuizActions({
     id: liveQuiz.id,
     name: liveQuiz.name,
   })
-  const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
+  const [deleteLiveQuiz, { loading: deleting }] = useMutation(
+    DeleteLiveQuizDocument,
+    { variables: { id: liveQuiz.id } }
+  )
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
@@ -180,7 +183,7 @@ function LiveQuizActions({
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
             onDelete={async () => {
-              await onDelete()
+              await deleteLiveQuiz()
               await refetchActivities?.()
             }}
             deleting={deleting}

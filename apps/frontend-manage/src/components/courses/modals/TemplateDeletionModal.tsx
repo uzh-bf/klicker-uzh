@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   DeleteActivityTemplateDocument,
-  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -29,14 +28,7 @@ function TemplateDeletionModal({
   const t = useTranslations()
   const [deleteActivityTemplate, { loading: deleting }] = useMutation(
     DeleteActivityTemplateDocument,
-    {
-      variables: {
-        activityId: activityId,
-        activityType: activityType,
-      },
-      // TODO: update cache instead of triggering refetch query once combined activity overview is available
-      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
-    }
+    { variables: { activityId: activityId, activityType: activityType } }
   )
 
   return (

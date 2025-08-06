@@ -796,64 +796,6 @@ export async function getLiveQuizData(
   return quiz
 }
 
-export async function getUserLiveQuizzes(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      liveQuizzes: {
-        where: {
-          isDeleted: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          course: true,
-          templateInfo: true,
-          blocks: {
-            orderBy: {
-              order: 'asc',
-            },
-            include: {
-              elements: {
-                orderBy: {
-                  order: 'asc',
-                },
-              },
-              _count: {
-                select: { elements: true },
-              },
-            },
-          },
-          _count: {
-            select: { blocks: true },
-          },
-        },
-      },
-    },
-  })
-
-  return user?.liveQuizzes.map((quiz) => ({
-    ...quiz,
-    templateId: quiz.templateInfo?.id,
-    blocks: quiz.blocks.map((block) => ({
-      ...block,
-      numOfParticipants: block.elements[0]
-        ? block.elements[0].results.total +
-          block.elements[0].anonymousResults.total
-        : 0,
-    })),
-    course: quiz.course ? quiz.course : undefined,
-    numOfBlocks: quiz._count?.blocks,
-    numOfInstances: quiz.blocks.reduce(
-      (acc, block) => acc + block._count?.elements,
-      0
-    ),
-  }))
-}
-
 export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },

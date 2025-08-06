@@ -16,7 +16,7 @@ import {
   prepareFreeTextArgs,
   prepareNumericalArgs,
   prepareSelectionArgs,
-} from '../../../questions/manipulation/helpers'
+} from '../../../elements/manipulation/helpers'
 import extractFormValuesFromElementInstance from '../extractFormValuesFromElementInstance'
 import { LiveQuizTemplateFormValues } from '../types'
 

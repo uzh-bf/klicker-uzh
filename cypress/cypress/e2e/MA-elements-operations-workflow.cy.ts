@@ -67,28 +67,23 @@ describe('Create different types of elements (with and without sample solution) 
     cy.wait(500)
 
     // check if duplicated question exists alongside original question
-    cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
-      'exist'
-    )
-    cy.get(
-      `[data-cy="element-item-${this.data.duplication.title + ' (Copy)'}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="element-item-${this.data.duplication.title + ' (Copy)'}"]`
-    ).contains(messages.shared.DRAFT.statusLabel)
+    cy.validateElement({ element: this.data.duplication.title })
+    cy.validateElement({
+      element: `${this.data.duplication.title} (Copy)`,
+      contains: [messages.shared.DRAFT.statusLabel],
+    })
 
     // delete the created and duplicated question
     cy.deleteElement({ elementName: `${this.data.duplication.title} (Copy)` })
-    cy.get(
-      `[data-cy="element-item-${this.data.duplication.title} (Copy)"]`
-    ).should('not.exist')
-    cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({
+      element: `${this.data.duplication.title} (Copy)`,
+      shouldExist: false,
+    })
     cy.deleteElement({ elementName: this.data.duplication.title })
-    cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.duplication.title,
+      shouldExist: false,
+    })
   })
   // #endregion
 
@@ -195,7 +190,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that opening the edit modal and closing without modifications does not trigger prompt', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.autoSave.title
@@ -204,7 +199,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
     cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="insert-question-title"]').should(
@@ -215,7 +210,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after editing a question and waiting for auto-save the corresponding content can be loaded', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -236,7 +231,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown & load data, verify updated content is visible
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
     cy.get('[data-cy="load-recovered-element-data"]').click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -249,7 +244,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after editing a question, auto-saving and discarding the saved content, the original content is loaded', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -270,7 +265,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // recovery prompt should not be shown & discard data, verify original content is visible
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
     cy.get('[data-cy="discard-recovered-element-data"]').click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -283,14 +278,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // verify that when closing and opening now after discarding, no prompt is shown
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
     cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
     cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
   })
 
   it('Verify that after editing an element and saving it, no prompt is shown to the user', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.title}"]`).click()
+    cy.editElement({ element: this.data.autoSave.title })
 
     // modify title and content
     cy.get('[data-cy="insert-question-title"]').should(
@@ -311,7 +306,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click()
 
     // recovery prompt should not be shown, verify edited content is visible
-    cy.get(`[data-cy="edit-element-${this.data.autoSave.titleEdited}"]`).click()
+    cy.editElement({ element: this.data.autoSave.titleEdited })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.autoSave.titleEdited
@@ -573,7 +568,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Update the content of the single choice question (including answer feedbacks) and trigger instance updates', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.update.title1}"]`).click()
+    cy.editElement({ element: this.data.update.title1 })
 
     // update content of the question
     cy.get('[data-cy="insert-question-title"]')
@@ -652,7 +647,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Edit the question again and disable the sample solution, verify that no instances in practice quizzes / microlearnings are updated', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="edit-element-${this.data.update.title2}"]`).click()
+    cy.editElement({ element: this.data.update.title2 })
 
     // update content of the question
     cy.get('[data-cy="insert-question-title"]')
@@ -1110,6 +1105,9 @@ describe('Create different types of elements (with and without sample solution) 
   it('Temporarily award ADMIN permissions to user pro3 and verify that the access requests are visible as well', function () {
     // grant ADMIN permissions to user pro3 through direct sharing
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -1155,6 +1153,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // revoke direct ADMIN permissions again
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get(
@@ -1253,6 +1254,9 @@ describe('Create different types of elements (with and without sample solution) 
 
   it("Verify that the active permission for user 'pro1' is shown correctly", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
@@ -1262,14 +1266,12 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that restricted question is visible for user pro1', function () {
     cy.loginIndividualCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
   })
 
   it('Verify that restricted question is not visible for user pro2', function () {
     cy.loginInstitutionalCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({ element: this.data.SEML.title, shouldExist: false })
   })
 
   it('Change the access level of the question in the catalog to public', function () {
@@ -1345,6 +1347,9 @@ describe('Create different types of elements (with and without sample solution) 
 
   it("Grant admin access to user 'pro2' for the restricted question", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
@@ -1535,6 +1540,9 @@ describe('Create different types of elements (with and without sample solution) 
 
   it("Verify that the active permission for user 'pro1' is shown correctly", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
@@ -1544,14 +1552,12 @@ describe('Create different types of elements (with and without sample solution) 
 
   it("Verify that the public question is visible for user 'pro1'", function () {
     cy.loginIndividualCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title, shouldExist: true })
   })
 
   it("Verify that the public question is not visible for user 'pro2'", function () {
     cy.loginInstitutionalCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({ element: this.data.SEML.title, shouldExist: false })
   })
 
   it('Import (and copy) the public question (for user pro2)', function () {
@@ -1574,11 +1580,14 @@ describe('Create different types of elements (with and without sample solution) 
     // check that the collection is visible in resources
     cy.get('[data-cy="library"]').click()
     cy.reload() // make sure data is refetched (works without - this is to avoid race conditions in testing)
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
   })
 
   it('Verify that imported question is visible to user pro2 (copied and with edit permissions)', function () {
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="edit-element-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="duplicate-element-${this.data.SEML.title}"]`).should(
@@ -1591,7 +1600,10 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Remove the public question from user pro1', function () {
     cy.loginIndividualCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML.title}{enter}`)
+    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="remove-element-${this.data.SEML.title}"]`).click()
 
     cy.get('[data-cy="confirm-deletion-final"]').click()
@@ -1610,7 +1622,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that imported question is still visible to user pro2 (due to derived permission)', function () {
     cy.loginInstitutionalCatalyst()
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
   })
 
   it('Remove the imported question from user pro2', function () {
@@ -1637,6 +1649,9 @@ describe('Create different types of elements (with and without sample solution) 
     })
 
     // share it directly with READ, WRITE and ADMIN permissions with the users pro1, pro2 and pro3, respectively
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SCML.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SCML.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SCML.title}"]`).click()
 
@@ -1689,6 +1704,9 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that the user with granted access are able to access the correct element manipulation functionalities', function () {
     // READ permissions should enable a user to duplicate the element (no editing, no re-use, no deletion / sharing)
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SCML.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should(
       'not.exist'
@@ -1704,6 +1722,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // WRITE permissions should enable a user to duplicate or edit the element (no re-use, no deletion / sharing)
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SCML.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
@@ -1718,6 +1739,9 @@ describe('Create different types of elements (with and without sample solution) 
 
     // ADMIN permissions should enable a user to duplicate, edit, delete or share the element
     cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SCML.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).should('exist')
     cy.get(`[data-cy="duplicate-element-${this.data.SCML.title}"]`).should(
@@ -1734,15 +1758,11 @@ describe('Create different types of elements (with and without sample solution) 
   it('Cleanup: Delete the created question again and verify deletion', function () {
     cy.loginLecturer()
     cy.deleteElement({ elementName: this.data.SCML.title })
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({ element: this.data.SCML.title, shouldExist: false })
 
     cy.loginIndividualCatalyst()
     cy.reload()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({ element: this.data.SCML.title, shouldExist: false })
   })
 
   it('Create user groups with all users and prepare a new selection question (incl. answer collection) for user group sharing', function () {
@@ -1870,6 +1890,9 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Grant direct READ, WRITE and ADMIN permissions to the element for the user groups', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML2.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SEML2.title}"]`).click()
 
@@ -1933,7 +1956,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginIndividualCatalyst()
 
     // check that the shared element is available with the correct permissions
-    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML2.title })
     cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
       'exist'
     )
@@ -1959,6 +1982,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginInstitutionalCatalyst()
 
     // check that the shared element is available with the correct permissions
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML2.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
     cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
       'exist'
@@ -1986,11 +2012,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginInstitutionalCatalyst2()
 
     // check that the shared element is available with the correct permissions
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SEML2.title}{enter}`)
     cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).should('exist')
     cy.get(`[data-cy="duplicate-element-${this.data.SEML2.title}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).should('exist')
     cy.get(`[data-cy="actions-element-${this.data.SEML2.title}"]`).should(
       'exist'
     )

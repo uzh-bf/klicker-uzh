@@ -4,7 +4,6 @@ import {
   ElementType,
   FlagOutdatedElementInstancesDocument,
   GetSingleQuestionDocument,
-  GetUserElementsDocument,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
@@ -45,6 +44,7 @@ interface ElementEditModalProps {
   triggerSuccessToast: () => void
   elementId?: number
   mode: ElementEditMode
+  refetchElements: () => Promise<void>
 }
 
 function ElementEditModal({
@@ -54,6 +54,7 @@ function ElementEditModal({
   triggerSuccessToast,
   elementId,
   mode,
+  refetchElements,
 }: ElementEditModalProps): React.ReactElement {
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
@@ -135,6 +136,7 @@ function ElementEditModal({
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
+      refetchElements={refetchElements}
       onSubmitElement={async (values) => {
         try {
           switch (values.type) {
@@ -147,11 +149,9 @@ function ElementEditModal({
 
               const result = await manipulateContentElement({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateContentElement
               if (data?.__typename !== 'ContentElement' || !data.id) {
@@ -170,11 +170,9 @@ function ElementEditModal({
 
               const result = await manipulateFlashcardElement({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateFlashcardElement
               if (data?.__typename !== 'FlashcardElement' || !data.id) {
@@ -195,11 +193,9 @@ function ElementEditModal({
 
               const result = await manipulateChoicesQuestion({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateChoicesQuestion
               if (data?.__typename !== 'ChoicesElement' || !data.id) {
@@ -218,11 +214,9 @@ function ElementEditModal({
 
               const result = await manipulateNumericalQuestion({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateNumericalQuestion
               if (data?.__typename !== 'NumericalElement' || !data.id) {
@@ -241,11 +235,9 @@ function ElementEditModal({
 
               const result = await manipulateFreeTextQuestion({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateFreeTextQuestion
               if (data?.__typename !== 'FreeTextElement' || !data.id) {
@@ -284,11 +276,9 @@ function ElementEditModal({
 
               const result = await manipulateSelectionQuestion({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateSelectionQuestion
               if (data?.__typename !== 'SelectionElement' || !data.id) {
@@ -327,11 +317,9 @@ function ElementEditModal({
 
               const result = await manipulateCaseStudyQuestion({
                 variables: args,
-                refetchQueries: [
-                  { query: GetUserElementsDocument },
-                  { query: GetUserTagsDocument },
-                ],
+                refetchQueries: [{ query: GetUserTagsDocument }],
               })
+              await refetchElements()
 
               const data = result.data?.manipulateCaseStudyQuestion
               if (data?.__typename !== 'CaseStudyElement' || !data.id) {

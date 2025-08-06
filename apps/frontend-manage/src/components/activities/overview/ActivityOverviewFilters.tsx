@@ -26,9 +26,9 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import TagHeader from '../../questions/tags/TagHeader'
-import TagItem from '../../questions/tags/TagItem'
-import { SHARING_TYPE_FILTERS } from '../../questions/tags/TagList'
+import TagHeader from '../../elements/tags/TagHeader'
+import TagItem from '../../elements/tags/TagItem'
+import { SHARING_TYPE_FILTERS } from '../../elements/tags/TagList'
 
 const STATUS_ICONS = {
   [PublicationStatus.Draft]: [faPenToSquareRegular, faPenToSquareSolid],

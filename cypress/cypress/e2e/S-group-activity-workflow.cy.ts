@@ -503,24 +503,13 @@ describe('Create and solve a group activity', function () {
     ).should('exist')
 
     // add another question to the group activity
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
-      .contains(this.data.SCML.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SCML.title,
+      target: 'drop-elements-stack-0',
     })
-
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`)
-      .contains(this.data.CT.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.CT.title,
+      target: 'drop-elements-stack-0',
     })
 
     // verify that the contained questions are correct
@@ -1725,8 +1714,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1778,8 +1767,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1886,8 +1875,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1999,8 +1988,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2187,8 +2176,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared group activities should no longer be visible

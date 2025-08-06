@@ -372,7 +372,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
 
     // update the single choice question
-    cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).click()
+    cy.editElement({ element: this.data.SCML.title })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SCML.title
@@ -383,9 +383,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.instanceUpdates.newSCTitle)
     cy.get('[data-cy="instance-update-switch"]').click() // disable instance updates to verify option for manual updates
     cy.get('[data-cy="save-new-question"]').click()
-    cy.get(
-      `[data-cy="edit-element-${this.data.instanceUpdates.newSCTitle}"]`
-    ).should('exist') // verify that the change went into effect
+    cy.validateElement({ element: this.data.instanceUpdates.newSCTitle }) // verify that the change went into effect
 
     // open the live quiz editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
@@ -595,6 +593,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-4-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-5-stack-0"]').should('not.exist')
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.wait(1000) // wait for the submission to complete
 
     // verify that the instance update for the group activity went into effect
     cy.get('[data-cy="activities"]').click()
@@ -764,7 +763,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
 
     // update the multiple choice question
-    cy.get(`[data-cy="edit-element-${this.data.MCML.title}"]`).click()
+    cy.editElement({ element: this.data.MCML.title })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.MCML.title
@@ -775,9 +774,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.instanceUpdates.newMCTitle)
     cy.get('[data-cy="instance-update-switch"]').click() // disable instance updates to verify option for manual updates
     cy.get('[data-cy="save-new-question"]').click()
-    cy.get(
-      `[data-cy="edit-element-${this.data.instanceUpdates.newMCTitle}"]`
-    ).should('exist') // verify that the change went into effect
+    cy.validateElement({ element: this.data.instanceUpdates.newMCTitle }) // verify that the change went into effect
 
     // open the live quiz editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()

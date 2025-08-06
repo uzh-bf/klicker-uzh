@@ -10,7 +10,7 @@ function ElementTags({
 }: {
   tags: Tag[]
   tagfilter?: string[]
-  handleTagClick: (tagName: string) => void
+  handleTagClick: (tagId: number) => void
 }): React.ReactElement {
   if (!tags || tags.length === 0) {
     return <></>
@@ -18,17 +18,20 @@ function ElementTags({
 
   return (
     <div className="flex max-w-2xl flex-row gap-2 overflow-auto">
-      {tags.map((tag): React.ReactElement => {
-        const selected = tagfilter?.includes(tag.name)
+      {tags.map((tag) => {
+        const selected = tagfilter?.includes(tag.id.toString())
 
         return (
           <Button
             className={{
-              root: twMerge('bg-uzh-grey-20 h-8', selected && 'bg-primary-20'),
+              root: twMerge(
+                'bg-uzh-grey-20 h-8',
+                selected && 'bg-primary-20 hover:bg-primary-40/70'
+              ),
             }}
             onClick={(event) => {
               event?.stopPropagation()
-              handleTagClick(tag.name)
+              handleTagClick(tag.id)
             }}
             key={tag.id}
             data={{ cy: `tag-list-item-${tag.name}` }}

@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType as ActivityTypeEnum,
+  SortByType as SortByTypeEnum,
   type CaseStudyCaseInput as CaseStudyCaseInputType,
   type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
   type CaseStudyCriterionInput as CaseStudyCriterionInputType,
@@ -70,6 +71,10 @@ import {
   PublicationStatus,
 } from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
+
+export const SortByType = builder.enumType('SortByType', {
+  values: Object.values(SortByTypeEnum),
+})
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -874,6 +879,29 @@ export const Element = builder.unionType('Element', {
         return CaseStudyElement
     }
   },
+})
+
+export interface IUserElementList {
+  numOfElements: number
+  elements: (
+    | IChoicesElement
+    | INumericalElement
+    | IFreeTextElement
+    | IFlashcardElement
+    | IContentElement
+    | ISelectionElement
+    | ICaseStudyElement
+  )[]
+}
+
+export const UserElementListRef =
+  builder.objectRef<IUserElementList>('UserElementList')
+export const UserElementList = builder.objectType(UserElementListRef, {
+  name: 'UserElementList',
+  fields: (t) => ({
+    numOfElements: t.exposeInt('numOfElements'),
+    elements: t.expose('elements', { type: [Element] }),
+  }),
 })
 
 interface IElementSummary {

@@ -1,6 +1,6 @@
 import { SelectGroup } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ElementSelectCourse } from '../../components/activities/ElementCreation'
+import { ElementSelectCourse } from '../../components/activities/ActivityCreation'
 
 interface useGamifiedCourseGroupingProps {
   gamifiedCourses: ElementSelectCourse[]

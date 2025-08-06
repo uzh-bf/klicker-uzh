@@ -57,15 +57,14 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.FT.title}"]`).contains(
-      this.data.FT.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.FT.title}"]`).contains(
-      this.data.FT.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.FT.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.FT.title,
+      contains: [
+        this.data.FT.content,
+        this.data.FT.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
 
     cy.get(`[data-cy="edit-element-${this.data.FT.title}"]`).click()
     cy.get('[data-cy="free-text-input-0"]').should('exist')
@@ -115,12 +114,10 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.FT.titleEdited}"]`).contains(
-      this.data.FT.contentEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.FT.titleEdited}"]`).contains(
-      this.data.FT.titleEdited
-    )
+    cy.validateElement({
+      element: this.data.FT.titleEdited,
+      contains: [this.data.FT.contentEdited, this.data.FT.titleEdited],
+    })
   })
 
   it('Check that edited Free Text question is stored and loaded correctly', function () {

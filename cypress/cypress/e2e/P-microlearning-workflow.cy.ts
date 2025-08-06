@@ -237,12 +237,9 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // SC question without sample solution should be rejected
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`)
-      .contains(this.data.SC.title)
-      .trigger('dragstart', { dataTransfer })
-    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SC.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get('[data-cy="element-2-stack-1"]').contains(this.data.SC.title)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
@@ -406,15 +403,7 @@ describe('Different microlearning workflows', function () {
     const addQuestions = [this.data.SCML.title, this.data.FTML.title]
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     cy.wrap(addQuestions).each((element: string, ix) => {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="element-item-${element}"]`)
-        .contains(element)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get(`[data-cy="drop-elements-stack-2"]`).trigger('drop', {
-        dataTransfer,
-      })
+      cy.dragAndDropElement({ element, target: `drop-elements-stack-2` })
       cy.get(`[data-cy="element-${ix}-stack-2"]`).contains(element)
     })
 
@@ -1563,7 +1552,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
 
     // modify numerical question
-    cy.get(`[data-cy="edit-element-${this.data.SEML2.title}"]`).click()
+    cy.editElement({ element: this.data.SEML2.title })
     cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -1653,28 +1642,18 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-course"]').should('exist')
     cy.get('[data-cy="next-or-submit"]').click()
 
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.manipulation.newSETitle}"]`)
-      .contains(this.data.manipulation.newSETitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-stack-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.manipulation.newSETitle,
+      target: 'drop-elements-stack-0',
     })
     cy.get(`[data-cy="element-1-stack-0"]`).contains(
       this.data.manipulation.newSETitle.substring(0, 20)
     )
 
-    const dataTransfer2 = new DataTransfer()
     cy.get(`[data-cy="drop-elements-add-stack"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.CSML2.title}"]`)
-      .contains(this.data.CSML2.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get(`[data-cy="drop-elements-stack-1"]`).trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.CSML2.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get(`[data-cy="element-0-stack-1"]`).contains(
       this.data.CSML2.title.substring(0, 20)
@@ -2138,8 +2117,8 @@ describe('Different microlearning workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2254,8 +2233,8 @@ describe('Different microlearning workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2382,8 +2361,8 @@ describe('Different microlearning workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2518,8 +2497,8 @@ describe('Different microlearning workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2734,8 +2713,8 @@ describe('Different microlearning workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared microlearnings should no longer be visible

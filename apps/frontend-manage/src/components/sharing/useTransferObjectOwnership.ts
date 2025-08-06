@@ -6,8 +6,6 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   GetSingleCourseDocument,
-  GetUserElementsDocument,
-  GetUserLiveQuizzesDocument,
   ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -18,12 +16,14 @@ function useTransferObjectOwnership({
   catalogCollectionId,
   onError,
   refetchActivities,
+  refetchElements,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
   refetchActivities?: () => Promise<void>
+  refetchElements?: () => Promise<void>
 }): {
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
@@ -59,9 +59,6 @@ function useTransferObjectOwnership({
                 { query: GetAnswerCollectionsInfoDocument },
               ]
             : []),
-          ...(objectType === ObjectType.Element
-            ? [{ query: GetUserElementsDocument }]
-            : []),
           ...(objectType === ObjectType.Course
             ? [
                 {
@@ -70,14 +67,12 @@ function useTransferObjectOwnership({
                 },
               ]
             : []),
-          ...(objectType === ObjectType.LiveQuiz
-            ? [{ query: GetUserLiveQuizzesDocument }]
-            : []),
         ],
       })
 
       if (res.data?.transferObjectOwnership) {
         await refetchActivities?.() // if an activity was shared, refetch the activities shown on the activity list
+        await refetchElements?.() // if an element was shared, refetch the elements shown on the element list
         return true
       } else {
         onError()

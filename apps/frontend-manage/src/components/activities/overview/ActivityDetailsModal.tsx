@@ -22,7 +22,7 @@ import {
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import StudentElementPreviewActivityDetails from '../../questions/manipulation/StudentElementPreviewActivityDetails'
+import StudentElementPreviewActivityDetails from '../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityDetailsStack from './ActivityDetailsStack'
 import ActivityPointsTable from './ActivityPointsTable'
 

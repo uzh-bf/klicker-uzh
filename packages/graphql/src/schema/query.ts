@@ -36,7 +36,7 @@ import {
   LeaderboardEntry,
   StudentCourse,
 } from './course.js'
-import { ElementType } from './elementData.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -73,7 +73,9 @@ import {
   ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
+  SortByType,
   Tag,
+  UserElementList,
 } from './question.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
@@ -233,9 +235,26 @@ export const Query = builder.queryType({
 
       userElements: t.withAuth(asUser).field({
         nullable: true,
-        type: [Element],
-        resolve: async (_, __, ctx) => {
-          return await QuestionService.getUserElements(ctx)
+        type: UserElementList,
+        args: {
+          status: t.arg({ type: ElementStatus, required: false }),
+          type: t.arg({ type: ElementType, required: false }),
+          hasSampleSolution: t.arg.boolean({ required: true }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: true }),
+          searchString: t.arg.string({ required: false }),
+          showOwned: t.arg.boolean({ required: false }),
+          showShared: t.arg.boolean({ required: false }),
+          showDependencies: t.arg.boolean({ required: false }),
+          tagIds: t.arg.intList({ required: true }),
+          showUntagged: t.arg.boolean({ required: true }),
+          sortByType: t.arg({ type: SortByType, required: true }),
+          sortByAsc: t.arg.boolean({ required: true }),
+          showArchived: t.arg.boolean({ required: true }),
+          numEntries: t.arg.int({ required: true }),
+          offset: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.getUserElements(args, ctx)
         },
       }),
 
@@ -499,14 +518,6 @@ export const Query = builder.queryType({
         type: [Course],
         resolve: async (_, __, ctx) => {
           return await CourseService.getControlCourses(ctx)
-        },
-      }),
-
-      userLiveQuizzes: t.withAuth(asUser).field({
-        nullable: true,
-        type: [LiveQuiz],
-        resolve: async (_, __, ctx) => {
-          return await LiveQuizService.getUserLiveQuizzes(ctx)
         },
       }),
 

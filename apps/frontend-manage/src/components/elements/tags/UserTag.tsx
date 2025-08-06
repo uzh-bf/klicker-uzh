@@ -7,15 +7,6 @@ import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
 import TagEditForm from './TagEditForm'
 
-interface Props {
-  tag: Tag
-  handleTagClick: (tag: string) => void
-  active: boolean
-  isStatic?: boolean
-  onMoveUp?: () => void
-  onMoveDown?: () => void
-}
-
 function UserTag({
   tag,
   handleTagClick,
@@ -23,7 +14,16 @@ function UserTag({
   isStatic = false,
   onMoveDown,
   onMoveUp,
-}: Props) {
+  refetchElements,
+}: {
+  tag: Tag
+  handleTagClick: (tagId: number) => void
+  active: boolean
+  isStatic?: boolean
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  refetchElements: () => Promise<void>
+}) {
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
 
@@ -42,7 +42,7 @@ function UserTag({
             <Button
               basic
               fluid
-              onClick={(): void => handleTagClick(tag.name)}
+              onClick={(): void => handleTagClick(tag.id)}
               className={{
                 root: 'hover:text-primary-100 line-clamp-1 h-7 min-w-0 flex-1 overflow-hidden text-ellipsis py-0 text-sm',
               }}
@@ -70,6 +70,7 @@ function UserTag({
               }
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              refetchElements={refetchElements}
             />
           </div>
         )}

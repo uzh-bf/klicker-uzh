@@ -1,4 +1,4 @@
-import { ElementSelectCourse } from '../../components/activities/ElementCreation'
+import { ElementSelectCourse } from '../../components/activities/ActivityCreation'
 
 function useCoursesGamificationSplit({
   courseSelection,

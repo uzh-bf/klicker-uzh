@@ -56,13 +56,13 @@ interface ElementProps {
   disabled: boolean
   checkboxDisabled?: boolean
   tags?: Tag[]
-  handleTagClick: (tagName: string) => void
+  handleTagClick: (tagId: number) => void
   onCheck: () => void
   triggerSuccessToast: () => void
-  unsetDeletedQuestion: (questionId: number) => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
+  refetchElements: () => Promise<void>
 }
 
 function Element({
@@ -74,10 +74,10 @@ function Element({
   handleTagClick,
   onCheck,
   triggerSuccessToast,
-  unsetDeletedQuestion,
   hasAnswerFeedbacks,
   hasSampleSolution,
   tagfilter = [],
+  refetchElements,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
   const [isModificationModalOpen, setModificationModalOpen] = useState(false)
@@ -237,7 +237,10 @@ function Element({
           </div>
 
           {element.isArchived && (
-            <FontAwesomeIcon icon={faArchive} className="mr-3 mt-2" />
+            <Badge className="mt-1.25 mr-3 flex h-max flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faArchive} className="" />
+              <span>{t('shared.generic.archived')}</span>
+            </Badge>
           )}
 
           <SharingTypeBadge sharingType={element.sharingType} />
@@ -330,6 +333,7 @@ function Element({
           isOpen={isModificationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.EDIT}
+          refetchElements={refetchElements}
         />
       )}
       {isDuplicationModalOpen && (
@@ -339,6 +343,7 @@ function Element({
           isOpen={isDuplicationModalOpen}
           elementId={element.id}
           mode={ElementEditMode.DUPLICATE}
+          refetchElements={refetchElements}
         />
       )}
       {isDeletionModalOpen && element.isManager && (
@@ -347,7 +352,7 @@ function Element({
           setModalOpen={setDeletionModalOpen}
           elementId={element.id}
           title={element.name}
-          unsetDeletedQuestion={unsetDeletedQuestion}
+          refetchElements={refetchElements}
         />
       )}
       {isRemovalModalOpen && !element.isOwner && element.isRemovable && (
@@ -356,7 +361,7 @@ function Element({
           setModalOpen={setRemovalModalOpen}
           elementId={element.id}
           title={element.name}
-          unsetDeletedQuestion={unsetDeletedQuestion}
+          refetchElements={refetchElements}
         />
       )}
       {isSharingModalOpen && element.isManager ? (
@@ -366,6 +371,7 @@ function Element({
           objectType={ObjectType.Element}
           isOwner={element.isOwner ?? false}
           onClose={() => setSharingModalOpen(false)}
+          refetchElements={refetchElements}
         />
       ) : null}
 

@@ -167,15 +167,14 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
 
     // verify that the created KPRIM question is correctly displayed in the question pool
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      this.data.KP.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      this.data.KP.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.KP.title,
+      contains: [
+        this.data.KP.content,
+        this.data.KP.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.KP.title}"]`).click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
@@ -255,12 +254,10 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(1000)
 
     // verify that the updated KPRIM question is correctly displayed in the question pool
-    cy.get(`[data-cy="element-item-${this.data.KP.titleEdited}"]`).contains(
-      this.data.KP.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.titleEdited}"]`).contains(
-      this.data.KP.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.KP.titleEdited,
+      contains: [this.data.KP.contentEdited, this.data.KP.titleEdited],
+    })
   })
 
   it('Check that edited KPRIM question is stored and loaded correctly', function () {

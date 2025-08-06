@@ -16,14 +16,14 @@ function Pagination({
   totalPages,
   currentPage,
   setCurrentPage,
-  numOfActivities,
+  numOfObjects,
   PAGE_SIZE,
   className,
 }: {
   totalPages: number
   currentPage: number
   setCurrentPage: Dispatch<SetStateAction<number>>
-  numOfActivities: number
+  numOfObjects: number
   PAGE_SIZE: number
   className?: string
 }) {
@@ -37,8 +37,8 @@ function Pagination({
       <div className="text-muted-foreground text-sm">
         {t('manage.general.showingResults', {
           start: (currentPage - 1) * PAGE_SIZE + 1,
-          end: Math.min(currentPage * PAGE_SIZE, numOfActivities),
-          total: numOfActivities,
+          end: Math.min(currentPage * PAGE_SIZE, numOfObjects),
+          total: numOfObjects,
         })}
       </div>
       <PaginationComponent className="w-full">

@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CancelLiveQuizDocument,
   GetLiveQuizSummaryDocument,
-  GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -66,7 +65,6 @@ function CancelLiveQuizModal({
           },
         })
       },
-      refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
     }
   )
 

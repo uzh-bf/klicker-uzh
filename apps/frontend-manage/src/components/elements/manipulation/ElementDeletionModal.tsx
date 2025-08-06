@@ -1,31 +1,31 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  DeleteElementDocument,
   GetElementSummaryDocument,
-  GetUserElementsDocument,
-  ObjectType,
-  RemoveObjectDocument,
+  GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from '../../courses/modals/ActivityConfirmationModal'
 
-function ElementRemovalModal({
+function ElementDeletionModal({
   elementId,
   title,
   isModalOpen,
   setModalOpen,
-  unsetDeletedQuestion,
+  refetchElements,
 }: {
   elementId: number
   title: string
   isModalOpen: boolean
   setModalOpen: Dispatch<SetStateAction<boolean>>
-  unsetDeletedQuestion: (questionId: number) => void
+  refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
   const [confirmations, setConfirmations] = useState({
     actionFinal: false, // action cannot be undone, element will not be removed from any created activities
+    otherUsersAccess: false, // other users might not lose access to the element, if used
     derivedAccessHint: false, // derived access might be granted if element is still used
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
@@ -37,17 +37,14 @@ function ElementRemovalModal({
     fetchPolicy: 'network-only',
   })
 
-  // removal mutation
-  const [removeObject, { loading: removing }] = useMutation(
-    RemoveObjectDocument,
-    {
-      variables: {
-        objectId: String(elementId),
-        objectType: ObjectType.Element,
-      },
-    }
+  // deletion mutation
+  const [deleteElement, { loading: deleting }] = useMutation(
+    DeleteElementDocument
   )
 
+  const notApplicableShared =
+    !!data?.getElementSummary &&
+    !data.getElementSummary.sharedElementActivityUse
   const notApplicableDerived =
     !!data?.getElementSummary && !data.getElementSummary.retainsDerivedAccess
   const notApplicableResources =
@@ -59,33 +56,38 @@ function ElementRemovalModal({
     if (isModalOpen) {
       setConfirmations({
         actionFinal: false,
+        otherUsersAccess: notApplicableShared,
         derivedAccessHint: notApplicableDerived,
         dependencyAccess: notApplicableResources,
       })
     }
-  }, [isModalOpen, notApplicableDerived, notApplicableResources])
+  }, [
+    isModalOpen,
+    notApplicableDerived,
+    notApplicableResources,
+    notApplicableShared,
+  ])
 
   return (
     <ActivityConfirmationModal
       onClose={() => setModalOpen(false)}
-      title={t('manage.questionPool.removeElement')}
+      title={t('manage.questionPool.deleteElement')}
       loading={queryLoading}
-      message={t.rich('manage.questionPool.confirmElementRemoval', {
+      message={t.rich('manage.questionPool.confirmDeletion', {
         name: title,
         b: (content) => <b>{content}</b>,
       })}
       onSubmit={async () => {
-        await removeObject({
+        await deleteElement({
           variables: {
-            objectId: String(elementId),
-            objectType: ObjectType.Element,
+            id: elementId,
           },
-          refetchQueries: [{ query: GetUserElementsDocument }],
+          refetchQueries: [{ query: GetUserTagsDocument }],
         })
-        unsetDeletedQuestion(elementId)
+        await refetchElements()
         setModalOpen(false)
       }}
-      submitting={removing}
+      submitting={deleting}
       confirmations={confirmations}
       confirmationsInitializing={false}
       confirmationType="delete"
@@ -93,7 +95,7 @@ function ElementRemovalModal({
       <div className="flex flex-col gap-2">
         <ConfirmationItem
           confirmationType="delete"
-          label={t('manage.questionPool.elementRemovalFinal')}
+          label={t('manage.questionPool.elementDeletionFinal')}
           onClick={() => {
             setConfirmations((prev) => ({
               ...prev,
@@ -107,11 +109,28 @@ function ElementRemovalModal({
         <ConfirmationItem
           confirmationType="delete"
           label={
+            notApplicableShared
+              ? t('manage.questionPool.elementDeletionOtherUsersNotApplicable')
+              : t('manage.questionPool.elementDeletionOtherUsers')
+          }
+          onClick={() => {
+            setConfirmations((prev) => ({
+              ...prev,
+              otherUsersAccess: true,
+            }))
+          }}
+          confirmed={confirmations.otherUsersAccess}
+          notApplicable={notApplicableShared}
+          data={{ cy: 'confirm-other-users-access' }}
+        />
+        <ConfirmationItem
+          confirmationType="delete"
+          label={
             notApplicableDerived
               ? t(
-                  'manage.questionPool.elementRemovalDerivedAccessHintNotApplicable'
+                  'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
                 )
-              : t('manage.questionPool.elementRemovalDerivedAccessHint')
+              : t('manage.questionPool.elementDeletionDerivedAccessHint')
           }
           onClick={() => {
             setConfirmations((prev) => ({
@@ -128,9 +147,9 @@ function ElementRemovalModal({
           label={
             notApplicableResources
               ? t(
-                  'manage.questionPool.elementDeletionDerivedAccessNotApplicable'
+                  'manage.questionPool.elementDeletionDependencyAccessNotApplicable'
                 )
-              : t('manage.questionPool.elementDeletionDerivedAccessHint')
+              : t('manage.questionPool.elementDeletionDependencyAccess')
           }
           onClick={() => {
             setConfirmations((prev) => ({
@@ -147,4 +166,4 @@ function ElementRemovalModal({
   )
 }
 
-export default ElementRemovalModal
+export default ElementDeletionModal

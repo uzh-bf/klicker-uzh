@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteTagDocument,
-  GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -11,10 +10,12 @@ function TagDeletionModal({
   id,
   name,
   onClose,
+  refetchElements,
 }: {
   id: number
   name: string
   onClose: () => void
+  refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
@@ -39,7 +40,6 @@ function TagDeletionModal({
         },
       })
     },
-    refetchQueries: [{ query: GetUserElementsDocument }],
     optimisticResponse: {
       deleteTag: {
         id: id,
@@ -58,6 +58,7 @@ function TagDeletionModal({
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
         await deleteTag()
+        await refetchElements()
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-tag' }}
