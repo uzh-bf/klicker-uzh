@@ -20,7 +20,6 @@ function CatalogCollectionDeletionModal({
   onSuccess,
 }: CatalogCollectionDeletionModalProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [deleteCatalogCollection, { loading: deleting }] = useMutation(
     DeleteCatalogCollectionDocument
   )
@@ -41,28 +40,22 @@ function CatalogCollectionDeletionModal({
           await deleteCatalogCollection({
             variables: { catalogCollectionId },
             update: (cache, { data }) => {
-              if (!data?.deleteCatalogCollection) return
+              const success = data?.deleteCatalogCollection
+              if (!success) return
 
-              const prevCollections = cache.readQuery({
-                query: GetCatalogCollectionsListDocument,
-              })
-
-              if (!prevCollections?.getCatalogCollectionsList) {
-                return
-              }
-
-              const newCollections =
-                prevCollections.getCatalogCollectionsList.filter(
-                  (collection) =>
-                    collection.id !== data.deleteCatalogCollection!
-                )
-
-              cache.writeQuery({
-                query: GetCatalogCollectionsListDocument,
-                data: {
-                  getCatalogCollectionsList: newCollections,
-                },
-              })
+              cache.updateQuery(
+                { query: GetCatalogCollectionsListDocument },
+                (data) => {
+                  if (!data?.getCatalogCollectionsList) return data
+                  return {
+                    ...data,
+                    getCatalogCollectionsList:
+                      data.getCatalogCollectionsList.filter(
+                        (collection) => collection.id !== catalogCollectionId
+                      ),
+                  }
+                }
+              )
             },
           })
 

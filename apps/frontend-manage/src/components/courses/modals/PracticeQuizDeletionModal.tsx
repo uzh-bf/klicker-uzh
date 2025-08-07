@@ -29,7 +29,6 @@ function PracticeQuizDeletionModal({
     }
   )
 
-  // TODO: add query update
   const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
     DeletePracticeQuizDocument,
     {
@@ -41,10 +40,31 @@ function PracticeQuizDeletionModal({
           __typename: 'PracticeQuiz',
         },
       },
-      // TODO: replace this with a more efficient cache update
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update: (cache, { data: res }) => {
+        // if the practice quiz is not part of a course or the mutation was not successful, return early
+        if (!res?.deletePracticeQuiz?.id) return
+
+        // change the status of the practice quiz on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                practiceQuizzesInfo:
+                  data.course.practiceQuizzesInfo?.filter(
+                    (pq) => pq.id !== res.deletePracticeQuiz!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
     }
   )
 

@@ -298,6 +298,7 @@ function ActivityListEntry({
           name={activity.name}
           type={activity.type}
           displayName={activity.displayName}
+          courseId={activity.courseId}
           onClose={() => setChangeName(false)}
           refetchActivities={refetchActivities}
         />

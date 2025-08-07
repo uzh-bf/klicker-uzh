@@ -26,10 +26,8 @@ function CatalogChangeAccessModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [changeCatalogObjectAccess, { loading: changingCatalogObjectAccess }] =
     useMutation(ChangeCatalogObjectAccessDocument)
-  // TODO: add query update
   const [
     changeCatalogCollectionObjectAccess,
     { loading: changingCatalogCollectionAccess },
@@ -54,33 +52,22 @@ function CatalogChangeAccessModal({
               },
               update: (cache, { data }) => {
                 // check if request was successful
-                const success = data?.changeCatalogObjectAccess
-                if (!success) return
+                if (!data?.changeCatalogObjectAccess) return
 
                 // update list of catalog objects
-                const catalogObjects = cache.readQuery({
-                  query: GetCatalogObjectsDocument,
-                  variables: {
-                    catalogCollectionId,
-                  },
-                })
-
-                if (catalogObjects?.getCatalogObjects) {
-                  cache.writeQuery({
+                cache.updateQuery(
+                  {
                     query: GetCatalogObjectsDocument,
-                    variables: {
-                      catalogCollectionId,
-                    },
-                    data: {
-                      getCatalogObjects: catalogObjects?.getCatalogObjects.map(
-                        (obj) =>
-                          obj.id === assignmentId
-                            ? { ...obj, access: newAccess }
-                            : obj
-                      ),
-                    },
+                    variables: { catalogCollectionId },
+                  },
+                  (data) => ({
+                    getCatalogObjects: data?.getCatalogObjects?.map((obj) =>
+                      obj.id === assignmentId
+                        ? { ...obj, access: newAccess }
+                        : obj
+                    ),
                   })
-                }
+                )
               },
             })
             success = res.data?.changeCatalogObjectAccess ?? false
@@ -94,27 +81,20 @@ function CatalogChangeAccessModal({
               },
               update: (cache, { data }) => {
                 // check if request was successful
-                const success = data?.changeCatalogCollectionObjectAccess
-                if (!success) return
+                if (!data?.changeCatalogCollectionObjectAccess) return
 
-                // update list of catalog collections
-                const queryData = cache.readQuery({
-                  query: GetCatalogCollectionsListDocument,
-                })
-
-                if (queryData?.getCatalogCollectionsList) {
-                  cache.writeQuery({
-                    query: GetCatalogCollectionsListDocument,
-                    data: {
-                      getCatalogCollectionsList:
-                        queryData?.getCatalogCollectionsList.map((obj) =>
-                          obj.id === catalogCollectionId
-                            ? { ...obj, access: newAccess }
-                            : obj
-                        ),
-                    },
+                // update list of catalog collections using updateQuery
+                cache.updateQuery(
+                  { query: GetCatalogCollectionsListDocument },
+                  (data) => ({
+                    getCatalogCollectionsList:
+                      data?.getCatalogCollectionsList?.map((obj) =>
+                        obj.id === catalogCollectionId
+                          ? { ...obj, access: newAccess }
+                          : obj
+                      ),
                   })
-                }
+                )
               },
             })
             success = res.data?.changeCatalogCollectionObjectAccess ?? false

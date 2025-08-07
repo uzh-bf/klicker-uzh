@@ -17,6 +17,7 @@ function useObjectPermissions({
   const { data, loading } = useQuery(GetObjectPermissionsDocument, {
     variables: { objectId: String(objectId), objectType },
     skip,
+    fetchPolicy: 'cache-and-network',
   })
 
   return { permissions: data?.getObjectPermissions ?? [], loading }

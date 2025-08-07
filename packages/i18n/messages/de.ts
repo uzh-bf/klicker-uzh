@@ -2893,6 +2893,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Objekt wurde erfolgreich zur Katalogsammlung hinzugefügt',
       objectAddedError:
         'Fehler beim Hinzufügen des Objekts zur Katalogsammlung',
+      objectRemovalSuccess:
+        'Objekt wurde erfolgreich aus der Katalogsammlung entfernt',
+      objectRemovalFailed:
+        'Beim Entfernen des Objekts aus der Katalogsammlung ist ein Fehler aufgetreten, bitte versuchen Sie es erneut',
       selectObjectTypeFirst: 'Bitte wählen Sie zuerst einen Objekttyp aus',
       changeAccessTitle: 'Zugriffsrechte ändern',
       changeAccessDescription:

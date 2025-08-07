@@ -29,13 +29,10 @@ function GroupActivityDeletionModal({
     }
   )
 
-  // TODO: add query update
   const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
     DeleteGroupActivityDocument,
     {
-      variables: {
-        id: activityId,
-      },
+      variables: { id: activityId },
       optimisticResponse: {
         __typename: 'Mutation',
         deleteGroupActivity: {
@@ -43,9 +40,31 @@ function GroupActivityDeletionModal({
           id: activityId,
         },
       },
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update: (cache, { data: res }) => {
+        // if the group activity is not part of a course or the mutation was not successful, return early
+        if (!res?.deleteGroupActivity?.id) return
+
+        // change the status of the group activity on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                groupActivitiesInfo:
+                  data.course.groupActivitiesInfo?.filter(
+                    (ga) => ga.id !== res.deleteGroupActivity!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
     }
   )
 

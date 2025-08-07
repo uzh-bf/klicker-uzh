@@ -2842,6 +2842,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noObjectsAvailable: 'No objects available for the selected type',
       objectAddedSuccess: 'Object successfully added to the catalog collection',
       objectAddedError: 'Failed to add object to the catalog collection',
+      objectRemovalSuccess:
+        'The object was successfully removed from the catalog collection',
+      objectRemovalFailed:
+        'An error occurred while removing the object from the catalog collection, please try again',
       selectObjectTypeFirst: 'Please select an object type first',
       changeAccessTitle: 'Change Access Level',
       changeAccessDescription:
