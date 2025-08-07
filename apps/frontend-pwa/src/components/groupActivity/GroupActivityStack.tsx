@@ -46,6 +46,7 @@ function GroupActivityStack({
   const t = useTranslations()
   const router = useRouter()
 
+  // TODO: add query update
   const [submitGroupActivityDecisions, { loading: submitLoading }] =
     useMutation(SubmitGroupActivityDecisionsDocument, {
       refetchQueries: [

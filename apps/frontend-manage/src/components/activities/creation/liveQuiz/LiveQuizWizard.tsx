@@ -7,6 +7,7 @@ import {
   ElementType,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
+  PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -269,27 +270,7 @@ function LiveQuizWizard({
 
   const [editLiveQuiz] = useMutation(EditLiveQuizDocument)
   const [createLiveQuiz, { data }] = useMutation(CreateLiveQuizDocument)
-  const [startLiveQuiz] = useMutation(StartLiveQuizDocument, {
-    update(cache, res) {
-      const data = cache.readQuery({
-        query: GetUserRunningLiveQuizzesDocument,
-      })
-      cache.writeQuery({
-        query: GetUserRunningLiveQuizzesDocument,
-        data: {
-          userRunningLiveQuizzes: res.data?.startLiveQuiz
-            ? [
-                ...(data?.userRunningLiveQuizzes ?? []),
-                {
-                  id: res.data?.startLiveQuiz?.id,
-                  name: res.data.startLiveQuiz.name ?? '',
-                },
-              ]
-            : (data?.userRunningLiveQuizzes ?? []),
-        },
-      })
-    },
-  })
+  const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
@@ -360,8 +341,37 @@ function LiveQuizWizard({
               data={{ cy: 'quick-start' }}
               onClick={async () => {
                 await startLiveQuiz({
-                  variables: {
-                    id: data.createLiveQuiz!.id,
+                  variables: { id: data.createLiveQuiz!.id },
+                  update(cache, { data: res }) {
+                    // return early if the mutation failed
+                    if (!res?.startLiveQuiz) return
+
+                    cache.updateQuery(
+                      { query: GetUserRunningLiveQuizzesDocument },
+                      (data) => {
+                        // if no data is present, return early
+                        if (!data?.userRunningLiveQuizzes) return data
+
+                        // add the new live quiz to the existing list
+                        return {
+                          userRunningLiveQuizzes: [
+                            ...data.userRunningLiveQuizzes,
+                            {
+                              id: res.startLiveQuiz!.id,
+                              name: res.startLiveQuiz!.name,
+                            },
+                          ],
+                        }
+                      }
+                    )
+                  },
+                  optimisticResponse: {
+                    startLiveQuiz: {
+                      __typename: 'LiveQuizMeta',
+                      id: data.createLiveQuiz!.id,
+                      name: data.createLiveQuiz!.name,
+                      status: PublicationStatus.Published,
+                    },
                   },
                 })
                 router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)

@@ -18,6 +18,7 @@ function Activation() {
   const redirectionTimeout = useRef<any>(null)
   const { token } = router.query
 
+  // TODO: add query update
   const [activateAccount] = useMutation(ActivateParticipantAccountDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',

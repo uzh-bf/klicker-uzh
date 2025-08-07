@@ -16,12 +16,15 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 function Cockpit() {
   const router = useRouter()
 
+  // TODO: add query update
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
   )
+  // TODO: add query update
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
+  // TODO: add query update
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
     {

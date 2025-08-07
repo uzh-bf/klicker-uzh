@@ -29,6 +29,7 @@ type AnswerCollectionFormValues = {
 
 function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
+  // TODO: add query update
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
 
   const validationSchema = Yup.object({

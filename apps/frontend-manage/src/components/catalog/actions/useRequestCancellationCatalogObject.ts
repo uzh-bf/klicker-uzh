@@ -17,6 +17,7 @@ function useRequestCancellationCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
+  // TODO: add query update
   const [cancelObjectSharingRequest, { loading: cancellingSharingRequest }] =
     useMutation(CancelObjectSharingRequestDocument)
 

@@ -22,6 +22,7 @@ function DeleteUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
 
   const [confirmations, setConfirmations] = useState({

@@ -305,6 +305,7 @@ function GroupActivityWizard({
 
   const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
   const [editGroupActivity] = useMutation(EditGroupActivityDocument)
+
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
       submitGroupActivityForm({

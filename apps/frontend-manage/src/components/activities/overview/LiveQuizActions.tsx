@@ -107,6 +107,7 @@ function LiveQuizActions({
     name: liveQuiz.name,
   })
 
+  // TODO: add query update
   const [deleteLiveQuiz, { loading: deleting }] = useMutation(
     DeleteLiveQuizDocument,
     { variables: { id: liveQuiz.id } }

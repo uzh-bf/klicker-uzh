@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useTransferGroupOwnership() {
+  // TODO: add query update
   const [transferGroupOwnership, { loading }] = useMutation(
     TransferGroupOwnershipDocument
   )

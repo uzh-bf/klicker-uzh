@@ -29,6 +29,7 @@ function MicroLearningEndingModal({
     }
   )
 
+  // TODO: add query update
   const [endMicroLearning, { loading: endingMicroLearning }] = useMutation(
     EndMicroLearningDocument,
     {

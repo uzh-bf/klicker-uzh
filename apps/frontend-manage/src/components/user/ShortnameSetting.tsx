@@ -29,6 +29,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
     boolean | undefined
   >(true)
 
+  // TODO: add query update
   const [changeShortname] = useMutation(ChangeShortnameDocument)
   const [checkShortnameAvailable] = useLazyQuery(
     CheckShortnameAvailableDocument

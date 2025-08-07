@@ -14,6 +14,7 @@ function AssignmentConfirmationModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [
     manualRandomGroupAssignments,
     { loading: randomGroupCreationLoading },

@@ -30,6 +30,7 @@ function GroupActivityEndingModal({
     }
   )
 
+  // TODO: add query update
   const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
     EndGroupActivityDocument,
     {

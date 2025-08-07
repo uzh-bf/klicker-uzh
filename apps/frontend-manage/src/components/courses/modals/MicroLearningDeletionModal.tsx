@@ -29,6 +29,7 @@ function MicroLearningDeletionModal({
     }
   )
 
+  // TODO: add query update
   const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
     DeleteMicroLearningDocument,
     {

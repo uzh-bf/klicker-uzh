@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 
 function PoolNotification({ courseId }: { courseId: string }) {
   const t = useTranslations()
+  // TODO: add query update
   const [leaveRandomCourseGroupPool, { loading }] = useMutation(
     LeaveRandomCourseGroupPoolDocument,
     {

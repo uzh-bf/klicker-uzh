@@ -29,6 +29,7 @@ function GroupActivityDeletionModal({
     }
   )
 
+  // TODO: add query update
   const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
     DeleteGroupActivityDocument,
     {

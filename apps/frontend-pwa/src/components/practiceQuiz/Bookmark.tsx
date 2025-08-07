@@ -29,6 +29,7 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     return bookmarks.includes(stackId)
   }, [bookmarks, stackId])
 
+  // TODO: add query update
   const [bookmarkElementStack, { loading: bookmarkingStack }] = useMutation(
     BookmarkElementStackDocument,
     {

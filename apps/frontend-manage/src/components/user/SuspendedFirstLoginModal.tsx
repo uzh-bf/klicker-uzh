@@ -37,6 +37,7 @@ function SuspendedFirstLoginModal({
   >(true)
 
   const { data } = useSuspenseQuery(UserProfileDocument)
+  // TODO: add query update
   const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
   const t = useTranslations()
 

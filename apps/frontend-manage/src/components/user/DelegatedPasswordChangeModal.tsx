@@ -16,6 +16,7 @@ function DelegatedPasswordChangeModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [updateUserLogin] = useMutation(UpdateUserLoginDocument)
 
   if (!loginId) {

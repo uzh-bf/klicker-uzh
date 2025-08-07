@@ -34,6 +34,7 @@ function UserGroupCreationForm({
   onError: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [createUserGroup] = useMutation(CreateUserGroupDocument)
 
   const validationSchema = Yup.object({

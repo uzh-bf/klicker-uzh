@@ -21,6 +21,7 @@ import extractFormValuesFromElementInstance from '../extractFormValuesFromElemen
 import { LiveQuizTemplateFormValues } from '../types'
 
 function useProcessLiveQuizTemplateBlocksData() {
+  // TODO: add query update
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
 
   const processLiveQuizTemplateBlocksData = async ({

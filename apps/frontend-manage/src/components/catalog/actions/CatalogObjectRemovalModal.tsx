@@ -18,6 +18,7 @@ function CatalogObjectRemovalModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [removeCatalogObjectAssignment, { loading }] = useMutation(
     RemoveCatalogObjectAssignmentDocument
   )

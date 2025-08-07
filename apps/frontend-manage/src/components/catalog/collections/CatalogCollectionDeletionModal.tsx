@@ -20,6 +20,7 @@ function CatalogCollectionDeletionModal({
   onSuccess,
 }: CatalogCollectionDeletionModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [deleteCatalogCollection, { loading: deleting }] = useMutation(
     DeleteCatalogCollectionDocument
   )

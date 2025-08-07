@@ -25,6 +25,7 @@ import Layout from '../../components/Layout'
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
+  // TODO: add query update
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)

@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityType,
   ElementInstanceResults,
   type ElementStackInput,
   ResponseCorrectness,
@@ -27,6 +28,7 @@ import {
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
@@ -1091,9 +1093,22 @@ export async function manipulateGroupActivity(
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: createOrUpdateJSON,
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: { _count: { select: { participantGroups: true } } },
+          },
+          stacks: { include: { _count: { select: { elements: true } } } },
+          _count: { select: { permissions: true } },
+        },
       })
 
-      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      // enforce derived permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
           await recomputeDerivedPermissions({ elementId }, prisma)
@@ -1111,7 +1126,60 @@ export async function manipulateGroupActivity(
     { timeout: 60000 }
   )
 
-  return activity
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = getPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission:
+      activity.permissions[0]?.directPermission &&
+      activity.permissions[0].directPermission.userGroupId !== null,
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    type: ActivityType.GROUP_ACTIVITY,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, block) => acc + block._count.elements,
+      0
+    ),
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    groupDeadlineDate: activity.course.groupDeadlineDate,
+    numOfParticipantGroups: activity.course._count.participantGroups,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
 }
 
 export async function updateGroupAverageScores(ctx: Context) {

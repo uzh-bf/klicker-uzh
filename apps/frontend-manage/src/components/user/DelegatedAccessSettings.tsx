@@ -36,9 +36,11 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   }>({ open: false, loginId: undefined })
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
 
+  // TODO: add query update
   const [createUserLogin] = useMutation(CreateUserLoginDocument, {
     refetchQueries: [{ query: GetUserLoginsDocument }],
   })
+  // TODO: add query update
   const [deleteUserLogin] = useMutation(DeleteUserLoginDocument, {
     refetchQueries: [{ query: GetUserLoginsDocument }],
   })

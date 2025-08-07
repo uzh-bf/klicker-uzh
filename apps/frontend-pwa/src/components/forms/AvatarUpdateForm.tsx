@@ -33,6 +33,7 @@ interface AvatarUpdateFormProps {
 
 function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [updateParticipantAvatar] = useMutation(UpdateParticipantAvatarDocument)
 
   return (

@@ -29,6 +29,7 @@ function PracticeQuizDeletionModal({
     }
   )
 
+  // TODO: add query update
   const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
     DeletePracticeQuizDocument,
     {

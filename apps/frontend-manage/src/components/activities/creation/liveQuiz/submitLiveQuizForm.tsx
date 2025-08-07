@@ -1,12 +1,42 @@
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApolloCache,
+  DefaultContext,
+  FetchResult,
+  MutationFunctionOptions,
+} from '@apollo/client'
+import {
+  CreateLiveQuizMutation,
+  CreateLiveQuizMutationVariables,
+  EditLiveQuizMutation,
+  EditLiveQuizMutationVariables,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
 interface LiveQuizFormProps {
   id?: string
   editMode: boolean
   values: LiveQuizFormValues
-  createLiveQuiz: any
-  editLiveQuiz: any
+  createLiveQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          CreateLiveQuizMutation,
+          CreateLiveQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<CreateLiveQuizMutation>>
+  editLiveQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          EditLiveQuizMutation,
+          EditLiveQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<EditLiveQuizMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
 }
@@ -65,16 +95,32 @@ async function submitLiveQuizForm({
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
         },
-        refetchQueries: [
-          ...(values.courseId !== 'no-course-selected'
-            ? [
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: values.courseId },
-                },
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful or no course was assigned, return early
+          if (values.courseId !== 'no-course-selected' || !res?.editLiveQuiz)
+            return
+
+          // change the status of the live quiz on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: values.courseId! },
+            },
+            (data) => {
+              if (!data?.course) return data
+
+              const activities = [
+                ...(data.course.liveQuizzesInfo?.filter(
+                  (ga) => ga.id !== res.editLiveQuiz!.id
+                ) ?? []),
+                res.editLiveQuiz!,
               ]
-            : []),
-        ],
+              return {
+                course: { ...data.course, liveQuizzesInfo: activities },
+              }
+            }
+          )
+        },
       })
       success = Boolean(liveQuiz.data?.editLiveQuiz)
     } else {
@@ -98,16 +144,31 @@ async function submitLiveQuizForm({
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
         },
-        refetchQueries: [
-          ...(values.courseId !== 'no-course-selected'
-            ? [
-                {
-                  query: GetSingleCourseDocument,
-                  variables: { courseId: values.courseId },
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.createLiveQuiz) return
+
+          // change the status of the live quiz on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: values.courseId! },
+            },
+            (data) => {
+              if (!data?.course) return data
+
+              return {
+                course: {
+                  ...data.course,
+                  liveQuizzesInfo: [
+                    ...(data.course.liveQuizzesInfo ?? []),
+                    res.createLiveQuiz!,
+                  ],
                 },
-              ]
-            : []),
-        ],
+              }
+            }
+          )
+        },
       })
       success = Boolean(liveQuiz.data?.createLiveQuiz)
     }

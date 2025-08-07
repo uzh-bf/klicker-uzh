@@ -28,6 +28,7 @@ function useTransferObjectOwnership({
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
 } {
+  // TODO: add query update
   const [transferObjectOwnership, { loading: transferringOwnership }] =
     useMutation(TransferObjectOwnershipDocument)
 

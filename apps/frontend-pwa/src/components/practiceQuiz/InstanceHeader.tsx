@@ -46,6 +46,7 @@ function InstanceHeader({
   className,
 }: InstanceHeaderProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [rateElement, { loading: ratingLoading }] =
     useMutation(RateElementDocument)
 

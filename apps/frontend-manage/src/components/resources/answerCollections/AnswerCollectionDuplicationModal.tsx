@@ -19,6 +19,7 @@ function AnswerCollectionDuplicationModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [duplicateAnswerCollection, { loading }] = useMutation(
     DuplicateAnswerCollectionDocument
   )

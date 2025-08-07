@@ -50,6 +50,39 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
   )
 }
 
+export function getPermissionBooleans({
+  permissionLevel,
+  derived,
+  directGroupPermission,
+}) {
+  return {
+    isOwner: permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permissionLevel === DB.PermissionLevel.OWNER ||
+      permissionLevel === DB.PermissionLevel.ADMIN,
+    isEditor:
+      permissionLevel === DB.PermissionLevel.OWNER ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.WRITE,
+    isExecutor:
+      permissionLevel === DB.PermissionLevel.EXECUTE ||
+      permissionLevel === DB.PermissionLevel.WRITE ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isShared: permissionLevel !== DB.PermissionLevel.OWNER,
+    isRemovable:
+      permissionLevel !== DB.PermissionLevel.OWNER &&
+      !derived &&
+      !directGroupPermission,
+    sharingType:
+      permissionLevel === DB.PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED,
+  }
+}
+
 export async function getUserActivities(
   {
     statusFilter,
@@ -319,30 +352,19 @@ export async function getUserActivities(
 
   // map the activities to a unified format
   const activities = user.objects.flatMap((object) => {
-    const isOwner = object.permissionLevel === DB.PermissionLevel.OWNER
-    const isManager =
-      object.permissionLevel === DB.PermissionLevel.OWNER ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN
-    const isEditor =
-      object.permissionLevel === DB.PermissionLevel.OWNER ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN ||
-      object.permissionLevel === DB.PermissionLevel.WRITE
-    const isExecutor =
-      object.permissionLevel === DB.PermissionLevel.EXECUTE ||
-      object.permissionLevel === DB.PermissionLevel.WRITE ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN ||
-      object.permissionLevel === DB.PermissionLevel.OWNER
-    const isShared = object.permissionLevel !== DB.PermissionLevel.OWNER
-    const isRemovable =
-      object.permissionLevel !== DB.PermissionLevel.OWNER &&
-      !object.derived &&
-      object.directPermission?.userGroupId === null
-    const sharingType =
-      object.permissionLevel === DB.PermissionLevel.OWNER
-        ? SharingType.OWNED
-        : object.derived
-          ? SharingType.DEPENDENCY
-          : SharingType.SHARED
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permissionLevel: object.permissionLevel,
+      derived: object.derived,
+      directGroupPermission: object.directPermission?.userGroupId !== null,
+    })
 
     if (object.liveQuiz) {
       // if the object access is derived and the object is soft-deleted, don't show it

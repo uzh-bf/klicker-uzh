@@ -54,9 +54,9 @@ function useMicroLearningActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-
-  const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument)
-
+  const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
+    UnpublishMicroLearningDocument
+  )
   const onSuccessToast = () =>
     toast({
       type: 'success',
@@ -199,15 +199,40 @@ function useMicroLearningActions({
         onClick: async () => {
           await unpublishMicroLearning({
             variables: { id: microLearning.id! },
-            refetchQueries: [
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: microLearning.courseId },
-              },
-            ],
+            update: (cache, { data: res }) => {
+              // if the mutation was not successful, return early
+              if (!res?.unpublishMicroLearning?.id) return
+
+              // change the status of the practice quiz on the course overview back to draft
+              cache.updateQuery(
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: microLearning.courseId! },
+                },
+                (data) => {
+                  if (!data?.course) return data
+
+                  return {
+                    course: {
+                      ...data.course,
+                      microLearningsInfo: data.course.microLearningsInfo?.map(
+                        (quiz) =>
+                          quiz.id === res.unpublishMicroLearning?.id
+                            ? {
+                                ...quiz,
+                                status: res.unpublishMicroLearning?.status,
+                              }
+                            : quiz
+                      ),
+                    },
+                  }
+                }
+              )
+            },
           })
           await refetchActivities?.()
         },
+        disabled: unpublishing,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },

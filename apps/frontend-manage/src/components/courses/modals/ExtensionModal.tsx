@@ -32,7 +32,9 @@ function ExtensionModal({
   refetchActivities,
 }: ExtensionModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
+  // TODO: add query update
   const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
 
   return (

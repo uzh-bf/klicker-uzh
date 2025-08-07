@@ -31,6 +31,7 @@ function usePermissionLevelChange({
   }) => Promise<boolean>
   permissionChanging: boolean
 } {
+  // TODO: add query update
   const [changePermissionLevel, { loading: permissionLevelChanging }] =
     useMutation(ChangePermissionLevelDocument)
 

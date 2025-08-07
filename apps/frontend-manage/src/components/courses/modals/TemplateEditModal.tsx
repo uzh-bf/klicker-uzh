@@ -30,6 +30,7 @@ function TemplateEditModal({
 }: TemplateEditModalProps) {
   const t = useTranslations()
 
+  // TODO: add query update
   const [editActivityTemplate] = useMutation(EditActivityTemplateDocument)
   const { data, loading } = useQuery(GetTemplateInformationDocument, {
     variables: {

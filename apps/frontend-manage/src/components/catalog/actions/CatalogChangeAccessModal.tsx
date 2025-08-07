@@ -26,8 +26,10 @@ function CatalogChangeAccessModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [changeCatalogObjectAccess, { loading: changingCatalogObjectAccess }] =
     useMutation(ChangeCatalogObjectAccessDocument)
+  // TODO: add query update
   const [
     changeCatalogCollectionObjectAccess,
     { loading: changingCatalogCollectionAccess },

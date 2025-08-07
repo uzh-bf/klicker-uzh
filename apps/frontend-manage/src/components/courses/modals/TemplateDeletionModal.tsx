@@ -26,6 +26,7 @@ function TemplateDeletionModal({
   refetchActivities,
 }: TemplateDeletionModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [deleteActivityTemplate, { loading: deleting }] = useMutation(
     DeleteActivityTemplateDocument,
     { variables: { activityId: activityId, activityType: activityType } }

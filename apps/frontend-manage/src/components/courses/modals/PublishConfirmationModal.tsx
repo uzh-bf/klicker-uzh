@@ -40,6 +40,7 @@ function PublishConfirmationModal({
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
+  // TODO: add query update
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
     {
@@ -50,6 +51,7 @@ function PublishConfirmationModal({
       ],
     }
   )
+  // TODO: add query update
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
     {

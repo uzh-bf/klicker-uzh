@@ -18,6 +18,7 @@ function TagDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
     variables: {
       id,

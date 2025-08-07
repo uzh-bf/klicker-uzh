@@ -17,6 +17,7 @@ function useImportCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
+  // TODO: add query update
   const [importCatalogObject, { loading: importing }] = useMutation(
     ImportCatalogObjectDocument
   )

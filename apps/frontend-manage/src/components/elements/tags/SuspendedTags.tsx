@@ -39,6 +39,7 @@ function SuspendedTags({
   const t = useTranslations()
 
   const { data, error } = useSuspenseQuery(GetUserTagsDocument)
+  // TODO: add query update
   const [updateTagOrdering] = useMutation(UpdateTagOrderingDocument, {
     refetchQueries: [{ query: GetUserTagsDocument }],
   })

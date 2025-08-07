@@ -9,6 +9,7 @@ import GroupAction from './GroupAction'
 
 function RandomGroupBlock({ courseId }: { courseId: string }) {
   const t = useTranslations()
+  // TODO: add query update
   const [joinRandomCourseGroupPool, { loading }] = useMutation(
     JoinRandomCourseGroupPoolDocument,
     {

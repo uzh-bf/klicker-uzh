@@ -43,9 +43,11 @@ function AnswerCollectionOption({
 }) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
+  // TODO: add query update
   const [editAnswerCollectionEntry] = useMutation(
     EditAnswerCollectionEntryDocument
   )
+  // TODO: add query update
   const [deleteAnswerCollectionEntry] = useMutation(
     DeleteAnswerCollectionEntryDocument
   )

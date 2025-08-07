@@ -70,6 +70,7 @@ function ElementStack({
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
+  // TODO: add query update
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
   )

@@ -1,12 +1,42 @@
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApolloCache,
+  DefaultContext,
+  FetchResult,
+  MutationFunctionOptions,
+} from '@apollo/client'
+import {
+  CreatePracticeQuizMutation,
+  CreatePracticeQuizMutationVariables,
+  EditPracticeQuizMutation,
+  EditPracticeQuizMutationVariables,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
 interface PracticeQuizFormProps {
   id?: string
   values: PracticeQuizFormValues
   editMode: boolean
-  createPracticeQuiz: any
-  editPracticeQuiz: any
+  createPracticeQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          CreatePracticeQuizMutation,
+          CreatePracticeQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<CreatePracticeQuizMutation>>
+  editPracticeQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          EditPracticeQuizMutation,
+          EditPracticeQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<EditPracticeQuizMutation>>
   setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
@@ -51,39 +81,70 @@ async function submitPracticeQuizForm({
         }
       }),
       multiplier: parseInt(values.multiplier),
-      courseId: values.courseId,
+      courseId: values.courseId!,
       order: values.order,
       resetTimeDays: parseInt(values.resetTimeDays),
     }
 
-    if (editMode) {
+    if (editMode && id) {
       const result = await editPracticeQuiz({
-        variables: {
-          id,
-          ...createOrUpdateJSON,
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+        variables: { id, ...createOrUpdateJSON },
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.editPracticeQuiz) return
+
+          // change the status of the practice quiz on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: values.courseId! },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              const activities = [
+                ...(data.course.practiceQuizzesInfo?.filter(
+                  (ga) => ga.id !== res.editPracticeQuiz!.id
+                ) ?? []),
+                res.editPracticeQuiz!,
+              ]
+              return {
+                course: { ...data.course, practiceQuizzesInfo: activities },
+              }
+            }
+          )
+        },
       })
 
       success = Boolean(result.data?.editPracticeQuiz)
     } else {
       const result = await createPracticeQuiz({
         variables: createOrUpdateJSON,
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.createPracticeQuiz) return
+
+          // change the status of the practice quiz on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: values.courseId! },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              return {
+                course: {
+                  ...data.course,
+                  practiceQuizzesInfo: [
+                    ...(data.course.practiceQuizzesInfo ?? []),
+                    res.createPracticeQuiz!,
+                  ],
+                },
+              }
+            }
+          )
+        },
       })
 
       success = Boolean(result.data?.createPracticeQuiz)

@@ -46,12 +46,15 @@ function Header({
   const { pathname, asPath, query } = router
   const t = useTranslations()
 
+  // TODO: add query update
   const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
     ChangeParticipantLocaleDocument
   )
+  // TODO: add query update
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )
+  // TODO: add query update
   const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
     useMutation(LogoutTemporaryParticipantDocument)
 

@@ -40,11 +40,13 @@ export function useObjectActivity({
   )
 
   // mutation for adding messages
+  // TODO: add query update
   const [addMessage, { loading: addingMessage }] = useMutation(
     AddActivityMessageDocument
   )
 
   // mutation for resolving/unresolving messages
+  // TODO: add query update
   const [resolveMessage, { loading: resolvingMessage }] = useMutation(
     ResolveActivityLogEntryDocument,
     {

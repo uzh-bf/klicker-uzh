@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useDemoteGroupAdminToMember() {
+  // TODO: add query update
   const [demoteGroupAdminToMember, { loading }] = useMutation(
     DemoteGroupAdminToMemberDocument
   )

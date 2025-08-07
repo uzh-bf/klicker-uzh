@@ -29,6 +29,7 @@ function ActivityNameChangeModal({
   refetchActivities,
 }: ActivityNameChangeModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [changeActivityName] = useMutation(ChangeActivityNameDocument)
 
   const schema = Yup.object().shape({

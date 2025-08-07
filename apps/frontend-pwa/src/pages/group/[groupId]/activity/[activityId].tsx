@@ -39,6 +39,7 @@ function GroupActivityDetails() {
     }
   )
 
+  // TODO: add query update
   const [startGroupActivity, { loading: startLoading }] = useMutation(
     StartGroupActivityDocument,
     {
