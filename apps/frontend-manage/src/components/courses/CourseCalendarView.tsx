@@ -431,6 +431,7 @@ function CourseCalendarView({
           scrollTime="08:00:00"
           allDaySlot={true}
           nowIndicator={true}
+          displayEventTime={currentView !== 'dayGridMonth'}
           allDayText=""
           firstDay={1} // week starts on Monday
           moreLinkText={(num) => `+${num} ${t('manage.course.calendarMore')}`}

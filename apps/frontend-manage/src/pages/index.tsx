@@ -57,7 +57,7 @@ function Index() {
     // only try to access localStorage if we're on the client
     if (typeof window !== 'undefined') {
       try {
-        const savedFilters = localStorage.getItem('library-sorting-filters')
+        const savedFilters = localStorage.getItem('library-filtering-sorting')
         if (savedFilters) {
           return JSON.parse(savedFilters)
         }
@@ -131,10 +131,10 @@ function Index() {
       try {
         const newState = { filters, sort }
         // only save if there are actual changes
-        const currentStored = localStorage.getItem('library-sorting-filters')
+        const currentStored = localStorage.getItem('library-filtering-sorting')
         if (!currentStored || JSON.stringify(newState) !== currentStored) {
           localStorage.setItem(
-            'library-sorting-filters',
+            'library-filtering-sorting',
             JSON.stringify(newState)
           )
         }
