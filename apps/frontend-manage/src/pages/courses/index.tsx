@@ -119,10 +119,7 @@ function CourseSelectionPage() {
                 (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
               )}
             >
-              <UserNotification
-                type="warning"
-                className={{ root: 'text-normal mb-3' }}
-              >
+              <UserNotification className={{ root: 'mb-3 text-base' }}>
                 {t('manage.courseList.noCoursesFound')}
               </UserNotification>
               <CourseListButton

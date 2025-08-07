@@ -1075,7 +1075,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     activities: {
       activityType: 'Activity Type',
       noActivitiesAvailable:
-        'Currently, no activities are available. You can easily create new activities by combining questions in the <link>library</link>.',
+        'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
       noActivitiesForFilters:
         'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
       liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
@@ -2293,7 +2293,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
-      noCoursesFound: 'No courses found.',
+      noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',
       courseDisplayNameReq: 'Please enter a display name for the course.',
