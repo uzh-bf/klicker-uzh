@@ -248,6 +248,7 @@ function LiveQuizActions({
             key={liveQuiz.id}
             onClose={() => setEmbeddingModal(false)}
             quizId={liveQuiz.id}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled ?? false}
           />
         )}
 

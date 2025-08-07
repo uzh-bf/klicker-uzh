@@ -454,7 +454,7 @@ export async function finalRandomGroupAssignments(ctx: Context) {
         }
 
         await EmailService.sendEmail({
-          to: course.owner.email,
+          to: course.notificationEmail ?? course.owner.email,
           subject: `KlickerUZH - Group Creation for Course ${course.name}`,
           text: `The automated random group creation for your course ${course.name} has failed. Please refer to the course overview for more details and to change the group creation deadline: ${courseGroupsOverviewLink}.`,
           html: emailHtml,

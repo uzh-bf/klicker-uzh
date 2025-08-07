@@ -346,7 +346,11 @@ function LiveQuizWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          viewElementHref="/activities"
+          viewElementHref={
+            formData.courseId && formData.courseId !== 'no-course-selected'
+              ? `/courses/${formData.courseId}?tab=liveQuizzes`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()
