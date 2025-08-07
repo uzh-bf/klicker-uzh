@@ -66,6 +66,7 @@ function Cockpit() {
     id,
     name,
     isLiveQAEnabled,
+    isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
     startedAt,
@@ -80,6 +81,7 @@ function Cockpit() {
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
           quizId={id}
+          isGamificationEnabled={isGamificationEnabled}
           quizName={name}
           blocks={blocks ?? []}
           language={course?.language ?? null}

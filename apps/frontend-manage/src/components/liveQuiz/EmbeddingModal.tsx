@@ -10,9 +10,11 @@ import HMACLink from './HMACLink'
 function EmbeddingModal({
   onClose,
   quizId,
+  isGamificationEnabled,
 }: {
   onClose: () => void
   quizId: string
+  isGamificationEnabled: boolean
 }) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
@@ -103,18 +105,20 @@ function EmbeddingModal({
             </div>
           )
         })}
-        <div>
-          <div className="w-30 font-bold">
-            {t('shared.generic.leaderboard')}:
+        {isGamificationEnabled && (
+          <div>
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <HMACLink
+              quizId={quizId}
+              hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
+              params="leaderboard=true&hideControls=true"
+              identifier="leaderboard"
+              language={language}
+            />
           </div>
-          <HMACLink
-            quizId={quizId}
-            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-            params="leaderboard=true&hideControls=true"
-            identifier="leaderboard"
-            language={language}
-          />
-        </div>
+        )}
       </div>
     </Modal>
   )

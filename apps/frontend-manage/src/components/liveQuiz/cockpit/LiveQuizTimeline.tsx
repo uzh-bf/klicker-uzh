@@ -22,6 +22,7 @@ import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
   quizId: string
+  isGamificationEnabled: boolean
   blocks?: QuizTimelineBlock[]
   quizName: string
   language?: LocaleType | null
@@ -34,6 +35,7 @@ interface LiveQuizTimelineProps {
 
 function LiveQuizTimeline({
   quizId,
+  isGamificationEnabled,
   quizName,
   blocks = [],
   language,
@@ -130,6 +132,7 @@ function LiveQuizTimeline({
                 key={quizId}
                 onClose={() => setEmbedModalOpen(false)}
                 quizId={quizId}
+                isGamificationEnabled={isGamificationEnabled}
               />
             ) : null}
             <Button
