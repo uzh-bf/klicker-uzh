@@ -96,7 +96,7 @@ export async function getUserElements(
       status: status ? status : undefined,
       type: type ? type : undefined,
       isArchived: showArchived ? undefined : false,
-      tags: showUntagged ? { none: {} } : undefined,
+      tags: showUntagged ? { none: { ownerId: ctx.user.sub } } : undefined,
       AND: [
         ...(hasSampleSolution
           ? [{ options: { path: ['hasSampleSolution'], equals: true } }]

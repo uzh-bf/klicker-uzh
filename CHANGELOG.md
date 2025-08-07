@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.80...v3.3.0-alpha.81) (2025-08-07)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that element library filters are stored in new variable to avoid conflicts ([7ed270c](https://github.com/uzh-bf/klicker-uzh/commit/7ed270c9895c1351b66890c7962ac9223b55d611))
+* **packages/graphql:** only consider accessible tags when filtering element list content for untagged elements ([e5dfb6b](https://github.com/uzh-bf/klicker-uzh/commit/e5dfb6b49de439183333f97a64ac2afed659e013))
+
+
+### Enhancements
+
+* **apps/docs:** add documentation page dedicated to element updates in activities ([#4823](https://github.com/uzh-bf/klicker-uzh/issues/4823)) ([fca3983](https://github.com/uzh-bf/klicker-uzh/commit/fca398395f17b523caa4b19ae60852141a32d70e))
+* **apps/docs:** update documentation of power point integration and core concepts ([#4825](https://github.com/uzh-bf/klicker-uzh/issues/4825)) ([ac13f57](https://github.com/uzh-bf/klicker-uzh/commit/ac13f576d44d7840b301d868355585ab2a3433c7))
+* migrate activity list filtering and searching to backend and introduce pagination ([#4821](https://github.com/uzh-bf/klicker-uzh/issues/4821)) ([4864d40](https://github.com/uzh-bf/klicker-uzh/commit/4864d40f045e677f384457c185b2b51a72196680))
+* migrate element list filtering and searching to backend and introduce pagination ([#4822](https://github.com/uzh-bf/klicker-uzh/issues/4822)) ([a7b5b00](https://github.com/uzh-bf/klicker-uzh/commit/a7b5b00e07ecd8d8cc9af79bb4adef60ceee218f))
+
 ## [3.3.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.79...v3.3.0-alpha.80) (2025-08-03)
 
 
