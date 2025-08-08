@@ -385,6 +385,7 @@ export default {
       month: 'Monat',
       week: 'Woche',
       day: 'Tag',
+      total: 'Total',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1109,6 +1110,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       actionsLegend: 'Aktionen für Aktivitäten',
       activityDetailsNoInstanceSelected:
         'Bitte wählen Sie ein Element aus einem Block, um eine Vorschau und die entsprechende Bepunktung einzusehen.',
+      previewElement: 'Elementvorschau',
+      editElement: 'Element bearbeiten',
+      noElementEditPermissions:
+        'Sie haben nicht aussreichende Berechtigungen, um dieses Element zu bearbeiten.',
+      activityInformation: 'Aktivitätsinformationen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

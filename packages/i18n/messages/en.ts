@@ -383,6 +383,7 @@ export default {
       month: 'Month',
       week: 'Week',
       day: 'Day',
+      total: 'Total',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1107,6 +1108,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       actionsLegend: 'Actions Legend',
       activityDetailsNoInstanceSelected:
         'Please select an element from a block to view a preview and the corresponding scoring.',
+      previewElement: 'Preview Element',
+      editElement: 'Edit Element',
+      noElementEditPermissions:
+        'You do not have sufficient permissions to edit this element.',
+      activityInformation: 'Activity Information',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

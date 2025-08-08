@@ -566,7 +566,29 @@ export async function getLiveQuizDetails(
     include: {
       course: true,
       blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -592,6 +614,7 @@ export async function getLiveQuizDetails(
         ((elementData.options as { hasSampleSolution?: boolean })
           .hasSampleSolution ??
           false)
+      const isEditor = !!instance.element.permissions?.[0]
 
       if (!arePointsAwarded) {
         return {
@@ -600,6 +623,7 @@ export async function getLiveQuizDetails(
           bonusPoints: 0,
           totalPoints: 0,
           hasSampleSolution,
+          isEditor,
           instance,
         }
       }
@@ -625,6 +649,7 @@ export async function getLiveQuizDetails(
         bonusPoints,
         totalPoints,
         hasSampleSolution,
+        isEditor,
         instance,
       }
     })
@@ -718,7 +743,11 @@ function getAsyncActivityPointsElements({
   isGroupActivity = false,
   arePointsAwarded,
 }: {
-  stack: DB.ElementStack & { elements: DB.ElementInstance[] }
+  stack: DB.ElementStack & {
+    elements: (DB.ElementInstance & {
+      element: DB.Element & { permissions: DB.DerivedPermission[] }
+    })[]
+  }
   isGroupActivity?: boolean
   arePointsAwarded: boolean
 }) {
@@ -726,6 +755,7 @@ function getAsyncActivityPointsElements({
     elements: {
       totalPoints: number
       hasSampleSolution: boolean
+      isEditor: boolean
       instance: DB.ElementInstance
     }[]
     stackPoints: number
@@ -744,7 +774,13 @@ function getAsyncActivityPointsElements({
                 instance.elementData.options.hasSampleSolution) ??
               false,
           }
-      acc.elements.push({ totalPoints: points, hasSampleSolution, instance })
+
+      acc.elements.push({
+        totalPoints: points,
+        hasSampleSolution,
+        isEditor: !!instance.element.permissions?.[0],
+        instance,
+      })
       acc.stackPoints += points
       return acc
     },
@@ -770,7 +806,29 @@ export async function getPracticeQuizDetails(
     where: { id },
     include: {
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -813,7 +871,29 @@ export async function getMicroLearningDetails(
     where: { id },
     include: {
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -860,7 +940,29 @@ export async function getGroupActivityDetails(
         include: { _count: { select: { participantGroups: true } } },
       },
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
