@@ -868,7 +868,11 @@ export function prepareGroupActivityClues({
   ]
 }
 
-export function extractQuizInfo(doc: any, formulaTagId?: number) {
+export function extractQuizInfo(
+  doc: any,
+  formulaTagId?: number,
+  courseTagId?: number
+) {
   const turndown = new Turndown()
 
   return {
@@ -880,10 +884,10 @@ export function extractQuizInfo(doc: any, formulaTagId?: number) {
         card.answer[0].text[0].includes('\\(')
 
       if (hasFormula) {
-        console.log(
-          card.question[0].text[0].trim(),
-          card.answer[0].text[0].trim()
-        )
+        // console.log(
+        //   card.question[0].text[0].trim(),
+        //   card.answer[0].text[0].trim()
+        // )
       }
 
       return {
@@ -898,13 +902,7 @@ export function extractQuizInfo(doc: any, formulaTagId?: number) {
           .replaceAll('\\_', '_')
           .replaceAll('\\[', '[')
           .replaceAll('\\]', ']')
-          .replaceAll('\\\\%', '\\%')
-          .replaceAll('\\\\frac', '\\frac')
-          .replaceAll('\\\\infty', '\\infty')
-          .replaceAll('\\\\sigma', '\\sigma')
-          .replaceAll('\\\\rho', '\\rho')
-          .replaceAll('\\\\pi', '\\pi')
-          .replaceAll('\\\\sum', '\\sum'),
+          .replaceAll('\\\\', '\\'),
         explanation: turndown
           .turndown(card.answer[0].text[0].trim())
           .replaceAll('\\(', '$$$$')
@@ -915,28 +913,29 @@ export function extractQuizInfo(doc: any, formulaTagId?: number) {
           .replaceAll('\\[', '[')
           .replaceAll('\\]', ']')
           .replaceAll('\\\\%', '\\%')
-          .replaceAll('\\\\frac', '\\frac')
-          .replaceAll('\\\\infty', '\\infty')
-          .replaceAll('\\\\sigma', '\\sigma')
-          .replaceAll('\\\\rho', '\\rho')
-          .replaceAll('\\\\pi', '\\pi')
-          .replaceAll('\\\\sum', '\\sum'),
+          .replaceAll('\\\\', '\\'),
         type: ElementType.FLASHCARD,
         options: {},
-        tags: hasFormula
-          ? {
-              connect: {
-                id: formulaTagId,
-              },
-            }
-          : undefined,
+        tags:
+          (hasFormula && formulaTagId) || courseTagId
+            ? {
+                connect: [
+                  ...(hasFormula && formulaTagId ? [{ id: formulaTagId }] : []),
+                  ...(courseTagId ? [{ id: courseTagId }] : []),
+                ],
+              }
+            : undefined,
       }
     }),
     // ... other practice quiz properties
   }
 }
 
-export async function processQuizInfo(fileName: string, formulaTagId?: number) {
+export async function processQuizInfo(
+  fileName: string,
+  formulaTagId?: number,
+  courseTagId?: number
+) {
   // @ts-ignore
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
@@ -945,7 +944,7 @@ export async function processQuizInfo(fileName: string, formulaTagId?: number) {
 
   const xmlDoc = await parseStringPromise(xmlData)
 
-  const quizInfo = extractQuizInfo(xmlDoc, formulaTagId)
+  const quizInfo = extractQuizInfo(xmlDoc, formulaTagId, courseTagId)
 
   return quizInfo
 }
@@ -954,21 +953,50 @@ export async function prepareFlashcardsFromFile(
   prismaClient: Prisma.PrismaClient,
   fileName: string,
   userId: string,
-  formulaTagId?: number
+  formulaTagId?: number,
+  courseTagId?: number
 ) {
-  const quizInfo = await processQuizInfo(fileName, formulaTagId)
-
+  const quizInfo = await processQuizInfo(fileName, formulaTagId, courseTagId)
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data: any) => {
       // check if an element with the same originalId already exists
       const existingElement = await prismaClient.element.findFirst({
         where: {
-          originalId: data.originalId,
+          name: data.name,
           ownerId: userId,
+          isDeleted: false,
         },
       })
 
       if (existingElement) {
+        await prismaClient.element.update({
+          where: { id: existingElement.id },
+          data: {
+            tags: data.tags,
+            content:
+              data.content && existingElement.content !== data.content
+                ? data.content
+                : undefined,
+            explanation:
+              data.explanation &&
+              existingElement.explanation !== data.explanation
+                ? data.explanation
+                : undefined,
+          },
+        })
+
+        if (existingElement.explanation !== data.explanation) {
+          console.log('EXPLANATION CHANGED FOR FLASHCARD: ', data.name)
+          console.log('Old explanation: ', existingElement.explanation)
+          console.log('New explanation: ', data.explanation)
+        }
+
+        if (existingElement.content !== data.content) {
+          console.log('CONTENT CHANGED FOR FLASHCARD: ', data.name)
+          console.log('Old content: ', existingElement.content)
+          console.log('New content: ', data.content)
+        }
+
         return existingElement
       }
 
