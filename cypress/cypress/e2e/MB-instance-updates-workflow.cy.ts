@@ -201,11 +201,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.KPML.title)
@@ -220,11 +218,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.KPML.title)
@@ -239,11 +235,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.KPML.title)
@@ -258,7 +252,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -431,12 +424,10 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
 
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -490,11 +481,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -548,11 +537,9 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -607,7 +594,6 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -822,7 +808,6 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -830,7 +815,6 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.instanceUpdates.newMCTitle
     ) // updated title
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -886,7 +870,6 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -894,7 +877,6 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.instanceUpdates.newMCTitle
     ) // updated title
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -949,7 +931,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -957,7 +938,6 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.instanceUpdates.newMCTitle
     ) // updated title
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -1012,7 +992,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title

@@ -7,6 +7,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityDetails,
+  ElementType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -82,6 +83,7 @@ function ActivityOverviewTable({
             <ShadcnTableRow
               key={`stack-${stack.id}`}
               className="bg-muted/30 hover:bg-muted/30"
+              data-cy={`activity-details-stack-header-${stackIx}`}
             >
               <ShadcnTableCell colSpan={isLiveQuiz ? 4 : 1} className="py-1">
                 <div className="flex items-center font-bold">
@@ -104,7 +106,7 @@ function ActivityOverviewTable({
               ) : null}
             </ShadcnTableRow>
 
-            {stack.elements.map((element) => {
+            {stack.elements.map((element, instanceIx) => {
               const instanceId = String(element.instance.id)
               const isOutdated = outdatedInstances.includes(element.instance.id)
 
@@ -115,7 +117,7 @@ function ActivityOverviewTable({
                     'hover:bg-muted/50',
                     isOutdated && 'bg-uzh-red-20/50 hover:bg-uzh-red-20 py-1'
                   )}
-                  data-cy={`activity-instance-row-${element.instance.elementData.name}`}
+                  data-cy={`stack-${stackIx}-instance-${instanceIx}`}
                 >
                   <ShadcnTableCell className="whitespace-normal py-2">
                     <div className="flex items-center gap-2">
@@ -132,40 +134,62 @@ function ActivityOverviewTable({
                       <span>
                         {t(`shared.${element.instance.elementType}.typeLabel`)}
                       </span>
-                      <span className="flex flex-row items-center gap-1.5">
-                        {`${t('manage.general.sampleSolutionDescription')}: `}
-                        {element.hasSampleSolution ? (
-                          <FontAwesomeIcon
-                            icon={faCheckSquare}
-                            className="text-uzh-darkgreen-100"
-                            size="1x"
-                          />
-                        ) : (
-                          <FontAwesomeIcon
-                            icon={faXmarkSquare}
-                            className="text-red-600"
-                            size="1x"
-                          />
-                        )}
-                      </span>
+                      {[
+                        ElementType.Sc,
+                        ElementType.Mc,
+                        ElementType.Kprim,
+                        ElementType.Numerical,
+                        ElementType.FreeText,
+                        ElementType.Selection,
+                        ElementType.CaseStudy,
+                      ].includes(element.instance.elementType) && (
+                        <span className="flex flex-row items-center gap-1.5">
+                          {`${t('manage.general.sampleSolutionDescription')}: `}
+                          {element.hasSampleSolution ? (
+                            <FontAwesomeIcon
+                              icon={faCheckSquare}
+                              className="text-uzh-darkgreen-100"
+                              size="1x"
+                            />
+                          ) : (
+                            <FontAwesomeIcon
+                              icon={faXmarkSquare}
+                              className="text-red-600"
+                              size="1x"
+                            />
+                          )}
+                        </span>
+                      )}
                     </div>
                   </ShadcnTableCell>
                   {details.arePointsAwarded && (
                     <>
                       {isLiveQuiz && (
                         <>
-                          <ShadcnTableCell className="text-center align-middle">
+                          <ShadcnTableCell
+                            className="text-center align-middle"
+                            data-cy={`base-points-stack-${stackIx}-instance-${instanceIx}`}
+                          >
                             {`${element.basePoints ?? 0} P.`}
                           </ShadcnTableCell>
-                          <ShadcnTableCell className="text-center align-middle">
+                          <ShadcnTableCell
+                            className="text-center align-middle"
+                            data-cy={`correctness-points-stack-${stackIx}-instance-${instanceIx}`}
+                          >
                             {`${element.correctnessPoints ?? 0} P.`}
                           </ShadcnTableCell>
-                          <ShadcnTableCell className="text-center align-middle">
+                          <ShadcnTableCell
+                            className="text-center align-middle"
+                            data-cy={`bonus-points-stack-${stackIx}-instance-${instanceIx}`}
+                          >
                             {`${element.bonusPoints ?? 0} P.`}
                           </ShadcnTableCell>
                         </>
                       )}
-                      <ShadcnTableCell className="text-uzh-darkgreen-100 text-center align-middle">
+                      <ShadcnTableCell
+                        className="text-uzh-darkgreen-100 text-center align-middle"
+                        data-cy={`total-points-stack-${stackIx}-instance-${instanceIx}`}
+                      >
                         {`${element.totalPoints} P.`}
                       </ShadcnTableCell>
                     </>
@@ -215,7 +239,6 @@ function ActivityOverviewTable({
               )
             })}
 
-            {/* Add spacing between stacks */}
             {stackIx < stacks.length - 1 && (
               <ShadcnTableRow className="h-4">
                 <ShadcnTableCell
@@ -233,18 +256,30 @@ function ActivityOverviewTable({
             <ShadcnTableCell>{t('shared.generic.total')}</ShadcnTableCell>
             {isLiveQuiz && (
               <>
-                <ShadcnTableCell className="text-center">
+                <ShadcnTableCell
+                  className="text-center"
+                  data-cy="base-points-activity"
+                >
                   {details?.totalBasePoints ?? 0} P.
                 </ShadcnTableCell>
-                <ShadcnTableCell className="text-center">
+                <ShadcnTableCell
+                  className="text-center"
+                  data-cy="correctness-points-activity"
+                >
                   {details?.totalCorrectnessPoints ?? 0} P.
                 </ShadcnTableCell>
-                <ShadcnTableCell className="text-center">
+                <ShadcnTableCell
+                  className="text-center"
+                  data-cy="bonus-points-activity"
+                >
                   {details?.totalBonusPoints ?? 0} P.
                 </ShadcnTableCell>
               </>
             )}
-            <ShadcnTableCell className="text-uzh-darkgreen-100 text-center">
+            <ShadcnTableCell
+              className="text-uzh-darkgreen-100 text-center"
+              data-cy="total-points-activity"
+            >
               {details?.totalPoints ?? 0} P.
             </ShadcnTableCell>
             <ShadcnTableCell />

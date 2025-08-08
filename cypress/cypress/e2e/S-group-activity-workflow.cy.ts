@@ -1576,7 +1576,6 @@ describe('Create and solve a group activity', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -2862,12 +2861,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 450 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains(
-      '450 P.'
-    )
-
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('450 P.')
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -2876,26 +2870,41 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="stack-0-instance-5"]').contains(this.data.SEML.title)
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CSML.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 100 })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 150 })
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 50 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 100,
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 150,
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 6,
+    })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })

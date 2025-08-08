@@ -1509,7 +1509,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1547,7 +1546,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1599,12 +1597,10 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(
       this.data.liveQuiz.newSCTitle
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1634,9 +1630,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
       this.data.liveQuiz.newSCTitle
@@ -1787,8 +1780,6 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="activity-name-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
@@ -1930,7 +1921,6 @@ describe('Different live-quiz workflows', function () {
   // #region
   function verifyLiveQuizDetailsModalContent(activityName: string, data: any) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -3502,12 +3492,8 @@ describe('Different live-quiz workflows', function () {
       totalPoints: 730,
     })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('70 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains(
-      '660 P.'
-    )
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('70 P.')
+    cy.get('[data-cy="activity-details-stack-header-1"]').contains('660 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MC.title)
@@ -3518,68 +3504,69 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 0,
     })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 1,
     })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 2,
     })
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 3,
     })
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 4,
     })
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 5,
     })
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 6,
     })
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
     cy.assertInstancePoints({
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 7,
     })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
@@ -3590,60 +3577,61 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 0,
     })
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 1,
     })
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 2,
     })
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 3,
     })
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 4,
     })
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 5,
     })
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
     cy.assertInstancePoints({
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 0,
+      stackIx: 1,
+      instanceIx: 6,
     })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -3690,13 +3678,11 @@ describe('Different live-quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '70 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '660 P.'
     )
@@ -3710,29 +3696,38 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 6,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 7,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -3742,26 +3737,34 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 6,
+    })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
@@ -3809,13 +3812,11 @@ describe('Different live-quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '70 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '660 P.'
     )
@@ -3829,29 +3830,38 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 6,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 7,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -3861,26 +3871,34 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 6,
+    })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
   // #endregion
