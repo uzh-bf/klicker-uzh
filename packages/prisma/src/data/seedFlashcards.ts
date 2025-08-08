@@ -23,9 +23,7 @@ async function seedFlashcardSet(
 ) {
   const quizInfo = await processQuizInfo(fileName)
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
-    where: {
-      id: quizId,
-    },
+    where: { id: quizId },
     create: {
       id: quizId,
       name: quizInfo.title,

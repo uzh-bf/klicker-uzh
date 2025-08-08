@@ -972,6 +972,7 @@ export async function prepareFlashcardsFromFile(
         await prismaClient.element.update({
           where: { id: existingElement.id },
           data: {
+            status: Prisma.ElementStatus.REVIEW,
             tags: data.tags,
             content:
               data.content && existingElement.content !== data.content
@@ -1003,6 +1004,7 @@ export async function prepareFlashcardsFromFile(
       const flashcard = await prismaClient.element.create({
         data: {
           ...data,
+          status: Prisma.ElementStatus.REVIEW,
           owner: {
             connect: {
               id: userId,
