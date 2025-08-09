@@ -1,6 +1,6 @@
 import {
   faCheckSquare,
-  faEye,
+  faMagnifyingGlass,
   faPencil,
   faXmarkSquare,
 } from '@fortawesome/free-solid-svg-icons'
@@ -205,7 +205,7 @@ function ActivityOverviewTable({
                         }}
                         data-cy={`preview-instance-${element.instance.elementData.name}`}
                       >
-                        <FontAwesomeIcon icon={faEye} size="sm" />
+                        <FontAwesomeIcon icon={faMagnifyingGlass} size="sm" />
                       </Button>
                     </Tooltip>
                     <Tooltip
