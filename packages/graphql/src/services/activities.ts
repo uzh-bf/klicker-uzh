@@ -265,7 +265,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
           practiceQuiz: {
@@ -294,7 +294,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
           microLearning: {
@@ -323,7 +323,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
           groupActivity: {
@@ -349,7 +349,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
         },
@@ -419,7 +419,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.liveQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.liveQuiz.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.liveQuiz._count.permissions - 1
+          ? object.liveQuiz._count.directPermissions
           : undefined,
         isOwner,
         isManager,
@@ -466,7 +466,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.practiceQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.practiceQuiz.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.practiceQuiz._count.permissions - 1
+          ? object.practiceQuiz._count.directPermissions
           : undefined,
         isOwner,
         isManager,
@@ -509,7 +509,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.microLearning.isGamificationEnabled,
         isAssessmentEnabled: object.microLearning.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.microLearning._count.permissions - 1
+          ? object.microLearning._count.directPermissions
           : undefined,
         isOwner,
         isManager,
@@ -555,7 +555,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.groupActivity.isGamificationEnabled,
         isAssessmentEnabled: object.groupActivity.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.groupActivity._count.permissions - 1
+          ? object.groupActivity._count.directPermissions
           : undefined,
         isOwner,
         isManager,
