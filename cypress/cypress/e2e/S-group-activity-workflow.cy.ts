@@ -187,21 +187,29 @@ describe('Create and solve a group activity', function () {
     )
 
     // set the start date of the group activity to 2 months in the future at 12:30
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: 1,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: startDate1,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      },
     })
 
     // set the end date of the group activity to 3 months in the future at 14:00
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 2,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: endDate1,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      },
     })
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -423,21 +431,29 @@ describe('Create and solve a group activity', function () {
     )
 
     // set the start date of the group activity to 1 month in the past at 12:30 (from previous 2 months in the future)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -3,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: runningStartDate,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: runningStartDate,
+      },
     })
 
     // set the end date of the group activity to 2 months in the future at 14:00 (from previous 3 months in the future)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: -1,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: runningEndDate,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: runningEndDate,
+      },
     })
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -832,12 +848,16 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: 6,
-      day: 15,
-      hour: 18,
-      minute: 50,
-      validation: extensionDate,
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: 6,
+        day: 15,
+        hour: 18,
+        minute: 50,
+        validation: extensionDate,
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').click()
     cy.wait(1000) // wait for the extension to be processed and stored
@@ -847,12 +867,16 @@ describe('Create and solve a group activity', function () {
       `[data-cy="extend-group-activity-${this.data.running.name}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: -12,
-      day: 15,
-      hour: 12,
-      minute: 0,
-      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: -12,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()

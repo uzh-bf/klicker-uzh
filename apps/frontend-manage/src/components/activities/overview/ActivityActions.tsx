@@ -47,7 +47,7 @@ function ActivityActions({
             icon: faInfoCircle,
             className: '',
             onClick: () => openActivityDetailsModal(),
-            data: { cy: `activity-information` },
+            data: { cy: `activity-information-${activityName}` },
           },
           ...availableActions.slice(1),
         ].map((action) => ({

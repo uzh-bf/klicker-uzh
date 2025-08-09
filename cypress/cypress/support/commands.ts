@@ -982,6 +982,12 @@ interface DatetimeType {
   validation: string // validation string to be used for the date input
 }
 
+interface DateType {
+  monthDelta: number // month delta to be set relative to the default values
+  day: number // day of the month to be set
+  validation: string // validation string to be used for the date input
+}
+
 function createStacks({
   stacks,
   type = 'stack',
@@ -1072,38 +1078,73 @@ Cypress.Commands.add(
   }
 )
 
-function setDatetime(
-  cyString: string,
-  deselectorString: string,
-  datetime: DatetimeType
-) {
-  cy.get(`[data-cy="${cyString}"]`).realClick()
-
-  if (datetime.monthDelta > 0) {
-    for (let i = 0; i < datetime.monthDelta; i++) {
-      cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100) // navigate forward one month
-    }
-  } else if (datetime.monthDelta < 0) {
-    for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
-      cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100) // navigate back one month
-    }
-  }
-
-  cy.get(`[data-cy="${cyString}-calendar"]`)
-    .findByText(String(datetime.day))
-    .realClick()
-    .wait(100)
-  cy.get(`[data-cy="${cyString}-hours"]`)
-    .realClick()
-    .type(String(datetime.hour))
-  cy.get(`[data-cy="${cyString}-minutes"]`)
-    .realClick()
-    .type(String(datetime.minute))
-  cy.get(`[data-cy="${deselectorString}"]`).realClick() // deselect calendar
-  cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-  cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation) // verify correct date
+interface SetDatetimeArgs {
+  cyString: string // data-cy attribute of the datetime input
+  deselectorString: string // data-cy attribute of the element to deselect the calendar
+  datetime: DatetimeType // object containing monthDelta, day, hour, minute, and validation string
 }
-Cypress.Commands.add('setDatetime', setDatetime)
+
+Cypress.Commands.add(
+  'setDatetime',
+  ({ cyString, deselectorString, datetime }: SetDatetimeArgs) => {
+    cy.get(`[data-cy="${cyString}"]`).realClick()
+
+    if (datetime.monthDelta > 0) {
+      for (let i = 0; i < datetime.monthDelta; i++) {
+        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+      }
+    } else if (datetime.monthDelta < 0) {
+      for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
+        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+      }
+    }
+
+    cy.get(`[data-cy="${cyString}-calendar"]`)
+      .findByText(String(datetime.day))
+      .realClick()
+      .wait(100)
+    cy.get(`[data-cy="${cyString}-hours"]`)
+      .realClick()
+      .type(String(datetime.hour))
+    cy.get(`[data-cy="${cyString}-minutes"]`)
+      .realClick()
+      .type(String(datetime.minute))
+    cy.get(`[data-cy="${deselectorString}"]`).realClick()
+    cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
+    cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation)
+  }
+)
+
+interface SetDateArgs {
+  cyString: string // data-cy attribute of the datetime input
+  deselectorString: string // data-cy attribute of the element to deselect the calendar
+  date: DateType // object containing monthDelta, day, and validation string
+}
+
+Cypress.Commands.add(
+  'setDate',
+  ({ cyString, deselectorString, date }: SetDateArgs) => {
+    cy.get(`[data-cy="${cyString}"]`).realClick()
+
+    if (date.monthDelta > 0) {
+      for (let i = 0; i < date.monthDelta; i++) {
+        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+      }
+    } else if (date.monthDelta < 0) {
+      for (let i = 0; i < Math.abs(date.monthDelta); i++) {
+        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+      }
+    }
+
+    cy.get(`[data-cy="${cyString}-calendar"]`)
+      .findByText(String(date.day))
+      .realClick()
+      .wait(100)
+    cy.get(`[data-cy="${deselectorString}"]`).realClick()
+    cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
+    cy.get(`[data-cy="${cyString}"]`).should('contain', date.validation)
+  }
+)
 
 interface CreateMicrolearningArgs {
   name: string
@@ -1148,8 +1189,16 @@ Cypress.Commands.add(
     // Step 3: Settings
     cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    setDatetime('select-start-date', 'availability-section-header', startDate)
-    setDatetime('select-end-date', 'availability-section-header', endDate)
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: startDate,
+    })
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: endDate,
+    })
 
     if (multiplier) {
       cy.get('[data-cy="select-multiplier"]').realClick()
@@ -1224,16 +1273,16 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    setDatetime(
-      'select-start-date',
-      'availability-section-header',
-      scheduledStartDate
-    )
-    setDatetime(
-      'select-end-date',
-      'availability-section-header',
-      scheduledEndDate
-    )
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: scheduledStartDate,
+    })
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: scheduledEndDate,
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
@@ -1266,6 +1315,161 @@ Cypress.Commands.add(
     // Step 4: Questions / Elements
     cy.createStacks({ stacks: [stack] })
     cy.get('[data-cy="next-or-submit"]').click()
+  }
+)
+
+interface CreateCourseArgs {
+  name: string
+  displayName: string
+  description?: string
+  notificationEmail?: string
+  startDate?: DateType
+  endDate?: DateType
+  color?: string
+  isGamificationEnabled?: boolean
+  isGroupFormationEnabled?: boolean
+  groupFormationDeadline?: DateType
+  maxGroupSize?: number
+  preferredGroupSize?: number
+}
+
+Cypress.Commands.add(
+  'createCourse',
+  ({
+    name,
+    displayName,
+    description,
+    notificationEmail,
+    startDate,
+    endDate,
+    color,
+    isGamificationEnabled = true,
+    isGroupFormationEnabled = true,
+    groupFormationDeadline,
+    maxGroupSize = 4,
+    preferredGroupSize = 2,
+  }: CreateCourseArgs) => {
+    cy.get('[data-cy="course-list-button-new-course"]').click()
+
+    // set the necessary metadata
+    cy.get('[data-cy="course-name"]').click().type(name)
+    cy.get('[data-cy="course-display-name"]').click().type(displayName)
+
+    // if defined, set the description
+    if (description) {
+      cy.get('[data-cy="course-description"]').realClick().type(description)
+    }
+
+    // if defined, set the notification email
+    if (notificationEmail) {
+      cy.get('[data-cy="course-notification-email"]')
+        .click()
+        .clear()
+        .type(notificationEmail)
+    }
+
+    // if defined, set the start date
+    if (startDate) {
+      cy.setDate({
+        cyString: 'course-start-date',
+        deselectorString: 'course-name',
+        date: startDate,
+      })
+    }
+
+    // if defined, set the end date
+    if (endDate) {
+      cy.setDate({
+        cyString: 'course-end-date',
+        deselectorString: 'course-name',
+        date: endDate,
+      })
+    }
+
+    // if defined, set the color
+    if (color) {
+      cy.get('[data-cy="course-color-trigger"]').click()
+      cy.get('[data-cy="course-color-hex-input"]').clear()
+      cy.get('[data-cy="course-color-hex-input"]').type(color)
+      cy.get('[data-cy="course-color-submit"]').click()
+    }
+
+    // set gamification toggle
+    if (isGamificationEnabled) {
+      cy.get('[data-cy="course-gamification"]').should(
+        'have.attr',
+        'data-state',
+        'checked'
+      )
+    } else {
+      cy.get('[data-cy="course-gamification"]').click()
+      cy.get('[data-cy="course-gamification"]').should(
+        'have.attr',
+        'data-state',
+        'unchecked'
+      )
+    }
+
+    // set group formation toggle
+    if (isGroupFormationEnabled) {
+      cy.get('[data-cy="course-group-creation"]').should(
+        'have.attr',
+        'data-state',
+        'checked'
+      )
+
+      // if defined, modify the group formation deadline
+      if (groupFormationDeadline) {
+        cy.setDate({
+          cyString: 'group-creation-deadline',
+          deselectorString: 'course-name',
+          date: groupFormationDeadline,
+        })
+      }
+
+      // set group size parameters
+      cy.get('[data-cy="max-group-size"]')
+        .click()
+        .clear()
+        .type(String(maxGroupSize))
+      cy.get('[data-cy="preferred-group-size"]')
+        .click()
+        .clear()
+        .type(String(preferredGroupSize))
+    } else {
+      cy.get('[data-cy="course-group-creation"]').click()
+      cy.get('[data-cy="course-group-creation"]').should(
+        'have.attr',
+        'data-state',
+        'unchecked'
+      )
+    }
+
+    // submit the form
+    cy.get('[data-cy="manipulate-course-submit"]').click()
+
+    // check if the course is in the list
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(name).should('exist')
+  }
+)
+
+interface ShareObjectArgs {
+  usernameOrEmail: string
+  permissionLevel: string
+}
+
+Cypress.Commands.add(
+  'shareObject',
+  ({ usernameOrEmail, permissionLevel }: ShareObjectArgs) => {
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(usernameOrEmail)
+    cy.selectOption('[data-cy="new-permission-access-level"]', permissionLevel)
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
+    cy.get(`[data-cy="permission-${usernameOrEmail}"]`)
+      .should('exist')
+      .contains(permissionLevel)
   }
 )
 
@@ -1687,11 +1891,20 @@ declare global {
         stacks: StackType[]
         type?: 'block' | 'stack'
       }): Chainable<void>
-      setDatetime(
-        cyString: string,
-        deselectorString: string,
-        datetime: DatetimeType
-      ): Chainable<void>
+      setDatetime({
+        cyString,
+        deselectorString,
+        datetime,
+      }: SetDatetimeArgs): Chainable<void>
+      setDate({
+        cyString,
+        deselectorString,
+        date,
+      }: SetDateArgs): Chainable<void>
+      shareObject({
+        usernameOrEmail,
+        permissionLevel,
+      }: ShareObjectArgs): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,
@@ -1721,6 +1934,20 @@ declare global {
         clues,
         stack,
       }: CreateGroupActivityArgs): Chainable<void>
+      createCourse({
+        name,
+        displayName,
+        description,
+        notificationEmail,
+        startDate,
+        endDate,
+        color,
+        isGamificationEnabled,
+        isGroupFormationEnabled,
+        groupFormationDeadline,
+        maxGroupSize,
+        preferredGroupSize,
+      }: CreateCourseArgs): Chainable<void>
       caseStudyLoop({ object, callback }: CaseStudyLoopArgs): Chainable<void>
       answerCaseStudy({
         elementIx,

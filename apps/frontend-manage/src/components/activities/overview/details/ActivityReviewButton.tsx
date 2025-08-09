@@ -24,8 +24,9 @@ function ActivityReviewButton({
 
   return (
     <Button
-      className={{ root: 'h-7' }}
       disabled={settingReviewedStatus}
+      className={{ root: 'h-7' }}
+      data={{ cy: 'activity-review-button' }}
       onClick={async () => {
         const { data: res } = await setActivityReviewStatus({
           variables: {
