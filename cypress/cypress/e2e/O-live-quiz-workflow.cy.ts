@@ -1527,6 +1527,7 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.liveQuiz.newSCContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="activities"]').click()

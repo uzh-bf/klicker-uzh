@@ -1244,6 +1244,7 @@ describe('Different practice quiz workflows', function () {
       .clear()
       .type(this.data.manipulation.newNRContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the unmodified practice quiz
     cy.get('[data-cy="courses"]').click()
