@@ -929,18 +929,19 @@ export async function manipulateGroupActivity(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
+  let existingActivity: DB.GroupActivity | null = null
   if (id) {
-    const existingActiity = await ctx.prisma.groupActivity.findUnique({
+    existingActivity = await ctx.prisma.groupActivity.findUnique({
       where: { id, isDeleted: false },
     })
 
-    if (!existingActiity) {
+    if (!existingActivity) {
       throw new GraphQLError('Group Activity not found')
     }
     if (
-      existingActiity.status === DB.PublicationStatus.SCHEDULED ||
-      existingActiity.status === DB.PublicationStatus.PUBLISHED ||
-      existingActiity.status === DB.PublicationStatus.GRADED
+      existingActivity.status === DB.PublicationStatus.SCHEDULED ||
+      existingActivity.status === DB.PublicationStatus.PUBLISHED ||
+      existingActivity.status === DB.PublicationStatus.GRADED
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
@@ -1006,6 +1007,10 @@ export async function manipulateGroupActivity(
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+        ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+        : undefined,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

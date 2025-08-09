@@ -16,7 +16,7 @@ function ActivityActions({
   activityType: ActivityType
 }) {
   return (
-    <div className="-mr-1 -mt-1 flex flex-row items-end gap-1">
+    <div className="-mr-1 flex flex-row items-end gap-1">
       {availableActions.slice(0, 1).map((action) => {
         return (
           <Button

@@ -216,8 +216,9 @@ export async function manipulatePracticeQuiz(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the practice quiz exists and is not published
+  let existingActivity: DB.PracticeQuiz | null = null
   if (id) {
-    const existingActivity = await ctx.prisma.practiceQuiz.findUnique({
+    existingActivity = await ctx.prisma.practiceQuiz.findUnique({
       where: { id, isDeleted: false },
     })
 
@@ -280,6 +281,10 @@ export async function manipulatePracticeQuiz(
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+        ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+        : undefined,
     stacks: {
       create: stacks.map((stack) => ({
         type: DB.ElementStackType.PRACTICE_QUIZ,

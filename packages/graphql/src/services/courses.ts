@@ -1332,6 +1332,11 @@ export async function getCourseData(
     return null
   }
 
+  // check if the user is a course admin
+  const isCourseAdmin =
+    coursePermission.permissionLevel === DB.PermissionLevel.ADMIN ||
+    coursePermission.permissionLevel === DB.PermissionLevel.OWNER
+
   const {
     isOwner: courseOwner,
     isManager: courseManager,
@@ -1367,6 +1372,7 @@ export async function getCourseData(
       templateId: liveQuiz.templateInfo?.id ?? null,
       name: liveQuiz.name,
       displayName: liveQuiz.displayName,
+      reviewStatus: liveQuiz.reviewStatus,
       type: ActivityType.LIVE_QUIZ,
       status: liveQuiz.status,
       courseId: course.id,
@@ -1388,6 +1394,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
+      isCourseAdmin,
       sharingType,
       updatedAt: liveQuiz.updatedAt,
     }
@@ -1417,6 +1424,7 @@ export async function getCourseData(
       templateId: practiceQuiz.templateInfo?.id ?? null,
       name: practiceQuiz.name,
       displayName: practiceQuiz.displayName,
+      reviewStatus: practiceQuiz.reviewStatus,
       type: ActivityType.PRACTICE_QUIZ,
       status: practiceQuiz.status,
       courseId: course.id,
@@ -1439,6 +1447,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
+      isCourseAdmin,
       sharingType,
       updatedAt: practiceQuiz.updatedAt,
     }
@@ -1468,6 +1477,7 @@ export async function getCourseData(
       templateId: microLearning.templateInfo?.id ?? null,
       name: microLearning.name,
       displayName: microLearning.displayName,
+      reviewStatus: microLearning.reviewStatus,
       type: ActivityType.MICRO_LEARNING,
       status: microLearning.status,
       courseId: course.id,
@@ -1491,6 +1501,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
+      isCourseAdmin,
       sharingType,
       updatedAt: microLearning.updatedAt,
     }
@@ -1521,6 +1532,7 @@ export async function getCourseData(
         templateId: groupActivity.templateInfo?.id ?? null,
         name: groupActivity.name,
         displayName: groupActivity.displayName,
+        reviewStatus: groupActivity.reviewStatus,
         type: ActivityType.GROUP_ACTIVITY,
         status: groupActivity.status,
         courseId: course.id,
@@ -1546,6 +1558,7 @@ export async function getCourseData(
         isExecutor,
         isShared,
         isRemovable,
+        isCourseAdmin,
         sharingType,
         updatedAt: groupActivity.updatedAt,
       }

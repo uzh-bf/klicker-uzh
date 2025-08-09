@@ -25,19 +25,21 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ActivityOutdatedElementWarning from './ActivityOutdatedElementWarning'
+import ActivityOutdatedElementWarning from '../ActivityOutdatedElementWarning'
 
 function ActivityOverviewTable({
   details,
   activityStatus,
   isLiveQuiz,
   outdatedInstances,
+  selectedInstanceId,
   setSelectedInstanceId,
 }: {
   details: ActivityDetails
   activityStatus: PublicationStatus
   isLiveQuiz: boolean
   outdatedInstances: number[]
+  selectedInstanceId: number | null
   setSelectedInstanceId: Dispatch<SetStateAction<number | null>>
 }) {
   const t = useTranslations()
@@ -109,13 +111,24 @@ function ActivityOverviewTable({
             {stack.elements.map((element, instanceIx) => {
               const instanceId = String(element.instance.id)
               const isOutdated = outdatedInstances.includes(element.instance.id)
+              const isInstanceQuestion = [
+                ElementType.Sc,
+                ElementType.Mc,
+                ElementType.Kprim,
+                ElementType.Numerical,
+                ElementType.FreeText,
+                ElementType.Selection,
+                ElementType.CaseStudy,
+              ].includes(element.instance.elementType)
 
               return (
                 <ShadcnTableRow
                   key={instanceId}
                   className={twMerge(
                     'hover:bg-muted/50',
-                    isOutdated && 'bg-uzh-red-20/50 hover:bg-uzh-red-20 py-1'
+                    isOutdated && 'bg-uzh-red-20/50 hover:bg-uzh-red-20 py-1',
+                    selectedInstanceId === element.instance.id &&
+                      'bg-uzh-blue-20/60 hover:bg-uzh-blue-20/80'
                   )}
                   data-cy={`stack-${stackIx}-instance-${instanceIx}`}
                 >
@@ -134,15 +147,7 @@ function ActivityOverviewTable({
                       <span>
                         {t(`shared.${element.instance.elementType}.typeLabel`)}
                       </span>
-                      {[
-                        ElementType.Sc,
-                        ElementType.Mc,
-                        ElementType.Kprim,
-                        ElementType.Numerical,
-                        ElementType.FreeText,
-                        ElementType.Selection,
-                        ElementType.CaseStudy,
-                      ].includes(element.instance.elementType) && (
+                      {isInstanceQuestion && (
                         <span className="flex flex-row items-center gap-1.5">
                           {`${t('manage.general.sampleSolutionDescription')}: `}
                           {element.hasSampleSolution ? (
@@ -253,7 +258,7 @@ function ActivityOverviewTable({
       {details.arePointsAwarded && (
         <ShadcnTableFooter>
           <ShadcnTableRow className="py-2.5 font-bold">
-            <ShadcnTableCell>{t('shared.generic.total')}</ShadcnTableCell>
+            <ShadcnTableCell>{`${t('shared.generic.total')}`}</ShadcnTableCell>
             {isLiveQuiz && (
               <>
                 <ShadcnTableCell

@@ -10,6 +10,7 @@ fragment ActivityInfoData on ActivityInfo {
 
   numOfStacks
   numOfElements
+  reviewStatus
   automaticPublicationAt
   scheduledStartAt
   scheduledEndAt
@@ -32,6 +33,7 @@ fragment ActivityInfoData on ActivityInfo {
   isExecutor
   isShared
   isRemovable
+  isCourseAdmin
   sharingType
 
   updatedAt

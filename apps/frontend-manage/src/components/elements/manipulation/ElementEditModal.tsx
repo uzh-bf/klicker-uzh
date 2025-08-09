@@ -136,10 +136,14 @@ function ElementEditModal({
       onClose={() => {
         handleSetIsOpen(false)
         const { editElementId, ...query } = router.query
-        router.push({
-          pathname: '/',
-          query,
-        })
+        router.push(
+          {
+            pathname: '/',
+            query,
+          },
+          undefined,
+          { shallow: true }
+        )
       }}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
@@ -386,10 +390,14 @@ function ElementEditModal({
 
         // reset router query element id (if set)
         const { editElementId, ...query } = router.query
-        router.push({
-          pathname: '/',
-          query,
-        })
+        router.push(
+          {
+            pathname: '/',
+            query,
+          },
+          undefined,
+          { shallow: true }
+        )
 
         // trigger success toast
         triggerSuccessToast()

@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
+import * as ActivitiesService from '../services/activities.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -51,6 +52,7 @@ import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
+  ReviewStatus,
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
@@ -1268,6 +1270,19 @@ export const Mutation = builder.mutationType({
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
+        },
+      }),
+
+      setActivityReviewStatus: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ReviewStatus,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          isReviewed: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivitiesService.setActivityReviewStatus(args, ctx)
         },
       }),
 
