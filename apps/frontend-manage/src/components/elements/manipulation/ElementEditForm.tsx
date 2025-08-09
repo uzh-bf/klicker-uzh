@@ -1,4 +1,6 @@
 import { useQuery } from '@apollo/client'
+import { faMagnifyingGlass, faMessage } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementData,
   ElementStatus,
@@ -313,13 +315,23 @@ function ElementEditForm({
                       {
                         id: 'preview',
                         value: 'preview',
-                        label: t('shared.generic.preview'),
+                        label: (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faMagnifyingGlass} />
+                            <span>{t('shared.generic.preview')}</span>
+                          </div>
+                        ),
                         data: { cy: 'element-preview-tab' },
                       },
                       {
                         id: 'activity',
                         value: 'activity',
-                        label: t('shared.comments.title'),
+                        label: (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faMessage} />
+                            <span>{t('shared.comments.title')}</span>
+                          </div>
+                        ),
                         data: { cy: 'element-activity-tab' },
                       },
                     ]}

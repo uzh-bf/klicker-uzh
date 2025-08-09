@@ -7,7 +7,7 @@ import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
 import { PublicationStatus } from './practiceQuiz.js'
-import { ElementInstance, IElementInstance } from './question.js'
+import { ElementInstanceRef, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
 
@@ -17,6 +17,7 @@ interface IActivityInfoElement {
   bonusPoints?: number | null
   totalPoints: number
   hasSampleSolution: boolean
+  isEditor: boolean
   instance: IElementInstance
 }
 
@@ -31,8 +32,9 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
     bonusPoints: t.exposeInt('bonusPoints', { nullable: true }),
     totalPoints: t.exposeInt('totalPoints'),
     hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+    isEditor: t.exposeBoolean('isEditor'),
     instance: t.expose('instance', {
-      type: ElementInstance,
+      type: ElementInstanceRef,
     }),
   }),
 })

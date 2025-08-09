@@ -39,6 +39,7 @@ function Index() {
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [modificationModalOpen, setModificationModalOpen] = useState(false)
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -190,6 +191,13 @@ function Index() {
       return selection
     })
   }, [creationMode])
+
+  // if passed through the query arguments, open the element editing dialog
+  useEffect(() => {
+    if (router.query.editElementId) {
+      setModificationModalOpen(true)
+    }
+  }, [router.query.editElementId])
 
   const filtersActive = !!(
     filters.tags.length > 0 ||
@@ -431,6 +439,25 @@ function Index() {
           }
           isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
+      )}
+      {modificationModalOpen && router.query.editElementId && (
+        <ElementEditModal
+          isOpen
+          inputsDisabled={false}
+          handleSetIsOpen={setModificationModalOpen}
+          triggerSuccessToast={() =>
+            toast({
+              type: 'success',
+              message: t('manage.elements.questionSavedSuccessfully'),
+              options: { duration: 4000 },
+            })
+          }
+          elementId={parseInt(router.query.editElementId as string, 10)}
+          mode={ElementEditMode.EDIT}
           refetchElements={async () => {
             await refetchElements()
           }}

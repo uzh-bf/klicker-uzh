@@ -1458,6 +1458,8 @@ interface AssertInstancePointsArgs {
   correctnessPoints: number
   bonusPoints: number
   totalPoints: number
+  stackIx: number
+  instanceIx: number
 }
 
 Cypress.Commands.add(
@@ -1467,13 +1469,21 @@ Cypress.Commands.add(
     correctnessPoints,
     bonusPoints,
     totalPoints,
+    stackIx,
+    instanceIx,
   }: AssertInstancePointsArgs) => {
-    cy.get('[data-cy="base-points-instance"]').contains(`${basePoints} P.`)
-    cy.get('[data-cy="correctness-points-instance"]').contains(
-      `${correctnessPoints} P.`
-    )
-    cy.get('[data-cy="bonus-points-instance"]').contains(`${bonusPoints} P.`)
-    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+    cy.get(
+      `[data-cy="base-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${basePoints} P.`)
+    cy.get(
+      `[data-cy="correctness-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${correctnessPoints} P.`)
+    cy.get(
+      `[data-cy="bonus-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${bonusPoints} P.`)
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${totalPoints} P.`)
   }
 )
 
@@ -1484,12 +1494,28 @@ Cypress.Commands.add('assertNoActivityPoints', () => {
   cy.get('[data-cy="total-points-activity"]').should('not.exist')
 })
 
-Cypress.Commands.add('assertNoInstancePoints', () => {
-  cy.get('[data-cy="base-points-instance"]').should('not.exist')
-  cy.get('[data-cy="correctness-points-instance"]').should('not.exist')
-  cy.get('[data-cy="bonus-points-instance"]').should('not.exist')
-  cy.get('[data-cy="total-points-instance"]').should('not.exist')
-})
+interface StackInstanceArgs {
+  stackIx: number
+  instanceIx: number
+}
+
+Cypress.Commands.add(
+  'assertNoInstancePoints',
+  ({ stackIx, instanceIx }: StackInstanceArgs) => {
+    cy.get(
+      `[data-cy="base-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="correctness-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="bonus-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+  }
+)
 
 interface TotalPointsArgs {
   totalPoints: number
@@ -1504,8 +1530,14 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'assertAsynchronousInstancePoints',
-  ({ totalPoints }: TotalPointsArgs) => {
-    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  ({
+    totalPoints,
+    stackIx,
+    instanceIx,
+  }: TotalPointsArgs & StackInstanceArgs) => {
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${totalPoints} P.`)
   }
 )
 
@@ -1716,15 +1748,22 @@ declare global {
         correctnessPoints,
         bonusPoints,
         totalPoints,
+        stackIx,
+        instanceIx,
       }: AssertInstancePointsArgs): Chainable<void>
       assertNoActivityPoints(): Chainable<void>
-      assertNoInstancePoints(): Chainable<void>
+      assertNoInstancePoints({
+        stackIx,
+        instanceIx,
+      }: StackInstanceArgs): Chainable<void>
       assertAsynchronousActivityPoints({
         totalPoints,
       }: TotalPointsArgs): Chainable<void>
       assertAsynchronousInstancePoints({
         totalPoints,
-      }: TotalPointsArgs): Chainable<void>
+        stackIx,
+        instanceIx,
+      }: TotalPointsArgs & StackInstanceArgs): Chainable<void>
     }
   }
 }
