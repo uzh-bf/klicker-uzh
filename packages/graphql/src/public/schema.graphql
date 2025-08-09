@@ -59,8 +59,8 @@ type ActivityInfo {
   displayName: String!
   groupDeadlineDate: Date
   id: String!
+  isActivityReviewer: Boolean!
   isAssessmentEnabled: Boolean
-  isCourseAdmin: Boolean!
   isEditor: Boolean!
   isExecutor: Boolean!
   isGamificationEnabled: Boolean

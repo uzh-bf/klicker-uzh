@@ -113,6 +113,7 @@ function ActivityDetailsModal({
               <ActivityInformation
                 details={details}
                 activityType={activity.type}
+                activityReviewStatus={activity.reviewStatus}
               />
 
               <div className="flex w-full flex-col items-end gap-1 lg:w-1/3">
@@ -129,7 +130,7 @@ function ActivityDetailsModal({
                 )}
 
                 {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
-                {activity.isCourseAdmin && (
+                {activity.isActivityReviewer && (
                   <ActivityReviewButton
                     activity={activity}
                     isReviewed={isReviewed}

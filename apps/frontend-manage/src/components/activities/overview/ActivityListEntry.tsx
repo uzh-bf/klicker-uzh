@@ -5,10 +5,8 @@ import {
   faPenToSquare,
 } from '@fortawesome/free-regular-svg-icons'
 import {
-  faCheckDouble,
   faExclamationTriangle,
   faFilePen,
-  faInfoCircle,
   faPencil,
   faPlay,
   faStamp,
@@ -20,7 +18,6 @@ import {
   ActivityType,
   ObjectType,
   PublicationStatus,
-  ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -31,6 +28,7 @@ import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityNameChangeModal from './ActivityNameChangeModal'
+import ActivityReviewStatus from './ActivityReviewStatus'
 import AssessmentBadge from './AssessmentBadge'
 import ActivityDetailsModal from './details/ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
@@ -205,18 +203,7 @@ function ActivityListEntry({
         </div>
         <div className="gap-4.5 flex flex-col items-end">
           <div className="-mt-1 flex flex-row items-center">
-            {activity.reviewStatus === ReviewStatus.Reviewed ? (
-              <div className="mr-3 flex flex-row items-center gap-1.5 text-sm text-green-600">
-                <FontAwesomeIcon icon={faCheckDouble} />
-                <span>{t('shared.generic.reviewed')}</span>
-              </div>
-            ) : null}
-            {activity.reviewStatus === ReviewStatus.ModifiedAfterReview ? (
-              <div className="text-uzh-red-100 mr-3 flex flex-row items-center gap-1.5 text-sm">
-                <FontAwesomeIcon icon={faInfoCircle} />
-                <span>{t('shared.generic.modifiedAfterReview')}</span>
-              </div>
-            ) : null}
+            <ActivityReviewStatus reviewStatus={activity.reviewStatus} />
 
             {activity.numSharedUsers && activity.isManager ? (
               <div

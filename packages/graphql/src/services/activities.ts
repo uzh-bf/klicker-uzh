@@ -427,9 +427,12 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isCourseAdmin:
-          !!object.liveQuiz.course &&
-          object.liveQuiz.course.permissions.length > 0,
+        isActivityReviewer:
+          (object.liveQuiz.courseId === null &&
+            (object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN)) ||
+          (!!object.liveQuiz.course &&
+            object.liveQuiz.course.permissions.length > 0),
         sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
@@ -471,7 +474,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isCourseAdmin: object.practiceQuiz.course.permissions.length > 0,
+        isActivityReviewer: object.practiceQuiz.course.permissions.length > 0,
         sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
@@ -514,7 +517,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isCourseAdmin: object.microLearning.course.permissions.length > 0,
+        isActivityReviewer: object.microLearning.course.permissions.length > 0,
         sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
@@ -560,7 +563,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isCourseAdmin: object.groupActivity.course.permissions.length > 0,
+        isActivityReviewer: object.groupActivity.course.permissions.length > 0,
         sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }
@@ -1092,15 +1095,28 @@ export async function setActivityReviewStatus(
       const liveQuiz = await ctx.prisma.liveQuiz.update({
         where: {
           id: activityId,
-          courseId: { not: null },
-          course: {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionLevel: { in: acceptedPermissionLevels },
+          OR: [
+            {
+              courseId: null,
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionLevel: { in: acceptedPermissionLevels },
+                },
               },
             },
-          },
+            {
+              courseId: { not: null },
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: { in: acceptedPermissionLevels },
+                  },
+                },
+              },
+            },
+          ],
         },
         data: { reviewStatus },
       })

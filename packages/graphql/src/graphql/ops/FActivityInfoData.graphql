@@ -33,7 +33,7 @@ fragment ActivityInfoData on ActivityInfo {
   isExecutor
   isShared
   isRemovable
-  isCourseAdmin
+  isActivityReviewer
   sharingType
 
   updatedAt

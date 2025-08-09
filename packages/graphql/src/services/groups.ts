@@ -1008,9 +1008,11 @@ export async function manipulateGroupActivity(
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
     reviewStatus:
-      existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
-        ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
-        : undefined,
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({

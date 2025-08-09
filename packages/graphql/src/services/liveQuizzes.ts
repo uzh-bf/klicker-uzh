@@ -618,9 +618,11 @@ export async function manipulateLiveQuiz(
     isModerationEnabled,
     areInstancesOutdated: anyInstanceOutdated,
     reviewStatus:
-      existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
-        ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
-        : undefined,
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     blocks: {
       create: blocks.map((block) => ({
         order: block.order,

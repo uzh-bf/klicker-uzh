@@ -111,7 +111,7 @@ export interface IActivityInfo {
   isShared: boolean
   isExecutor: boolean
   isRemovable: boolean
-  isCourseAdmin: boolean
+  isActivityReviewer: boolean
   sharingType: SharingTypeEnum
 
   updatedAt: Date
@@ -181,7 +181,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     isExecutor: t.exposeBoolean('isExecutor'),
     isShared: t.exposeBoolean('isShared'),
     isRemovable: t.exposeBoolean('isRemovable'),
-    isCourseAdmin: t.exposeBoolean('isCourseAdmin'),
+    isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
     sharingType: t.expose('sharingType', { type: SharingType }),
 
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

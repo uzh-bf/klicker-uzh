@@ -1333,7 +1333,7 @@ export async function getCourseData(
   }
 
   // check if the user is a course admin
-  const isCourseAdmin =
+  const isActivityReviewer =
     coursePermission.permissionLevel === DB.PermissionLevel.ADMIN ||
     coursePermission.permissionLevel === DB.PermissionLevel.OWNER
 
@@ -1394,7 +1394,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
-      isCourseAdmin,
+      isActivityReviewer,
       sharingType,
       updatedAt: liveQuiz.updatedAt,
     }
@@ -1447,7 +1447,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
-      isCourseAdmin,
+      isActivityReviewer,
       sharingType,
       updatedAt: practiceQuiz.updatedAt,
     }
@@ -1501,7 +1501,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
-      isCourseAdmin,
+      isActivityReviewer,
       sharingType,
       updatedAt: microLearning.updatedAt,
     }
@@ -1558,7 +1558,7 @@ export async function getCourseData(
         isExecutor,
         isShared,
         isRemovable,
-        isCourseAdmin,
+        isActivityReviewer,
         sharingType,
         updatedAt: groupActivity.updatedAt,
       }
