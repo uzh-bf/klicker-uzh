@@ -225,6 +225,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -234,6 +235,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -243,6 +245,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -252,6 +255,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}

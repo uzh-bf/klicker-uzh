@@ -69,12 +69,14 @@ function GroupActivityActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
   refetchActivities,
 }: {
   groupActivity: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -145,6 +147,7 @@ function GroupActivityActions({
         activityId={groupActivity.id}
         activityName={groupActivity.name}
         activityType={groupActivity.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {sharingModal && groupActivity.isManager ? (
