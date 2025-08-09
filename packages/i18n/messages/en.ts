@@ -386,6 +386,8 @@ export default {
       total: 'Total',
       reviewed: 'Reviewed',
       modifiedAfterReview: 'Modified after review',
+      modifiedAfterReviewInformation:
+        'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
     },
     types: {
       ACTIVITIES: 'Activities',

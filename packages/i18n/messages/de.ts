@@ -387,7 +387,9 @@ export default {
       day: 'Tag',
       total: 'Total',
       reviewed: 'Gereviewt',
-      modifiedAfterReview: 'Nach Review editiert',
+      modifiedAfterReview: 'Nach Review verändert',
+      modifiedAfterReviewInformation:
+        'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',

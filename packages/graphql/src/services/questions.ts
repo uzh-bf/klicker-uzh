@@ -1387,10 +1387,7 @@ export async function updateElementInstances(
   {
     elementId,
     includeTemplates,
-  }: {
-    elementId: number
-    includeTemplates: boolean
-  },
+  }: { elementId: number; includeTemplates: boolean },
   ctx: ContextWithUser
 ) {
   // fetch the question and return null, if the question does not exist
@@ -1523,6 +1520,7 @@ export async function updateElementInstances(
       microLearningId: string | undefined
       groupActivityId: string | undefined
       templateId: string | undefined
+      reviewStatus: DB.ReviewStatus | undefined
     }[]
   >((acc, instance) => {
     if (
@@ -1547,6 +1545,7 @@ export async function updateElementInstances(
         microLearningId: undefined,
         groupActivityId: undefined,
         templateId: instance.elementBlock.liveQuiz.templateInfo?.id,
+        reviewStatus: instance.elementBlock.liveQuiz.reviewStatus,
       })
 
       return acc
@@ -1562,6 +1561,7 @@ export async function updateElementInstances(
         microLearningId: instance.elementStack.microLearning.id,
         groupActivityId: undefined,
         templateId: instance.elementStack.microLearning.templateInfo?.id,
+        reviewStatus: instance.elementStack.microLearning.reviewStatus,
       })
 
       return acc
@@ -1577,6 +1577,7 @@ export async function updateElementInstances(
         microLearningId: undefined,
         groupActivityId: undefined,
         templateId: instance.elementStack.practiceQuiz.templateInfo?.id,
+        reviewStatus: instance.elementStack.practiceQuiz.reviewStatus,
       })
 
       return acc
@@ -1589,6 +1590,7 @@ export async function updateElementInstances(
         microLearningId: undefined,
         groupActivityId: instance.elementStack.groupActivity.id,
         templateId: instance.elementStack.groupActivity.templateInfo?.id,
+        reviewStatus: instance.elementStack.groupActivity.reviewStatus,
       })
 
       return acc
@@ -1613,6 +1615,7 @@ export async function updateElementInstances(
           microLearningId,
           groupActivityId,
           templateId,
+          reviewStatus,
         }) => {
           const oldInstance = await ctx.prisma.elementInstance.findUnique({
             where: { id: instanceId },
@@ -1640,6 +1643,31 @@ export async function updateElementInstances(
               },
             },
           })
+
+          // if the previous activity status was set to reviewed, update it to indicated that the content was modified
+          if (reviewStatus === DB.ReviewStatus.REVIEWED) {
+            if (typeof liveQuizId !== 'undefined') {
+              await ctx.prisma.liveQuiz.update({
+                where: { id: liveQuizId },
+                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+              })
+            } else if (typeof practiceQuizId !== 'undefined') {
+              await ctx.prisma.practiceQuiz.update({
+                where: { id: practiceQuizId },
+                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+              })
+            } else if (typeof microLearningId !== 'undefined') {
+              await ctx.prisma.microLearning.update({
+                where: { id: microLearningId },
+                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+              })
+            } else if (typeof groupActivityId !== 'undefined') {
+              await ctx.prisma.groupActivity.update({
+                where: { id: groupActivityId },
+                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+              })
+            }
+          }
 
           if (
             includeTemplates &&
