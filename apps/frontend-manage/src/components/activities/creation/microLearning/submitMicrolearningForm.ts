@@ -93,10 +93,13 @@ async function submitMicrolearningForm({
         variables: { id, ...createUpdateJSON },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.editMicroLearning) return
+          if (!res?.editMicroLearning?.courseId) return
 
           // if the course assignment changed, remove the microlearning from the previous course
-          if (previousCourseId && values.courseId !== previousCourseId) {
+          if (
+            previousCourseId &&
+            res.editMicroLearning.courseId !== previousCourseId
+          ) {
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
@@ -120,7 +123,7 @@ async function submitMicrolearningForm({
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.editMicroLearning.courseId! },
             },
             (data) => {
               if (!data?.course) return data
@@ -144,13 +147,13 @@ async function submitMicrolearningForm({
         variables: createUpdateJSON,
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.createMicroLearning) return
+          if (!res?.createMicroLearning?.courseId) return
 
           // change the status of the microlearning on the course overview back to draft
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.createMicroLearning.courseId! },
             },
             (data) => {
               if (!data?.course) return data

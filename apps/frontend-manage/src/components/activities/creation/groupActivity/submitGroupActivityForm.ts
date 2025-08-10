@@ -56,7 +56,6 @@ async function submitGroupActivityForm({
   try {
     let success = false
     if (id) {
-      if (!id) return null
       const { data: result } = await editGroupActivity({
         variables: {
           id,
@@ -80,10 +79,13 @@ async function submitGroupActivityForm({
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.editGroupActivity) return
+          if (!res?.editGroupActivity?.courseId) return
 
           // if the course assignment changed, remove the microlearning from the previous course
-          if (previousCourseId && values.courseId !== previousCourseId) {
+          if (
+            previousCourseId &&
+            res.editGroupActivity.courseId !== previousCourseId
+          ) {
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
@@ -109,7 +111,7 @@ async function submitGroupActivityForm({
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.editGroupActivity.courseId },
             },
             (data) => {
               if (!data?.course) return data
@@ -152,13 +154,13 @@ async function submitGroupActivityForm({
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.createGroupActivity) return
+          if (!res?.createGroupActivity?.courseId) return
 
           // change the status of the group activity on the course overview back to draft
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.createGroupActivity.courseId },
             },
             (data) => {
               if (!data?.course) return data

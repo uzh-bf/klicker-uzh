@@ -93,10 +93,13 @@ async function submitPracticeQuizForm({
         variables: { id, ...createOrUpdateJSON },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.editPracticeQuiz) return
+          if (!res?.editPracticeQuiz?.courseId) return
 
           // if the course assignment changed, remove the practice quiz from the previous course
-          if (previousCourseId && values.courseId !== previousCourseId) {
+          if (
+            previousCourseId &&
+            res.editPracticeQuiz.courseId !== previousCourseId
+          ) {
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
@@ -120,7 +123,7 @@ async function submitPracticeQuizForm({
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.editPracticeQuiz.courseId },
             },
             (data) => {
               if (!data?.course) return data
@@ -145,13 +148,13 @@ async function submitPracticeQuizForm({
         variables: createOrUpdateJSON,
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.createPracticeQuiz) return
+          if (!res?.createPracticeQuiz?.courseId) return
 
           // change the status of the practice quiz on the course overview back to draft
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.createPracticeQuiz.courseId! },
             },
             (data) => {
               if (!data?.course) return data

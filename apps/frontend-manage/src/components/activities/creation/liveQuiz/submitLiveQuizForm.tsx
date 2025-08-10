@@ -100,13 +100,16 @@ async function submitLiveQuizForm({
         update: (cache, { data: res }) => {
           // if the mutation was not successful or no course was assigned (and the activity was not removed from another course), return early
           if (
-            (values.courseId === 'no-course-selected' && !previousCourseId) ||
-            !res?.editLiveQuiz
+            !res?.editLiveQuiz ||
+            (!res.editLiveQuiz.courseId && !previousCourseId)
           )
             return
 
           // if the course was changed, remove the live quiz from the previous course
-          if (previousCourseId && previousCourseId !== values.courseId) {
+          if (
+            previousCourseId &&
+            previousCourseId !== res.editLiveQuiz.courseId
+          ) {
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
@@ -126,11 +129,11 @@ async function submitLiveQuizForm({
           }
 
           // replace / add the live quiz in the course overview with the new version
-          if (values.courseId !== 'no-course-selected') {
+          if (res.editLiveQuiz.courseId) {
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
-                variables: { courseId: values.courseId! },
+                variables: { courseId: res.editLiveQuiz.courseId! },
               },
               (data) => {
                 if (!data?.course) return data
@@ -173,13 +176,13 @@ async function submitLiveQuizForm({
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
-          if (!res?.createLiveQuiz) return
+          if (!res?.createLiveQuiz?.courseId) return
 
           // change the status of the live quiz on the course overview back to draft
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
+              variables: { courseId: res.createLiveQuiz.courseId },
             },
             (data) => {
               if (!data?.course) return data
