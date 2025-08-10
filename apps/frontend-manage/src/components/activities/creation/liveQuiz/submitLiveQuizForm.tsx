@@ -13,8 +13,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
-interface LiveQuizFormProps {
+interface LiveQuizFormSubmissionProps {
   id?: string
+  previousCourseId?: string | null
   editMode: boolean
   values: LiveQuizFormValues
   createLiveQuiz: (
@@ -43,13 +44,14 @@ interface LiveQuizFormProps {
 
 async function submitLiveQuizForm({
   id,
+  previousCourseId,
   editMode,
   values,
   createLiveQuiz,
   editLiveQuiz,
   setIsWizardCompleted,
   onError,
-}: LiveQuizFormProps) {
+}: LiveQuizFormSubmissionProps) {
   const blockSubmission = values.blocks.map(
     (block: ElementBlockFormValues, ix) => {
       return {
@@ -96,30 +98,55 @@ async function submitLiveQuizForm({
           isModerationEnabled: values.isModerationEnabled,
         },
         update: (cache, { data: res }) => {
-          // if the mutation was not successful or no course was assigned, return early
-          if (values.courseId !== 'no-course-selected' || !res?.editLiveQuiz)
+          // if the mutation was not successful or no course was assigned (and the activity was not removed from another course), return early
+          if (
+            (values.courseId === 'no-course-selected' && !previousCourseId) ||
+            !res?.editLiveQuiz
+          )
             return
 
-          // change the status of the live quiz on the course overview back to draft
-          cache.updateQuery(
-            {
-              query: GetSingleCourseDocument,
-              variables: { courseId: values.courseId! },
-            },
-            (data) => {
-              if (!data?.course) return data
+          // if the course was changed, remove the live quiz from the previous course
+          if (previousCourseId && previousCourseId !== values.courseId) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId },
+              },
+              (data) => {
+                if (!data?.course) return data
 
-              const activities = [
-                ...(data.course.liveQuizzesInfo?.filter(
+                const activities = data.course.liveQuizzesInfo?.filter(
                   (ga) => ga.id !== res.editLiveQuiz!.id
-                ) ?? []),
-                res.editLiveQuiz!,
-              ]
-              return {
-                course: { ...data.course, liveQuizzesInfo: activities },
+                )
+                return {
+                  course: { ...data.course, liveQuizzesInfo: activities },
+                }
               }
-            }
-          )
+            )
+          }
+
+          // replace / add the live quiz in the course overview with the new version
+          if (values.courseId !== 'no-course-selected') {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: values.courseId! },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                const activities = [
+                  ...(data.course.liveQuizzesInfo?.filter(
+                    (ga) => ga.id !== res.editLiveQuiz!.id
+                  ) ?? []),
+                  res.editLiveQuiz!,
+                ]
+                return {
+                  course: { ...data.course, liveQuizzesInfo: activities },
+                }
+              }
+            )
+          }
         },
       })
       success = Boolean(liveQuiz.data?.editLiveQuiz)

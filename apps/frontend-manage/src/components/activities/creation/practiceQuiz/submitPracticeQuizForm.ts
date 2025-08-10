@@ -13,8 +13,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
-interface PracticeQuizFormProps {
+interface PracticeQuizFormSubmissionProps {
   id?: string
+  previousCourseId?: string
   values: PracticeQuizFormValues
   editMode: boolean
   createPracticeQuiz: (
@@ -44,6 +45,7 @@ interface PracticeQuizFormProps {
 
 async function submitPracticeQuizForm({
   id,
+  previousCourseId,
   values,
   editMode,
   createPracticeQuiz,
@@ -51,7 +53,7 @@ async function submitPracticeQuizForm({
   setSelectedCourseId,
   setIsWizardCompleted,
   onError,
-}: PracticeQuizFormProps) {
+}: PracticeQuizFormSubmissionProps) {
   try {
     let success = false
 
@@ -93,7 +95,28 @@ async function submitPracticeQuizForm({
           // if the mutation was not successful, return early
           if (!res?.editPracticeQuiz) return
 
-          // change the status of the practice quiz on the course overview back to draft
+          // if the course assignment changed, remove the practice quiz from the previous course
+          if (previousCourseId && values.courseId !== previousCourseId) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId! },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                const activities =
+                  data.course.practiceQuizzesInfo?.filter(
+                    (pq) => pq.id !== res.editPracticeQuiz!.id
+                  ) ?? []
+                return {
+                  course: { ...data.course, practiceQuizzesInfo: activities },
+                }
+              }
+            )
+          }
+
+          // updated / add the practice quiz in the currently assigned course
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
@@ -104,7 +127,7 @@ async function submitPracticeQuizForm({
 
               const activities = [
                 ...(data.course.practiceQuizzesInfo?.filter(
-                  (ga) => ga.id !== res.editPracticeQuiz!.id
+                  (pq) => pq.id !== res.editPracticeQuiz!.id
                 ) ?? []),
                 res.editPracticeQuiz!,
               ]

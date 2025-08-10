@@ -16,6 +16,7 @@ import { GroupActivityFormValues } from '../WizardLayout'
 
 interface GroupActivityFormSubmissionProps {
   id?: string
+  previousCourseId?: string
   values: GroupActivityFormValues
   createGroupActivity: (
     options?:
@@ -44,6 +45,7 @@ interface GroupActivityFormSubmissionProps {
 
 async function submitGroupActivityForm({
   id,
+  previousCourseId,
   values,
   createGroupActivity,
   editGroupActivity,
@@ -80,7 +82,30 @@ async function submitGroupActivityForm({
           // if the mutation was not successful, return early
           if (!res?.editGroupActivity) return
 
-          // change the status of the group activity on the course overview back to draft
+          // if the course assignment changed, remove the microlearning from the previous course
+          if (previousCourseId && values.courseId !== previousCourseId) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                return {
+                  course: {
+                    ...data.course,
+                    groupActivitiesInfo:
+                      data.course.groupActivitiesInfo?.filter(
+                        (ga) => ga.id !== res.editGroupActivity!.id
+                      ),
+                  },
+                }
+              }
+            )
+          }
+
+          // updated / add the group activity in the currently assigned course
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,

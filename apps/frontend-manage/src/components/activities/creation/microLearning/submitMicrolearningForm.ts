@@ -17,8 +17,9 @@ import {
   MicroLearningFormValues,
 } from '../WizardLayout'
 
-interface MicroLearningFormProps {
+interface MicroLearningFormSubmissionProps {
   id?: string
+  previousCourseId?: string
   values: MicroLearningFormValues
   editMode: boolean
   createMicroLearning: (
@@ -48,6 +49,7 @@ interface MicroLearningFormProps {
 
 async function submitMicrolearningForm({
   id,
+  previousCourseId,
   values,
   editMode,
   createMicroLearning,
@@ -55,7 +57,7 @@ async function submitMicrolearningForm({
   setSelectedCourseId,
   setIsWizardCompleted,
   onError,
-}: MicroLearningFormProps) {
+}: MicroLearningFormSubmissionProps) {
   try {
     let success = false
 
@@ -93,7 +95,28 @@ async function submitMicrolearningForm({
           // if the mutation was not successful, return early
           if (!res?.editMicroLearning) return
 
-          // change the status of the microlearning on the course overview back to draft
+          // if the course assignment changed, remove the microlearning from the previous course
+          if (previousCourseId && values.courseId !== previousCourseId) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                const activities =
+                  data.course.microLearningsInfo?.filter(
+                    (ml) => ml.id !== res.editMicroLearning!.id
+                  ) ?? []
+                return {
+                  course: { ...data.course, microLearningsInfo: activities },
+                }
+              }
+            )
+          }
+
+          // updated / add the microlearning in the currently assigned course
           cache.updateQuery(
             {
               query: GetSingleCourseDocument,
@@ -104,7 +127,7 @@ async function submitMicrolearningForm({
 
               const activities = [
                 ...(data.course.microLearningsInfo?.filter(
-                  (ga) => ga.id !== res.editMicroLearning!.id
+                  (ml) => ml.id !== res.editMicroLearning!.id
                 ) ?? []),
                 res.editMicroLearning!,
               ]

@@ -276,6 +276,7 @@ function LiveQuizWizard({
     async (values: LiveQuizFormValues) => {
       submitLiveQuizForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         editMode,
         values,
         createLiveQuiz,

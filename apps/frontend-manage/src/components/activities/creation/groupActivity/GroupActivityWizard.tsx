@@ -310,6 +310,7 @@ function GroupActivityWizard({
     async (values: GroupActivityFormValues) => {
       submitGroupActivityForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         createGroupActivity,
         editGroupActivity,

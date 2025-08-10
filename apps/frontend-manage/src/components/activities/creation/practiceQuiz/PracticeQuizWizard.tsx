@@ -260,6 +260,7 @@ function PracticeQuizWizard({
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         editMode,
         createPracticeQuiz,
