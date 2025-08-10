@@ -64,6 +64,7 @@ function ActivityCreation({
         (editMode !== ActivityType.LiveQuiz &&
           duplicationMode !== ActivityType.LiveQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
+      fetchPolicy: 'network-only',
     }
   )
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
@@ -75,6 +76,7 @@ function ActivityCreation({
         (editMode !== ActivityType.MicroLearning &&
           duplicationMode !== ActivityType.MicroLearning &&
           conversionMode !== 'microLearningToPracticeQuiz'),
+      fetchPolicy: 'network-only',
     }
   )
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
@@ -86,6 +88,7 @@ function ActivityCreation({
         (editMode !== ActivityType.PracticeQuiz &&
           duplicationMode !== ActivityType.PracticeQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
+      fetchPolicy: 'network-only',
     }
   )
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
@@ -96,6 +99,7 @@ function ActivityCreation({
         !activityId ||
         (editMode !== ActivityType.GroupActivity &&
           duplicationMode !== ActivityType.GroupActivity),
+      fetchPolicy: 'network-only',
     }
   )
 
