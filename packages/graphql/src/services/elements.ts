@@ -239,11 +239,11 @@ export async function getUserElements(
   }
 }
 
-export async function getSingleQuestion(
+export async function getSingleElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.element.findUnique({
+  const element = await ctx.prisma.element.findUnique({
     where: { id, permissions: { some: { userId: ctx.user.sub } } },
     include: {
       permissions: {
@@ -257,15 +257,15 @@ export async function getSingleQuestion(
     },
   })
 
-  if (!question) {
+  if (!element) {
     return null
   }
 
-  const selectedItemIds = question.answerCollectionItems.map((item) => item.id)
-  const permission = question.permissions[0]
+  const selectedItemIds = element.answerCollectionItems.map((item) => item.id)
+  const permission = element.permissions[0]
 
   return {
-    ...question,
+    ...element,
     permissionLevel: permission!.permissionLevel,
     derivedAccess: permission!.derived,
     isOwner: permission!.permissionLevel === DB.PermissionLevel.OWNER,
@@ -277,13 +277,13 @@ export async function getSingleQuestion(
       permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
       permission!.permissionLevel === DB.PermissionLevel.WRITE,
     options: {
-      ...question.options,
+      ...element.options,
       // SE elements
-      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollection: { id: element.answerCollectionId, entries: [] },
       // SE elements
       answerCollectionSolutionIds: selectedItemIds,
       // CS elements
-      answerCollectionId: question.answerCollectionId,
+      answerCollectionId: element.answerCollectionId,
       // CS elements
       collectionItemIds: selectedItemIds,
     },
@@ -372,7 +372,7 @@ export async function getSingleElementInstance(
   return instance
 }
 
-export async function manipulateQuestion(
+export async function manipulateElement(
   {
     id,
     status,
@@ -412,7 +412,7 @@ export async function manipulateQuestion(
 
   // fetch the existing element to compare before/after state
   const isNewElement = typeof id === 'undefined' || id === null
-  const questionPrev = !isNewElement
+  const elementPrev = !isNewElement
     ? await ctx.prisma.element.findUnique({
         where: { id: id, isDeleted: false },
         include: {
@@ -423,8 +423,8 @@ export async function manipulateQuestion(
     : undefined
 
   // determine which tags have been deconnected
-  if (questionPrev?.tags) {
-    tagsToDisconnect = questionPrev.tags
+  if (elementPrev?.tags) {
+    tagsToDisconnect = elementPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
@@ -469,11 +469,8 @@ export async function manipulateQuestion(
   }
 
   // (SE only) determine which answer options are no longer considered to be correct
-  if (
-    type === DB.ElementType.SELECTION &&
-    questionPrev?.answerCollectionItems
-  ) {
-    const prevSolutionsIds = questionPrev.answerCollectionItems.map(
+  if (type === DB.ElementType.SELECTION && elementPrev?.answerCollectionItems) {
+    const prevSolutionsIds = elementPrev.answerCollectionItems.map(
       (sol) => sol.id
     )
     collectionAnswersToDisconnect = options?.hasSampleSolution
@@ -485,9 +482,9 @@ export async function manipulateQuestion(
   // (similar to selection questions, but not dependent on definition of a sample solution)
   if (
     type === DB.ElementType.CASE_STUDY &&
-    questionPrev?.answerCollectionItems
+    elementPrev?.answerCollectionItems
   ) {
-    const previousItemIds = questionPrev.answerCollectionItems.map(
+    const previousItemIds = elementPrev.answerCollectionItems.map(
       (item) => item.id
     )
     collectionAnswersToDisconnect = previousItemIds.filter(
@@ -495,7 +492,7 @@ export async function manipulateQuestion(
     )
   }
 
-  const question = await ctx.prisma.element.upsert({
+  const element = await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
@@ -587,18 +584,18 @@ export async function manipulateQuestion(
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(
-    { elementId: question.id, userId: ctx.user.sub },
+    { elementId: element.id, userId: ctx.user.sub },
     ctx.prisma
   )
 
-  // if the answer collection linked to the question has changed, recompute the derived permissions for the removed answer collection
+  // if the answer collection linked to the element has changed, recompute the derived permissions for the removed answer collection
   if (
-    questionPrev?.answerCollectionId !== null &&
-    typeof questionPrev?.answerCollectionId !== 'undefined' &&
-    question.answerCollectionId !== questionPrev.answerCollectionId
+    elementPrev?.answerCollectionId !== null &&
+    typeof elementPrev?.answerCollectionId !== 'undefined' &&
+    element.answerCollectionId !== elementPrev.answerCollectionId
   ) {
     await recomputeDerivedPermissions(
-      { answerCollectionId: questionPrev.answerCollectionId },
+      { answerCollectionId: elementPrev.answerCollectionId },
       ctx.prisma
     )
   }
@@ -611,18 +608,18 @@ export async function manipulateQuestion(
       data: {
         type: DB.ActivityLogType.CREATION,
         objectType: DB.ObjectType.ELEMENT,
-        elementId: question.id,
+        elementId: element.id,
         userId: ctx.user.sub,
-        createdAt: question.createdAt,
-        updatedAt: question.updatedAt,
+        createdAt: element.createdAt,
+        updatedAt: element.updatedAt,
       },
     })
-  } else if (questionPrev) {
+  } else if (elementPrev) {
     // track title changes
-    if (name && name !== questionPrev.name) {
+    if (name && name !== elementPrev.name) {
       const modificationDetails: ActivityLogModificationDetails = {
         field: ActivityLogModificationFieldType.TITLE,
-        oldValue: questionPrev.name,
+        oldValue: elementPrev.name,
         newValue: name,
       }
 
@@ -631,7 +628,7 @@ export async function manipulateQuestion(
           type: DB.ActivityLogType.MODIFICATION,
           modificationDetails,
           objectType: DB.ObjectType.ELEMENT,
-          elementId: question.id,
+          elementId: element.id,
           userId: ctx.user.sub,
         },
       })
@@ -640,7 +637,7 @@ export async function manipulateQuestion(
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
-    id: question.id,
+    id: element.id,
   })
 
   if (
@@ -654,19 +651,19 @@ export async function manipulateQuestion(
   }
 
   return {
-    ...question,
+    ...element,
     options: {
-      ...question.options,
+      ...element.options,
       // SE elements
-      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollection: { id: element.answerCollectionId, entries: [] },
       // SE elements
-      answerCollectionSolutionIds: question.answerCollectionItems.map(
+      answerCollectionSolutionIds: element.answerCollectionItems.map(
         (sol) => sol.id
       ),
       // CS elements
-      answerCollectionId: question.answerCollectionId,
+      answerCollectionId: element.answerCollectionId,
       // CS elements
-      collectionItemIds: question.answerCollectionItems.map((item) => item.id),
+      collectionItemIds: element.answerCollectionItems.map((item) => item.id),
     },
   }
 }
@@ -718,7 +715,7 @@ export async function deleteElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  // soft delete question and disconnect linked answer collection and sample solutions
+  // soft delete element and disconnect linked answer collection and sample solutions
   const { deletedElement, originalElement } = await ctx.prisma.$transaction(
     async (prisma) => {
       const originalElement = await prisma.element.findUnique({ where: { id } })
@@ -752,7 +749,7 @@ export async function deleteElement(
         )
       }
 
-      // if the element was linked to any tags, check if the tags still have other questions linked to it
+      // if the element was linked to any tags, check if the tags still have other elements linked to it
       for (const tag of element.tags) {
         const elementTag = await prisma.tag.findUnique({
           where: { id: tag.id },
@@ -1050,7 +1047,7 @@ export async function getInstanceUpdateActivities(
   ctx: ContextWithUser
 ) {
   // fetch meta information on all activities that would be affected by the element update
-  // fetch the question and return null, if the question does not exist
+  // fetch the element and return null, if the element does not exist
   const acceptedStatusValues = includeTemplateInstances
     ? [
         DB.PublicationStatus.DRAFT,
@@ -1390,7 +1387,7 @@ export async function updateElementInstances(
   }: { elementId: number; includeTemplates: boolean },
   ctx: ContextWithUser
 ) {
-  // fetch the question and return null, if the question does not exist
+  // fetch the element and return null, if the element does not exist
   const acceptedStatusValues = includeTemplates
     ? [
         DB.PublicationStatus.DRAFT,

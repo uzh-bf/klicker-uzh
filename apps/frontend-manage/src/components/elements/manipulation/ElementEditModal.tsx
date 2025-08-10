@@ -3,7 +3,7 @@ import {
   CreateAnswerCollectionDocument,
   ElementType,
   FlagOutdatedElementInstancesDocument,
-  GetSingleQuestionDocument,
+  GetSingleElementDocument,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
@@ -71,7 +71,7 @@ function ElementEditModal({
     )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
-    GetSingleQuestionDocument,
+    GetSingleElementDocument,
     {
       variables: { id: elementId! },
       skip: typeof elementId === 'undefined' || !isOpen,
@@ -118,7 +118,7 @@ function ElementEditModal({
 
   const initialValues = useElementFormInitialValues({
     mode,
-    question: dataQuestion?.question,
+    question: dataQuestion?.element,
     isDuplication,
   })
 

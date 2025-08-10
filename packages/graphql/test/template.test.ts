@@ -15,7 +15,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { updateElementInstances } from '../src/services/questions.js'
+import { updateElementInstances } from '../src/services/elements.js'
 import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,

@@ -1,5 +1,5 @@
-query GetSingleQuestion($id: Int!) {
-  question(id: $id) {
+query GetSingleElement($id: Int!) {
+  element(id: $id) {
     __typename
 
     ... on ChoicesElement {
