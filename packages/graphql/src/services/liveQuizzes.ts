@@ -702,7 +702,23 @@ export async function manipulateLiveQuiz(
             take: 1,
           },
           course: {
-            include: { _count: { select: { participantGroups: true } } },
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           blocks: {
             include: { _count: { select: { elements: true } } },
@@ -754,6 +770,7 @@ export async function manipulateLiveQuiz(
     templateId: activity.templateInfo?.id ?? null,
     name: activity.name,
     displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
     type: ActivityType.LIVE_QUIZ,
     status: activity.status,
     courseId: activity.course?.id,
@@ -777,6 +794,14 @@ export async function manipulateLiveQuiz(
     isExecutor,
     isShared,
     isRemovable,
+    isActivityReviewer:
+      !id || // activity creation -> automatically activity owner
+      (activity.courseId === null &&
+        (activity.permissions[0]?.permissionLevel ===
+          DB.PermissionLevel.OWNER ||
+          activity.permissions[0]?.permissionLevel ===
+            DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
+      (!!activity.course && activity.course._count.permissions > 0), // live quiz in course -> course admin
     sharingType,
     updatedAt: activity.updatedAt,
   }

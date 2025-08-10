@@ -352,7 +352,23 @@ export async function manipulateMicroLearning(
             take: 1,
           },
           course: {
-            include: { _count: { select: { participantGroups: true } } },
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           stacks: {
             include: { _count: { select: { elements: true } } },
@@ -408,6 +424,7 @@ export async function manipulateMicroLearning(
     templateId: activity.templateInfo?.id ?? null,
     name: activity.name,
     displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
     type: ActivityType.MICRO_LEARNING,
     status: activity.status,
     courseId: activity.course?.id,
@@ -433,6 +450,7 @@ export async function manipulateMicroLearning(
     isExecutor,
     isShared,
     isRemovable,
+    isActivityReviewer: activity.course._count.permissions > 0,
     sharingType,
     updatedAt: activity.updatedAt,
   }
