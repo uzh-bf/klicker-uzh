@@ -410,7 +410,7 @@ function CourseManipulationModal({
                       className={{
                         label: 'font-bold text-gray-600',
                       }}
-                      data={{ cy: 'toggle-group-creation-enabled' }}
+                      data={{ cy: 'course-group-creation' }}
                     />
                   </div>
                   {values.isGamificationEnabled &&

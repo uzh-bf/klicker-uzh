@@ -280,6 +280,17 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
                 },
               },
               templateInfo: { select: { id: true } },
@@ -287,7 +298,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              // _count: { select: { permissions: true } }, // ? shared user counts left out for efficiency on activity list
+              _count: { select: { directPermissions: true } },
             },
           },
           practiceQuiz: {
@@ -298,6 +309,17 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
                 },
               },
               templateInfo: { select: { id: true } },
@@ -305,7 +327,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              // _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
           microLearning: {
@@ -316,6 +338,17 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
                 },
               },
               templateInfo: { select: { id: true } },
@@ -323,20 +356,33 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              // _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
           groupActivity: {
             include: {
               course: {
-                include: { _count: { select: { participantGroups: true } } },
+                include: {
+                  _count: { select: { participantGroups: true } },
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
               },
               templateInfo: { select: { id: true } },
               stacks: {
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              // _count: { select: { permissions: true } },
+              _count: { select: { directPermissions: true } },
             },
           },
         },
@@ -377,6 +423,7 @@ export async function getUserActivities(
         templateId: object.liveQuiz.templateInfo?.id ?? null,
         name: object.liveQuiz.name,
         displayName: object.liveQuiz.displayName,
+        reviewStatus: object.liveQuiz.reviewStatus,
         type: ActivityType.LIVE_QUIZ,
         status: object.liveQuiz.status,
         courseId: object.liveQuiz.course?.id,
@@ -393,13 +440,21 @@ export async function getUserActivities(
         areInstancesOutdated: object.liveQuiz.areInstancesOutdated,
         isGamificationEnabled: object.liveQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.liveQuiz.isAssessmentEnabled,
-        numSharedUsers: undefined, // object.liveQuiz._count.permissions - 1,
+        numSharedUsers: isManager
+          ? object.liveQuiz._count.directPermissions
+          : undefined,
         isOwner,
         isManager,
         isEditor,
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer:
+          (object.liveQuiz.courseId === null &&
+            (object.permissionLevel === DB.PermissionLevel.OWNER ||
+              object.permissionLevel === DB.PermissionLevel.ADMIN)) ||
+          (!!object.liveQuiz.course &&
+            object.liveQuiz.course.permissions.length > 0),
         sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
@@ -414,6 +469,7 @@ export async function getUserActivities(
         templateId: object.practiceQuiz.templateInfo?.id ?? null,
         name: object.practiceQuiz.name,
         displayName: object.practiceQuiz.displayName,
+        reviewStatus: object.practiceQuiz.reviewStatus,
         type: ActivityType.PRACTICE_QUIZ,
         status: object.practiceQuiz.status,
         courseId: object.practiceQuiz.course?.id,
@@ -431,13 +487,16 @@ export async function getUserActivities(
         areInstancesOutdated: object.practiceQuiz.areInstancesOutdated,
         isGamificationEnabled: object.practiceQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.practiceQuiz.isAssessmentEnabled,
-        numSharedUsers: undefined, // object.practiceQuiz._count.permissions - 1,
+        numSharedUsers: isManager
+          ? object.practiceQuiz._count.directPermissions
+          : undefined,
         isOwner,
         isManager,
         isEditor,
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer: object.practiceQuiz.course.permissions.length > 0,
         sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
@@ -452,6 +511,7 @@ export async function getUserActivities(
         templateId: object.microLearning.templateInfo?.id ?? null,
         name: object.microLearning.name,
         displayName: object.microLearning.displayName,
+        reviewStatus: object.microLearning.reviewStatus,
         type: ActivityType.MICRO_LEARNING,
         status: object.microLearning.status,
         courseId: object.microLearning.course?.id,
@@ -470,13 +530,16 @@ export async function getUserActivities(
         areInstancesOutdated: object.microLearning.areInstancesOutdated,
         isGamificationEnabled: object.microLearning.isGamificationEnabled,
         isAssessmentEnabled: object.microLearning.isAssessmentEnabled,
-        numSharedUsers: undefined, // object.microLearning._count.permissions - 1,
+        numSharedUsers: isManager
+          ? object.microLearning._count.directPermissions
+          : undefined,
         isOwner,
         isManager,
         isEditor,
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer: object.microLearning.course.permissions.length > 0,
         sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
@@ -491,6 +554,7 @@ export async function getUserActivities(
         templateId: object.groupActivity.templateInfo?.id ?? null,
         name: object.groupActivity.name,
         displayName: object.groupActivity.displayName,
+        reviewStatus: object.groupActivity.reviewStatus,
         type: ActivityType.GROUP_ACTIVITY,
         status: object.groupActivity.status,
         courseId: object.groupActivity.course?.id,
@@ -512,13 +576,16 @@ export async function getUserActivities(
         areInstancesOutdated: object.groupActivity.areInstancesOutdated,
         isGamificationEnabled: object.groupActivity.isGamificationEnabled,
         isAssessmentEnabled: object.groupActivity.isAssessmentEnabled,
-        numSharedUsers: undefined, // object.groupActivity._count.permissions - 1,
+        numSharedUsers: isManager
+          ? object.groupActivity._count.directPermissions
+          : undefined,
         isOwner,
         isManager,
         isEditor,
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer: object.groupActivity.course.permissions.length > 0,
         sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }
@@ -588,7 +655,29 @@ export async function getLiveQuizDetails(
     include: {
       course: true,
       blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -614,6 +703,7 @@ export async function getLiveQuizDetails(
         ((elementData.options as { hasSampleSolution?: boolean })
           .hasSampleSolution ??
           false)
+      const isEditor = !!instance.element.permissions?.[0]
 
       if (!arePointsAwarded) {
         return {
@@ -622,6 +712,7 @@ export async function getLiveQuizDetails(
           bonusPoints: 0,
           totalPoints: 0,
           hasSampleSolution,
+          isEditor,
           instance,
         }
       }
@@ -647,6 +738,7 @@ export async function getLiveQuizDetails(
         bonusPoints,
         totalPoints,
         hasSampleSolution,
+        isEditor,
         instance,
       }
     })
@@ -740,7 +832,11 @@ function getAsyncActivityPointsElements({
   isGroupActivity = false,
   arePointsAwarded,
 }: {
-  stack: DB.ElementStack & { elements: DB.ElementInstance[] }
+  stack: DB.ElementStack & {
+    elements: (DB.ElementInstance & {
+      element: DB.Element & { permissions: DB.DerivedPermission[] }
+    })[]
+  }
   isGroupActivity?: boolean
   arePointsAwarded: boolean
 }) {
@@ -748,6 +844,7 @@ function getAsyncActivityPointsElements({
     elements: {
       totalPoints: number
       hasSampleSolution: boolean
+      isEditor: boolean
       instance: DB.ElementInstance
     }[]
     stackPoints: number
@@ -766,7 +863,13 @@ function getAsyncActivityPointsElements({
                 instance.elementData.options.hasSampleSolution) ??
               false,
           }
-      acc.elements.push({ totalPoints: points, hasSampleSolution, instance })
+
+      acc.elements.push({
+        totalPoints: points,
+        hasSampleSolution,
+        isEditor: !!instance.element.permissions?.[0],
+        instance,
+      })
       acc.stackPoints += points
       return acc
     },
@@ -792,7 +895,29 @@ export async function getPracticeQuizDetails(
     where: { id },
     include: {
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -835,7 +960,29 @@ export async function getMicroLearningDetails(
     where: { id },
     include: {
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -882,7 +1029,29 @@ export async function getGroupActivityDetails(
         include: { _count: { select: { participantGroups: true } } },
       },
       stacks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -921,4 +1090,116 @@ export async function getGroupActivityDetails(
     totalPoints,
     stacks,
   }
+}
+
+export async function setActivityReviewStatus(
+  {
+    activityId,
+    activityType,
+    isReviewed,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    isReviewed: boolean
+  },
+  ctx: ContextWithUser
+) {
+  const reviewStatus = isReviewed
+    ? DB.ReviewStatus.REVIEWED
+    : DB.ReviewStatus.INCOMPLETE
+  const acceptedPermissionLevels = [
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
+  try {
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      const liveQuiz = await ctx.prisma.liveQuiz.update({
+        where: {
+          id: activityId,
+          OR: [
+            {
+              courseId: null,
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionLevel: { in: acceptedPermissionLevels },
+                },
+              },
+            },
+            {
+              courseId: { not: null },
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: { in: acceptedPermissionLevels },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        data: { reviewStatus },
+      })
+
+      return !!liveQuiz ? reviewStatus : null
+    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+      const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+        where: {
+          id: activityId,
+          course: {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        },
+        data: { reviewStatus },
+      })
+
+      return !!practiceQuiz ? reviewStatus : null
+    } else if (activityType === ActivityType.MICRO_LEARNING) {
+      const microLearning = await ctx.prisma.microLearning.update({
+        where: {
+          id: activityId,
+          course: {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        },
+        data: { reviewStatus },
+      })
+
+      return !!microLearning ? reviewStatus : null
+    } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+      const groupActivity = await ctx.prisma.groupActivity.update({
+        where: {
+          id: activityId,
+          course: {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        },
+        data: { reviewStatus },
+      })
+
+      return !!groupActivity ? reviewStatus : null
+    }
+  } catch (error) {
+    console.error('Error setting activity review status:', error)
+    return null
+  }
+
+  return null
 }

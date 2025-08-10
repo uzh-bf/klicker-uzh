@@ -192,8 +192,9 @@ export async function manipulateMicroLearning(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the microlearning exists and is not published
+  let existingActivity: DB.MicroLearning | null = null
   if (id) {
-    const existingActivity = await ctx.prisma.microLearning.findUnique({
+    existingActivity = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
         isDeleted: false,
@@ -266,6 +267,12 @@ export async function manipulateMicroLearning(
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     stacks: {
       create: stacks.map((stack) => {
         return {

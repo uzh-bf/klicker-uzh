@@ -15,6 +15,7 @@ import {
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -56,6 +57,7 @@ function ElementEditModal({
   mode,
   refetchElements,
 }: ElementEditModalProps): React.ReactElement {
+  const router = useRouter()
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
@@ -141,7 +143,18 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
-      onClose={() => handleSetIsOpen(false)}
+      onClose={() => {
+        handleSetIsOpen(false)
+        const { editElementId, ...query } = router.query
+        router.push(
+          {
+            pathname: '/',
+            query,
+          },
+          undefined,
+          { shallow: true }
+        )
+      }}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
@@ -384,6 +397,17 @@ function ElementEditModal({
 
         // close modal
         handleSetIsOpen(false)
+
+        // reset router query element id (if set)
+        const { editElementId, ...query } = router.query
+        router.push(
+          {
+            pathname: '/',
+            query,
+          },
+          undefined,
+          { shallow: true }
+        )
 
         // trigger success toast
         triggerSuccessToast()

@@ -25,6 +25,10 @@ export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
 })
 
+export const ReviewStatus = builder.enumType('ReviewStatus', {
+  values: Object.values(DB.ReviewStatus),
+})
+
 export const ElementStackType = builder.enumType('ElementStackType', {
   values: Object.values(DB.ElementStackType),
 })

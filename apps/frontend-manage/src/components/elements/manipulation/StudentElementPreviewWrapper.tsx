@@ -17,15 +17,18 @@ import { ElementFormTypes } from './types'
 interface StudentElementPreviewWrapperProps {
   values: ElementData | ElementFormTypes
   instance: ElementInstance | undefined
+  initialFeedbacksExplanation?: boolean
 }
 
 function StudentElementPreviewWrapper({
   values,
   instance,
+  initialFeedbacksExplanation = false,
 }: StudentElementPreviewWrapperProps): React.ReactElement {
   const t = useTranslations()
-  const [showFeedbacksExplanation, setShowFeedbacksExplanation] =
-    useState(false)
+  const [showFeedbacksExplanation, setShowFeedbacksExplanation] = useState(
+    initialFeedbacksExplanation
+  )
 
   const explanationOrFeedbacksDefined =
     'explanation' in values &&

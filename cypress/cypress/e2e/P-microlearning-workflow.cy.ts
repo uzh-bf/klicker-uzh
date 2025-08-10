@@ -193,21 +193,29 @@ describe('Different microlearning workflows', function () {
       .contains(this.data.course)
 
     // set the start date to 2 months in the past at 12:30 (default is start of next month)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -3,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: startDate1,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      },
     })
 
     // set the end date to 2 months in the future at 14:00 (default is start of next month)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 1,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: endDate1,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      },
     })
 
     // select multiplier
@@ -368,22 +376,30 @@ describe('Different microlearning workflows', function () {
 
     // check, change and verify the start date
     // (before: 2 months in the past at 12:30, new: 3 months in the past at 10:45)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -1,
-      day: 15,
-      hour: 10,
-      minute: 45,
-      validation: startDate2,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -1,
+        day: 15,
+        hour: 10,
+        minute: 45,
+        validation: startDate2,
+      },
     })
 
     // check, change and verify the end date
     // (before: 2 months in the future at 14:00, new: 5 months in the future at 16:00)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 3,
-      day: 15,
-      hour: 16,
-      minute: 0,
-      validation: endDate2,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 3,
+        day: 15,
+        hour: 16,
+        minute: 0,
+        validation: endDate2,
+      },
     })
 
     // update the activity multiplier
@@ -758,12 +774,16 @@ describe('Different microlearning workflows', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: 3,
-      day: 15,
-      hour: 18,
-      minute: 50,
-      validation: extensionDate,
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: 3,
+        day: 15,
+        hour: 18,
+        minute: 50,
+        validation: extensionDate,
+      },
     })
 
     cy.get('[data-cy="extend-activity-confirm"]').click()
@@ -777,12 +797,16 @@ describe('Different microlearning workflows', function () {
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: -12,
-      day: 15,
-      hour: 12,
-      minute: 0,
-      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: -12,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
@@ -1548,7 +1572,7 @@ describe('Different microlearning workflows', function () {
     )
   })
 
-  it('Edit the selection questions and edit & save the microlearning without making any changes', function () {
+  it('Edit the selection question and edit & save the microlearning without making any changes', function () {
     cy.loginLecturer()
 
     // modify numerical question
@@ -1562,6 +1586,7 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.newSEContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the unmodified practice quiz
     cy.get('[data-cy="courses"]').click()
@@ -1947,7 +1972,6 @@ describe('Different microlearning workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -3361,37 +3385,48 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 80 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('60 P.')
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-stack-header-1"]').contains('60 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -3443,13 +3478,11 @@ describe('Different microlearning workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '20 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '60 P.'
     )
@@ -3458,27 +3491,17 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 2 })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 2 })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })

@@ -63,12 +63,14 @@ function PracticeQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
   refetchActivities,
 }: {
   practiceQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
   refetchActivities?: () => Promise<void>
 }) {
   const [publishModal, setPublishModal] = useState(false)
@@ -134,6 +136,7 @@ function PracticeQuizActions({
         activityId={practiceQuiz.id}
         activityName={practiceQuiz.name}
         activityType={practiceQuiz.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {publishModal && (

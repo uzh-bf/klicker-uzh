@@ -383,6 +383,11 @@ export default {
       month: 'Month',
       week: 'Week',
       day: 'Day',
+      total: 'Total',
+      reviewed: 'Reviewed',
+      modifiedAfterReview: 'Modified after review',
+      modifiedAfterReviewInformation:
+        'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1107,6 +1112,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       actionsLegend: 'Actions Legend',
       activityDetailsNoInstanceSelected:
         'Please select an element from a block to view a preview and the corresponding scoring.',
+      previewElement: 'Preview Element',
+      editElement: 'Edit Element',
+      noElementEditPermissions:
+        'You do not have sufficient permissions to edit this element.',
+      activityInformation: 'Activity Information',
+      activityMultiplier: 'Activity Multiplier',
+      reviewCompleted: 'Review completed',
+      resetReview: 'Reset Review',
+      reviewStatusUpdated: 'Review status updated successfully',
+      reviewStatusUpdateFailed: 'Update of review status failed',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

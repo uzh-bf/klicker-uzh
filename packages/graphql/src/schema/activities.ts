@@ -6,8 +6,8 @@ import {
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
-import { PublicationStatus } from './practiceQuiz.js'
-import { ElementInstance, IElementInstance } from './question.js'
+import { PublicationStatus, ReviewStatus } from './practiceQuiz.js'
+import { ElementInstanceRef, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
 
@@ -17,6 +17,7 @@ interface IActivityInfoElement {
   bonusPoints?: number | null
   totalPoints: number
   hasSampleSolution: boolean
+  isEditor: boolean
   instance: IElementInstance
 }
 
@@ -31,8 +32,9 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
     bonusPoints: t.exposeInt('bonusPoints', { nullable: true }),
     totalPoints: t.exposeInt('totalPoints'),
     hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+    isEditor: t.exposeBoolean('isEditor'),
     instance: t.expose('instance', {
-      type: ElementInstance,
+      type: ElementInstanceRef,
     }),
   }),
 })
@@ -79,6 +81,8 @@ export interface IActivityInfo {
 
   name: string
   displayName: string
+  reviewStatus: DB.ReviewStatus
+
   type: ActivityTypeEnum
   status: DB.PublicationStatus
 
@@ -107,6 +111,7 @@ export interface IActivityInfo {
   isShared: boolean
   isExecutor: boolean
   isRemovable: boolean
+  isActivityReviewer: boolean
   sharingType: SharingTypeEnum
 
   updatedAt: Date
@@ -121,6 +126,8 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
+    reviewStatus: t.expose('reviewStatus', { type: ReviewStatus }),
+
     type: t.expose('type', { type: ActivityType }),
     status: t.expose('status', { type: PublicationStatus }),
 
@@ -174,6 +181,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
     isExecutor: t.exposeBoolean('isExecutor'),
     isShared: t.exposeBoolean('isShared'),
     isRemovable: t.exposeBoolean('isRemovable'),
+    isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
     sharingType: t.expose('sharingType', { type: SharingType }),
 
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

@@ -27,9 +27,10 @@ import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
-import ActivityDetailsModal from './ActivityDetailsModal'
 import ActivityNameChangeModal from './ActivityNameChangeModal'
+import ActivityReviewStatus from './ActivityReviewStatus'
 import AssessmentBadge from './AssessmentBadge'
+import ActivityDetailsModal from './details/ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
 import MicrolearningActions from './MicrolearningActions'
@@ -201,10 +202,12 @@ function ActivityListEntry({
           </div>
         </div>
         <div className="gap-4.5 flex flex-col items-end">
-          <div className="flex flex-row items-center gap-4">
+          <div className="-mt-1 flex flex-row items-center">
+            <ActivityReviewStatus reviewStatus={activity.reviewStatus} />
+
             {activity.numSharedUsers && activity.isManager ? (
               <div
-                className="hover:text-primary-100 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
+                className="hover:text-primary-100 ml-2 mr-3 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -222,6 +225,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -231,6 +235,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -240,6 +245,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -249,6 +255,7 @@ function ActivityListEntry({
                 isTemplate={!!activity.templateId}
                 sharingModal={sharingModal}
                 setSharingModal={setSharingModal}
+                setShowDetails={setShowDetails}
                 refetchActivities={refetchActivities}
               />
             ) : null}
@@ -290,6 +297,7 @@ function ActivityListEntry({
         <ActivityDetailsModal
           activity={activity}
           onClose={() => setShowDetails(false)}
+          refetchActivities={refetchActivities}
         />
       )}
       {changeName && (

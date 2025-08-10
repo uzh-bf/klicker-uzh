@@ -385,6 +385,11 @@ export default {
       month: 'Monat',
       week: 'Woche',
       day: 'Tag',
+      total: 'Total',
+      reviewed: 'Gereviewt',
+      modifiedAfterReview: 'Nach Review verändert',
+      modifiedAfterReviewInformation:
+        'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1109,6 +1114,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       actionsLegend: 'Aktionen für Aktivitäten',
       activityDetailsNoInstanceSelected:
         'Bitte wählen Sie ein Element aus einem Block, um eine Vorschau und die entsprechende Bepunktung einzusehen.',
+      previewElement: 'Elementvorschau',
+      editElement: 'Element bearbeiten',
+      noElementEditPermissions:
+        'Sie haben nicht aussreichende Berechtigungen, um dieses Element zu bearbeiten.',
+      activityInformation: 'Aktivitätsinformationen',
+      activityMultiplier: 'Aktivitäts-Multiplikator',
+      reviewCompleted: 'Review abgeschlossen',
+      resetReview: 'Review zurücksetzen',
+      reviewStatusUpdated: 'Review-Status erfolgreich aktualisiert',
+      reviewStatusUpdateFailed:
+        'Aktualisierung des Review-Status fehlgeschlagen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

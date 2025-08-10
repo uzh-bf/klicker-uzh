@@ -545,8 +545,9 @@ export async function manipulateLiveQuiz(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the live quiz exists and is not published
+  let existingActivity: DB.LiveQuiz | null = null
   if (id) {
-    const existingActivity = await ctx.prisma.liveQuiz.findUnique({
+    existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
     })
 
@@ -618,6 +619,12 @@ export async function manipulateLiveQuiz(
     isLiveQAEnabled,
     isModerationEnabled,
     areInstancesOutdated: anyInstanceOutdated,
+    reviewStatus:
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     blocks: {
       create: blocks.map((block) => ({
         order: block.order,

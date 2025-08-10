@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
@@ -20,6 +21,7 @@ export interface ActivityLogProps {
   isResolvingMessage?: boolean
   // Optional flag to indicate if the modal/component is currently visible
   visible?: boolean
+  className?: string
 }
 
 /**
@@ -32,6 +34,7 @@ function ActivityLog({
   onResolveMessage: propOnResolveMessage,
   isResolvingMessage: propIsResolvingMessage,
   visible = true,
+  className = '',
 }: ActivityLogProps) {
   const t = useTranslations()
   const [message, setMessage] = useState('')
@@ -150,7 +153,10 @@ function ActivityLog({
       </div> */}
 
       <div
-        className="max-h-80 overflow-y-auto scroll-smooth p-2"
+        className={twMerge(
+          'max-h-80 overflow-y-auto scroll-smooth p-2',
+          className
+        )}
         style={{ overscrollBehavior: 'contain' }}
         ref={(el) => {
           // scroll to bottom when component mounts or updates

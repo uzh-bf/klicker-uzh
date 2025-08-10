@@ -81,12 +81,14 @@ function LiveQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
   refetchActivities,
 }: {
   liveQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -211,6 +213,7 @@ function LiveQuizActions({
         activityId={liveQuiz.id}
         activityName={liveQuiz.name}
         activityType={liveQuiz.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {deletionModal && (

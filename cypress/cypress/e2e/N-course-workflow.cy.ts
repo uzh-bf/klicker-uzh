@@ -224,11 +224,9 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
+    cy.get('[data-cy="course-group-creation"]').should('be.disabled')
     cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
     cy.get('[data-cy="max-group-size"]').should('not.exist')
     cy.get('[data-cy="preferred-group-size"]').should('not.exist')
@@ -236,7 +234,7 @@ describe('Test course creation and editing functionalities', function () {
     // check if the values of the form are properly reset if gamification is disabled
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').click()
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
@@ -244,10 +242,8 @@ describe('Test course creation and editing functionalities', function () {
 
     // change group settings
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
+    cy.get('[data-cy="course-group-creation"]').click()
 
     // enter an invalid group creation deadline date (after end date - 10 months in the future)
     // when field becomes visible, it is initialized with the current course date
@@ -685,8 +681,8 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+    cy.get('[data-cy="course-group-creation"]').click()
+    cy.get('[data-cy="course-group-creation"]').should(
       'have.attr',
       'data-state',
       'checked'

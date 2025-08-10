@@ -1054,33 +1054,33 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
         monthDelta: -36,
         day: 15,
         hour: 12,
         minute: 0,
         validation: getDatetimeValidationString(-36, '15') + ', 12:00',
-      }
-    ) // select publication date 3 years in the past -> course start date is beginning of the previous year
+      },
+    }) // select publication date 3 years in the past -> course start date is beginning of the previous year
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
 
     // set future publication date
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
         monthDelta: 40,
         day: 15,
         hour: 12,
         minute: 0,
         validation: getDatetimeValidationString(4, '15') + ', 12:00',
-      }
-    ) // select publication date 4 months in the future
+      },
+    }) // select publication date 4 months in the future
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1148,17 +1148,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
         monthDelta: -1,
         day: 15,
         hour: 12,
         minute: 0,
         validation: getDatetimeValidationString(-1, '15') + ', 12:00',
-      }
-    ) // set last month as a publication date (within the course runtime, but past)
+      },
+    }) // set last month as a publication date (within the course runtime, but past)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1244,6 +1244,7 @@ describe('Different practice quiz workflows', function () {
       .clear()
       .type(this.data.manipulation.newNRContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the unmodified practice quiz
     cy.get('[data-cy="courses"]').click()
@@ -1524,7 +1525,6 @@ describe('Different practice quiz workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -2679,38 +2679,49 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 100 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('80 P.')
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-stack-header-1"]').contains('80 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -2749,13 +2760,11 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '20 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '80 P.'
     )
@@ -2764,28 +2773,18 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 2 })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 2 })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })

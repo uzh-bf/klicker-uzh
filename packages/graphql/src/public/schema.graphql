@@ -59,6 +59,7 @@ type ActivityInfo {
   displayName: String!
   groupDeadlineDate: Date
   id: String!
+  isActivityReviewer: Boolean!
   isAssessmentEnabled: Boolean
   isEditor: Boolean!
   isExecutor: Boolean!
@@ -73,6 +74,7 @@ type ActivityInfo {
   numOfStacks: Int!
   numSharedUsers: Int
   permissionLevel: PermissionLevel!
+  reviewStatus: ReviewStatus!
   scheduledEndAt: Date
   scheduledStartAt: Date
   sharingType: SharingType!
@@ -88,6 +90,7 @@ type ActivityInfoElement {
   correctnessPoints: Int
   hasSampleSolution: Boolean!
   instance: ElementInstance!
+  isEditor: Boolean!
   totalPoints: Int!
 }
 
@@ -1713,6 +1716,7 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
+  setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2253,6 +2257,12 @@ input ResponseInput {
   choices: [ChoicesResponse!]
   selection: [Int!]
   value: String
+}
+
+enum ReviewStatus {
+  INCOMPLETE
+  MODIFIED_AFTER_REVIEW
+  REVIEWED
 }
 
 type SelectionActivityEvaluationData {
