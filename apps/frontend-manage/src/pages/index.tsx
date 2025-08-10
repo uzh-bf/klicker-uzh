@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
@@ -12,10 +13,10 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useState } from 'react'
 import { isEmpty } from 'remeda'
+import ElementBatchOperationsModal from '~/components/elements/manipulation/ElementBatchOperationsModal'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
-import ArchiveActionButtons from '../components/elements/ArchiveActionButtons'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSorting from '../components/elements/ElementListSorting'
@@ -40,6 +41,7 @@ function Index() {
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
+  const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -316,6 +318,11 @@ function Index() {
                           const allElements = elements.reduce<
                             Record<number, Element>
                           >((acc, element) => {
+                            // if activity creation is open, only select elements with manager access
+                            if (creationMode && !element.isManager) {
+                              return acc
+                            }
+
                             acc[element.id] = element
                             return acc
                           }, {})
@@ -327,10 +334,6 @@ function Index() {
                     }}
                     className={{ root: 'border-unset' }}
                   />
-                  {/* {t('manage.questionPool.numSelected', {
-                    count: Object.keys(selectedElementContent).length,
-                    total: elements.length ?? 0,
-                  })} */}
                 </div>
 
                 <ElementListSearch setSearchString={setSearchString} />
@@ -340,7 +343,7 @@ function Index() {
                   handleSortOrderToggle={handleSortOrderToggle}
                 />
 
-                {Object.keys(selectedElements).length > 0 && (
+                {/* {Object.keys(selectedElements).length > 0 && (
                   <ArchiveActionButtons
                     selectedElements={selectedElements}
                     setSelectedElements={setSelectedElements}
@@ -348,26 +351,44 @@ function Index() {
                       await refetchElements()
                     }}
                   />
-                )}
+                )} */}
               </div>
-              <Button
-                primary
-                onClick={() => {
-                  const value = localStorage.getItem(
-                    'autosave-element-creation'
-                  )
 
-                  if (value) {
-                    setShowRecoveryPrompt(true)
-                  } else {
-                    setIsElementCreationModalOpen(true)
-                  }
-                }}
-                data={{ cy: 'create-question' }}
-                className={{ root: 'h-9 font-bold' }}
-              >
-                {t('manage.questionPool.createElement')}
-              </Button>
+              <div className="flex flex-row items-center gap-2">
+                {!creationMode && Object.keys(selectedElements).length > 0 && (
+                  <Button
+                    className={{
+                      root: 'h-9 bg-orange-100 hover:bg-orange-200',
+                    }}
+                    onClick={() => setBatchOperationsOpen(true)}
+                  >
+                    <Button.Icon icon={faListCheck} />
+                    <Button.Label>
+                      {t('manage.questionPool.batchOperations', {
+                        numElements: Object.keys(selectedElements).length,
+                      })}
+                    </Button.Label>
+                  </Button>
+                )}
+                <Button
+                  primary
+                  onClick={() => {
+                    const value = localStorage.getItem(
+                      'autosave-element-creation'
+                    )
+
+                    if (value) {
+                      setShowRecoveryPrompt(true)
+                    } else {
+                      setIsElementCreationModalOpen(true)
+                    }
+                  }}
+                  data={{ cy: 'create-question' }}
+                  className={{ root: 'h-9 font-bold' }}
+                >
+                  {t('manage.questionPool.createElement')}
+                </Button>
+              </div>
             </div>
 
             <div className="h-full overflow-y-auto">
@@ -391,7 +412,12 @@ function Index() {
                     }
                     setSelectedElements={(id: number, data: Element) => {
                       setSelectedElements((prev) => {
-                        return { ...prev, [id]: prev[id] ? undefined : data }
+                        if (prev[id]) {
+                          delete prev[id]
+                        } else {
+                          prev[id] = data
+                        }
+                        return { ...prev }
                       })
                     }}
                     tagfilter={filters.tags}
@@ -458,6 +484,18 @@ function Index() {
           }
           elementId={parseInt(router.query.editElementId as string, 10)}
           mode={ElementEditMode.EDIT}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
+      )}
+      {batchOperationsOpen && (
+        <ElementBatchOperationsModal
+          selectedElements={Object.values(selectedElements).filter(
+            (element) => element !== undefined
+          )}
+          onClose={() => setBatchOperationsOpen(false)}
+          resetSelectedElements={() => setSelectedElements({})}
           refetchElements={async () => {
             await refetchElements()
           }}

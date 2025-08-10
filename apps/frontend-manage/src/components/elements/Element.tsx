@@ -54,7 +54,6 @@ interface ElementProps {
   checked: boolean
   element: ElementObject
   disabled: boolean
-  checkboxDisabled?: boolean
   tags?: Tag[]
   handleTagClick: (tagId: number) => void
   onCheck: () => void
@@ -69,7 +68,6 @@ function Element({
   checked = false,
   element,
   disabled,
-  checkboxDisabled,
   tags = [],
   handleTagClick,
   onCheck,
@@ -146,7 +144,7 @@ function Element({
   return (
     <div className="flex items-center" data-cy={`element-item-${element.name}`}>
       <Checkbox
-        disabled={disabled || checkboxDisabled}
+        disabled={disabled}
         checked={checked}
         onCheck={onCheck}
         className={{ root: 'border-unset mr-1.5' }}

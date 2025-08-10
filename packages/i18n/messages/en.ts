@@ -158,6 +158,7 @@ export default {
       confirm: 'Confirm',
       close: 'Close',
       approve: 'Approve',
+      apply: 'Apply',
       sendAnswer: 'Send answer',
       begin: 'Begin',
       finish: 'Finish',
@@ -310,6 +311,7 @@ export default {
       comingSoon: 'Coming soon...',
       pinCode: 'PIN Code',
       forgotPassword: 'Forgot password?',
+      archive: 'Archive',
       archived: 'Archived',
       ended: 'Ended',
       assessment: 'Assessment',
@@ -388,6 +390,7 @@ export default {
       modifiedAfterReview: 'Modified after review',
       modifiedAfterReviewInformation:
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
+      availableActions: 'Available Actions',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1309,6 +1312,25 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Sample solutions can only be added to questions. Content elements and flashcards do not support sample solutions.',
       answerFeedbacksUnavailableTypes:
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
+      batchOperations: 'Batch operations ({numElements} elements)',
+      batchOperationsElements: 'Batch Operations (Elements)',
+      selectedElementsDescription:
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+      actionApplies: 'Action applies',
+      modifyStatus: 'Modify status',
+      modifyMultiplier: 'Modify multiplier',
+      modifyBasePoints: 'Modify base points',
+      grantBasePoints: 'Grant base points',
+      noElementsWillBeUpdated: 'No elements will be updated',
+      nElementsWillBeUpdated: '{number} elements will be updated',
+      batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
+<ul>
+<li>Archiving elements / recovering elements from the archive only applies to non-archived / archived elements, respectively. This action can only be executed by users with admin permissions on the elements in question.</li>
+<li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
+<li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
+<li>Element status changes can be performed by all users.</li>
+</ul>
+      `,
     },
     tags: {
       deleteTag: 'Delete tag',
