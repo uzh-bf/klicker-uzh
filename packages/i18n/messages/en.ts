@@ -1290,18 +1290,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
-      archivingSuccess:
-        'All selected elements have been successfully archived.',
-      archivingPartialSuccess:
-        'All elements with sufficient permissions have been successfully archived. Please note that at least admin permissions on the corresponding object are required to archive elements.',
-      archivingFailed:
-        'None of the selected elements could be archived. Please check your permissions (admin rights are required for this operation) and try again.',
-      restoreFromArchiveSuccess:
-        'All selected elements have been successfully restored from the archive.',
-      restoreFromArchivePartialSuccess:
-        'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
-      restoreFromArchiveFailed:
-        'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
       showFeedbacksExplanation: 'Show answer feedbacks & explanation',
       showExplanation: 'Show explanation',
       showFeedbacksExplanationTooltip:
@@ -1320,7 +1308,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
       modifyBasePoints: 'Modify base points',
-      grantBasePoints: 'Grant base points',
+      awardBasePoints: 'Award base points',
       noElementsWillBeUpdated: 'No elements will be updated',
       nElementsWillBeUpdated: '{number} elements will be updated',
       batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
@@ -1331,6 +1319,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
 <li>Element status changes can be performed by all users.</li>
 </ul>
       `,
+      updateActivitiesBatchInfo:
+        'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
+      activityUpdates: 'Activity updates',
+      draftScheduledActivities: 'Draft and scheduled activities',
+      templateUpdates: 'Template updates',
+      batchOperationSuccess:
+        'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
+      batchOperationPartialSuccess:
+        'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Elemente und Ihre Berechtigungen.',
+      batchOperationFailed:
+        'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     tags: {
       deleteTag: 'Delete tag',

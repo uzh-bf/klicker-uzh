@@ -22,7 +22,6 @@ import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import {
-  ArchivedElementList,
   Element,
   ElementInstance,
   OptionsCaseStudyInput,
@@ -1287,6 +1286,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      applyElementBatchOperations: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          archive: t.arg.boolean({ required: true }),
+          unarchive: t.arg.boolean({ required: true }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          multiplier: t.arg.int({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
+          updateInstances: t.arg.boolean({ required: true }),
+          updateTemplateInstances: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.applyElementBatchOperations(args, ctx)
+        },
+      }),
+
       updateElementInstances: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [ElementInstance],
@@ -1298,7 +1314,12 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.updateElementInstances(args, ctx)
+            return await ElementService.updateElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter,
+              ctx.user.sub
+            )
           }
         ),
       }),
@@ -1312,7 +1333,11 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.flagOutdatedElementInstances(args, ctx)
+            return await ElementService.flagOutdatedElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter
+            )
           }
         ),
       }),
@@ -1410,18 +1435,6 @@ export const Mutation = builder.mutationType({
             return await CourseService.toggleArchiveCourse(args, ctx)
           }
         ),
-      }),
-
-      toggleIsArchived: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ArchivedElementList,
-        args: {
-          elementIds: t.arg.intList({ required: true }),
-          isArchived: t.arg.boolean({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementService.toggleIsArchived(args, ctx)
-        },
       }),
 
       updateTagOrdering: t.withAuth(asUserFullAccess).field({

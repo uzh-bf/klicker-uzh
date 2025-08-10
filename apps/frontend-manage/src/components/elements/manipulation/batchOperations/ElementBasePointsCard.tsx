@@ -51,7 +51,7 @@ function ElementBasePointsCard({
             data={{ cy: 'base-points-checkbox' }}
           />
           <span className="text-sm text-gray-600">
-            {t('manage.questionPool.grantBasePoints')}
+            {t('manage.questionPool.awardBasePoints')}
           </span>
           <Switch
             checked={selectedActions.basePoints ?? true}

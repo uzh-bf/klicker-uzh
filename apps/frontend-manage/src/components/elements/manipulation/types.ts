@@ -138,6 +138,8 @@ export type BatchOperationActions = {
   status?: ElementStatus
   multiplier?: string
   basePoints?: boolean
+  updateInstances: boolean
+  updateTemplateInstances: boolean
 }
 
 export const INITIAL_ELEMENT_BATCH_OPERATIONS: BatchOperationActions = {
@@ -146,6 +148,8 @@ export const INITIAL_ELEMENT_BATCH_OPERATIONS: BatchOperationActions = {
   status: undefined,
   multiplier: undefined,
   basePoints: undefined,
+  updateInstances: true,
+  updateTemplateInstances: false,
 }
 
 export type ElementFormTypes =

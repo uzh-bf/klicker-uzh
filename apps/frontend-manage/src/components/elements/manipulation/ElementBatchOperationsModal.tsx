@@ -1,14 +1,20 @@
+import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import {
+  ApplyElementBatchOperationsDocument,
+  Element,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import { isShallowEqual } from 'remeda'
+import { isShallowEqual, omit } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import ElementArchiveCard from './batchOperations/ElementArchiveCard'
 import ElementBasePointsCard from './batchOperations/ElementBasePointsCard'
 import ElementBatchOperationsInfo from './batchOperations/ElementBatchOperationsInfo'
+import ElementInstanceUpdatesCard from './batchOperations/ElementInstanceUpdatesCard'
 import ElementMultiplierCard from './batchOperations/ElementMultiplierCard'
 import ElementStatusCard from './batchOperations/ElementStatusCard'
 import SelectedElementsList from './batchOperations/SelectedElementsList'
@@ -34,6 +40,11 @@ function ElementBatchOperationsModal({
   )
   const [selectedActions, setSelectedActions] = useState<BatchOperationActions>(
     INITIAL_ELEMENT_BATCH_OPERATIONS
+  )
+
+  // application function for element list batch operations
+  const [applyElementBatchOperations, { loading: applying }] = useMutation(
+    ApplyElementBatchOperationsDocument
   )
 
   // whenever the applied filters change, update the affected elements
@@ -117,6 +128,10 @@ function ElementBatchOperationsModal({
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
               />
+              <ElementInstanceUpdatesCard
+                selectedActions={selectedActions}
+                setSelectedActions={setSelectedActions}
+              />
             </div>
             <div className="flex flex-row items-center gap-5 self-end">
               <span
@@ -138,19 +153,72 @@ function ElementBatchOperationsModal({
               <Button
                 primary
                 disabled={
+                  applying ||
                   affectedElements.length === 0 ||
                   isShallowEqual(
-                    selectedActions,
-                    INITIAL_ELEMENT_BATCH_OPERATIONS
+                    omit(selectedActions, [
+                      'updateInstances',
+                      'updateTemplateInstances',
+                    ]),
+                    omit(INITIAL_ELEMENT_BATCH_OPERATIONS, [
+                      'updateInstances',
+                      'updateTemplateInstances',
+                    ])
                   )
                 }
                 onClick={async () => {
-                  // TODO: implement submission logic
-                  const success = false
+                  // submit the batch operations
+                  const { data: res } = await applyElementBatchOperations({
+                    variables: {
+                      elementIds: affectedElements,
+                      archive: selectedActions.archive,
+                      unarchive: selectedActions.unarchive,
+                      status: selectedActions.status ?? undefined,
+                      multiplier:
+                        typeof selectedActions.multiplier !== 'undefined' &&
+                        selectedActions.multiplier !== ''
+                          ? parseInt(selectedActions.multiplier, 10)
+                          : null,
+                      basePoints: selectedActions.basePoints ?? undefined,
+                      updateInstances: selectedActions.updateInstances,
+                      updateTemplateInstances:
+                        selectedActions.updateTemplateInstances,
+                    },
+                  })
 
-                  // TODO: refetch elements, reset selection, show toast depending on failure / partial success / success
+                  // in case of success, reset the selected elements and refetch the elements
+                  if (
+                    res?.applyElementBatchOperations === affectedElements.length
+                  ) {
+                    resetSelectedElements()
+                    await refetchElements()
+                    toast({
+                      type: 'success',
+                      message: t('manage.questionPool.batchOperationSuccess'),
+                      options: { duration: 3000 },
+                    })
+                    onClose()
+                  } else if (res?.applyElementBatchOperations !== 0) {
+                    resetSelectedElements()
+                    await refetchElements()
+                    toast({
+                      type: 'warning',
+                      message: t(
+                        'manage.questionPool.batchOperationPartialSuccess'
+                      ),
+                      options: { duration: 4500 },
+                    })
+                    onClose()
+                  } else {
+                    toast({
+                      type: 'error',
+                      message: t('manage.questionPool.batchOperationFailed'),
+                      options: { duration: 5000 },
+                    })
+                  }
                 }}
                 className={{ root: 'h-9' }}
+                data={{ cy: 'apply-batch-operations' }}
               >
                 {t('shared.generic.apply')}
               </Button>

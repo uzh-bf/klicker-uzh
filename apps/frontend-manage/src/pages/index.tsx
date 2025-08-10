@@ -5,6 +5,7 @@ import {
   Element,
   GetUserElementsDocument,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Checkbox, toast } from '@uzh-bf/design-system'
@@ -54,6 +55,11 @@ function Index() {
   const [selectedElements, setSelectedElements] = useState<
     Record<number, Element | undefined>
   >({})
+
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
@@ -489,7 +495,7 @@ function Index() {
           }}
         />
       )}
-      {batchOperationsOpen && (
+      {user?.privatePreview && batchOperationsOpen ? (
         <ElementBatchOperationsModal
           selectedElements={Object.values(selectedElements).filter(
             (element) => element !== undefined
@@ -500,7 +506,7 @@ function Index() {
             await refetchElements()
           }}
         />
-      )}
+      ) : null}
       {showRecoveryPrompt && (
         <RecoveryPrompt
           onRecovery={() => {

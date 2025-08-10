@@ -1293,18 +1293,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Element wiederherstellen',
-      archivingSuccess:
-        'Alle ausgewählten Elemente wurden erfolgreich archiviert.',
-      archivingPartialSuccess:
-        'Alle Elemente mit ausreichenden Berechtigungen wurden erfolgreich archiviert. Bitte beachten Sie, dass zur Archivierung von Elementen mindestens Admin-Berechtigungen auf dem entsprechenden Objekt erforderlich sind.',
-      archivingFailed:
-        'Keines der ausgewählten Elemente konnte archiviert werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
-      restoreFromArchiveSuccess:
-        'Das Element wurde erfolgreich aus dem Archiv wiederhergestellt.',
-      restoreFromArchivePartialSuccess:
-        'Einige Elemente konnten erfolgreich aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
-      restoreFromArchiveFailed:
-        'Keine Elemente konnten aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
       showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showFeedbacksExplanationTooltip:
@@ -1323,7 +1311,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
       modifyBasePoints: 'Basispunkte ändern',
-      grantBasePoints: 'Basispunkte vergeben',
+      awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
       nElementsWillBeUpdated: '{number} Elemente werden verändert',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
@@ -1334,6 +1322,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
 <li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
 </ul>
       `,
+      updateActivitiesBatchInfo:
+        'Wählen Sie hier, ob die Änderungen, die an den ausgewählten Elementen vorgenommen werden, auch auf alle Aktivitäten im Entwurf- und Planungsstatus angewendet werden sollen. Optional können Sie auch Aktivitätsvorlagen mit diesem Element in das Update einbeziehen.',
+      activityUpdates: 'Aktivitäts-Updates',
+      draftScheduledActivities: 'Entwurfs- und geplante Aktivitäten',
+      templateUpdates: 'Vorlagen-Updates',
+      batchOperationSuccess:
+        'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
+      batchOperationPartialSuccess:
+        'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Elemente und Ihre Berechtigungen.',
+      batchOperationFailed:
+        'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     tags: {
       deleteTag: 'Tag löschen',
