@@ -535,9 +535,7 @@ export async function manipulateElement(
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
       basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
-      version: {
-        increment: 1,
-      },
+      version: { increment: 1 },
       options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
@@ -720,6 +718,7 @@ export async function applyElementBatchOperations(
       DB.PermissionLevel.OWNER,
       DB.PermissionLevel.ADMIN,
       DB.PermissionLevel.WRITE,
+      DB.PermissionLevel.EXECUTE,
       DB.PermissionLevel.READ,
     ]
   } else {
@@ -772,6 +771,7 @@ export async function applyElementBatchOperations(
           const updatedElement = await tx.element.update({
             where: { id: element.id },
             data: {
+              version: { increment: 1 },
               isArchived: archive ? true : unarchive ? false : undefined,
               status: status ?? undefined,
               pointsMultiplier:
@@ -1511,72 +1511,49 @@ export async function updateElementInstances(
             include: {
               microLearning: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
               practiceQuiz: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
               groupActivity: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
             },
           },
           elementBlock: {
             include: {
               // ? where clause is not accepted by prisma for unknown reasons
-              liveQuiz: {
-                include: {
-                  templateInfo: true,
-                  permissions: true,
-                },
-              },
+              liveQuiz: { include: { templateInfo: true, permissions: true } },
             },
           },
         },
