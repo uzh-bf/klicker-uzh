@@ -418,12 +418,13 @@ function Index() {
                     }
                     setSelectedElements={(id: number, data: Element) => {
                       setSelectedElements((prev) => {
-                        if (prev[id]) {
-                          delete prev[id]
+                        const newSelected = { ...prev }
+                        if (newSelected[id]) {
+                          delete newSelected[id]
                         } else {
-                          prev[id] = data
+                          newSelected[id] = data
                         }
-                        return { ...prev }
+                        return newSelected
                       })
                     }}
                     tagfilter={filters.tags}

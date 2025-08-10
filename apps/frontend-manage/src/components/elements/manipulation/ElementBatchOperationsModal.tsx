@@ -79,7 +79,7 @@ function ElementBatchOperationsModal({
 
     // return the filtered and mapped elements (unfiltered if no relevant action applied)
     setAffectedElements(filtered.map((element) => element.id))
-  }, [selectedActions])
+  }, [selectedElements, selectedActions])
 
   return (
     <Modal

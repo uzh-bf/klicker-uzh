@@ -43,9 +43,7 @@ function ElementBasePointsCard({
                 archive: false,
                 unarchive: false,
                 basePoints:
-                  typeof selectedActions.basePoints !== 'undefined'
-                    ? undefined
-                    : true,
+                  typeof prev.basePoints !== 'undefined' ? undefined : true,
               }))
             }}
             data={{ cy: 'base-points-checkbox' }}

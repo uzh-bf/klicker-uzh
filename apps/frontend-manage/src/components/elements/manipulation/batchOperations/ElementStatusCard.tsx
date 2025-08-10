@@ -44,7 +44,7 @@ function ElementStatusCard({
                 archive: false,
                 unarchive: false,
                 status:
-                  typeof selectedActions.status !== 'undefined'
+                  typeof prev.status !== 'undefined'
                     ? undefined
                     : ElementStatus.Draft,
               }))

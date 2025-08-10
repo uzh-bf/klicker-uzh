@@ -43,9 +43,7 @@ function ElementMultiplierCard({
                 archive: false,
                 unarchive: false,
                 multiplier:
-                  typeof selectedActions.multiplier !== 'undefined'
-                    ? undefined
-                    : '1',
+                  typeof prev.multiplier !== 'undefined' ? undefined : '1',
               }))
             }}
             data={{ cy: 'multiplier-checkbox' }}
@@ -62,30 +60,22 @@ function ElementMultiplierCard({
               {
                 label: t('manage.activityWizard.multiplier1'),
                 value: '1',
-                data: {
-                  cy: `select-multiplier-${t('manage.activityWizard.multiplier1')}`,
-                },
+                data: { cy: `select-multiplier-1` },
               },
               {
                 label: t('manage.activityWizard.multiplier2'),
                 value: '2',
-                data: {
-                  cy: `select-multiplier-${t('manage.activityWizard.multiplier2')}`,
-                },
+                data: { cy: `select-multiplier-2` },
               },
               {
                 label: t('manage.activityWizard.multiplier3'),
                 value: '3',
-                data: {
-                  cy: `select-multiplier-${t('manage.activityWizard.multiplier3')}`,
-                },
+                data: { cy: `select-multiplier-3` },
               },
               {
                 label: t('manage.activityWizard.multiplier4'),
                 value: '4',
-                data: {
-                  cy: `select-multiplier-${t('manage.activityWizard.multiplier4')}`,
-                },
+                data: { cy: `select-multiplier-4` },
               },
             ]}
             data={{ cy: 'select-multiplier' }}
