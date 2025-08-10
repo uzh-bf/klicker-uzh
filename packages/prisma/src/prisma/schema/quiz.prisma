@@ -7,6 +7,12 @@ enum PublicationStatus {
   TEMPLATE // activity template state - activity is locked from being edited / executed, deletion allowed
 }
 
+enum ReviewStatus {
+  INCOMPLETE // review is not yet started
+  REVIEWED // review is completed
+  MODIFIED_AFTER_REVIEW // review is completed, but the activity was modified after the review
+}
+
 // ----- PRACTICE QUIZZES -----
 // #region
 enum ElementOrderType {
@@ -24,6 +30,7 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
+  reviewStatus     ReviewStatus      @default(INCOMPLETE)
   availableFrom    DateTime?
 
   areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
@@ -96,8 +103,9 @@ model LiveQuiz {
   maxBonusPoints       Int       @default(45)
   timeToZeroBonus      Int       @default(20)
 
-  accessMode AccessMode        @default(PUBLIC)
-  status     PublicationStatus @default(DRAFT)
+  accessMode   AccessMode        @default(PUBLIC)
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
 
   activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
@@ -140,6 +148,7 @@ model MicroLearning {
   pointsMultiplier Int               @default(1)
   description      String?
   status           PublicationStatus @default(DRAFT)
+  reviewStatus     ReviewStatus      @default(INCOMPLETE)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
@@ -241,9 +250,10 @@ model GroupActivityClueInstance {
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
-  name        String
-  displayName String
-  status      PublicationStatus @default(DRAFT)
+  name         String
+  displayName  String
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
 
   pointsMultiplier Int @default(1)
 

@@ -1263,9 +1263,9 @@ export async function getCourseData(
             include: { directPermission: true },
           },
           templateInfo: true,
-          _count: { select: { permissions: true } },
+          _count: { select: { directPermissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { name: 'desc' },
       },
       practiceQuizzes: {
         where: { isDeleted: false },
@@ -1279,9 +1279,9 @@ export async function getCourseData(
             include: { directPermission: true },
           },
           templateInfo: true,
-          _count: { select: { permissions: true } },
+          _count: { select: { directPermissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { name: 'asc' },
       },
       groupActivities: {
         where: { isDeleted: false },
@@ -1295,9 +1295,9 @@ export async function getCourseData(
             include: { directPermission: true },
           },
           templateInfo: true,
-          _count: { select: { permissions: true } },
+          _count: { select: { directPermissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { scheduledStartAt: 'asc' },
       },
       microLearnings: {
         where: { isDeleted: false },
@@ -1311,9 +1311,9 @@ export async function getCourseData(
             include: { directPermission: true },
           },
           templateInfo: true,
-          _count: { select: { permissions: true } },
+          _count: { select: { directPermissions: true } },
         },
-        orderBy: { scheduledStartAt: 'desc' },
+        orderBy: { scheduledStartAt: 'asc' },
       },
       leaderboard: {
         include: { participation: { include: { participant: true } } },
@@ -1331,6 +1331,11 @@ export async function getCourseData(
   if (!coursePermission) {
     return null
   }
+
+  // check if the user is a course admin
+  const isActivityReviewer =
+    coursePermission.permissionLevel === DB.PermissionLevel.ADMIN ||
+    coursePermission.permissionLevel === DB.PermissionLevel.OWNER
 
   const {
     isOwner: courseOwner,
@@ -1367,6 +1372,7 @@ export async function getCourseData(
       templateId: liveQuiz.templateInfo?.id ?? null,
       name: liveQuiz.name,
       displayName: liveQuiz.displayName,
+      reviewStatus: liveQuiz.reviewStatus,
       type: ActivityType.LIVE_QUIZ,
       status: liveQuiz.status,
       courseId: course.id,
@@ -1381,13 +1387,14 @@ export async function getCourseData(
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: liveQuiz.areInstancesOutdated,
-      numSharedUsers: liveQuiz._count.permissions - 1,
+      numSharedUsers: liveQuiz._count.directPermissions,
       isOwner,
       isManager,
       isEditor,
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: liveQuiz.updatedAt,
     }
@@ -1417,6 +1424,7 @@ export async function getCourseData(
       templateId: practiceQuiz.templateInfo?.id ?? null,
       name: practiceQuiz.name,
       displayName: practiceQuiz.displayName,
+      reviewStatus: practiceQuiz.reviewStatus,
       type: ActivityType.PRACTICE_QUIZ,
       status: practiceQuiz.status,
       courseId: course.id,
@@ -1432,13 +1440,14 @@ export async function getCourseData(
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: practiceQuiz.areInstancesOutdated,
-      numSharedUsers: practiceQuiz._count.permissions - 1,
+      numSharedUsers: practiceQuiz._count.directPermissions,
       isOwner,
       isManager,
       isEditor,
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: practiceQuiz.updatedAt,
     }
@@ -1468,6 +1477,7 @@ export async function getCourseData(
       templateId: microLearning.templateInfo?.id ?? null,
       name: microLearning.name,
       displayName: microLearning.displayName,
+      reviewStatus: microLearning.reviewStatus,
       type: ActivityType.MICRO_LEARNING,
       status: microLearning.status,
       courseId: course.id,
@@ -1484,13 +1494,14 @@ export async function getCourseData(
       permissionLevel: permission.permissionLevel,
       derivedAccess: permission.derived,
       areInstancesOutdated: microLearning.areInstancesOutdated,
-      numSharedUsers: microLearning._count.permissions - 1,
+      numSharedUsers: microLearning._count.directPermissions,
       isOwner,
       isManager,
       isEditor,
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: microLearning.updatedAt,
     }
@@ -1521,6 +1532,7 @@ export async function getCourseData(
         templateId: groupActivity.templateInfo?.id ?? null,
         name: groupActivity.name,
         displayName: groupActivity.displayName,
+        reviewStatus: groupActivity.reviewStatus,
         type: ActivityType.GROUP_ACTIVITY,
         status: groupActivity.status,
         courseId: course.id,
@@ -1539,13 +1551,14 @@ export async function getCourseData(
         permissionLevel: permission.permissionLevel,
         derivedAccess: permission.derived,
         areInstancesOutdated: groupActivity.areInstancesOutdated,
-        numSharedUsers: groupActivity._count.permissions - 1,
+        numSharedUsers: groupActivity._count.directPermissions,
         isOwner,
         isManager,
         isEditor,
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer,
         sharingType,
         updatedAt: groupActivity.updatedAt,
       }

@@ -1,0 +1,17 @@
+{
+  "review": {
+    "course": {
+      "name": "Review Course 1",
+      "displayName": "Review Course 1 (Display)"
+    },
+    "course2": {
+      "name": "Review Course 2",
+      "displayName": "Review Course 2 (Display)"
+    },
+    "liveQuizNoCourse": "Live Quiz without Course",
+    "liveQuiz": "Standard Live Quiz",
+    "practiceQuiz": "Standard Practice Quiz",
+    "microLearning": "Standard Micro Learning",
+    "groupActivity": "Standard Group Activity"
+  }
+}

@@ -79,12 +79,14 @@ function MicrolearningActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
   refetchActivities,
 }: {
   microLearning: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -161,6 +163,7 @@ function MicrolearningActions({
         activityId={microLearning.id}
         activityName={microLearning.name}
         activityType={microLearning.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {sharingModal && microLearning.isManager ? (

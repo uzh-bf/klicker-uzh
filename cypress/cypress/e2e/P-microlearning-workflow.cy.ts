@@ -193,21 +193,29 @@ describe('Different microlearning workflows', function () {
       .contains(this.data.course)
 
     // set the start date to 2 months in the past at 12:30 (default is start of next month)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -3,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: startDate1,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      },
     })
 
     // set the end date to 2 months in the future at 14:00 (default is start of next month)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 1,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: endDate1,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      },
     })
 
     // select multiplier
@@ -368,22 +376,30 @@ describe('Different microlearning workflows', function () {
 
     // check, change and verify the start date
     // (before: 2 months in the past at 12:30, new: 3 months in the past at 10:45)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -1,
-      day: 15,
-      hour: 10,
-      minute: 45,
-      validation: startDate2,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -1,
+        day: 15,
+        hour: 10,
+        minute: 45,
+        validation: startDate2,
+      },
     })
 
     // check, change and verify the end date
     // (before: 2 months in the future at 14:00, new: 5 months in the future at 16:00)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 3,
-      day: 15,
-      hour: 16,
-      minute: 0,
-      validation: endDate2,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 3,
+        day: 15,
+        hour: 16,
+        minute: 0,
+        validation: endDate2,
+      },
     })
 
     // update the activity multiplier
@@ -758,12 +774,16 @@ describe('Different microlearning workflows', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: 3,
-      day: 15,
-      hour: 18,
-      minute: 50,
-      validation: extensionDate,
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: 3,
+        day: 15,
+        hour: 18,
+        minute: 50,
+        validation: extensionDate,
+      },
     })
 
     cy.get('[data-cy="extend-activity-confirm"]').click()
@@ -777,12 +797,16 @@ describe('Different microlearning workflows', function () {
       `[data-cy="extend-microlearning-${this.data.running.nameNew}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: -12,
-      day: 15,
-      hour: 12,
-      minute: 0,
-      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: -12,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()

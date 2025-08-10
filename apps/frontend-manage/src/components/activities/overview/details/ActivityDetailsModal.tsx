@@ -12,21 +12,27 @@ import {
   GetOutdatedElementInstancesDocument,
   ObjectType,
   PublicationStatus,
+  ReviewStatus,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import ActivityLog from '~/components/sharing/ActivityLog'
-import StudentElementPreviewActivityDetails from '../../elements/manipulation/StudentElementPreviewActivityDetails'
+import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
+import ActivityLog from '../../../sharing/ActivityLog'
+import ActivityInformation from './ActivityInformation'
 import ActivityOverviewTable from './ActivityOverviewTable'
+import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsModal({
   activity,
   onClose,
+  refetchActivities,
 }: {
   activity: ActivityInfo
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
 
@@ -35,9 +41,17 @@ function ActivityDetailsModal({
     variables: { activityId: activity.id, activityType: activity.type },
     fetchPolicy: 'cache-and-network',
   })
+
+  // fetch user for preview flag
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
+
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
   const isLiveQuiz = activity.type === ActivityType.LiveQuiz
+  const isReviewed = activity.reviewStatus === ReviewStatus.Reviewed
 
   // check which instances are outdated
   const { data } = useQuery(GetOutdatedElementInstancesDocument, {
@@ -96,43 +110,33 @@ function ActivityDetailsModal({
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <div className="flex flex-col gap-2 lg:flex-row">
-              <UserNotification
-                className={{ root: 'w-full text-base lg:w-1/2 xl:w-2/3' }}
-              >
-                <div className="font-bold">
-                  {t('manage.activities.activityInformation')}
-                </div>
-                <div className="mt-1 flex flex-col gap-0.5 text-sm">
-                  {[
-                    {
-                      label: t('manage.activityWizard.name'),
-                      value: details.name,
-                    },
-                    {
-                      label: t('manage.activityWizard.displayName'),
-                      value: details.displayName,
-                    },
-                    {
-                      label: t('manage.activities.activityType'),
-                      value: t(`shared.types.${activity.type}`),
-                    },
-                  ].map(({ label, value }) => (
-                    <div key={label}>
-                      <span className="font-bold">{label}:</span> {value}
-                    </div>
-                  ))}
-                </div>
-              </UserNotification>
-              <div className="flex w-full flex-col items-end gap-1 lg:w-1/2 xl:w-1/3">
-                <Button
-                  className={{ root: 'h-7' }}
-                  onClick={() => setSelectedInstanceId(null)}
-                >
-                  <Button.Icon icon={faMessage} />
-                  <Button.Label>
-                    {t('shared.comments.viewComments')}
-                  </Button.Label>
-                </Button>
+              <ActivityInformation
+                details={details}
+                activityType={activity.type}
+                activityReviewStatus={activity.reviewStatus}
+              />
+
+              <div className="flex w-full flex-col items-end gap-1 lg:w-1/3">
+                {user?.privatePreview && (
+                  <Button
+                    className={{ root: 'h-7' }}
+                    onClick={() => setSelectedInstanceId(null)}
+                  >
+                    <Button.Icon icon={faMessage} />
+                    <Button.Label>
+                      {t('shared.comments.viewComments')}
+                    </Button.Label>
+                  </Button>
+                )}
+
+                {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
+                {activity.isActivityReviewer && (
+                  <ActivityReviewButton
+                    activity={activity}
+                    isReviewed={isReviewed}
+                    refetchActivities={refetchActivities}
+                  />
+                )}
               </div>
             </div>
 
@@ -141,6 +145,7 @@ function ActivityDetailsModal({
               activityStatus={activity.status}
               isLiveQuiz={isLiveQuiz}
               outdatedInstances={outdatedInstances}
+              selectedInstanceId={selectedInstanceId}
               setSelectedInstanceId={setSelectedInstanceId}
             />
           </div>
