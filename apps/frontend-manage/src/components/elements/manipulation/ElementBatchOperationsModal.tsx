@@ -167,49 +167,59 @@ function ElementBatchOperationsModal({
                   )
                 }
                 onClick={async () => {
-                  // submit the batch operations
-                  const { data: res } = await applyElementBatchOperations({
-                    variables: {
-                      elementIds: affectedElements,
-                      archive: selectedActions.archive,
-                      unarchive: selectedActions.unarchive,
-                      status: selectedActions.status ?? undefined,
-                      multiplier:
-                        typeof selectedActions.multiplier !== 'undefined' &&
-                        selectedActions.multiplier !== ''
-                          ? parseInt(selectedActions.multiplier, 10)
-                          : null,
-                      basePoints: selectedActions.basePoints ?? undefined,
-                      updateInstances: selectedActions.updateInstances,
-                      updateTemplateInstances:
-                        selectedActions.updateTemplateInstances,
-                    },
-                  })
+                  try {
+                    // submit the batch operations
+                    const { data: res } = await applyElementBatchOperations({
+                      variables: {
+                        elementIds: affectedElements,
+                        archive: selectedActions.archive,
+                        unarchive: selectedActions.unarchive,
+                        status: selectedActions.status ?? undefined,
+                        multiplier:
+                          typeof selectedActions.multiplier !== 'undefined' &&
+                          selectedActions.multiplier !== ''
+                            ? parseInt(selectedActions.multiplier, 10)
+                            : null,
+                        basePoints: selectedActions.basePoints ?? undefined,
+                        updateInstances: selectedActions.updateInstances,
+                        updateTemplateInstances:
+                          selectedActions.updateTemplateInstances,
+                      },
+                    })
 
-                  // in case of success, reset the selected elements and refetch the elements
-                  if (
-                    res?.applyElementBatchOperations === affectedElements.length
-                  ) {
-                    resetSelectedElements()
-                    await refetchElements()
-                    toast({
-                      type: 'success',
-                      message: t('manage.questionPool.batchOperationSuccess'),
-                      options: { duration: 3000 },
-                    })
-                    onClose()
-                  } else if (res?.applyElementBatchOperations !== 0) {
-                    resetSelectedElements()
-                    await refetchElements()
-                    toast({
-                      type: 'warning',
-                      message: t(
-                        'manage.questionPool.batchOperationPartialSuccess'
-                      ),
-                      options: { duration: 4500 },
-                    })
-                    onClose()
-                  } else {
+                    // in case of success, reset the selected elements and refetch the elements
+                    if (
+                      res?.applyElementBatchOperations ===
+                      affectedElements.length
+                    ) {
+                      resetSelectedElements()
+                      await refetchElements()
+                      toast({
+                        type: 'success',
+                        message: t('manage.questionPool.batchOperationSuccess'),
+                        options: { duration: 3000 },
+                      })
+                      onClose()
+                    } else if (res?.applyElementBatchOperations !== 0) {
+                      resetSelectedElements()
+                      await refetchElements()
+                      toast({
+                        type: 'warning',
+                        message: t(
+                          'manage.questionPool.batchOperationPartialSuccess'
+                        ),
+                        options: { duration: 4500 },
+                      })
+                      onClose()
+                    } else {
+                      toast({
+                        type: 'error',
+                        message: t('manage.questionPool.batchOperationFailed'),
+                        options: { duration: 5000 },
+                      })
+                    }
+                  } catch (error) {
+                    console.error(error)
                     toast({
                       type: 'error',
                       message: t('manage.questionPool.batchOperationFailed'),
