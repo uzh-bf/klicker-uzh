@@ -3,16 +3,17 @@ import {
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma'
-import type {
-  CaseStudyCaseSolution,
-  ElementBlockInput,
-  ElementResultsCaseStudy,
-  ElementResultsChoices,
-  ElementResultsContent,
-  ElementResultsFlashcard,
-  ElementResultsOpen,
-  ElementResultsSelection,
-  ElementStackInput,
+import {
+  ActivityType,
+  type CaseStudyCaseSolution,
+  type ElementBlockInput,
+  type ElementResultsCaseStudy,
+  type ElementResultsChoices,
+  type ElementResultsContent,
+  type ElementResultsFlashcard,
+  type ElementResultsOpen,
+  type ElementResultsSelection,
+  type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
@@ -30,6 +31,7 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
+import { getPermissionBooleans } from './activities.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -693,11 +695,36 @@ export async function manipulateLiveQuiz(
               : { disconnect: true },
         },
         include: {
-          course: true,
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           blocks: {
-            include: { elements: { orderBy: { order: 'asc' } } },
+            include: { _count: { select: { elements: true } } },
             orderBy: { order: 'asc' },
           },
+          _count: { select: { permissions: true } },
         },
       })
 
@@ -719,7 +746,65 @@ export async function manipulateLiveQuiz(
     id,
   })
 
-  return activity
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = getPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission:
+      activity.permissions[0]?.directPermission &&
+      activity.permissions[0].directPermission.userGroupId !== null,
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.LIVE_QUIZ,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.blocks.length,
+    numOfElements: activity.blocks.reduce(
+      (acc, block) => acc + block._count.elements,
+      0
+    ),
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer:
+      !id || // activity creation -> automatically activity owner
+      (activity.courseId === null &&
+        (activity.permissions[0]?.permissionLevel ===
+          DB.PermissionLevel.OWNER ||
+          activity.permissions[0]?.permissionLevel ===
+            DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
+      (!!activity.course && activity.course._count.permissions > 0), // live quiz in course -> course admin
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
 }
 
 export async function removeLiveQuiz(

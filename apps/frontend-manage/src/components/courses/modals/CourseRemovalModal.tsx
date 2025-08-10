@@ -26,6 +26,7 @@ function CourseRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
+  // TODO: add query update
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
 

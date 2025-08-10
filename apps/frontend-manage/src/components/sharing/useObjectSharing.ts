@@ -37,6 +37,7 @@ function useObjectSharing({
   }) => Promise<boolean>
   objectSharing: boolean
 } {
+  // TODO: add query update
   const [shareObject, { loading: sharingObject }] =
     useMutation(ShareObjectDocument)
 

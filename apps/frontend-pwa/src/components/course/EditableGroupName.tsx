@@ -15,6 +15,7 @@ function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
   const [groupNameValue, setGroupNameValue] = useState(groupName)
+  // TODO: add query update
   const [renameParticipantGroup, { loading: submitting }] = useMutation(
     RenameParticipantGroupDocument
   )

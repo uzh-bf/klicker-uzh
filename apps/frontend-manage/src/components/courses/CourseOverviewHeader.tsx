@@ -51,6 +51,7 @@ function CourseOverviewHeader({
   const [sharingModal, setSharingModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
+  // TODO: add query update
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',

@@ -46,7 +46,10 @@ function ElementList({
 
   if (elements.length === 0) {
     return (
-      <UserNotification type="warning" className={{ root: 'ml-7 text-sm' }}>
+      <UserNotification
+        type={filtersActive ? 'warning' : undefined}
+        className={{ root: 'ml-7 text-sm' }}
+      >
         <span className="mr-1">
           {t('manage.questionPool.noQuestionsWarning')}
         </span>

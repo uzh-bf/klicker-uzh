@@ -25,6 +25,7 @@ import Layout from '../components/Layout'
 function AdminPanel() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
+  // TODO: add query update
   const [grantPrivatePreviewAccess] = useMutation(
     GrantPrivatePreviewAccessDocument
   )

@@ -18,7 +18,9 @@ function Login() {
   const t = useTranslations()
   const router = useRouter()
 
+  // TODO: add query update
   const [loginParticipant] = useMutation(LoginParticipantDocument)
+  // TODO: add query update
   const [sendMagicLink] = useMutation(SendMagicLinkDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',

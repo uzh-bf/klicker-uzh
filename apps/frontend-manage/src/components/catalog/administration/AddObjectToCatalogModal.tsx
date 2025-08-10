@@ -33,6 +33,7 @@ function AddObjectToCatalogModal({
   onError,
 }: AddObjectToCatalogModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [addObjectToCatalog] = useMutation(AddObjectToCatalogDocument)
 
   return (

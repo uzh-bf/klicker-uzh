@@ -1082,7 +1082,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     activities: {
       activityType: 'Aktivitätstyp',
       noActivitiesAvailable:
-        'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Fragen in der <link>Bibliothek</link> erstellen.',
+        'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Elementen in der <link>Bibliothek</link> erstellen.',
       noActivitiesForFilters:
         'Für die aktuell ausgewählten Filter bzw. den eingegebenen Suchbegriff konnten keine Aktivitäten gefunden werden. Bitte versuchen Sie es mit anderen Filtern oder einem anderen Suchbegriff.',
       liveQuizInfo: '{numOfBlocks} Blöcke, {numOfElements} Element(e)',
@@ -2345,7 +2345,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
-      noCoursesFound: 'Es konnten keine Kurse gefunden werden.',
+      noCoursesFound:
+        'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
       courseNameReq: 'Bitte geben Sie einen Namen für den Kurs an.',
       courseDisplayNameReq:
@@ -2909,6 +2910,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Objekt wurde erfolgreich zur Katalogsammlung hinzugefügt',
       objectAddedError:
         'Fehler beim Hinzufügen des Objekts zur Katalogsammlung',
+      objectRemovalSuccess:
+        'Objekt wurde erfolgreich aus der Katalogsammlung entfernt',
+      objectRemovalFailed:
+        'Beim Entfernen des Objekts aus der Katalogsammlung ist ein Fehler aufgetreten, bitte versuchen Sie es erneut',
       selectObjectTypeFirst: 'Bitte wählen Sie zuerst einen Objekttyp aus',
       changeAccessTitle: 'Zugriffsrechte ändern',
       changeAccessDescription:

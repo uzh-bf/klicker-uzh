@@ -25,6 +25,7 @@ function CreateCatalogCollectionModal({
   onError: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [createCatalogCollection] = useMutation(CreateCatalogCollectionDocument)
 
   return (

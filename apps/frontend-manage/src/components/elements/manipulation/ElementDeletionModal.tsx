@@ -38,6 +38,7 @@ function ElementDeletionModal({
   })
 
   // deletion mutation
+  // TODO: add query update
   const [deleteElement, { loading: deleting }] = useMutation(
     DeleteElementDocument
   )

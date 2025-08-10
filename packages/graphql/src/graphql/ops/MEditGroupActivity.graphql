@@ -22,12 +22,6 @@ mutation EditGroupActivity(
     clues: $clues
     stack: $stack
   ) {
-    id
-    name
-    displayName
-    description
-    scheduledStartAt
-    scheduledEndAt
-    pointsMultiplier
+    ...ActivityInfoData
   }
 }

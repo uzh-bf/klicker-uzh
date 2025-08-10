@@ -47,20 +47,8 @@ function useGroupActivityActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-
   const [unpublishGroupActivity, { loading: unpublishing }] = useMutation(
-    UnpublishGroupActivityDocument,
-    {
-      variables: {
-        id: groupActivity.id,
-      },
-      refetchQueries: [
-        {
-          query: GetSingleCourseDocument,
-          variables: { courseId: groupActivity.courseId! },
-        },
-      ],
-    }
+    UnpublishGroupActivityDocument
   )
 
   const actions = useMemo(
@@ -91,7 +79,39 @@ function useGroupActivityActions({
         label: t('manage.course.unpublishGroupActivity'),
         icon: faLock,
         onClick: async () => {
-          await unpublishGroupActivity()
+          await unpublishGroupActivity({
+            variables: { id: groupActivity.id! },
+            update: (cache, { data: res }) => {
+              // if the mutation was not successful, return early
+              if (!res?.unpublishGroupActivity?.id) return
+
+              // change the status of the practice quiz on the course overview back to draft
+              cache.updateQuery(
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: groupActivity.courseId! },
+                },
+                (data) => {
+                  if (!data?.course) return data
+
+                  return {
+                    course: {
+                      ...data.course,
+                      groupActivitiesInfo: data.course.groupActivitiesInfo?.map(
+                        (quiz) =>
+                          quiz.id === res.unpublishGroupActivity?.id
+                            ? {
+                                ...quiz,
+                                status: res.unpublishGroupActivity?.status,
+                              }
+                            : quiz
+                      ),
+                    },
+                  }
+                }
+              )
+            },
+          })
           await refetchActivities?.()
         },
         disabled: unpublishing,

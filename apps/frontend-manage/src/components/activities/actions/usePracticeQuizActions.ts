@@ -47,8 +47,9 @@ function usePracticeQuizActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-
-  const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument)
+  const [unpublishPracticeQuiz, { loading: unpublishing }] = useMutation(
+    UnpublishPracticeQuizDocument
+  )
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${practiceQuiz.courseLanguage ? `/${practiceQuiz.courseLanguage}` : ''}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
 
   const onSuccessToast = () =>
@@ -162,15 +163,40 @@ function usePracticeQuizActions({
         onClick: async () => {
           await unpublishPracticeQuiz({
             variables: { id: practiceQuiz.id! },
-            refetchQueries: [
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: practiceQuiz.courseId },
-              },
-            ],
+            update: (cache, { data: res }) => {
+              // if the mutation was not successful, return early
+              if (!res?.unpublishPracticeQuiz?.id) return
+
+              // change the status of the practice quiz on the course overview back to draft
+              cache.updateQuery(
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: practiceQuiz.courseId! },
+                },
+                (data) => {
+                  if (!data?.course) return data
+
+                  return {
+                    course: {
+                      ...data.course,
+                      practiceQuizzesInfo: data.course.practiceQuizzesInfo?.map(
+                        (quiz) =>
+                          quiz.id === res.unpublishPracticeQuiz?.id
+                            ? {
+                                ...quiz,
+                                status: res.unpublishPracticeQuiz?.status,
+                              }
+                            : quiz
+                      ),
+                    },
+                  }
+                }
+              )
+            },
           })
           await refetchActivities?.()
         },
+        disabled: unpublishing,
         data: { cy: `unpublish-practice-quiz-${practiceQuiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },

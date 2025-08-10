@@ -17,6 +17,7 @@ function GroupCreationBlock({
   setSelectedTab: (value: string) => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [createParticipantGroup, { loading }] = useMutation(
     CreateParticipantGroupDocument
   )

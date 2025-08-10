@@ -48,6 +48,7 @@ function SuspendedCourseLeaderboard({
     },
   })
 
+  // TODO: add query update
   const [updateWeeklyTimelineEntriesCourse, { loading: updateLoading }] =
     useMutation(UpdateWeeklyTimelineEntriesCourseDocument, {
       variables: { courseId },

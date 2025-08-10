@@ -279,6 +279,7 @@ function MicroLearningWizard({
     async (values: MicroLearningFormValues) => {
       submitMicrolearningForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         editMode,
         createMicroLearning,

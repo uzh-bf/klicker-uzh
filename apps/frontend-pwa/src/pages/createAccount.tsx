@@ -33,6 +33,7 @@ function CreateAccount({
   const t = useTranslations()
   const router = useRouter()
 
+  // TODO: add query update
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument
   )

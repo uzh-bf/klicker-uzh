@@ -17,6 +17,7 @@ function useCopyCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
+  // TODO: add query update
   const [copyCatalogObjectToAccount, { loading: copyingCatalogObject }] =
     useMutation(CopyCatalogObjectToAccountDocument)
 

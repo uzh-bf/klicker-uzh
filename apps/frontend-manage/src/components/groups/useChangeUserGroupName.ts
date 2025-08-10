@@ -6,6 +6,7 @@ import {
 import { Dispatch, SetStateAction } from 'react'
 
 function useChangeUserGroupName() {
+  // TODO: add query update
   const [changeUserGroupName, { loading }] = useMutation(
     ChangeUserGroupNameDocument
   )

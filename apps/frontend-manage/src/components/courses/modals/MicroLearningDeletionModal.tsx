@@ -40,10 +40,31 @@ function MicroLearningDeletionModal({
           id: activityId,
         },
       },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update: (cache, { data: res }) => {
+        // if the microlearning is not part of a course or the mutation was not successful, return early
+        if (!res?.deleteMicroLearning?.id) return
+
+        // change the status of the microlearning on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                microLearningsInfo:
+                  data.course.microLearningsInfo?.filter(
+                    (ml) => ml.id !== res.deleteMicroLearning!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
     }
   )
 

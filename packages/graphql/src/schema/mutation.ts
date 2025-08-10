@@ -18,6 +18,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import { ElementStatus, ElementType } from './elementData.js'
@@ -928,7 +929,7 @@ export const Mutation = builder.mutationType({
 
       createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: LiveQuiz,
+        type: ActivityInfo,
         args: {
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
@@ -956,7 +957,7 @@ export const Mutation = builder.mutationType({
 
       editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: LiveQuiz,
+        type: ActivityInfo,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
@@ -3002,7 +3003,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: PracticeQuiz,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3028,7 +3029,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: PracticeQuiz,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
@@ -3059,7 +3060,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroLearning,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3079,7 +3080,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroLearning,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
@@ -3142,7 +3143,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: GroupActivity,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3163,7 +3164,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: GroupActivity,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),

@@ -16,6 +16,7 @@ function CourseArchiveModal({
   isArchived: boolean
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [toggleArchiveCourse, { loading }] = useMutation(
     ToggleArchiveCourseDocument,
     { refetchQueries: [{ query: GetUserCoursesDocument }] }

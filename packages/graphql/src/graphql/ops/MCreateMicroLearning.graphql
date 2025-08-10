@@ -18,26 +18,6 @@ mutation CreateMicroLearning(
     startDate: $startDate
     endDate: $endDate
   ) {
-    id
-    name
-    displayName
-    description
-    scheduledStartAt
-    scheduledEndAt
-    pointsMultiplier
-
-    course {
-      id
-    }
-
-    stacks {
-      id
-      displayName
-      description
-      elements {
-        id
-        ...ElementData
-      }
-    }
+    ...ActivityInfoData
   }
 }

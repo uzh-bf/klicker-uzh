@@ -18,6 +18,7 @@ function CatalogCollectionNameChangeModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [changeCatalogCollectionName] = useMutation(
     ChangeCatalogCollectionNameDocument
   )

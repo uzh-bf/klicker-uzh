@@ -18,6 +18,7 @@ function CollectionDeletionModal({
   setDeletionModal: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [deleteAnswerCollection, { loading }] = useMutation(
     DeleteAnswerCollectionDocument,
     {

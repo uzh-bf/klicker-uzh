@@ -1617,13 +1617,13 @@ type Mutation {
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
-  createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
-  createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
+  createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
-  createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
+  createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
@@ -1648,10 +1648,10 @@ type Mutation {
   duplicateAnswerCollection(id: Int!): AnswerCollection
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
-  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
-  editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
-  editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
-  editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
+  editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
+  editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endExpiredActivities: Boolean!

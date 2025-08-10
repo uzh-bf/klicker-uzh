@@ -19,8 +19,10 @@ function useRequestCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }): { onRequest: () => Promise<boolean>; requesting: boolean } {
+  // TODO: add query update
   const [requestCatalogCollection, { loading: requestingCatalogCollection }] =
     useMutation(RequestCatalogCollectionDocument)
+  // TODO: add query update
   const [requestCatalogObject, { loading: requestingCatalogObject }] =
     useMutation(RequestCatalogObjectDocument)
 

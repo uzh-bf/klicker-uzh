@@ -17,6 +17,8 @@ import Layout from '../components/Layout'
 function JoinPage() {
   const t = useTranslations()
   const router = useRouter()
+
+  // TODO: add query update
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
   const [showError, setError] = useState(false)
 

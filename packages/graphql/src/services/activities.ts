@@ -50,6 +50,39 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
   )
 }
 
+export function getPermissionBooleans({
+  permissionLevel,
+  derived,
+  directGroupPermission,
+}) {
+  return {
+    isOwner: permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permissionLevel === DB.PermissionLevel.OWNER ||
+      permissionLevel === DB.PermissionLevel.ADMIN,
+    isEditor:
+      permissionLevel === DB.PermissionLevel.OWNER ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.WRITE,
+    isExecutor:
+      permissionLevel === DB.PermissionLevel.EXECUTE ||
+      permissionLevel === DB.PermissionLevel.WRITE ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isShared: permissionLevel !== DB.PermissionLevel.OWNER,
+    isRemovable:
+      permissionLevel !== DB.PermissionLevel.OWNER &&
+      !derived &&
+      !directGroupPermission,
+    sharingType:
+      permissionLevel === DB.PermissionLevel.OWNER
+        ? SharingType.OWNED
+        : derived
+          ? SharingType.DEPENDENCY
+          : SharingType.SHARED,
+  }
+}
+
 export async function getUserActivities(
   {
     statusFilter,
@@ -247,14 +280,18 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
+                  _count: {
+                    select: {
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
                       },
                     },
                   },
@@ -265,7 +302,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { directPermissions: true } },
+              _count: { select: { permissions: true } },
             },
           },
           practiceQuiz: {
@@ -276,14 +313,18 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
+                  _count: {
+                    select: {
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
                       },
                     },
                   },
@@ -294,7 +335,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { directPermissions: true } },
+              _count: { select: { permissions: true } },
             },
           },
           microLearning: {
@@ -305,14 +346,18 @@ export async function getUserActivities(
                   name: true,
                   startDate: true,
                   language: true,
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
+                  _count: {
+                    select: {
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
                       },
                     },
                   },
@@ -323,22 +368,26 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { directPermissions: true } },
+              _count: { select: { permissions: true } },
             },
           },
           groupActivity: {
             include: {
               course: {
                 include: {
-                  _count: { select: { participantGroups: true } },
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
+                  _count: {
+                    select: {
+                      participantGroups: true,
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
                       },
                     },
                   },
@@ -349,7 +398,7 @@ export async function getUserActivities(
                 include: { _count: { select: { elements: true } } },
                 orderBy: { order: 'asc' },
               },
-              _count: { select: { directPermissions: true } },
+              _count: { select: { permissions: true } },
             },
           },
         },
@@ -365,30 +414,19 @@ export async function getUserActivities(
 
   // map the activities to a unified format
   const activities = user.objects.flatMap((object) => {
-    const isOwner = object.permissionLevel === DB.PermissionLevel.OWNER
-    const isManager =
-      object.permissionLevel === DB.PermissionLevel.OWNER ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN
-    const isEditor =
-      object.permissionLevel === DB.PermissionLevel.OWNER ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN ||
-      object.permissionLevel === DB.PermissionLevel.WRITE
-    const isExecutor =
-      object.permissionLevel === DB.PermissionLevel.EXECUTE ||
-      object.permissionLevel === DB.PermissionLevel.WRITE ||
-      object.permissionLevel === DB.PermissionLevel.ADMIN ||
-      object.permissionLevel === DB.PermissionLevel.OWNER
-    const isShared = object.permissionLevel !== DB.PermissionLevel.OWNER
-    const isRemovable =
-      object.permissionLevel !== DB.PermissionLevel.OWNER &&
-      !object.derived &&
-      object.directPermission?.userGroupId === null
-    const sharingType =
-      object.permissionLevel === DB.PermissionLevel.OWNER
-        ? SharingType.OWNED
-        : object.derived
-          ? SharingType.DEPENDENCY
-          : SharingType.SHARED
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permissionLevel: object.permissionLevel,
+      derived: object.derived,
+      directGroupPermission: object.directPermission?.userGroupId !== null,
+    })
 
     if (object.liveQuiz) {
       // if the object access is derived and the object is soft-deleted, don't show it
@@ -419,7 +457,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.liveQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.liveQuiz.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.liveQuiz._count.directPermissions
+          ? object.liveQuiz._count.permissions - 1
           : undefined,
         isOwner,
         isManager,
@@ -432,7 +470,7 @@ export async function getUserActivities(
             (object.permissionLevel === DB.PermissionLevel.OWNER ||
               object.permissionLevel === DB.PermissionLevel.ADMIN)) ||
           (!!object.liveQuiz.course &&
-            object.liveQuiz.course.permissions.length > 0),
+            object.liveQuiz.course._count.permissions > 0),
         sharingType,
         updatedAt: object.liveQuiz.updatedAt,
       }
@@ -466,7 +504,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.practiceQuiz.isGamificationEnabled,
         isAssessmentEnabled: object.practiceQuiz.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.practiceQuiz._count.directPermissions
+          ? object.practiceQuiz._count.permissions - 1
           : undefined,
         isOwner,
         isManager,
@@ -474,7 +512,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isActivityReviewer: object.practiceQuiz.course.permissions.length > 0,
+        isActivityReviewer: object.practiceQuiz.course._count.permissions > 0,
         sharingType,
         updatedAt: object.practiceQuiz.updatedAt,
       }
@@ -509,7 +547,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.microLearning.isGamificationEnabled,
         isAssessmentEnabled: object.microLearning.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.microLearning._count.directPermissions
+          ? object.microLearning._count.permissions - 1
           : undefined,
         isOwner,
         isManager,
@@ -517,7 +555,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isActivityReviewer: object.microLearning.course.permissions.length > 0,
+        isActivityReviewer: object.microLearning.course._count.permissions > 0,
         sharingType,
         updatedAt: object.microLearning.updatedAt,
       }
@@ -555,7 +593,7 @@ export async function getUserActivities(
         isGamificationEnabled: object.groupActivity.isGamificationEnabled,
         isAssessmentEnabled: object.groupActivity.isAssessmentEnabled,
         numSharedUsers: isManager
-          ? object.groupActivity._count.directPermissions
+          ? object.groupActivity._count.permissions - 1
           : undefined,
         isOwner,
         isManager,
@@ -563,7 +601,7 @@ export async function getUserActivities(
         isExecutor,
         isShared,
         isRemovable,
-        isActivityReviewer: object.groupActivity.course.permissions.length > 0,
+        isActivityReviewer: object.groupActivity.course._count.permissions > 0,
         sharingType,
         updatedAt: object.groupActivity.updatedAt,
       }

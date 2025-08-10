@@ -30,6 +30,7 @@ function SharingRequestApprovalModal({
     type: request.objectType,
   })
 
+  // TODO: add query update
   const [approveObjectSharingRequest, { loading: approvalLoading }] =
     useMutation(ApproveObjectSharingRequestDocument)
 

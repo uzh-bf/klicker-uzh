@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useRemoveUserFromGroup() {
+  // TODO: add query update
   const [removeUserFromGroup, { loading }] = useMutation(
     RemoveUserFromGroupDocument
   )

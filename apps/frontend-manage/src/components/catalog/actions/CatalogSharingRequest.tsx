@@ -14,6 +14,7 @@ import SharingRequestApprovalModal from './SharingRequestApprovalModal'
 function CatalogSharingRequest({ request }: { request: ObjectSharingRequest }) {
   const t = useTranslations()
   const [approvalModal, setApprovalModal] = useState(false)
+  // TODO: add query update
   const [declineObjectSharingRequest, { loading: declineLoading }] =
     useMutation(DeclineObjectSharingRequestDocument)
 

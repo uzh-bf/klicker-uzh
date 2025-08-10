@@ -20,27 +20,6 @@ mutation EditPracticeQuiz(
     order: $order
     resetTimeDays: $resetTimeDays
   ) {
-    id
-    name
-    displayName
-    description
-    pointsMultiplier
-    resetTimeDays
-    orderType
-
-    course {
-      id
-    }
-
-    stacks {
-      id
-      displayName
-      description
-      order
-      elements {
-        id
-        ...ElementData
-      }
-    }
+    ...ActivityInfoData
   }
 }

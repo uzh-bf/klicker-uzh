@@ -32,6 +32,7 @@ function GroupActivityStartingModal({
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
 
+  // TODO: add query update
   const [openGroupActivity, { loading: openingGroupActivity }] = useMutation(
     OpenGroupActivityDocument,
     {

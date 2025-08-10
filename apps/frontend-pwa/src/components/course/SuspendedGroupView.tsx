@@ -83,7 +83,9 @@ function SuspendedGroupView({
   subscribeActivityList,
 }: SuspendedGroupViewProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
+  // TODO: add query update
   const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
 
   const { data: groupActivitiesData } = useReadQuery(groupActivityQueryRef)

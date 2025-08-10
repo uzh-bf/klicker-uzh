@@ -40,6 +40,7 @@ function FlagElementModal({
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
+  // TODO: add query update
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
   const flagElementSchema = Yup.object().shape({

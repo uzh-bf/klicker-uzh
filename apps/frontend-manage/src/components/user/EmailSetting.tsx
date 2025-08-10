@@ -13,6 +13,7 @@ interface EmailSettingProps {
 
 function EmailSetting({ user }: EmailSettingProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [changeEmailSettings, { loading: changingSetting }] = useMutation(
     ChangeEmailSettingsDocument
   )

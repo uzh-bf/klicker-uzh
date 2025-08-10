@@ -19,6 +19,7 @@ function AnswerCollectionRemovalModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
 

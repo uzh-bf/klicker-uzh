@@ -21,6 +21,7 @@ function ArchiveActionButtons({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
     ToggleIsArchivedDocument
   )

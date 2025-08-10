@@ -32,6 +32,7 @@ function MicrolearningEvaluation() {
     skip: !data?.microLearning?.course?.id,
   })
 
+  // TODO: add query update
   const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
     useMutation(MarkMicroLearningCompletedDocument)
 

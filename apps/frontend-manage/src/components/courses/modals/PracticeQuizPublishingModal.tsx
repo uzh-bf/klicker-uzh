@@ -30,6 +30,7 @@ function PracticeQuizPublishingModal({
   refetchActivities,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
+  // TODO: add query update
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
     useMutation(PublishPracticeQuizDocument)
 

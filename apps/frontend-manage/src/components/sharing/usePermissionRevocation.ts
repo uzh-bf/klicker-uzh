@@ -29,6 +29,7 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
+  // TODO: add query update
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )

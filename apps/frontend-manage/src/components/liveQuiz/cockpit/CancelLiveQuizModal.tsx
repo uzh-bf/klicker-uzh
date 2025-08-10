@@ -51,19 +51,24 @@ function CancelLiveQuizModal({
     CancelLiveQuizDocument,
     {
       variables: { id: quizId },
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-          data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.cancelLiveQuiz?.id
-              ) ?? [],
-          },
-        })
+      update(cache, { data: res }) {
+        // return early if the mutation failed
+        if (!res?.cancelLiveQuiz) return
+
+        cache.updateQuery(
+          { query: GetUserRunningLiveQuizzesDocument },
+          (data) => {
+            // if no data is present, return early
+            if (!data?.userRunningLiveQuizzes) return data
+
+            // remove the cancelled live quiz from the existing list
+            return {
+              userRunningLiveQuizzes: data.userRunningLiveQuizzes.filter(
+                (q) => q.id !== res.cancelLiveQuiz!.id
+              ),
+            }
+          }
+        )
       },
     }
   )

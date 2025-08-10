@@ -3,6 +3,7 @@ import {
   ActivityInfo,
   ActivityType,
   DeleteLiveQuizDocument,
+  GetSingleCourseDocument,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
@@ -111,7 +112,41 @@ function LiveQuizActions({
 
   const [deleteLiveQuiz, { loading: deleting }] = useMutation(
     DeleteLiveQuizDocument,
-    { variables: { id: liveQuiz.id } }
+    {
+      variables: { id: liveQuiz.id },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteLiveQuiz: {
+          id: liveQuiz.id,
+          __typename: 'LiveQuiz',
+        },
+      },
+      update: (cache, { data: res }) => {
+        // if the live quiz is not part of a course or the mutation was not successful, return early
+        if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
+
+        // change the status of the live quiz on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId: liveQuiz.courseId! },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                liveQuizzesInfo:
+                  data.course.liveQuizzesInfo?.filter(
+                    (lq) => lq.id !== res.deleteLiveQuiz!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
+    }
   )
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -197,6 +232,7 @@ function LiveQuizActions({
           <TemplateDeletionModal
             activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
+            courseId={liveQuiz.courseId}
             onClose={() => setTemplateDeletionModal(false)}
             onSuccess={() =>
               toast({

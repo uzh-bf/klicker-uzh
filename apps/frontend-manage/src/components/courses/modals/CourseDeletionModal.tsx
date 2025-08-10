@@ -48,6 +48,7 @@ function CourseDeletionModal({
     skip: !courseId,
   })
 
+  // TODO: add query update
   const [deleteCourse, { loading: courseDeleting }] = useMutation(
     DeleteCourseDocument,
     {

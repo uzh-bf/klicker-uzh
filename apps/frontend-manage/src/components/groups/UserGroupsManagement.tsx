@@ -25,10 +25,7 @@ function UserGroupsManagement() {
               <Loader />
             ) : typeof data?.getUserGroupsUser === 'undefined' ||
               data.getUserGroupsUser?.length === 0 ? (
-              <UserNotification
-                type="info"
-                message={t('manage.userGroups.noGroups')}
-              />
+              <UserNotification message={t('manage.userGroups.noGroups')} />
             ) : (
               <div className="mt-1.5 flex flex-col gap-[0.15rem]">
                 {data?.getUserGroupsUser?.map((group) => (

@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function usePromoteGroupMemberToAdmin() {
+  // TODO: add query update
   const [promoteGroupMemberToAdmin, { loading }] = useMutation(
     PromoteGroupMemberToAdminDocument
   )

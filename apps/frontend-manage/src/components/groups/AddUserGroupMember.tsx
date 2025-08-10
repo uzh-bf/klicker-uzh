@@ -19,6 +19,7 @@ function AddUserGroupMember({
   loading: boolean
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [addUserToUserGroup] = useMutation(AddUserToUserGroupDocument)
 
   const onErrorToast = () =>

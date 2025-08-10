@@ -25,6 +25,7 @@ import Layout from '../../components/Layout'
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
+  // TODO: add query update
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
@@ -118,10 +119,7 @@ function CourseSelectionPage() {
                 (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
               )}
             >
-              <UserNotification
-                type="warning"
-                className={{ root: 'text-normal mb-3' }}
-              >
+              <UserNotification className={{ root: 'mb-3 text-base' }}>
                 {t('manage.courseList.noCoursesFound')}
               </UserNotification>
               <CourseListButton

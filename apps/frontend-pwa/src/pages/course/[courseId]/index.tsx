@@ -84,6 +84,7 @@ function CourseOverview({
       variables: { courseId },
     })
 
+  // TODO: add query update
   const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [
@@ -94,6 +95,7 @@ function CourseOverview({
     ],
   })
 
+  // TODO: add query update
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [

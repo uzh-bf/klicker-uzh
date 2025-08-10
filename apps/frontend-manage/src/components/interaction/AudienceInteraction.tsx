@@ -80,12 +80,19 @@ function AudienceInteraction({
     }
   }, [subscribeToMore, quizId])
 
+  // TODO: add query update
   const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument)
+  // TODO: add query update
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
+  // TODO: add query update
   const [pinFeedback] = useMutation(PinFeedbackDocument)
+  // TODO: add query update
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
+  // TODO: add query update
   const [deleteFeedback] = useMutation(DeleteFeedbackDocument)
+  // TODO: add query update
   const [deleteFeedbackResponse] = useMutation(DeleteFeedbackResponseDocument)
+  // TODO: add query update
   const [respondToFeedback] = useMutation(RespondToFeedbackDocument)
 
   return (

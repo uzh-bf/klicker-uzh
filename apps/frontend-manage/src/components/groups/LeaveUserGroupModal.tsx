@@ -23,6 +23,7 @@ function LeaveUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
+  // TODO: add query update
   const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
 
   const onErrorToast = () =>

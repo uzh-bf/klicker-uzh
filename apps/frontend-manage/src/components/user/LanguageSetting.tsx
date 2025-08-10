@@ -18,6 +18,7 @@ function LanguageSetting({ user }: LanguageSettingProps) {
   const router = useRouter()
   const { pathname, query, asPath } = router
 
+  // TODO: add query update
   const [changeUserLocale, { loading: changingLanguage }] = useMutation(
     ChangeUserLocaleDocument
   )
