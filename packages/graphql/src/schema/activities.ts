@@ -6,8 +6,8 @@ import {
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
+import { ElementInstanceRef, IElementInstance } from './element.js'
 import { PublicationStatus, ReviewStatus } from './practiceQuiz.js'
-import { ElementInstanceRef, IElementInstance } from './question.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
 

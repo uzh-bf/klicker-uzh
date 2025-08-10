@@ -15,7 +15,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { updateElementInstances } from '../src/services/questions.js'
+import { updateElementInstances } from '../src/services/elements.js'
 import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
@@ -978,7 +978,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: false },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
     const template2 = await prisma.activityTemplate.findUnique({
       where: {
@@ -1007,7 +1009,9 @@ describe('Unit tests for template service', () => {
     // trigger another element instance update, this time including the activity templates
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the content of the corresponding element instance has changed, the answer collections linked to the template not
@@ -1062,7 +1066,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that answer collections 2 and 3 are now linked to the template
@@ -1121,7 +1127,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that only answer collection 3 is now linked to the template
@@ -1178,7 +1186,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that answer collections 1 and 3 is now linked to the template
@@ -1234,7 +1244,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the update was successful and that the corresponding answer collection entries are now linked to the template

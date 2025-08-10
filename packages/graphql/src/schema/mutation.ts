@@ -6,6 +6,7 @@ import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as CourseService from '../services/courses.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -13,7 +14,6 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
-import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -21,6 +21,17 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
+import {
+  Element,
+  ElementInstance,
+  OptionsCaseStudyInput,
+  OptionsChoicesInput,
+  OptionsFreeTextInput,
+  OptionsNumericalInput,
+  OptionsSelectionInput,
+  Tag,
+  TemplateBlockInput,
+} from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
@@ -57,18 +68,6 @@ import {
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
-import {
-  ArchivedElementList,
-  Element,
-  ElementInstance,
-  OptionsCaseStudyInput,
-  OptionsChoicesInput,
-  OptionsFreeTextInput,
-  OptionsNumericalInput,
-  OptionsSelectionInput,
-  Tag,
-  TemplateBlockInput,
-} from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   ActivityLogEntry,
@@ -709,7 +708,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.deleteTag(args, ctx)
+          return await ElementService.deleteTag(args, ctx)
         },
       }),
 
@@ -723,7 +722,7 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await QuestionService.deleteElement(args, ctx)
+            return await ElementService.deleteElement(args, ctx)
           }
         ),
       }),
@@ -736,7 +735,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.editTag(args, ctx)
+          return await ElementService.editTag(args, ctx)
         },
       }),
 
@@ -998,7 +997,7 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await QuestionService.changeElementStatus(args, ctx)
+            return await ElementService.changeElementStatus(args, ctx)
           }
         ),
       }),
@@ -1032,7 +1031,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -1069,7 +1068,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -1110,7 +1109,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(args, ctx)
+          return await ElementService.manipulateElement(args, ctx)
         },
       }),
 
@@ -1147,7 +1146,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
           )
@@ -1187,7 +1186,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
           )
@@ -1227,7 +1226,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1267,7 +1266,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
@@ -1287,6 +1286,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      applyElementBatchOperations: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          archive: t.arg.boolean({ required: true }),
+          unarchive: t.arg.boolean({ required: true }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          multiplier: t.arg.int({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
+          updateInstances: t.arg.boolean({ required: true }),
+          updateTemplateInstances: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.applyElementBatchOperations(args, ctx)
+        },
+      }),
+
       updateElementInstances: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [ElementInstance],
@@ -1298,7 +1314,12 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await QuestionService.updateElementInstances(args, ctx)
+            return await ElementService.updateElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter,
+              ctx.user.sub
+            )
           }
         ),
       }),
@@ -1312,7 +1333,11 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await QuestionService.flagOutdatedElementInstances(args, ctx)
+            return await ElementService.flagOutdatedElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter
+            )
           }
         ),
       }),
@@ -1412,18 +1437,6 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      toggleIsArchived: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ArchivedElementList,
-        args: {
-          elementIds: t.arg.intList({ required: true }),
-          isArchived: t.arg.boolean({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await QuestionService.toggleIsArchived(args, ctx)
-        },
-      }),
-
       updateTagOrdering: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Tag],
@@ -1432,7 +1445,7 @@ export const Mutation = builder.mutationType({
           targetIx: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.updateTagOrdering(args, ctx)
+          return await ElementService.updateTagOrdering(args, ctx)
         },
       }),
 
@@ -1533,7 +1546,7 @@ export const Mutation = builder.mutationType({
           contentType: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.getFileUploadSas(args, ctx)
+          return await ElementService.getFileUploadSas(args, ctx)
         },
       }),
 
@@ -2919,7 +2932,7 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else if (args.objectType === DB.ObjectType.ELEMENT) {
-            return await QuestionService.removeElement(
+            return await ElementService.removeElement(
               { id: parseInt(args.objectId) },
               ctx
             )

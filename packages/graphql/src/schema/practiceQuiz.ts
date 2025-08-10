@@ -13,9 +13,9 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
+import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
 import { IStackFeedback } from './evaluation.js'
-import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),

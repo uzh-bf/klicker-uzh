@@ -1,8 +1,8 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
 import { CourseRef } from './course.js'
+import { ElementInstanceRef } from './element.js'
 import { PublicationStatus } from './practiceQuiz.js'
-import { ElementInstanceRef } from './question.js'
 
 export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),

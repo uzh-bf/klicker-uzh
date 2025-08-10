@@ -1,8 +1,8 @@
 import {
   BlobSASPermissions,
   BlobServiceClient,
-  StorageSharedKeyCredential,
   generateBlobSASQueryParameters,
+  StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
 import {
@@ -15,11 +15,13 @@ import {
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
+  PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
+import EventEmitter from 'events'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type {
   ContextWithUser,
@@ -239,11 +241,11 @@ export async function getUserElements(
   }
 }
 
-export async function getSingleQuestion(
+export async function getSingleElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.element.findUnique({
+  const element = await ctx.prisma.element.findUnique({
     where: { id, permissions: { some: { userId: ctx.user.sub } } },
     include: {
       permissions: {
@@ -257,15 +259,15 @@ export async function getSingleQuestion(
     },
   })
 
-  if (!question) {
+  if (!element) {
     return null
   }
 
-  const selectedItemIds = question.answerCollectionItems.map((item) => item.id)
-  const permission = question.permissions[0]
+  const selectedItemIds = element.answerCollectionItems.map((item) => item.id)
+  const permission = element.permissions[0]
 
   return {
-    ...question,
+    ...element,
     permissionLevel: permission!.permissionLevel,
     derivedAccess: permission!.derived,
     isOwner: permission!.permissionLevel === DB.PermissionLevel.OWNER,
@@ -277,13 +279,13 @@ export async function getSingleQuestion(
       permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
       permission!.permissionLevel === DB.PermissionLevel.WRITE,
     options: {
-      ...question.options,
+      ...element.options,
       // SE elements
-      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollection: { id: element.answerCollectionId, entries: [] },
       // SE elements
       answerCollectionSolutionIds: selectedItemIds,
       // CS elements
-      answerCollectionId: question.answerCollectionId,
+      answerCollectionId: element.answerCollectionId,
       // CS elements
       collectionItemIds: selectedItemIds,
     },
@@ -372,7 +374,7 @@ export async function getSingleElementInstance(
   return instance
 }
 
-export async function manipulateQuestion(
+export async function manipulateElement(
   {
     id,
     status,
@@ -412,7 +414,7 @@ export async function manipulateQuestion(
 
   // fetch the existing element to compare before/after state
   const isNewElement = typeof id === 'undefined' || id === null
-  const questionPrev = !isNewElement
+  const elementPrev = !isNewElement
     ? await ctx.prisma.element.findUnique({
         where: { id: id, isDeleted: false },
         include: {
@@ -423,8 +425,8 @@ export async function manipulateQuestion(
     : undefined
 
   // determine which tags have been deconnected
-  if (questionPrev?.tags) {
-    tagsToDisconnect = questionPrev.tags
+  if (elementPrev?.tags) {
+    tagsToDisconnect = elementPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
@@ -469,11 +471,8 @@ export async function manipulateQuestion(
   }
 
   // (SE only) determine which answer options are no longer considered to be correct
-  if (
-    type === DB.ElementType.SELECTION &&
-    questionPrev?.answerCollectionItems
-  ) {
-    const prevSolutionsIds = questionPrev.answerCollectionItems.map(
+  if (type === DB.ElementType.SELECTION && elementPrev?.answerCollectionItems) {
+    const prevSolutionsIds = elementPrev.answerCollectionItems.map(
       (sol) => sol.id
     )
     collectionAnswersToDisconnect = options?.hasSampleSolution
@@ -485,9 +484,9 @@ export async function manipulateQuestion(
   // (similar to selection questions, but not dependent on definition of a sample solution)
   if (
     type === DB.ElementType.CASE_STUDY &&
-    questionPrev?.answerCollectionItems
+    elementPrev?.answerCollectionItems
   ) {
-    const previousItemIds = questionPrev.answerCollectionItems.map(
+    const previousItemIds = elementPrev.answerCollectionItems.map(
       (item) => item.id
     )
     collectionAnswersToDisconnect = previousItemIds.filter(
@@ -495,7 +494,7 @@ export async function manipulateQuestion(
     )
   }
 
-  const question = await ctx.prisma.element.upsert({
+  const element = await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
@@ -587,18 +586,18 @@ export async function manipulateQuestion(
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(
-    { elementId: question.id, userId: ctx.user.sub },
+    { elementId: element.id, userId: ctx.user.sub },
     ctx.prisma
   )
 
-  // if the answer collection linked to the question has changed, recompute the derived permissions for the removed answer collection
+  // if the answer collection linked to the element has changed, recompute the derived permissions for the removed answer collection
   if (
-    questionPrev?.answerCollectionId !== null &&
-    typeof questionPrev?.answerCollectionId !== 'undefined' &&
-    question.answerCollectionId !== questionPrev.answerCollectionId
+    elementPrev?.answerCollectionId !== null &&
+    typeof elementPrev?.answerCollectionId !== 'undefined' &&
+    element.answerCollectionId !== elementPrev.answerCollectionId
   ) {
     await recomputeDerivedPermissions(
-      { answerCollectionId: questionPrev.answerCollectionId },
+      { answerCollectionId: elementPrev.answerCollectionId },
       ctx.prisma
     )
   }
@@ -611,18 +610,18 @@ export async function manipulateQuestion(
       data: {
         type: DB.ActivityLogType.CREATION,
         objectType: DB.ObjectType.ELEMENT,
-        elementId: question.id,
+        elementId: element.id,
         userId: ctx.user.sub,
-        createdAt: question.createdAt,
-        updatedAt: question.updatedAt,
+        createdAt: element.createdAt,
+        updatedAt: element.updatedAt,
       },
     })
-  } else if (questionPrev) {
+  } else if (elementPrev) {
     // track title changes
-    if (name && name !== questionPrev.name) {
+    if (name && name !== elementPrev.name) {
       const modificationDetails: ActivityLogModificationDetails = {
         field: ActivityLogModificationFieldType.TITLE,
-        oldValue: questionPrev.name,
+        oldValue: elementPrev.name,
         newValue: name,
       }
 
@@ -631,7 +630,7 @@ export async function manipulateQuestion(
           type: DB.ActivityLogType.MODIFICATION,
           modificationDetails,
           objectType: DB.ObjectType.ELEMENT,
-          elementId: question.id,
+          elementId: element.id,
           userId: ctx.user.sub,
         },
       })
@@ -640,7 +639,7 @@ export async function manipulateQuestion(
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
-    id: question.id,
+    id: element.id,
   })
 
   if (
@@ -654,21 +653,163 @@ export async function manipulateQuestion(
   }
 
   return {
-    ...question,
+    ...element,
     options: {
-      ...question.options,
+      ...element.options,
       // SE elements
-      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollection: { id: element.answerCollectionId, entries: [] },
       // SE elements
-      answerCollectionSolutionIds: question.answerCollectionItems.map(
+      answerCollectionSolutionIds: element.answerCollectionItems.map(
         (sol) => sol.id
       ),
       // CS elements
-      answerCollectionId: question.answerCollectionId,
+      answerCollectionId: element.answerCollectionId,
       // CS elements
-      collectionItemIds: question.answerCollectionItems.map((item) => item.id),
+      collectionItemIds: element.answerCollectionItems.map((item) => item.id),
     },
   }
+}
+
+export async function applyElementBatchOperations(
+  {
+    elementIds,
+    archive,
+    unarchive,
+    status,
+    multiplier,
+    basePoints,
+    updateInstances,
+    updateTemplateInstances,
+  }: {
+    elementIds: number[]
+    archive: boolean
+    unarchive: boolean
+    status?: DB.ElementStatus | null
+    multiplier?: number | null
+    basePoints?: boolean | null
+    updateInstances: boolean
+    updateTemplateInstances: boolean
+  },
+  ctx: ContextWithUser
+) {
+  if (elementIds.length === 0) {
+    return 0
+  }
+
+  // determine the required access level for the batch operation, depending on the selected actions
+  let requiredPermissionLevels: DB.PermissionLevel[] = []
+  if (archive || unarchive) {
+    // archiving / unarchiving requires at least ADMIN access
+    requiredPermissionLevels = [
+      DB.PermissionLevel.OWNER,
+      DB.PermissionLevel.ADMIN,
+    ]
+  } else if (
+    (typeof multiplier !== 'undefined' && multiplier !== null) ||
+    (typeof basePoints !== 'undefined' && basePoints !== null)
+  ) {
+    // modifying points requires at least WRITE access
+    requiredPermissionLevels = [
+      DB.PermissionLevel.OWNER,
+      DB.PermissionLevel.ADMIN,
+      DB.PermissionLevel.WRITE,
+    ]
+  } else if (typeof status !== 'undefined' && status !== null) {
+    // changing status requires at least READ access
+    requiredPermissionLevels = [
+      DB.PermissionLevel.OWNER,
+      DB.PermissionLevel.ADMIN,
+      DB.PermissionLevel.WRITE,
+      DB.PermissionLevel.READ,
+    ]
+  } else {
+    // no actions selected, nothing to do
+    return 0
+  }
+
+  // if both archive and unarchive are true, disable the action (no elements should be selected)
+  if (archive && unarchive) {
+    return 0
+  }
+
+  // fetch all elements that should be modified
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: elementIds },
+      isDeleted: false,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: { in: requiredPermissionLevels },
+        },
+      },
+      // if elements should be archived / unarchived, they should not be in the corresponding state already
+      isArchived: archive ? false : unarchive ? true : undefined,
+      // if the multiplier should be modified, the element should have a sample solution defined
+      options:
+        typeof multiplier !== 'undefined' && multiplier !== null
+          ? { path: ['hasSampleSolution'], equals: true }
+          : undefined,
+      // if base points should be set / unset, the element must not be a flashcard or content element
+      type:
+        typeof basePoints !== 'undefined' && basePoints !== null
+          ? { notIn: [DB.ElementType.FLASHCARD, DB.ElementType.CONTENT] }
+          : undefined,
+    },
+  })
+
+  // if no elements were found, return 0
+  if (dbElements.length === 0) {
+    return 0
+  }
+
+  // execute the required element updates and, if enabled, update the corresponding linked instances
+  const updatedElements = await Promise.allSettled(
+    dbElements.map(
+      async (element) =>
+        await ctx.prisma.$transaction(async (tx) => {
+          // execute the element update
+          const updatedElement = await tx.element.update({
+            where: { id: element.id },
+            data: {
+              isArchived: archive ? true : unarchive ? false : undefined,
+              status: status ?? undefined,
+              pointsMultiplier:
+                typeof multiplier !== 'undefined' && multiplier !== null
+                  ? multiplier
+                  : undefined,
+              basePoints:
+                typeof basePoints !== 'undefined' && basePoints !== null
+                  ? basePoints
+                  : undefined,
+            },
+          })
+
+          // if enabled, update the corresponding element instances
+          if (updateInstances) {
+            await updateElementInstances(
+              {
+                elementId: updatedElement.id,
+                includeTemplates: updateTemplateInstances,
+              },
+              tx,
+              ctx.emitter,
+              ctx.user.sub
+            )
+          }
+
+          return updatedElement
+        })
+    )
+  )
+
+  // filter out the elements that were successfully updated
+  const successfullyUpdatedElements = updatedElements
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value)
+
+  // return the number of successfully updated elements
+  return successfullyUpdatedElements.length
 }
 
 export async function changeElementStatus(
@@ -718,7 +859,7 @@ export async function deleteElement(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  // soft delete question and disconnect linked answer collection and sample solutions
+  // soft delete element and disconnect linked answer collection and sample solutions
   const { deletedElement, originalElement } = await ctx.prisma.$transaction(
     async (prisma) => {
       const originalElement = await prisma.element.findUnique({ where: { id } })
@@ -752,7 +893,7 @@ export async function deleteElement(
         )
       }
 
-      // if the element was linked to any tags, check if the tags still have other questions linked to it
+      // if the element was linked to any tags, check if the tags still have other elements linked to it
       for (const tag of element.tags) {
         const elementTag = await prisma.tag.findUnique({
           where: { id: tag.id },
@@ -915,56 +1056,6 @@ export async function updateTagOrdering(
   return reorderedTags
 }
 
-export async function toggleIsArchived(
-  { elementIds, isArchived }: { elementIds: number[]; isArchived: boolean },
-  ctx: ContextWithUser
-) {
-  // find all elements that should be archived
-  const elements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elementIds },
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
-    select: { id: true },
-  })
-
-  // if no elements are found, return an empty array
-  if (!elements || elements.length === 0) {
-    return { elements: [], failure: true }
-  }
-
-  // update the isArchived status of the elements
-  const updatedElements = await ctx.prisma.element.updateMany({
-    where: {
-      id: { in: elements.map((el) => el.id) },
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
-    data: { isArchived },
-  })
-
-  return {
-    success: updatedElements.count === elementIds.length,
-    partialSuccess:
-      updatedElements.count > 0 && updatedElements.count < elementIds.length,
-    failure: updatedElements.count === 0,
-    elements: elements.map(({ id }) => ({ id, isArchived })),
-  }
-}
-
 // map mime types of images to file extensions
 const FILE_EXTENSIONS: Record<string, string> = {
   'image/png': 'png',
@@ -1050,7 +1141,7 @@ export async function getInstanceUpdateActivities(
   ctx: ContextWithUser
 ) {
   // fetch meta information on all activities that would be affected by the element update
-  // fetch the question and return null, if the question does not exist
+  // fetch the element and return null, if the element does not exist
   const acceptedStatusValues = includeTemplateInstances
     ? [
         DB.PublicationStatus.DRAFT,
@@ -1388,9 +1479,11 @@ export async function updateElementInstances(
     elementId,
     includeTemplates,
   }: { elementId: number; includeTemplates: boolean },
-  ctx: ContextWithUser
+  prisma: PrismaTransactionClient,
+  emitter: EventEmitter,
+  userId: string
 ) {
-  // fetch the question and return null, if the question does not exist
+  // fetch the element and return null, if the element does not exist
   const acceptedStatusValues = includeTemplates
     ? [
         DB.PublicationStatus.DRAFT,
@@ -1406,7 +1499,7 @@ export async function updateElementInstances(
     DB.PermissionLevel.OWNER,
   ]
 
-  const element = await ctx.prisma.element.findUnique({
+  const element = await prisma.element.findUnique({
     where: {
       id: elementId,
       isDeleted: false,
@@ -1424,7 +1517,7 @@ export async function updateElementInstances(
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
-                      userId: ctx.user.sub,
+                      userId,
                       permissionLevel: {
                         in: requiredActivityAccess,
                       },
@@ -1443,7 +1536,7 @@ export async function updateElementInstances(
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
-                      userId: ctx.user.sub,
+                      userId,
                       permissionLevel: {
                         in: requiredActivityAccess,
                       },
@@ -1462,7 +1555,7 @@ export async function updateElementInstances(
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
-                      userId: ctx.user.sub,
+                      userId,
                       permissionLevel: {
                         in: requiredActivityAccess,
                       },
@@ -1532,7 +1625,7 @@ export async function updateElementInstances(
             DB.PublicationStatus.TEMPLATE)) &&
       // ensure that user has at least WRITE permissions on activity (cannot be checked with where clause above)
       instance.elementBlock.liveQuiz.permissions
-        .filter((permission) => permission.userId === ctx.user.sub)
+        .filter((permission) => permission.userId === userId)
         .some((permission) =>
           requiredActivityAccess.includes(permission.permissionLevel)
         )
@@ -1617,7 +1710,7 @@ export async function updateElementInstances(
           templateId,
           reviewStatus,
         }) => {
-          const oldInstance = await ctx.prisma.elementInstance.findUnique({
+          const oldInstance = await prisma.elementInstance.findUnique({
             where: { id: instanceId },
           })
 
@@ -1629,7 +1722,7 @@ export async function updateElementInstances(
           // prepare new results objects
           const newResults = getInitialInstanceResults(newElementData)
 
-          const instance = await ctx.prisma.elementInstance.update({
+          const instance = await prisma.elementInstance.update({
             where: { id: instanceId },
             data: {
               elementData: newElementData,
@@ -1647,22 +1740,22 @@ export async function updateElementInstances(
           // if the previous activity status was set to reviewed, update it to indicated that the content was modified
           if (reviewStatus === DB.ReviewStatus.REVIEWED) {
             if (typeof liveQuizId !== 'undefined') {
-              await ctx.prisma.liveQuiz.update({
+              await prisma.liveQuiz.update({
                 where: { id: liveQuizId },
                 data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
               })
             } else if (typeof practiceQuizId !== 'undefined') {
-              await ctx.prisma.practiceQuiz.update({
+              await prisma.practiceQuiz.update({
                 where: { id: practiceQuizId },
                 data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
               })
             } else if (typeof microLearningId !== 'undefined') {
-              await ctx.prisma.microLearning.update({
+              await prisma.microLearning.update({
                 where: { id: microLearningId },
                 data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
               })
             } else if (typeof groupActivityId !== 'undefined') {
-              await ctx.prisma.groupActivity.update({
+              await prisma.groupActivity.update({
                 where: { id: groupActivityId },
                 data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
               })
@@ -1689,7 +1782,7 @@ export async function updateElementInstances(
                   activityId: liveQuizId,
                   activityType: ActivityType.LIVE_QUIZ,
                 },
-                ctx.prisma
+                prisma
               )
 
               instanceCollectionIds = ids
@@ -1703,7 +1796,7 @@ export async function updateElementInstances(
                   activityId: practiceQuizId,
                   activityType: ActivityType.PRACTICE_QUIZ,
                 },
-                ctx.prisma
+                prisma
               )
 
               instanceCollectionIds = ids
@@ -1717,7 +1810,7 @@ export async function updateElementInstances(
                   activityId: microLearningId,
                   activityType: ActivityType.MICRO_LEARNING,
                 },
-                ctx.prisma
+                prisma
               )
 
               instanceCollectionIds = ids
@@ -1731,7 +1824,7 @@ export async function updateElementInstances(
                   activityId: groupActivityId,
                   activityType: ActivityType.GROUP_ACTIVITY,
                 },
-                ctx.prisma
+                prisma
               )
 
               instanceCollectionIds = ids
@@ -1739,7 +1832,7 @@ export async function updateElementInstances(
             }
 
             // fetch the existing template and the contained answer collections
-            const template = await ctx.prisma.activityTemplate.findUnique({
+            const template = await prisma.activityTemplate.findUnique({
               where: {
                 id: templateId,
               },
@@ -1788,7 +1881,7 @@ export async function updateElementInstances(
               collectionEntriesToConnect.length > 0 ||
               collectionEntriesToDisconnect.length > 0
             ) {
-              await ctx.prisma.activityTemplate.update({
+              await prisma.activityTemplate.update({
                 where: {
                   id: templateId,
                 },
@@ -1837,27 +1930,27 @@ export async function updateElementInstances(
           if (!instance) return null
 
           if (typeof liveQuizId !== 'undefined') {
-            ctx.emitter.emit('invalidate', {
+            emitter.emit('invalidate', {
               typename: 'LiveQuiz',
               id: liveQuizId,
             })
           } else if (typeof practiceQuizId !== 'undefined') {
-            ctx.emitter.emit('invalidate', {
+            emitter.emit('invalidate', {
               typename: 'PracticeQuiz',
               id: practiceQuizId,
             })
           } else if (typeof microLearningId !== 'undefined') {
-            ctx.emitter.emit('invalidate', {
+            emitter.emit('invalidate', {
               typename: 'MicroLearning',
               id: microLearningId,
             })
           } else if (typeof groupActivityId !== 'undefined') {
-            ctx.emitter.emit('invalidate', {
+            emitter.emit('invalidate', {
               typename: 'GroupActivity',
               id: groupActivityId,
             })
           } else if (typeof templateId !== 'undefined') {
-            ctx.emitter.emit('invalidate', {
+            emitter.emit('invalidate', {
               typename: 'Template',
               id: templateId,
             })
@@ -1880,22 +1973,23 @@ export async function updateElementInstances(
 
     // recompute the derived permissions for all touched answer collections
     for (const id of uniqueTouchedAnswerCollectionIds) {
-      await recomputeDerivedPermissions({ answerCollectionId: id }, ctx.prisma)
+      await recomputeDerivedPermissions({ answerCollectionId: id }, prisma)
     }
   }
 
   // mark all instances as outdated that are no longer in sync with the element version
-  await flagOutdatedElementInstances({ elementId }, ctx)
+  await flagOutdatedElementInstances({ elementId }, prisma, emitter)
 
   return updatedInstances
 }
 
 export async function flagOutdatedElementInstances(
   { elementId }: { elementId: number },
-  ctx: ContextWithUser
+  prisma: PrismaTransactionClient,
+  emitter: EventEmitter
 ) {
   // fetch the element to check the latest version
-  const element = await ctx.prisma.element.findUnique({
+  const element = await prisma.element.findUnique({
     where: { id: elementId, isDeleted: false },
   })
 
@@ -1904,7 +1998,7 @@ export async function flagOutdatedElementInstances(
   }
 
   // fetch all element instances with outdated element versions
-  const outdatedInstances = await ctx.prisma.elementInstance.findMany({
+  const outdatedInstances = await prisma.elementInstance.findMany({
     where: {
       elementId,
       NOT: {
@@ -1934,49 +2028,49 @@ export async function flagOutdatedElementInstances(
 
   for (const instance of outdatedInstances) {
     // set the element instance version to outdated
-    await ctx.prisma.elementInstance.update({
+    await prisma.elementInstance.update({
       where: { id: instance.id },
       data: { isVersionOutdated: true },
     })
 
     // highlight on the activity that it contains outdated elements
     if (instance.elementBlock?.liveQuizId) {
-      await ctx.prisma.liveQuiz.update({
+      await prisma.liveQuiz.update({
         where: { id: instance.elementBlock.liveQuizId },
         data: { areInstancesOutdated: true },
       })
 
-      ctx.emitter.emit('invalidate', {
+      emitter.emit('invalidate', {
         typename: 'LiveQuiz',
         id: instance.elementBlock.liveQuizId,
       })
     } else if (instance.elementStack?.microLearningId) {
-      await ctx.prisma.microLearning.update({
+      await prisma.microLearning.update({
         where: { id: instance.elementStack.microLearningId },
         data: { areInstancesOutdated: true },
       })
 
-      ctx.emitter.emit('invalidate', {
+      emitter.emit('invalidate', {
         typename: 'MicroLearning',
         id: instance.elementStack.microLearningId,
       })
     } else if (instance.elementStack?.practiceQuizId) {
-      await ctx.prisma.practiceQuiz.update({
+      await prisma.practiceQuiz.update({
         where: { id: instance.elementStack.practiceQuizId },
         data: { areInstancesOutdated: true },
       })
 
-      ctx.emitter.emit('invalidate', {
+      emitter.emit('invalidate', {
         typename: 'PracticeQuiz',
         id: instance.elementStack.practiceQuizId,
       })
     } else if (instance.elementStack?.groupActivityId) {
-      await ctx.prisma.groupActivity.update({
+      await prisma.groupActivity.update({
         where: { id: instance.elementStack.groupActivityId },
         data: { areInstancesOutdated: true },
       })
 
-      ctx.emitter.emit('invalidate', {
+      emitter.emit('invalidate', {
         typename: 'GroupActivity',
         id: instance.elementStack.groupActivityId,
       })

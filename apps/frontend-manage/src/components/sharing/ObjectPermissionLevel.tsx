@@ -24,10 +24,12 @@ const PermissionLevelIcons: Record<
 function ObjectPermissionLevel({
   objectName,
   permissionLevel,
+  iconOnly = false,
   className,
 }: {
   objectName: string
   permissionLevel: PermissionLevel
+  iconOnly?: boolean
   className?: string
 }) {
   const badge = PermissionLevelIcons[permissionLevel]
@@ -35,6 +37,17 @@ function ObjectPermissionLevel({
 
   if (typeof badge === 'undefined') {
     return null
+  }
+
+  if (iconOnly) {
+    return (
+      <FontAwesomeIcon
+        size="sm"
+        icon={badge.icon}
+        className={twMerge('shrink-0', badge.color, className)}
+        data-cy={`permission-level-icon-${objectName}-${permissionLevel}`}
+      />
+    )
   }
 
   return (

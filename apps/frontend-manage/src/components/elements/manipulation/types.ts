@@ -132,6 +132,26 @@ export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
 }
 
+export type BatchOperationActions = {
+  archive: boolean
+  unarchive: boolean
+  status?: ElementStatus
+  multiplier?: string
+  basePoints?: boolean
+  updateInstances: boolean
+  updateTemplateInstances: boolean
+}
+
+export const INITIAL_ELEMENT_BATCH_OPERATIONS: BatchOperationActions = {
+  archive: false,
+  unarchive: false,
+  status: undefined,
+  multiplier: undefined,
+  basePoints: undefined,
+  updateInstances: true,
+  updateTemplateInstances: false,
+}
+
 export type ElementFormTypes =
   | ElementFormTypesChoices
   | ElementFormTypesNumerical

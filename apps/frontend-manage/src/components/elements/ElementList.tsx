@@ -92,7 +92,6 @@ function ElementList({
           key={`question-list-element-${element.id}`}
           element={element}
           disabled={!element.isManager && activityWizardOpen}
-          checkboxDisabled={!element.isManager}
           checked={!!selectedElements[element.id]}
           tags={element.tags || []}
           handleTagClick={handleTagClick}

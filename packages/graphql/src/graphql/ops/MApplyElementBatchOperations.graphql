@@ -1,0 +1,21 @@
+mutation ApplyElementBatchOperations(
+  $elementIds: [Int!]!
+  $archive: Boolean!
+  $unarchive: Boolean!
+  $status: ElementStatus
+  $multiplier: Int
+  $basePoints: Boolean
+  $updateInstances: Boolean!
+  $updateTemplateInstances: Boolean!
+) {
+  applyElementBatchOperations(
+    elementIds: $elementIds
+    archive: $archive
+    unarchive: $unarchive
+    status: $status
+    multiplier: $multiplier
+    basePoints: $basePoints
+    updateInstances: $updateInstances
+    updateTemplateInstances: $updateTemplateInstances
+  )
+}

@@ -160,6 +160,7 @@ export default {
       confirm: 'Bestätigen',
       close: 'Schliessen',
       approve: 'Genehmigen',
+      apply: 'Anwenden',
       sendAnswer: 'Antwort senden',
       begin: 'Beginnen',
       finish: 'Abschliessen',
@@ -311,6 +312,7 @@ export default {
       comingSoon: 'Coming soon...',
       pinCode: 'PIN Code',
       forgotPassword: 'Passwort vergessen?',
+      archive: 'Archiv',
       archived: 'Archiviert',
       ended: 'Beendet',
       assessment: 'Assessment',
@@ -390,6 +392,7 @@ export default {
       modifiedAfterReview: 'Nach Review verändert',
       modifiedAfterReviewInformation:
         'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
+      availableActions: 'Verfügbare Aktionen',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1289,19 +1292,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie nutzen das Element nicht in keiner Aktivität. Das Element kann vollständig entfernt werden.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
-      restoreFromArchive: 'Aus dem Archiv wiederherstellen',
-      archivingSuccess:
-        'Alle ausgewählten Elemente wurden erfolgreich archiviert.',
-      archivingPartialSuccess:
-        'Alle Elemente mit ausreichenden Berechtigungen wurden erfolgreich archiviert. Bitte beachten Sie, dass zur Archivierung von Elementen mindestens Admin-Berechtigungen auf dem entsprechenden Objekt erforderlich sind.',
-      archivingFailed:
-        'Keines der ausgewählten Elemente konnte archiviert werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
-      restoreFromArchiveSuccess:
-        'Das Element wurde erfolgreich aus dem Archiv wiederhergestellt.',
-      restoreFromArchivePartialSuccess:
-        'Einige Elemente konnten erfolgreich aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
-      restoreFromArchiveFailed:
-        'Keine Elemente konnten aus dem Archiv wiederhergestellt werden. Bitte überprüfen Sie Ihre Berechtigungen (Admin-Rechte sind erforderlich für diese Operation) und versuchen Sie es erneut.',
+      restoreFromArchive: 'Element wiederherstellen',
       showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showFeedbacksExplanationTooltip:
@@ -1312,6 +1303,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Musterlösungen können nur für Fragen erfasst werden. Inhaltselemente und Lernkarten unterstützen keine Musterlösungen.',
       answerFeedbacksUnavailableTypes:
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
+      batchOperations: 'Batch-Operationen ({numElements} Elemente)',
+      batchOperationsElements: 'Batch-Operationen (Elemente)',
+      selectedElementsDescription:
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, die von den gewählten Aktionen betroffen sind, sind markiert. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+      actionApplies: 'Aktion wird angewendet',
+      modifyStatus: 'Status ändern',
+      modifyMultiplier: 'Multiplikator ändern',
+      modifyBasePoints: 'Basispunkte ändern',
+      awardBasePoints: 'Basispunkte vergeben',
+      noElementsWillBeUpdated: 'Keine Elemente werden verändert',
+      nElementsWillBeUpdated: '{number} Elemente werden verändert',
+      batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
+<ul>
+<li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
+<li>Multiplikatoren können nur für Fragen mit einer definierten Musterlösung geändert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
+<li>Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
+<li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
+</ul>
+      `,
+      updateActivitiesBatchInfo:
+        'Wählen Sie hier, ob die Änderungen, die an den ausgewählten Elementen vorgenommen werden, auch auf alle Aktivitäten im Entwurf- und Planungsstatus angewendet werden sollen. Optional können Sie auch Aktivitätsvorlagen mit diesem Element in das Update einbeziehen.',
+      activityUpdates: 'Aktivitäts-Updates',
+      draftScheduledActivities: 'Entwurfs- und geplante Aktivitäten',
+      templateUpdates: 'Vorlagen-Updates',
+      batchOperationSuccess:
+        'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
+      batchOperationPartialSuccess:
+        'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Elemente und Ihre Berechtigungen.',
+      batchOperationFailed:
+        'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     tags: {
       deleteTag: 'Tag löschen',
