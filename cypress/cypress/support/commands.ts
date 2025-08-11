@@ -397,6 +397,7 @@ interface CreateChoicesQuestionArgs {
   explanation?: string
   choices: { value: string; correct?: boolean; feedback?: string }[]
   multiplier?: number
+  isArchived?: boolean
   userId: string
 }
 
@@ -408,6 +409,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger single choice question creation directly through prisma action
@@ -418,6 +420,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -440,6 +443,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger multiple choice question creation directly through prisma action
@@ -450,6 +454,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -472,6 +477,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger kprim question creation directly through prisma action
@@ -482,6 +488,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -507,6 +514,7 @@ interface CreateQuestionNRArgs {
   accuracy?: string
   solutionRanges?: { min: string; max: string }[] | null
   exactSolutions?: string[] | null
+  isArchived?: boolean
   userId: string
 }
 
@@ -523,6 +531,7 @@ Cypress.Commands.add(
     accuracy,
     solutionRanges,
     exactSolutions,
+    isArchived = false,
     userId,
   }: CreateQuestionNRArgs) => {
     // trigger numerical question creation directly through prisma action
@@ -537,6 +546,7 @@ Cypress.Commands.add(
       accuracy,
       solutionRanges,
       exactSolutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -558,6 +568,7 @@ interface CreateQuestionFTArgs {
   multiplier?: number
   maxLength?: string
   solutions?: string[]
+  isArchived?: boolean
   userId: string
 }
 
@@ -570,6 +581,7 @@ Cypress.Commands.add(
     multiplier,
     maxLength,
     solutions,
+    isArchived = false,
     userId,
   }: CreateQuestionFTArgs) => {
     // trigger free text question creation directly through prisma action
@@ -580,6 +592,7 @@ Cypress.Commands.add(
       multiplier,
       maxLength,
       solutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -602,6 +615,7 @@ interface CreateSelectionArgs {
   collectionName: string
   numberOfInputs: number
   correctAnswers?: string[]
+  isArchived?: boolean
   userId: string
 }
 
@@ -615,6 +629,7 @@ Cypress.Commands.add(
     collectionName,
     numberOfInputs,
     correctAnswers,
+    isArchived = false,
     userId,
   }: CreateSelectionArgs) => {
     // trigger selection question creation directly through prisma action
@@ -626,6 +641,7 @@ Cypress.Commands.add(
       collectionName,
       numberOfInputs,
       correctAnswers,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -679,6 +695,7 @@ interface CreateCaseStudyArgs {
       }
     }
   }
+  isArchived?: boolean
   userId: string
 }
 
@@ -694,6 +711,7 @@ Cypress.Commands.add(
     criteria,
     cases,
     solutions,
+    isArchived = false,
     userId,
   }: CreateCaseStudyArgs) => {
     // trigger case study question creation directly through prisma action
@@ -707,6 +725,7 @@ Cypress.Commands.add(
       criteria,
       cases,
       solutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -725,17 +744,25 @@ interface CreateFlashcardArgs {
   name: string
   content: string
   explanation: string
+  isArchived?: boolean
   userId: string
 }
 
 Cypress.Commands.add(
   'createFlashcard',
-  ({ name, content, explanation, userId }: CreateFlashcardArgs) => {
+  ({
+    name,
+    content,
+    explanation,
+    isArchived = false,
+    userId,
+  }: CreateFlashcardArgs) => {
     // trigger flashcard creation directly through prisma action
     cy.task('createFlashcard', {
       name,
       content,
       explanation,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -753,16 +780,18 @@ Cypress.Commands.add(
 interface CreateContentArgs {
   name: string
   content: string
+  isArchived?: boolean
   userId: string
 }
 
 Cypress.Commands.add(
   'createContent',
-  ({ name, content, userId }: CreateContentArgs) => {
+  ({ name, content, isArchived = false, userId }: CreateContentArgs) => {
     // trigger flashcard creation directly through prisma action
     cy.task('createContentElement', {
       name,
       content,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful

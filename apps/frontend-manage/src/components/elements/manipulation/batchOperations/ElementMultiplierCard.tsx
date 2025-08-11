@@ -57,26 +57,10 @@ function ElementMultiplierCard({
               }))
             }}
             items={[
-              {
-                label: t('manage.activityWizard.multiplier1'),
-                value: '1',
-                data: { cy: `select-multiplier-1` },
-              },
-              {
-                label: t('manage.activityWizard.multiplier2'),
-                value: '2',
-                data: { cy: `select-multiplier-2` },
-              },
-              {
-                label: t('manage.activityWizard.multiplier3'),
-                value: '3',
-                data: { cy: `select-multiplier-3` },
-              },
-              {
-                label: t('manage.activityWizard.multiplier4'),
-                value: '4',
-                data: { cy: `select-multiplier-4` },
-              },
+              { label: t('manage.activityWizard.multiplier1'), value: '1' },
+              { label: t('manage.activityWizard.multiplier2'), value: '2' },
+              { label: t('manage.activityWizard.multiplier3'), value: '3' },
+              { label: t('manage.activityWizard.multiplier4'), value: '4' },
             ]}
             data={{ cy: 'select-multiplier' }}
             className={{ root: 'h-8 w-44', trigger: 'h-8' }}

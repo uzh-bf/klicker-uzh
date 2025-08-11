@@ -54,7 +54,7 @@ function ElementBatchOperationsModal({
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
     let mapped = [
-      ...affectedElements.map((element) => ({
+      ...selectedElements.map((element) => ({
         ...element,
         actionsApplied: true,
         reasons: [] as string[],
@@ -149,6 +149,7 @@ function ElementBatchOperationsModal({
       className={{
         content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
       }}
+      dataCloseButton={{ cy: 'close-batch-operations-modal' }}
     >
       <div className="flex h-auto min-h-0 flex-col gap-6 md:flex-row md:gap-6 lg:h-full lg:max-h-full">
         <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-2/5">
@@ -207,7 +208,10 @@ function ElementBatchOperationsModal({
                 {numOfUpdatedElements === 0
                   ? t('manage.questionPool.noElementsWillBeUpdated')
                   : t('manage.questionPool.nElementsWillBeUpdated', {
-                      number: numOfUpdatedElements,
+                      number:
+                        numOfUpdatedElements === selectedElements.length
+                          ? numOfUpdatedElements
+                          : `${numOfUpdatedElements}/${selectedElements.length}`,
                     })}
               </span>
               <Button

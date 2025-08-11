@@ -206,6 +206,7 @@ export default defineConfig({
           explanation,
           multiplier,
           choices,
+          isArchived,
           userId,
         }: {
           type: ElementType
@@ -214,6 +215,7 @@ export default defineConfig({
           explanation?: string
           multiplier?: number
           choices: { value: string; correct?: boolean; feedback?: string }[]
+          isArchived: boolean
           userId: string
         }) {
           if (type === ElementType.SC && choices.length < 2) {
@@ -246,6 +248,7 @@ export default defineConfig({
                 explanation: explanation ?? undefined,
                 basePoints: true,
                 pointsMultiplier: multiplier,
+                isArchived,
                 options: {
                   hasSampleSolution,
                   hasAnswerFeedbacks,
@@ -305,6 +308,7 @@ export default defineConfig({
           accuracy,
           solutionRanges,
           exactSolutions,
+          isArchived,
           userId,
         }: {
           name: string
@@ -317,6 +321,7 @@ export default defineConfig({
           accuracy?: string
           solutionRanges?: { min: string; max: string }[] | null
           exactSolutions?: string[] | null
+          isArchived: boolean
           userId: string
         }) {
           const hasSampleSolution =
@@ -335,6 +340,7 @@ export default defineConfig({
                 explanation: explanation ?? undefined,
                 basePoints: true,
                 pointsMultiplier: multiplier,
+                isArchived,
                 options: {
                   hasSampleSolution,
                   unit,
@@ -398,6 +404,7 @@ export default defineConfig({
           multiplier,
           maxLength,
           solutions,
+          isArchived,
           userId,
         }: {
           name: string
@@ -406,6 +413,7 @@ export default defineConfig({
           multiplier?: number
           maxLength?: string
           solutions?: string[]
+          isArchived: boolean
           userId: string
         }) {
           const hasSampleSolution =
@@ -422,6 +430,7 @@ export default defineConfig({
                 explanation: explanation ?? undefined,
                 basePoints: true,
                 pointsMultiplier: multiplier,
+                isArchived,
                 options: {
                   hasSampleSolution,
                   restrictions: {
@@ -472,6 +481,7 @@ export default defineConfig({
           collectionName,
           numberOfInputs,
           correctAnswers,
+          isArchived,
           userId,
         }: {
           name: string
@@ -481,6 +491,7 @@ export default defineConfig({
           collectionName: string
           numberOfInputs: number
           correctAnswers?: string[]
+          isArchived: boolean
           userId: string
         }) {
           const prisma = await connect()
@@ -531,6 +542,7 @@ export default defineConfig({
                 content,
                 explanation,
                 pointsMultiplier: multiplier,
+                isArchived,
                 options: {
                   hasSampleSolution,
                   numberOfInputs,
@@ -616,6 +628,7 @@ export default defineConfig({
           criteria,
           cases,
           solutions,
+          isArchived,
           userId,
         }: {
           name: string
@@ -656,6 +669,7 @@ export default defineConfig({
               }
             }
           }
+          isArchived: boolean
           userId: string
         }) {
           const prisma = await connect()
@@ -704,6 +718,7 @@ export default defineConfig({
                 content,
                 explanation,
                 pointsMultiplier: multiplier,
+                isArchived,
                 options: {
                   hasSampleSolution,
                   criteria: criteria.map((criterion, ix) => ({
@@ -856,10 +871,12 @@ export default defineConfig({
         async createContentElement({
           name,
           content,
+          isArchived,
           userId,
         }: {
           name: string
           content: string
+          isArchived: boolean
           userId: string
         }) {
           const prisma = await connect()
@@ -871,6 +888,7 @@ export default defineConfig({
                 name,
                 content,
                 options: {} as ElementOptionsContent,
+                isArchived,
                 owner: {
                   connect: {
                     id: userId,
@@ -910,11 +928,13 @@ export default defineConfig({
           name,
           content,
           explanation,
+          isArchived,
           userId,
         }: {
           name: string
           content: string
           explanation: string
+          isArchived: boolean
           userId: string
         }) {
           const prisma = await connect()
@@ -927,6 +947,7 @@ export default defineConfig({
                 content,
                 explanation,
                 options: {} as ElementOptionsFlashcard,
+                isArchived,
                 owner: {
                   connect: {
                     id: userId,
