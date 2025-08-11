@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
-  BatchOperationActions,
+  ElementBatchOperationActions,
   INITIAL_ELEMENT_BATCH_OPERATIONS,
 } from '../types'
 
@@ -18,8 +18,8 @@ function ElementArchiveCard({
   selectedActions,
   setSelectedActions,
 }: {
-  selectedActions: BatchOperationActions
-  setSelectedActions: Dispatch<SetStateAction<BatchOperationActions>>
+  selectedActions: ElementBatchOperationActions
+  setSelectedActions: Dispatch<SetStateAction<ElementBatchOperationActions>>
 }) {
   const t = useTranslations()
 

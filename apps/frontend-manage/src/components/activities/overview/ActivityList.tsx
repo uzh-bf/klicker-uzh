@@ -3,6 +3,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { Dispatch, SetStateAction } from 'react'
 import ActivityListEntry from './ActivityListEntry'
 
 function ActivityList({
@@ -10,12 +11,16 @@ function ActivityList({
   noActivities,
   hideActivityType = false,
   highlightedActivity,
+  selectedActivities,
+  setSelectedActivities,
   refetchActivities,
 }: {
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
   highlightedActivity: string | null
+  selectedActivities?: Record<string, ActivityInfo>
+  setSelectedActivities?: Dispatch<SetStateAction<Record<string, ActivityInfo>>>
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -64,6 +69,23 @@ function ActivityList({
               : undefined
           }
           hideType={hideActivityType}
+          checked={selectedActivities && !!selectedActivities[activity.id]}
+          onCheck={
+            setSelectedActivities
+              ? () => {
+                  if (selectedActivities && selectedActivities[activity.id]) {
+                    const newSelectedActivities = { ...selectedActivities }
+                    delete newSelectedActivities[activity.id]
+                    setSelectedActivities(newSelectedActivities)
+                  } else {
+                    setSelectedActivities((prev) => ({
+                      ...prev,
+                      [activity.id]: activity,
+                    }))
+                  }
+                }
+              : undefined
+          }
           highlightedActivity={highlightedActivity}
           refetchActivities={refetchActivities}
         />

@@ -1,16 +1,21 @@
 import { useQuery } from '@apollo/client'
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
+  ActivityInfo,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { TextField } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import ActivityBatchOperationsModal from '../components/activities/overview/ActivityBatchOperationsModal'
 import ActivityList from '../components/activities/overview/ActivityList'
+import ActivityListSearch from '../components/activities/overview/ActivityListSearch'
+import ActivityListSelectAllCheckbox from '../components/activities/overview/ActivityListSelectAllCheckbox'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
@@ -22,9 +27,12 @@ const PAGE_SIZE = 10
 
 function Activities() {
   const t = useTranslations()
-  const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+  const [selectedActivities, setSelectedActivities] = useState<{
+    [elementId: number]: ActivityInfo
+  }>({})
 
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
     status: [],
@@ -39,6 +47,12 @@ function Activities() {
 
   // get available courses
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
+
+  // get the user data to check for the private preview flag
+  const { data: dataUser } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const user = dataUser?.userProfile
 
   // get user activities while respecting the corresponding filters and pagination
   const {
@@ -105,32 +119,35 @@ function Activities() {
         </div>
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
-            <div>
-              <div className="mb-2 flex flex-row items-center gap-1">
-                <TextField
-                  placeholder={t('manage.general.searchPlaceholder')}
-                  value={searchInput}
-                  onChange={(newValue: string) => {
-                    setSearchInput(newValue)
-
-                    if (newValue.trim() === '') {
-                      setSearchString('')
-                    }
-                  }}
-                  icon={faMagnifyingGlass}
-                  className={{
-                    input: 'pl-8! h-10',
-                    field: 'w-80 rounded-md pr-3',
-                  }}
-                  onEnter={() => setSearchString(searchInput)}
-                  onReset={() => {
-                    setSearchInput('')
-                    setSearchString('')
-                  }}
-                  data={{ cy: 'activities-search-input' }}
-                />
+            <div className="flex flex-row items-start justify-between">
+              <div className="mb-2 flex flex-row items-center gap-1.5">
+                {user?.privatePreview && (
+                  <ActivityListSelectAllCheckbox
+                    activities={activities}
+                    selectedActivities={selectedActivities}
+                    setSelectedActivities={setSelectedActivities}
+                  />
+                )}
+                <ActivityListSearch setSearchString={setSearchString} />
                 {/* // TODO: introduce customized ordering for activity overview */}
               </div>
+              {user?.privatePreview &&
+              Object.keys(selectedActivities).length > 0 ? (
+                <Button
+                  className={{
+                    root: 'mt-0.5 h-8 bg-orange-100 hover:bg-orange-200',
+                  }}
+                  onClick={() => setBatchOperationsOpen(true)}
+                  data={{ cy: 'element-batch-operations' }}
+                >
+                  <Button.Icon icon={faListCheck} />
+                  <Button.Label>
+                    {t('manage.activities.batchOperations', {
+                      numActivities: Object.keys(selectedActivities).length,
+                    })}
+                  </Button.Label>
+                </Button>
+              ) : null}
             </div>
 
             <div className="h-full overflow-y-auto">
@@ -142,6 +159,8 @@ function Activities() {
                     activities={activities}
                     noActivities={!filtersActive && numOfActivities === 0}
                     highlightedActivity={null}
+                    selectedActivities={selectedActivities}
+                    setSelectedActivities={setSelectedActivities}
                     refetchActivities={async () => {
                       await refetchActivities()
                     }}
@@ -163,6 +182,17 @@ function Activities() {
           </>
         </div>
       </div>
+
+      {user?.privatePreview && batchOperationsOpen ? (
+        <ActivityBatchOperationsModal
+          selectedActivities={Object.values(selectedActivities)}
+          onClose={() => setBatchOperationsOpen(false)}
+          resetSelectedActivities={() => setSelectedActivities({})}
+          refetchActivities={async () => {
+            await refetchActivities()
+          }}
+        />
+      ) : null}
     </Layout>
   )
 }

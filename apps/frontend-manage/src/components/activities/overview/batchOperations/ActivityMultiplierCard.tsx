@@ -1,3 +1,5 @@
+import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Card,
   CardContent,
@@ -5,18 +7,24 @@ import {
   CardTitle,
   Checkbox,
   Select,
+  Tooltip,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ElementBatchOperationActions } from '../types'
+import { ActivityBatchOperationActions } from './types'
 
-function ElementMultiplierCard({
+interface ActivityMultiplierCardProps {
+  selectedActions: ActivityBatchOperationActions
+  setSelectedActions: Dispatch<SetStateAction<ActivityBatchOperationActions>>
+}
+
+function ActivityMultiplierCardContent({
+  multiplierDisabled,
   selectedActions,
   setSelectedActions,
-}: {
-  selectedActions: ElementBatchOperationActions
-  setSelectedActions: Dispatch<SetStateAction<ElementBatchOperationActions>>
+}: ActivityMultiplierCardProps & {
+  multiplierDisabled: boolean
 }) {
   const t = useTranslations()
 
@@ -29,19 +37,27 @@ function ElementMultiplierCard({
       )}
     >
       <CardHeader className="px-0">
-        <CardTitle className="font-normal">
-          {t('manage.questionPool.modifyMultiplier')}
+        <CardTitle className="flex w-full flex-row items-center justify-between font-normal">
+          <span className={twMerge(multiplierDisabled && 'opacity-50')}>
+            {t('manage.activities.modifyMultiplier')}
+          </span>
+          {multiplierDisabled && (
+            <FontAwesomeIcon
+              size="sm"
+              icon={faLock}
+              className="text-uzh-red-100"
+            />
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0">
         <div className="flex items-center gap-2">
           <Checkbox
+            disabled={multiplierDisabled}
             checked={typeof selectedActions.multiplier !== 'undefined'}
             onCheck={() => {
               setSelectedActions((prev) => ({
                 ...prev,
-                archive: false,
-                unarchive: false,
                 multiplier:
                   typeof prev.multiplier !== 'undefined' ? undefined : '1',
               }))
@@ -72,4 +88,36 @@ function ElementMultiplierCard({
   )
 }
 
-export default ElementMultiplierCard
+function ActivityMultiplierCard({
+  selectedActions,
+  setSelectedActions,
+}: ActivityMultiplierCardProps) {
+  const t = useTranslations()
+  const multiplierDisabled =
+    !!selectedActions.course &&
+    !selectedActions.course.isGamificationEnabled &&
+    !selectedActions.course.isAssessmentEnabled
+
+  return multiplierDisabled ? (
+    <Tooltip
+      delay={0}
+      tooltip={t(
+        'manage.activities.multiplierRequiresGamifiedAssessmentCourse'
+      )}
+    >
+      <ActivityMultiplierCardContent
+        selectedActions={selectedActions}
+        setSelectedActions={setSelectedActions}
+        multiplierDisabled={multiplierDisabled}
+      />
+    </Tooltip>
+  ) : (
+    <ActivityMultiplierCardContent
+      selectedActions={selectedActions}
+      setSelectedActions={setSelectedActions}
+      multiplierDisabled={multiplierDisabled}
+    />
+  )
+}
+
+export default ActivityMultiplierCard
