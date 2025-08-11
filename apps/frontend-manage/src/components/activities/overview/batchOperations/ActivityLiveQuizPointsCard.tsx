@@ -1,4 +1,10 @@
 import {
+  LQ_DEFAULT_CORRECT_POINTS,
+  LQ_DEFAULT_POINTS,
+  LQ_MAX_BONUS_POINTS,
+  LQ_TIME_TO_ZERO_BONUS,
+} from '@klicker-uzh/shared-components/src/constants'
+import {
   Card,
   CardContent,
   CardHeader,
@@ -45,10 +51,10 @@ function ActivityLiveQuizPointsCard({
                     typeof prev.liveQuizPoints !== 'undefined'
                       ? undefined
                       : {
-                          basePoints: 10,
-                          correctnessPoints: 30,
-                          bonusPoints: 10,
-                          bonusTime: 5,
+                          basePoints: LQ_DEFAULT_POINTS,
+                          correctnessPoints: LQ_DEFAULT_CORRECT_POINTS,
+                          bonusPoints: LQ_MAX_BONUS_POINTS,
+                          bonusTime: LQ_TIME_TO_ZERO_BONUS,
                         },
                 }))
               }}
