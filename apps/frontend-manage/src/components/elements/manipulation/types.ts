@@ -132,7 +132,7 @@ export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
 }
 
-export type BatchOperationActions = {
+export type ElementBatchOperationActions = {
   archive: boolean
   unarchive: boolean
   status?: ElementStatus
@@ -142,7 +142,7 @@ export type BatchOperationActions = {
   updateTemplateInstances: boolean
 }
 
-export const INITIAL_ELEMENT_BATCH_OPERATIONS: BatchOperationActions = {
+export const INITIAL_ELEMENT_BATCH_OPERATIONS: ElementBatchOperationActions = {
   archive: false,
   unarchive: false,
   status: undefined,

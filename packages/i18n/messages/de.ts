@@ -1128,6 +1128,52 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdated: 'Review-Status erfolgreich aktualisiert',
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
+      batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
+      batchOperationsActivities: 'Aktivitäten - Batch-Operationen',
+      batchNotApplicableExplanation:
+        'Die ausgewählten Batch-Operationen können aus den folgenden Gründen nicht auf diese Aktivität angewendet werden:',
+      modifyMultiplier: 'Multiplikator ändern',
+      changeCourse: 'Kurszuweisung ändern',
+      modifyLiveQuizPoints: 'Bepunktung anpassen (nur Live Quiz)',
+      enableLiveQuizPointsModification:
+        'Basis, Korrektheits- und Bonuspunkte anpassen',
+      bonusTime: 'Bonuszeit',
+      noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
+      nActivitiesWillBeUpdated: '{number} Aktivitäten werden verändert',
+      multiplierRequiresGamifiedAssessmentCourse:
+        'Ein Multiplikator kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen verwendet werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+      batchNoCoursesAvailable:
+        'Es sind keine laufenden oder geplanten Kurse verfügbar zu welchen Sie Ihre Aktivitäten zuweisen könnten. Bitte erstellen Sie zunächst einen entsprechenden Kurs unter "Kurse"',
+      batchOperationsInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Aktivitäten gelten die folgenden Regeln:
+<ul>
+<li>Veränderungen des Multiplikators sind nur für gamifizierte Aktivitäten oder Aktivitäten als Teil eines Assessment-Kurses möglich. Wird eine neue Kurszuweisung im gleichen Schritt als Batch-Operation gewählt, werden die Gamifizierungs- und Assessment-Einstellungen dieses Kurses genutzt.</li>
+<li>Aktivitäten können grundsätzlich allen laufenden und zukünftigen Kursen zugewiesen werden. Bei Microlearnings und Gruppenaktivitäten werden zusätzlich nur Zuweisungen erlaubt, bei welchen das Verfügbarkeits-Intervall der Aktivität vollständig in der Kurslaufzeit liegt.</li>
+<li>Basis-, Korrektheits- und Bonuspunkte können nur für Live Quizzes definiert und angepasst werden. Bei Aktivierung dieser Option werden andere Aktivitätstypen nicht geupdated.</li>
+<li>Alle Anpassungen erfordern mindestens Schreibrechte auf der jeweiligen Aktivität.</li>
+</ul>
+      `,
+      selectedActivitiesDescription:
+        'Sie haben die folgenden Aktivitäten ausgewählt. Alle Aktivitäten, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+      batchInvalidStatus:
+        'Nur Entwurfs- und geplante Aktivitäten können über Batch-Operations angepasst werden.',
+      batchNeedEditorPermissions:
+        'Um eine Aktivität über die Batch-Operationen anzupassen, benötigen Sie mindestens Schreibzugriff.',
+      batchMultiplierRequiresGamificationOrAssessment:
+        'Eine Veränderung des Multiplikators ist nur für gamifizierte Aktivitäten oder Aktivitäten mit Assessment-Kurs Zuweisung möglich.',
+      batchGroupActivityRequiresGroupsEnabled:
+        'Gruppenaktivitäten können nur Kursen zugewiesen werden, in welchen die Gruppenbildung aktiviert ist.',
+      batchActivityDatesOutsideCourse:
+        'Das Verfügbarkeitsintervall von Gruppenaktivtäten und Microlearnings muss vollständig innerhalb der Kurslaufzeit liegen.',
+      batchGroupActivityRequiresFinalizedGroups:
+        'Gruppenaktivitäten können nur Kursen zugewiesen werden, bei welchen die Gruppenbildung zum Startdatum der Aktivität abgeschlossen ist.',
+      batchPointsOnlyLiveQuiz:
+        'Basis-, Korrektheits- und Bonus-Punkte können nur für Live Quizzes definiert und angepasst werden.',
+      batchOperationSuccess:
+        'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
+      batchOperationPartialSuccess:
+        'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
+      batchOperationFailed:
+        'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1304,9 +1350,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerFeedbacksUnavailableTypes:
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
-      batchOperationsElements: 'Batch-Operationen (Elemente)',
+      batchOperationsElements: 'Elemente - Batch-Operationen',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, die von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       actionApplies: 'Aktion wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',

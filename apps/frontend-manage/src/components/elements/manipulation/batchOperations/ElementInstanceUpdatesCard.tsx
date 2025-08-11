@@ -11,14 +11,14 @@ import {
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { BatchOperationActions } from '../types'
+import { ElementBatchOperationActions } from '../types'
 
 function ElementInstanceUpdatesCard({
   selectedActions,
   setSelectedActions,
 }: {
-  selectedActions: BatchOperationActions
-  setSelectedActions: Dispatch<SetStateAction<BatchOperationActions>>
+  selectedActions: ElementBatchOperationActions
+  setSelectedActions: Dispatch<SetStateAction<ElementBatchOperationActions>>
 }) {
   const t = useTranslations()
 

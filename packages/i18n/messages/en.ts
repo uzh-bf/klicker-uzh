@@ -1125,6 +1125,51 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetReview: 'Reset Review',
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
+      batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperationsActivities: 'Activities - Batch Operations',
+      batchNotApplicableExplanation:
+        'The selected batch operations cannot be applied to this activity for the following reasons:',
+      modifyMultiplier: 'Modify multiplier',
+      changeCourse: 'Change course assignment',
+      modifyLiveQuizPoints: 'Adjust scoring (Live Quiz only)',
+      enableLiveQuizPointsModification:
+        'Modify base, correctness and bonus points',
+      bonusTime: 'Bonus time',
+      noActivitiesWillBeUpdated: 'No activities will be updated',
+      nActivitiesWillBeUpdated: '{number} activities will be updated',
+      multiplierRequiresGamifiedAssessmentCourse:
+        'A multiplier can only be used for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these conditions.',
+      batchNoCoursesAvailable:
+        'There are no ongoing or planned courses available to which you could assign your activities. Please create a corresponding course under "Courses" first.',
+      batchOperationsInformation: `Depending on the selected actions and the available permissions for the selected activities, the following rules apply:
+<ul>
+<li>Changes to the multiplier are only possible for gamified activities or activities that are part of assessment courses. If a new course assignment is chosen as a batch operation in the same step, the gamification and assessment settings of that course will apply.</li>
+<li>Activities can generally be assigned to all ongoing and future courses. For microlearnings and group activities, only assignments where the availability interval of the activity is fully within the course duration are allowed.</li>
+<li>Base, correctness, and bonus points can only be defined and adjusted for live quizzes. If this option is activated, other activity types will not be updated.</li>
+<li>All adjustments require at least write permissions on the respective activities.</li>
+</ul>
+      `,
+      selectedActivitiesDescription:
+        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
+      batchInvalidStatus:
+        'Only draft and scheduled activities can be adjusted via batch operations.',
+      batchNeedEditorPermissions:
+        'To adjust an activity via batch operations, you need at least write access.',
+      batchMultiplierRequiresGamificationOrAssessment:
+        'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
+      batchGroupActivityRequiresGroupsEnabled:
+        'Group activities can only be assigned to courses where group formation is enabled.',
+      batchActivityDatesOutsideCourse:
+        'The availability interval of group activities and microlearnings must be fully within the course duration.',
+      batchGroupActivityRequiresFinalizedGroups:
+        'Group activities can only be assigned to courses where group formation is completed by the start date of the activity.',
+      batchPointsOnlyLiveQuiz:
+        'Base, correctness, and bonus points can only be defined and adjusted for live quizzes.',
+      batchOperationSuccess: 'Your batch operation was successfully applied.',
+      batchOperationPartialSuccess:
+        'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
+      batchOperationFailed:
+        'An error occurred while applying the batch operation. Please check your permissions and try again.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1301,7 +1346,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerFeedbacksUnavailableTypes:
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
-      batchOperationsElements: 'Batch Operations (Elements)',
+      batchOperationsElements: 'Elements - Batch Operations',
       selectedElementsDescription:
         'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
       actionApplies: 'Action applies',

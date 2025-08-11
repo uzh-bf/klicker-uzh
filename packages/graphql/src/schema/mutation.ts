@@ -1287,7 +1287,6 @@ export const Mutation = builder.mutationType({
       }),
 
       applyElementBatchOperations: t.withAuth(asUserFullAccess).int({
-        nullable: true,
         args: {
           elementIds: t.arg.intList({ required: true }),
           archive: t.arg.boolean({ required: true }),
@@ -1300,6 +1299,21 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.applyElementBatchOperations(args, ctx)
+        },
+      }),
+
+      applyActivityBatchOperations: t.withAuth(asUserFullAccess).int({
+        args: {
+          activityIds: t.arg.stringList({ required: true }),
+          multiplier: t.arg.int({ required: false }),
+          courseId: t.arg.string({ required: false }),
+          basePoints: t.arg.int({ required: false }),
+          correctnessPoints: t.arg.int({ required: false }),
+          bonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivitiesService.applyActivityBatchOperations(args, ctx)
         },
       }),
 

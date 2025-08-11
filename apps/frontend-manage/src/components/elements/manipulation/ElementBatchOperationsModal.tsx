@@ -19,7 +19,7 @@ import ElementMultiplierCard from './batchOperations/ElementMultiplierCard'
 import ElementStatusCard from './batchOperations/ElementStatusCard'
 import SelectedElementsList from './batchOperations/SelectedElementsList'
 import {
-  BatchOperationActions,
+  ElementBatchOperationActions,
   INITIAL_ELEMENT_BATCH_OPERATIONS,
 } from './types'
 
@@ -42,9 +42,8 @@ function ElementBatchOperationsModal({
       reasons: [] as string[],
     }))
   )
-  const [selectedActions, setSelectedActions] = useState<BatchOperationActions>(
-    INITIAL_ELEMENT_BATCH_OPERATIONS
-  )
+  const [selectedActions, setSelectedActions] =
+    useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
 
   // application function for element list batch operations
   const [applyElementBatchOperations, { loading: applying }] = useMutation(
@@ -53,88 +52,78 @@ function ElementBatchOperationsModal({
 
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
-    let mapped = [
-      ...selectedElements.map((element) => ({
-        ...element,
-        actionsApplied: true,
-        reasons: [] as string[],
-      })),
-    ]
+    const updatedAffectedElements = selectedElements.map((element) => {
+      let actionsApplied = true
+      const reasons: string[] = []
 
-    if (selectedActions.unarchive) {
-      mapped = mapped.map((element) => ({
-        ...element,
-        actionsApplied:
-          element.actionsApplied && !!element.isArchived && !!element.isManager,
-        reasons: [
-          ...element.reasons,
-          ...(!element.isArchived
-            ? [t('manage.questionPool.batchUnarchiveOnlyArchivedElements')]
-            : []),
-          ...(element.isArchived && !element.isManager
-            ? [t('manage.questionPool.batchUnarchiveOnlyManagerElements')]
-            : []),
-        ],
-      }))
-    } else if (selectedActions.archive) {
-      mapped = mapped.map((element) => ({
-        ...element,
-        actionsApplied:
-          element.actionsApplied && !element.isArchived && !!element.isManager,
-        reasons: [
-          ...element.reasons,
-          ...(element.isArchived
-            ? [t('manage.questionPool.batchArchiveOnlyUnarchivedElements')]
-            : []),
-          ...(!element.isManager
-            ? [t('manage.questionPool.batchArchiveOnlyManagerElements')]
-            : []),
-        ],
-      }))
-    }
-    if (selectedActions.multiplier) {
-      mapped = mapped.map((element) => ({
-        ...element,
-        actionsApplied:
-          element.actionsApplied &&
-          !!element.isEditor &&
-          !!('options' in element && element.options.hasSampleSolution),
-        reasons: [
-          ...element.reasons,
-          ...(!element.isEditor
-            ? [t('manage.questionPool.batchMultiplierOnlyEditorElements')]
-            : []),
-          ...(!('options' in element && element.options.hasSampleSolution)
-            ? [t('manage.questionPool.batchMultiplierOnlySampleSolution')]
-            : []),
-        ],
-      }))
-    }
-    if (typeof selectedActions.basePoints !== 'undefined') {
-      mapped = mapped.map((element) => ({
-        ...element,
-        actionsApplied:
-          element.actionsApplied &&
-          !!element.isEditor &&
-          !(
-            element.type === ElementType.Flashcard ||
-            element.type === ElementType.Content
-          ),
-        reasons: [
-          ...element.reasons,
-          ...(!element.isEditor
-            ? [t('manage.questionPool.batchBasePointsOnlyEditorElements')]
-            : []),
-          ...(element.type === ElementType.Flashcard ||
+      // archive / unarchive
+      if (selectedActions.unarchive) {
+        if (!element.isArchived) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchUnarchiveOnlyArchivedElements')
+          )
+        }
+        if (element.isArchived && !element.isManager) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchUnarchiveOnlyManagerElements')
+          )
+        }
+      } else if (selectedActions.archive) {
+        if (element.isArchived) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchArchiveOnlyUnarchivedElements')
+          )
+        }
+        if (!element.isManager) {
+          actionsApplied = false
+          reasons.push(t('manage.questionPool.batchArchiveOnlyManagerElements'))
+        }
+      }
+
+      // multiplier modification
+      if (selectedActions.multiplier) {
+        if (!('options' in element && element.options.hasSampleSolution)) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchMultiplierOnlySampleSolution')
+          )
+        }
+        if (!element.isEditor) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchMultiplierOnlyEditorElements')
+          )
+        }
+      }
+
+      // base points modification
+      if (typeof selectedActions.basePoints !== 'undefined') {
+        if (
+          element.type === ElementType.Flashcard ||
           element.type === ElementType.Content
-            ? [t('manage.questionPool.batchBasePointsOnlyQuestions')]
-            : []),
-        ],
-      }))
-    }
+        ) {
+          actionsApplied = false
+          reasons.push(t('manage.questionPool.batchBasePointsOnlyQuestions'))
+        }
+        if (!element.isEditor) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.questionPool.batchBasePointsOnlyEditorElements')
+          )
+        }
+      }
 
-    // set the updated element list
-    setAffectedElements(mapped)
+      return {
+        ...element,
+        actionsApplied,
+        reasons,
+      }
+    })
+
+    setAffectedElements(updatedAffectedElements)
   }, [selectedElements, selectedActions])
 
   const numOfUpdatedElements = useMemo(() => {
@@ -255,8 +244,7 @@ function ElementBatchOperationsModal({
 
                     // in case of success, reset the selected elements and refetch the elements
                     if (
-                      res?.applyElementBatchOperations ===
-                      affectedElements.length
+                      res?.applyElementBatchOperations === numOfUpdatedElements
                     ) {
                       resetSelectedElements()
                       await refetchElements()

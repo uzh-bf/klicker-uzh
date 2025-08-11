@@ -1,0 +1,19 @@
+mutation ApplyActivityBatchOperations(
+  $activityIds: [String!]!
+  $multiplier: Int
+  $courseId: String
+  $basePoints: Int
+  $correctnessPoints: Int
+  $bonusPoints: Int
+  $timeToZeroBonus: Int
+) {
+  applyActivityBatchOperations(
+    activityIds: $activityIds
+    multiplier: $multiplier
+    courseId: $courseId
+    basePoints: $basePoints
+    correctnessPoints: $correctnessPoints
+    bonusPoints: $bonusPoints
+    timeToZeroBonus: $timeToZeroBonus
+  )
+}

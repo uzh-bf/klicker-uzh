@@ -8,17 +8,17 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Checkbox, toast } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useState } from 'react'
-import { isEmpty } from 'remeda'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
+import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
 import ElementListSorting from '../components/elements/ElementListSorting'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
@@ -52,9 +52,9 @@ function Index() {
   const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
 
-  const [selectedElements, setSelectedElements] = useState<
-    Record<number, Element | undefined>
-  >({})
+  const [selectedElements, setSelectedElements] = useState<{
+    [elementId: number]: Element
+  }>({})
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -166,7 +166,8 @@ function Index() {
           changed = true
         }
       })
-      // Only update state if something actually changed to avoid render loop
+
+      // only update state if something actually changed to avoid render loop
       return changed ? updatedSelection : prev
     })
   }, [elements])
@@ -300,65 +301,19 @@ function Index() {
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex flex-row items-center gap-1">
-                <div className="flex flex-col pr-0.5 text-xs">
-                  <Checkbox
-                    checked={
-                      elements.length !== 0 &&
-                      Object.values(selectedElements).filter((value) => value)
-                        .length == elements.length
-                    }
-                    partial={
-                      Object.values(selectedElements).filter((value) => value)
-                        .length > 0
-                    }
-                    onCheck={() => {
-                      setSelectedElements((prev) => {
-                        if (elements) {
-                          if (!isEmpty(selectedElements)) {
-                            // if the selection is non-empty, reset it
-                            return {}
-                          }
-
-                          // add all elements to the selection
-                          const allElements = elements.reduce<
-                            Record<number, Element>
-                          >((acc, element) => {
-                            // if activity creation is open, only select elements with manager access
-                            if (creationMode && !element.isManager) {
-                              return acc
-                            }
-
-                            acc[element.id] = element
-                            return acc
-                          }, {})
-                          return allElements
-                        }
-
-                        return prev
-                      })
-                    }}
-                    className={{ root: 'border-unset' }}
-                    data={{ cy: 'select-all-elements' }}
-                  />
-                </div>
-
+              <div className="flex flex-row items-center gap-1.5">
+                <ElementListSelectAllCheckbox
+                  elements={elements}
+                  selectedElements={selectedElements}
+                  setSelectedElements={setSelectedElements}
+                  creationMode={creationMode}
+                />
                 <ElementListSearch setSearchString={setSearchString} />
                 <ElementListSorting
                   sort={sort}
                   handleSortByChange={handleSortByChange}
                   handleSortOrderToggle={handleSortOrderToggle}
                 />
-
-                {/* {Object.keys(selectedElements).length > 0 && (
-                  <ArchiveActionButtons
-                    selectedElements={selectedElements}
-                    setSelectedElements={setSelectedElements}
-                    refetchElements={async () => {
-                      await refetchElements()
-                    }}
-                  />
-                )} */}
               </div>
 
               <div className="flex flex-row items-center gap-2">
@@ -500,9 +455,7 @@ function Index() {
       )}
       {user?.privatePreview && batchOperationsOpen ? (
         <ElementBatchOperationsModal
-          selectedElements={Object.values(selectedElements).filter(
-            (element) => element !== undefined
-          )}
+          selectedElements={Object.values(selectedElements)}
           onClose={() => setBatchOperationsOpen(false)}
           resetSelectedElements={() => setSelectedElements({})}
           refetchElements={async () => {
