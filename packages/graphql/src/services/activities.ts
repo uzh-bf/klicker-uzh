@@ -981,7 +981,7 @@ export async function applyActivityBatchOperations(
           },
         })
 
-        // if the multiplier was changed, update the instances of the live quiz accordingly
+        // if the multiplier was changed, update the instances of the practice quiz accordingly
         if (setMultiplier) {
           // get all instances that have a pointsMultiplier defined
           const instances = practiceQuiz.stacks
@@ -1005,7 +1005,7 @@ export async function applyActivityBatchOperations(
         // if the course assignment was changed, update the derived pemissions on the quiz
         if (newCourse) {
           await recomputeDerivedPermissions(
-            { liveQuizId: modifiedPracticeQuiz.id },
+            { practiceQuizId: modifiedPracticeQuiz.id },
             tx
           )
         }
@@ -1035,7 +1035,7 @@ export async function applyActivityBatchOperations(
           },
         })
 
-        // if the multiplier was changed, update the instances of the live quiz accordingly
+        // if the multiplier was changed, update the instances of the microlearning accordingly
         if (setMultiplier) {
           // get all instances that have a pointsMultiplier defined
           const instances = microLearning.stacks
@@ -1059,7 +1059,7 @@ export async function applyActivityBatchOperations(
         // if the course assignment was changed, update the derived pemissions on the quiz
         if (newCourse) {
           await recomputeDerivedPermissions(
-            { liveQuizId: modifiedMicroLearning.id },
+            { microLearningId: modifiedMicroLearning.id },
             tx
           )
         }
@@ -1089,7 +1089,7 @@ export async function applyActivityBatchOperations(
           },
         })
 
-        // if the multiplier was changed, update the instances of the live quiz accordingly
+        // if the multiplier was changed, update the instances of the group activity accordingly
         if (setMultiplier) {
           // get all instances that have a pointsMultiplier defined
           const instances = groupActivity.stacks
@@ -1113,7 +1113,7 @@ export async function applyActivityBatchOperations(
         // if the course assignment was changed, update the derived pemissions on the quiz
         if (newCourse) {
           await recomputeDerivedPermissions(
-            { liveQuizId: modifiedGroupActivity.id },
+            { groupActivityId: modifiedGroupActivity.id },
             tx
           )
         }
