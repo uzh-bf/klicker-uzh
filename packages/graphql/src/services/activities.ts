@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
+import {
+  PrismaTransactionClient,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
@@ -659,6 +663,466 @@ export async function getUserActivities(
         return -new Date(activity.updatedAt).getTime()
       }
     ),
+  }
+}
+
+async function updateInstanceMultipliers(
+  {
+    instances,
+    newActivityMultiplier,
+  }: { instances: DB.ElementInstance[]; newActivityMultiplier: number },
+  prisma: PrismaTransactionClient
+) {
+  // compute new multipliers for each instance based on element multiplier and activity multiplier
+  const instanceMultiplierMap = instances.reduce<{
+    [instanceId: number]: number
+  }>((acc, instance) => {
+    acc[instance.id] =
+      instance.elementData.pointsMultiplier & newActivityMultiplier
+    return acc
+  }, {})
+
+  // store the new multiplier in the instance options
+  await Promise.all(
+    instances.map((instance) => {
+      const newMultiplier = instanceMultiplierMap[instance.id]
+
+      if (newMultiplier) {
+        return prisma.elementInstance.update({
+          where: { id: instance.id },
+          data: {
+            options: {
+              ...instance.options,
+              pointsMultiplier: newMultiplier,
+            },
+          },
+        })
+      }
+    })
+  )
+}
+
+export async function applyActivityBatchOperations(
+  {
+    activityIds,
+    multiplier,
+    courseId,
+    basePoints,
+    correctnessPoints,
+    bonusPoints,
+    timeToZeroBonus,
+  }: {
+    activityIds: string[]
+    multiplier?: number | null
+    courseId?: string | null
+    basePoints?: number | null
+    correctnessPoints?: number | null
+    bonusPoints?: number | null
+    timeToZeroBonus?: number | null
+  },
+  ctx: ContextWithUser
+) {
+  if (activityIds.length === 0) {
+    return 0
+  }
+
+  // fetch the course to which the activities should be assigned, if defined
+  const newCourse = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: {
+          id: courseId,
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [
+                  DB.PermissionLevel.OWNER,
+                  DB.PermissionLevel.ADMIN,
+                  DB.PermissionLevel.WRITE,
+                  DB.PermissionLevel.EXECUTE,
+                  DB.PermissionLevel.READ,
+                ],
+              },
+            },
+          },
+        },
+      })
+    : undefined
+
+  // if the course does not exist or the multiplier should be changed despite
+  // the course not being gamified / assessment-relevant, return early
+  // skip if the courseId is undefined -> course not assigned and check is irrelevant
+  if (
+    courseId &&
+    (!newCourse ||
+      (typeof multiplier !== 'undefined' &&
+        multiplier !== null &&
+        !newCourse.isGamificationEnabled &&
+        !newCourse.isAssessmentEnabled))
+  ) {
+    return 0
+  }
+
+  // at least write permissions on the activities are required
+  const requiredPermissionLevels = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
+  // only draft and scheduled activities can be updated
+  const allowedActivityStatus = [
+    DB.PublicationStatus.DRAFT,
+    DB.PublicationStatus.SCHEDULED,
+  ]
+
+  // check if the live quiz grading logic should be manipulated
+  const setLiveQuizPoints =
+    typeof basePoints !== 'undefined' &&
+    basePoints !== null &&
+    typeof correctnessPoints !== 'undefined' &&
+    correctnessPoints !== null &&
+    typeof bonusPoints !== 'undefined' &&
+    bonusPoints !== null &&
+    typeof timeToZeroBonus !== 'undefined' &&
+    timeToZeroBonus !== null
+
+  // check if a new multiplier should be set (requires gamification or assessment flag)
+  const setMultiplier = typeof multiplier !== 'undefined' && multiplier !== null
+
+  // fetch all live quizzes that should be updated
+  const liveQuizzes = await ctx.prisma.liveQuiz.findMany({
+    where: {
+      id: { in: activityIds },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: { in: requiredPermissionLevels },
+        },
+      },
+      status: { in: allowedActivityStatus },
+      // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+      OR:
+        setMultiplier && !newCourse
+          ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
+          : undefined,
+    },
+    include: { blocks: { include: { elements: true } } },
+  })
+
+  // fetch all practice quizzes that should be updated
+  const practiceQuizzes = !setLiveQuizPoints
+    ? await ctx.prisma.practiceQuiz.findMany({
+        where: {
+          id: { in: activityIds },
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: { in: requiredPermissionLevels },
+            },
+          },
+          status: { in: allowedActivityStatus },
+          // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+          OR:
+            setMultiplier && !newCourse
+              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
+              : undefined,
+        },
+        include: { stacks: { include: { elements: true } } },
+      })
+    : []
+
+  // fetch all microlearnings that should be updated
+  const microLearnings = !setLiveQuizPoints
+    ? await ctx.prisma.microLearning.findMany({
+        where: {
+          id: { in: activityIds },
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: { in: requiredPermissionLevels },
+            },
+          },
+          status: { in: allowedActivityStatus },
+          // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+          OR:
+            setMultiplier && !newCourse
+              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
+              : undefined,
+          // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
+          scheduledStartAt: newCourse
+            ? { gte: newCourse.startDate }
+            : undefined,
+          scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+        },
+        include: { stacks: { include: { elements: true } } },
+      })
+    : []
+
+  // fetch all group activities that should be updated
+  const groupActivities =
+    !setLiveQuizPoints && (!newCourse || newCourse.isGroupCreationEnabled) // if the course is updated, group creation needs to be enabled
+      ? await ctx.prisma.groupActivity.findMany({
+          where: {
+            id: { in: activityIds },
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: { in: requiredPermissionLevels },
+              },
+            },
+            status: { in: allowedActivityStatus },
+            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+            OR:
+              setMultiplier && !newCourse
+                ? [
+                    { isGamificationEnabled: true },
+                    { isAssessmentEnabled: true },
+                  ]
+                : undefined,
+            // if a new course is assigned, the group formation deadline should be before the start of the group activity
+            // (start date of course does not need to be verified, since group formation deadline is always after start date)
+            scheduledStartAt: newCourse
+              ? { gte: newCourse.groupDeadlineDate }
+              : undefined,
+            // if a new course is assigned, the group activity should end before the end of the course
+            scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+          },
+          include: { stacks: { include: { elements: true } } },
+        })
+      : []
+
+  // apply activity updates
+  let updatedLiveQuizzes: DB.LiveQuiz[] = []
+  let updatedPracticeQuizzes: DB.PracticeQuiz[] = []
+  let updatedMicroLearnings: DB.MicroLearning[] = []
+  let updatedGroupActivities: DB.GroupActivity[] = []
+
+  // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
+  for (const liveQuiz of liveQuizzes) {
+    const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
+      const modifiedLiveQuiz = await tx.liveQuiz.update({
+        where: { id: liveQuiz.id },
+        data: {
+          // course re-assignment (including update of gamification and assessment flags)
+          course: newCourse ? { connect: { id: newCourse.id } } : undefined,
+          isGamificationEnabled: newCourse
+            ? { set: newCourse.isGamificationEnabled }
+            : undefined,
+          isAssessmentEnabled: newCourse
+            ? { set: newCourse.isAssessmentEnabled }
+            : undefined,
+          // multiplier updates
+          pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+          // if defined, set custom grading logic components
+          defaultPoints: setLiveQuizPoints ? { set: basePoints } : undefined,
+          defaultCorrectPoints: setLiveQuizPoints
+            ? { set: correctnessPoints }
+            : undefined,
+          maxBonusPoints: setLiveQuizPoints ? { set: bonusPoints } : undefined,
+          timeToZeroBonus: setLiveQuizPoints
+            ? { set: timeToZeroBonus }
+            : undefined,
+        },
+      })
+
+      // if the multiplier was changed, update the instances of the live quiz accordingly
+      if (setMultiplier) {
+        // get all instances that have a pointsMultiplier defined
+        const instances = liveQuiz.blocks
+          .flatMap((block) => block.elements)
+          .filter(
+            (instance) =>
+              'options' in instance &&
+              instance.options &&
+              'pointsMultiplier' in instance.options
+          )
+
+        await updateInstanceMultipliers(
+          {
+            instances,
+            newActivityMultiplier: modifiedLiveQuiz.pointsMultiplier,
+          },
+          tx
+        )
+      }
+
+      // if the course assignment was changed, update the derived pemissions on the quiz
+      if (newCourse) {
+        await recomputeDerivedPermissions(
+          { liveQuizId: modifiedLiveQuiz.id },
+          tx
+        )
+      }
+
+      return modifiedLiveQuiz
+    })
+
+    updatedLiveQuizzes.push(updatedLiveQuiz)
+  }
+
+  if (!setLiveQuizPoints) {
+    // update practice quizzes (including gamification / assessment flags & all instances - depending on the required updates)
+    for (const practiceQuiz of practiceQuizzes) {
+      const updatedPracticeQuiz = await ctx.prisma.$transaction(async (tx) => {
+        const modifiedPracticeQuiz = await tx.practiceQuiz.update({
+          where: { id: practiceQuiz.id },
+          data: {
+            // course re-assignment (including update of gamification and assessment flags)
+            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
+            isGamificationEnabled: newCourse
+              ? { set: newCourse.isGamificationEnabled }
+              : undefined,
+            isAssessmentEnabled: newCourse
+              ? { set: newCourse.isAssessmentEnabled }
+              : undefined,
+            // multiplier updates
+            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+          },
+        })
+
+        // if the multiplier was changed, update the instances of the live quiz accordingly
+        if (setMultiplier) {
+          // get all instances that have a pointsMultiplier defined
+          const instances = practiceQuiz.stacks
+            .flatMap((stack) => stack.elements)
+            .filter(
+              (instance) =>
+                'options' in instance &&
+                instance.options &&
+                'pointsMultiplier' in instance.options
+            )
+
+          await updateInstanceMultipliers(
+            {
+              instances,
+              newActivityMultiplier: modifiedPracticeQuiz.pointsMultiplier,
+            },
+            tx
+          )
+        }
+
+        // if the course assignment was changed, update the derived pemissions on the quiz
+        if (newCourse) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: modifiedPracticeQuiz.id },
+            tx
+          )
+        }
+
+        return modifiedPracticeQuiz
+      })
+
+      updatedPracticeQuizzes.push(updatedPracticeQuiz)
+    }
+
+    // update microlearnings (including gamification / assessment flags & all instances - depending on the required updates)
+    for (const microLearning of microLearnings) {
+      const updatedMicroLearning = await ctx.prisma.$transaction(async (tx) => {
+        const modifiedMicroLearning = await tx.microLearning.update({
+          where: { id: microLearning.id },
+          data: {
+            // course re-assignment (including update of gamification and assessment flags)
+            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
+            isGamificationEnabled: newCourse
+              ? { set: newCourse.isGamificationEnabled }
+              : undefined,
+            isAssessmentEnabled: newCourse
+              ? { set: newCourse.isAssessmentEnabled }
+              : undefined,
+            // multiplier updates
+            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+          },
+        })
+
+        // if the multiplier was changed, update the instances of the live quiz accordingly
+        if (setMultiplier) {
+          // get all instances that have a pointsMultiplier defined
+          const instances = microLearning.stacks
+            .flatMap((stack) => stack.elements)
+            .filter(
+              (instance) =>
+                'options' in instance &&
+                instance.options &&
+                'pointsMultiplier' in instance.options
+            )
+
+          await updateInstanceMultipliers(
+            {
+              instances,
+              newActivityMultiplier: modifiedMicroLearning.pointsMultiplier,
+            },
+            tx
+          )
+        }
+
+        // if the course assignment was changed, update the derived pemissions on the quiz
+        if (newCourse) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: modifiedMicroLearning.id },
+            tx
+          )
+        }
+
+        return modifiedMicroLearning
+      })
+
+      updatedMicroLearnings.push(updatedMicroLearning)
+    }
+
+    // update group activities (including gamification / assessment flags & all instances - depending on the required updates)
+    for (const groupActivity of groupActivities) {
+      const updatedGroupActivity = await ctx.prisma.$transaction(async (tx) => {
+        const modifiedGroupActivity = await tx.groupActivity.update({
+          where: { id: groupActivity.id },
+          data: {
+            // course re-assignment (including update of gamification and assessment flags)
+            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
+            isGamificationEnabled: newCourse
+              ? { set: newCourse.isGamificationEnabled }
+              : undefined,
+            isAssessmentEnabled: newCourse
+              ? { set: newCourse.isAssessmentEnabled }
+              : undefined,
+            // multiplier updates
+            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+          },
+        })
+
+        // if the multiplier was changed, update the instances of the live quiz accordingly
+        if (setMultiplier) {
+          // get all instances that have a pointsMultiplier defined
+          const instances = groupActivity.stacks
+            .flatMap((stack) => stack.elements)
+            .filter(
+              (instance) =>
+                'options' in instance &&
+                instance.options &&
+                'pointsMultiplier' in instance.options
+            )
+
+          await updateInstanceMultipliers(
+            {
+              instances,
+              newActivityMultiplier: modifiedGroupActivity.pointsMultiplier,
+            },
+            tx
+          )
+        }
+
+        // if the course assignment was changed, update the derived pemissions on the quiz
+        if (newCourse) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: modifiedGroupActivity.id },
+            tx
+          )
+        }
+
+        return modifiedGroupActivity
+      })
+
+      updatedGroupActivities.push(updatedGroupActivity)
+    }
   }
 }
 
