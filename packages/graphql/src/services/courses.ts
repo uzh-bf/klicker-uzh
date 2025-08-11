@@ -926,7 +926,7 @@ export async function getActiveUserCourses(
     include: {
       courses: {
         where: { endDate: { gte: new Date() }, isArchived: false },
-        orderBy: { startDate: 'asc' },
+        orderBy: [{ startDate: 'asc' }, { name: 'asc' }],
       },
     },
   })

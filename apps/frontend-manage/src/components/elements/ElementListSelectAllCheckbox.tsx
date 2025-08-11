@@ -18,8 +18,7 @@ function ElementListSelectAllCheckbox({
     <Checkbox
       checked={
         elements.length !== 0 &&
-        Object.values(selectedElements).filter((value) => value).length ==
-          elements.length
+        elements.every((e) => Boolean(selectedElements[e.id]))
       }
       partial={
         Object.values(selectedElements).filter((value) => value).length > 0
@@ -36,10 +35,7 @@ function ElementListSelectAllCheckbox({
             const allElements = elements.reduce<Record<number, Element>>(
               (acc, element) => {
                 // if activity creation is open, only select elements with manager access
-                if (creationMode && !element.isManager) {
-                  return acc
-                }
-
+                if (creationMode && !element.isManager) return acc
                 acc[element.id] = element
                 return acc
               },

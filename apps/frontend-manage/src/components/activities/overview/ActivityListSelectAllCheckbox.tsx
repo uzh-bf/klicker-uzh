@@ -16,8 +16,7 @@ function ActivityListSelectAllCheckbox({
     <Checkbox
       checked={
         activities.length !== 0 &&
-        Object.values(selectedActivities).filter((value) => value).length ==
-          activities.length
+        activities.every((a) => Boolean(selectedActivities[a.id]))
       }
       partial={
         Object.values(selectedActivities).filter((value) => value).length > 0

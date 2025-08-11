@@ -72,18 +72,16 @@ function ActivityList({
           checked={selectedActivities && !!selectedActivities[activity.id]}
           onCheck={
             setSelectedActivities
-              ? () => {
-                  if (selectedActivities && selectedActivities[activity.id]) {
-                    const newSelectedActivities = { ...selectedActivities }
-                    delete newSelectedActivities[activity.id]
-                    setSelectedActivities(newSelectedActivities)
-                  } else {
-                    setSelectedActivities((prev) => ({
-                      ...prev,
-                      [activity.id]: activity,
-                    }))
-                  }
-                }
+              ? () =>
+                  setSelectedActivities((prev) => {
+                    const next = { ...prev }
+                    if (next[activity.id]) {
+                      delete next[activity.id]
+                    } else {
+                      next[activity.id] = activity
+                    }
+                    return next
+                  })
               : undefined
           }
           highlightedActivity={highlightedActivity}

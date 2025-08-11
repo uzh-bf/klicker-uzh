@@ -119,6 +119,7 @@ function ActivityListEntry({
             checked={checked}
             onCheck={onCheck}
             className={{ root: 'border-unset' }}
+            data={{ cy: `activity-checkbox-${activity.name}` }}
           />
         ) : null}
         <div

@@ -83,7 +83,11 @@ function ActivityBatchOperationsModal({
       }
 
       // multiplier modification with course modification at the same time (selected course settings apply)
-      if (selectedActions.multiplier && selectedActions.course) {
+      if (
+        typeof selectedActions.multiplier !== 'undefined' &&
+        selectedActions.multiplier !== null &&
+        selectedActions.course
+      ) {
         if (
           !selectedActions.course.isAssessmentEnabled &&
           !selectedActions.course.isGamificationEnabled
@@ -98,7 +102,8 @@ function ActivityBatchOperationsModal({
       }
       // if the course assignment is not modified, the assigned course settings
       else if (
-        selectedActions.multiplier &&
+        typeof selectedActions.multiplier !== 'undefined' &&
+        selectedActions.multiplier !== null &&
         (!activity.courseId ||
           (!activity.isGamificationEnabled && !activity.isAssessmentEnabled))
       ) {

@@ -678,7 +678,7 @@ async function updateInstanceMultipliers(
     [instanceId: number]: number
   }>((acc, instance) => {
     acc[instance.id] =
-      instance.elementData.pointsMultiplier & newActivityMultiplier
+      instance.elementData.pointsMultiplier * newActivityMultiplier
     return acc
   }, {})
 
@@ -923,6 +923,11 @@ export async function applyActivityBatchOperations(
           timeToZeroBonus: setLiveQuizPoints
             ? { set: timeToZeroBonus }
             : undefined,
+          // if set before, update the review status
+          reviewStatus:
+            liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+              ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+              : undefined,
         },
       })
 
@@ -978,6 +983,11 @@ export async function applyActivityBatchOperations(
               : undefined,
             // multiplier updates
             pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+            // if set before, update the review status
+            reviewStatus:
+              practiceQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                : undefined,
           },
         })
 
@@ -1032,6 +1042,11 @@ export async function applyActivityBatchOperations(
               : undefined,
             // multiplier updates
             pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+            // if set before, update the review status
+            reviewStatus:
+              microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
+                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                : undefined,
           },
         })
 
@@ -1086,6 +1101,11 @@ export async function applyActivityBatchOperations(
               : undefined,
             // multiplier updates
             pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+            // if set before, update the review status
+            reviewStatus:
+              groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
+                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                : undefined,
           },
         })
 
