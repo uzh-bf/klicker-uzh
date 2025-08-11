@@ -86,20 +86,16 @@ function ActivityBatchOperationsModal({
       if (
         typeof selectedActions.multiplier !== 'undefined' &&
         selectedActions.multiplier !== null &&
-        selectedActions.course
+        selectedActions.course &&
+        !selectedActions.course.isAssessmentEnabled &&
+        !selectedActions.course.isGamificationEnabled
       ) {
-        if (
-          !selectedActions.course.isAssessmentEnabled &&
-          !selectedActions.course.isGamificationEnabled
-        ) {
-          actionsApplied = false
-          reasons.push(
-            t(
-              'manage.activities.batchMultiplierRequiresGamificationOrAssessment'
-            )
-          )
-        }
+        actionsApplied = false
+        reasons.push(
+          t('manage.activities.batchMultiplierRequiresGamificationOrAssessment')
+        )
       }
+
       // if the course assignment is not modified, the assigned course settings
       else if (
         typeof selectedActions.multiplier !== 'undefined' &&
@@ -166,7 +162,10 @@ function ActivityBatchOperationsModal({
 
       // live quiz points modification
       if (typeof selectedActions.liveQuizPoints !== 'undefined') {
-        if (activity.type !== ActivityType.LiveQuiz) {
+        if (
+          activity.type !== ActivityType.LiveQuiz ||
+          (!activity.isGamificationEnabled && !activity.isAssessmentEnabled)
+        ) {
           actionsApplied = false
           reasons.push(t('manage.activities.batchPointsOnlyLiveQuiz'))
         }

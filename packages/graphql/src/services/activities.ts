@@ -723,6 +723,7 @@ export async function applyActivityBatchOperations(
   ctx: ContextWithUser
 ) {
   if (activityIds.length === 0) {
+    console.log('EARLY RETURN 1') // TODO: REMOVE
     return 0
   }
 
@@ -760,6 +761,9 @@ export async function applyActivityBatchOperations(
         !newCourse.isGamificationEnabled &&
         !newCourse.isAssessmentEnabled))
   ) {
+    console.log('EARLY RETURN 1') // TODO: REMOVE
+    console.log(newCourse)
+    console.log(multiplier)
     return 0
   }
 
@@ -803,7 +807,7 @@ export async function applyActivityBatchOperations(
       status: { in: allowedActivityStatus },
       // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
       OR:
-        setMultiplier && !newCourse
+        (setMultiplier && !newCourse) || setLiveQuizPoints
           ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
           : undefined,
     },
@@ -901,15 +905,20 @@ export async function applyActivityBatchOperations(
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
     const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
+      // check if the course is different from before
+      const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
+
       const modifiedLiveQuiz = await tx.liveQuiz.update({
         where: { id: liveQuiz.id },
         data: {
           // course re-assignment (including update of gamification and assessment flags)
-          course: newCourse ? { connect: { id: newCourse.id } } : undefined,
-          isGamificationEnabled: newCourse
+          course: isCourseChanged
+            ? { connect: { id: newCourse.id } }
+            : undefined,
+          isGamificationEnabled: isCourseChanged
             ? { set: newCourse.isGamificationEnabled }
             : undefined,
-          isAssessmentEnabled: newCourse
+          isAssessmentEnabled: isCourseChanged
             ? { set: newCourse.isAssessmentEnabled }
             : undefined,
           // multiplier updates
@@ -926,7 +935,11 @@ export async function applyActivityBatchOperations(
           // if set before, update the review status
           reviewStatus:
             liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-              ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+              ? {
+                  set: isCourseChanged
+                    ? DB.ReviewStatus.INCOMPLETE
+                    : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                }
               : undefined,
         },
       })
@@ -970,15 +983,21 @@ export async function applyActivityBatchOperations(
     // update practice quizzes (including gamification / assessment flags & all instances - depending on the required updates)
     for (const practiceQuiz of practiceQuizzes) {
       const updatedPracticeQuiz = await ctx.prisma.$transaction(async (tx) => {
+        // check if the course is different from before
+        const isCourseChanged =
+          !!newCourse && practiceQuiz.courseId !== newCourse.id
+
         const modifiedPracticeQuiz = await tx.practiceQuiz.update({
           where: { id: practiceQuiz.id },
           data: {
             // course re-assignment (including update of gamification and assessment flags)
-            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
-            isGamificationEnabled: newCourse
+            course: isCourseChanged
+              ? { connect: { id: newCourse.id } }
+              : undefined,
+            isGamificationEnabled: isCourseChanged
               ? { set: newCourse.isGamificationEnabled }
               : undefined,
-            isAssessmentEnabled: newCourse
+            isAssessmentEnabled: isCourseChanged
               ? { set: newCourse.isAssessmentEnabled }
               : undefined,
             // multiplier updates
@@ -986,7 +1005,11 @@ export async function applyActivityBatchOperations(
             // if set before, update the review status
             reviewStatus:
               practiceQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                ? {
+                    set: isCourseChanged
+                      ? DB.ReviewStatus.INCOMPLETE
+                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                  }
                 : undefined,
           },
         })
@@ -1029,15 +1052,21 @@ export async function applyActivityBatchOperations(
     // update microlearnings (including gamification / assessment flags & all instances - depending on the required updates)
     for (const microLearning of microLearnings) {
       const updatedMicroLearning = await ctx.prisma.$transaction(async (tx) => {
+        // check if the course is different from before
+        const isCourseChanged =
+          !!newCourse && microLearning.courseId !== newCourse.id
+
         const modifiedMicroLearning = await tx.microLearning.update({
           where: { id: microLearning.id },
           data: {
             // course re-assignment (including update of gamification and assessment flags)
-            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
-            isGamificationEnabled: newCourse
+            course: isCourseChanged
+              ? { connect: { id: newCourse.id } }
+              : undefined,
+            isGamificationEnabled: isCourseChanged
               ? { set: newCourse.isGamificationEnabled }
               : undefined,
-            isAssessmentEnabled: newCourse
+            isAssessmentEnabled: isCourseChanged
               ? { set: newCourse.isAssessmentEnabled }
               : undefined,
             // multiplier updates
@@ -1045,7 +1074,11 @@ export async function applyActivityBatchOperations(
             // if set before, update the review status
             reviewStatus:
               microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                ? {
+                    set: isCourseChanged
+                      ? DB.ReviewStatus.INCOMPLETE
+                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                  }
                 : undefined,
           },
         })
@@ -1088,15 +1121,21 @@ export async function applyActivityBatchOperations(
     // update group activities (including gamification / assessment flags & all instances - depending on the required updates)
     for (const groupActivity of groupActivities) {
       const updatedGroupActivity = await ctx.prisma.$transaction(async (tx) => {
+        // check if the course is different from before
+        const isCourseChanged =
+          !!newCourse && groupActivity.courseId !== newCourse.id
+
         const modifiedGroupActivity = await tx.groupActivity.update({
           where: { id: groupActivity.id },
           data: {
             // course re-assignment (including update of gamification and assessment flags)
-            course: newCourse ? { connect: { id: newCourse.id } } : undefined,
-            isGamificationEnabled: newCourse
+            course: isCourseChanged
+              ? { connect: { id: newCourse.id } }
+              : undefined,
+            isGamificationEnabled: isCourseChanged
               ? { set: newCourse.isGamificationEnabled }
               : undefined,
-            isAssessmentEnabled: newCourse
+            isAssessmentEnabled: isCourseChanged
               ? { set: newCourse.isAssessmentEnabled }
               : undefined,
             // multiplier updates
@@ -1104,7 +1143,11 @@ export async function applyActivityBatchOperations(
             // if set before, update the review status
             reviewStatus:
               groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? { set: DB.ReviewStatus.MODIFIED_AFTER_REVIEW }
+                ? {
+                    set: isCourseChanged
+                      ? DB.ReviewStatus.INCOMPLETE
+                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                  }
                 : undefined,
           },
         })
