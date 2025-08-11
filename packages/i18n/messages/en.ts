@@ -1303,7 +1303,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Batch Operations (Elements)',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
       actionApplies: 'Action applies',
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
@@ -1323,13 +1323,30 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
       activityUpdates: 'Activity updates',
       draftScheduledActivities: 'Draft and scheduled activities',
-      templateUpdates: 'Template updates',
-      batchOperationSuccess:
-        'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
+      templateUpdates: 'Activity template updates',
+      batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
-        'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Elemente und Ihre Berechtigungen.',
+        'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
       batchOperationFailed:
-        'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+        'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      batchNotApplicableExplanation:
+        'The selected batch operations cannot be applied to this element for the following reasons:',
+      batchUnarchiveOnlyArchivedElements:
+        'Restoring elements from the archive is only possible for archived elements',
+      batchUnarchiveOnlyManagerElements:
+        'Restoring elements from the archive requires at least admin permissions',
+      batchArchiveOnlyUnarchivedElements:
+        'Archiving elements is only possible for non-archived elements',
+      batchArchiveOnlyManagerElements:
+        'Archiving elements requires at least admin permissions',
+      batchMultiplierOnlyEditorElements:
+        'Changing the element multiplier requires at least write permissions.',
+      batchMultiplierOnlySampleSolution:
+        'Changing the element multiplier is only possible for questions with a defined sample solution.',
+      batchBasePointsOnlyEditorElements:
+        'Changing the element base points requires at least write permissions.',
+      batchBasePointsOnlyQuestions:
+        'Base points can only be enabled / disabled for questions (not flashcards or content elements).',
     },
     tags: {
       deleteTag: 'Delete tag',

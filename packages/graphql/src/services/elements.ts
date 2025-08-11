@@ -535,9 +535,7 @@ export async function manipulateElement(
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
       basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
-      version: {
-        increment: 1,
-      },
+      version: { increment: 1 },
       options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
@@ -720,6 +718,7 @@ export async function applyElementBatchOperations(
       DB.PermissionLevel.OWNER,
       DB.PermissionLevel.ADMIN,
       DB.PermissionLevel.WRITE,
+      DB.PermissionLevel.EXECUTE,
       DB.PermissionLevel.READ,
     ]
   } else {
@@ -764,52 +763,49 @@ export async function applyElementBatchOperations(
   }
 
   // execute the required element updates and, if enabled, update the corresponding linked instances
-  const updatedElements = await Promise.allSettled(
-    dbElements.map(
-      async (element) =>
-        await ctx.prisma.$transaction(async (tx) => {
-          // execute the element update
-          const updatedElement = await tx.element.update({
-            where: { id: element.id },
-            data: {
-              isArchived: archive ? true : unarchive ? false : undefined,
-              status: status ?? undefined,
-              pointsMultiplier:
-                typeof multiplier !== 'undefined' && multiplier !== null
-                  ? multiplier
-                  : undefined,
-              basePoints:
-                typeof basePoints !== 'undefined' && basePoints !== null
-                  ? basePoints
-                  : undefined,
-            },
-          })
-
-          // if enabled, update the corresponding element instances
-          if (updateInstances) {
-            await updateElementInstances(
-              {
-                elementId: updatedElement.id,
-                includeTemplates: updateTemplateInstances,
-              },
-              tx,
-              ctx.emitter,
-              ctx.user.sub
-            )
-          }
-
-          return updatedElement
+  // needs to be sequential since element instance updates potentially include derived permission updates
+  const updatedElements: DB.Element[] = []
+  for (const element of dbElements) {
+    updatedElements.push(
+      await ctx.prisma.$transaction(async (tx) => {
+        // execute the element update
+        const updatedElement = await tx.element.update({
+          where: { id: element.id },
+          data: {
+            version: { increment: 1 },
+            isArchived: archive ? true : unarchive ? false : undefined,
+            status: status ?? undefined,
+            pointsMultiplier:
+              typeof multiplier !== 'undefined' && multiplier !== null
+                ? multiplier
+                : undefined,
+            basePoints:
+              typeof basePoints !== 'undefined' && basePoints !== null
+                ? basePoints
+                : undefined,
+          },
         })
-    )
-  )
 
-  // filter out the elements that were successfully updated
-  const successfullyUpdatedElements = updatedElements
-    .filter((result) => result.status === 'fulfilled')
-    .map((result) => result.value)
+        // if enabled, update the corresponding element instances
+        if (updateInstances) {
+          await updateElementInstances(
+            {
+              elementId: updatedElement.id,
+              includeTemplates: updateTemplateInstances,
+            },
+            tx,
+            ctx.emitter,
+            ctx.user.sub
+          )
+        }
+
+        return updatedElement
+      })
+    )
+  }
 
   // return the number of successfully updated elements
-  return successfullyUpdatedElements.length
+  return updatedElements.length
 }
 
 export async function changeElementStatus(
@@ -1511,72 +1507,49 @@ export async function updateElementInstances(
             include: {
               microLearning: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
               practiceQuiz: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
               groupActivity: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
-                  },
+                  status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
                     some: {
                       userId,
-                      permissionLevel: {
-                        in: requiredActivityAccess,
-                      },
+                      permissionLevel: { in: requiredActivityAccess },
                     },
                   },
                 },
-                include: {
-                  templateInfo: true,
-                },
+                include: { templateInfo: true },
               },
             },
           },
           elementBlock: {
             include: {
               // ? where clause is not accepted by prisma for unknown reasons
-              liveQuiz: {
-                include: {
-                  templateInfo: true,
-                  permissions: true,
-                },
-              },
+              liveQuiz: { include: { templateInfo: true, permissions: true } },
             },
           },
         },
