@@ -723,7 +723,6 @@ export async function applyActivityBatchOperations(
   ctx: ContextWithUser
 ) {
   if (activityIds.length === 0) {
-    console.log('EARLY RETURN 1') // TODO: REMOVE
     return 0
   }
 
@@ -761,9 +760,6 @@ export async function applyActivityBatchOperations(
         !newCourse.isGamificationEnabled &&
         !newCourse.isAssessmentEnabled))
   ) {
-    console.log('EARLY RETURN 1') // TODO: REMOVE
-    console.log(newCourse)
-    console.log(multiplier)
     return 0
   }
 
