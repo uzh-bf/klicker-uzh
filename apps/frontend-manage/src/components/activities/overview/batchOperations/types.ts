@@ -13,7 +13,7 @@ export type ActivityBatchOperationActions = {
     basePoints: number
     correctnessPoints: number
     bonusPoints: number
-    bonusTimes: number
+    bonusTime: number
   }
 }
 

@@ -244,8 +244,7 @@ function ElementBatchOperationsModal({
 
                     // in case of success, reset the selected elements and refetch the elements
                     if (
-                      res?.applyElementBatchOperations ===
-                      affectedElements.length
+                      res?.applyElementBatchOperations === numOfUpdatedElements
                     ) {
                       resetSelectedElements()
                       await refetchElements()

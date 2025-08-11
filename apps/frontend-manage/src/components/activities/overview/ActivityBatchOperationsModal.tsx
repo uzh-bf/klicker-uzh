@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
+  ApplyActivityBatchOperationsDocument,
   GetActiveUserCoursesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,7 +12,7 @@ import {
 //       liveQuizPoints: selectedActions.liveQuizPoints ?? undefined,
 //     },
 //   })ops'
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -50,10 +51,10 @@ function ActivityBatchOperationsModal({
   const [selectedActions, setSelectedActions] =
     useState<ActivityBatchOperationActions>(INITIAL_ACTIVITY_BATCH_OPERATIONS)
 
-  // TODO: Add mutation for activity batch operations
-  // const [applyActivityBatchOperations, { loading: applying }] = useMutation(
-  //   ApplyActivityBatchOperationsDocument
-  // )
+  // database mutation to execute activity batch operations
+  const [applyActivityBatchOperations, { loading: applying }] = useMutation(
+    ApplyActivityBatchOperationsDocument
+  )
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
     GetActiveUserCoursesDocument,
@@ -266,8 +267,7 @@ function ActivityBatchOperationsModal({
               <Button
                 primary
                 disabled={
-                  // TODO: Add loading state when mutation is implemented
-                  // applying ||
+                  applying ||
                   numOfUpdatedActivities === 0 ||
                   isShallowEqual(
                     selectedActions,
@@ -276,10 +276,31 @@ function ActivityBatchOperationsModal({
                 }
                 onClick={async () => {
                   try {
-                    // TODO: Submit the batch operations
-                    const updatedCount = 2
+                    const { data: res } = await applyActivityBatchOperations({
+                      variables: {
+                        activityIds: selectedActivities.map(
+                          (activity) => activity.id
+                        ),
+                        multiplier:
+                          typeof selectedActions.multiplier !== 'undefined' &&
+                          selectedActions.multiplier !== ''
+                            ? parseInt(selectedActions.multiplier, 10)
+                            : null,
+                        courseId: selectedActions.course?.id,
+                        basePoints: selectedActions.liveQuizPoints?.basePoints,
+                        correctnessPoints:
+                          selectedActions.liveQuizPoints?.correctnessPoints,
+                        bonusPoints:
+                          selectedActions.liveQuizPoints?.bonusPoints,
+                        timeToZeroBonus:
+                          selectedActions.liveQuizPoints?.bonusTime,
+                      },
+                    })
 
-                    if (updatedCount === selectedActivities.length) {
+                    if (
+                      res?.applyActivityBatchOperations ===
+                      numOfUpdatedActivities
+                    ) {
                       resetSelectedActivities()
                       await refetchActivities()
                       toast({
@@ -288,7 +309,7 @@ function ActivityBatchOperationsModal({
                         options: { duration: 3000 },
                       })
                       onClose()
-                    } else if (updatedCount !== 0) {
+                    } else if (res?.applyActivityBatchOperations !== 0) {
                       resetSelectedActivities()
                       await refetchActivities()
                       toast({

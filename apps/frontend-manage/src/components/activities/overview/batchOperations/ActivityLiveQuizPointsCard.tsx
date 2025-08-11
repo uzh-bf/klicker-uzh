@@ -48,7 +48,7 @@ function ActivityLiveQuizPointsCard({
                           basePoints: 10,
                           correctnessPoints: 30,
                           bonusPoints: 10,
-                          bonusTimes: 5,
+                          bonusTime: 5,
                         },
                 }))
               }}
@@ -136,7 +136,7 @@ function ActivityLiveQuizPointsCard({
                 precision={0}
                 min={0}
                 unit={t('shared.generic.seconds')}
-                value={selectedActions.liveQuizPoints.bonusTimes.toString()}
+                value={selectedActions.liveQuizPoints.bonusTime.toString()}
                 onChange={(value) => {
                   const numValue = parseInt(value, 10) || 0
                   setSelectedActions((prev) => ({
@@ -144,7 +144,7 @@ function ActivityLiveQuizPointsCard({
                     liveQuizPoints: prev.liveQuizPoints
                       ? {
                           ...prev.liveQuizPoints,
-                          bonusTimes: numValue,
+                          bonusTime: numValue,
                         }
                       : undefined,
                   }))

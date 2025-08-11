@@ -893,10 +893,10 @@ export async function applyActivityBatchOperations(
       : []
 
   // apply activity updates
-  let updatedLiveQuizzes: DB.LiveQuiz[] = []
-  let updatedPracticeQuizzes: DB.PracticeQuiz[] = []
-  let updatedMicroLearnings: DB.MicroLearning[] = []
-  let updatedGroupActivities: DB.GroupActivity[] = []
+  let updatedLiveQuizzes: string[] = []
+  let updatedPracticeQuizzes: string[] = []
+  let updatedMicroLearnings: string[] = []
+  let updatedGroupActivities: string[] = []
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
@@ -958,7 +958,7 @@ export async function applyActivityBatchOperations(
       return modifiedLiveQuiz
     })
 
-    updatedLiveQuizzes.push(updatedLiveQuiz)
+    updatedLiveQuizzes.push(updatedLiveQuiz.id)
   }
 
   if (!setLiveQuizPoints) {
@@ -1013,7 +1013,7 @@ export async function applyActivityBatchOperations(
         return modifiedPracticeQuiz
       })
 
-      updatedPracticeQuizzes.push(updatedPracticeQuiz)
+      updatedPracticeQuizzes.push(updatedPracticeQuiz.id)
     }
 
     // update microlearnings (including gamification / assessment flags & all instances - depending on the required updates)
@@ -1067,7 +1067,7 @@ export async function applyActivityBatchOperations(
         return modifiedMicroLearning
       })
 
-      updatedMicroLearnings.push(updatedMicroLearning)
+      updatedMicroLearnings.push(updatedMicroLearning.id)
     }
 
     // update group activities (including gamification / assessment flags & all instances - depending on the required updates)
@@ -1121,9 +1121,16 @@ export async function applyActivityBatchOperations(
         return modifiedGroupActivity
       })
 
-      updatedGroupActivities.push(updatedGroupActivity)
+      updatedGroupActivities.push(updatedGroupActivity.id)
     }
   }
+
+  return (
+    updatedLiveQuizzes.length +
+    updatedPracticeQuizzes.length +
+    updatedMicroLearnings.length +
+    updatedGroupActivities.length
+  )
 }
 
 export async function getLiveQuizDetails(

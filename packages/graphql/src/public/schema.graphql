@@ -1582,7 +1582,8 @@ type Mutation {
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: ObjectType!): CatalogObject
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
-  applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int
+  applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
+  applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
