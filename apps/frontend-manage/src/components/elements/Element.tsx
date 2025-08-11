@@ -148,6 +148,7 @@ function Element({
         checked={checked}
         onCheck={onCheck}
         className={{ root: 'border-unset mr-1.5' }}
+        data={{ cy: `element-checkbox-${element.name}` }}
       />
       {drag(
         <div
@@ -235,8 +236,11 @@ function Element({
           </div>
 
           {element.isArchived && (
-            <Badge className="mt-1.25 mr-3 flex h-max flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faArchive} className="" />
+            <Badge
+              className="mt-1.25 mr-3 flex h-max flex-row items-center gap-2"
+              data-cy={`archive-badge-${element.name}`}
+            >
+              <FontAwesomeIcon icon={faArchive} />
               <span>{t('shared.generic.archived')}</span>
             </Badge>
           )}

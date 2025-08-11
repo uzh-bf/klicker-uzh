@@ -339,6 +339,7 @@ function Index() {
                       })
                     }}
                     className={{ root: 'border-unset' }}
+                    data={{ cy: 'select-all-elements' }}
                   />
                 </div>
 
@@ -367,6 +368,7 @@ function Index() {
                       root: 'h-9 bg-orange-100 hover:bg-orange-200',
                     }}
                     onClick={() => setBatchOperationsOpen(true)}
+                    data={{ cy: 'element-batch-operations' }}
                   >
                     <Button.Icon icon={faListCheck} />
                     <Button.Label>

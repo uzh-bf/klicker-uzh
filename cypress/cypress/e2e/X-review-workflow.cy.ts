@@ -667,4 +667,517 @@ describe('Feature test for review functionalities and batch operations', functio
     }
   })
   // #endregion
+
+  // ! Part 2: Element list batch operations
+  // #region
+  it('Prepare elements for element list batch operations', function () {
+    cy.cleanup()
+    cy.seed()
+
+    // login and show archived elements
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.get('[data-cy="show-archive-switch"]').first().click()
+
+    // SC question with solution
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
+      multiplier: 2,
+      isArchived: true,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // MC question with solution
+    cy.createQuestionMC({
+      name: this.data.MCML.title,
+      content: this.data.MCML.content,
+      choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // KPRIM question without solution
+    cy.createQuestionKPRIM({
+      name: this.data.KP.title,
+      content: this.data.KP.content,
+      choices: this.data.KP.choices,
+      isArchived: true,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // NR question with solution
+    cy.createQuestionNR({
+      name: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
+      multiplier: 3,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // FT question without solution
+    cy.createQuestionFT({
+      name: this.data.FT.title,
+      content: this.data.FT.content,
+      ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // FC flashcard
+    cy.createFlashcard({
+      name: this.data.FC.title,
+      content: this.data.FC.content,
+      explanation: this.data.FC.explanation,
+      isArchived: true,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // CT element
+    cy.createContent({
+      name: this.data.CT.title,
+      content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // SE question with solution
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      name: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // CS question without solution
+    cy.createQuestionCS({
+      name: this.data.CS.title,
+      content: this.data.CS.content,
+      explanation: this.data.CS.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CS.selectedItems.includes(i)
+      ),
+      criteria: this.data.CS.criteria,
+      cases: this.data.CS.cases,
+      solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+  })
+
+  it('Verify that selected elements are correctly shown in element batch operations modal', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+
+    // select specific elements
+    cy.get(`[data-cy="element-checkbox-${this.data.SCML.title}"]`).click()
+    cy.get(`[data-cy="element-checkbox-${this.data.KP.title}"]`).click()
+    cy.get(`[data-cy="element-checkbox-${this.data.FC.title}"]`).click()
+    cy.get(`[data-cy="element-checkbox-${this.data.CS.title}"]`).click()
+
+    // open batch operations dialog and verify that correct elements are shown
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.KP.title,
+      this.data.FC.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('not.exist')
+    })
+    cy.get('[data-cy="close-batch-operations-modal"]').click()
+
+    // select all elements through the corresponding checkbox
+    cy.get('[data-cy="select-all-elements"]').click().wait(500) // deselect all
+    cy.get('[data-cy="select-all-elements"]').click() // select all
+
+    // open batch operations dialog and verify that all elements are
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('not.exist')
+    })
+  })
+
+  it('Verify that the applied operations are displayed correctly in batch operations modal', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="select-all-elements"]').click() // select all
+    cy.get('[data-cy="element-batch-operations"]').click()
+
+    // select the option to archive elements
+    cy.get('[data-cy="archive-button"]').click()
+    cy.wrap([
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.KP.title,
+      this.data.FC.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+
+    // select the option to unarchive elements
+    cy.get('[data-cy="unarchive-button"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.KP.title,
+      this.data.FC.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+
+    // select the option to change the status of elements (deselect it again; archiving options are automatically deselected)
+    cy.get('[data-cy="status-checkbox"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.get('[data-cy="status-checkbox"]').click()
+
+    // select the option to change the multiplier of elements (deselect it again)
+    cy.get('[data-cy="multiplier-checkbox"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.SEML.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([
+      this.data.KP.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+    cy.get('[data-cy="multiplier-checkbox"]').click()
+
+    // select the option to enable / disable base points (deselect it again)
+    cy.get('[data-cy="base-points-checkbox"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([this.data.FC.title, this.data.CT.title]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+    cy.get('[data-cy="base-points-checkbox"]').click()
+
+    // select status and base points change (verify only questions selected), add multiplier (verify only questions with sample solution selected)
+    cy.get('[data-cy="status-checkbox"]').click()
+    cy.get('[data-cy="base-points-checkbox"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([this.data.FC.title, this.data.CT.title]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+
+    cy.get('[data-cy="multiplier-checkbox"]').click()
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.SEML.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([
+      this.data.KP.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+  })
+
+  it('Verify that archiving / unarchiving elements works correctly', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    const allElements = [
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]
+
+    // verify that only the seeded archived elements have the corresponding badge
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.KP.title,
+      this.data.FC.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="archive-badge-${title}"]`).should('exist')
+    })
+
+    // archive all elements
+    cy.get('[data-cy="select-all-elements"]').click() // select all
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.get('[data-cy="archive-button"]').click()
+    cy.wrap([
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-check-${title}"]`).should('exist')
+    })
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.KP.title,
+      this.data.FC.title,
+    ]).each((title) => {
+      cy.get(`[data-cy="element-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="element-batch-x-${title}"]`).should('exist')
+    })
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that all elements are archived now
+    cy.wrap(allElements).each((title) => {
+      cy.get(`[data-cy="archive-badge-${title}"]`).should('exist')
+    })
+
+    // unarchive all elements again
+    cy.get('[data-cy="select-all-elements"]').click() // select all
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.get('[data-cy="unarchive-button"]').click()
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that none of the elements are archived
+    cy.wrap(allElements).each((title) => {
+      cy.get(`[data-cy="archive-badge-${title}"]`).should('not.exist')
+    })
+  })
+
+  it('Verify that status changes are possible for all elements', function () {
+    cy.loginLecturer()
+
+    const allElements = [
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.FC.title,
+      this.data.CT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]
+
+    // verify that all elements are in ready state
+    cy.wrap(allElements).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should(
+        'contain',
+        messages.shared.READY.statusLabel
+      )
+    })
+
+    // set all elements to a reviewed status
+    cy.get('[data-cy="select-all-elements"]').click() // select all
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.get('[data-cy="status-checkbox"]').click()
+    cy.selectOption(
+      '[data-cy="element-status-select"]',
+      messages.shared.REVIEW.statusLabel
+    )
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that all elements are in reviewed state
+    cy.wrap(allElements).each((title) => {
+      cy.get(`[data-cy="element-item-${title}"]`).should(
+        'contain',
+        messages.shared.REVIEW.statusLabel
+      )
+    })
+  })
+
+  it('Verify that points multiplier and base point operations are only applied for supported elements', function () {
+    cy.loginLecturer()
+
+    // disabled base points for all elements
+    cy.get('[data-cy="select-all-elements"]').click()
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.get('[data-cy="base-points-checkbox"]').click()
+    cy.get('[data-cy="base-points-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="base-points-switch"]').click()
+    cy.get('[data-cy="base-points-switch"]').should(
+      'not.have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that base points have been disabled for all questions
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KP.title,
+      this.data.NRML.title,
+      this.data.FT.title,
+      this.data.SEML.title,
+      this.data.CS.title,
+    ]).each((element) => {
+      cy.get(`[data-cy="edit-element-${element}"]`).click()
+      cy.get('[data-cy="configure-base-points"]').should(
+        'not.have.attr',
+        'data-state',
+        'checked'
+      )
+      cy.get('[data-cy="close-element-modal"]').click()
+    })
+
+    // change the multiplier (to 3x) and enable base points
+    cy.get('[data-cy="select-all-elements"]').click()
+    cy.get('[data-cy="element-batch-operations"]').click()
+    cy.get('[data-cy="base-points-checkbox"]').click()
+    cy.get('[data-cy="base-points-switch"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="multiplier-checkbox"]').click()
+    cy.selectOption('[data-cy="select-multiplier"]', '3')
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that base points have been enabled for all questions with sample solution
+    cy.wrap([
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.NRML.title,
+      this.data.SEML.title,
+    ]).each((element) => {
+      cy.get(`[data-cy="edit-element-${element}"]`).click()
+      cy.get('[data-cy="configure-base-points"]').should(
+        'have.attr',
+        'data-state',
+        'checked'
+      )
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier3)
+      cy.get('[data-cy="close-element-modal"]').click()
+    })
+
+    cy.wrap([this.data.KP.title, this.data.FT.title, this.data.CS.title]).each(
+      (element) => {
+        cy.get(`[data-cy="edit-element-${element}"]`).click()
+        cy.get('[data-cy="configure-base-points"]').should(
+          'not.have.attr',
+          'data-state',
+          'checked'
+        )
+        cy.get('[data-cy="close-element-modal"]').click()
+      }
+    )
+  })
+  // #endregion
 })

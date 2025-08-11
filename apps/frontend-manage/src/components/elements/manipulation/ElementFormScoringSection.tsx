@@ -81,9 +81,8 @@ function ElementformScoringSection({
             onCheckedChange={() =>
               setFieldValue('basePoints', !values.basePoints)
             }
-            className={{
-              root: 'mt-2 self-center',
-            }}
+            className={{ root: 'mt-2 self-center' }}
+            data={{ cy: 'configure-base-points' }}
           />
         </div>
 

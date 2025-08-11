@@ -328,6 +328,7 @@ function TagList({
           checked={isArchiveActive}
           onCheckedChange={(): void => handleToggleArchive()}
           className={{ label: 'font-normal' }}
+          data={{ cy: 'show-archive-switch' }}
         />
       </div>
 
