@@ -763,53 +763,49 @@ export async function applyElementBatchOperations(
   }
 
   // execute the required element updates and, if enabled, update the corresponding linked instances
-  const updatedElements = await Promise.allSettled(
-    dbElements.map(
-      async (element) =>
-        await ctx.prisma.$transaction(async (tx) => {
-          // execute the element update
-          const updatedElement = await tx.element.update({
-            where: { id: element.id },
-            data: {
-              version: { increment: 1 },
-              isArchived: archive ? true : unarchive ? false : undefined,
-              status: status ?? undefined,
-              pointsMultiplier:
-                typeof multiplier !== 'undefined' && multiplier !== null
-                  ? multiplier
-                  : undefined,
-              basePoints:
-                typeof basePoints !== 'undefined' && basePoints !== null
-                  ? basePoints
-                  : undefined,
-            },
-          })
-
-          // if enabled, update the corresponding element instances
-          if (updateInstances) {
-            await updateElementInstances(
-              {
-                elementId: updatedElement.id,
-                includeTemplates: updateTemplateInstances,
-              },
-              tx,
-              ctx.emitter,
-              ctx.user.sub
-            )
-          }
-
-          return updatedElement
+  // needs to be sequential since element instance updates potentially include derived permission updates
+  const updatedElements: DB.Element[] = []
+  for (const element of dbElements) {
+    updatedElements.push(
+      await ctx.prisma.$transaction(async (tx) => {
+        // execute the element update
+        const updatedElement = await tx.element.update({
+          where: { id: element.id },
+          data: {
+            version: { increment: 1 },
+            isArchived: archive ? true : unarchive ? false : undefined,
+            status: status ?? undefined,
+            pointsMultiplier:
+              typeof multiplier !== 'undefined' && multiplier !== null
+                ? multiplier
+                : undefined,
+            basePoints:
+              typeof basePoints !== 'undefined' && basePoints !== null
+                ? basePoints
+                : undefined,
+          },
         })
-    )
-  )
 
-  // filter out the elements that were successfully updated
-  const successfullyUpdatedElements = updatedElements
-    .filter((result) => result.status === 'fulfilled')
-    .map((result) => result.value)
+        // if enabled, update the corresponding element instances
+        if (updateInstances) {
+          await updateElementInstances(
+            {
+              elementId: updatedElement.id,
+              includeTemplates: updateTemplateInstances,
+            },
+            tx,
+            ctx.emitter,
+            ctx.user.sub
+          )
+        }
+
+        return updatedElement
+      })
+    )
+  }
 
   // return the number of successfully updated elements
-  return successfullyUpdatedElements.length
+  return updatedElements.length
 }
 
 export async function changeElementStatus(

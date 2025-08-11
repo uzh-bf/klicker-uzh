@@ -8,7 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual, omit } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import ElementArchiveCard from './batchOperations/ElementArchiveCard'
@@ -36,7 +36,11 @@ function ElementBatchOperationsModal({
 }) {
   const t = useTranslations()
   const [affectedElements, setAffectedElements] = useState(
-    selectedElements.map((element) => element.id)
+    selectedElements.map((element) => ({
+      ...element,
+      actionsApplied: true,
+      reasons: [] as string[],
+    }))
   )
   const [selectedActions, setSelectedActions] = useState<BatchOperationActions>(
     INITIAL_ELEMENT_BATCH_OPERATIONS
@@ -49,37 +53,93 @@ function ElementBatchOperationsModal({
 
   // whenever the applied filters change, update the affected elements
   useEffect(() => {
-    let filtered = [...selectedElements]
+    let mapped = [
+      ...affectedElements.map((element) => ({
+        ...element,
+        actionsApplied: true,
+        reasons: [] as string[],
+      })),
+    ]
 
     if (selectedActions.unarchive) {
-      filtered = filtered.filter(
-        (element) => element.isArchived && element.isManager
-      )
+      mapped = mapped.map((element) => ({
+        ...element,
+        actionsApplied:
+          element.actionsApplied && !!element.isArchived && !!element.isManager,
+        reasons: [
+          ...element.reasons,
+          ...(!element.isArchived
+            ? [t('manage.questionPool.batchUnarchiveOnlyArchivedElements')]
+            : []),
+          ...(element.isArchived && !element.isManager
+            ? [t('manage.questionPool.batchUnarchiveOnlyManagerElements')]
+            : []),
+        ],
+      }))
     } else if (selectedActions.archive) {
-      filtered = filtered.filter(
-        (element) => !element.isArchived && element.isManager
-      )
+      mapped = mapped.map((element) => ({
+        ...element,
+        actionsApplied:
+          element.actionsApplied && !element.isArchived && !!element.isManager,
+        reasons: [
+          ...element.reasons,
+          ...(element.isArchived
+            ? [t('manage.questionPool.batchArchiveOnlyUnarchivedElements')]
+            : []),
+          ...(!element.isManager
+            ? [t('manage.questionPool.batchArchiveOnlyManagerElements')]
+            : []),
+        ],
+      }))
     }
     if (selectedActions.multiplier) {
-      filtered = filtered.filter(
-        (element) =>
-          element.isEditor &&
-          'options' in element &&
-          element.options.hasSampleSolution
-      )
+      mapped = mapped.map((element) => ({
+        ...element,
+        actionsApplied:
+          element.actionsApplied &&
+          !!element.isEditor &&
+          !!('options' in element && element.options.hasSampleSolution),
+        reasons: [
+          ...element.reasons,
+          ...(!element.isEditor
+            ? [t('manage.questionPool.batchMultiplierOnlyEditorElements')]
+            : []),
+          ...(!('options' in element && element.options.hasSampleSolution)
+            ? [t('manage.questionPool.batchMultiplierOnlySampleSolution')]
+            : []),
+        ],
+      }))
     }
     if (typeof selectedActions.basePoints !== 'undefined') {
-      filtered = filtered.filter(
-        (element) =>
-          element.isEditor &&
-          element.type !== ElementType.Flashcard &&
-          element.type !== ElementType.Content
-      )
+      mapped = mapped.map((element) => ({
+        ...element,
+        actionsApplied:
+          element.actionsApplied &&
+          !!element.isEditor &&
+          !(
+            element.type === ElementType.Flashcard ||
+            element.type === ElementType.Content
+          ),
+        reasons: [
+          ...element.reasons,
+          ...(!element.isEditor
+            ? [t('manage.questionPool.batchBasePointsOnlyEditorElements')]
+            : []),
+          ...(element.type === ElementType.Flashcard ||
+          element.type === ElementType.Content
+            ? [t('manage.questionPool.batchBasePointsOnlyQuestions')]
+            : []),
+        ],
+      }))
     }
 
-    // return the filtered and mapped elements (unfiltered if no relevant action applied)
-    setAffectedElements(filtered.map((element) => element.id))
+    // set the updated element list
+    setAffectedElements(mapped)
   }, [selectedElements, selectedActions])
+
+  const numOfUpdatedElements = useMemo(() => {
+    return affectedElements.filter((element) => element.actionsApplied).length
+  }, [affectedElements])
 
   return (
     <Modal
@@ -137,24 +197,24 @@ function ElementBatchOperationsModal({
               <span
                 className={twMerge(
                   'text-sm text-green-600',
-                  affectedElements.length === 0 && 'text-red-600'
+                  numOfUpdatedElements === 0 && 'text-red-600'
                 )}
               >
                 <FontAwesomeIcon
-                  icon={affectedElements.length === 0 ? faX : faCheck}
+                  icon={numOfUpdatedElements === 0 ? faX : faCheck}
                   className="mr-1.5"
                 />
-                {affectedElements.length === 0
+                {numOfUpdatedElements === 0
                   ? t('manage.questionPool.noElementsWillBeUpdated')
                   : t('manage.questionPool.nElementsWillBeUpdated', {
-                      number: affectedElements.length,
+                      number: numOfUpdatedElements,
                     })}
               </span>
               <Button
                 primary
                 disabled={
                   applying ||
-                  affectedElements.length === 0 ||
+                  numOfUpdatedElements === 0 ||
                   isShallowEqual(
                     omit(selectedActions, [
                       'updateInstances',
@@ -171,7 +231,9 @@ function ElementBatchOperationsModal({
                     // submit the batch operations
                     const { data: res } = await applyElementBatchOperations({
                       variables: {
-                        elementIds: affectedElements,
+                        elementIds: affectedElements
+                          .filter((element) => element.actionsApplied)
+                          .map((element) => element.id),
                         archive: selectedActions.archive,
                         unarchive: selectedActions.unarchive,
                         status: selectedActions.status ?? undefined,

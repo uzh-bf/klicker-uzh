@@ -1306,7 +1306,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
       batchOperationsElements: 'Batch-Operationen (Elemente)',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, die von den gewählten Aktionen betroffen sind, sind markiert. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, die von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       actionApplies: 'Aktion wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
@@ -1326,13 +1326,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie hier, ob die Änderungen, die an den ausgewählten Elementen vorgenommen werden, auch auf alle Aktivitäten im Entwurf- und Planungsstatus angewendet werden sollen. Optional können Sie auch Aktivitätsvorlagen mit diesem Element in das Update einbeziehen.',
       activityUpdates: 'Aktivitäts-Updates',
       draftScheduledActivities: 'Entwurfs- und geplante Aktivitäten',
-      templateUpdates: 'Vorlagen-Updates',
+      templateUpdates: 'Aktivitätsvorlagen-Updates',
       batchOperationSuccess:
         'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
       batchOperationPartialSuccess:
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Elemente und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      batchNotApplicableExplanation:
+        'Die ausgewählten Batch-Operationen können aus den folgenden Gründen nicht auf dieses Element angewendet werden:',
+      batchUnarchiveOnlyArchivedElements:
+        'Die Wiederherstellung von Elementen aus dem Archiv ist nur für archivierte Elemente möglich',
+      batchUnarchiveOnlyManagerElements:
+        'Die Wiederherstellung von Elementen aus dem Archiv erfordert mindestens Adminrechte',
+      batchArchiveOnlyUnarchivedElements:
+        'Das Archivieren von Elementen ist nur für nicht archivierte Elemente möglich',
+      batchArchiveOnlyManagerElements:
+        'Das Archivieren von Elementen erfordert mindestens Adminrechte',
+      batchMultiplierOnlyEditorElements:
+        'Das Verändern von Multiplikatoren erfordert mindestens Schreibrechte.',
+      batchMultiplierOnlySampleSolution:
+        'Das Verändern von Multiplikatoren ist nur für Fragen mit einer definierten Musterlösung möglich.',
+      batchBasePointsOnlyEditorElements:
+        'Das Verändern von Basispunkten erfordert mindestens Schreibrechte.',
+      batchBasePointsOnlyQuestions:
+        'Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden.',
     },
     tags: {
       deleteTag: 'Tag löschen',
