@@ -317,10 +317,12 @@ function Index() {
               </div>
 
               <div className="flex flex-row items-center gap-2">
-                {!creationMode && Object.keys(selectedElements).length > 0 && (
+                {!creationMode &&
+                Object.keys(selectedElements).length > 0 &&
+                user?.privatePreview ? (
                   <Button
                     className={{
-                      root: 'h-9 bg-orange-100 hover:bg-orange-200',
+                      root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
                     }}
                     onClick={() => setBatchOperationsOpen(true)}
                     data={{ cy: 'element-batch-operations' }}
@@ -332,7 +334,7 @@ function Index() {
                       })}
                     </Button.Label>
                   </Button>
-                )}
+                ) : null}
                 <Button
                   primary
                   onClick={() => {

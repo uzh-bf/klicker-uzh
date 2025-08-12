@@ -4,6 +4,7 @@ import {
   ActivityInfo,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
+  PublicationStatus,
   SharingType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -31,7 +32,7 @@ function Activities() {
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
   const [selectedActivities, setSelectedActivities] = useState<{
-    [elementId: number]: ActivityInfo
+    [activityId: string]: ActivityInfo
   }>({})
 
   const [filters, setFilters] = useState<ActivityOverviewFilterType>({
@@ -46,7 +47,9 @@ function Activities() {
   })
 
   // get available courses
-  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument)
+  const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
 
   // get the user data to check for the private preview flag
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -92,6 +95,31 @@ function Activities() {
     setCurrentPage(1)
   }, [filters, searchString])
 
+  // when the shown activities change, make sure the selected activities are still valid
+  useEffect(() => {
+    setSelectedActivities((prev) => {
+      const updatedSelection = { ...prev }
+      let changed = false
+
+      Object.keys(updatedSelection).forEach((id) => {
+        if (
+          !activities.some(
+            (act) =>
+              act.id === id &&
+              (act.status === PublicationStatus.Draft ||
+                act.status === PublicationStatus.Scheduled)
+          )
+        ) {
+          delete updatedSelection[id]
+          changed = true
+        }
+      })
+
+      // only update state if something actually changed to avoid render loop
+      return changed ? updatedSelection : prev
+    })
+  }, [activities])
+
   const filtersActive =
     filters.status.length > 0 ||
     typeof filters.sharingType === 'undefined' ||
@@ -135,7 +163,7 @@ function Activities() {
               Object.keys(selectedActivities).length > 0 ? (
                 <Button
                   className={{
-                    root: 'mt-0.5 h-8 bg-orange-100 hover:bg-orange-200',
+                    root: 'h-8.5 mt-0.5 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
                   }}
                   onClick={() => setBatchOperationsOpen(true)}
                   data={{ cy: 'activity-batch-operations' }}

@@ -145,6 +145,7 @@ export default {
       completed: 'Completed',
       running: 'Running',
       points: 'Points',
+      pointsSmall: 'points',
       title: 'KlickerUZH',
       send: 'Send',
       next: 'Next',
@@ -1126,6 +1127,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
       batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperationsOnlyDraftScheduled:
+        'Batch operations can only be performed on draft or scheduled activities.',
       batchOperationsActivities: 'Activities - Batch Operations',
       batchNotApplicableExplanation:
         'The selected batch operations cannot be applied to this activity for the following reasons:',
@@ -1138,7 +1141,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       multiplierRequiresGamifiedAssessmentCourse:
-        'A multiplier can only be used for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these conditions.',
+        'A multiplier can only be used for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+      liveQuizPointsRequireGamifiedAssessmentCourse:
+        'The scoring for live quizzes can only be adjusted for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       batchNoCoursesAvailable:
         'There are no ongoing or planned courses available to which you could assign your activities. Please create a corresponding course under "Courses" first.',
       batchOperationsInformation: `Depending on the selected actions and the available permissions for the selected activities, the following rules apply:
@@ -1165,6 +1170,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Group activities can only be assigned to courses where group formation is completed by the start date of the activity.',
       batchPointsOnlyLiveQuiz:
         'Base, correctness, and bonus points can only be defined and adjusted for live quizzes.',
+      batchPracticeQuizScheduledWithinCourse:
+        'Scheduled practice quizzes (with a defined publication time) must have their publication time within the course duration.',
       batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
         'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',

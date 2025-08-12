@@ -167,7 +167,7 @@ function ActivityNameChangeModal({
               label={t('manage.activityWizard.name')}
               tooltip={t('manage.activityWizard.liveQuizName')}
               className={{
-                root: '-mt-2 mb-2 w-full',
+                root: 'mb-2 w-full',
                 tooltip: 'z-20 w-80',
                 label: 'w-36',
               }}

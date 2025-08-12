@@ -1,7 +1,7 @@
 export type ActivityBatchOperationActions = {
   multiplier?: string
   course?: {
-    id: string
+    id?: string
     isGamificationEnabled: boolean
     isAssessmentEnabled: boolean
     isGroupCreationEnabled: boolean

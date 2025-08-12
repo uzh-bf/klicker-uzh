@@ -147,6 +147,7 @@ export default {
       running: 'Laufend',
       grading: 'Bewertung',
       points: 'Punkte',
+      pointsSmall: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
       next: 'Weiter',
@@ -1129,6 +1130,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
       batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
+      batchOperationsOnlyDraftScheduled:
+        'Batch-Operationen können nur mit Entwurfs- oder geplanten Aktivitäten ausgeführt werden.',
       batchOperationsActivities: 'Aktivitäten - Batch-Operationen',
       batchNotApplicableExplanation:
         'Die ausgewählten Batch-Operationen können aus den folgenden Gründen nicht auf diese Aktivität angewendet werden:',
@@ -1142,6 +1145,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden verändert',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen verwendet werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+      liveQuizPointsRequireGamifiedAssessmentCourse:
+        'Die Bepunktung für Live Quizzes kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen angepasst werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       batchNoCoursesAvailable:
         'Es sind keine laufenden oder geplanten Kurse verfügbar zu welchen Sie Ihre Aktivitäten zuweisen könnten. Bitte erstellen Sie zunächst einen entsprechenden Kurs unter "Kurse"',
       batchOperationsInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Aktivitäten gelten die folgenden Regeln:
@@ -1168,6 +1173,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, bei welchen die Gruppenbildung zum Startdatum der Aktivität abgeschlossen ist.',
       batchPointsOnlyLiveQuiz:
         'Basis-, Korrektheits- und Bonus-Punkte können nur für Live Quizzes definiert und angepasst werden.',
+      batchPracticeQuizScheduledWithinCourse:
+        'Bei geplanten Übungsquizzes (mit definiertem Zeitpunkt zur automatischen Publikation) muss der Publikationszeitpunkt innerhalb der Kursdauer liegen.',
       batchOperationSuccess:
         'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
       batchOperationPartialSuccess:

@@ -1899,11 +1899,6 @@ describe('Feature test for review functionalities and batch operations', functio
       cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
       cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
     })
-    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification // TODO: REMOVE THIS, ONCE RE-ASSIGNMENT IS NOT NEEDED ANYMORE
-    cy.selectOption(
-      '[data-cy="select-multiplier"]',
-      messages.manage.activityWizard.multiplier4
-    ) // TODO: REMOVE THIS, ONCE RE-ASSIGNMENT IS NOT NEEDED ANYMORE
     cy.get('[data-cy="apply-batch-operations"]').click()
 
     // verify that the changes went into effect

@@ -1940,10 +1940,31 @@ export async function changeGroupActivityName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+  })
+
+  if (!groupActivity) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (
+    groupActivity.name === name &&
+    groupActivity.displayName === displayName
+  ) {
+    return true
+  }
+
   try {
     await ctx.prisma.groupActivity.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
