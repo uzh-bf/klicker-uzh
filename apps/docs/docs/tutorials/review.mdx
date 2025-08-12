@@ -2,15 +2,23 @@
 title: Review Functionalities
 ---
 
-Review functionalities on activities:
+## How can I inspect an activity's content?
 
-- Review functionality on activities, how it works (status incomplete, reviewed, changed after review)
-- Review unsets when course assignment changes
-- Review changes when activity or content is updated
-- Review can be set for live quiz admins (if not in course) and course admins otherwise
-- Designed for review workflows in larger courses between multiple lecturers / review of TA-created content
+![](/img/review/live_quiz_details_modal.png)
 
-Batch operations on elements:
+An activity's content can be inspected through the activity details view, accessible from the activity list or course overview. Simply select the corresponding **"Activity Information"** entry from the activity actions dropdown (three dots) or click on the activity's title. You will find the following essential information on the activity's content:
 
-- Everything mentioned in tooltip on element list batch operations modal
-- Only the elements visisble in the current list and selected from it can be edited through batch operations (describe step-by-step)
+- All **elements contained in the activity** are listed in order of their appearance and with their associated block / stack. By clicking on the magnifying glass icon on the right side, you can directly access a preview of the element as the students will see it. Optionally and only if defined, you can view the sample solution and explanation, as it is shown in asynchronous activities. Given that you have sufficient permissions, the pencil icon allows you to directly open the editing dialog of the associated element to make modifications. Please note that any modifications are applied to the element itself and are propagated to all draft and scheduled activities, if the corresponding option is enabled.
+- The table view of all elements also directly highlights which questions have a sample solution defined and the **points that can be earned for correct answers**. The amounts shown already **include any multipliers set on the element or activity and customized grading configurations for live quizzes**. If your activity is not gamified (i.e. is part of a non-gamified course or gamification was not enabled during the creation of a live quiz), no points will be displayed.
+- If available to you, you can open the comments section for the activity at the top of the dialog. Please note that any comments made here are specific to this activity and will not be shown on the associated elements. To make review comments on the elements, please use the pencil icon to open the element editing dialog first.
+- Finally, the activity details view offers you a simple review functionality, described in the [next section](/tutorials/review/#how-can-i-mark-an-activity-as-reviewed-to-keep-track).
+
+Additionally, for practice quizzes and microlearnings (not for live quizzes and group activities, as of now), a dedicated preview of the entire student interface can be opened. Please make sure that you are not logged in with a student account in our student application (https://pwa.klicker.uzh.ch) when opening this overview, since it might not be available otherwise. For more information, refer to the [activity preview documentation](/tutorials/review/#how-can-i-mark-an-activity-as-reviewed-to-keep-track).
+
+## How can I mark an activity as reviewed to keep track?
+
+When collaboratively creating content (using e.g. the [sharing functionalities](/tutorials/direct_sharing/) or our [delegated access feature](/tutorials/delegated_access/)), KlickerUZH offers you the possibility to mark activities as reviewed and automatically updates the status, if any further changes are made.
+
+KlickerUZH distinguishes three different review status values: **"not reviewed"** (which is not explicitly shown), **"reviewed"**, and **"modified after review"**. Through the activity details dialog shown above, an activity can be marked as reviewed by any user with admin permissions on the assigned course or admin permissions on the activity itself, if no course is assigned for live quizzes. The activity will then automatically be marked as reviewed.
+
+If the activity is assigned to a (different) course after a review, the corresponding status is unset, since the users with review permissions might have changed. If the activity is edited or any element contained therein updated, the review status will reflect this by changing automatically to "modified after review". For your convenience, we provide filters on the activity list that allow you to filter for activities with a particular review status.

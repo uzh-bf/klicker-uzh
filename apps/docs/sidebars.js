@@ -26,6 +26,7 @@ module.exports = {
       // 'tutorials/direct_sharing',
       // 'tutorials/catalog_sharing',
       'tutorials/delegated_access',
+      'tutorials/review',
     ],
     'Lecturer - Integrations': [
       'tutorials/ppt_integration',
