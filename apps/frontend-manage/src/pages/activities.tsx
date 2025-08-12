@@ -138,7 +138,7 @@ function Activities() {
                     root: 'mt-0.5 h-8 bg-orange-100 hover:bg-orange-200',
                   }}
                   onClick={() => setBatchOperationsOpen(true)}
-                  data={{ cy: 'element-batch-operations' }}
+                  data={{ cy: 'activity-batch-operations' }}
                 >
                   <Button.Icon icon={faListCheck} />
                   <Button.Label>

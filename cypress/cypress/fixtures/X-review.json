@@ -13,5 +13,22 @@
     "practiceQuiz": "Standard Practice Quiz",
     "microLearning": "Standard Micro Learning",
     "groupActivity": "Standard Group Activity"
+  },
+  "batch": {
+    "course1": "Batch Operations Course 1",
+    "course2": "Batch Operations Course 2",
+    "course3": "Batch Operations Course 3",
+    "course4": "Batch Operations Course 4",
+    "course5": "Batch Operations Course 5",
+    "courseNoGroups": "Batch Operations Course No Groups",
+    "courseNotGamified": "Batch Operations Course No Gamification",
+    "liveQuiz": "Activity Batch Operations Live Quiz 1",
+    "liveQuiz2": "Activity Batch Operations Live Quiz 2",
+    "practiceQuiz": "Activity Batch Operations Practice Quiz 1",
+    "practiceQuiz2": "Activity Batch Operations Practice Quiz 2",
+    "microLearning": "Activity Batch Operations Micro Learning 1",
+    "microLearning2": "Activity Batch Operations Micro Learning 2",
+    "groupActivity": "Activity Batch Operations Group Activity 1",
+    "groupActivity2": "Activity Batch Operations Group Activity 2"
   }
 }

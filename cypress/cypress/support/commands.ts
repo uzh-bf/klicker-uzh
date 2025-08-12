@@ -1465,7 +1465,7 @@ Cypress.Commands.add(
         .click()
         .clear()
         .type(String(preferredGroupSize))
-    } else {
+    } else if (isGamificationEnabled) {
       cy.get('[data-cy="course-group-creation"]').click()
       cy.get('[data-cy="course-group-creation"]').should(
         'have.attr',

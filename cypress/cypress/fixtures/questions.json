@@ -1238,5 +1238,19 @@
   "CT3": {
     "title": "CT Question Title (Version 3)",
     "content": "CT Question Content (Version 3)"
-  }
+  },
+  "groupActivityStandardClues": [
+    {
+      "type": "text",
+      "name": "Clue 1",
+      "displayName": "First Hint",
+      "content": "Lorem ipsum dolor sit amet"
+    },
+    {
+      "type": "text",
+      "name": "Clue 2",
+      "displayName": "Second Hint",
+      "content": "Consectetur adipiscing elit"
+    }
+  ]
 }
