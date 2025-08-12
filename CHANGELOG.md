@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.81...v3.3.0-alpha.82) (2025-08-12)
+
+
+### Features
+
+* add batch operations for activity list ([#4833](https://github.com/uzh-bf/klicker-uzh/issues/4833)) ([f79e0f5](https://github.com/uzh-bf/klicker-uzh/commit/f79e0f541695a6fa69d267a1e4a2f4e70e69a58c))
+* implement batch operations on library view for elements ([#4829](https://github.com/uzh-bf/klicker-uzh/issues/4829)) ([8a4a4be](https://github.com/uzh-bf/klicker-uzh/commit/8a4a4be0548b9ccdf4fd357e33df81dd46e1ef65))
+* introduce functionality to mark activities as reviewed ([#4828](https://github.com/uzh-bf/klicker-uzh/issues/4828)) ([576c3bd](https://github.com/uzh-bf/klicker-uzh/commit/576c3bdc53781cca4279b2d285b98f7c7546f3c5))
+
+
+### Refactors
+
+* introduce proper cache updates for different mutations in manage frontend for improved UX ([#4824](https://github.com/uzh-bf/klicker-uzh/issues/4824)) ([96585f0](https://github.com/uzh-bf/klicker-uzh/commit/96585f0ef8ab0d2c89f2e25140fceb5d1be13509))
+
+
+### Enhancements
+
+* correctly handle scheduled practice quizzes for activity batch operations and improve UX ([#4837](https://github.com/uzh-bf/klicker-uzh/issues/4837)) ([a2ce821](https://github.com/uzh-bf/klicker-uzh/commit/a2ce82109d9b59f1eeeeb2c9b1a28a029c983a4a))
+* update activity details view with table overview and activity comments section ([#4827](https://github.com/uzh-bf/klicker-uzh/issues/4827)) ([c8ec82b](https://github.com/uzh-bf/klicker-uzh/commit/c8ec82b15e33dde7a85861baa7948ca15d8307b9))
+
 ## [3.3.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.80...v3.3.0-alpha.81) (2025-08-07)
 
 
