@@ -2398,6 +2398,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userOneCtx
     )
     expect(success).toBe(true)
+
     const success2 = await changeCatalogObjectAccess(
       { assignmentId: assignment2.id, access: ObjectAccess.PUBLIC },
       userOneCtx
@@ -2407,9 +2408,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     // verify that the catalog object assignments have been updated correctly
     const updatedAssignment1 =
       await prisma.catalogCollectionAssignment.findUnique({
-        where: {
-          id: assignment1.id,
-        },
+        where: { id: assignment1.id },
       })
     expect(updatedAssignment1).not.toBeNull()
     expect(updatedAssignment1?.access).toBe(ObjectAccess.RESTRICTED)
@@ -2418,11 +2417,24 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       MISSING_CATALOG_COLLECTION_ID
     )
 
+    // verify that audit log entries have been created for these changes
+    const auditLogs1 = await prisma.auditLogEntry.findMany({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+      },
+    })
+    expect(auditLogs1[0]).toBeTruthy()
+    expect(auditLogs1[0]?.sourceUserId).toBe(userOne.id)
+    expect(auditLogs1[0]?.message).toBe(
+      `Catalog object assignment (ID ${updatedAssignment1!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.RESTRICTED}`
+    )
+
+    // verify that the catalog object assignments have been updated correctly
     const updatedAssignment2 =
       await prisma.catalogCollectionAssignment.findUnique({
-        where: {
-          id: assignment2.id,
-        },
+        where: { id: assignment2.id },
       })
     expect(updatedAssignment2).not.toBeNull()
     expect(updatedAssignment2?.access).toBe(ObjectAccess.PUBLIC)
@@ -2430,17 +2442,18 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(updatedAssignment2?.catalogCollectionId).toBe(publicCatalog.id)
 
     // verify that audit log entries have been created for these changes
-    const auditLog1 = await prisma.auditLogEntry.findFirst({
+    const auditLogs2 = await prisma.auditLogEntry.findMany({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
         objectType: ObjectType.ANSWER_COLLECTION,
         objectId: String(AC1!.id),
       },
+      orderBy: { updatedAt: 'desc' },
     })
-    expect(auditLog1).toBeTruthy()
-    expect(auditLog1?.sourceUserId).toBe(userOne.id)
-    expect(auditLog1?.message).toBe(
-      `Catalog object assignment (ID ${updatedAssignment1!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.RESTRICTED}`
+    expect(auditLogs2[0]).toBeTruthy()
+    expect(auditLogs2[0]?.sourceUserId).toBe(userOne.id)
+    expect(auditLogs2[0]?.message).toBe(
+      `Catalog object assignment (ID ${updatedAssignment2!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.PUBLIC}`
     )
   })
   // #endregion
