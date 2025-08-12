@@ -73,14 +73,13 @@ function ActivityCourseCardContent({
                   typeof prev.course !== 'undefined'
                     ? undefined
                     : {
-                        id: courses[0].id,
-                        isGamificationEnabled: courses[0].isGamificationEnabled,
-                        isAssessmentEnabled: courses[0].isAssessmentEnabled,
-                        isGroupCreationEnabled:
-                          courses[0].isGroupCreationEnabled,
-                        startDate: courses[0].startDate,
-                        endDate: courses[0].endDate,
-                        groupDeadlineDate: courses[0].groupDeadlineDate,
+                        id: undefined,
+                        isGamificationEnabled: true,
+                        isAssessmentEnabled: true,
+                        isGroupCreationEnabled: true,
+                        startDate: null,
+                        endDate: null,
+                        groupDeadlineDate: null,
                       },
               }))
             }}
@@ -88,6 +87,7 @@ function ActivityCourseCardContent({
           />
           <Select
             value={selectedActions.course?.id ?? ''}
+            placeholder={t('manage.activityWizard.selectCourse')}
             onChange={(value) => {
               const selectedCourse = courses.find(
                 (course) => course.id === value

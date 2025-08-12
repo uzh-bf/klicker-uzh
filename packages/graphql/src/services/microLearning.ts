@@ -548,10 +548,31 @@ export async function changeMicroLearningName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+  })
+
+  if (!microLearning) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (
+    microLearning.name === name &&
+    microLearning.displayName === displayName
+  ) {
+    return true
+  }
+
   try {
     await ctx.prisma.microLearning.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })

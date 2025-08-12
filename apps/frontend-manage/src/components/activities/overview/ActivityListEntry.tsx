@@ -67,6 +67,9 @@ function ActivityListEntry({
   })
   const user = dataUser?.userProfile
 
+  const disabled =
+    activity.status !== PublicationStatus.Draft &&
+    activity.status !== PublicationStatus.Scheduled
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
       <FontAwesomeIcon
@@ -115,12 +118,26 @@ function ActivityListEntry({
     <>
       <div className="flex w-full flex-row items-center gap-1.5">
         {user?.privatePreview && onCheck ? (
-          <Checkbox
-            checked={checked}
-            onCheck={onCheck}
-            className={{ root: 'border-unset' }}
-            data={{ cy: `activity-checkbox-${activity.name}` }}
-          />
+          disabled ? (
+            <Tooltip
+              tooltip={t('manage.activities.batchOperationsOnlyDraftScheduled')}
+            >
+              <Checkbox
+                disabled
+                checked={false}
+                onCheck={() => {}}
+                className={{ root: 'border-unset disabled:bg-uzh-grey-20' }}
+                data={{ cy: `activity-checkbox-${activity.name}` }}
+              />
+            </Tooltip>
+          ) : (
+            <Checkbox
+              checked={checked}
+              onCheck={onCheck}
+              className={{ root: 'border-unset disabled:bg-uzh-grey-20' }}
+              data={{ cy: `activity-checkbox-${activity.name}` }}
+            />
+          )
         ) : null}
         <div
           className={twMerge(

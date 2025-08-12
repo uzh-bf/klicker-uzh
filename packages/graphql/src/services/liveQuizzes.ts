@@ -1916,10 +1916,28 @@ export async function changeLiveQuizName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+  })
+
+  if (!liveQuiz) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (liveQuiz.name === name && liveQuiz.displayName === displayName) {
+    return true
+  }
+
   try {
     await ctx.prisma.liveQuiz.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })

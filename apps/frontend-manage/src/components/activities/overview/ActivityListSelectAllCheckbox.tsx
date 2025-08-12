@@ -1,4 +1,4 @@
-import { ActivityInfo } from '@klicker-uzh/graphql/dist/ops'
+import { ActivityInfo, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Checkbox } from '@uzh-bf/design-system'
 import { Dispatch, SetStateAction } from 'react'
 import { isEmpty } from 'remeda'
@@ -32,6 +32,14 @@ function ActivityListSelectAllCheckbox({
             // add all activities to the selection
             return activities.reduce<Record<string, ActivityInfo>>(
               (acc, activity) => {
+                // if the activity is not in scheduled or draft state, it should not be selectable
+                if (
+                  activity.status !== PublicationStatus.Draft &&
+                  activity.status !== PublicationStatus.Scheduled
+                ) {
+                  return acc
+                }
+
                 acc[activity.id] = activity
                 return acc
               },

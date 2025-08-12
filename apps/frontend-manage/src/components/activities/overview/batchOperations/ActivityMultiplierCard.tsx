@@ -65,6 +65,7 @@ function ActivityMultiplierCardContent({
             data={{ cy: 'multiplier-checkbox' }}
           />
           <Select
+            disabled={typeof selectedActions.multiplier === 'undefined'}
             value={selectedActions.multiplier ?? '1'}
             onChange={(value) => {
               setSelectedActions((prev) => ({
@@ -80,7 +81,6 @@ function ActivityMultiplierCardContent({
             ]}
             data={{ cy: 'select-multiplier' }}
             className={{ root: 'h-8 w-44', trigger: 'h-8' }}
-            disabled={typeof selectedActions.multiplier === 'undefined'}
           />
         </div>
       </CardContent>
@@ -94,7 +94,7 @@ function ActivityMultiplierCard({
 }: ActivityMultiplierCardProps) {
   const t = useTranslations()
   const multiplierDisabled =
-    !!selectedActions.course &&
+    !!selectedActions.course?.id &&
     !selectedActions.course.isGamificationEnabled &&
     !selectedActions.course.isAssessmentEnabled
 

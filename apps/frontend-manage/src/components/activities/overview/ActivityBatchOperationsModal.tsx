@@ -86,7 +86,7 @@ function ActivityBatchOperationsModal({
       if (
         typeof selectedActions.multiplier !== 'undefined' &&
         selectedActions.multiplier !== null &&
-        selectedActions.course &&
+        selectedActions.course?.id &&
         !selectedActions.course.isAssessmentEnabled &&
         !selectedActions.course.isGamificationEnabled
       ) {
@@ -100,6 +100,7 @@ function ActivityBatchOperationsModal({
       else if (
         typeof selectedActions.multiplier !== 'undefined' &&
         selectedActions.multiplier !== null &&
+        !selectedActions.course?.id &&
         (!activity.courseId ||
           (!activity.isGamificationEnabled && !activity.isAssessmentEnabled))
       ) {
@@ -110,7 +111,7 @@ function ActivityBatchOperationsModal({
       }
 
       // course assignment change
-      if (selectedActions.course) {
+      if (selectedActions.course?.id) {
         // group activities can only be assigned to courses with groups enabled
         if (
           activity.type === ActivityType.GroupActivity &&
@@ -119,6 +120,42 @@ function ActivityBatchOperationsModal({
           actionsApplied = false
           reasons.push(
             t('manage.activities.batchGroupActivityRequiresGroupsEnabled')
+          )
+        }
+
+        // for group activities, verify that the start date is after the group formation deadline
+        if (
+          activity.type === ActivityType.GroupActivity &&
+          selectedActions.course.groupDeadlineDate
+        ) {
+          const activityStart = dayjs(activity.scheduledStartAt)
+          const groupFormationDeadline = dayjs(
+            selectedActions.course.groupDeadlineDate
+          )
+
+          if (activityStart.isBefore(groupFormationDeadline)) {
+            actionsApplied = false
+            reasons.push(
+              t('manage.activities.batchGroupActivityRequiresFinalizedGroups')
+            )
+          }
+        }
+
+        // scheduled practice quizzes can only be assigned to courses where the scheduled start date lies within the course duration
+        if (
+          activity.type === ActivityType.PracticeQuiz &&
+          activity.automaticPublicationAt &&
+          dayjs(activity.automaticPublicationAt).isAfter(dayjs()) &&
+          (dayjs(activity.automaticPublicationAt).isBefore(
+            dayjs(selectedActions.course.startDate)
+          ) ||
+            dayjs(activity.automaticPublicationAt).isAfter(
+              dayjs(selectedActions.course.endDate)
+            ))
+        ) {
+          actionsApplied = false
+          reasons.push(
+            t('manage.activities.batchPracticeQuizScheduledWithinCourse')
           )
         }
 
@@ -140,35 +177,18 @@ function ActivityBatchOperationsModal({
             reasons.push(t('manage.activities.batchActivityDatesOutsideCourse'))
           }
         }
-
-        // for group activities, verify that the start date is after the group formation deadline
-        if (
-          activity.type === ActivityType.GroupActivity &&
-          selectedActions.course.groupDeadlineDate
-        ) {
-          const activityStart = dayjs(activity.scheduledStartAt)
-          const groupFormationDeadline = dayjs(
-            selectedActions.course.groupDeadlineDate
-          )
-
-          if (activityStart.isBefore(groupFormationDeadline)) {
-            actionsApplied = false
-            reasons.push(
-              t('manage.activities.batchGroupActivityRequiresFinalizedGroups')
-            )
-          }
-        }
       }
 
       // live quiz points modification
-      if (typeof selectedActions.liveQuizPoints !== 'undefined') {
-        if (
-          activity.type !== ActivityType.LiveQuiz ||
-          (!activity.isGamificationEnabled && !activity.isAssessmentEnabled)
-        ) {
-          actionsApplied = false
-          reasons.push(t('manage.activities.batchPointsOnlyLiveQuiz'))
-        }
+      if (
+        typeof selectedActions.liveQuizPoints !== 'undefined' &&
+        (activity.type !== ActivityType.LiveQuiz ||
+          (!selectedActions.course?.id &&
+            !activity.isGamificationEnabled &&
+            !activity.isAssessmentEnabled))
+      ) {
+        actionsApplied = false
+        reasons.push(t('manage.activities.batchPointsOnlyLiveQuiz'))
       }
 
       return {
@@ -181,16 +201,18 @@ function ActivityBatchOperationsModal({
     setAffectedActivities(updatedAffectedActivities)
   }, [selectedActivities, selectedActions])
 
-  // if the course changes, unset and block the multiplier selection, if no points are awarded
+  // if the course changes to a non-gamified non-assessment course, no points are awarded
+  // -> multiplier and live quiz points settings need to be blocked
   useEffect(() => {
     if (
-      selectedActions.course &&
+      selectedActions.course?.id &&
       !selectedActions.course.isGamificationEnabled &&
       !selectedActions.course.isAssessmentEnabled
     ) {
       setSelectedActions((prev) => ({
         ...prev,
         multiplier: undefined,
+        liveQuizPoints: undefined,
       }))
     }
   }, [selectedActions.course])
@@ -276,7 +298,8 @@ function ActivityBatchOperationsModal({
                   isShallowEqual(
                     selectedActions,
                     INITIAL_ACTIVITY_BATCH_OPERATIONS
-                  )
+                  ) ||
+                  (selectedActions.course && !selectedActions.course.id)
                 }
                 onClick={async () => {
                   try {

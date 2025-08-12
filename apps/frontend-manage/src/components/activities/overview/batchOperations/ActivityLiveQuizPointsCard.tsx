@@ -1,3 +1,5 @@
+import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -11,19 +13,23 @@ import {
   CardTitle,
   Checkbox,
   NumberField,
+  Tooltip,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActivityBatchOperationActions } from './types'
 
-function ActivityLiveQuizPointsCard({
-  selectedActions,
-  setSelectedActions,
-}: {
+interface ActivityLiveQuizPointsCardProps {
   selectedActions: ActivityBatchOperationActions
   setSelectedActions: Dispatch<SetStateAction<ActivityBatchOperationActions>>
-}) {
+}
+
+function ActivityLiveQuizPointsCardContent({
+  pointsDisabled,
+  selectedActions,
+  setSelectedActions,
+}: ActivityLiveQuizPointsCardProps & { pointsDisabled: boolean }) {
   const t = useTranslations()
 
   return (
@@ -35,14 +41,24 @@ function ActivityLiveQuizPointsCard({
       )}
     >
       <CardHeader className="px-0">
-        <CardTitle className="font-normal">
-          {t('manage.activities.modifyLiveQuizPoints')}
+        <CardTitle className="flex w-full flex-row items-center justify-between font-normal">
+          <span className={twMerge(pointsDisabled && 'opacity-50')}>
+            {t('manage.activities.modifyLiveQuizPoints')}
+          </span>
+          {pointsDisabled && (
+            <FontAwesomeIcon
+              size="sm"
+              icon={faLock}
+              className="text-uzh-red-100"
+            />
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <Checkbox
+              disabled={pointsDisabled}
               checked={typeof selectedActions.liveQuizPoints !== 'undefined'}
               onCheck={() => {
                 setSelectedActions((prev) => ({
@@ -60,7 +76,7 @@ function ActivityLiveQuizPointsCard({
               }}
               data={{ cy: 'live-quiz-points-checkbox' }}
             />
-            <span>
+            <span className={twMerge(pointsDisabled && 'opacity-50')}>
               {t('manage.activities.enableLiveQuizPointsModification')}
             </span>
           </div>
@@ -72,7 +88,7 @@ function ActivityLiveQuizPointsCard({
                 labelType="small"
                 precision={0}
                 min={0}
-                unit="P."
+                unit={t('shared.generic.pointsSmall')}
                 value={selectedActions.liveQuizPoints.basePoints.toString()}
                 onChange={(value) => {
                   const numValue = parseInt(value, 10) || 0
@@ -95,7 +111,7 @@ function ActivityLiveQuizPointsCard({
                 labelType="small"
                 precision={0}
                 min={0}
-                unit="P."
+                unit={t('shared.generic.pointsSmall')}
                 value={selectedActions.liveQuizPoints.correctnessPoints.toString()}
                 onChange={(value) => {
                   const numValue = parseInt(value, 10) || 0
@@ -118,7 +134,7 @@ function ActivityLiveQuizPointsCard({
                 labelType="small"
                 precision={0}
                 min={0}
-                unit="P."
+                unit={t('shared.generic.pointsSmall')}
                 value={selectedActions.liveQuizPoints.bonusPoints.toString()}
                 onChange={(value) => {
                   const numValue = parseInt(value, 10) || 0
@@ -163,6 +179,39 @@ function ActivityLiveQuizPointsCard({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function ActivityLiveQuizPointsCard({
+  selectedActions,
+  setSelectedActions,
+}: ActivityLiveQuizPointsCardProps) {
+  const t = useTranslations()
+  const pointsDisabled =
+    !!selectedActions.course?.id &&
+    !selectedActions.course.isGamificationEnabled &&
+    !selectedActions.course.isAssessmentEnabled
+
+  return pointsDisabled ? (
+    <Tooltip
+      delay={0}
+      tooltip={t(
+        'manage.activities.liveQuizPointsRequireGamifiedAssessmentCourse'
+      )}
+      className={{ trigger: 'w-full lg:col-span-2' }}
+    >
+      <ActivityLiveQuizPointsCardContent
+        selectedActions={selectedActions}
+        setSelectedActions={setSelectedActions}
+        pointsDisabled={pointsDisabled}
+      />
+    </Tooltip>
+  ) : (
+    <ActivityLiveQuizPointsCardContent
+      selectedActions={selectedActions}
+      setSelectedActions={setSelectedActions}
+      pointsDisabled={pointsDisabled}
+    />
   )
 }
 

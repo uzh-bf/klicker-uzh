@@ -822,11 +822,35 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
-          // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-          OR:
-            setMultiplier && !newCourse
-              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-              : undefined,
+          AND: [
+            // if the practice quiz is assigned to a new course, the scheduled publication date must lie within the course duration (or be null -> draft)
+            ...(newCourse
+              ? [
+                  {
+                    OR: [
+                      { availableFrom: null },
+                      {
+                        availableFrom: {
+                          gte: newCourse.startDate,
+                          lte: newCourse.endDate,
+                        },
+                      },
+                    ],
+                  },
+                ]
+              : []),
+            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+            ...(setMultiplier && !newCourse
+              ? [
+                  {
+                    OR: [
+                      { isGamificationEnabled: true },
+                      { isAssessmentEnabled: true },
+                    ],
+                  },
+                ]
+              : []),
+          ],
         },
         include: { stacks: { include: { elements: true } } },
       })

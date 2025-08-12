@@ -525,10 +525,28 @@ export async function changePracticeQuizName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id },
+  })
+
+  if (!practiceQuiz) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (practiceQuiz.name === name && practiceQuiz.displayName === displayName) {
+    return true
+  }
+
   try {
     await ctx.prisma.practiceQuiz.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          practiceQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
