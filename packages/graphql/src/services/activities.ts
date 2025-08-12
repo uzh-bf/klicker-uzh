@@ -687,7 +687,7 @@ async function updateInstanceMultipliers(
     instances.map((instance) => {
       const newMultiplier = instanceMultiplierMap[instance.id]
 
-      if (newMultiplier) {
+      if (typeof newMultiplier !== 'undefined') {
         return prisma.elementInstance.update({
           where: { id: instance.id },
           data: {
