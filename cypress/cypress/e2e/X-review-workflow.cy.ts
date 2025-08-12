@@ -676,7 +676,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
     // login and show archived elements
     cy.loginLecturer()
-    cy.wait(2000)
+    cy.wait(1000)
     cy.get('[data-cy="show-archive-switch"]').first().click()
 
     // SC question with solution
@@ -779,7 +779,7 @@ describe('Feature test for review functionalities and batch operations', functio
     })
   })
 
-  it('Verify that selected elements are correctly shown in element batch operations modal', function () {
+  it('Verify that selected elements are shown correctly in element batch operations modal', function () {
     cy.loginLecturer()
     cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
 
@@ -1178,6 +1178,863 @@ describe('Feature test for review functionalities and batch operations', functio
         cy.get('[data-cy="close-element-modal"]').click()
       }
     )
+  })
+  // #endregion
+
+  // ! Part 3: Activity list batch operations
+  // #region
+  const validCourseStart = {
+    monthDelta: 1,
+    day: 11,
+    validation: getDatetimeValidationString(2, '11'),
+  }
+  const validCourseGroupDeadline = {
+    monthDelta: -4,
+    day: 12,
+    validation: getDatetimeValidationString(3, '12'),
+  }
+  const validCourseEnd = {
+    monthDelta: 6,
+    day: 20,
+    validation: getDatetimeValidationString(13, '20'),
+  }
+
+  const invalidCourseStart = {
+    monthDelta: 3,
+    day: 20,
+    validation: getDatetimeValidationString(4, '20'),
+  }
+  const invalidCourseGroupDeadline = {
+    monthDelta: -3,
+    day: 21,
+    validation: getDatetimeValidationString(4, '21'),
+  }
+  const invalidCourseEnd = {
+    monthDelta: -1,
+    day: 20,
+    validation: getDatetimeValidationString(6, '20'),
+  }
+
+  // 3 months in the future at 2:00
+  const activityStart = {
+    monthDelta: 3,
+    day: 11,
+    hour: 2,
+    minute: 0,
+    validation: getDatetimeValidationString(4, '11') + ', 02:00',
+  }
+  // 7 months in the future at 18:00
+  const activityEnd = {
+    monthDelta: 6,
+    day: 20,
+    hour: 18,
+    minute: 0,
+    validation: getDatetimeValidationString(7, '20') + ', 18:00',
+  }
+
+  it('Prepare elements, activities, and courses for activity batch operations', function () {
+    cy.cleanup()
+    cy.seed()
+
+    // create two questions (both with sample solutions -> valid in asynchronous activities)
+    cy.loginLecturer()
+    cy.wait(1000)
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionNR({
+      name: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // 2 valid courses with group formation and gamification enabled; duration longer than any activity
+    cy.get('[data-cy="courses"]').click()
+    cy.createCourse({
+      name: this.data.batch.course1,
+      displayName: this.data.batch.course1,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: true,
+      startDate: validCourseStart,
+      endDate: validCourseEnd,
+      groupFormationDeadline: validCourseGroupDeadline,
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+    cy.createCourse({
+      name: this.data.batch.course2,
+      displayName: this.data.batch.course2,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: true,
+      startDate: validCourseStart,
+      endDate: validCourseEnd,
+      groupFormationDeadline: validCourseGroupDeadline,
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+
+    // 3 invalid courses with start / end / group formation deadline dates that interfere with the activity availability timeframes
+    cy.createCourse({
+      name: this.data.batch.course3,
+      displayName: this.data.batch.course3,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: true,
+      startDate: validCourseStart,
+      endDate: invalidCourseEnd,
+      groupFormationDeadline: validCourseGroupDeadline,
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+    cy.createCourse({
+      name: this.data.batch.course4,
+      displayName: this.data.batch.course4,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: true,
+      startDate: invalidCourseStart,
+      endDate: invalidCourseEnd,
+      groupFormationDeadline: invalidCourseGroupDeadline,
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+    cy.createCourse({
+      name: this.data.batch.course5,
+      displayName: this.data.batch.course5,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: true,
+      startDate: invalidCourseStart,
+      endDate: validCourseEnd,
+      groupFormationDeadline: invalidCourseGroupDeadline,
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+
+    // course without group formation enabled (cannot be used for group activities)
+    cy.createCourse({
+      name: this.data.batch.courseNoGroups,
+      displayName: this.data.batch.courseNoGroups,
+      isGamificationEnabled: true,
+      isGroupFormationEnabled: false,
+      startDate: validCourseStart,
+      endDate: validCourseEnd,
+    })
+
+    // course without gamification (cannot be combined with multiplier updates)
+    cy.createCourse({
+      name: this.data.batch.courseNotGamified,
+      displayName: this.data.batch.courseNotGamified,
+      isGamificationEnabled: false,
+      isGroupFormationEnabled: false,
+      startDate: validCourseStart,
+      endDate: validCourseEnd,
+    })
+
+    // create one activity of each type
+    cy.get('[data-cy="library"]').click()
+    cy.createLiveQuiz({
+      name: this.data.batch.liveQuiz,
+      displayName: this.data.batch.liveQuiz,
+      courseName: this.data.batch.course1,
+      blocks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createPracticeQuiz({
+      name: this.data.batch.practiceQuiz,
+      displayName: this.data.batch.practiceQuiz,
+      courseName: this.data.batch.course1,
+      stacks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createMicroLearning({
+      name: this.data.batch.microLearning,
+      displayName: this.data.batch.microLearning,
+      courseName: this.data.batch.course1,
+      startDate: activityStart,
+      endDate: activityEnd,
+      stacks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createGroupActivity({
+      name: this.data.batch.groupActivity,
+      displayName: this.data.batch.groupActivity,
+      courseName: this.data.batch.course1,
+      scheduledStartDate: activityStart,
+      scheduledEndDate: activityEnd,
+      task: 'TASK',
+      clues: this.data.groupActivityStandardClues,
+      stack: { elements: [this.data.SCML.title, this.data.NRML.title] },
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createLiveQuiz({
+      name: this.data.batch.liveQuiz2,
+      displayName: this.data.batch.liveQuiz2,
+      courseName: this.data.batch.courseNotGamified,
+      blocks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createPracticeQuiz({
+      name: this.data.batch.practiceQuiz2,
+      displayName: this.data.batch.practiceQuiz2,
+      courseName: this.data.batch.courseNotGamified,
+      stacks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    cy.createMicroLearning({
+      name: this.data.batch.microLearning2,
+      displayName: this.data.batch.microLearning2,
+      courseName: this.data.batch.courseNotGamified,
+      startDate: activityStart,
+      endDate: activityEnd,
+      stacks: [{ elements: [this.data.SCML.title, this.data.NRML.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+  })
+
+  it('Verify that selected activities are shown correctly in activity batch operations modal', function () {
+    cy.loginLecturer()
+
+    // select specific activities
+    cy.get(`[data-cy="activities"]`).click().wait(500) // wait for activity list to load
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.microLearning}"]`
+    ).click()
+
+    // open batch operations dialog and verify that correct activities are shown
+    cy.get('[data-cy="activity-batch-operations"]').click()
+    cy.wrap([this.data.batch.liveQuiz, this.data.batch.microLearning]).each(
+      (title) => {
+        cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+        cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+        cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+      }
+    )
+    cy.wrap([this.data.batch.practiceQuiz, this.data.batch.groupActivity]).each(
+      (title) => {
+        cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('not.exist')
+      }
+    )
+    cy.get('[data-cy="close-batch-operations-modal"]').click()
+
+    // select all activities through the corresponding checkbox
+    cy.get('[data-cy="select-all-activities"]').click().wait(500) // deselect all
+    cy.get('[data-cy="select-all-activities"]').click() // select all
+
+    // open batch operations dialog and verify that all activities are selected
+    cy.get('[data-cy="activity-batch-operations"]').click()
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.microLearning,
+      this.data.batch.practiceQuiz,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+  })
+
+  it('Verify that the applied operations are displayed correctly in activity batch operations modal', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="activities"]`).click().wait(500) // wait for activity list to load
+    cy.get('[data-cy="select-all-activities"]').click() // select all
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    // if multiplier is selected, only gamified activities are affected
+    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.microLearning,
+      this.data.batch.practiceQuiz,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.batch.liveQuiz2,
+      this.data.batch.microLearning2,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+
+    // if non-gamified course is selected, multiplier modification is automatically de-selected
+    cy.get('[data-cy="course-checkbox"]').click() // enable course re-assignment
+    cy.selectOption(
+      '[data-cy="select-course"]',
+      this.data.batch.courseNotGamified
+    ) // select non-gamified course (multiplier should automatically be de-selected)
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.microLearning,
+      this.data.batch.practiceQuiz,
+      this.data.batch.liveQuiz2,
+      this.data.batch.microLearning2,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+
+    // group activity will not be updated for non-gamified course
+    cy.get(
+      `[data-cy="activity-batch-entry-${this.data.batch.groupActivity}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-check-${this.data.batch.groupActivity}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="activity-batch-x-${this.data.batch.groupActivity}"]`
+    ).should('exist')
+
+    // if course with durations not entirely containing activity duration is selected, corresponding updates are not applied
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course3) // invalid course runtime for microlearnings and group activities (other activities are updated)
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.liveQuiz2,
+      this.data.batch.practiceQuiz,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.batch.microLearning,
+      this.data.batch.microLearning2,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course4) // invalid course runtime for microlearnings and group activities (other activities are updated)
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.liveQuiz2,
+      this.data.batch.practiceQuiz,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.batch.microLearning,
+      this.data.batch.microLearning2,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course5) // invalid course runtime for microlearnings and group activities (other activities are updated)
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.liveQuiz2,
+      this.data.batch.practiceQuiz,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.batch.microLearning,
+      this.data.batch.microLearning2,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+
+    // if live quiz points are selected, only live quizzes are affected
+    cy.get('[data-cy="course-checkbox"]').click() // deselect course re-assignment
+    cy.get('[data-cy="live-quiz-points-checkbox"]').click() // enable live quiz points modification
+    cy.get(
+      `[data-cy="activity-batch-entry-${this.data.batch.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-check-${this.data.batch.liveQuiz}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-batch-x-${this.data.batch.liveQuiz}"]`).should(
+      'not.exist'
+    )
+
+    cy.wrap([
+      this.data.batch.liveQuiz2, // non-gamified live quizzes are not affected
+      this.data.batch.practiceQuiz,
+      this.data.batch.practiceQuiz2,
+      this.data.batch.microLearning,
+      this.data.batch.microLearning2,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+  })
+
+  it('Verify that multiplier changes are applied correctly', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="activities"]`).click().wait(500) // wait for activity list to load
+    cy.get('[data-cy="select-all-activities"]').click() // select all
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    // udpate gamified activities with new multiplier
+    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.microLearning,
+      this.data.batch.practiceQuiz,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.wrap([
+      this.data.batch.liveQuiz2,
+      this.data.batch.microLearning2,
+      this.data.batch.practiceQuiz2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+    cy.selectOption(
+      '[data-cy="select-multiplier"]',
+      messages.manage.activityWizard.multiplier3
+    ) // set multiplier to 3
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify through activity wizards that updates have been successful
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier3
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').should('not.exist') // non-gamified activity should not have multiplier
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.batch.practiceQuiz}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.batch.practiceQuiz}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier3
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.batch.practiceQuiz2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.batch.practiceQuiz2}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').should('not.exist') // non-gamified activity should not have multiplier
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.batch.microLearning}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-microlearning-${this.data.batch.microLearning}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier3
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.batch.microLearning2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-microlearning-${this.data.batch.microLearning2}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').should('not.exist') // non-gamified activity should not have multiplier
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-group-activity-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier3
+    )
+  })
+
+  it('Verify that course re-assignments are applied correctly', function () {
+    cy.loginLecturer()
+
+    // select all gamified activities and re-assign them to the second gamified course
+    cy.get(`[data-cy="activities"]`).click().wait(500) // wait for activity list to load
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.practiceQuiz}"]`
+    ).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.microLearning}"]`
+    ).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    cy.get('[data-cy="course-checkbox"]').click() // enable course re-assignment
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course2)
+    cy.wrap([
+      this.data.batch.liveQuiz,
+      this.data.batch.microLearning,
+      this.data.batch.practiceQuiz,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify through activity wizards that re-assignments have been successful
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.batch.practiceQuiz}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.batch.practiceQuiz}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.batch.microLearning}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-microlearning-${this.data.batch.microLearning}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-group-activity-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+  })
+
+  it('Verify that customized live quiz grading logic is applied correctly', function () {
+    cy.loginLecturer()
+
+    // select both live quizzes
+    cy.get(`[data-cy="activities"]`).click().wait(500) // wait for activity list to load
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    // modify live quiz grading logic updates
+    cy.get('[data-cy="live-quiz-points-checkbox"]').click() // enable live quiz points modification
+    cy.get(`[data-cy="base-points-input"]`).clear().type('100')
+    cy.get(`[data-cy="correctness-points-input"]`).clear().type('200')
+    cy.get(`[data-cy="bonus-points-input"]`).clear().type('300')
+    cy.get(`[data-cy="bonus-times-input"]`).clear().type('60')
+
+    // changes should be applied to gamified live quiz only
+    cy.get(
+      `[data-cy="activity-batch-entry-${this.data.batch.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-check-${this.data.batch.liveQuiz}"]`
+    ).should('exist')
+    cy.get(`[data-cy="activity-batch-x-${this.data.batch.liveQuiz}"]`).should(
+      'not.exist'
+    )
+
+    cy.get(
+      `[data-cy="activity-batch-entry-${this.data.batch.liveQuiz2}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-check-${this.data.batch.liveQuiz2}"]`
+    ).should('not.exist')
+    cy.get(`[data-cy="activity-batch-x-${this.data.batch.liveQuiz2}"]`).should(
+      'exist'
+    )
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify through the activity wizard if the changes have been applied
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="live-quiz-advanced-settings"]').click()
+    cy.get('[data-cy="live-quiz-default-points"]').should('have.value', '100')
+    cy.get('[data-cy="live-quiz-default-correct-points"]').should(
+      'have.value',
+      '200'
+    )
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').should('have.value', '300')
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').should(
+      'have.value',
+      '60'
+    )
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
+
+    // for the non-gamified live quiz, the settings should not be available
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="live-quiz-advanced-settings"]').should('not.exist')
+  })
+
+  it('Verify that the combination of multiplier change and course re-assignment is possible simultaneously', function () {
+    cy.loginLecturer()
+
+    // assign all non-gamified activities and the group activity to the second valid course and set the multiplier to 4
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.practiceQuiz2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.microLearning2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="activity-checkbox-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    // change the muliplier to 4
+    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification
+    cy.selectOption(
+      '[data-cy="select-multiplier"]',
+      messages.manage.activityWizard.multiplier4
+    )
+
+    cy.get(
+      `[data-cy="activity-batch-entry-${this.data.batch.groupActivity}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-check-${this.data.batch.groupActivity}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="activity-batch-x-${this.data.batch.groupActivity}"]`
+    ).should('not.exist')
+
+    cy.wrap([
+      this.data.batch.liveQuiz2,
+      this.data.batch.practiceQuiz2,
+      this.data.batch.microLearning2,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('not.exist') // activities are still in non-gamified course before selecting new course
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('exist')
+    })
+
+    // assign second valid course
+    cy.get('[data-cy="course-checkbox"]').click() // enable course re-assignment
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course2)
+    cy.wrap([
+      this.data.batch.liveQuiz2,
+      this.data.batch.practiceQuiz2,
+      this.data.batch.microLearning2,
+      this.data.batch.groupActivity,
+    ]).each((title) => {
+      cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+      cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+    })
+    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification // TODO: REMOVE THIS, ONCE RE-ASSIGNMENT IS NOT NEEDED ANYMORE
+    cy.selectOption(
+      '[data-cy="select-multiplier"]',
+      messages.manage.activityWizard.multiplier4
+    ) // TODO: REMOVE THIS, ONCE RE-ASSIGNMENT IS NOT NEEDED ANYMORE
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that the changes went into effect
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier4
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-PRACTICE_QUIZ-${this.data.batch.practiceQuiz2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.batch.practiceQuiz2}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier4
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-MICRO_LEARNING-${this.data.batch.microLearning2}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-microlearning-${this.data.batch.microLearning2}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier4
+    )
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(
+      `[data-cy="actions-GROUP_ACTIVITY-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-group-activity-${this.data.batch.groupActivity}"]`
+    ).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course2)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier4
+    )
+  })
+
+  it('Verify that the combination of multiplier change, course re-assignment and customized grading logic is possible for the live quiz', function () {
+    cy.loginLecturer()
+
+    // assign the two live quizzes to course 3, set the multiplier to 2 and set new grading logic
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="activity-checkbox-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="activity-batch-operations"]').click()
+
+    // assign third course
+    cy.get('[data-cy="course-checkbox"]').click() // enable course re-assignment
+    cy.selectOption('[data-cy="select-course"]', this.data.batch.course3)
+
+    // change the muliplier to 2
+    cy.get('[data-cy="multiplier-checkbox"]').click() // enable multiplier modification
+    cy.selectOption(
+      '[data-cy="select-multiplier"]',
+      messages.manage.activityWizard.multiplier2
+    )
+
+    // apply new custom live quiz grading logic
+    cy.get('[data-cy="live-quiz-points-checkbox"]').click() // enable live quiz points modification
+    cy.get(`[data-cy="base-points-input"]`).clear().type('1')
+    cy.get(`[data-cy="correctness-points-input"]`).clear().type('2')
+    cy.get(`[data-cy="bonus-points-input"]`).clear().type('3')
+    cy.get(`[data-cy="bonus-times-input"]`).clear().type('4')
+
+    // verify that the changes will affect both activities and apply the changes
+    cy.wrap([this.data.batch.liveQuiz, this.data.batch.liveQuiz2]).each(
+      (title) => {
+        cy.get(`[data-cy="activity-batch-entry-${title}"]`).should('exist')
+        cy.get(`[data-cy="activity-batch-check-${title}"]`).should('exist')
+        cy.get(`[data-cy="activity-batch-x-${title}"]`).should('not.exist')
+      }
+    )
+    cy.get('[data-cy="apply-batch-operations"]').click()
+
+    // verify that the changes were applied successfully to both quizzes
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course3)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier2
+    )
+    cy.get('[data-cy="live-quiz-advanced-settings"]').click()
+    cy.get('[data-cy="live-quiz-default-points"]').should('have.value', '1')
+    cy.get('[data-cy="live-quiz-default-correct-points"]').should(
+      'have.value',
+      '2'
+    )
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').should('have.value', '3')
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').should('have.value', '4')
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
+
+    cy.get(`[data-cy="activities"]`).click().wait(500)
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.batch.liveQuiz2}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').contains(this.data.batch.course3)
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.activityWizard.multiplier2
+    )
+    cy.get('[data-cy="live-quiz-advanced-settings"]').click()
+    cy.get('[data-cy="live-quiz-default-points"]').should('have.value', '1')
+    cy.get('[data-cy="live-quiz-default-correct-points"]').should(
+      'have.value',
+      '2'
+    )
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').should('have.value', '3')
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').should('have.value', '4')
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').click()
   })
   // #endregion
 })

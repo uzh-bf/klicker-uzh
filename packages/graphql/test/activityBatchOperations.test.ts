@@ -53,11 +53,14 @@ describe('Unit tests for batch operations on activities', () => {
     await testCleanup(prisma)
   })
 
-  async function seedElement(args: { [x: string]: any }, prisma: PrismaClient) {
-    // Randomly choose one of the values of ElementType
+  async function seedElement(
+    args: { [x: string]: any },
+    prisma: PrismaClient,
+    seed: number = 0
+  ) {
+    // randomly choose one of the values of ElementType
     const elementTypes = Object.values(ElementType)
-    const randomType =
-      elementTypes[Math.floor(Math.random() * elementTypes.length)]!
+    const randomType = elementTypes[seed % elementTypes.length]!
 
     const element = await prisma.element.create({
       data: {
@@ -107,7 +110,8 @@ describe('Unit tests for batch operations on activities', () => {
   ) {
     const elementId = await seedElement(
       args.ownerId ? { ownerId: args.ownerId } : {},
-      prisma
+      prisma,
+      0
     )
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
@@ -152,7 +156,8 @@ describe('Unit tests for batch operations on activities', () => {
   ) {
     const elementId = await seedElement(
       args.ownerId ? { ownerId: args.ownerId } : {},
-      prisma
+      prisma,
+      1
     )
     const practiceQuiz = await prisma.practiceQuiz.create({
       data: {
@@ -168,7 +173,7 @@ describe('Unit tests for batch operations on activities', () => {
                 create: [
                   {
                     order: 0,
-                    type: ElementInstanceType.LIVE_QUIZ,
+                    type: ElementInstanceType.PRACTICE_QUIZ,
                     elementType: ElementType.SC,
                     options: { pointsMultiplier: 2 },
                     elementData: { pointsMultiplier: 2 } as ElementData,
@@ -199,7 +204,8 @@ describe('Unit tests for batch operations on activities', () => {
   ) {
     const elementId = await seedElement(
       args.ownerId ? { ownerId: args.ownerId } : {},
-      prisma
+      prisma,
+      2
     )
     const microLearning = await prisma.microLearning.create({
       data: {
@@ -212,12 +218,12 @@ describe('Unit tests for batch operations on activities', () => {
           create: [
             {
               order: 0,
-              type: ElementStackType.PRACTICE_QUIZ,
+              type: ElementStackType.MICROLEARNING,
               elements: {
                 create: [
                   {
                     order: 0,
-                    type: ElementInstanceType.LIVE_QUIZ,
+                    type: ElementInstanceType.MICROLEARNING,
                     elementType: ElementType.SC,
                     options: { pointsMultiplier: 3 },
                     elementData: { pointsMultiplier: 3 } as ElementData,
@@ -248,7 +254,8 @@ describe('Unit tests for batch operations on activities', () => {
   ) {
     const elementId = await seedElement(
       args.ownerId ? { ownerId: args.ownerId } : {},
-      prisma
+      prisma,
+      3
     )
     const groupActivity = await prisma.groupActivity.create({
       data: {
@@ -261,12 +268,12 @@ describe('Unit tests for batch operations on activities', () => {
           create: [
             {
               order: 0,
-              type: ElementStackType.PRACTICE_QUIZ,
+              type: ElementStackType.GROUP_ACTIVITY,
               elements: {
                 create: [
                   {
                     order: 0,
-                    type: ElementInstanceType.LIVE_QUIZ,
+                    type: ElementInstanceType.GROUP_ACTIVITY,
                     elementType: ElementType.SC,
                     options: { pointsMultiplier: 4 },
                     elementData: { pointsMultiplier: 4 } as ElementData,

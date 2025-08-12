@@ -2417,21 +2417,6 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       MISSING_CATALOG_COLLECTION_ID
     )
 
-    // verify that audit log entries have been created for these changes
-    const auditLogs1 = await prisma.auditLogEntry.findMany({
-      where: {
-        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
-        objectType: ObjectType.ANSWER_COLLECTION,
-        objectId: String(AC1!.id),
-      },
-    })
-    expect(auditLogs1[0]).toBeTruthy()
-    expect(auditLogs1[0]?.sourceUserId).toBe(userOne.id)
-    expect(auditLogs1[0]?.message).toBe(
-      `Catalog object assignment (ID ${updatedAssignment1!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.RESTRICTED}`
-    )
-
-    // verify that the catalog object assignments have been updated correctly
     const updatedAssignment2 =
       await prisma.catalogCollectionAssignment.findUnique({
         where: { id: assignment2.id },
@@ -2442,17 +2427,31 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(updatedAssignment2?.catalogCollectionId).toBe(publicCatalog.id)
 
     // verify that audit log entries have been created for these changes
+    const auditLogs1 = await prisma.auditLogEntry.findMany({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(auditLogs1[1]).toBeTruthy()
+    expect(auditLogs1[1]!.sourceUserId).toBe(userOne.id)
+    expect(auditLogs1[1]!.message).toBe(
+      `Catalog object assignment (ID ${updatedAssignment1!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.RESTRICTED}`
+    )
+
     const auditLogs2 = await prisma.auditLogEntry.findMany({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
         objectType: ObjectType.ANSWER_COLLECTION,
         objectId: String(AC1!.id),
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
     })
     expect(auditLogs2[0]).toBeTruthy()
-    expect(auditLogs2[0]?.sourceUserId).toBe(userOne.id)
-    expect(auditLogs2[0]?.message).toBe(
+    expect(auditLogs2[0]!.sourceUserId).toBe(userOne.id)
+    expect(auditLogs2[0]!.message).toBe(
       `Catalog object assignment (ID ${updatedAssignment2!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.PUBLIC}`
     )
   })

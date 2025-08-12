@@ -527,20 +527,7 @@ describe('Feature test for activity logs', function () {
         validation: getDatetimeValidationString(2, '20') + ', 14:00',
       }, // 2 months in the future at 14:00
       task: 'TASK',
-      clues: [
-        {
-          type: 'text',
-          name: 'Clue 1',
-          displayName: 'First Hint',
-          content: 'Lorem ipsum dolor sit amet',
-        },
-        {
-          type: 'text',
-          name: 'Clue 2',
-          displayName: 'Second Hint',
-          content: 'Consectetur adipiscing elit',
-        },
-      ],
+      clues: this.data.groupActivityStandardClues,
       stack: {
         elements: [this.data.SCML.title],
       },
