@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker compose down postgres redis_exec redis_cache reverse_proxy_docker
+docker compose down postgres redis_exec redis_cache reverse_proxy_docker hatchet
