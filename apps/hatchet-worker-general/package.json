@@ -8,7 +8,8 @@
     "dist"
   ],
   "dependencies": {
-    "@hatchet-dev/typescript-sdk": "1.9.4"
+    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/hatchet-tasks": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.16.1",
