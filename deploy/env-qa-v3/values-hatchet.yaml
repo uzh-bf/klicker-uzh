@@ -1,0 +1,76 @@
+sharedConfig:
+  # you can disable shared config by setting this to false
+  enabled: true
+
+  # these are the most commonly configured values
+  # serverUrl: "http://localhost:8080"
+  # serverAuthCookieDomain: "localhost:8080" # the domain for the auth cookie
+  # serverAuthCookieInsecure: "t" # allows cookies to be set over http
+  # serverAuthSetEmailVerified: "t" # automatically sets email_verified to true for all users
+  # serverAuthBasicAuthEnabled: "t" # allows login via basic auth (email/password)
+  # grpcBroadcastAddress: "localhost:7070" # the endpoint for the gRPC server, exposed via the `grpc` service
+  # grpcInsecure: "true" # allows gRPC to be served over http
+
+  # you can set additional environment variables here, which will override any defaults
+  # env:
+
+api:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+frontend:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+postgres:
+  enabled: false
+
+grpc:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+controllers:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+scheduler:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+caddy:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
