@@ -120,7 +120,7 @@ export async function processResponseMessage(message: Message) {
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
-    const sessionKey = `lq:${message.sessionId}`
+    const sessionKey = `lqV2:${message.sessionId}`
     const instanceKey = `${sessionKey}:i:${message.instanceId}`
     const responseTimestamp = message.responseTimestamp
     const response = message.response
