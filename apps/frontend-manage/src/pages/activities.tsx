@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
+  ActivityType,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   PublicationStatus,
@@ -12,6 +13,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ActivityBatchOperationsModal from '../components/activities/overview/ActivityBatchOperationsModal'
 import ActivityList from '../components/activities/overview/ActivityList'
@@ -20,6 +22,7 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
+import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
 
@@ -28,9 +31,12 @@ const PAGE_SIZE = 10
 
 function Activities() {
   const t = useTranslations()
+  const router = useRouter()
+
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
   const [selectedActivities, setSelectedActivities] = useState<{
     [activityId: string]: ActivityInfo
   }>({})
@@ -119,6 +125,16 @@ function Activities() {
       return changed ? updatedSelection : prev
     })
   }, [activities])
+
+  // if passed through the query arguments, open the activity details dialog
+  useEffect(() => {
+    if (
+      router.query.openActivityDetailsId &&
+      router.query.openActivityDetailsType
+    ) {
+      setShowDetails(true)
+    }
+  }, [router.query.openActivityDetailsId, router.query.openActivityDetailsType])
 
   const filtersActive =
     filters.status.length > 0 ||
@@ -211,6 +227,27 @@ function Activities() {
         </div>
       </div>
 
+      {router.query.openActivityDetailsId &&
+      router.query.openActivityDetailsType ? (
+        <ActivityDetailsModal
+          activityId={router.query.openActivityDetailsId as string}
+          activityType={router.query.openActivityDetailsType as ActivityType}
+          onClose={() => {
+            // close the modal
+            setShowDetails(false)
+
+            // unset the edit open activity id (if defined)
+            const { openActivityDetailsId, openActivityDetailsType, ...query } =
+              router.query
+            router.push({ pathname: '/activities', query }, undefined, {
+              shallow: true,
+            })
+          }}
+          refetchActivities={async () => {
+            await refetchActivities()
+          }}
+        />
+      ) : null}
       {user?.privatePreview && batchOperationsOpen ? (
         <ActivityBatchOperationsModal
           selectedActivities={Object.values(selectedActivities)}

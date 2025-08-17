@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import {
-  ActivityInfo,
   ActivityType,
+  GetActivityDetailsDocument,
   GetSingleCourseDocument,
   SetActivityReviewStatusDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -10,11 +10,15 @@ import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function ActivityReviewButton({
-  activity,
+  activityId,
+  activityType,
+  courseId,
   isReviewed,
   refetchActivities,
 }: {
-  activity: ActivityInfo
+  activityId: string
+  activityType: ActivityType
+  courseId?: string | null
   isReviewed: boolean
   refetchActivities?: () => void
 }) {
@@ -29,19 +33,37 @@ function ActivityReviewButton({
       data={{ cy: 'activity-review-button' }}
       onClick={async () => {
         const { data: res } = await setActivityReviewStatus({
-          variables: {
-            activityId: activity.id,
-            activityType: activity.type,
-            isReviewed: !isReviewed,
-          },
+          variables: { activityId, activityType, isReviewed: !isReviewed },
           update: (cache, { data: res }) => {
-            if (!res?.setActivityReviewStatus || !activity.courseId) return
+            if (!res?.setActivityReviewStatus) return
+
+            // update activity details query
+            cache.updateQuery(
+              {
+                query: GetActivityDetailsDocument,
+                variables: { activityId, activityType },
+              },
+              (queryData) => {
+                // if query data does not exist, return null
+                if (!queryData?.activityDetails) return null
+
+                return {
+                  activityDetails: {
+                    ...queryData.activityDetails,
+                    reviewStatus: res.setActivityReviewStatus!,
+                  },
+                }
+              }
+            )
+
+            // if no course id is specified, only update activity details
+            if (!courseId) return
 
             // update course overview query
             cache.updateQuery(
               {
                 query: GetSingleCourseDocument,
-                variables: { courseId: activity.courseId },
+                variables: { courseId },
               },
               (queryData) => {
                 if (!queryData?.course) return null
@@ -51,17 +73,17 @@ function ActivityReviewButton({
                   | 'practiceQuizzesInfo'
                   | 'microLearningsInfo'
                   | 'groupActivitiesInfo' =
-                  activity.type === ActivityType.LiveQuiz
+                  activityType === ActivityType.LiveQuiz
                     ? 'liveQuizzesInfo'
-                    : activity.type === ActivityType.PracticeQuiz
+                    : activityType === ActivityType.PracticeQuiz
                       ? 'practiceQuizzesInfo'
-                      : activity.type === ActivityType.MicroLearning
+                      : activityType === ActivityType.MicroLearning
                         ? 'microLearningsInfo'
                         : 'groupActivitiesInfo'
 
                 const updatedActivities =
                   queryData.course?.[activityKey]?.map((act) =>
-                    act.id === activity.id
+                    act.id === activityId
                       ? {
                           ...act,
                           reviewStatus: res.setActivityReviewStatus,

@@ -145,15 +145,13 @@ function ElementEditModal({
       initialValues={formikInitialValues}
       onClose={() => {
         handleSetIsOpen(false)
-        const { editElementId, ...query } = router.query
-        router.push(
-          {
-            pathname: '/',
-            query,
-          },
-          undefined,
-          { shallow: true }
-        )
+        const {
+          editElementId,
+          contextActivityId,
+          contextActivityType,
+          ...query
+        } = router.query
+        router.push({ pathname: '/', query }, undefined, { shallow: true })
       }}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
@@ -395,19 +393,35 @@ function ElementEditModal({
           )
         }
 
-        // close modal
-        handleSetIsOpen(false)
+        // extract query parameters
+        const {
+          editElementId,
+          contextActivityId,
+          contextActivityType,
+          ...query
+        } = router.query
 
-        // reset router query element id (if set)
-        const { editElementId, ...query } = router.query
-        router.push(
-          {
-            pathname: '/',
-            query,
-          },
-          undefined,
-          { shallow: true }
-        )
+        if (contextActivityId && contextActivityType) {
+          // if the element is edited in the context of an activity, re-open the corresponding activity details
+          router.push(
+            {
+              pathname: '/activities',
+              query: {
+                ...query,
+                openActivityDetailsId: contextActivityId,
+                openActivityDetailsType: contextActivityType,
+              },
+            },
+            undefined,
+            { shallow: true }
+          )
+        } else {
+          // close modal
+          handleSetIsOpen(false)
+
+          // unset the edit element id
+          router.push({ pathname: '/', query }, undefined, { shallow: true })
+        }
 
         // trigger success toast
         triggerSuccessToast()
