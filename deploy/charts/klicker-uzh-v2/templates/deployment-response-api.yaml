@@ -45,7 +45,7 @@ spec:
           imagePullPolicy: {{ .Values.responseApi.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 78
+              containerPort: 7078
               protocol: TCP
           env:
             - name: NODE_ENV

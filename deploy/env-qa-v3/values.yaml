@@ -9,14 +9,16 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general:deploy-hatchet
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        tag: deploy-hatchet
         pullPolicy: Always
 
     responseProcessor:
       replicaCount: 1
       priorityClassName: staging-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor:deploy-hatchet
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        tag: deploy-hatchet
         pullPolicy: Always
 
 auth:
@@ -207,14 +209,15 @@ lti:
           - lti.klicker-qa.bf-app.ch
 
 responseApi:
-  corsAllowedOrigins: ''
+  corsAllowedOrigins: 'https://response-api.klicker-qa.bf-app.ch'
 
   priorityClassName: staging-workload
 
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/response-api:deploy-hatchet
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    tag: deploy-hatchet
     pullPolicy: Always
 
   autoscaling:
