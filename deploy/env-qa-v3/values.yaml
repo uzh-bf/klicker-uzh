@@ -12,7 +12,6 @@ hatchet:
       priorityClassName: staging-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
-        tag: deploy-hatchet
         pullPolicy: Always
 
     responseProcessor:
@@ -20,7 +19,6 @@ hatchet:
       priorityClassName: staging-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
-        tag: deploy-hatchet
         pullPolicy: Always
 
 auth:

@@ -8,6 +8,13 @@ hatchet:
   client:
     token: '${HATCHET_CLIENT_TOKEN}'
     tenantId: '${HATCHET_DEFAULT_TENANT_ID}'
+  workers:
+    general:
+      image:
+        tag: '${APP_VERSION}'
+    responseProcessor:
+      image:
+        tag: '${APP_VERSION}'
 
 email:
   type: '${EMAIL_TYPE}'
