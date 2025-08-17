@@ -101,7 +101,7 @@ function Index() {
 
     // reset the filters and sorting
     handleReset()
-  }, [router])
+  }, [router.query.filterByCourse, router.query.filterByActivity])
 
   const {
     loading: loadingElements,
@@ -227,7 +227,12 @@ function Index() {
   useEffect(() => {
     if (router.query.filterByActivity) {
       handleReset()
-      toggleCourseIdFilter({ courseId: router.query.filterByCourse as string })
+
+      if (router.query.filterByCourse) {
+        toggleCourseIdFilter({
+          courseId: router.query.filterByCourse as string,
+        })
+      }
       toggleActivityIdFilter({
         activityId: router.query.filterByActivity as string,
       })

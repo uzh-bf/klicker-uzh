@@ -287,9 +287,7 @@ function FilterList({
           trigger={t('shared.generic.gamification')}
           value="gamification-tags"
           active={sampleSolution || answerFeedbacks}
-          data={{
-            cy: `collapse-tag-header-${t('shared.generic.gamification')}`,
-          }}
+          data={{ cy: `collapse-tag-header-gamification` }}
         >
           <FilterItem
             disabled={

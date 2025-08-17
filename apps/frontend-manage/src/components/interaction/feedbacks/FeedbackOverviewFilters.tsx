@@ -124,7 +124,7 @@ function FeedbackOverviewFilters({
           trigger={t('shared.generic.status')}
           value="status-filters"
           active={!showResolved || !showOpen}
-          data={{ cy: `collapse-tag-header-${t('shared.generic.status')}` }}
+          data={{ cy: `collapse-tag-header-status` }}
         >
           <FilterItem
             text={t('manage.cockpit.filterSolved')}
@@ -146,7 +146,7 @@ function FeedbackOverviewFilters({
           trigger={t('manage.cockpit.pinning')}
           value="pinning-filters"
           active={showPinned || showUnpinned}
-          data={{ cy: `collapse-tag-header-${t('manage.cockpit.pinning')}` }}
+          data={{ cy: `collapse-tag-header-pinning` }}
         >
           <FilterItem
             text={t('manage.cockpit.filterPinned')}
@@ -168,7 +168,7 @@ function FeedbackOverviewFilters({
           trigger={t('manage.cockpit.visibility')}
           value="visibility-filters"
           active={showPublished || showUnpublished}
-          data={{ cy: `collapse-tag-header-${t('manage.cockpit.visibility')}` }}
+          data={{ cy: `collapse-tag-header-visibility` }}
         >
           <FilterItem
             text={t('manage.cockpit.filterPublished')}

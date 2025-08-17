@@ -152,7 +152,9 @@ function ActivityDetailsModal({
                       router.push({
                         pathname: '/',
                         query: {
-                          filterByCourse: details.courseId,
+                          ...(details.courseId
+                            ? { filterByCourse: details.courseId }
+                            : {}),
                           filterByActivity: details.id,
                         },
                       })
