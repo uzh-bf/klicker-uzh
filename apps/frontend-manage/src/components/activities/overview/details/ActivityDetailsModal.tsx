@@ -51,7 +51,6 @@ function ActivityDetailsModal({
 
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
-  const isLiveQuiz = activityType === ActivityType.LiveQuiz
   const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
 
   // check which instances are outdated

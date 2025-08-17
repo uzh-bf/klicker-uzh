@@ -44,8 +44,11 @@ function ActivityReviewButton({
                 variables: { activityId, activityType },
               },
               (queryData) => {
-                if (!queryData?.activityDetails || !res.setActivityReviewStatus)
-                  return null
+                // if query data does not exist, return null
+                if (!queryData?.activityDetails) return null
+
+                // if the update was not successful, return the original data
+                if (!res.setActivityReviewStatus) return queryData
 
                 return {
                   activityDetails: {
