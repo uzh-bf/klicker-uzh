@@ -12,6 +12,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ActivityBatchOperationsModal from '../components/activities/overview/ActivityBatchOperationsModal'
 import ActivityList from '../components/activities/overview/ActivityList'
@@ -28,6 +29,8 @@ const PAGE_SIZE = 10
 
 function Activities() {
   const t = useTranslations()
+  const router = useRouter()
+
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
@@ -188,6 +191,11 @@ function Activities() {
                     noActivities={!filtersActive && numOfActivities === 0}
                     highlightedActivity={null}
                     selectedActivities={selectedActivities}
+                    openActivityDetailsId={
+                      router.query.openActivityDetails
+                        ? (router.query.openActivityDetails as string)
+                        : undefined
+                    }
                     setSelectedActivities={setSelectedActivities}
                     refetchActivities={async () => {
                       await refetchActivities()

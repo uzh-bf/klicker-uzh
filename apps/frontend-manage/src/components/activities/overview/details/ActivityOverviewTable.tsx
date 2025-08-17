@@ -231,6 +231,7 @@ function ActivityOverviewTable({
                             query: {
                               editElementId:
                                 element.instance.elementData.elementId,
+                              contextActivityId: details.id,
                             },
                           })
                         }}

@@ -24,6 +24,7 @@ import {
 import { Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -43,6 +44,7 @@ function ActivityListEntry({
   highlighted = false,
   hideType = false,
   checked = false,
+  detailsOpen = false,
   onCheck,
   highlightedActivity,
   refetchActivities,
@@ -51,12 +53,15 @@ function ActivityListEntry({
   highlighted?: boolean
   hideType?: boolean
   checked?: boolean
+  detailsOpen?: boolean
   onCheck?: () => void
   highlightedActivity: string | null
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const [showDetails, setShowDetails] = useState<boolean>(false)
+  const router = useRouter()
+
+  const [showDetails, setShowDetails] = useState<boolean>(detailsOpen)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
   const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
@@ -338,7 +343,16 @@ function ActivityListEntry({
       {showDetails && (
         <ActivityDetailsModal
           activity={activity}
-          onClose={() => setShowDetails(false)}
+          onClose={() => {
+            // close the modal
+            setShowDetails(false)
+
+            // unset the edit open activity id (if defined)
+            const { openActivityDetails, ...query } = router.query
+            router.push({ pathname: '/activities', query }, undefined, {
+              shallow: true,
+            })
+          }}
           refetchActivities={refetchActivities}
         />
       )}
