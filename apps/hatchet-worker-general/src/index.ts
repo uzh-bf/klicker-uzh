@@ -13,6 +13,4 @@ async function main() {
   await worker.start()
 }
 
-if (require.main === module) {
-  main()
-}
+await main()
