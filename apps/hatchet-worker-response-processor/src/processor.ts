@@ -1,3 +1,5 @@
+// TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
+
 import {
   computeAwardedPoints,
   computeAwardedXp,
