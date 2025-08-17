@@ -32,3 +32,4 @@ ssl/
 util/backup/dumps
 
 dist/
+project/
