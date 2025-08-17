@@ -38,7 +38,7 @@ import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FilterItem from './FilterItem'
 import FilterListEntry from './FilterListEntry'
-import SuspendedActivities from './SuspendedActivities'
+import SuspendedActivitySelection from './SuspendedActivitySelection'
 import SuspendedTags from './SuspendedTags'
 
 const ELEMENT_STATUS_FILTERS: Record<ElementStatus, IconDefinition[]> = {
@@ -54,7 +54,7 @@ export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
 }
 
 interface FilterListProps {
-  compact: boolean
+  defaultValue?: string
   filtersActive: boolean
   isArchiveActive: boolean
   showUntagged: boolean
@@ -89,7 +89,7 @@ interface FilterListProps {
 }
 
 function FilterList({
-  compact,
+  defaultValue = 'element-status',
   filtersActive,
   isArchiveActive,
   showUntagged,
@@ -136,23 +136,7 @@ function FilterList({
 
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <Accordion
-        type="multiple"
-        defaultValue={
-          compact
-            ? []
-            : [
-                'element-status',
-                'element-types',
-                ...(user?.userProfile?.privatePreview
-                  ? ['sharing-types', 'used-in-activity']
-                  : []),
-                'user-tags',
-                'gamification-tags',
-              ]
-        }
-        className="w-full"
-      >
+      <Accordion type="single" defaultValue={defaultValue} className="w-full">
         <FilterListEntry
           trigger={t('manage.questionPool.elementStatus')}
           value="element-status"
@@ -290,7 +274,7 @@ function FilterList({
           data={{ cy: `collapse-tag-header-used-in-activity` }}
         >
           <Suspense fallback={<Loader />}>
-            <SuspendedActivities
+            <SuspendedActivitySelection
               activeCourseId={activeCourseId}
               activeActivityId={activeActivityId}
               toggleCourseIdFilter={toggleCourseIdFilter}

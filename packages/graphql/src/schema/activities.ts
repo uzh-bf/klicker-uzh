@@ -234,6 +234,7 @@ export interface IActivityDetails {
   status: DB.PublicationStatus
   reviewStatus: DB.ReviewStatus
   isActivityReviewer: boolean
+  isActivityManager: boolean
   courseId?: string | null
   arePointsAwarded: boolean
   pointsMultiplier: number
@@ -255,6 +256,7 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     status: t.expose('status', { type: PublicationStatus }),
     reviewStatus: t.expose('reviewStatus', { type: ReviewStatus }),
     isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
+    isActivityManager: t.exposeBoolean('isActivityManager'),
     courseId: t.exposeString('courseId', { nullable: true }),
     arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),

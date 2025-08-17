@@ -1129,6 +1129,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdated: 'Review-Status erfolgreich aktualisiert',
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
+      openElementsInLibrary: 'Elemente in Bibliothek öffnen',
       batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
       batchOperationsOnlyDraftScheduled:
         'Batch-Operationen können nur mit Entwurfs- oder geplanten Aktivitäten ausgeführt werden.',

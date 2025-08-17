@@ -1126,6 +1126,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetReview: 'Reset Review',
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
+      openElementsInLibrary: 'Open elements in library',
       batchOperations: 'Batch operations ({numActivities} activities)',
       batchOperationsOnlyDraftScheduled:
         'Batch operations can only be performed on draft or scheduled activities.',

@@ -19,6 +19,7 @@ type ActivityDetails {
   courseId: String
   displayName: String!
   id: String!
+  isActivityManager: Boolean!
   isActivityReviewer: Boolean!
   name: String!
   pointsMultiplier: Int!

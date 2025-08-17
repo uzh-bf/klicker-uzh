@@ -7,7 +7,7 @@ import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 
-function SuspendedActivities({
+function SuspendedActivitySelection({
   activeCourseId,
   activeActivityId,
   toggleCourseIdFilter,
@@ -77,9 +77,13 @@ function SuspendedActivities({
       <SelectField
         id="course-select"
         label={t('shared.generic.course')}
+        disabled={userCourses.userCourses?.length === 0}
         value={activeCourseId ?? 'no-course'}
         items={[
-          { value: 'no-course', label: 'No Course' },
+          {
+            value: 'no-course',
+            label: t('manage.activityWizard.liveQuizNoCourse'),
+          },
           ...(userCourses.userCourses?.map((course) => ({
             value: course.id,
             label: course.displayName || course.name,
@@ -122,4 +126,4 @@ function SuspendedActivities({
   )
 }
 
-export default SuspendedActivities
+export default SuspendedActivitySelection
