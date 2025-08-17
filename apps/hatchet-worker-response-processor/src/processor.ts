@@ -2,6 +2,10 @@
 
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+import type {
+  Context,
+  DurableContext,
+} from '@hatchet-dev/typescript-sdk/index.js'
 import {
   computeAwardedPoints,
   computeAwardedXp,
@@ -98,13 +102,16 @@ function updateLeaderboards({
   }
 }
 
-export async function processResponseMessage(message: Message) {
-  console.log('ProcessResponse function processing a message', message)
+export async function processResponseMessage(
+  message: Message,
+  ctx: Context | DurableContext
+) {
+  ctx.logger.info('ProcessResponse function processing a message', message)
 
   try {
     assert(!!redisExec)
   } catch (e) {
-    console.error('Redis connection error', e)
+    ctx.logger.error('Redis connection error', e)
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
@@ -126,7 +133,7 @@ export async function processResponseMessage(message: Message) {
     const responseTimestamp = message.responseTimestamp
     const response = message.response
     if (!response) {
-      console.error('Missing response', message)
+      ctx.logger.error('Missing response', message)
       return { status: 400 }
     }
 
@@ -149,7 +156,7 @@ export async function processResponseMessage(message: Message) {
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
           } else {
-            console.log("Participant's JWT verified", participantData)
+            ctx.logger.info("Participant's JWT verified", participantData)
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
@@ -159,11 +166,14 @@ export async function processResponseMessage(message: Message) {
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
             participantData = null
           } else {
-            console.log("Temporary Participant's JWT verified", participantData)
+            ctx.logger.info(
+              "Temporary Participant's JWT verified",
+              participantData
+            )
           }
         }
       } catch (e) {
-        console.error('JWT verification failed', e, message.cookie)
+        ctx.logger.error('JWT verification failed', e, message.cookie)
       }
 
       // if the participant has already responded to the question instance, return instantly
@@ -176,7 +186,7 @@ export async function processResponseMessage(message: Message) {
             : participantData.sub
         ))
       ) {
-        console.log(
+        ctx.logger.info(
           'Participant has already responded to this question instance'
         )
         return { status: 200 }
@@ -186,10 +196,10 @@ export async function processResponseMessage(message: Message) {
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo) {
-      console.log('Question instance metadata not found', message)
+      ctx.logger.info('Question instance metadata not found', message)
       return { status: 400 }
     }
-    console.log('Instance info', instanceInfo)
+    ctx.logger.info('Instance info', instanceInfo)
 
     const {
       type,
@@ -207,7 +217,7 @@ export async function processResponseMessage(message: Message) {
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      console.log('Error parsing solutions', e, message)
+      ctx.logger.info('Error parsing solutions', e, message)
     }
 
     let pointsAwarded: number | string = 0
@@ -658,17 +668,17 @@ export async function processResponseMessage(message: Message) {
       }
     }
   } catch (e) {
-    console.error('Error processing response', e, message)
+    ctx.logger.error('Error processing response', e, message)
     redisMulti?.discard()
     return { status: 500 }
   }
 
   try {
     await redisMulti.exec()
-    console.log("Successfully processed participant's response", message)
+    ctx.logger.info("Successfully processed participant's response", message)
     return { status: 200 }
   } catch (e) {
-    console.error('Redis transaction failed', e, message)
+    ctx.logger.error('Redis transaction failed', e, message)
     redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
