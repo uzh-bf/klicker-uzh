@@ -13,3 +13,13 @@ releases:
     values:
       - values.yaml
       - .values-SECRET.yaml
+  - name: hatchet-prod
+    namespace: klicker-v2-prod
+    createNamespace: true
+    chart: hatchet/hatchet-ha
+    version: '{{ env "HATCHET_CHART_VERSION" | default "0.9.2" }}'
+    installed: true
+    kubeContext: klicker-k8scbfdbd7c
+    values:
+      - values-hatchet.yaml
+      - .values-hatchet-SECRET.yaml
