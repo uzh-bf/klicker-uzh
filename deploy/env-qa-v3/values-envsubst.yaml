@@ -29,8 +29,8 @@ auth:
 
 frontendPWA:
   replicaCount: '${APP_REPLICAS}'
-  image:
-    tag: '${APP_VERSION}'
+  # image:
+  # tag: '${APP_VERSION}'
 
 frontendManage:
   replicaCount: '${APP_REPLICAS}'

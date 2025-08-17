@@ -214,7 +214,7 @@ lti:
           - lti.klicker-qa.bf-app.ch
 
 responseApi:
-  corsAllowedOrigins: 'https://response-api.klicker-qa.bf-app.ch'
+  corsAllowedOrigins: 'https://pwa.klicker-qa.bf-app.ch'
 
   priorityClassName: staging-workload
 
