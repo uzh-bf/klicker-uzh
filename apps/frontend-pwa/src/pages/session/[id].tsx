@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -12,19 +13,17 @@ import {
   GetRunningLiveQuizDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import { GetServerSidePropsContext } from 'next'
-import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-
-import { useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
@@ -35,6 +34,83 @@ const DynamicAccountSelector = dynamic(
   () => import('../../components/liveQuiz/AccountSelector'),
   { ssr: false }
 )
+
+async function handleNewResponse(
+  sessionId: string,
+  instanceId: number,
+  type: ElementType,
+  answer: any
+) {
+  let requestOptions: RequestInit = {
+    method: 'POST',
+    credentials: 'include',
+  }
+  if (QUESTION_GROUPS.CHOICES.includes(type)) {
+    requestOptions = {
+      ...requestOptions,
+      body: JSON.stringify({
+        instanceId,
+        sessionId,
+        response: { choices: answer },
+      }),
+    }
+  } else if (
+    QUESTION_GROUPS.NUMERICAL.includes(type) ||
+    QUESTION_GROUPS.FREE_TEXT.includes(type)
+  ) {
+    requestOptions = {
+      ...requestOptions,
+      body: JSON.stringify({
+        instanceId,
+        sessionId,
+        response: { value: answer },
+      }),
+    }
+  } else if (type === ElementType.Selection) {
+    requestOptions = {
+      ...requestOptions,
+      body: JSON.stringify({
+        instanceId,
+        sessionId,
+        response: { selection: answer },
+      }),
+    }
+  } else if (type === ElementType.CaseStudy) {
+    requestOptions = {
+      ...requestOptions,
+      body: JSON.stringify({
+        instanceId,
+        sessionId,
+        response: { assessment: answer },
+      }),
+    }
+  } else if (type === ElementType.Content) {
+    requestOptions = {
+      ...requestOptions,
+      body: JSON.stringify({
+        instanceId,
+        sessionId,
+        response: { read: true },
+      }),
+    }
+  } else {
+    return null
+  }
+
+  try {
+    // TODO: send responses to both for testing logic for a timeframe (use a separate redis cache to track data -> could compare if both yield the same data or, better, v2 has more responses)
+    await fetch(
+      process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
+      requestOptions
+    )
+    await fetch(
+      process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
+      requestOptions
+    )
+  } catch (e) {
+    console.log('error', e)
+  }
+}
 
 function Index({ id }: { id: string }) {
   const t = useTranslations()
@@ -87,76 +163,6 @@ function Index({ id }: { id: string }) {
     isGamificationEnabled,
     course,
   } = data.studentLiveQuiz
-
-  const handleNewResponse = async (
-    type: ElementType,
-    instanceId: number,
-    answer: any
-  ) => {
-    let requestOptions: RequestInit = {
-      method: 'POST',
-      credentials: 'include',
-    }
-    if (QUESTION_GROUPS.CHOICES.includes(type)) {
-      requestOptions = {
-        ...requestOptions,
-        body: JSON.stringify({
-          instanceId: instanceId,
-          sessionId: id,
-          response: { choices: answer },
-        }),
-      }
-    } else if (
-      QUESTION_GROUPS.NUMERICAL.includes(type) ||
-      QUESTION_GROUPS.FREE_TEXT.includes(type)
-    ) {
-      requestOptions = {
-        ...requestOptions,
-        body: JSON.stringify({
-          instanceId: instanceId,
-          sessionId: id,
-          response: { value: answer },
-        }),
-      }
-    } else if (type === ElementType.Selection) {
-      requestOptions = {
-        ...requestOptions,
-        body: JSON.stringify({
-          instanceId: instanceId,
-          sessionId: id,
-          response: { selection: answer },
-        }),
-      }
-    } else if (type === ElementType.CaseStudy) {
-      requestOptions = {
-        ...requestOptions,
-        body: JSON.stringify({
-          instanceId: instanceId,
-          sessionId: id,
-          response: { assessment: answer },
-        }),
-      }
-    } else if (type === ElementType.Content) {
-      requestOptions = {
-        ...requestOptions,
-        body: JSON.stringify({
-          instanceId: instanceId,
-          sessionId: id,
-          response: { read: true },
-        }),
-      }
-    } else {
-      return null
-    }
-    try {
-      await fetch(
-        process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
-        requestOptions
-      )
-    } catch (e) {
-      console.log('error', e)
-    }
-  }
 
   const mobileMenuItems: {
     value: string
