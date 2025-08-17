@@ -4,6 +4,8 @@ heartbeats:
 hatchet:
   client:
     tlsStrategy: 'none'
+    apiUrl: 'hatchet-qa-api:8080'
+    hostPort: 'hatchet-grpc:7070'
   workers:
     general:
       replicaCount: 1

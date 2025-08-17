@@ -50,6 +50,9 @@ hatchet:
   client:
     token: ""
     tlsStrategy: "none"
+    apiUrl: ""
+    tenantId: ""
+    hostPort: ""
   workers:
     general:
       replicaCount: 1
