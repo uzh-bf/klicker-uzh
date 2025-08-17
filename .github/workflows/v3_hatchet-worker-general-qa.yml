@@ -1,4 +1,4 @@
-name: Build Docker image for hatchet-worker-general
+name: Build Docker image for hatchet-worker-general (QA)
 
 on:
   push:

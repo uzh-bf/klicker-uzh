@@ -1,4 +1,4 @@
-name: Build Docker image for hatchet-worker-response-processor
+name: Build Docker image for hatchet-worker-response-processor (QA)
 
 on:
   push:
