@@ -1,6 +1,24 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
+hatchet:
+  client:
+    tlsStrategy: 'none'
+  workers:
+    general:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general:deploy-hatchet
+        pullPolicy: Always
+
+    responseProcessor:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor:deploy-hatchet
+        pullPolicy: Always
+
 auth:
   priorityClassName: staging-workload
 
@@ -187,6 +205,42 @@ lti:
       - secretName: klicker-qa-lti-tls
         hosts:
           - lti.klicker-qa.bf-app.ch
+
+responseApi:
+  corsAllowedOrigins: ''
+
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api:deploy-hatchet
+    pullPolicy: Always
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: response-api.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-response-api-tls
+        hosts:
+          - response-api.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
 
 redis:
   priorityClassName: staging-workload
