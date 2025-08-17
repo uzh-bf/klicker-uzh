@@ -24,7 +24,6 @@ import {
 import { Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
@@ -57,8 +56,6 @@ function ActivityListEntry({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const router = useRouter()
-
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)

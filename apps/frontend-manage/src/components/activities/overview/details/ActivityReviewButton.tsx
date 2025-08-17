@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
+  GetActivityDetailsDocument,
   GetSingleCourseDocument,
   SetActivityReviewStatusDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -35,6 +36,25 @@ function ActivityReviewButton({
           variables: { activityId, activityType, isReviewed: !isReviewed },
           update: (cache, { data: res }) => {
             if (!res?.setActivityReviewStatus || !courseId) return
+
+            // update activity details query
+            cache.updateQuery(
+              {
+                query: GetActivityDetailsDocument,
+                variables: { activityId, activityType },
+              },
+              (queryData) => {
+                if (!queryData?.activityDetails || !res.setActivityReviewStatus)
+                  return null
+
+                return {
+                  activityDetails: {
+                    ...queryData.activityDetails,
+                    reviewStatus: res.setActivityReviewStatus,
+                  },
+                }
+              }
+            )
 
             // update course overview query
             cache.updateQuery(
