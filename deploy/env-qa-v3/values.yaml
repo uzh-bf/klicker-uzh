@@ -58,6 +58,9 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  image:
+    tag: deploy-hatchet
+
   ingress:
     hosts:
       - host: pwa.klicker-qa.bf-app.ch
