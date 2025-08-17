@@ -8,8 +8,8 @@ sharedConfig:
   # serverAuthCookieInsecure: "t" # allows cookies to be set over http
   # serverAuthSetEmailVerified: "t" # automatically sets email_verified to true for all users
   # serverAuthBasicAuthEnabled: "t" # allows login via basic auth (email/password)
-  # grpcBroadcastAddress: "localhost:7070" # the endpoint for the gRPC server, exposed via the `grpc` service
-  # grpcInsecure: "true" # allows gRPC to be served over http
+  grpcBroadcastAddress: 'hatchet-grpc:7070' # the endpoint for the gRPC server, exposed via the `grpc` service
+  grpcInsecure: 'true' # allows gRPC to be served over http
 
   # you can set additional environment variables here, which will override any defaults
   # env:

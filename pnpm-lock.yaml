@@ -1225,9 +1225,6 @@ importers:
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
-      '@klicker-uzh/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       ioredis:
         specifier: 5.4.1
         version: 5.4.1
@@ -1235,6 +1232,9 @@ importers:
         specifier: 5.9.4
         version: 5.9.4
     devDependencies:
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@types/node':
         specifier: ^20.16.1
         version: 20.17.12
