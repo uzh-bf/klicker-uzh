@@ -1,6 +1,8 @@
 repositories:
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+  - name: hatchet
+    url: https://hatchet-dev.github.io/hatchet-charts
 
 releases:
   - name: klicker-v2-prod
