@@ -1222,6 +1222,18 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../../packages/grading
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
+      jose:
+        specifier: 5.9.4
+        version: 5.9.4
     devDependencies:
       '@types/node':
         specifier: ^20.16.1
@@ -1490,6 +1502,22 @@ importers:
       vitest:
         specifier: ~3.2.3
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.17.12)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.8.1)
+
+  apps/response-api:
+    dependencies:
+      '@hatchet-dev/typescript-sdk':
+        specifier: 1.9.4
+        version: 1.9.4
+    devDependencies:
+      '@types/node':
+        specifier: ^20.16.1
+        version: 20.17.12
+      tsx:
+        specifier: ~4.19.1
+        version: 4.19.2
+      typescript:
+        specifier: ~5.6.3
+        version: 5.6.3
 
   cypress:
     devDependencies:
@@ -12830,6 +12858,9 @@ packages:
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
 
+  jose@5.9.4:
+    resolution: {integrity: sha512-WBBl6au1qg6OHj67yCffCgFR3BADJBXN8MdRvCgJDuMv3driV2nHr7jdGvaKX9IolosAsn+M0XRArqLXUhyJHQ==}
+
   jose@5.9.6:
     resolution: {integrity: sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ==}
 
@@ -22764,7 +22795,7 @@ snapshots:
       graphql-request: 6.1.0(graphql@16.9.0)
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
-      jose: 5.9.6
+      jose: 5.9.4
       js-yaml: 4.1.0
       lodash: 4.17.21
       scuid: 1.1.0
@@ -31731,7 +31762,7 @@ snapshots:
     dependencies:
       '@ioredis/commands': 1.2.0
       cluster-key-slot: 1.1.2
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.1(supports-color@8.1.1)
       denque: 2.1.0
       lodash.defaults: 4.2.0
       lodash.isarguments: 3.1.0
@@ -32467,6 +32498,8 @@ snapshots:
       '@sideway/pinpoint': 2.0.0
 
   jose@4.15.9: {}
+
+  jose@5.9.4: {}
 
   jose@5.9.6: {}
 
