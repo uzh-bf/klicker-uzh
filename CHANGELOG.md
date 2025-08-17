@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.82...v3.3.0-alpha.83) (2025-08-17)
+
+
+### Enhancements
+
+* **apps/docs:** update documentation with new review and batch operation functionalities ([#4838](https://github.com/uzh-bf/klicker-uzh/issues/4838)) ([d92cdb7](https://github.com/uzh-bf/klicker-uzh/commit/d92cdb7ada77b96e904a5daf2b4199066d1e96a8))
+* **apps/frontend-manage:** re-open activity details view after editing element in activity context ([#4840](https://github.com/uzh-bf/klicker-uzh/issues/4840)) ([5bbe314](https://github.com/uzh-bf/klicker-uzh/commit/5bbe3144a0fff313481a228af85e46f96360309a))
+
 ## [3.3.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.81...v3.3.0-alpha.82) (2025-08-12)
 
 
