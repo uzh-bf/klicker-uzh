@@ -5,7 +5,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivityInfo,
   ActivityType,
   ElementInstance,
   GetActivityDetailsDocument,
@@ -26,11 +25,13 @@ import ActivityOverviewTable from './ActivityOverviewTable'
 import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsModal({
-  activity,
+  activityId,
+  activityType,
   onClose,
   refetchActivities,
 }: {
-  activity: ActivityInfo
+  activityId: string
+  activityType: ActivityType
   onClose: () => void
   refetchActivities?: () => Promise<void>
 }) {
@@ -38,7 +39,7 @@ function ActivityDetailsModal({
 
   // fetch activity details
   const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
-    variables: { activityId: activity.id, activityType: activity.type },
+    variables: { activityId, activityType },
     fetchPolicy: 'cache-and-network',
   })
 
@@ -50,8 +51,8 @@ function ActivityDetailsModal({
 
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
-  const isLiveQuiz = activity.type === ActivityType.LiveQuiz
-  const isReviewed = activity.reviewStatus === ReviewStatus.Reviewed
+  const isLiveQuiz = activityType === ActivityType.LiveQuiz
+  const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
 
   // check which instances are outdated
   const { data } = useQuery(GetOutdatedElementInstancesDocument, {
@@ -64,18 +65,18 @@ function ActivityDetailsModal({
     fetchPolicy: 'cache-and-network',
   })
 
-  const outdatedInstances = useMemo(
-    () =>
-      [
-        PublicationStatus.Draft,
-        PublicationStatus.Scheduled,
-        PublicationStatus.Template,
-      ].includes(activity.status)
-        ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
+  const outdatedInstances = useMemo(() => {
+    if (!details?.status) return []
+
+    return [
+      PublicationStatus.Draft,
+      PublicationStatus.Scheduled,
+      PublicationStatus.Template,
+    ].includes(details.status)
+      ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
           [])
-        : [],
-    [data?.getOutdatedElementInstances, activity.status]
-  )
+      : []
+  }, [data?.getOutdatedElementInstances, details?.status])
 
   // selected instance id
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
@@ -112,8 +113,8 @@ function ActivityDetailsModal({
             <div className="flex flex-col gap-2 lg:flex-row">
               <ActivityInformation
                 details={details}
-                activityType={activity.type}
-                activityReviewStatus={activity.reviewStatus}
+                activityType={activityType}
+                activityReviewStatus={details?.reviewStatus}
               />
 
               <div className="flex w-full flex-col items-end gap-1 lg:w-1/3">
@@ -130,9 +131,11 @@ function ActivityDetailsModal({
                 )}
 
                 {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
-                {activity.isActivityReviewer && (
+                {details.isActivityReviewer && (
                   <ActivityReviewButton
-                    activity={activity}
+                    activityId={details.id}
+                    activityType={activityType}
+                    courseId={details.courseId}
                     isReviewed={isReviewed}
                     refetchActivities={refetchActivities}
                   />
@@ -142,8 +145,7 @@ function ActivityDetailsModal({
 
             <ActivityOverviewTable
               details={details}
-              activityStatus={activity.status}
-              isLiveQuiz={isLiveQuiz}
+              activityType={activityType}
               outdatedInstances={outdatedInstances}
               selectedInstanceId={selectedInstanceId}
               setSelectedInstanceId={setSelectedInstanceId}
@@ -183,13 +185,13 @@ function ActivityDetailsModal({
             ) : (
               <ActivityLog
                 visible={!selected}
-                objectId={activity.id}
+                objectId={activityId}
                 objectType={
-                  activity.type === ActivityType.LiveQuiz
+                  activityType === ActivityType.LiveQuiz
                     ? ObjectType.LiveQuiz
-                    : activity.type === ActivityType.PracticeQuiz
+                    : activityType === ActivityType.PracticeQuiz
                       ? ObjectType.PracticeQuiz
-                      : activity.type === ActivityType.MicroLearning
+                      : activityType === ActivityType.MicroLearning
                         ? ObjectType.MicroLearning
                         : ObjectType.GroupActivity
                 }

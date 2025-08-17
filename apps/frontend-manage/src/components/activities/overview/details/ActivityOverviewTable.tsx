@@ -7,8 +7,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityDetails,
+  ActivityType,
   ElementType,
-  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -29,15 +29,13 @@ import ActivityOutdatedElementWarning from '../ActivityOutdatedElementWarning'
 
 function ActivityOverviewTable({
   details,
-  activityStatus,
-  isLiveQuiz,
+  activityType,
   outdatedInstances,
   selectedInstanceId,
   setSelectedInstanceId,
 }: {
   details: ActivityDetails
-  activityStatus: PublicationStatus
-  isLiveQuiz: boolean
+  activityType: ActivityType
   outdatedInstances: number[]
   selectedInstanceId: number | null
   setSelectedInstanceId: Dispatch<SetStateAction<number | null>>
@@ -45,6 +43,7 @@ function ActivityOverviewTable({
   const t = useTranslations()
   const router = useRouter()
   const stacks = details.stacks ?? []
+  const isLiveQuiz = activityType === ActivityType.LiveQuiz
 
   return (
     <ShadcnTable className="text-sm">
@@ -139,7 +138,7 @@ function ActivityOverviewTable({
                       </div>
                       {isOutdated && (
                         <ActivityOutdatedElementWarning
-                          status={activityStatus}
+                          status={details.status}
                         />
                       )}
                     </div>
@@ -232,6 +231,7 @@ function ActivityOverviewTable({
                               editElementId:
                                 element.instance.elementData.elementId,
                               contextActivityId: details.id,
+                              contextActivityType: activityType,
                             },
                           })
                         }}

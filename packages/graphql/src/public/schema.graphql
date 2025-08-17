@@ -16,11 +16,15 @@ type Achievement {
 
 type ActivityDetails {
   arePointsAwarded: Boolean!
+  courseId: String
   displayName: String!
   id: String!
+  isActivityReviewer: Boolean!
   name: String!
   pointsMultiplier: Int!
+  reviewStatus: ReviewStatus!
   stacks: [ActivityInfoStack!]!
+  status: PublicationStatus!
   totalBasePoints: Int
   totalBonusPoints: Int
   totalCorrectnessPoints: Int

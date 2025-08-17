@@ -145,7 +145,12 @@ function ElementEditModal({
       initialValues={formikInitialValues}
       onClose={() => {
         handleSetIsOpen(false)
-        const { editElementId, contextActivityId, ...query } = router.query
+        const {
+          editElementId,
+          contextActivityId,
+          contextActivityType,
+          ...query
+        } = router.query
         router.push({ pathname: '/', query }, undefined, { shallow: true })
       }}
       updateInstances={updateInstances}
@@ -389,14 +394,23 @@ function ElementEditModal({
         }
 
         // extract query parameters
-        const { editElementId, contextActivityId, ...query } = router.query
+        const {
+          editElementId,
+          contextActivityId,
+          contextActivityType,
+          ...query
+        } = router.query
 
-        if (contextActivityId) {
+        if (contextActivityId && contextActivityType) {
           // if the element is edited in the context of an activity, re-open the corresponding activity details
           router.push(
             {
               pathname: '/activities',
-              query: { ...query, openActivityDetails: contextActivityId },
+              query: {
+                ...query,
+                openActivityDetailsId: contextActivityId,
+                openActivityDetailsType: contextActivityType,
+              },
             },
             undefined,
             { shallow: true }

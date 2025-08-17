@@ -44,7 +44,6 @@ function ActivityListEntry({
   highlighted = false,
   hideType = false,
   checked = false,
-  detailsOpen = false,
   onCheck,
   highlightedActivity,
   refetchActivities,
@@ -53,7 +52,6 @@ function ActivityListEntry({
   highlighted?: boolean
   hideType?: boolean
   checked?: boolean
-  detailsOpen?: boolean
   onCheck?: () => void
   highlightedActivity: string | null
   refetchActivities?: () => Promise<void>
@@ -61,7 +59,7 @@ function ActivityListEntry({
   const t = useTranslations()
   const router = useRouter()
 
-  const [showDetails, setShowDetails] = useState<boolean>(detailsOpen)
+  const [showDetails, setShowDetails] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
   const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
@@ -342,17 +340,9 @@ function ActivityListEntry({
 
       {showDetails && (
         <ActivityDetailsModal
-          activity={activity}
-          onClose={() => {
-            // close the modal
-            setShowDetails(false)
-
-            // unset the edit open activity id (if defined)
-            const { openActivityDetails, ...query } = router.query
-            router.push({ pathname: '/activities', query }, undefined, {
-              shallow: true,
-            })
-          }}
+          activityId={activity.id}
+          activityType={activity.type}
+          onClose={() => setShowDetails(false)}
           refetchActivities={refetchActivities}
         />
       )}

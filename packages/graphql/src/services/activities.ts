@@ -1223,7 +1223,23 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {
-      course: true,
+      permissions: { where: { userId: ctx.user.sub } },
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       blocks: {
         include: {
           elements: {
@@ -1361,6 +1377,16 @@ export async function getLiveQuizDetails(
     id: liveQuiz.id,
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
+    status: liveQuiz.status,
+    reviewStatus: liveQuiz.reviewStatus,
+    isActivityReviewer:
+      (liveQuiz.courseId === null &&
+        (liveQuiz.permissions[0]?.permissionLevel ===
+          DB.PermissionLevel.OWNER ||
+          liveQuiz.permissions[0]?.permissionLevel ===
+            DB.PermissionLevel.ADMIN)) ||
+      (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
+    courseId: liveQuiz.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalBasePoints,
@@ -1464,6 +1490,22 @@ export async function getPracticeQuizDetails(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id },
     include: {
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       stacks: {
         include: {
           elements: {
@@ -1515,6 +1557,10 @@ export async function getPracticeQuizDetails(
     id: practiceQuiz.id,
     name: practiceQuiz.name,
     displayName: practiceQuiz.displayName,
+    status: practiceQuiz.status,
+    reviewStatus: practiceQuiz.reviewStatus,
+    isActivityReviewer: practiceQuiz.course._count.permissions > 0,
+    courseId: practiceQuiz.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalPoints,
@@ -1529,6 +1575,22 @@ export async function getMicroLearningDetails(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: { id },
     include: {
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       stacks: {
         include: {
           elements: {
@@ -1579,6 +1641,10 @@ export async function getMicroLearningDetails(
     id: microLearning.id,
     name: microLearning.name,
     displayName: microLearning.displayName,
+    status: microLearning.status,
+    reviewStatus: microLearning.reviewStatus,
+    isActivityReviewer: microLearning.course._count.permissions > 0,
+    courseId: microLearning.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,
@@ -1596,7 +1662,21 @@ export async function getGroupActivityDetails(
     where: { id },
     include: {
       course: {
-        include: { _count: { select: { participantGroups: true } } },
+        include: {
+          _count: {
+            select: {
+              participantGroups: true,
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       stacks: {
         include: {
@@ -1653,6 +1733,10 @@ export async function getGroupActivityDetails(
     id: groupActivity.id,
     name: groupActivity.name,
     displayName: groupActivity.displayName,
+    status: groupActivity.status,
+    reviewStatus: groupActivity.reviewStatus,
+    isActivityReviewer: groupActivity.course._count.permissions > 0,
+    courseId: groupActivity.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,

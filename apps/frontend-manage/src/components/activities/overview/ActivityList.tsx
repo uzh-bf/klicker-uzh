@@ -12,7 +12,6 @@ function ActivityList({
   hideActivityType = false,
   highlightedActivity,
   selectedActivities,
-  openActivityDetailsId,
   setSelectedActivities,
   refetchActivities,
 }: {
@@ -21,7 +20,6 @@ function ActivityList({
   hideActivityType?: boolean
   highlightedActivity: string | null
   selectedActivities?: Record<string, ActivityInfo>
-  openActivityDetailsId?: string
   setSelectedActivities?: Dispatch<SetStateAction<Record<string, ActivityInfo>>>
   refetchActivities?: () => Promise<void>
 }) {
@@ -72,11 +70,6 @@ function ActivityList({
           }
           hideType={hideActivityType}
           checked={selectedActivities && !!selectedActivities[activity.id]}
-          detailsOpen={
-            typeof openActivityDetailsId !== 'undefined'
-              ? openActivityDetailsId === activity.id
-              : undefined
-          }
           onCheck={
             setSelectedActivities
               ? () =>

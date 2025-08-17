@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityInfo,
+  ActivityType,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   PublicationStatus,
@@ -21,6 +22,7 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
+import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
 
@@ -34,6 +36,7 @@ function Activities() {
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
   const [selectedActivities, setSelectedActivities] = useState<{
     [activityId: string]: ActivityInfo
   }>({})
@@ -123,6 +126,16 @@ function Activities() {
     })
   }, [activities])
 
+  // if passed through the query arguments, open the activity details dialog
+  useEffect(() => {
+    if (
+      router.query.openActivityDetailsId &&
+      router.query.openActivityDetailsType
+    ) {
+      setShowDetails(true)
+    }
+  }, [router.query.openActivityDetailsId, router.query.openActivityDetailsType])
+
   const filtersActive =
     filters.status.length > 0 ||
     typeof filters.sharingType === 'undefined' ||
@@ -191,11 +204,6 @@ function Activities() {
                     noActivities={!filtersActive && numOfActivities === 0}
                     highlightedActivity={null}
                     selectedActivities={selectedActivities}
-                    openActivityDetailsId={
-                      router.query.openActivityDetails
-                        ? (router.query.openActivityDetails as string)
-                        : undefined
-                    }
                     setSelectedActivities={setSelectedActivities}
                     refetchActivities={async () => {
                       await refetchActivities()
@@ -219,6 +227,27 @@ function Activities() {
         </div>
       </div>
 
+      {router.query.openActivityDetailsId &&
+      router.query.openActivityDetailsType ? (
+        <ActivityDetailsModal
+          activityId={router.query.openActivityDetailsId as string}
+          activityType={router.query.openActivityDetailsType as ActivityType}
+          onClose={() => {
+            // close the modal
+            setShowDetails(false)
+
+            // unset the edit open activity id (if defined)
+            const { openActivityDetailsId, openActivityDetailsType, ...query } =
+              router.query
+            router.push({ pathname: '/activities', query }, undefined, {
+              shallow: true,
+            })
+          }}
+          refetchActivities={async () => {
+            await refetchActivities()
+          }}
+        />
+      ) : null}
       {user?.privatePreview && batchOperationsOpen ? (
         <ActivityBatchOperationsModal
           selectedActivities={Object.values(selectedActivities)}
