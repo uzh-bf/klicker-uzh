@@ -1223,7 +1223,18 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {
-      permissions: { where: { userId: ctx.user.sub } },
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
       course: {
         include: {
           _count: {
@@ -1246,15 +1257,19 @@ export async function getLiveQuizDetails(
             include: {
               element: {
                 include: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.WRITE,
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
+                  _count: {
+                    select: {
+                      permissions: {
+                        where: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.WRITE,
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
                       },
                     },
                   },
@@ -1289,7 +1304,7 @@ export async function getLiveQuizDetails(
         ((elementData.options as { hasSampleSolution?: boolean })
           .hasSampleSolution ??
           false)
-      const isEditor = !!instance.element.permissions?.[0]
+      const isEditor = instance.element._count.permissions > 0
 
       if (!arePointsAwarded) {
         return {
@@ -1380,11 +1395,7 @@ export async function getLiveQuizDetails(
     status: liveQuiz.status,
     reviewStatus: liveQuiz.reviewStatus,
     isActivityReviewer:
-      (liveQuiz.courseId === null &&
-        (liveQuiz.permissions[0]?.permissionLevel ===
-          DB.PermissionLevel.OWNER ||
-          liveQuiz.permissions[0]?.permissionLevel ===
-            DB.PermissionLevel.ADMIN)) ||
+      (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
       (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
     courseId: liveQuiz.courseId,
     arePointsAwarded,
