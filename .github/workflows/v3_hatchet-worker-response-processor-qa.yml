@@ -6,6 +6,7 @@ on:
     branches:
       - 'v3'
       - 'v3*'
+      - 'deploy-hatchet'
   pull_request:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -21,7 +22,7 @@ env:
 
 jobs:
   build:
-    # if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,6 +56,6 @@ jobs:
         with:
           context: .
           file: apps/hatchet-worker-response-processor/Dockerfile
-          # push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
