@@ -23,6 +23,7 @@ api:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
 
 frontend:
   replicaCount: 1
@@ -33,6 +34,7 @@ frontend:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
 
 postgres:
   enabled: false
@@ -46,6 +48,7 @@ grpc:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
 
 controllers:
   replicaCount: 1
@@ -56,6 +59,7 @@ controllers:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
 
 scheduler:
   replicaCount: 1
@@ -66,6 +70,7 @@ scheduler:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
 
 caddy:
   enabled: true
@@ -76,3 +81,4 @@ caddy:
     requests:
       cpu: 50m
       memory: 128Mi
+  priorityClassName: staging-workload
