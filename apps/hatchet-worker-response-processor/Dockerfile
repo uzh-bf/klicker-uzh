@@ -48,6 +48,7 @@ RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/apps/hatchet-worker-response-processor/dist/ /app/apps/hatchet-worker-response-processor/dist/
 
 USER nodejs
