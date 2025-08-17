@@ -1868,3 +1868,81 @@ export async function setActivityReviewStatus(
 
   return null
 }
+
+export async function getCourseActivityIds(
+  { courseId }: { courseId?: string | null },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      objects: {
+        where: {
+          OR: [
+            { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            ...(courseId
+              ? [{ practiceQuiz: { isDeleted: false, courseId } }]
+              : []),
+            ...(courseId
+              ? [{ microLearning: { isDeleted: false, courseId } }]
+              : []),
+            ...(courseId
+              ? [{ groupActivity: { isDeleted: false, courseId } }]
+              : []),
+          ],
+        },
+        include: {
+          liveQuiz: { select: { id: true, name: true } },
+          practiceQuiz: { select: { id: true, name: true } },
+          microLearning: { select: { id: true, name: true } },
+          groupActivity: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!user) return null
+
+  const { liveQuizzes, practiceQuizzes, microLearnings, groupActivities } =
+    user.objects.reduce<{
+      liveQuizzes: { id: string; name: string }[]
+      practiceQuizzes: { id: string; name: string }[]
+      microLearnings: { id: string; name: string }[]
+      groupActivities: { id: string; name: string }[]
+    }>(
+      (acc, obj) => {
+        if (obj.liveQuiz) {
+          acc.liveQuizzes.push({ id: obj.liveQuiz.id, name: obj.liveQuiz.name })
+        } else if (obj.practiceQuiz) {
+          acc.practiceQuizzes.push({
+            id: obj.practiceQuiz.id,
+            name: obj.practiceQuiz.name,
+          })
+        } else if (obj.microLearning) {
+          acc.microLearnings.push({
+            id: obj.microLearning.id,
+            name: obj.microLearning.name,
+          })
+        } else if (obj.groupActivity) {
+          acc.groupActivities.push({
+            id: obj.groupActivity.id,
+            name: obj.groupActivity.name,
+          })
+        }
+        return acc
+      },
+      {
+        liveQuizzes: [],
+        practiceQuizzes: [],
+        microLearnings: [],
+        groupActivities: [],
+      }
+    )
+
+  return {
+    liveQuizzes,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
+  }
+}

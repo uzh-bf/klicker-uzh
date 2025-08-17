@@ -3,13 +3,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
-interface TagHeaderProps {
+interface FilterHeaderProps {
   text: string
   state: boolean
   setState: (state: boolean) => void
 }
 
-function TagHeader({ text, state, setState }: TagHeaderProps) {
+function FilterHeader({ text, state, setState }: FilterHeaderProps) {
   return (
     <Button
       basic
@@ -28,4 +28,4 @@ function TagHeader({ text, state, setState }: TagHeaderProps) {
   )
 }
 
-export default TagHeader
+export default FilterHeader

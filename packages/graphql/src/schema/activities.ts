@@ -267,3 +267,41 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
   }),
 })
+
+export interface ICourseActivityItem {
+  id: string
+  name: string
+}
+
+export const CourseActivityItemRef =
+  builder.objectRef<ICourseActivityItem>('CourseActivityItem')
+export const CourseActivityItem = builder.objectType(CourseActivityItemRef, {
+  name: 'CourseActivityItem',
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+  }),
+})
+
+export interface ICourseActivityList {
+  liveQuizzes: ICourseActivityItem[]
+  practiceQuizzes: ICourseActivityItem[]
+  microLearnings: ICourseActivityItem[]
+  groupActivities: ICourseActivityItem[]
+}
+
+export const CourseActivityListRef =
+  builder.objectRef<ICourseActivityList>('CourseActivityList')
+export const CourseActivityList = builder.objectType(CourseActivityListRef, {
+  name: 'CourseActivityList',
+  fields: (t) => ({
+    liveQuizzes: t.expose('liveQuizzes', { type: [CourseActivityItem] }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [CourseActivityItem],
+    }),
+    microLearnings: t.expose('microLearnings', { type: [CourseActivityItem] }),
+    groupActivities: t.expose('groupActivities', {
+      type: [CourseActivityItem],
+    }),
+  }),
+})

@@ -1308,6 +1308,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
+      activityUsage: 'Activity Usage',
+      selectActivity: 'Select Activity...',
       answerFeedbacks: 'Answer feedbacks',
       noQuestionsWarning:
         'We could not find any questions that meet the desired criteria.',

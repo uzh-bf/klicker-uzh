@@ -41,7 +41,11 @@ function TagActions({
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-up` }}
         >
-          <Button.Icon withoutLabel icon={faArrowUp} />
+          <Button.Icon
+            withoutLabel
+            icon={faArrowUp}
+            className={{ root: 'h-2.75 w-2.75' }}
+          />
         </Button>
       )}
       {onMoveDown && (
@@ -54,7 +58,11 @@ function TagActions({
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-down` }}
         >
-          <Button.Icon withoutLabel icon={faArrowDown} />
+          <Button.Icon
+            withoutLabel
+            icon={faArrowDown}
+            className={{ root: 'h-2.75 w-2.75' }}
+          />
         </Button>
       )}
       {setEditMode && (
@@ -67,7 +75,11 @@ function TagActions({
           }}
           data={{ cy: `tag-list-item-${tag.name}-edit` }}
         >
-          <Button.Icon withoutLabel icon={faPencil} />
+          <Button.Icon
+            withoutLabel
+            icon={faPencil}
+            className={{ root: 'h-3 w-3' }}
+          />
         </Button>
       )}
       {setIsDeletionModalOpen && (
@@ -80,7 +92,11 @@ function TagActions({
           }}
           data={{ cy: `tag-list-item-${tag.name}-delete` }}
         >
-          <Button.Icon withoutLabel icon={faTrash} />
+          <Button.Icon
+            withoutLabel
+            icon={faTrash}
+            className={{ root: 'h-3 w-3' }}
+          />
         </Button>
       )}
       {isDeletionModalOpen && setIsDeletionModalOpen ? (

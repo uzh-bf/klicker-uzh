@@ -17,7 +17,11 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
-import { ActivityDetails, UserActivityList } from './activities.js'
+import {
+  ActivityDetails,
+  CourseActivityList,
+  UserActivityList,
+} from './activities.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -246,6 +250,7 @@ export const Query = builder.queryType({
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),
           tagIds: t.arg.intList({ required: true }),
+          activityId: t.arg.string({ required: false }),
           showUntagged: t.arg.boolean({ required: true }),
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
@@ -406,6 +411,15 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.getActiveUserCourses(args, ctx)
+        },
+      }),
+
+      getCourseActivityIds: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseActivityList,
+        args: { courseId: t.arg.string({ required: false }) },
+        resolve: async (_, args, ctx) => {
+          return await ActivityService.getCourseActivityIds(args, ctx)
         },
       }),
 

@@ -797,6 +797,18 @@ type CourseActivityAnalytics {
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }
 
+type CourseActivityItem {
+  id: String!
+  name: String!
+}
+
+type CourseActivityList {
+  groupActivities: [CourseActivityItem!]!
+  liveQuizzes: [CourseActivityItem!]!
+  microLearnings: [CourseActivityItem!]!
+  practiceQuizzes: [CourseActivityItem!]!
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -2141,6 +2153,7 @@ type Query {
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
+  getCourseActivityIds(courseId: String): CourseActivityList
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData
@@ -2203,7 +2216,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, numEntries: Int, offset: Int, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements(hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
+  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
