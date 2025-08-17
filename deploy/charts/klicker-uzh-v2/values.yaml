@@ -46,6 +46,57 @@ cron:
   updateWeeklyTimelineEntries: "15 0 * * *" # running daily at midnight (UTC
   token: ""
 
+hatchet:
+  client:
+    token: ""
+    tlsStrategy: "none"
+  workers:
+    general:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+    responseProcessor:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
 auth:
   priorityClassName: production-workload
 
@@ -338,6 +389,48 @@ olatApi:
     limits:
       cpu: 1000m
       memory: 1000Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+responseApi:
+  corsAllowedOrigins: ''
+
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 7078
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
 
   autoscaling:
     enabled: false
