@@ -35,7 +35,7 @@ function ActivityReviewButton({
         const { data: res } = await setActivityReviewStatus({
           variables: { activityId, activityType, isReviewed: !isReviewed },
           update: (cache, { data: res }) => {
-            if (!res?.setActivityReviewStatus || !courseId) return
+            if (!res?.setActivityReviewStatus) return
 
             // update activity details query
             cache.updateQuery(
@@ -47,17 +47,17 @@ function ActivityReviewButton({
                 // if query data does not exist, return null
                 if (!queryData?.activityDetails) return null
 
-                // if the update was not successful, return the original data
-                if (!res.setActivityReviewStatus) return queryData
-
                 return {
                   activityDetails: {
                     ...queryData.activityDetails,
-                    reviewStatus: res.setActivityReviewStatus,
+                    reviewStatus: res.setActivityReviewStatus!,
                   },
                 }
               }
             )
+
+            // if no course id is specified, only update activity details
+            if (!courseId) return
 
             // update course overview query
             cache.updateQuery(
