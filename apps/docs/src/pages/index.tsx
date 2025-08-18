@@ -4,6 +4,7 @@ import Layout from '@theme/Layout'
 import { CTA } from '../components/landing/CTA'
 import { FeatureFocusSection } from '../components/landing/FeatureFocusSection'
 import FeatureSection from '../components/landing/FeatureSection'
+import { SocialProof } from '../components/landing/SocialProof'
 import { TitleImage } from '../components/landing/TitleImage'
 import { UseCaseOverview } from '../components/landing/UseCaseOverview'
 
@@ -12,67 +13,105 @@ function Home() {
     <Layout>
       <TitleImage />
       <FeatureSection
-        title={'Synchronous Interaction'}
-        description={
-          'Interact with your students during class and drive engagement with your lecture.'
-        }
+        title="Core Teaching Tools"
+        description="Essential real-time interaction features for engaging classroom experiences"
         features={[
           {
             title: 'Live Quizzes',
             icon: faArrowRight,
-            text: 'You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.',
+            text: 'Launch interactive quizzes during class with real-time results. Students participate using any device, with instant feedback and dynamic visualizations.',
             hoverImage: '/img/live_quiz/lq_student_view.png',
           },
           {
-            title: 'Live Q&A',
+            title: 'Live Q&A & Feedback',
             icon: faArrowRight,
-            text: 'You can launch a Live Q&A session during your lecture. Students can ask and upvote questions from other students and give real-time feedback. You can answer questions live in writing or orally.',
+            text: 'Enable students to ask questions, upvote topics, and provide real-time feedback. Moderate discussions and respond instantly to maintain engagement.',
             hoverImage: '/img/landing/live_qa.png',
+          },
+          {
+            title: 'Anonymous Participation',
+            icon: faArrowRight,
+            text: 'NEW: Allow students to participate anonymously in all activities, reducing anxiety and encouraging honest responses while maintaining engagement.',
+            hoverImage: '/img/live_quiz/lq_student_view.png',
           },
         ]}
       />
 
+      <SocialProof />
+
       <FeatureSection
-        title="Asynchronous Interaction"
-        description="Foster engagement and interaction with your contents outside of class."
+        title="Flexible Learning Activities"
+        description="Self-paced and collaborative learning beyond the classroom"
         features={[
           {
             title: 'Microlearning',
             icon: faArrowRight,
-            text: 'You can prepare short Microlearning units that students can work through at their own pace. The units are time-restricted and can be used to combat the forgetting curve.',
+            text: 'Create bite-sized learning units with scheduled delivery. Combat the forgetting curve with time-restricted content that students complete at their own pace.',
             hoverImage: '/img/microlearning/ml_mobile_views.png',
           },
           {
             title: 'Practice Quizzes',
             icon: faArrowRight,
-            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or using a spaced repetition algorithm.',
+            text: 'Offer unlimited practice opportunities with intelligent question ordering. Use spaced repetition algorithms to optimize learning retention.',
             hoverImage: '/img/practice_quiz/pq_olat_view.png',
           },
           {
             title: 'Group Activities',
             icon: faArrowRight,
-            text: 'Students form groups and engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
+            text: 'Foster collaboration with team-based challenges. Built-in chat enables real-time communication while solving problems together.',
             hoverImage: '/img/group_activity/ga_graded_students.png',
           },
         ]}
       />
 
       <FeatureSection
-        title="Gamified Learning"
-        description="Engage your students with gamified learning activities."
+        title="Enhanced Engagement"
+        description="Gamification features that motivate and reward participation"
         features={[
           {
-            title: 'Points and Leaderboards',
+            title: 'Anonymous Gamified Quizzes',
             icon: faArrowRight,
-            text: 'Individual and group leaderboards display rankings, inspiring a sense of friendly competition and prompting students to stay engaged.',
+            text: 'NEW: Combine gamification with anonymous participation. Students compete for points without revealing their identity, perfect for sensitive topics.',
             hoverImage: '/img/leaderboard/course_leaderboard.png',
             shadow: false,
           },
           {
-            title: 'Group Formation',
+            title: 'Points & Leaderboards',
             icon: faArrowRight,
-            text: 'Students can form groups with their peers by choice or randomly and collaborate and compete against other groups.',
+            text: 'Track progress with individual and group rankings. Customizable point systems reward speed, accuracy, and participation.',
+            hoverImage: '/img/leaderboard/course_leaderboard.png',
+            shadow: false,
+          },
+          {
+            title: 'Achievements & Rewards',
+            icon: faArrowRight,
+            text: 'Motivate students with badges, milestones, and level progression. Create custom achievements aligned with learning objectives.',
             hoverImage: '/img/group/group_student_view.png',
+          },
+        ]}
+      />
+
+      <FeatureSection
+        title="Productivity Features"
+        description="Save time with powerful management and automation tools"
+        features={[
+          {
+            title: 'Batch Operations',
+            icon: faArrowRight,
+            text: 'NEW: Manage multiple activities efficiently with bulk actions. Edit, publish, or archive dozens of items in seconds.',
+            hoverImage: '/img/elements/library.png',
+          },
+          {
+            title: 'Review & Tracking System',
+            icon: faArrowRight,
+            text: 'NEW: Mark activities as reviewed and track completion status. Never lose sight of your teaching progress across courses.',
+            hoverImage: '/img/elements/library.png',
+          },
+          {
+            title: 'Calendar Integration',
+            icon: faArrowRight,
+            text: 'NEW: Visualize your semester at a glance with calendar views. Schedule activities and manage deadlines effortlessly.',
+            hoverImage: '/img/elements/library.png',
           },
         ]}
       />

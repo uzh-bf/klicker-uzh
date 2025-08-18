@@ -1,49 +1,124 @@
-import { Button, H2, Prose } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
+import { 
+  faRocket, 
+  faUsers, 
+  faMap,
+  faCheckCircle 
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 export function CTA() {
-  const buttons = [
-    {
-      title: 'Roadmap',
-      description:
-        "Are you interested in what's next? Check out our current Roadmap! We are also very happy about any feedbacks or bug reports. In urgent cases, you should contact us through our support channels.",
-      href: 'https://klicker-uzh.feedbear.com',
-    },
-    {
-      title: 'Community',
-      description:
-        'We strive to develop our roadmap and goals based on the needs of our users. If you would like to be involved in future developments, we welcome you to join our KlickerUZH community.',
-      href: 'https://community.klicker.uzh.ch',
-    },
-  ]
-
   return (
-    <div className="space-y-4 py-16 text-center sm:py-24 md:space-y-8">
-      <H2 className={{ root: 'text-3xl font-bold' }}>Be Part of the Journey</H2>
-      <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
-        {buttons.map((button, index) => (
-          <a
-            key={index}
-            href={button.href}
-            rel="noreferrer noopener"
-            target="_blank"
-            className="group transition-transform duration-300 hover:scale-105"
-          >
-            <Button
-              className={{
-                root: 'bg-linear-to-br h-full w-full cursor-pointer flex-col items-start whitespace-normal rounded-xl border-none from-gray-50 to-gray-100 p-6 text-left text-lg shadow-lg transition-all duration-300 hover:from-gray-100 hover:to-gray-200 hover:shadow-xl',
-              }}
+    <div className="relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-orange-50 py-20 sm:py-28">
+      <div className="absolute inset-0 bg-grid-gray-200 opacity-10"></div>
+      
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Ready to Transform Your Classroom?
+          </h2>
+          <p className="mt-6 text-lg leading-8 text-gray-600">
+            Join thousands of educators who are already engaging their students with KlickerUZH. 
+            Start free today, no credit card required.
+          </p>
+          
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <a href="https://manage.klicker.uzh.ch" target="_blank">
+                <Button 
+                  primary
+                  className={{ 
+                    root: 'text-lg px-8 py-4 shadow-lg hover:shadow-xl transition-all bg-red-600 hover:bg-red-700 border-none' 
+                  }}
+                >
+                  <FontAwesomeIcon icon={faRocket} className="mr-2" />
+                  Start Free Today
+                </Button>
+              </a>
+              <a href="/getting_started/welcome">
+                <Button 
+                  className={{ 
+                    root: 'text-lg px-8 py-4 bg-white text-gray-900 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50' 
+                  }}
+                >
+                  View Documentation
+                </Button>
+              </a>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm text-gray-600 mt-4">
+              <span className="flex items-center gap-1">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-green-500" />
+                Free forever
+              </span>
+              <span className="flex items-center gap-1">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-green-500" />
+                No credit card
+              </span>
+              <span className="flex items-center gap-1">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-green-500" />
+                Open source
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-20 border-t border-gray-200 pt-12">
+          <h3 className="text-center text-xl font-semibold text-gray-900 mb-8">
+            Join Our Community
+          </h3>
+          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
+            <a
+              href="https://community.klicker.uzh.ch"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="group relative flex items-start rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-red-200"
             >
-              <div className="text-primary-600 mb-2 font-bold">
-                {button.title}
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100">
+                <FontAwesomeIcon icon={faUsers} className="h-5 w-5 text-red-600" />
               </div>
-              <Prose
-                className={{ root: 'text-gray-700 group-hover:text-gray-900' }}
-              >
-                {button.description}
-              </Prose>
-            </Button>
-          </a>
-        ))}
+              <div className="ml-4 flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 group-hover:text-red-600">
+                  Community Forum
+                </h4>
+                <p className="mt-2 text-sm text-gray-600">
+                  Connect with other educators, share best practices, and get help from the community.
+                </p>
+                <span className="mt-3 inline-flex items-center text-sm font-medium text-red-600">
+                  Join discussion
+                  <svg className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+            </a>
+
+            <a
+              href="https://klicker-uzh.feedbear.com"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="group relative flex items-start rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-red-200"
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100">
+                <FontAwesomeIcon icon={faMap} className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 group-hover:text-red-600">
+                  Product Roadmap
+                </h4>
+                <p className="mt-2 text-sm text-gray-600">
+                  See what's coming next and vote on features that matter most to you.
+                </p>
+                <span className="mt-3 inline-flex items-center text-sm font-medium text-red-600">
+                  View roadmap
+                  <svg className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )

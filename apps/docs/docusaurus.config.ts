@@ -5,7 +5,8 @@ import remarkMath from 'remark-math'
 
 const config: Config = {
   future: {
-    experimental_faster: false,
+    experimental_faster: true,
+    v4: true,
   },
   trailingSlash: true,
   title: 'KlickerUZH',
