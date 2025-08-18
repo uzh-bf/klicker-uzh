@@ -24,6 +24,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
+import type { ChainableCommander } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
@@ -42,8 +43,32 @@ const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
 
+// Feature flags for dual Redis mode
+const ENABLE_DUAL_REDIS_MODE = process.env.ENABLE_DUAL_REDIS_MODE === 'true'
+const PRESERVE_REDIS = process.env.PRESERVE_REDIS_FOR_COMPARISON === 'true'
+
 // ------ HELPER FUNCTIONS ------
 // #region
+
+/**
+ * Helper function to execute Redis operations on both lq: and lqV2: prefixes
+ * This enables parallel testing of Azure Functions and Hatchet processors
+ */
+function redisOperation(
+  redisMulti: ChainableCommander,
+  operation: string,
+  key: string,
+  ...args: any[]
+) {
+  // Always execute on the original lq: prefix
+  redisMulti[operation](`lq:${key}`, ...args)
+
+  // If dual mode is enabled, also execute on lqV2: prefix
+  if (ENABLE_DUAL_REDIS_MODE) {
+    redisMulti[operation](`lqV2:${key}`, ...args)
+  }
+}
+
 async function getCachedBlockResults({
   ctx,
   activeBlock,
@@ -369,14 +394,32 @@ async function unlinkCachedBlockResults({
 }) {
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
-  activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
-  })
+
+  if (!PRESERVE_REDIS) {
+    // Always unlink lq: keys
+    unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
+    unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
+    activeInstanceIds.forEach((instanceId) => {
+      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
+      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
+      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
+      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
+    })
+
+    // If NOT in comparison mode and dual Redis is enabled, also unlink lqV2: keys
+    // In comparison mode, we preserve lqV2: keys for analysis
+    if (ENABLE_DUAL_REDIS_MODE) {
+      unlinkMulti.unlink(`lqV2:${quizId}:b:${blockId}:lb`)
+      unlinkMulti.unlink(`lqV2:${quizId}:b:${blockId}:lbTemporary`)
+      activeInstanceIds.forEach((instanceId) => {
+        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:info`)
+        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:responseHashes`)
+        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:responses`)
+        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:results`)
+      })
+    }
+  }
+
   return unlinkMulti.exec()
 }
 // #endregion
@@ -1052,13 +1095,14 @@ export async function startLiveQuiz(
       case DB.PublicationStatus.DRAFT:
       case DB.PublicationStatus.SCHEDULED: {
         try {
-          await ctx.redisExec
-            .pipeline()
-            .hmset(`lq:${quiz.id}:meta`, {
-              namespace: quiz.namespace,
-              startedAt: Number(new Date()),
-            })
-            .exec()
+          const pipeline = ctx.redisExec.pipeline()
+
+          redisOperation(pipeline, 'hmset', `${quiz.id}:meta`, {
+            namespace: quiz.namespace,
+            startedAt: Number(new Date()),
+          })
+
+          await pipeline.exec()
         } catch (e) {
           console.error(e)
         }
@@ -1268,67 +1312,107 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.SC:
       case DB.ElementType.MC:
       case DB.ElementType.KPRIM: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          choiceCount: elementData.options.choices.length,
-          solutions: elementData.options.hasSampleSolution
-            ? JSON.stringify(
-                elementData.options.choices
-                  .map((choice, ix) => ({ ix, correct: choice.correct }))
-                  .filter((choice) => choice.correct)
-                  .map((choice) => choice.ix)
-              )
-            : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-          ...(instance.results as ElementResultsChoices).choices,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          {
+            ...commonInfo,
+            choiceCount: elementData.options.choices.length,
+            solutions: elementData.options.hasSampleSolution
+              ? JSON.stringify(
+                  elementData.options.choices
+                    .map((choice, ix) => ({ ix, correct: choice.correct }))
+                    .filter((choice) => choice.correct)
+                    .map((choice) => choice.ix)
+                )
+              : undefined,
+          }
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+            ...(instance.results as ElementResultsChoices).choices,
+          }
+        )
         break
       }
 
       case DB.ElementType.NUMERICAL: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions:
-            elementData.options.exactSolutions &&
-            elementData.options.exactSolutions.length > 0
-              ? JSON.stringify(elementData.options.exactSolutions)
-              : elementData.options.solutionRanges
-                ? JSON.stringify(elementData.options.solutionRanges)
-                : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          {
+            ...commonInfo,
+            solutions:
+              elementData.options.exactSolutions &&
+              elementData.options.exactSolutions.length > 0
+                ? JSON.stringify(elementData.options.exactSolutions)
+                : elementData.options.solutionRanges
+                  ? JSON.stringify(elementData.options.solutionRanges)
+                  : undefined,
+          }
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+          }
+        )
         break
       }
 
       case DB.ElementType.FREE_TEXT: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions: elementData.options.hasSampleSolution
-            ? JSON.stringify(elementData.options.solutions)
-            : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          {
+            ...commonInfo,
+            solutions: elementData.options.hasSampleSolution
+              ? JSON.stringify(elementData.options.solutions)
+              : undefined,
+          }
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+          }
+        )
         break
       }
 
       case DB.ElementType.SELECTION: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions: JSON.stringify(
-            elementData.options.answerCollectionSolutionIds
-          ),
-          numberOfInputs: elementData.options.numberOfInputs,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-          ...(instance.results as ElementResultsSelection).selections,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          {
+            ...commonInfo,
+            solutions: JSON.stringify(
+              elementData.options.answerCollectionSolutionIds
+            ),
+            numberOfInputs: elementData.options.numberOfInputs,
+          }
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+            ...(instance.results as ElementResultsSelection).selections,
+          }
+        )
         break
       }
 
@@ -1345,21 +1429,41 @@ export async function activateLiveQuizBlock(
               }))
             : undefined
 
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions: solutions ? JSON.stringify(solutions) : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          {
+            ...commonInfo,
+            solutions: solutions ? JSON.stringify(solutions) : undefined,
+          }
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+          }
+        )
         break
       }
 
       case DB.ElementType.CONTENT: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:info`,
+          commonInfo
+        )
+        redisOperation(
+          redisMulti,
+          'hmset',
+          `${quiz.id}:i:${instance.id}:results`,
+          {
+            participants: 0,
+          }
+        )
         break
       }
     }
@@ -1819,12 +1923,29 @@ export async function endLiveQuiz(
       })
     }
 
-    const keys = await ctx.redisExec.keys(`lq:${id}:*`)
-    const pipe = ctx.redisExec.multi()
-    for (const key of keys) {
-      pipe.unlink(key)
+    // Clean up Redis keys unless we're in comparison mode
+    if (!PRESERVE_REDIS) {
+      const keys = await ctx.redisExec.keys(`lq:${id}:*`)
+      const pipe = ctx.redisExec.multi()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+
+      // If dual Redis mode is enabled, also clean up lqV2: keys
+      if (ENABLE_DUAL_REDIS_MODE) {
+        const keysV2 = await ctx.redisExec.keys(`lqV2:${id}:*`)
+        for (const key of keysV2) {
+          pipe.unlink(key)
+        }
+      }
+
+      await pipe.exec()
+    } else {
+      // In comparison mode, log that we're preserving Redis data
+      console.log(
+        `Preserving Redis data for quiz ${id} - both lq: and lqV2: keys retained`
+      )
     }
-    await pipe.exec()
 
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
       where: {
