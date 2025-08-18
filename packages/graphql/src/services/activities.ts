@@ -172,7 +172,25 @@ export async function getUserActivities(
   const [activitiesFromView, totalCount] = await Promise.all([
     ctx.prisma.userActivities.findMany({
       where: whereClause,
-      // TODO: add ordering based on input args
+      orderBy: [
+        ...(sortByType === SortByType.CREATED
+          ? [{ createdAt: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder }]
+          : []),
+        ...(sortByType === SortByType.MODIFIED
+          ? [{ updatedAt: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder }]
+          : []),
+        ...(sortByType === SortByType.TITLE
+          ? [{ name: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder }]
+          : []),
+        ...(sortByType === SortByType.TYPE
+          ? [{ typeOrder: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder }]
+          : []),
+        ...(sortByType === SortByType.STATUS
+          ? [{ status: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder }]
+          : []),
+        // break ties using the modification date
+        { updatedAt: 'desc' as DB.Prisma.SortOrder },
+      ],
       take: numEntries ?? undefined,
       skip: offset ?? undefined,
     }),

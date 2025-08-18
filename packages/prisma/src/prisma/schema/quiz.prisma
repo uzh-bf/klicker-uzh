@@ -391,6 +391,7 @@ view UserActivities {
   // core activity fields
   id           String            @db.Uuid
   type         String // 'LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY'
+  typeOrder    Int // custom order for sorting by activity type (in order as listed above)
   name         String
   displayName  String
   description  String?

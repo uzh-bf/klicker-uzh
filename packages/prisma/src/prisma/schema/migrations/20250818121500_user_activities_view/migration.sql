@@ -4,6 +4,7 @@ SELECT
   -- Core activity fields
   lq.id,
   'LIVE_QUIZ' as type,
+  1 as "typeOrder",
   lq.name,
   lq."displayName",
   lq.description,
@@ -112,6 +113,7 @@ SELECT
   -- Core activity fields
   pq.id,
   'PRACTICE_QUIZ' as type,
+  2 as "typeOrder",
   pq.name,
   pq."displayName",
   pq.description,
@@ -221,6 +223,7 @@ SELECT
   -- Core activity fields
   ml.id,
   'MICRO_LEARNING' as type,
+  3 as "typeOrder",
   ml.name,
   ml."displayName",
   ml.description,
@@ -330,6 +333,7 @@ SELECT
   -- Core activity fields
   ga.id,
   'GROUP_ACTIVITY' as type,
+  4 as "typeOrder",
   ga.name,
   ga."displayName",
   ga.description,
