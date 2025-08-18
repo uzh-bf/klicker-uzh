@@ -28,14 +28,31 @@ import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
 
-// number of entries per page for pagination
-const PAGE_SIZE = 10
-
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
 
   const [searchString, setSearchString] = useState('')
+
+  // initialize page size from local storage (if available)
+  const [pageSize, setPageSize] = useState(() => {
+    // only try to access localStorage when on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const storedPageSize = localStorage.getItem('activity-page-size')
+        if (storedPageSize) {
+          return JSON.parse(storedPageSize)
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing stored activity-page-size from localStorage',
+          error
+        )
+      }
+    }
+    return 10
+  })
+
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -105,23 +122,30 @@ function Activities() {
       reviewStatus: filters.reviewStatus ?? undefined,
       sortByType: sort.by,
       sortByAsc: sort.asc,
-      numEntries: PAGE_SIZE,
-      offset: (currentPage - 1) * PAGE_SIZE,
+      numEntries: pageSize,
+      offset: (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
   const activities = dataActivities?.userActivities?.activities || []
 
+  // on change, store new page size in local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activity-page-size', JSON.stringify(pageSize))
+    }
+  }, [pageSize])
+
   // reset pagination if activities length changes and current page would be out of bounds
   useEffect(() => {
     if (loadingActivities) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+    const maxPage = Math.max(1, Math.ceil(numOfActivities / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
-  }, [loadingActivities, numOfActivities, currentPage])
+  }, [loadingActivities, numOfActivities, currentPage, pageSize])
 
   // reset pagination when filters, search, or sorting changes
   useEffect(() => {
@@ -194,7 +218,7 @@ function Activities() {
     typeof filters.reviewStatus !== 'undefined'
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
 
   return (
     <Layout
@@ -272,13 +296,14 @@ function Activities() {
                     }}
                   />
 
-                  {activities.length > 0 && totalPages > 1 && (
+                  {activities.length > 0 && (
                     <Pagination
                       totalPages={totalPages}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
                       numOfObjects={numOfActivities}
-                      PAGE_SIZE={PAGE_SIZE}
+                      pageSize={pageSize}
+                      setPageSize={setPageSize}
                       className="mb-3"
                     />
                   )}

@@ -1063,6 +1063,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       gradingDescription: 'Dokumentation',
       showingResults:
         '{start} bis {end} von {total} Ergebnissen werden angezeigt',
+      NEntriesPerPage: '{N} Ergebnisse pro Seite',
       previousPage: 'Vorherige',
       nextPage: 'Nächste',
     },

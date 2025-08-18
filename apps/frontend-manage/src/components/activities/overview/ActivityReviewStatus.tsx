@@ -20,11 +20,7 @@ function ActivityReviewStatus({
         </div>
       ) : null}
       {reviewStatus === ReviewStatus.ModifiedAfterReview ? (
-        <Tooltip
-          tooltip={t(
-            'shared.generic.reviewStatusMODIFIED_AFTER_REVIEWInformation'
-          )}
-        >
+        <Tooltip tooltip={t('shared.generic.modifiedAfterReviewInformation')}>
           <div className="text-uzh-red-100 mr-3 flex flex-row items-center gap-1.5 text-sm">
             <FontAwesomeIcon icon={faInfoCircle} />
             <span>{t('shared.generic.reviewStatusMODIFIED_AFTER_REVIEW')}</span>

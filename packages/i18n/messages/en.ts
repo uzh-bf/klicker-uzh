@@ -1061,6 +1061,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sampleSolutionDescription: 'Sample Solution',
       gradingDescription: 'Documentation',
       showingResults: 'Showing {start} to {end} of {total} results',
+      NEntriesPerPage: '{N} entries per page',
       previousPage: 'Previous',
       nextPage: 'Next',
     },
