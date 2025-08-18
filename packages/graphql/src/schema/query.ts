@@ -79,6 +79,7 @@ import {
   ElementStack,
   PracticeQuiz,
   PublicationStatus,
+  ReviewStatus,
   StackFeedback,
 } from './practiceQuiz.js'
 import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
@@ -251,6 +252,7 @@ export const Query = builder.queryType({
           showDependencies: t.arg.boolean({ required: false }),
           tagIds: t.arg.intList({ required: true }),
           activityId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: false }),
           showUntagged: t.arg.boolean({ required: true }),
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
@@ -283,6 +285,8 @@ export const Query = builder.queryType({
           showOwned: t.arg.boolean({ required: false }),
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),
+          multiplier: t.arg.int({ required: false }),
+          reviewStatus: t.arg({ type: ReviewStatus, required: false }),
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           numEntries: t.arg.int({ required: false }),

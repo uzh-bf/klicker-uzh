@@ -12,6 +12,10 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
+  fa1,
+  fa2,
+  fa3,
+  fa4,
   faCheckCircle as faCheckCircleSolid,
   faCommentDots as faCommentDotsSolid,
   faComment as faCommentSolid,
@@ -36,6 +40,7 @@ import { Accordion, Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { LibraryFilters } from '../../../lib/hooks/useSortingAndFiltering'
 import FilterItem from './FilterItem'
 import FilterListEntry from './FilterListEntry'
 import SuspendedActivitySelection from './SuspendedActivitySelection'
@@ -53,19 +58,18 @@ export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
   [SharingType.Dependency]: [faFolderTree, faFolderTree],
 }
 
+const MULTIPLIER_ICONS = {
+  '1': [fa1, fa1],
+  '2': [fa2, fa2],
+  '3': [fa3, fa3],
+  '4': [fa4, fa4],
+}
+
 interface FilterListProps {
   defaultValue?: string
   filtersActive: boolean
   isArchiveActive: boolean
-  showUntagged: boolean
-  activeTags: string[]
-  activeCourseId?: string
-  activeActivityId?: string
-  activeStatus?: ElementStatus
-  activeType?: ElementType
-  activeSharingTypes?: SharingType[]
-  sampleSolution: boolean
-  answerFeedbacks: boolean
+  filters: LibraryFilters
   handleReset: () => void
   handleTagClick: ({
     valueOrId,
@@ -82,6 +86,7 @@ interface FilterListProps {
   }) => void
   toggleCourseIdFilter: ({ courseId }: { courseId?: string }) => void
   toggleActivityIdFilter: ({ activityId }: { activityId?: string }) => void
+  toggleMultiplierFilter: ({ multiplier }: { multiplier?: number }) => void
   toggleSampleSolutionFilter: () => void
   toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
@@ -92,18 +97,11 @@ function FilterList({
   defaultValue = 'element-status',
   filtersActive,
   isArchiveActive,
-  showUntagged,
-  activeTags,
-  activeCourseId,
-  activeActivityId,
-  activeType,
-  activeStatus,
-  activeSharingTypes,
-  sampleSolution,
-  answerFeedbacks,
+  filters,
   handleTagClick,
   toggleCourseIdFilter,
   toggleActivityIdFilter,
+  toggleMultiplierFilter,
   handleReset,
   toggleSampleSolutionFilter,
   toggleAnswerFeedbackFilter,
@@ -140,7 +138,7 @@ function FilterList({
         <FilterListEntry
           trigger={t('manage.questionPool.elementStatus')}
           value="element-status"
-          active={!!activeStatus}
+          active={!!filters.status}
           data={{ cy: 'collapse-tag-header-status' }}
         >
           {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
@@ -148,7 +146,7 @@ function FilterList({
               key={status}
               text={t(`shared.${status as ElementStatus}.statusLabel`)}
               icon={icons}
-              active={activeStatus === status}
+              active={filters.status === status}
               onClick={(): void =>
                 handleTagClick({
                   valueOrId: status,
@@ -165,7 +163,7 @@ function FilterList({
         <FilterListEntry
           trigger={t('manage.questionPool.elementTypes')}
           value="element-types"
-          active={!!activeType}
+          active={!!filters.type}
           data={{ cy: 'collapse-tag-header-types' }}
         >
           {Object.entries(ELEMENT_TYPE_FILTERS).map(([type, icons]) => {
@@ -176,13 +174,13 @@ function FilterList({
                 key={type}
                 text={t(`shared.${type as ElementType}.typeLabel`)}
                 icon={icons}
-                active={activeType === type}
+                active={filters.type === type}
                 onClick={(): void => {
                   // if flashcards / content elements are selected -> disable sample solution
                   if (
                     (type === ElementType.Flashcard ||
                       type === ElementType.Content) &&
-                    sampleSolution
+                    filters.sampleSolution
                   ) {
                     toggleSampleSolutionFilter()
                   }
@@ -192,7 +190,7 @@ function FilterList({
                     type !== ElementType.Sc &&
                     type !== ElementType.Mc &&
                     type !== ElementType.Kprim &&
-                    answerFeedbacks
+                    filters.answerFeedbacks
                   ) {
                     toggleAnswerFeedbackFilter()
                   }
@@ -215,14 +213,14 @@ function FilterList({
           <FilterListEntry
             trigger={t('shared.generic.sharing')}
             value="sharing-types"
-            active={activeSharingTypes?.length !== 3}
+            active={filters.sharingType?.length !== 3}
             data={{ cy: `collapse-tag-header-sharing` }}
           >
             {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
               // do not show dependenccy filter, if shared elements are not shown
               if (
                 type === SharingType.Dependency &&
-                !activeSharingTypes?.includes(SharingType.Shared)
+                !filters.sharingType?.includes(SharingType.Shared)
               ) {
                 return null
               }
@@ -233,7 +231,7 @@ function FilterList({
                   text={t(`manage.sharing.label${type as SharingType}`)}
                   icon={icons}
                   active={
-                    activeSharingTypes?.includes(type as SharingType) ?? false
+                    filters.sharingType?.includes(type as SharingType) ?? false
                   }
                   onClick={(): void =>
                     handleTagClick({
@@ -254,13 +252,13 @@ function FilterList({
         <FilterListEntry
           trigger={t('manage.questionPool.tags')}
           value="user-tags"
-          active={activeTags.length > 0 || showUntagged}
+          active={filters.tags.length > 0 || filters.untagged}
           data={{ cy: `collapse-tag-header-user-tags` }}
         >
           <Suspense fallback={<Loader />}>
             <SuspendedTags
-              showUntagged={showUntagged}
-              activeTags={activeTags}
+              showUntagged={filters.untagged}
+              activeTags={filters.tags}
               handleTagClick={handleTagClick}
               refetchElements={refetchElements}
             />
@@ -270,13 +268,13 @@ function FilterList({
         <FilterListEntry
           trigger={t('manage.questionPool.activityUsage')}
           value="used-in-activity"
-          active={typeof activeActivityId !== 'undefined'}
+          active={typeof filters.activityId !== 'undefined'}
           data={{ cy: `collapse-tag-header-used-in-activity` }}
         >
           <Suspense fallback={<Loader />}>
             <SuspendedActivitySelection
-              activeCourseId={activeCourseId}
-              activeActivityId={activeActivityId}
+              activeCourseId={filters.courseId}
+              activeActivityId={filters.activityId}
               toggleCourseIdFilter={toggleCourseIdFilter}
               toggleActivityIdFilter={toggleActivityIdFilter}
             />
@@ -284,23 +282,45 @@ function FilterList({
         </FilterListEntry>
 
         <FilterListEntry
+          trigger={t('shared.generic.multiplier')}
+          value="multiplier-filters"
+          active={filters.multiplier !== undefined}
+          data={{ cy: `collapse-tag-header-multiplier` }}
+        >
+          {['1', '2', '3', '4'].map((multiplier) => (
+            <FilterItem
+              key={multiplier}
+              text={t(
+                `manage.activityWizard.multiplier${multiplier as '1' | '2' | '3' | '4'}`
+              )}
+              icon={MULTIPLIER_ICONS[multiplier as '1' | '2' | '3' | '4']}
+              active={String(filters.multiplier) === multiplier}
+              onClick={() =>
+                toggleMultiplierFilter({ multiplier: parseInt(multiplier, 10) })
+              }
+              data={{ cy: `multiplier-filter-${multiplier}` }}
+            />
+          ))}
+        </FilterListEntry>
+
+        <FilterListEntry
           trigger={t('shared.generic.gamification')}
           value="gamification-tags"
-          active={sampleSolution || answerFeedbacks}
+          active={filters.sampleSolution || filters.answerFeedbacks}
           data={{ cy: `collapse-tag-header-gamification` }}
         >
           <FilterItem
             disabled={
-              activeType === ElementType.Flashcard ||
-              activeType === ElementType.Content
+              filters.type === ElementType.Flashcard ||
+              filters.type === ElementType.Content
             }
             text={t('shared.generic.sampleSolution')}
             icon={[faCheckCircleRegular, faCheckCircleSolid]}
-            active={sampleSolution}
+            active={filters.sampleSolution}
             onClick={toggleSampleSolutionFilter}
             tooltip={
-              activeType === ElementType.Flashcard ||
-              activeType === ElementType.Content
+              filters.type === ElementType.Flashcard ||
+              filters.type === ElementType.Content
                 ? t('manage.questionPool.sampleSolutionUnavailableTypes')
                 : undefined
             }
@@ -308,20 +328,20 @@ function FilterList({
           />
           <FilterItem
             disabled={
-              activeType &&
-              activeType !== ElementType.Sc &&
-              activeType !== ElementType.Mc &&
-              activeType !== ElementType.Kprim
+              filters.type &&
+              filters.type !== ElementType.Sc &&
+              filters.type !== ElementType.Mc &&
+              filters.type !== ElementType.Kprim
             }
             text={t('manage.questionPool.answerFeedbacks')}
             icon={[faCommentDotsRegular, faCommentDotsSolid]}
-            active={answerFeedbacks}
+            active={filters.answerFeedbacks}
             onClick={toggleAnswerFeedbackFilter}
             tooltip={
-              activeType &&
-              activeType !== ElementType.Sc &&
-              activeType !== ElementType.Mc &&
-              activeType !== ElementType.Kprim
+              filters.type &&
+              filters.type !== ElementType.Sc &&
+              filters.type !== ElementType.Mc &&
+              filters.type !== ElementType.Kprim
                 ? t('manage.questionPool.answerFeedbacksUnavailableTypes')
                 : undefined
             }

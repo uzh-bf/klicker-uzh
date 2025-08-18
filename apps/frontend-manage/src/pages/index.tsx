@@ -87,6 +87,7 @@ function Index() {
     handleToggleArchive,
     toggleCourseIdFilter,
     toggleActivityIdFilter,
+    toggleMultiplierFilter,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
@@ -119,6 +120,7 @@ function Index() {
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
       tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
       activityId: filters.activityId,
+      multiplier: filters.multiplier,
       showUntagged: filters.untagged,
       sortByType: sort.by,
       sortByAsc: sort.asc,
@@ -246,6 +248,7 @@ function Index() {
     filters.type ||
     filters.status ||
     filters.sharingType?.length !== 3 ||
+    filters.multiplier ||
     filters.sampleSolution ||
     filters.answerFeedbacks ||
     filters.untagged
@@ -291,19 +294,12 @@ function Index() {
                 : undefined
             }
             filtersActive={filtersActive}
-            activeTags={filters.tags}
-            activeCourseId={filters.courseId}
-            activeActivityId={filters.activityId}
-            activeType={filters.type}
-            activeSharingTypes={filters.sharingType}
-            activeStatus={filters.status}
-            showUntagged={filters.untagged}
-            sampleSolution={filters.sampleSolution}
-            answerFeedbacks={filters.answerFeedbacks}
+            filters={filters}
             handleReset={handleResetCleanURL}
             handleTagClick={handleTagClick}
             toggleCourseIdFilter={toggleCourseIdFilter}
             toggleActivityIdFilter={toggleActivityIdFilter}
+            toggleMultiplierFilter={toggleMultiplierFilter}
             toggleSampleSolutionFilter={toggleSampleSolutionFilter}
             toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
             handleToggleArchive={handleToggleArchive}

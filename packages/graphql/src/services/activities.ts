@@ -96,6 +96,8 @@ export async function getUserActivities(
     showOwned = true,
     showShared = true,
     showDependencies = true,
+    multiplier,
+    reviewStatus,
     sortByType,
     sortByAsc,
     numEntries,
@@ -109,6 +111,8 @@ export async function getUserActivities(
     showOwned?: boolean | null
     showShared?: boolean | null
     showDependencies?: boolean | null
+    multiplier?: number | null
+    reviewStatus?: DB.ReviewStatus | null
     sortByType: SortByType
     sortByAsc: boolean
     numEntries?: number | null
@@ -142,6 +146,10 @@ export async function getUserActivities(
       statusFilter && statusFilter.length > 0
         ? { in: statusFilter }
         : undefined,
+    // activity multiplier filter
+    pointsMultiplier: multiplier ? { equals: multiplier } : undefined,
+    // review status filter
+    reviewStatus: reviewStatus ? { equals: reviewStatus } : undefined,
     // filter by activity type, if an activity type filter is set
     type: activityTypeFilter ? { equals: activityTypeFilter } : undefined,
     // course filter

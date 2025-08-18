@@ -387,8 +387,10 @@ export default {
       week: 'Week',
       day: 'Day',
       total: 'Total',
-      reviewed: 'Reviewed',
-      modifiedAfterReview: 'Modified after review',
+      reviewStatus: 'Review Status',
+      reviewStatusINCOMPLETE: 'Review pending',
+      reviewStatusREVIEWED: 'Reviewed',
+      reviewStatusMODIFIED_AFTER_REVIEW: 'Modified after review',
       modifiedAfterReviewInformation:
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
       availableActions: 'Available Actions',
@@ -1087,8 +1089,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityType: 'Activity Type',
       noActivitiesAvailable:
         'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
-      noActivitiesForFilters:
-        'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
+      noActivitiesWarning:
+        'We could not find any activities that meet the desired criteria.',
       liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
@@ -1109,6 +1111,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If this activity is assigned to a course that you have access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the activity after triggering its removal. Once the associated course is deleted or removed, the element will be automatically removed as well.',
       activityRemovalDependencyAccess:
         'Derived access rights to included elements and resources will be automatically revoked (unless technically required).',
+      activeFiltersWarning:
+        'There are currently active filters that might affect the activities listed here. To view all activities, please <reset>reset</reset> the filters or update them on the right side.',
       changeActivityName: 'Change Activity Name',
       activityNameChangeSuccess:
         'The name of the activity has been successfully changed.',
@@ -1314,8 +1318,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityUsage: 'Activity Usage',
       selectActivity: 'Select Activity...',
       answerFeedbacks: 'Answer feedbacks',
-      noQuestionsWarning:
-        'We could not find any questions that meet the desired criteria.',
+      noElementsWarning:
+        'We could not find any elements that meet the desired criteria.',
       activeFiltersWarning:
         'There are currently active filters that might affect the elements shown here. To view all elements (except archived ones), please <reset>reset</reset> the filters or update them on the right side.',
       deleteElement: 'Delete element',
