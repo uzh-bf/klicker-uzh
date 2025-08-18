@@ -51,8 +51,7 @@ SELECT
   dp.derived,
   
   -- Permission details for direct permissions
-  dp_direct.user_id as "directPermissionUserId",
-  dp_direct.user_group_id as "directPermissionUserGroupId",
+  p_direct.user_group_id as "directPermissionUserGroupId",
 
   -- Owner information
   lq."ownerId",
@@ -63,6 +62,10 @@ SELECT
 
 FROM "LiveQuiz" lq
 JOIN "DerivedPermission" dp ON dp."liveQuizId" = lq.id
+LEFT JOIN (
+  SELECT p.id, p."userGroupId" as user_group_id
+  FROM "Permission" p
+) p_direct ON p_direct.id = dp."directPermissionId"
 LEFT JOIN "ActivityTemplate" at ON at."liveQuizId" = lq.id
 LEFT JOIN "Course" c ON c.id = lq."courseId"
 LEFT JOIN (
@@ -80,14 +83,6 @@ LEFT JOIN (
   ) ei_counts ON ei_counts."elementBlockId" = eb.id
   GROUP BY eb."liveQuizId"
 ) block_counts ON block_counts."liveQuizId" = lq.id
-LEFT JOIN (
-  SELECT 
-    p."liveQuizId",
-    p."userId" as user_id,
-    p."userGroupId" as user_group_id
-  FROM "Permission" p
-  WHERE p."liveQuizId" IS NOT NULL
-) dp_direct ON dp_direct."liveQuizId" = lq.id AND dp_direct.user_id = dp."userId"
 LEFT JOIN (
   SELECT 
     p."liveQuizId",
@@ -160,8 +155,7 @@ SELECT
   dp.derived,
   
   -- Permission details for direct permissions
-  dp_direct.user_id as "directPermissionUserId",
-  dp_direct.user_group_id as "directPermissionUserGroupId",
+  p_direct.user_group_id as "directPermissionUserGroupId",
 
   -- Owner information
   pq."ownerId",
@@ -172,6 +166,10 @@ SELECT
 
 FROM "PracticeQuiz" pq
 JOIN "DerivedPermission" dp ON dp."practiceQuizId" = pq.id
+LEFT JOIN (
+  SELECT p.id, p."userGroupId" as user_group_id
+  FROM "Permission" p
+) p_direct ON p_direct.id = dp."directPermissionId"
 LEFT JOIN "ActivityTemplate" at ON at."practiceQuizId" = pq.id
 LEFT JOIN "Course" c ON c.id = pq."courseId"
 LEFT JOIN (
@@ -190,14 +188,6 @@ LEFT JOIN (
   WHERE es."practiceQuizId" IS NOT NULL
   GROUP BY es."practiceQuizId"
 ) stack_counts ON stack_counts."practiceQuizId" = pq.id
-LEFT JOIN (
-  SELECT 
-    p."practiceQuizId",
-    p."userId" as user_id,
-    p."userGroupId" as user_group_id
-  FROM "Permission" p
-  WHERE p."practiceQuizId" IS NOT NULL
-) dp_direct ON dp_direct."practiceQuizId" = pq.id AND dp_direct.user_id = dp."userId"
 LEFT JOIN (
   SELECT 
     p."practiceQuizId",
@@ -270,8 +260,7 @@ SELECT
   dp.derived,
   
   -- Permission details for direct permissions
-  dp_direct.user_id as "directPermissionUserId",
-  dp_direct.user_group_id as "directPermissionUserGroupId",
+  p_direct.user_group_id as "directPermissionUserGroupId",
 
   -- Owner information
   ml."ownerId",
@@ -282,6 +271,10 @@ SELECT
 
 FROM "MicroLearning" ml
 JOIN "DerivedPermission" dp ON dp."microLearningId" = ml.id
+LEFT JOIN (
+  SELECT p.id, p."userGroupId" as user_group_id
+  FROM "Permission" p
+) p_direct ON p_direct.id = dp."directPermissionId"
 LEFT JOIN "ActivityTemplate" at ON at."microLearningId" = ml.id
 LEFT JOIN "Course" c ON c.id = ml."courseId"
 LEFT JOIN (
@@ -300,14 +293,6 @@ LEFT JOIN (
   WHERE es."microLearningId" IS NOT NULL
   GROUP BY es."microLearningId"
 ) stack_counts ON stack_counts."microLearningId" = ml.id
-LEFT JOIN (
-  SELECT 
-    p."microLearningId",
-    p."userId" as user_id,
-    p."userGroupId" as user_group_id
-  FROM "Permission" p
-  WHERE p."microLearningId" IS NOT NULL
-) dp_direct ON dp_direct."microLearningId" = ml.id AND dp_direct.user_id = dp."userId"
 LEFT JOIN (
   SELECT 
     p."microLearningId",
@@ -380,8 +365,7 @@ SELECT
   dp.derived,
   
   -- Permission details for direct permissions
-  dp_direct.user_id as "directPermissionUserId",
-  dp_direct.user_group_id as "directPermissionUserGroupId",
+  p_direct.user_group_id as "directPermissionUserGroupId",
 
   -- Owner information
   ga."ownerId",
@@ -392,6 +376,10 @@ SELECT
 
 FROM "GroupActivity" ga
 JOIN "DerivedPermission" dp ON dp."groupActivityId" = ga.id
+LEFT JOIN (
+  SELECT p.id, p."userGroupId" as user_group_id
+  FROM "Permission" p
+) p_direct ON p_direct.id = dp."directPermissionId"
 LEFT JOIN "ActivityTemplate" at ON at."groupActivityId" = ga.id
 LEFT JOIN "Course" c ON c.id = ga."courseId"
 LEFT JOIN (
@@ -417,14 +405,6 @@ LEFT JOIN (
   FROM "ParticipantGroup" pg
   GROUP BY pg."courseId"
 ) course_stats ON course_stats."courseId" = ga."courseId"
-LEFT JOIN (
-  SELECT 
-    p."groupActivityId",
-    p."userId" as user_id,
-    p."userGroupId" as user_group_id
-  FROM "Permission" p
-  WHERE p."groupActivityId" IS NOT NULL
-) dp_direct ON dp_direct."groupActivityId" = ga.id AND dp_direct.user_id = dp."userId"
 LEFT JOIN (
   SELECT 
     p."groupActivityId",

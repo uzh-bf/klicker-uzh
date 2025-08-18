@@ -150,7 +150,7 @@ function DirectSharingForm({
         submitForm,
         validateForm,
       }) => (
-        <tr className="border-t border-gray-200 hover:bg-gray-50">
+        <tr className="border-t border-gray-200">
           <td className="px-4 py-3 text-sm text-gray-900">
             <TextField
               value={values.shortnameOrEmail || ''}
