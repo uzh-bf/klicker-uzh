@@ -283,6 +283,8 @@ export const Query = builder.queryType({
           showOwned: t.arg.boolean({ required: false }),
           showShared: t.arg.boolean({ required: false }),
           showDependencies: t.arg.boolean({ required: false }),
+          sortByType: t.arg({ type: SortByType, required: true }),
+          sortByAsc: t.arg.boolean({ required: true }),
           numEntries: t.arg.int({ required: false }),
           offset: t.arg.int({ required: false }),
         },

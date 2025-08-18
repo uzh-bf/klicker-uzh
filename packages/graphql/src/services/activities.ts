@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType, SharingType } from '@klicker-uzh/types'
+import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -97,6 +97,8 @@ export async function getUserActivities(
     showOwned = true,
     showShared = true,
     showDependencies = true,
+    sortByType,
+    sortByAsc,
     numEntries,
     offset,
   }: {
@@ -108,6 +110,8 @@ export async function getUserActivities(
     showOwned?: boolean | null
     showShared?: boolean | null
     showDependencies?: boolean | null
+    sortByType: SortByType
+    sortByAsc: boolean
     numEntries?: number | null
     offset?: number | null
   },
@@ -406,6 +410,7 @@ export async function getUserActivities(
             },
           },
         },
+        // TODO: add ordering based on input args
         take: numEntries ?? undefined,
         skip: offset ?? undefined,
       },

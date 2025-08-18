@@ -7,6 +7,7 @@ import {
   GetUserActivitiesDocument,
   PublicationStatus,
   SharingType,
+  SortByType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -19,12 +20,14 @@ import ActivityBatchOperationsModal from '../components/activities/overview/Acti
 import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityListSearch from '../components/activities/overview/ActivityListSearch'
 import ActivityListSelectAllCheckbox from '../components/activities/overview/ActivityListSelectAllCheckbox'
+import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
 import ActivityOverviewFilters, {
   ActivityOverviewFilterType,
 } from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
+import { LibrarySortType } from '../lib/hooks/useSortingAndFiltering'
 
 // number of entries per page for pagination
 const PAGE_SIZE = 10
@@ -50,6 +53,11 @@ function Activities() {
     ],
     type: undefined,
     course: undefined,
+  })
+
+  const [sort, setSort] = useState<LibrarySortType>({
+    asc: false,
+    by: SortByType.Modified,
   })
 
   // get available courses
@@ -78,6 +86,8 @@ function Activities() {
       showOwned: filters.sharingType.includes(SharingType.Owned),
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      sortByType: sort.by,
+      sortByAsc: sort.asc,
       numEntries: PAGE_SIZE,
       offset: (currentPage - 1) * PAGE_SIZE,
     },
@@ -96,10 +106,10 @@ function Activities() {
     }
   }, [loadingActivities, numOfActivities, currentPage])
 
-  // reset pagination when filters or search changes
+  // reset pagination when filters, search, or sorting changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [filters, searchString])
+  }, [filters, searchString, sort])
 
   // when the shown activities change, make sure the selected activities are still valid
   useEffect(() => {
@@ -173,7 +183,15 @@ function Activities() {
                   />
                 )}
                 <ActivityListSearch setSearchString={setSearchString} />
-                {/* // TODO: introduce customized ordering for activity overview */}
+                <ActivityListSorting
+                  sort={sort}
+                  handleSortByChange={(newSortBy: SortByType) => {
+                    setSort((prev) => ({ ...prev, by: newSortBy }))
+                  }}
+                  handleSortOrderToggle={() => {
+                    setSort((prev) => ({ ...prev, asc: !prev.asc }))
+                  }}
+                />
               </div>
               {user?.privatePreview &&
               Object.keys(selectedActivities).length > 0 ? (

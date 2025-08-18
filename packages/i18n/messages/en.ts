@@ -1038,6 +1038,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dateModified: 'Modification Date',
       title: 'Title',
       elementType: 'Element Type',
+      activityType: 'Activity Type',
+      status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:

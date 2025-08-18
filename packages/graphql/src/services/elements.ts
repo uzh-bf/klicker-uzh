@@ -214,6 +214,19 @@ export async function getUserElements(
                 },
               ]
             : []),
+          ...(sortByType === SortByType.STATUS
+            ? [
+                {
+                  element: {
+                    status: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          // break ties using the modification date
+          {
+            element: { updatedAt: 'desc' as DB.Prisma.SortOrder },
+          },
         ],
         take: numEntries ?? undefined,
         skip: offset ?? undefined,
