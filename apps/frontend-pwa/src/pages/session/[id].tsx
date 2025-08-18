@@ -98,15 +98,22 @@ async function handleNewResponse(
   }
 
   try {
-    // TODO: send responses to both for testing logic for a timeframe (use a separate redis cache to track data -> could compare if both yield the same data or, better, v2 has more responses)
+    // Always send to primary endpoint (Azure Function)
     await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
-    await fetch(
-      process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
-      requestOptions
-    )
+
+    // Only send to secondary endpoint (Hatchet) if dual mode is enabled
+    const isDualModeEnabled =
+      process.env.NEXT_PUBLIC_ENABLE_DUAL_RESPONSE_MODE === 'true'
+
+    if (isDualModeEnabled && process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL) {
+      await fetch(
+        process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
+        requestOptions
+      )
+    }
   } catch (e) {
     console.log('error', e)
   }
