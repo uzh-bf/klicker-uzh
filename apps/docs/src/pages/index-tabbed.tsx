@@ -1,18 +1,18 @@
 import Layout from '@theme/Layout'
 
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { CTA } from '../components/landing/CTA'
 import { FeatureFocusSection } from '../components/landing/FeatureFocusSection'
 import FeatureTabExplorer from '../components/landing/FeatureTabExplorer'
 import { SimplifiedSocialProof } from '../components/landing/SimplifiedSocialProof'
 import { TitleImage } from '../components/landing/TitleImage'
 import { UseCaseOverview } from '../components/landing/UseCaseOverview'
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 
 function HomeTabbed() {
   return (
     <Layout>
       <TitleImage />
-      
+
       <SimplifiedSocialProof />
 
       <FeatureTabExplorer />

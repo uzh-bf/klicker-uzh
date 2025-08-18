@@ -11,7 +11,7 @@ function HomeHybrid() {
   return (
     <Layout>
       <TitleImage />
-      
+
       <SimplifiedOSSProof />
 
       <FeatureSmartGrid />

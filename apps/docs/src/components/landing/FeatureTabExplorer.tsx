@@ -1,4 +1,10 @@
-import { faArrowRight, faChalkboardTeacher, faUsers, faGamepad, faCogs } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowRight,
+  faChalkboardTeacher,
+  faCogs,
+  faGamepad,
+  faUsers,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -23,7 +29,8 @@ const categories: FeatureCategory[] = [
     id: 'teaching',
     name: 'Teaching Tools',
     icon: faChalkboardTeacher,
-    description: 'Essential real-time interaction features for engaging classrooms',
+    description:
+      'Essential real-time interaction features for engaging classrooms',
     features: [
       {
         title: 'Live Quizzes',
@@ -121,12 +128,12 @@ const categories: FeatureCategory[] = [
 export function FeatureTabExplorer() {
   const [activeTab, setActiveTab] = useState('teaching')
 
-  const activeCategory = categories.find(cat => cat.id === activeTab)!
+  const activeCategory = categories.find((cat) => cat.id === activeTab)!
 
   return (
-    <div className="py-16 bg-white">
+    <div className="bg-white py-16">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Comprehensive Feature Suite
           </h2>
@@ -136,25 +143,30 @@ export function FeatureTabExplorer() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8 justify-center" aria-label="Tabs">
+        <div className="mb-8 border-b border-gray-200">
+          <nav
+            className="-mb-px flex justify-center space-x-8"
+            aria-label="Tabs"
+          >
             {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => setActiveTab(category.id)}
                 className={twMerge(
-                  'group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap',
+                  'group inline-flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
                   activeTab === category.id
                     ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 )}
                 aria-current={activeTab === category.id ? 'page' : undefined}
               >
-                <FontAwesomeIcon 
-                  icon={category.icon} 
+                <FontAwesomeIcon
+                  icon={category.icon}
                   className={twMerge(
                     'mr-2 h-4 w-4',
-                    activeTab === category.id ? 'text-red-500' : 'text-gray-400 group-hover:text-gray-500'
+                    activeTab === category.id
+                      ? 'text-red-500'
+                      : 'text-gray-400 group-hover:text-gray-500'
                   )}
                 />
                 {category.name}
@@ -165,44 +177,47 @@ export function FeatureTabExplorer() {
 
         {/* Active Tab Content */}
         <div className="mb-8">
-          <div className="text-center mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="mb-8 text-center">
+            <h3 className="mb-2 text-xl font-semibold text-gray-900">
               {activeCategory.name}
             </h3>
             <p className="text-gray-600">{activeCategory.description}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {activeCategory.features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="group relative bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all hover:border-red-200"
+                className="group relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-red-200 hover:shadow-lg"
               >
                 {feature.isNew && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                  <span className="absolute -right-2 -top-2 inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                     NEW
                   </span>
                 )}
-                
-                <div className="aspect-[4/3] mb-4 rounded-lg overflow-hidden bg-gray-50">
+
+                <div className="mb-4 aspect-[4/3] overflow-hidden rounded-lg bg-gray-50">
                   <img
                     src={feature.image}
                     alt={`${feature.title} screenshot`}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                
-                <h4 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
+
+                <h4 className="mb-2 text-lg font-semibold text-gray-900 transition-colors group-hover:text-red-600">
                   {feature.title}
                 </h4>
-                
-                <p className="text-gray-600 text-sm leading-relaxed">
+
+                <p className="text-sm leading-relaxed text-gray-600">
                   {feature.text}
                 </p>
 
-                <div className="mt-4 flex items-center text-red-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-4 flex items-center text-sm font-medium text-red-600 opacity-0 transition-opacity group-hover:opacity-100">
                   <span>Learn more</span>
-                  <FontAwesomeIcon icon={faArrowRight} className="ml-1 h-3 w-3" />
+                  <FontAwesomeIcon
+                    icon={faArrowRight}
+                    className="ml-1 h-3 w-3"
+                  />
                 </div>
               </div>
             ))}

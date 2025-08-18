@@ -10,7 +10,7 @@ function HomeJourney() {
   return (
     <Layout>
       <TitleImage />
-      
+
       <SimplifiedSocialProof />
 
       <FeatureJourney />

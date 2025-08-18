@@ -1,4 +1,11 @@
-import { faChevronDown, faChevronRight, faChalkboardTeacher, faUsers, faGamepad, faCogs } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChalkboardTeacher,
+  faChevronDown,
+  faChevronRight,
+  faCogs,
+  faGamepad,
+  faUsers,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +31,8 @@ const sections: FeatureSection[] = [
     id: 'teaching',
     title: 'Core Teaching Tools',
     icon: faChalkboardTeacher,
-    description: 'Essential real-time interaction features for engaging classroom experiences',
+    description:
+      'Essential real-time interaction features for engaging classroom experiences',
     color: 'blue',
     features: [
       {
@@ -125,22 +133,26 @@ const sections: FeatureSection[] = [
 
 const colorClasses = {
   blue: {
-    section: 'border-blue-200 hover:border-blue-300 bg-gradient-to-r from-blue-50 to-white',
+    section:
+      'border-blue-200 hover:border-blue-300 bg-gradient-to-r from-blue-50 to-white',
     icon: 'text-blue-600 bg-blue-100',
     content: 'bg-blue-50/50',
   },
   green: {
-    section: 'border-green-200 hover:border-green-300 bg-gradient-to-r from-green-50 to-white',
+    section:
+      'border-green-200 hover:border-green-300 bg-gradient-to-r from-green-50 to-white',
     icon: 'text-green-600 bg-green-100',
     content: 'bg-green-50/50',
   },
   red: {
-    section: 'border-red-200 hover:border-red-300 bg-gradient-to-r from-red-50 to-white',
+    section:
+      'border-red-200 hover:border-red-300 bg-gradient-to-r from-red-50 to-white',
     icon: 'text-red-600 bg-red-100',
     content: 'bg-red-50/50',
   },
   orange: {
-    section: 'border-orange-200 hover:border-orange-300 bg-gradient-to-r from-orange-50 to-white',
+    section:
+      'border-orange-200 hover:border-orange-300 bg-gradient-to-r from-orange-50 to-white',
     icon: 'text-orange-600 bg-orange-100',
     content: 'bg-orange-50/50',
   },
@@ -150,9 +162,9 @@ export function FeatureAccordion() {
   const [openSections, setOpenSections] = useState<string[]>(['teaching'])
 
   const toggleSection = (sectionId: string) => {
-    setOpenSections(prev =>
+    setOpenSections((prev) =>
       prev.includes(sectionId)
-        ? prev.filter(id => id !== sectionId)
+        ? prev.filter((id) => id !== sectionId)
         : [...prev, sectionId]
     )
   }
@@ -165,9 +177,9 @@ export function FeatureAccordion() {
   }
 
   return (
-    <div className="py-16 bg-white">
+    <div className="bg-white py-16">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Explore Features by Category
           </h2>
@@ -180,12 +192,12 @@ export function FeatureAccordion() {
           {sections.map((section) => {
             const isOpen = openSections.includes(section.id)
             const colors = colorClasses[section.color]
-            
+
             return (
-              <div 
+              <div
                 key={section.id}
                 className={twMerge(
-                  'border-2 rounded-xl transition-all duration-200',
+                  'rounded-xl border-2 transition-all duration-200',
                   colors.section
                 )}
               >
@@ -193,23 +205,26 @@ export function FeatureAccordion() {
                 <button
                   onClick={() => toggleSection(section.id)}
                   onKeyDown={(e) => handleKeyDown(e, section.id)}
-                  className="w-full flex items-center justify-between p-6 text-left focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-xl"
+                  className="flex w-full items-center justify-between rounded-xl p-6 text-left focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                   aria-expanded={isOpen}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={twMerge('p-3 rounded-lg', colors.icon)}>
-                      <FontAwesomeIcon icon={section.icon} className="h-5 w-5" />
+                    <div className={twMerge('rounded-lg p-3', colors.icon)}>
+                      <FontAwesomeIcon
+                        icon={section.icon}
+                        className="h-5 w-5"
+                      />
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">
                         {section.title}
                       </h3>
-                      <p className="text-gray-600 mt-1">
+                      <p className="mt-1 text-gray-600">
                         {section.description}
                       </p>
                     </div>
                   </div>
-                  <FontAwesomeIcon 
+                  <FontAwesomeIcon
                     icon={isOpen ? faChevronDown : faChevronRight}
                     className={twMerge(
                       'h-5 w-5 text-gray-500 transition-transform',
@@ -220,16 +235,21 @@ export function FeatureAccordion() {
 
                 {/* Section Content */}
                 {isOpen && (
-                  <div className={twMerge('border-t border-gray-200', colors.content)}>
-                    <div className="p-6 space-y-6">
+                  <div
+                    className={twMerge(
+                      'border-t border-gray-200',
+                      colors.content
+                    )}
+                  >
+                    <div className="space-y-6 p-6">
                       {section.features.map((feature, index) => (
-                        <div 
+                        <div
                           key={feature.title}
-                          className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                          className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                         >
-                          <div className="flex flex-col lg:flex-row gap-6">
+                          <div className="flex flex-col gap-6 lg:flex-row">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-3">
+                              <div className="mb-3 flex items-center gap-3">
                                 <h4 className="text-lg font-semibold text-gray-900">
                                   {feature.title}
                                 </h4>
@@ -239,16 +259,16 @@ export function FeatureAccordion() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-gray-600 leading-relaxed">
+                              <p className="leading-relaxed text-gray-600">
                                 {feature.text}
                               </p>
                             </div>
-                            <div className="lg:w-80 flex-shrink-0">
-                              <div className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-50">
+                            <div className="flex-shrink-0 lg:w-80">
+                              <div className="aspect-[4/3] overflow-hidden rounded-lg bg-gray-50">
                                 <img
                                   src={feature.image}
                                   alt={`${feature.title} screenshot`}
-                                  className="w-full h-full object-contain"
+                                  className="h-full w-full object-contain"
                                 />
                               </div>
                             </div>
@@ -265,14 +285,18 @@ export function FeatureAccordion() {
 
         {/* Summary Stats */}
         <div className="mt-12 text-center">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
             {sections.map((section, index) => (
               <div key={section.id} className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
                   {section.features.length}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {section.title.replace('Features', '').replace('Tools', '').trim()} Features
+                  {section.title
+                    .replace('Features', '')
+                    .replace('Tools', '')
+                    .trim()}{' '}
+                  Features
                 </div>
               </div>
             ))}

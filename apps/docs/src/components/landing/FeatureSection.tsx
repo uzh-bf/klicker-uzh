@@ -1,6 +1,6 @@
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Feature {
@@ -45,8 +45,8 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
         <p className="mt-6 text-lg text-gray-600">{description}</p>
       </div>
 
-      <div className="mt-12 flex flex-col lg:flex-row justify-between gap-8">
-        <dl 
+      <div className="mt-12 flex flex-col justify-between gap-8 lg:flex-row">
+        <dl
           className="max-w-xl flex-1 space-y-4 text-base text-gray-600 lg:max-w-none"
           role="list"
           aria-label={`Features of ${title}`}
@@ -57,7 +57,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               role="listitem"
               tabIndex={0}
               className={twMerge(
-                'flex cursor-pointer flex-row items-start gap-4 p-4 sm:p-6 rounded-lg transition-all duration-200',
+                'flex cursor-pointer flex-row items-start gap-4 rounded-lg p-4 transition-all duration-200 sm:p-6',
                 'hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2',
                 hoveredFeatureIx === ix && 'bg-gray-100 shadow-md'
               )}
@@ -66,15 +66,15 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
               onKeyDown={(e) => handleKeyDown(e, ix)}
               aria-selected={hoveredFeatureIx === ix}
             >
-              <div className="flex-shrink-0 mt-1">
+              <div className="mt-1 flex-shrink-0">
                 <FontAwesomeIcon
                   aria-hidden="true"
                   icon={feature.icon}
-                  className="text-red-600 h-5 w-5"
+                  className="h-5 w-5 text-red-600"
                 />
               </div>
               <div className="flex-1">
-                <dt className="font-semibold text-gray-900 mb-1">
+                <dt className="mb-1 font-semibold text-gray-900">
                   {feature.title}
                   {feature.text.startsWith('NEW:') && (
                     <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
@@ -82,7 +82,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                     </span>
                   )}
                 </dt>
-                <dd className="text-gray-600 leading-relaxed">
+                <dd className="leading-relaxed text-gray-600">
                   {feature.text.replace('NEW: ', '')}
                 </dd>
               </div>
@@ -91,23 +91,23 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
         </dl>
 
         <div className="flex-1 pt-4 lg:pl-8">
-          <div className="relative rounded-lg overflow-hidden bg-gray-50 aspect-[4/3] lg:aspect-auto lg:h-[400px]">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-50 lg:aspect-auto lg:h-[400px]">
             {!imageLoaded && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="animate-pulse bg-gray-200 rounded-lg w-full h-full"></div>
+                <div className="h-full w-full animate-pulse rounded-lg bg-gray-200"></div>
               </div>
             )}
             <img
               src={features[hoveredFeatureIx].hoverImage ?? ''}
               alt={`Screenshot showing ${features[hoveredFeatureIx].title} feature in action`}
               className={twMerge(
-                "h-full w-full object-contain transition-opacity duration-300",
-                imageLoaded ? "opacity-100" : "opacity-0"
+                'h-full w-full object-contain transition-opacity duration-300',
+                imageLoaded ? 'opacity-100' : 'opacity-0'
               )}
               loading="lazy"
             />
           </div>
-          <div className="mt-4 sm:hidden text-center">
+          <div className="mt-4 text-center sm:hidden">
             <p className="text-sm text-gray-500">
               Tap any feature above to see preview
             </p>

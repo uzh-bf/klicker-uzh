@@ -10,7 +10,7 @@ function HomeBento() {
   return (
     <Layout>
       <TitleImage />
-      
+
       <SimplifiedSocialProof />
 
       <FeatureBentoGrid />

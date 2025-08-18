@@ -10,7 +10,7 @@ function HomeAccordion() {
   return (
     <Layout>
       <TitleImage />
-      
+
       <SimplifiedSocialProof />
 
       <FeatureAccordion />
