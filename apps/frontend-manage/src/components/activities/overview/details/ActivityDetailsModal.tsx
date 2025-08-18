@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
+  faList,
   faMessage,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -17,6 +18,7 @@ import {
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
@@ -36,6 +38,7 @@ function ActivityDetailsModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const router = useRouter()
 
   // fetch activity details
   const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
@@ -116,10 +119,10 @@ function ActivityDetailsModal({
                 activityReviewStatus={details?.reviewStatus}
               />
 
-              <div className="flex w-full flex-col items-end gap-1 lg:w-1/3">
+              <div className="flex w-full flex-col items-end gap-1.5 lg:w-1/3">
                 {user?.privatePreview && (
                   <Button
-                    className={{ root: 'h-7' }}
+                    className={{ root: 'h-7 text-sm' }}
                     onClick={() => setSelectedInstanceId(null)}
                   >
                     <Button.Icon icon={faMessage} />
@@ -138,6 +141,30 @@ function ActivityDetailsModal({
                     isReviewed={isReviewed}
                     refetchActivities={refetchActivities}
                   />
+                )}
+
+                {/* activity admins can open contained elements in library
+                 -> with less than admin permissions only a selection might be visible, which could be confusing */}
+                {details.isActivityManager && (
+                  <Button
+                    className={{ root: 'h-7 text-sm' }}
+                    onClick={() =>
+                      router.push({
+                        pathname: '/',
+                        query: {
+                          ...(details.courseId
+                            ? { filterByCourse: details.courseId }
+                            : {}),
+                          filterByActivity: details.id,
+                        },
+                      })
+                    }
+                  >
+                    <Button.Icon icon={faList} />
+                    <Button.Label>
+                      {t('manage.activities.openElementsInLibrary')}
+                    </Button.Label>
+                  </Button>
                 )}
               </div>
             </div>

@@ -1,0 +1,20 @@
+query GetCourseActivityIds($courseId: String) {
+  getCourseActivityIds(courseId: $courseId) {
+    liveQuizzes {
+      id
+      name
+    }
+    practiceQuizzes {
+      id
+      name
+    }
+    microLearnings {
+      id
+      name
+    }
+    groupActivities {
+      id
+      name
+    }
+  }
+}

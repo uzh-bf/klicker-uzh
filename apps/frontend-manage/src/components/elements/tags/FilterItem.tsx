@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tooltip } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
-interface TagItemProps {
+interface FilterItemProps {
   text: string
   icon: IconDefinition[]
   active: boolean
@@ -13,7 +13,7 @@ interface TagItemProps {
   data?: { cy?: string; test?: string }
 }
 
-function TagItem({
+function FilterItem({
   text,
   icon,
   active,
@@ -21,8 +21,8 @@ function TagItem({
   onClick,
   tooltip,
   data,
-}: TagItemProps) {
-  const tagItemElement = (
+}: FilterItemProps) {
+  const filterItemElement = (
     <li
       className={twMerge(
         'hover:text-primary-100 cursor-pointer px-2 py-0.5',
@@ -41,11 +41,11 @@ function TagItem({
 
   return tooltip ? (
     <Tooltip tooltip={tooltip} delay={700}>
-      {tagItemElement}
+      {filterItemElement}
     </Tooltip>
   ) : (
-    tagItemElement
+    filterItemElement
   )
 }
 
-export default TagItem
+export default FilterItem

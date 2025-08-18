@@ -22,13 +22,13 @@ import {
   PublicationStatus,
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Accordion, Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import TagHeader from '../../elements/tags/TagHeader'
-import TagItem from '../../elements/tags/TagItem'
-import { SHARING_TYPE_FILTERS } from '../../elements/tags/TagList'
+import FilterItem from '../../elements/tags/FilterItem'
+import { SHARING_TYPE_FILTERS } from '../../elements/tags/FilterList'
+import FilterListEntry from '../../elements/tags/FilterListEntry'
 
 const STATUS_ICONS = {
   [PublicationStatus.Draft]: [faPenToSquareRegular, faPenToSquareSolid],
@@ -65,10 +65,6 @@ function ActivityOverviewFilters({
   filtersActive: boolean
 }) {
   const t = useTranslations()
-  const [statusVisible, setStatusVisible] = useState(true)
-  const [sharingTypeVisible, setSharingTypeVisible] = useState(true)
-  const [typesVisible, setTypesVisible] = useState(true)
-  const [coursesVisible, setCoursesVisible] = useState(true)
 
   const toggleStatusFilter = (status: PublicationStatus) => {
     setFilters((prev) => {
@@ -120,13 +116,22 @@ function ActivityOverviewFilters({
 
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <TagHeader
-        text={t('shared.generic.status')}
-        state={statusVisible}
-        setState={setStatusVisible}
-      />
-      {statusVisible && (
-        <ul className="list-none">
+      <Accordion
+        type="multiple"
+        defaultValue={[
+          'status-filters',
+          'sharing-filters',
+          'type-filters',
+          'course-filters',
+        ]}
+        className="w-full"
+      >
+        <FilterListEntry
+          trigger={t('shared.generic.status')}
+          value="status-filters"
+          active={filters.status.length > 0}
+          data={{ cy: `collapse-tag-header-status` }}
+        >
           {[
             PublicationStatus.Draft,
             PublicationStatus.Scheduled,
@@ -135,7 +140,7 @@ function ActivityOverviewFilters({
             PublicationStatus.Graded,
             PublicationStatus.Template,
           ].map((status) => (
-            <TagItem
+            <FilterItem
               key={status}
               text={t(`shared.${status}.statusLabel`)}
               icon={STATUS_ICONS[status]}
@@ -144,16 +149,14 @@ function ActivityOverviewFilters({
               data={{ cy: `status-filter-${status.toLowerCase()}` }}
             />
           ))}
-        </ul>
-      )}
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('shared.generic.sharing')}
-        state={sharingTypeVisible}
-        setState={setSharingTypeVisible}
-      />
-      {sharingTypeVisible && (
-        <ul className="list-none">
+        <FilterListEntry
+          trigger={t('shared.generic.sharing')}
+          value="sharing-filters"
+          active={filters.sharingType.length !== 3}
+          data={{ cy: `collapse-tag-header-sharing` }}
+        >
           {[
             SharingType.Owned,
             SharingType.Shared,
@@ -161,7 +164,7 @@ function ActivityOverviewFilters({
               ? [SharingType.Dependency]
               : []),
           ].map((type) => (
-            <TagItem
+            <FilterItem
               key={type}
               text={t(`manage.sharing.label${type as SharingType}`)}
               icon={SHARING_TYPE_FILTERS[type]}
@@ -170,23 +173,21 @@ function ActivityOverviewFilters({
               data={{ cy: `sharing-filter-${type}` }}
             />
           ))}
-        </ul>
-      )}
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('manage.activities.activityType')}
-        state={typesVisible}
-        setState={setTypesVisible}
-      />
-      {typesVisible && (
-        <ul className="list-none">
+        <FilterListEntry
+          trigger={t('manage.activities.activityType')}
+          value="type-filters"
+          active={filters.type !== undefined}
+          data={{ cy: `collapse-tag-header-activity-type` }}
+        >
           {[
             ActivityType.LiveQuiz,
             ActivityType.PracticeQuiz,
             ActivityType.MicroLearning,
             ActivityType.GroupActivity,
           ].map((type) => (
-            <TagItem
+            <FilterItem
               key={type}
               text={t(`shared.types.${type}`)}
               icon={TYPE_ICONS[type]}
@@ -195,42 +196,38 @@ function ActivityOverviewFilters({
               data={{ cy: `type-filter-${type.toLowerCase()}` }}
             />
           ))}
-        </ul>
-      )}
+        </FilterListEntry>
 
-      {availableCourses.length > 0 && (
-        <>
-          <TagHeader
-            text={t('shared.generic.courses')}
-            state={coursesVisible}
-            setState={setCoursesVisible}
-          />
-          {coursesVisible && (
-            <ul className="list-none">
-              <TagItem
-                key="unassigned"
-                text={t('manage.activities.noCourseAssigned')}
-                icon={[faX, faX]}
-                active={filters.course === null}
-                onClick={() => toggleCourseFilter(null)}
-                data={{ cy: 'course-filter-unassigned' }}
+        {availableCourses.length > 0 && (
+          <FilterListEntry
+            trigger={t('shared.generic.courses')}
+            value="course-filters"
+            active={filters.course !== undefined}
+            data={{ cy: `collapse-tag-header-courses` }}
+          >
+            <FilterItem
+              key="unassigned"
+              text={t('manage.activities.noCourseAssigned')}
+              icon={[faX, faX]}
+              active={filters.course === null}
+              onClick={() => toggleCourseFilter(null)}
+              data={{ cy: 'course-filter-unassigned' }}
+            />
+            {availableCourses.map((course) => (
+              <FilterItem
+                key={course.id}
+                text={course.name}
+                icon={[faUserGroup, faUserGroup]}
+                active={filters.course === course.id}
+                onClick={() => toggleCourseFilter(course.id)}
+                data={{
+                  cy: `course-filter-${course.name.toLowerCase().replace(/\s+/g, '-')}`,
+                }}
               />
-              {availableCourses.map((course) => (
-                <TagItem
-                  key={course.id}
-                  text={course.name}
-                  icon={[faUserGroup, faUserGroup]}
-                  active={filters.course === course.id}
-                  onClick={() => toggleCourseFilter(course.id)}
-                  data={{
-                    cy: `course-filter-${course.name.toLowerCase().replace(/\s+/g, '-')}`,
-                  }}
-                />
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+            ))}
+          </FilterListEntry>
+        )}
+      </Accordion>
 
       <Button
         className={{

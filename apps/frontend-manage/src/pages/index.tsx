@@ -12,7 +12,7 @@ import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -25,7 +25,7 @@ import ElementEditModal, {
   ElementEditMode,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
-import TagList from '../components/elements/tags/TagList'
+import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
@@ -85,9 +85,23 @@ function Index() {
     handleTagClick,
     handleReset,
     handleToggleArchive,
+    toggleCourseIdFilter,
+    toggleActivityIdFilter,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
+
+  const handleResetCleanURL = useCallback(() => {
+    // if a filtering by activity / course is set through the URL, reset it
+    if (router.query.filterByActivity || router.query.filterByCourse) {
+      router.push({ pathname: '/', query: {} }, undefined, {
+        shallow: true,
+      })
+    }
+
+    // reset the filters and sorting
+    handleReset()
+  }, [router.query.filterByCourse, router.query.filterByActivity])
 
   const {
     loading: loadingElements,
@@ -104,6 +118,7 @@ function Index() {
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
       tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+      activityId: filters.activityId,
       showUntagged: filters.untagged,
       sortByType: sort.by,
       sortByAsc: sort.asc,
@@ -208,8 +223,26 @@ function Index() {
     }
   }, [router.query.editElementId])
 
+  // if the library should be filtered by activity, reset the filters and re-set them accordingly
+  useEffect(() => {
+    if (router.query.filterByActivity) {
+      handleReset()
+
+      if (router.query.filterByCourse) {
+        toggleCourseIdFilter({
+          courseId: router.query.filterByCourse as string,
+        })
+      }
+      toggleActivityIdFilter({
+        activityId: router.query.filterByActivity as string,
+      })
+    }
+  }, [router.query.filterByCourse, router.query.filterByActivity])
+
   const filtersActive = !!(
     filters.tags.length > 0 ||
+    filters.courseId ||
+    filters.activityId ||
     filters.type ||
     filters.status ||
     filters.sharingType?.length !== 3 ||
@@ -250,52 +283,35 @@ function Index() {
 
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
         <div>
-          <div className="hidden h-full md:block">
-            <TagList
-              key={creationMode}
-              compact={!!creationMode}
-              filtersActive={filtersActive}
-              activeTags={filters.tags}
-              activeType={filters.type}
-              activeSharingTypes={filters.sharingType}
-              activeStatus={filters.status}
-              showUntagged={filters.untagged}
-              sampleSolution={filters.sampleSolution}
-              answerFeedbacks={filters.answerFeedbacks}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-              toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-              handleToggleArchive={handleToggleArchive}
-              isArchiveActive={filters.archive}
-              refetchElements={async () => {
-                await refetchElements()
-              }}
-            />
-          </div>
-          <div className="md:hidden">
-            <TagList
-              compact
-              key={creationMode}
-              filtersActive={filtersActive}
-              activeTags={filters.tags}
-              activeType={filters.type}
-              activeSharingTypes={filters.sharingType}
-              activeStatus={filters.status}
-              showUntagged={filters.untagged}
-              sampleSolution={filters.sampleSolution}
-              answerFeedbacks={filters.answerFeedbacks}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-              toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-              handleToggleArchive={handleToggleArchive}
-              isArchiveActive={filters.archive}
-              refetchElements={async () => {
-                await refetchElements()
-              }}
-            />
-          </div>
+          <FilterList
+            key={creationMode}
+            defaultValue={
+              filters.courseId || filters.activityId
+                ? 'used-in-activity'
+                : undefined
+            }
+            filtersActive={filtersActive}
+            activeTags={filters.tags}
+            activeCourseId={filters.courseId}
+            activeActivityId={filters.activityId}
+            activeType={filters.type}
+            activeSharingTypes={filters.sharingType}
+            activeStatus={filters.status}
+            showUntagged={filters.untagged}
+            sampleSolution={filters.sampleSolution}
+            answerFeedbacks={filters.answerFeedbacks}
+            handleReset={handleResetCleanURL}
+            handleTagClick={handleTagClick}
+            toggleCourseIdFilter={toggleCourseIdFilter}
+            toggleActivityIdFilter={toggleActivityIdFilter}
+            toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+            toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
+            refetchElements={async () => {
+              await refetchElements()
+            }}
+          />
         </div>
 
         <div className="flex w-full flex-1 flex-col overflow-auto">
@@ -396,7 +412,7 @@ function Index() {
                         isUntagged: false,
                       })
                     }
-                    handleFilterReset={handleReset}
+                    handleFilterReset={handleResetCleanURL}
                     refetchElements={async () => {
                       await refetchElements()
                     }}

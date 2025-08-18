@@ -13,6 +13,8 @@ export type QuestionPoolFilters = {
   sharingType: SharingType[]
   status?: ElementStatus
   type?: ElementType
+  courseId?: string
+  activityId?: string
   sampleSolution: boolean
   answerFeedbacks: boolean
 }
@@ -31,6 +33,8 @@ enum QuestionPoolReducerActionType {
   ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
   RESET = 'RESET',
   UNDEFINED = 'UNDEFINED',
+  SET_COURSE_ID = 'SET_COURSE_ID',
+  SET_ACTIVITY_ID = 'SET_ACTIVITY_ID',
 }
 
 type FilterSortType = {
@@ -62,6 +66,8 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
     archive: false,
     untagged: false,
     tags: [],
+    courseId: undefined,
+    activityId: undefined,
     sampleSolution: false,
     answerFeedbacks: false,
   },
@@ -152,6 +158,24 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
           ...state.filters,
           tags: [...state.filters.tags, action.valueOrId!],
           untagged: false,
+        },
+      }
+
+    case QuestionPoolReducerActionType.SET_COURSE_ID:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          courseId: action.valueOrId as string | undefined,
+        },
+      }
+
+    case QuestionPoolReducerActionType.SET_ACTIVITY_ID:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          activityId: action.valueOrId as string | undefined,
         },
       }
 
@@ -253,6 +277,16 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
         isStatusTag,
         isSharingTypeTag,
         isUntagged,
+      }),
+    toggleCourseIdFilter: ({ courseId }: { courseId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_COURSE_ID,
+        valueOrId: courseId,
+      }),
+    toggleActivityIdFilter: ({ activityId }: { activityId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_ACTIVITY_ID,
+        valueOrId: activityId,
       }),
     toggleSampleSolutionFilter: (): void =>
       dispatch({

@@ -1397,6 +1397,7 @@ export async function getLiveQuizDetails(
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
       (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
+    isActivityManager: liveQuiz._count.permissions > 0,
     courseId: liveQuiz.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1501,6 +1502,18 @@ export async function getPracticeQuizDetails(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id },
     include: {
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
       course: {
         include: {
           _count: {
@@ -1571,6 +1584,7 @@ export async function getPracticeQuizDetails(
     status: practiceQuiz.status,
     reviewStatus: practiceQuiz.reviewStatus,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
+    isActivityManager: practiceQuiz._count.permissions > 0,
     courseId: practiceQuiz.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1586,6 +1600,18 @@ export async function getMicroLearningDetails(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: { id },
     include: {
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
       course: {
         include: {
           _count: {
@@ -1655,6 +1681,7 @@ export async function getMicroLearningDetails(
     status: microLearning.status,
     reviewStatus: microLearning.reviewStatus,
     isActivityReviewer: microLearning.course._count.permissions > 0,
+    isActivityManager: microLearning._count.permissions > 0,
     courseId: microLearning.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1672,6 +1699,18 @@ export async function getGroupActivityDetails(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
       course: {
         include: {
           _count: {
@@ -1747,6 +1786,7 @@ export async function getGroupActivityDetails(
     status: groupActivity.status,
     reviewStatus: groupActivity.reviewStatus,
     isActivityReviewer: groupActivity.course._count.permissions > 0,
+    isActivityManager: groupActivity._count.permissions > 0,
     courseId: groupActivity.courseId,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1867,4 +1907,82 @@ export async function setActivityReviewStatus(
   }
 
   return null
+}
+
+export async function getCourseActivityIds(
+  { courseId }: { courseId?: string | null },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      objects: {
+        where: {
+          OR: [
+            { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            ...(courseId
+              ? [{ practiceQuiz: { isDeleted: false, courseId } }]
+              : []),
+            ...(courseId
+              ? [{ microLearning: { isDeleted: false, courseId } }]
+              : []),
+            ...(courseId
+              ? [{ groupActivity: { isDeleted: false, courseId } }]
+              : []),
+          ],
+        },
+        include: {
+          liveQuiz: { select: { id: true, name: true } },
+          practiceQuiz: { select: { id: true, name: true } },
+          microLearning: { select: { id: true, name: true } },
+          groupActivity: { select: { id: true, name: true } },
+        },
+      },
+    },
+  })
+
+  if (!user) return null
+
+  const { liveQuizzes, practiceQuizzes, microLearnings, groupActivities } =
+    user.objects.reduce<{
+      liveQuizzes: { id: string; name: string }[]
+      practiceQuizzes: { id: string; name: string }[]
+      microLearnings: { id: string; name: string }[]
+      groupActivities: { id: string; name: string }[]
+    }>(
+      (acc, obj) => {
+        if (obj.liveQuiz) {
+          acc.liveQuizzes.push({ id: obj.liveQuiz.id, name: obj.liveQuiz.name })
+        } else if (obj.practiceQuiz) {
+          acc.practiceQuizzes.push({
+            id: obj.practiceQuiz.id,
+            name: obj.practiceQuiz.name,
+          })
+        } else if (obj.microLearning) {
+          acc.microLearnings.push({
+            id: obj.microLearning.id,
+            name: obj.microLearning.name,
+          })
+        } else if (obj.groupActivity) {
+          acc.groupActivities.push({
+            id: obj.groupActivity.id,
+            name: obj.groupActivity.name,
+          })
+        }
+        return acc
+      },
+      {
+        liveQuizzes: [],
+        practiceQuizzes: [],
+        microLearnings: [],
+        groupActivities: [],
+      }
+    )
+
+  return {
+    liveQuizzes,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
+  }
 }

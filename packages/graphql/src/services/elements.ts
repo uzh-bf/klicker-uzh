@@ -44,6 +44,7 @@ export async function getUserElements(
     showShared = true,
     showDependencies = true,
     tagIds,
+    activityId,
     showUntagged,
     sortByType,
     sortByAsc,
@@ -60,6 +61,7 @@ export async function getUserElements(
     showShared?: boolean | null
     showDependencies?: boolean | null
     tagIds: number[]
+    activityId?: string | null
     showUntagged: boolean
     sortByType: SortByType
     sortByAsc: boolean
@@ -110,6 +112,22 @@ export async function getUserElements(
           ? tagIds.map((id) => ({
               tags: { some: { id } },
             }))
+          : []),
+        ...(activityId
+          ? [
+              {
+                elementInstances: {
+                  some: {
+                    OR: [
+                      { elementBlock: { liveQuizId: activityId } },
+                      { elementStack: { practiceQuizId: activityId } },
+                      { elementStack: { microLearningId: activityId } },
+                      { elementStack: { groupActivityId: activityId } },
+                    ],
+                  },
+                },
+              },
+            ]
           : []),
       ],
       OR: searchString

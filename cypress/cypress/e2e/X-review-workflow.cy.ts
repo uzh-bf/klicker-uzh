@@ -677,7 +677,7 @@ describe('Feature test for review functionalities and batch operations', functio
     // login and show archived elements
     cy.loginLecturer()
     cy.wait(1000)
-    cy.get('[data-cy="show-archive-switch"]').first().click()
+    cy.get('[data-cy="show-archive-switch"]').click()
 
     // SC question with solution
     cy.createQuestionSC({
@@ -781,7 +781,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that selected elements are shown correctly in element batch operations modal', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
 
     // select specific elements
     cy.get(`[data-cy="element-checkbox-${this.data.SCML.title}"]`).click()
@@ -837,7 +837,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that the applied operations are displayed correctly in batch operations modal', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
     cy.get('[data-cy="select-all-elements"]').click() // select all
     cy.get('[data-cy="element-batch-operations"]').click()
 
@@ -990,7 +990,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that archiving / unarchiving elements works correctly', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
     const allElements = [
       this.data.SCML.title,
       this.data.MCML.title,

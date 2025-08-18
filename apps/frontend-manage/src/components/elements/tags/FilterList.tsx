@@ -32,13 +32,14 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Switch } from '@uzh-bf/design-system'
+import { Accordion, Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useState } from 'react'
+import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
+import FilterItem from './FilterItem'
+import FilterListEntry from './FilterListEntry'
+import SuspendedActivitySelection from './SuspendedActivitySelection'
 import SuspendedTags from './SuspendedTags'
-import TagHeader from './TagHeader'
-import TagItem from './TagItem'
 
 const ELEMENT_STATUS_FILTERS: Record<ElementStatus, IconDefinition[]> = {
   [ElementStatus.Draft]: [faPenRegular, faPenSolid],
@@ -52,12 +53,14 @@ export const SHARING_TYPE_FILTERS: Record<SharingType, IconDefinition[]> = {
   [SharingType.Dependency]: [faFolderTree, faFolderTree],
 }
 
-interface TagListProps {
-  compact: boolean
+interface FilterListProps {
+  defaultValue?: string
   filtersActive: boolean
   isArchiveActive: boolean
   showUntagged: boolean
   activeTags: string[]
+  activeCourseId?: string
+  activeActivityId?: string
   activeStatus?: ElementStatus
   activeType?: ElementType
   activeSharingTypes?: SharingType[]
@@ -77,30 +80,36 @@ interface TagListProps {
     isSharingTypeTag: boolean
     isUntagged: boolean
   }) => void
+  toggleCourseIdFilter: ({ courseId }: { courseId?: string }) => void
+  toggleActivityIdFilter: ({ activityId }: { activityId?: string }) => void
   toggleSampleSolutionFilter: () => void
   toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
   refetchElements: () => Promise<void>
 }
 
-function TagList({
-  compact,
+function FilterList({
+  defaultValue = 'element-status',
   filtersActive,
   isArchiveActive,
   showUntagged,
   activeTags,
+  activeCourseId,
+  activeActivityId,
   activeType,
   activeStatus,
   activeSharingTypes,
   sampleSolution,
   answerFeedbacks,
   handleTagClick,
+  toggleCourseIdFilter,
+  toggleActivityIdFilter,
   handleReset,
   toggleSampleSolutionFilter,
   toggleAnswerFeedbackFilter,
   handleToggleArchive,
   refetchElements,
-}: TagListProps): React.ReactElement {
+}: FilterListProps): React.ReactElement {
   const t = useTranslations()
 
   const { data: user } = useQuery(UserProfileDocument, {
@@ -125,25 +134,17 @@ function TagList({
       : undefined,
   }
 
-  const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
-  const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
-  const [sharingTypesVisible, setSharingTypesVisible] = useState(!compact)
-  const [userTagsVisible, setUserTagsVisible] = useState(!compact)
-  const [gamificationTagsVisible, setGamificationTagsVisible] =
-    useState(!compact)
-
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <TagHeader
-        text={t('manage.questionPool.elementStatus')}
-        state={questionStatusVisible}
-        setState={setQuestionStatusVisible}
-      />
-
-      {questionStatusVisible && (
-        <ul className="list-none">
+      <Accordion type="single" defaultValue={defaultValue} className="w-full">
+        <FilterListEntry
+          trigger={t('manage.questionPool.elementStatus')}
+          value="element-status"
+          active={!!activeStatus}
+          data={{ cy: 'collapse-tag-header-status' }}
+        >
           {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
-            <TagItem
+            <FilterItem
               key={status}
               text={t(`shared.${status as ElementStatus}.statusLabel`)}
               icon={icons}
@@ -159,21 +160,19 @@ function TagList({
               }
             />
           ))}
-        </ul>
-      )}
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('manage.questionPool.elementTypes')}
-        state={questionTypesVisible}
-        setState={setQuestionTypesVisible}
-      />
-      {questionTypesVisible && (
-        <ul className="list-none">
+        <FilterListEntry
+          trigger={t('manage.questionPool.elementTypes')}
+          value="element-types"
+          active={!!activeType}
+          data={{ cy: 'collapse-tag-header-types' }}
+        >
           {Object.entries(ELEMENT_TYPE_FILTERS).map(([type, icons]) => {
             if (!icons) return null
 
             return (
-              <TagItem
+              <FilterItem
                 key={type}
                 text={t(`shared.${type as ElementType}.typeLabel`)}
                 icon={icons}
@@ -210,77 +209,87 @@ function TagList({
               />
             )
           })}
-        </ul>
-      )}
+        </FilterListEntry>
 
-      {user?.userProfile?.privatePreview ? (
-        <>
-          <TagHeader
-            text={t('shared.generic.sharing')}
-            state={sharingTypesVisible}
-            setState={setSharingTypesVisible}
-          />
-          {sharingTypesVisible && (
-            <ul className="list-none">
-              {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
-                // do not show dependenccy filter, if shared elements are not shown
-                if (
-                  type === SharingType.Dependency &&
-                  !activeSharingTypes?.includes(SharingType.Shared)
-                ) {
-                  return null
-                }
+        {user?.userProfile?.privatePreview ? (
+          <FilterListEntry
+            trigger={t('shared.generic.sharing')}
+            value="sharing-types"
+            active={activeSharingTypes?.length !== 3}
+            data={{ cy: `collapse-tag-header-sharing` }}
+          >
+            {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
+              // do not show dependenccy filter, if shared elements are not shown
+              if (
+                type === SharingType.Dependency &&
+                !activeSharingTypes?.includes(SharingType.Shared)
+              ) {
+                return null
+              }
 
-                return (
-                  <TagItem
-                    key={type}
-                    text={t(`manage.sharing.label${type as SharingType}`)}
-                    icon={icons}
-                    active={
-                      activeSharingTypes?.includes(type as SharingType) ?? false
-                    }
-                    onClick={(): void =>
-                      handleTagClick({
-                        valueOrId: type,
-                        isTypeTag: false,
-                        isStatusTag: false,
-                        isSharingTypeTag: true,
-                        isUntagged: false,
-                      })
-                    }
-                    data={{ cy: `element-sharing-filter-${type}` }}
-                  />
-                )
-              })}
-            </ul>
-          )}
-        </>
-      ) : null}
+              return (
+                <FilterItem
+                  key={type}
+                  text={t(`manage.sharing.label${type as SharingType}`)}
+                  icon={icons}
+                  active={
+                    activeSharingTypes?.includes(type as SharingType) ?? false
+                  }
+                  onClick={(): void =>
+                    handleTagClick({
+                      valueOrId: type,
+                      isTypeTag: false,
+                      isStatusTag: false,
+                      isSharingTypeTag: true,
+                      isUntagged: false,
+                    })
+                  }
+                  data={{ cy: `element-sharing-filter-${type}` }}
+                />
+              )
+            })}
+          </FilterListEntry>
+        ) : null}
 
-      <TagHeader
-        text={t('manage.questionPool.tags')}
-        state={userTagsVisible}
-        setState={setUserTagsVisible}
-      />
-      {userTagsVisible && (
-        <Suspense fallback={<Loader />}>
-          <SuspendedTags
-            showUntagged={showUntagged}
-            activeTags={activeTags}
-            handleTagClick={handleTagClick}
-            refetchElements={refetchElements}
-          />
-        </Suspense>
-      )}
+        <FilterListEntry
+          trigger={t('manage.questionPool.tags')}
+          value="user-tags"
+          active={activeTags.length > 0 || showUntagged}
+          data={{ cy: `collapse-tag-header-user-tags` }}
+        >
+          <Suspense fallback={<Loader />}>
+            <SuspendedTags
+              showUntagged={showUntagged}
+              activeTags={activeTags}
+              handleTagClick={handleTagClick}
+              refetchElements={refetchElements}
+            />
+          </Suspense>
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('shared.generic.gamification')}
-        state={gamificationTagsVisible}
-        setState={setGamificationTagsVisible}
-      />
-      {gamificationTagsVisible && (
-        <ul className="list-none">
-          <TagItem
+        <FilterListEntry
+          trigger={t('manage.questionPool.activityUsage')}
+          value="used-in-activity"
+          active={typeof activeActivityId !== 'undefined'}
+          data={{ cy: `collapse-tag-header-used-in-activity` }}
+        >
+          <Suspense fallback={<Loader />}>
+            <SuspendedActivitySelection
+              activeCourseId={activeCourseId}
+              activeActivityId={activeActivityId}
+              toggleCourseIdFilter={toggleCourseIdFilter}
+              toggleActivityIdFilter={toggleActivityIdFilter}
+            />
+          </Suspense>
+        </FilterListEntry>
+
+        <FilterListEntry
+          trigger={t('shared.generic.gamification')}
+          value="gamification-tags"
+          active={sampleSolution || answerFeedbacks}
+          data={{ cy: `collapse-tag-header-gamification` }}
+        >
+          <FilterItem
             disabled={
               activeType === ElementType.Flashcard ||
               activeType === ElementType.Content
@@ -297,7 +306,7 @@ function TagList({
             }
             data={{ cy: 'sample-solution-filter' }}
           />
-          <TagItem
+          <FilterItem
             disabled={
               activeType &&
               activeType !== ElementType.Sc &&
@@ -318,10 +327,10 @@ function TagList({
             }
             data={{ cy: 'answer-feedback-filter' }}
           />
-        </ul>
-      )}
+        </FilterListEntry>
+      </Accordion>
 
-      <div className="mt-5">
+      <div className="mt-2">
         <Switch
           size="sm"
           label={t('manage.questionPool.showArchived')}
@@ -347,4 +356,4 @@ function TagList({
   )
 }
 
-export default TagList
+export default FilterList
