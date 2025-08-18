@@ -4,7 +4,6 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { sortBy } from 'remeda'
 import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -117,8 +116,8 @@ export async function getUserActivities(
   },
   ctx: ContextWithUser
 ) {
-  // where clause needed for filtering the desired activities
-  const activityFilteringClause = {
+  const whereClause = {
+    userId: ctx.user.sub,
     // depending on the shared access flags, determine the required access levels
     permissionLevel:
       showOwned && showShared
@@ -138,291 +137,52 @@ export async function getUserActivities(
           },
     // chose whether to include objects that are available through derived access
     derived: showDependencies ? undefined : false,
-    OR: [
-      ...(!activityTypeFilter || activityTypeFilter === ActivityType.LIVE_QUIZ
-        ? [
-            {
-              liveQuizId: { not: null },
-              liveQuiz: {
-                status:
-                  statusFilter && statusFilter.length > 0
-                    ? { in: statusFilter }
-                    : undefined,
-                courseId: courseId
-                  ? { equals: courseId }
-                  : withoutCourse
-                    ? null
-                    : undefined,
-                OR: searchString
-                  ? [
-                      {
-                        name: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                      {
-                        displayName: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
+    // status filter
+    status:
+      statusFilter && statusFilter.length > 0
+        ? { in: statusFilter }
+        : undefined,
+    // filter by activity type, if an activity type filter is set
+    type: activityTypeFilter ? { equals: activityTypeFilter } : undefined,
+    // course filter
+    courseId: courseId
+      ? { equals: courseId }
+      : withoutCourse
+        ? null
+        : undefined,
+    // search string
+    OR: searchString
+      ? [
+          {
+            name: {
+              contains: searchString,
+              mode: 'insensitive' as DB.Prisma.QueryMode,
             },
-          ]
-        : []),
-      ...(!withoutCourse &&
-      (!activityTypeFilter || activityTypeFilter === ActivityType.PRACTICE_QUIZ)
-        ? [
-            {
-              practiceQuizId: { not: null },
-              practiceQuiz: {
-                status:
-                  statusFilter && statusFilter.length > 0
-                    ? { in: statusFilter }
-                    : undefined,
-                courseId: courseId ?? undefined,
-                OR: searchString
-                  ? [
-                      {
-                        name: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                      {
-                        displayName: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
+          },
+          {
+            displayName: {
+              contains: searchString,
+              mode: 'insensitive' as DB.Prisma.QueryMode,
             },
-          ]
-        : []),
-      ...(!withoutCourse &&
-      (!activityTypeFilter ||
-        activityTypeFilter === ActivityType.MICRO_LEARNING)
-        ? [
-            {
-              microLearningId: { not: null },
-              microLearning: {
-                status:
-                  statusFilter && statusFilter.length > 0
-                    ? { in: statusFilter }
-                    : undefined,
-                courseId: courseId ?? undefined,
-                OR: searchString
-                  ? [
-                      {
-                        name: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                      {
-                        displayName: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
-            },
-          ]
-        : []),
-      ...(!withoutCourse &&
-      (!activityTypeFilter ||
-        activityTypeFilter === ActivityType.GROUP_ACTIVITY)
-        ? [
-            {
-              groupActivityId: { not: null },
-              groupActivity: {
-                status:
-                  statusFilter && statusFilter.length > 0
-                    ? { in: statusFilter }
-                    : undefined,
-                courseId: courseId ?? undefined,
-                OR: searchString
-                  ? [
-                      {
-                        name: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                      {
-                        displayName: {
-                          contains: searchString,
-                          mode: 'insensitive' as DB.Prisma.QueryMode,
-                        },
-                      },
-                    ]
-                  : undefined,
-              },
-            },
-          ]
-        : []),
-    ],
+          },
+        ]
+      : undefined,
   }
 
-  // fetch all activities that are available to the user
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-    include: {
-      _count: { select: { objects: { where: activityFilteringClause } } },
-      objects: {
-        where: activityFilteringClause,
-        include: {
-          directPermission: true,
-          liveQuiz: {
-            include: {
-              course: {
-                select: {
-                  id: true,
-                  name: true,
-                  startDate: true,
-                  language: true,
-                  _count: {
-                    select: {
-                      permissions: {
-                        where: {
-                          userId: ctx.user.sub,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              templateInfo: { select: { id: true } },
-              blocks: {
-                include: { _count: { select: { elements: true } } },
-                orderBy: { order: 'asc' },
-              },
-              _count: { select: { permissions: true } },
-            },
-          },
-          practiceQuiz: {
-            include: {
-              course: {
-                select: {
-                  id: true,
-                  name: true,
-                  startDate: true,
-                  language: true,
-                  _count: {
-                    select: {
-                      permissions: {
-                        where: {
-                          userId: ctx.user.sub,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              templateInfo: { select: { id: true } },
-              stacks: {
-                include: { _count: { select: { elements: true } } },
-                orderBy: { order: 'asc' },
-              },
-              _count: { select: { permissions: true } },
-            },
-          },
-          microLearning: {
-            include: {
-              course: {
-                select: {
-                  id: true,
-                  name: true,
-                  startDate: true,
-                  language: true,
-                  _count: {
-                    select: {
-                      permissions: {
-                        where: {
-                          userId: ctx.user.sub,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              templateInfo: { select: { id: true } },
-              stacks: {
-                include: { _count: { select: { elements: true } } },
-                orderBy: { order: 'asc' },
-              },
-              _count: { select: { permissions: true } },
-            },
-          },
-          groupActivity: {
-            include: {
-              course: {
-                include: {
-                  _count: {
-                    select: {
-                      participantGroups: true,
-                      permissions: {
-                        where: {
-                          userId: ctx.user.sub,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.ADMIN,
-                              DB.PermissionLevel.OWNER,
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              templateInfo: { select: { id: true } },
-              stacks: {
-                include: { _count: { select: { elements: true } } },
-                orderBy: { order: 'asc' },
-              },
-              _count: { select: { permissions: true } },
-            },
-          },
-        },
-        // TODO: add ordering based on input args
-        take: numEntries ?? undefined,
-        skip: offset ?? undefined,
-      },
-    },
-  })
+  const [activitiesFromView, totalCount] = await Promise.all([
+    ctx.prisma.userActivities.findMany({
+      where: whereClause,
+      // TODO: add ordering based on input args
+      take: numEntries ?? undefined,
+      skip: offset ?? undefined,
+    }),
+    ctx.prisma.userActivities.count({
+      where: whereClause,
+    }),
+  ])
 
-  if (!user) {
-    return null
-  }
-
-  // map the activities to a unified format
-  const activities = user.objects.flatMap((object) => {
+  // map the fetched activities to the return type
+  const activities = activitiesFromView.flatMap((activity) => {
     const {
       isOwner,
       isManager,
@@ -432,243 +192,91 @@ export async function getUserActivities(
       isRemovable,
       sharingType,
     } = getPermissionBooleans({
-      permissionLevel: object.permissionLevel,
-      derived: object.derived,
-      directGroupPermission: object.directPermission?.userGroupId !== null,
+      permissionLevel: activity.permissionLevel,
+      derived: activity.derived,
+      directGroupPermission: activity.directPermissionUserGroupId !== null,
     })
 
-    if (object.liveQuiz) {
-      // if the object access is derived and the object is soft-deleted, don't show it
-      if (object.derived && object.liveQuiz.isDeleted) {
-        return []
-      }
-
-      return {
-        id: object.liveQuiz.id,
-        templateId: object.liveQuiz.templateInfo?.id ?? null,
-        name: object.liveQuiz.name,
-        displayName: object.liveQuiz.displayName,
-        reviewStatus: object.liveQuiz.reviewStatus,
-        type: ActivityType.LIVE_QUIZ,
-        status: object.liveQuiz.status,
-        courseId: object.liveQuiz.course?.id,
-        courseName: object.liveQuiz.course?.name,
-        courseLanguage: object.liveQuiz.course?.language,
-        courseStartDate: object.liveQuiz.course?.startDate,
-        numOfStacks: object.liveQuiz.blocks.length,
-        numOfElements: object.liveQuiz.blocks.reduce(
-          (acc, block) => acc + block._count.elements,
-          0
-        ),
-        permissionLevel: object.permissionLevel,
-        derivedAccess: object.derived,
-        areInstancesOutdated: object.liveQuiz.areInstancesOutdated,
-        isGamificationEnabled: object.liveQuiz.isGamificationEnabled,
-        isAssessmentEnabled: object.liveQuiz.isAssessmentEnabled,
-        numSharedUsers: isManager
-          ? object.liveQuiz._count.permissions - 1
-          : undefined,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        isActivityReviewer:
-          (object.liveQuiz.courseId === null &&
-            (object.permissionLevel === DB.PermissionLevel.OWNER ||
-              object.permissionLevel === DB.PermissionLevel.ADMIN)) ||
-          (!!object.liveQuiz.course &&
-            object.liveQuiz.course._count.permissions > 0),
-        sharingType,
-        updatedAt: object.liveQuiz.updatedAt,
-      }
-    } else if (object.practiceQuiz) {
-      // if the object access is derived and the object is soft-deleted, don't show it
-      if (object.derived && object.practiceQuiz.isDeleted) {
-        return []
-      }
-
-      return {
-        id: object.practiceQuiz.id,
-        templateId: object.practiceQuiz.templateInfo?.id ?? null,
-        name: object.practiceQuiz.name,
-        displayName: object.practiceQuiz.displayName,
-        reviewStatus: object.practiceQuiz.reviewStatus,
-        type: ActivityType.PRACTICE_QUIZ,
-        status: object.practiceQuiz.status,
-        courseId: object.practiceQuiz.course?.id,
-        courseName: object.practiceQuiz.course?.name,
-        courseLanguage: object.practiceQuiz.course?.language,
-        courseStartDate: object.practiceQuiz.course?.startDate,
-        numOfStacks: object.practiceQuiz.stacks.length,
-        numOfElements: object.practiceQuiz.stacks.reduce(
-          (acc, block) => acc + block._count.elements,
-          0
-        ),
-        automaticPublicationAt: object.practiceQuiz.availableFrom,
-        permissionLevel: object.permissionLevel,
-        derivedAccess: object.derived,
-        areInstancesOutdated: object.practiceQuiz.areInstancesOutdated,
-        isGamificationEnabled: object.practiceQuiz.isGamificationEnabled,
-        isAssessmentEnabled: object.practiceQuiz.isAssessmentEnabled,
-        numSharedUsers: isManager
-          ? object.practiceQuiz._count.permissions - 1
-          : undefined,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        isActivityReviewer: object.practiceQuiz.course._count.permissions > 0,
-        sharingType,
-        updatedAt: object.practiceQuiz.updatedAt,
-      }
-    } else if (object.microLearning) {
-      // if the object access is derived and the object is soft-deleted, don't show it
-      if (object.derived && object.microLearning.isDeleted) {
-        return []
-      }
-
-      return {
-        id: object.microLearning.id,
-        templateId: object.microLearning.templateInfo?.id ?? null,
-        name: object.microLearning.name,
-        displayName: object.microLearning.displayName,
-        reviewStatus: object.microLearning.reviewStatus,
-        type: ActivityType.MICRO_LEARNING,
-        status: object.microLearning.status,
-        courseId: object.microLearning.course?.id,
-        courseName: object.microLearning.course?.name,
-        courseLanguage: object.microLearning.course?.language,
-        courseStartDate: object.microLearning.course?.startDate,
-        numOfStacks: object.microLearning.stacks.length,
-        numOfElements: object.microLearning.stacks.reduce(
-          (acc, block) => acc + block._count.elements,
-          0
-        ),
-        scheduledStartAt: object.microLearning.scheduledStartAt,
-        scheduledEndAt: object.microLearning.scheduledEndAt,
-        permissionLevel: object.permissionLevel,
-        derivedAccess: object.derived,
-        areInstancesOutdated: object.microLearning.areInstancesOutdated,
-        isGamificationEnabled: object.microLearning.isGamificationEnabled,
-        isAssessmentEnabled: object.microLearning.isAssessmentEnabled,
-        numSharedUsers: isManager
-          ? object.microLearning._count.permissions - 1
-          : undefined,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        isActivityReviewer: object.microLearning.course._count.permissions > 0,
-        sharingType,
-        updatedAt: object.microLearning.updatedAt,
-      }
-    } else if (object.groupActivity) {
-      // if the object access is derived and the object is soft-deleted, don't show it
-      if (object.derived && object.groupActivity.isDeleted) {
-        return []
-      }
-
-      return {
-        id: object.groupActivity.id,
-        templateId: object.groupActivity.templateInfo?.id ?? null,
-        name: object.groupActivity.name,
-        displayName: object.groupActivity.displayName,
-        reviewStatus: object.groupActivity.reviewStatus,
-        type: ActivityType.GROUP_ACTIVITY,
-        status: object.groupActivity.status,
-        courseId: object.groupActivity.course?.id,
-        courseName: object.groupActivity.course?.name,
-        courseLanguage: object.groupActivity.course?.language,
-        courseStartDate: object.groupActivity.course?.startDate,
-        numOfStacks: object.groupActivity.stacks.length,
-        numOfElements: object.groupActivity.stacks.reduce(
-          (acc, block) => acc + block._count.elements,
-          0
-        ),
-        scheduledStartAt: object.groupActivity.scheduledStartAt,
-        scheduledEndAt: object.groupActivity.scheduledEndAt,
-        groupDeadlineDate: object.groupActivity.course.groupDeadlineDate,
-        numOfParticipantGroups:
-          object.groupActivity.course._count.participantGroups,
-        permissionLevel: object.permissionLevel,
-        derivedAccess: object.derived,
-        areInstancesOutdated: object.groupActivity.areInstancesOutdated,
-        isGamificationEnabled: object.groupActivity.isGamificationEnabled,
-        isAssessmentEnabled: object.groupActivity.isAssessmentEnabled,
-        numSharedUsers: isManager
-          ? object.groupActivity._count.permissions - 1
-          : undefined,
-        isOwner,
-        isManager,
-        isEditor,
-        isExecutor,
-        isShared,
-        isRemovable,
-        isActivityReviewer: object.groupActivity.course._count.permissions > 0,
-        sharingType,
-        updatedAt: object.groupActivity.updatedAt,
-      }
+    // if only derived access to the activity is given and it is soft deleted, do not show it in the overview
+    if (activity.derived && activity.isDeleted) {
+      return []
     }
 
-    return []
+    // return all relevant information for the activity
+    return {
+      ...activity,
+      type: activity.type as ActivityType,
+      derivedAccess: activity.derived,
+      numSharedUsers: activity.numActivityPermissions,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      isActivityReviewer:
+        (activity.type === ActivityType.LIVE_QUIZ &&
+          activity.courseId === null &&
+          (activity.permissionLevel === DB.PermissionLevel.OWNER ||
+            activity.permissionLevel === DB.PermissionLevel.ADMIN)) ||
+        activity.isUserCourseAdmin,
+      sharingType,
+    }
   })
 
-  // the activities should be ordered as follows:
-  // 1) first by active vs inactive status (active: published, scheduled, draft, template; inactive: ended, graded)
-  // 2) then by type: live quiz, microlearning, practice quiz, group activity
-  // 3) then by status within the active/inactive groups
-  // 4) then by start date / updated date
-  const activityTypeOrder = {
-    [ActivityType.LIVE_QUIZ]: 1,
-    [ActivityType.MICRO_LEARNING]: 2,
-    [ActivityType.PRACTICE_QUIZ]: 3,
-    [ActivityType.GROUP_ACTIVITY]: 4,
-  }
+  // // the activities should be ordered as follows:
+  // // 1) first by active vs inactive status (active: published, scheduled, draft, template; inactive: ended, graded)
+  // // 2) then by type: live quiz, microlearning, practice quiz, group activity
+  // // 3) then by status within the active/inactive groups
+  // // 4) then by start date / updated date
+  // const activityTypeOrder = {
+  //   [ActivityType.LIVE_QUIZ]: 1,
+  //   [ActivityType.MICRO_LEARNING]: 2,
+  //   [ActivityType.PRACTICE_QUIZ]: 3,
+  //   [ActivityType.GROUP_ACTIVITY]: 4,
+  // }
 
-  const activityStatusOrder = {
-    [DB.PublicationStatus.PUBLISHED]: 1,
-    [DB.PublicationStatus.SCHEDULED]: 2,
-    [DB.PublicationStatus.DRAFT]: 3,
-    [DB.PublicationStatus.TEMPLATE]: 4,
-    [DB.PublicationStatus.ENDED]: 2,
-    [DB.PublicationStatus.GRADED]: 1,
-  }
+  // const activityStatusOrder = {
+  //   [DB.PublicationStatus.PUBLISHED]: 1,
+  //   [DB.PublicationStatus.SCHEDULED]: 2,
+  //   [DB.PublicationStatus.DRAFT]: 3,
+  //   [DB.PublicationStatus.TEMPLATE]: 4,
+  //   [DB.PublicationStatus.ENDED]: 2,
+  //   [DB.PublicationStatus.GRADED]: 1,
+  // }
 
-  // helper function to determine if a status is active or inactive
-  const isActiveStatus = (status: DB.PublicationStatus): boolean => {
-    return (
-      status === DB.PublicationStatus.PUBLISHED ||
-      status === DB.PublicationStatus.SCHEDULED ||
-      status === DB.PublicationStatus.DRAFT ||
-      status === DB.PublicationStatus.TEMPLATE
-    )
-  }
+  // // helper function to determine if a status is active or inactive
+  // const isActiveStatus = (status: DB.PublicationStatus): boolean => {
+  //   return (
+  //     status === DB.PublicationStatus.PUBLISHED ||
+  //     status === DB.PublicationStatus.SCHEDULED ||
+  //     status === DB.PublicationStatus.DRAFT ||
+  //     status === DB.PublicationStatus.TEMPLATE
+  //   )
+  // }
 
-  return {
-    numOfActivities: user._count.objects,
-    activities: sortBy(
-      activities,
-      // first order by active/inactive (active first)
-      (activity) => (isActiveStatus(activity.status) ? 0 : 1),
-      // then order by activity type
-      (activity) => activityTypeOrder[activity.type],
-      // then order by status within each group
-      (activity) => activityStatusOrder[activity.status] || 100,
-      // then by scheduled start date or updated date
-      (activity) => {
-        if (activity.scheduledStartAt) {
-          return -new Date(activity.scheduledStartAt).getTime()
-        }
-        return -new Date(activity.updatedAt).getTime()
-      }
-    ),
-  }
+  // return {
+  //   numOfActivities: user._count.objects,
+  //   activities: sortBy(
+  //     activities,
+  //     // first order by active/inactive (active first)
+  //     (activity) => (isActiveStatus(activity.status) ? 0 : 1),
+  //     // then order by activity type
+  //     (activity) => activityTypeOrder[activity.type],
+  //     // then order by status within each group
+  //     (activity) => activityStatusOrder[activity.status] || 100,
+  //     // then by scheduled start date or updated date
+  //     (activity) => {
+  //       if (activity.scheduledStartAt) {
+  //         return -new Date(activity.scheduledStartAt).getTime()
+  //       }
+  //       return -new Date(activity.updatedAt).getTime()
+  //     }
+  //   ),
+  // }
+
+  // TODO: correctly get number of activities instead of using length here!!!
+  return { numOfActivities: totalCount, activities }
 }
 
 async function updateInstanceMultipliers(
