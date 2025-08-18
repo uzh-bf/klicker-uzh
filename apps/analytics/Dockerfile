@@ -10,4 +10,4 @@ COPY apps/analytics/ .
 COPY packages/prisma/src/prisma/schema/*.prisma apps/analytics/prisma/schema/
 RUN rm apps/analytics/prisma/schema/js.prisma
 
-RUN prisma generate
+RUN prisma generate --schema=prisma/schema
