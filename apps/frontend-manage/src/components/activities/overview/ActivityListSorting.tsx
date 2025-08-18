@@ -2,9 +2,9 @@ import { faSortAsc, faSortDesc } from '@fortawesome/free-solid-svg-icons'
 import { SortByType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { LibrarySortType } from '../../lib/hooks/useSortingAndFiltering'
+import { LibrarySortType } from '../../../lib/hooks/useSortingAndFiltering'
 
-function ElementListSorting({
+function ActivityListSorting({
   sort,
   handleSortByChange,
   handleSortOrderToggle,
@@ -26,31 +26,31 @@ function ElementListSorting({
           {
             value: SortByType.Title,
             label: t('manage.general.title'),
-            data: { cy: 'sort-by-question-pool-title' },
+            data: { cy: 'sort-by-activity-title' },
           },
           {
             value: SortByType.Type,
-            label: t('manage.general.elementType'),
-            data: { cy: 'sort-by-question-pool-type' },
+            label: t('manage.general.activityType'),
+            data: { cy: 'sort-by-activity-type' },
           },
           {
             value: SortByType.Status,
             label: t('manage.general.status'),
-            data: { cy: 'sort-by-question-pool-status' },
+            data: { cy: 'sort-by-activity-status' },
           },
           {
             value: SortByType.Created,
             label: t('manage.general.dateCreated'),
-            data: { cy: 'sort-by-question-pool-created' },
+            data: { cy: 'sort-by-activity-created' },
           },
           {
             value: SortByType.Modified,
             label: t('manage.general.dateModified'),
-            data: { cy: 'sort-by-question-pool-modified' },
+            data: { cy: 'sort-by-activity-modified' },
           },
         ]}
         className={{ root: 'w-46', trigger: 'h-9' }}
-        data={{ cy: 'sort-by-question-pool' }}
+        data={{ cy: 'sort-by-activity' }}
       />
       <Button
         disabled={!sort.by}
@@ -58,7 +58,7 @@ function ElementListSorting({
           handleSortOrderToggle()
         }}
         className={{ root: 'h-9 w-9 rounded-md' }}
-        data={{ cy: 'sort-order-question-pool-toggle' }}
+        data={{ cy: 'sort-order-activity-toggle' }}
       >
         <Button.Icon icon={sort.asc ? faSortAsc : faSortDesc} withoutLabel />
       </Button>
@@ -66,4 +66,4 @@ function ElementListSorting({
   )
 }
 
-export default ElementListSorting
+export default ActivityListSorting

@@ -1039,6 +1039,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       dateModified: 'Änderungsdatum',
       title: 'Titel',
       elementType: 'Elementtyp',
+      activityType: 'Aktivitätstyp',
+      status: 'Status',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
       catalystRequired:
