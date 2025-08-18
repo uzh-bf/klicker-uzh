@@ -1,9 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
-// global variable for ensured consistency with current dates
-const currentYear = new Date().getFullYear()
-
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
   before(() => {
     cy.seed()
@@ -29,11 +26,11 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
 
   // ! Part 1: Question duplication
   // #region
@@ -388,6 +385,7 @@ describe('Create different types of elements (with and without sample solution) 
   }) {
     // start the first live quiz and open the first block
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(`${liveQuiz}{enter}`)
     cy.get(`[data-cy="start-live-quiz-${liveQuiz}"]`).click()
     cy.wait(500)
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -886,6 +884,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.liveQuiz3,
     ]).each((quiz: string) => {
       // open lecturer cockpit
+      cy.get('[data-cy="activities-search-input"]').type(`${quiz}{enter}`)
       cy.get(`[data-cy="live-quiz-cockpit-${quiz}"]`).click()
       cy.wait(1000)
 
@@ -900,6 +899,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+      cy.get('[data-cy="activities-search-input"]').clear()
     })
 
     // delete all practice quizzes
